@@ -44,13 +44,13 @@ Or use the packaging scripts (see "Packaging" below).
 
 ## Screenshots
 
-|      Icon      |   Collection Management   |   Batch Request   |
-|:-------------:|:------------------------:|:----------------:|
-| ![Icon](../docs/EasyPostman-1024.png) | ![Collections](../docs/collections.png) | ![Batch](../docs/batch.png) |
+|          Icon          |        Collection Management         |      Batch Request       |
+|:----------------------:|:------------------------------------:|:------------------------:|
+| ![Icon](docs/icon.png) | ![Collections](docs/collections.png) | ![Batch](docs/batch.png) |
 
-|  Environments  |   History   |   Stress Test   |
-|:-------------:|:-----------:|:---------------:|
-| ![Envs](../docs/environments.png) | ![History](../docs/history.png) | ![Stress](../docs/stresstest.png) |
+|          Environments          |           History            |          Stress Test           |
+|:------------------------------:|:----------------------------:|:------------------------------:|
+| ![Envs](docs/environments.png) | ![History](docs/history.png) | ![Stress](docs/stresstest.png) |
 
 ---
 

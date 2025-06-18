@@ -1,0 +1,6 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 扁平极简风格，三层文档叠加，主色统一，增加描边提升辨识度 -->
+  <rect x="3" y="5" width="14" height="16" rx="2" fill="#F5F5F5" stroke="#222" stroke-width="1.5"/>
+  <rect x="7" y="3" width="14" height="16" rx="2" fill="#E0E0E0" stroke="#222" stroke-width="1.5"/>
+  <rect x="5" y="7" width="14" height="16" rx="2" fill="#BDBDBD" stroke="#222" stroke-width="1.5"/>
+</svg>

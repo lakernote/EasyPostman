@@ -1,0 +1,347 @@
+package com.laker.postman.common;
+
+import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
+import com.formdev.flatlaf.extras.FlatDesktop;
+import com.laker.postman.common.combobox.EnvironmentComboBox;
+import com.laker.postman.common.dialog.ExitDialog;
+import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.SystemUtil;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+@Slf4j
+public class TopMenuBarPanel extends JPanel {
+
+    private static TopMenuBarPanel instance;
+    @Getter
+    private EnvironmentComboBox environmentComboBox;
+    private JMenuBar menuBar;
+
+    private TopMenuBarPanel() {
+        setLayout(new BorderLayout());
+        // 复合边框：下方红色线+内边距
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 1, 0, Color.lightGray),
+                BorderFactory.createEmptyBorder(1, 4, 1, 4)
+        ));
+        init();
+    }
+
+    public static TopMenuBarPanel getInstance() {
+        if (instance == null) {
+            instance = new TopMenuBarPanel();
+        }
+        return instance;
+    }
+
+    private void init() {
+        initComponents();
+        FlatDesktop.setAboutHandler(this::aboutActionPerformed);
+        FlatDesktop.setQuitHandler(FlatDesktop.QuitResponse::performQuit);
+    }
+
+    private void initComponents() {
+        menuBar = new JMenuBar();
+        menuBar.setBorder(BorderFactory.createEmptyBorder());
+        // ---------文件菜单
+        JMenu fileMenu = new JMenu("文件");
+        JMenuItem exitMenuItem = new JMenuItem("退出");
+        exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        exitMenuItem.setMnemonic('X');
+        exitMenuItem.addActionListener(e -> ExitDialog.show());
+        JMenuItem logMenuItem = new JMenuItem("日志");
+        logMenuItem.addActionListener(e -> {
+            try {
+                Desktop.getDesktop().open(new File(SystemUtil.LOG_DIR));
+            } catch (IOException ex) {
+                log.error("Failed to open log directory", ex);
+                JOptionPane.showMessageDialog(null,
+                        "无法打开日志目录，请检查日志。",
+                        "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        fileMenu.add(logMenuItem);
+        fileMenu.add(exitMenuItem);
+        menuBar.add(fileMenu);
+
+        // ---------主题菜单
+        JMenu themeMenu = new JMenu("主题");
+        ButtonGroup themeGroup = new ButtonGroup();
+        JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem("浅色(Flat Light)");
+        JRadioButtonMenuItem darkTheme = new JRadioButtonMenuItem("深色(Flat Dark)");
+        JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem("IntelliJ 风格");
+        JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem("Mac Light 风格");
+        themeGroup.add(lightTheme);
+        themeGroup.add(darkTheme);
+        themeGroup.add(intellijTheme);
+        themeGroup.add(macLightTheme);
+        themeMenu.add(lightTheme);
+        themeMenu.add(darkTheme);
+        themeMenu.add(intellijTheme);
+        themeMenu.add(macLightTheme);
+        // 根据当前主题设置默认选中项
+        String lafClass = UIManager.getLookAndFeel().getClass().getName();
+        switch (lafClass) {
+            case "com.formdev.flatlaf.FlatLightLaf" -> lightTheme.setSelected(true);
+            case "com.formdev.flatlaf.FlatDarkLaf" -> darkTheme.setSelected(true);
+            case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> macLightTheme.setSelected(true);
+            default -> intellijTheme.setSelected(true);
+        }
+        // 切换主题事件
+        lightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatLightLaf"));
+        darkTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatDarkLaf"));
+        intellijTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatIntelliJLaf"));
+        macLightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.themes.FlatMacLightLaf"));
+        menuBar.add(themeMenu);
+
+        // ---------帮助菜单
+        JMenu helpMenu = new JMenu("帮助");
+        // 新增“检查更新”菜单项
+        JMenuItem updateMenuItem = new JMenuItem("检查更新");
+        updateMenuItem.addActionListener(e -> checkUpdate());
+        helpMenu.add(updateMenuItem);
+        // 新增“反馈建议”菜单项
+        JMenuItem feedbackMenuItem = new JMenuItem("反馈建议");
+        feedbackMenuItem.addActionListener(e -> JOptionPane.showMessageDialog(null, "请通过 Gitee 或 GitHub 提交 issue。", "反馈建议", JOptionPane.INFORMATION_MESSAGE));
+        helpMenu.add(feedbackMenuItem);
+        menuBar.add(helpMenu);
+
+        // ---------关于菜单
+        JMenu aboutMenu = new JMenu("关于");
+        JMenuItem aboutMenuItem = new JMenuItem("关于 EasyPostman");
+        aboutMenuItem.addActionListener(e -> aboutActionPerformed());
+        aboutMenu.add(aboutMenuItem);
+        menuBar.add(aboutMenu);
+
+        // 菜单栏放左侧
+        add(menuBar, BorderLayout.WEST);
+
+        // ---------环境选择器下拉框（右侧）
+        if (environmentComboBox == null) {
+            environmentComboBox = new EnvironmentComboBox();
+        } else {
+            environmentComboBox.reload();
+        }
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        rightPanel.setOpaque(false);
+        rightPanel.add(environmentComboBox);
+        add(rightPanel, BorderLayout.EAST);
+
+        setBackground(new Color(245, 247, 250));
+        setOpaque(true);
+    }
+
+    private void aboutActionPerformed() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel("EasyPostman");
+        title.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel version = new JLabel("版本：" + getCurrentVersion());
+        version.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel author = new JLabel("作者：lakernote");
+        author.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel license = new JLabel("协议：Apache-2.0");
+        license.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // 可点击的博客、GitHub、Gitee
+        JLabel blog = createLinkLabel("博客：https://laker.blog.csdn.net", "https://laker.blog.csdn.net");
+        blog.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel github = createLinkLabel("GitHub: https://github.com/lakernote", "https://github.com/lakernote");
+        github.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel gitee = createLinkLabel("Gitee: https://gitee.com/lakernote", "https://gitee.com/lakernote");
+        gitee.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel contact = new JLabel("微信：lakernote");
+        contact.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(title);
+        panel.add(version);
+        panel.add(author);
+        panel.add(license);
+        panel.add(contact);
+        panel.add(blog);
+        panel.add(github);
+        panel.add(gitee);
+        JOptionPane.showMessageDialog(MainFrame.getInstance(), panel, "关于 EasyPostman", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /**
+     * 创建可点击的 JLabel 链接（无下划线样式）
+     */
+    private JLabel createLinkLabel(String text, String url) {
+        JLabel label = new JLabel(
+                "<html><span style='color:#1a0dab;cursor:pointer;'>" + text + "</span></html>");
+        label.setForeground(new Color(26, 13, 171)); // Google 蓝色
+        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        label.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(url));
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "无法打开链接：" + url, "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                label.setForeground(new Color(66, 133, 244)); // 鼠标悬停变色
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                label.setForeground(new Color(26, 13, 171));
+            }
+        });
+        return label;
+    }
+
+    /**
+     * 获取当前版本号：优先从 MANIFEST.MF Implementation-Version，若无则尝试读取 pom.xml
+     */
+    private String getCurrentVersion() {
+        String version = null;
+        try {
+            version = getClass().getPackage().getImplementationVersion();
+        } catch (Exception ignored) {
+            // 忽略异常，可能是没有 MANIFEST.MF 文件
+        }
+        if (version != null && !version.isBlank()) {
+            log.info("Current version from MANIFEST.MF: {}", version);
+            return "v" + version;
+        }
+        // 开发环境下读取 pom.xml
+        try {
+            Path pom = Paths.get("pom.xml");
+            if (Files.exists(pom)) {
+                String xml = java.nio.file.Files.readString(pom);
+                int idx = xml.indexOf("<version>");
+                if (idx > 0) {
+                    int start = idx + "<version>".length();
+                    int end = xml.indexOf("</version>", start);
+                    if (end > start) {
+                        version = xml.substring(start, end).trim();
+                        log.info("Current version from pom.xml: {}", version);
+                        return "v" + version;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            log.warn("Failed to read pom.xml for version", ignored);
+        }
+        return "开发环境";
+    }
+
+    /**
+     * 检查更新：访问 Gitee Release API，获取最新版本号并与本地对比。
+     */
+    private void checkUpdate() {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            String latestVersion = null;
+            String releaseUrl = null;
+            String errorMsg = null;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    // Gitee API: https://gitee.com/api/v5/repos/lakernote/easy-tools/releases/latest
+                    java.net.URL url = new java.net.URL("https://gitee.com/api/v5/repos/lakernote/easy-tools/releases/latest");
+                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(5000);
+                    conn.setReadTimeout(5000);
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("Accept", "application/json");
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        try (java.io.InputStream is = conn.getInputStream();
+                             java.util.Scanner scanner = new java.util.Scanner(is, java.nio.charset.StandardCharsets.UTF_8)) {
+                            String json = scanner.useDelimiter("\\A").next();
+                            // 简单解析 tag_name 和 html_url
+                            int tagIdx = json.indexOf("\"tag_name\":");
+                            if (tagIdx > 0) {
+                                int start = json.indexOf('"', tagIdx + 11) + 1;
+                                int end = json.indexOf('"', start);
+                                latestVersion = json.substring(start, end);
+                            }
+                            int urlIdx = json.indexOf("\"html_url\":");
+                            if (urlIdx > 0) {
+                                int start = json.indexOf('"', urlIdx + 11) + 1;
+                                int end = json.indexOf('"', start);
+                                releaseUrl = json.substring(start, end);
+                            }
+                        }
+                    } else {
+                        errorMsg = "网络错误，状态码：" + code;
+                    }
+                } catch (Exception ex) {
+                    errorMsg = "检查更新失败：" + ex.getMessage();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                String currentVersion = getCurrentVersion();
+                if (errorMsg != null) {
+                    JOptionPane.showMessageDialog(null, errorMsg, "检查更新", JOptionPane.ERROR_MESSAGE);
+                } else if (latestVersion == null) {
+                    JOptionPane.showMessageDialog(null, "未获取到最新版本信息。", "检查更新", JOptionPane.WARNING_MESSAGE);
+                } else if (latestVersion.equals(currentVersion)) {
+                    JOptionPane.showMessageDialog(null, "已是最新版本（" + currentVersion + "）", "检查更新", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    int r = JOptionPane.showConfirmDialog(null, "发现新版本：" + latestVersion + "\n是否前往下载？", "检查更新", JOptionPane.YES_NO_OPTION);
+                    if (r == JOptionPane.YES_OPTION && releaseUrl != null) {
+                        try {
+                            Desktop.getDesktop().browse(new URI(releaseUrl));
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null, "无法打开浏览器：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void switchLaf(String className) {
+        try {
+            FlatAnimatedLafChange.showSnapshot();
+            switch (className) {
+                case "com.formdev.flatlaf.FlatLightLaf" -> com.formdev.flatlaf.FlatLightLaf.setup();
+                case "com.formdev.flatlaf.FlatDarkLaf" -> com.formdev.flatlaf.FlatDarkLaf.setup();
+                case "com.formdev.flatlaf.FlatIntelliJLaf" -> com.formdev.flatlaf.FlatIntelliJLaf.setup();
+                case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> com.formdev.flatlaf.themes.FlatMacLightLaf.setup();
+                default -> UIManager.setLookAndFeel(className);
+            }
+            // 更新全局字体
+            Font font = UIManager.getFont("defaultFont");
+            UIManager.put("Label.font", font);
+            UIManager.put("Button.font", font);
+            UIManager.put("TextField.font", font);
+            UIManager.put("TextArea.font", font);
+            UIManager.put("ComboBox.font", font);
+            // 重新初始化菜单栏以应用新主题
+            menuBar.removeAll();
+            initComponents();
+            // 重新绘制所有窗口
+            for (Window window : Window.getWindows()) {
+                SwingUtilities.updateComponentTreeUI(window);
+            }
+            FlatAnimatedLafChange.hideSnapshotWithAnimation();
+        } catch (Exception e) {
+            log.error("Failed to switch LookAndFeel", e);
+        }
+    }
+}

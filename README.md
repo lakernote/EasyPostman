@@ -48,6 +48,7 @@ API。
 - SwingX：提供扩展的 Swing 组件，如 JXTable、JXTree、JXStatusBar 等。
 - JGoodies Forms：灵活的布局管理器，简化复杂界面布局。
 - MigLayout：强大的布局管理器，支持复杂界面设计。
+- 加载优化，加载中提示，异步加载，懒加载等。
 
 ---
 

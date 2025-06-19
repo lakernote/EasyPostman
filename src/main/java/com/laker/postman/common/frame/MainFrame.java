@@ -1,8 +1,8 @@
 package com.laker.postman.common.frame;
 
+import com.laker.postman.common.EasyLoadingPanel;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.dialog.ExitDialog;
-import com.laker.postman.panel.EasyPostmanMainPanel;
 import com.laker.postman.util.SingletonProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +13,8 @@ import java.awt.event.WindowEvent;
 
 @Slf4j
 public class MainFrame extends JFrame {
+    private JPanel mainPanel;
+
     private MainFrame() {
         super();
         setName("EasyPostman");
@@ -25,15 +27,14 @@ public class MainFrame extends JFrame {
     }
 
     public void initComponents() {
-        initContentPanel();
+        EasyLoadingPanel.showOn();
         initWindowSize();
         initWindowCloseListener();
         setVisible(true);
+        // 主面板异步加载
+        EasyLoadingPanel.hideFromMainPanel();
     }
 
-    private void initContentPanel() {
-        setContentPane(EasyPostmanMainPanel.getInstance());
-    }
 
     private void initWindowSize() {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();

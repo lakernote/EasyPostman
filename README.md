@@ -10,6 +10,7 @@ API。
 - GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 微信：lakernote
+
 ---
 
 ## 快速开始
@@ -40,9 +41,14 @@ API。
 - Java 17
 - Swing 桌面 GUI
 - jlink & jpackage 打包分发
-- RSyntaxTextArea 代码高亮
-- FlatLaf 现代 UI 主题
 - jIconFont-Swing 字体图标
+- FlatLaf：现代化 UI 主题，支持暗色模式和高分辨率显示。
+- RSyntaxTextArea：支持语法高亮的文本编辑器组件，适合代码编辑场景。
+- AutoComplete：为输入框添加自动补全功能。
+- SwingX：提供扩展的 Swing 组件，如 JXTable、JXTree、JXStatusBar 等。
+- JGoodies Forms：灵活的布局管理器，简化复杂界面布局。
+- MigLayout：强大的布局管理器，支持复杂界面设计。
+- JNotification：实现桌面通知弹窗功能。
 
 ---
 

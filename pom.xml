@@ -96,6 +96,17 @@
             <type>pom</type>
         </dependency>
 
+        <!-- RSyntaxTextArea 代码编辑器 -->
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>rsyntaxtextarea</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>autocomplete</artifactId>
+            <version>3.3.2</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

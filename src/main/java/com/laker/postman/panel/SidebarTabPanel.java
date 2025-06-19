@@ -81,7 +81,8 @@ public class SidebarTabPanel extends AbstractBasePanel {
         consoleLogArea.setEditable(false); // 设置为不可编辑
         consoleLogArea.setLineWrap(true); // 自动换行
         consoleLogArea.setWrapStyleWord(true); // 换行时按单词换行
-        consoleLogArea.setFocusable(Boolean.FALSE);
+        consoleLogArea.setFocusable(true); // 允许获取焦点，便于复制
+        consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR)); // 显示文本光标
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
         logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         logScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);

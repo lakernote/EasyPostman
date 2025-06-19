@@ -141,11 +141,11 @@ public class RequestEditSubPanel extends JPanel {
 
         // 新增：脚本Tab，抽离为 ScriptPanel
         scriptPanel = new ScriptPanel();
-        reqTabs.addTab("Script", scriptPanel);
+        reqTabs.addTab("Scripts", scriptPanel);
 
         // 2.5 Cookie 面板
         CookieTablePanel cookiePanel = new CookieTablePanel(urlField);
-        reqTabs.addTab("Cookie", cookiePanel);
+        reqTabs.addTab("Cookies", cookiePanel);
 
         // 3. 响应面板
         JPanel responsePanel = new JPanel(new BorderLayout());

@@ -434,8 +434,8 @@ public class EnvironmentPanel extends AbstractBasePanel {
                 JOptionPane.WARNING_MESSAGE);
         if (confirm == JOptionPane.YES_OPTION) {
             environmentListModel.removeElement(new EnvironmentItem(env));
-            TopMenuBarPanel.getInstance().getEnvironmentComboBox().reload(); // 刷新顶部下拉框
             EnvironmentService.deleteEnvironment(env.getId());
+            TopMenuBarPanel.getInstance().getEnvironmentComboBox().reload(); // 刷新顶部下拉框
         }
     }
 
@@ -459,7 +459,6 @@ public class EnvironmentPanel extends AbstractBasePanel {
                 environmentComboBox.addItem(copyItem);
             }
             environmentList.setSelectedValue(copyItem, true);
-            JOptionPane.showMessageDialog(this, "环境已复制", "提示", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             log.error("复制环境失败", ex);
             JOptionPane.showMessageDialog(this, "复制失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);

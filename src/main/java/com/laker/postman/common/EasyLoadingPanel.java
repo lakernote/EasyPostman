@@ -30,7 +30,7 @@ public class EasyLoadingPanel extends JPanel {
         loadingLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 18));
         loadingLabel.setForeground(new Color(80, 120, 200));
         JProgressBar progressBar = new JProgressBar();
-        progressBar.setIndeterminate(true);
+        progressBar.setIndeterminate(true); // 设置为不确定模式
         progressBar.setPreferredSize(new Dimension(barWidth, 18));
         JPanel inner = new JPanel();
         inner.setOpaque(false);

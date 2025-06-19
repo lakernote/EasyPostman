@@ -1,7 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.common.SplashWindow;
 import com.laker.postman.util.BusinessStyleUtils;
 import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -16,6 +16,8 @@ import java.awt.*;
  */
 @Slf4j
 public class App {
+
+
     public static void main(String[] args) {
         // Swing 推荐在事件分派线程（EDT）中运行所有 UI 相关操作
         SwingUtilities.invokeLater(() -> {
@@ -33,15 +35,16 @@ public class App {
 
             // 3. FlatLaf 统一商务风格属性（圆角、阴影等）
             BusinessStyleUtils.applyBusinessStyle();
-
             IconFontSwing.register(FontAwesome.getIconFont());
 
-            // 4. 启动
-            final MainFrame mainFrame = MainFrame.getInstance();
-            mainFrame.initComponents();
+            // 4. 显示 SplashWindow
+            SplashWindow splash = new SplashWindow();
+
+            // 5. 异步加载主窗口
+            splash.initMainFrame();
         });
 
-        // 5. 设置全局异常处理器，防止程序因未捕获异常崩溃
+        // 6. 设置全局异常处理器，防止程序因未捕获异常崩溃
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             JOptionPane.showMessageDialog(null,

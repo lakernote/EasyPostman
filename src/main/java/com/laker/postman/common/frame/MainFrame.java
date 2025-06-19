@@ -29,7 +29,6 @@ public class MainFrame extends JFrame {
         setContentPane(EasyPostmanMainPanel.getInstance());
         initWindowSize();
         initWindowCloseListener();
-        setVisible(true);
     }
 
 

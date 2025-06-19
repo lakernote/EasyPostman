@@ -134,6 +134,8 @@ public class ScriptPanel extends JPanel {
         provider.addCompletion(new ShorthandCompletion(provider, "pm.environment.set", "pm.environment.set('key', 'value');", "设置环境变量"));
         provider.addCompletion(new ShorthandCompletion(provider, "pm.environment.get", "pm.environment.get('key');", "获取环境变量"));
         provider.addCompletion(new ShorthandCompletion(provider, "console.log", "console.log('内容');", "打印日志"));
+        provider.addCompletion(new ShorthandCompletion(provider, "JSON.parse(responseBody)", "JSON.parse(responseBody);", "解析响应体为 JSON 对象"));
+        provider.addCompletion(new ShorthandCompletion(provider, "JSON.stringify", "JSON.stringify(obj);", "将对象转换为 JSON 字符串"));
         AutoCompletion ac = new AutoCompletion(provider);
         ac.setAutoCompleteEnabled(true); // 启用自动补全
         ac.setAutoActivationEnabled(true); // 启用自动激活

@@ -64,7 +64,7 @@ public class SplashWindow extends JWindow {
         content.add(bottomPanel, BorderLayout.SOUTH);
 
         setContentPane(content);
-        setSize(480, 280);
+        setSize(450, 280);
         setLocationRelativeTo(null);
         setBackground(new Color(0, 0, 0, 0)); // 透明背景
         setAlwaysOnTop(true);

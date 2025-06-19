@@ -23,10 +23,9 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Scanner;
+
+import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
 public class TopMenuBarPanel extends JPanel {
@@ -212,42 +211,6 @@ public class TopMenuBarPanel extends JPanel {
             }
         });
         return label;
-    }
-
-    /**
-     * 获取当前版本号：优先从 MANIFEST.MF Implementation-Version，若无则尝试读取 pom.xml
-     */
-    private String getCurrentVersion() {
-        String version = null;
-        try {
-            version = getClass().getPackage().getImplementationVersion();
-        } catch (Exception ignored) {
-            // 忽略异常，可能是没有 MANIFEST.MF 文件
-        }
-        if (version != null && !version.isBlank()) {
-            log.info("Current version from MANIFEST.MF: {}", version);
-            return "v" + version;
-        }
-        // 开发环境下读取 pom.xml
-        try {
-            Path pom = Paths.get("pom.xml");
-            if (Files.exists(pom)) {
-                String xml = java.nio.file.Files.readString(pom);
-                int idx = xml.indexOf("<version>");
-                if (idx > 0) {
-                    int start = idx + "<version>".length();
-                    int end = xml.indexOf("</version>", start);
-                    if (end > start) {
-                        version = xml.substring(start, end).trim();
-                        log.info("Current version from pom.xml: {}", version);
-                        return "v" + version;
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-            log.warn("Failed to read pom.xml for version", ignored);
-        }
-        return "开发环境";
     }
 
     /**

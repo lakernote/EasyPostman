@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# 检查 java 是否可用
+if ! command -v java &> /dev/null; then
+    echo "❌ 未检测到 java，请先安装 JDK 17+ 并配置环境变量。"
+    exit 1
+fi
+# 检查 mvn 是否可用
+if ! command -v mvn &> /dev/null; then
+    echo "❌ 未检测到 mvn，请先安装 Maven 并配置环境变量。"
+    exit 1
+fi
+# 检查 jlink 是否可用
+if ! command -v jlink &> /dev/null; then
+    echo "❌ 未检测到 jlink，请确认 JDK 17+ 已正确安装。"
+    exit 1
+fi
+
 # 获取项目根目录路径（包含 pom.xml）
 PROJECT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
 
@@ -14,6 +30,12 @@ MAIN_CLASS="com.laker.postman.App"
 ICON_DIR="assets/mac/EasyPostman.icns"
 OUTPUT_DIR="dist"
 
+# 检查 icns 图标文件是否存在
+if [ ! -f "$ICON_DIR" ]; then
+    echo "❌ 图标文件 $ICON_DIR 不存在，请检查 assets/mac/EasyPostman.icns 是否存在。"
+    exit 1
+fi
+
 # 检查 JDK 版本是否 >= 17
 JAVA_VERSION=$(java -version 2>&1 | grep version | awk '{print substr($3, 2, 3)}' | tr -d '"')
 if (( $(echo "$JAVA_VERSION < 17" | bc -l) )); then
@@ -26,6 +48,11 @@ echo "🚀 开始构建项目..."
 mvn clean package -DskipTests
 if [ $? -ne 0 ]; then
     echo "❌ Maven 构建失败，请检查错误日志"
+    exit 1
+fi
+# 检查 jar 包是否生成成功
+if [ ! -f "target/$JAR_NAME" ]; then
+    echo "❌ 构建未生成 jar 包: target/$JAR_NAME"
     exit 1
 fi
 

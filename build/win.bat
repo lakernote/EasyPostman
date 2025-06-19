@@ -103,7 +103,7 @@ jpackage ^
     --win-shortcut ^
     --win-menu ^
     --java-options "-Xms128m" ^
-    --java-options "-Xmx1g" ^
+    --java-options "-Xmx256m" ^
     --java-options "-Dfile.encoding=UTF-8"
 if errorlevel 1 (
     echo ERROR: jpackage failed

@@ -103,7 +103,21 @@ public class SplashWindow extends JWindow {
             @Override
             protected void done() {
                 try {
-                    get().setVisible(true);
+                    MainFrame mainFrame = get();
+                    mainFrame.setVisible(true);
+                    // 渐变显示主窗口，消除白屏
+                    Timer timer = new Timer(15, null);
+                    timer.addActionListener(e -> {
+                        float opacity = mainFrame.getOpacity();
+                        if (opacity < 1f) {
+                            float next = Math.min(1f, opacity + 0.08f);
+                            mainFrame.setOpacity(next);
+                        } else {
+                            mainFrame.setOpacity(1f);
+                            timer.stop();
+                        }
+                    });
+                    timer.start();
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(null, "主窗口加载失败，请重启应用。", "错误", JOptionPane.ERROR_MESSAGE);
                     System.exit(1);

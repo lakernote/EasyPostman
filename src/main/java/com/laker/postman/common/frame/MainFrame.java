@@ -19,6 +19,10 @@ public class MainFrame extends JFrame {
         setName("EasyPostman");
         setTitle("EasyPostman");
         setIconImage(Icons.LOGO.getImage());
+        // 启动时先设置为透明，等内容加载好后再渐变显示
+        try {
+            this.setOpacity(0f);
+        } catch (Exception ignore) {}
     }
 
     public static MainFrame getInstance() {
@@ -29,6 +33,8 @@ public class MainFrame extends JFrame {
         setContentPane(EasyPostmanMainPanel.getInstance());
         initWindowSize();
         initWindowCloseListener();
+        pack();
+        setLocationRelativeTo(null);
     }
 
 
@@ -41,8 +47,6 @@ public class MainFrame extends JFrame {
         } else {
             setPreferredSize(new Dimension(960, 640));
         }
-        pack();
-        setLocationRelativeTo(null);
         if (screenSize.getWidth() <= 1366) {
             setExtendedState(Frame.MAXIMIZED_BOTH);
         }

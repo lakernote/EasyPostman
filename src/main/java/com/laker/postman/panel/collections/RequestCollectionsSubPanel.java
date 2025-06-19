@@ -696,6 +696,8 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                     HttpRequestItem tabItem = subPanel.getCurrentRequest();
                     if (tabItem != null && item.getId().equals(tabItem.getId())) {
                         editPanel.updateTabDirty(subPanel, false);
+                        subPanel.updateTablesBorder(false);
+                        subPanel.setOriginalRequestItem(item);
                     }
                 }
             }

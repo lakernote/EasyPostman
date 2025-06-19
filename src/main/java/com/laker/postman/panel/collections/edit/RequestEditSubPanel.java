@@ -240,7 +240,16 @@ public class RequestEditSubPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             boolean dirty = isModified();
             RequestEditPanel.getInstance().updateTabDirty(this, dirty);
+            updateTablesBorder(dirty);
         });
+    }
+
+    public void updateTablesBorder(boolean isModified) {
+        requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(isModified);
+        requestBodyPanel.getFormDataTablePanel().updateTableBorder(isModified);
+        paramsPanel.updateTableBorder(isModified);
+        headersPanel.updateTableBorder(isModified);
+        extractorPanel.getExtractorTablePabel().updateTableBorder(isModified);
     }
 
     private void formatResponseBody() {

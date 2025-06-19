@@ -1,3 +1,6 @@
 /dependency-reduced-pom.xml
 /target/
 /dist/
+/.idea/
+.DS_Store
+**/.DS_Store

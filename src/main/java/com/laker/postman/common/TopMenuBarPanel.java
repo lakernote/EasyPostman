@@ -1,5 +1,6 @@
 package com.laker.postman.common;
 
+import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
@@ -17,10 +18,15 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Scanner;
 
 @Slf4j
 public class TopMenuBarPanel extends JPanel {
@@ -250,37 +256,26 @@ public class TopMenuBarPanel extends JPanel {
     private void checkUpdate() {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             String latestVersion = null;
-            String releaseUrl = null;
+            final String releaseUrl = "https://gitee.com/lakernote/easy-postman/releases";
             String errorMsg = null;
 
             @Override
             protected Void doInBackground() {
                 try {
-                    // Gitee API: https://gitee.com/api/v5/repos/lakernote/easy-tools/releases/latest
-                    java.net.URL url = new java.net.URL("https://gitee.com/api/v5/repos/lakernote/easy-tools/releases/latest");
-                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                    URL url = new URL("https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/latest");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(5000);
                     conn.setReadTimeout(5000);
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("Accept", "application/json");
                     int code = conn.getResponseCode();
                     if (code == 200) {
-                        try (java.io.InputStream is = conn.getInputStream();
-                             java.util.Scanner scanner = new java.util.Scanner(is, java.nio.charset.StandardCharsets.UTF_8)) {
+                        try (InputStream is = conn.getInputStream();
+                             Scanner scanner = new Scanner(is, StandardCharsets.UTF_8)) {
                             String json = scanner.useDelimiter("\\A").next();
-                            // 简单解析 tag_name 和 html_url
-                            int tagIdx = json.indexOf("\"tag_name\":");
-                            if (tagIdx > 0) {
-                                int start = json.indexOf('"', tagIdx + 11) + 1;
-                                int end = json.indexOf('"', start);
-                                latestVersion = json.substring(start, end);
-                            }
-                            int urlIdx = json.indexOf("\"html_url\":");
-                            if (urlIdx > 0) {
-                                int start = json.indexOf('"', urlIdx + 11) + 1;
-                                int end = json.indexOf('"', start);
-                                releaseUrl = json.substring(start, end);
-                            }
+                            log.info("Received update info: {}", json);
+                            JSONObject jsonObj = new JSONObject(json);
+                            latestVersion = jsonObj.getStr("tag_name");
                         }
                     } else {
                         errorMsg = "网络错误，状态码：" + code;
@@ -302,7 +297,7 @@ public class TopMenuBarPanel extends JPanel {
                     JOptionPane.showMessageDialog(null, "已是最新版本（" + currentVersion + "）", "检查更新", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     int r = JOptionPane.showConfirmDialog(null, "发现新版本：" + latestVersion + "\n是否前往下载？", "检查更新", JOptionPane.YES_NO_OPTION);
-                    if (r == JOptionPane.YES_OPTION && releaseUrl != null) {
+                    if (r == JOptionPane.YES_OPTION) {
                         try {
                             Desktop.getDesktop().browse(new URI(releaseUrl));
                         } catch (Exception ex) {

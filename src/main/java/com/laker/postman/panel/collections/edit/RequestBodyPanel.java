@@ -4,15 +4,13 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.table.FileCellEditor;
-import com.laker.postman.common.table.FileCellRenderer;
 import com.laker.postman.common.table.TextOrFileTableCellEditor;
+import com.laker.postman.common.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import lombok.Getter;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,16 +26,17 @@ public class RequestBodyPanel extends JPanel {
     public static final String RAW_TYPE_JSON = "JSON";
 
     @Getter
-    private JComboBox<String> bodyTypeComboBox;
-    private JComboBox<String> rawTypeComboBox;
+    private final JComboBox<String> bodyTypeComboBox;
+    private final JLabel formatLabel;
+    private final JComboBox<String> rawTypeComboBox;
     @Getter
     private EasyTablePanel formDataTablePanel;
     @Getter
     private EasyNameValueTablePanel formUrlencodedTablePanel;
     @Getter
     private JTextArea bodyArea;
-    private CardLayout bodyCardLayout;
-    private JPanel bodyCardPanel;
+    private final CardLayout bodyCardLayout;
+    private final JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_RAW;
     private String currentRawType = RAW_TYPE_JSON;
 
@@ -51,12 +50,14 @@ public class RequestBodyPanel extends JPanel {
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
         bodyTypePanel.add(bodyTypeComboBox);
         bodyTypePanel.add(Box.createHorizontalStrut(10));
-        bodyTypePanel.add(new JLabel("Format:"));
+        formatLabel = new JLabel("Format:");
+        bodyTypePanel.add(formatLabel);
         String[] rawTypes = {RAW_TYPE_JSON};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         rawTypeComboBox.addActionListener(e -> currentRawType = (String) rawTypeComboBox.getSelectedItem());
-        rawTypeComboBox.setVisible(BODY_TYPE_RAW.equals(currentBodyType));
+        rawTypeComboBox.setVisible(isBodyTypeRAW());
+        formatLabel.setVisible(isBodyTypeRAW());
         bodyTypePanel.add(rawTypeComboBox);
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
@@ -67,6 +68,10 @@ public class RequestBodyPanel extends JPanel {
         bodyCardPanel.add(createRawPanel(), BODY_TYPE_RAW);
         add(bodyCardPanel, BorderLayout.CENTER);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
+    }
+
+    private boolean isBodyTypeRAW() {
+        return BODY_TYPE_RAW.equals(currentBodyType);
     }
 
     private JPanel createNonePanel() {
@@ -84,20 +89,7 @@ public class RequestBodyPanel extends JPanel {
         formDataTablePanel.setColumnEditor(1, new DefaultCellEditor(typeCombo));
         // 设置Value列根据Type动态切换编辑器和渲染器
         formDataTablePanel.setColumnEditor(2, new TextOrFileTableCellEditor());
-        formDataTablePanel.setColumnRenderer(2, new TableCellRenderer() {
-            private final FileCellRenderer fileRenderer = new FileCellRenderer();
-            private final DefaultTableCellRenderer textRenderer = new DefaultTableCellRenderer();
-
-            @Override
-            public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Object type = table.getValueAt(row, 1);
-                if ("File".equals(type)) {
-                    return fileRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                } else {
-                    return textRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                }
-            }
-        });
+        formDataTablePanel.setColumnRenderer(2, new TextOrFileTableCellRenderer());
         panel.add(formDataTablePanel, BorderLayout.CENTER);
         return panel;
     }
@@ -125,10 +117,11 @@ public class RequestBodyPanel extends JPanel {
         currentBodyType = bodyType;
         bodyCardLayout.show(bodyCardPanel, bodyType);
         rawTypeComboBox.setVisible(BODY_TYPE_RAW.equals(bodyType));
+        formatLabel.setVisible(BODY_TYPE_RAW.equals(bodyType));
     }
 
     private void formatBody() {
-        if (!BODY_TYPE_RAW.equals(currentBodyType)) {
+        if (!isBodyTypeRAW()) {
             JOptionPane.showMessageDialog(this, "Only Raw type Body can be formatted");
             return;
         }
@@ -152,12 +145,11 @@ public class RequestBodyPanel extends JPanel {
         return currentBodyType;
     }
 
-    // 新增：获取raw body内容
+
     public String getRawBody() {
         return bodyArea != null ? bodyArea.getText().trim() : null;
     }
 
-    // ��增：获取form-data内容
     public Map<String, String> getFormData() {
         Map<String, String> formData = new LinkedHashMap<>();
         if (formDataTablePanel != null) {
@@ -174,11 +166,10 @@ public class RequestBodyPanel extends JPanel {
         return formData;
     }
 
-    // 新增：获取form-data文件内容
     public Map<String, String> getFormFiles() {
         Map<String, String> formFiles = new LinkedHashMap<>();
         if (formDataTablePanel != null) {
-            java.util.List<java.util.Map<String, Object>> rows = formDataTablePanel.getRows();
+            java.util.List<Map<String, Object>> rows = formDataTablePanel.getRows();
             for (java.util.Map<String, Object> row : rows) {
                 String key = row.get("Key") == null ? null : row.get("Key").toString();
                 String type = row.get("Type") == null ? null : row.get("Type").toString();
@@ -191,7 +182,6 @@ public class RequestBodyPanel extends JPanel {
         return formFiles;
     }
 
-    // 新增：��取x-www-form-urlencoded内容
     public String getFormUrlencodedBody() {
         if (formUrlencodedTablePanel == null) return null;
         StringBuilder sb = new StringBuilder();

@@ -313,7 +313,7 @@ public class RequestEditPanel extends JPanel {
         }
     }
 
-    // 新增：用于动态更新tab红点
+    // 用于动态更新tab红点
     public void updateTabDirty(RequestEditSubPanel panel, boolean dirty) {
         int idx = tabbedPane.indexOfComponent(panel);
         if (idx < 0) return;

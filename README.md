@@ -7,13 +7,16 @@
 EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，支持多环境变量、批量请求、压力测试等高级功能，助力高效测试和管理
 API。
 
+- GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
+- Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
+- 微信：lakernote
 ---
 
 ## 快速开始
 
 1. 克隆仓库：`git clone https://gitee.com/lakernote/easy-postman.git`
 2. 使用 JDK 17+ 编译运行：`mvn clean package`
-3. 运行主程序：`App.java` 或 `java -jar target/easy-postman.jar` 
+3. 运行主程序：`App.java` 或 `java -jar target/easy-postman.jar`
 
 或直接使用打包脚本（见下文“打包说明”）。
 
@@ -66,7 +69,7 @@ API。
 
 - 欢迎提交 Issue、PR 参与共建
 - QQ 群/微信群（可在 Issue 区留言获取）
-- 关注 [GitHub](https://github.com/你的仓库/easy-postman) 获取最新动态
+- 关注 [GitHub](https://github.com/lakernote/easy-postman) 获取最新动态
 
 ---
 

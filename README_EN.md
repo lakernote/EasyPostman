@@ -65,7 +65,7 @@ Or use the packaging scripts (see "Packaging" below).
 
 - Issues and PRs are welcome!
 - QQ/WeChat groups (ask in Issues for details)
-- Follow [GitHub](https://github.com/your-repo/easy-postman) for updates
+- Follow [GitHub](https://github.com/lakernote/easy-postman) for updates
 
 ---
 

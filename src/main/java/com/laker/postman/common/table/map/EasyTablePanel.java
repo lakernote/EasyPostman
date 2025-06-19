@@ -1,7 +1,10 @@
 package com.laker.postman.common.table.map;
 
 import com.laker.postman.common.constants.Colors;
+import com.laker.postman.common.table.TableRowTransferHandler;
 import com.laker.postman.util.FontUtil;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -38,6 +41,7 @@ import java.util.Map;
  *     List<Map<String, Object>> rows = panel.getRows();
  * </pre>
  */
+@Slf4j
 public class EasyTablePanel extends JPanel {
     // 表格的数据模型
     private final DefaultTableModel tableModel;
@@ -48,7 +52,11 @@ public class EasyTablePanel extends JPanel {
     // 列名数组
     private final String[] columns;
 
-    private String originalTableJson; // 用于存储原始表格数据的JSON字符串，用于比较修改是否修改
+    /**
+     * -- GETTER --
+     * 获取表格是否可编辑
+     */
+    @Getter
     private boolean editable = true; // 新增字段，默认可编辑
 
     /**
@@ -73,6 +81,8 @@ public class EasyTablePanel extends JPanel {
         };
         // 创建表格
         table = new JTable(tableModel);
+        // 启用行拖动排序
+        enableRowDragAndDrop();
         // 初始化表格UI
         initTableUI();
         JScrollPane scrollPane = new JScrollPane(table);
@@ -128,13 +138,11 @@ public class EasyTablePanel extends JPanel {
         return menu;
     }
 
-    /**
-     * 添加表格的鼠标监听器，右键弹出菜单
-     */
-    private MouseAdapter tableMouseListener;
-
     private void addTableListener() {
-        tableMouseListener = new MouseAdapter() {
+        /*
+          添加表格的鼠标监听器，右键弹出菜单
+         */
+        MouseAdapter tableMouseListener = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (e.isPopupTrigger()) showMenu(e);
@@ -207,10 +215,6 @@ public class EasyTablePanel extends JPanel {
 
     public void addTableModelListener(TableModelListener l) {
         tableModel.addTableModelListener(l);
-    }
-
-    public void removeTableModelListener(TableModelListener l) {
-        tableModel.removeTableModelListener(l);
     }
 
     /**
@@ -295,19 +299,6 @@ public class EasyTablePanel extends JPanel {
         tableModel.addRow(values);
     }
 
-
-    public void removeRow(int row) {
-        if (row >= 0 && row < tableModel.getRowCount()) {
-            tableModel.removeRow(row);
-        }
-    }
-
-    public void updateRow(Object newValue, int row, int column) {
-        if (row >= 0 && row < tableModel.getRowCount()) {
-            tableModel.setValueAt(newValue, row, column);
-        }
-    }
-
     /**
      * 设置某一列的自定义渲染器
      *
@@ -346,10 +337,6 @@ public class EasyTablePanel extends JPanel {
      */
     public Object getValueAt(int row, int column) {
         return table.getValueAt(row, column);
-    }
-
-    public int getSelectedRow() {
-        return table.getSelectedRow();
     }
 
     // 设置自适应最后一列，消除右侧空白
@@ -398,15 +385,6 @@ public class EasyTablePanel extends JPanel {
         table.repaint();
     }
 
-    /**
-     * 获取表格是否可编辑
-     *
-     * @return true-可编辑，false-只读
-     */
-    public boolean isEditable() {
-        return editable;
-    }
-
     // 整体高亮时边框提示
     public void updateTableBorder(boolean modified) {
         if (modified) {
@@ -419,5 +397,14 @@ public class EasyTablePanel extends JPanel {
                     BorderFactory.createEmptyBorder(2, 2, 2, 2)));
         }
         table.repaint();
+    }
+
+    /**
+     * 启用JTable行拖动排序
+     */
+    private void enableRowDragAndDrop() {
+        table.setDragEnabled(true);
+        table.setDropMode(DropMode.INSERT_ROWS);
+        table.setTransferHandler(new TableRowTransferHandler(tableModel,this));
     }
 }

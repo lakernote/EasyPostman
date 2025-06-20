@@ -6,10 +6,13 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpRequestItem;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -35,21 +38,41 @@ public class RequestCollectionPersistence {
         }
     }
 
-    public void loadRequestGroups(Runnable createDefaultRequestGroups) {
+    public void initRequestGroupsFromFile(Runnable createDefaultRequestGroups) {
         File file = new File(filePath);
         if (!file.exists()) {
             createDefaultRequestGroups.run();
             return;
         }
         try {
-            JSONArray array = JSONUtil.readJSONArray(file, StandardCharsets.UTF_8);
-            rootTreeNode.removeAllChildren();
-            for (Object o : array) {
-                JSONObject groupJson = (JSONObject) o;
-                DefaultMutableTreeNode groupNode = parseGroupNode(groupJson);
-                rootTreeNode.add(groupNode);
-            }
-            treeModel.reload();
+
+            SwingWorker<List<DefaultMutableTreeNode>, Void> worker = new SwingWorker<>() {
+                @Override
+                protected List<DefaultMutableTreeNode> doInBackground() {
+                    JSONArray array = JSONUtil.readJSONArray(file, StandardCharsets.UTF_8);
+                    List<DefaultMutableTreeNode> groupNodeList = new ArrayList<>();
+                    for (Object o : array) {
+                        JSONObject groupJson = (JSONObject) o;
+                        DefaultMutableTreeNode groupNode = parseGroupNode(groupJson);
+                        groupNodeList.add(groupNode);
+                    }
+                    return groupNodeList;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        List<DefaultMutableTreeNode> groupNodeList = get();
+                        groupNodeList.forEach(rootTreeNode::add);
+                        treeModel.reload(rootTreeNode);
+                        log.info("加载请求组完成");
+                    } catch (Exception e) {
+                        log.error("加载请求组失败", e);
+                        JOptionPane.showMessageDialog(null, "加载请求组失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
         } catch (Exception ex) {
             log.error("加载失败", ex);
         }

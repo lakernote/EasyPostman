@@ -109,21 +109,28 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
         // 初始化持久化工具
         persistence = new RequestCollectionPersistence(COLLECTION_PATH, rootTreeNode, treeModel);
         // 创建树组件
-        requestTree = new JTree(treeModel);
+        requestTree = new JTree(treeModel) {
+            @Override
+            public boolean isPathEditable(TreePath path) {
+                // 禁止根节点重命名
+                Object node = path.getLastPathComponent();
+                if (node instanceof DefaultMutableTreeNode treeNode) {
+                    return treeNode.getParent() != null;
+                }
+                return false;
+            }
+        };
         // 不显示根节点
         requestTree.setRootVisible(false);
         // 让 JTree 组件显示根节点的“展开/收起”小三角（即树形结构的手柄）。
         requestTree.setShowsRootHandles(true);
         // 设置树的字体和行高
         requestTree.setCellRenderer(new RequestTreeCellRenderer());
-        requestTree.setRowHeight(28); // 行高更大，视觉更舒适
-        requestTree.setBackground(new Color(245, 247, 250)); // 柔和背景色
-        // 优化滚动条外观
+        requestTree.setRowHeight(28);
+        requestTree.setBackground(new Color(245, 247, 250));
         JScrollPane treeScrollPane = new JScrollPane(requestTree);
         treeScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        treeScrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY)); // 设置顶部边框颜色
-
-
+        treeScrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
         // 启用拖拽排序
         requestTree.setDragEnabled(true); // 启用拖拽
         requestTree.setDropMode(DropMode.ON_OR_INSERT); // 设置拖拽模式为插入
@@ -231,6 +238,10 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                 JPopupMenu menu = new JPopupMenu();
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
                 Object userObj = selectedNode != null ? selectedNode.getUserObject() : null;
+                // 根节点不显示任何操作
+                if (selectedNode == rootTreeNode) {
+                    return;
+                }
                 // 仅分组节点可新增文件/请求
                 if (userObj instanceof Object[] && "group".equals(((Object[]) userObj)[0])) {
                     JMenuItem addGroupItem = new JMenuItem("新增文件夹");
@@ -241,19 +252,22 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                     menu.add(addRequestItem);
                     menu.addSeparator();
                 }
-                // 新增：请求节点右键菜单增加“复制”
+                // 请求节点右键菜单增加“复制”
                 if (userObj instanceof Object[] && "request".equals(((Object[]) userObj)[0])) {
                     JMenuItem copyItem = new JMenuItem("复制");
                     copyItem.addActionListener(e -> copySelectedRequest());
                     menu.add(copyItem);
                     menu.addSeparator();
                 }
-                JMenuItem renameItem = new JMenuItem("重命名");
-                JMenuItem deleteItem = new JMenuItem("删除");
-                renameItem.addActionListener(e -> renameSelectedItem());
-                deleteItem.addActionListener(e -> deleteSelectedItem());
-                menu.add(renameItem);
-                menu.add(deleteItem);
+                // 只有非根节点才显示重命名/删除
+                if (selectedNode != rootTreeNode) {
+                    JMenuItem renameItem = new JMenuItem("重命名");
+                    JMenuItem deleteItem = new JMenuItem("删除");
+                    renameItem.addActionListener(e -> renameSelectedItem());
+                    deleteItem.addActionListener(e -> deleteSelectedItem());
+                    menu.add(renameItem);
+                    menu.add(deleteItem);
+                }
                 menu.show(requestTree, x, y);
             }
 
@@ -400,8 +414,10 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
             }
         });
 
-        // 加载数据
-        persistence.loadRequestGroups(this::createDefaultRequestGroups);
+        SwingUtilities.invokeLater(() -> {
+            persistence.initRequestGroupsFromFile(this::createDefaultRequestGroups);
+        }); // 异步加载请求组
+
     }
 
     // 导出请求集合到JSON文件

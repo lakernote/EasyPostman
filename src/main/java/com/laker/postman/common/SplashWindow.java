@@ -14,7 +14,7 @@ import java.awt.*;
  */
 @Slf4j
 public class SplashWindow extends JWindow {
-    public static final int MIN_TIME = 1500;
+    public static final int MIN_TIME = 1000;
     private final JLabel statusLabel;
 
     public SplashWindow() {

@@ -59,7 +59,7 @@ public class SidebarTabPanel extends AbstractBasePanel {
                 () -> SingletonPanelFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
-            tabbedPane.addTab(info.title, new JPanel()); // 修复：设置标题，便于 getTitleAt 正常工作
+            tabbedPane.addTab(info.title, new JPanel()); // 占位面板，实际内容在切换时加载 先用空面板占位，后续可以懒加载真正的内容面板（如ensureTabComponentLoaded方法所做的），提升性能和启动速度。
             tabbedPane.setTabComponentAt(i, createPostmanTabHeader(info.title, info.icon));
         }
         tabbedPane.setSelectedIndex(0);
@@ -225,7 +225,7 @@ public class SidebarTabPanel extends AbstractBasePanel {
     private static class TabInfo {
         String title;
         Icon icon;
-        Supplier<JPanel> panelSupplier;
+        Supplier<JPanel> panelSupplier; // 用于懒加载面板
         JPanel panel;
 
         TabInfo(String title, Icon icon, Supplier<JPanel> panelSupplier) {
@@ -237,6 +237,7 @@ public class SidebarTabPanel extends AbstractBasePanel {
         JPanel getPanel() {
             if (panel == null) {
                 panel = panelSupplier.get();
+                log.info("Loaded panel for tab: {}", title);
             }
             return panel;
         }

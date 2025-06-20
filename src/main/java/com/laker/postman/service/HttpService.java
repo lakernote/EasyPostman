@@ -256,5 +256,6 @@ public class HttpService {
         public Map<String, List<String>> headers;
         public String body;
         public int code; // 添加响应状态码字段
+        public String threadName; // 添加线程名称字段
     }
 }

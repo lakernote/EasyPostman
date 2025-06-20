@@ -447,9 +447,27 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                 });
                 HttpRequestItem item = currentRequestItem;
                 StressResult result = StressTestService.stressTest(item, concurrency, requestCount, (completed) -> {
-                    if (isCancelled()) return; // 支持取消
+                    if (isCancelled()) return;
                     int percent = (int) ((completed * 100.0) / requestCount);
                     publish(percent);
+                }, (reqItem, resp) -> {
+                    // 每个请求完成时写入历史
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            String method = reqItem.getMethod();
+                            String url = reqItem.getUrl();
+                            String requestBody = reqItem.getBody();
+                            String requestHeaders = reqItem.getHeaders() != null ? reqItem.getHeaders().toString() : "";
+                            String responseStatus = resp != null ? String.valueOf(resp.code) : "ERROR";
+                            String responseHeaders = resp != null && resp.headers != null ? resp.headers.toString() : "";
+                            String responseBody = resp != null ? resp.body : "";
+                            HistoryPanel historyPanel =
+                                    SingletonPanelFactory.getInstance(HistoryPanel.class);
+                            historyPanel.addRequestHistory(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, "", resp.threadName);
+                        } catch (Exception ex) {
+                            log.error("保存单次压测请求到历史失败", ex);
+                        }
+                    });
                 });
                 if (isCancelled()) {
                     stressResult.append("压测已取消\n");
@@ -532,29 +550,6 @@ public class RequestStressTestPanel extends AbstractBasePanel {
             setStyledResult(stressResult.toString());
             // 自动滚动到底部
             stressResultArea.setCaretPosition(stressResultArea.getDocument().getLength());
-            // 自动保存到历史记录
-            try {
-                if (!isCancelled() && currentRequestItem != null) {
-                    // 获取参数和结果
-                    String method = currentRequestItem.getMethod();
-                    String url = currentRequestItem.getUrl();
-                    String requestBody = currentRequestItem.getBody();
-                    String requestHeaders = currentRequestItem.getHeaders() != null ? currentRequestItem.getHeaders().toString() : "";
-                    String resultText = stressResult.toString();
-                    // 这里只保存压测摘要，不保存响应体
-                    SwingUtilities.invokeLater(() -> {
-                        try {
-                            HistoryPanel historyPanel =
-                                    SingletonPanelFactory.getInstance(com.laker.postman.panel.history.HistoryPanel.class);
-                            historyPanel.addRequestHistory(method, url, requestBody, requestHeaders, "STRESS", "", resultText, "");
-                        } catch (Exception exception) {
-                            log.error("保存压测结果到历史记录失败", exception);
-                        }
-                    });
-                }
-            } catch (Exception exception) {
-                log.error("保存压测结果到历史记录失败", exception);
-            }
         }
     }
 

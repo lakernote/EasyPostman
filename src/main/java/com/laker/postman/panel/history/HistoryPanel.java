@@ -152,6 +152,7 @@ public class HistoryPanel extends AbstractBasePanel {
         sb.append("<html><body style='font-family:monospace;font-size:9px;'>");
         sb.append("<b>【方法】</b> <span style='color:#1976d2;'>").append(item.method).append("</span> ");
         sb.append("<b>【URL】</b> <span style='color:#388e3c;'>").append(item.url).append("</span><br><br>");
+        sb.append("<b>【执行线程】</b> <span style='color:#d2691e;'>").append(item.threadName == null ? "(无)" : item.threadName).append("</span><br><br>");
         sb.append("<b>【请求头】</b><br><pre style='margin:0;'>")
           .append(item.requestHeaders == null || item.requestHeaders.isEmpty() ? "(无)" : escapeHtml(item.requestHeaders)).append("</pre><br>");
         sb.append("<b>【请求体】</b><br><pre style='margin:0;'>")
@@ -201,8 +202,8 @@ public class HistoryPanel extends AbstractBasePanel {
     }
 
 
-    // 新增：支持带重定向链的历史记录
-    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String redirectChain) {
+    // 新增：支持带重定向链和线程名的历史记录
+    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String redirectChain, String threadName) {
         RequestHistoryItem item = new RequestHistoryItem(
                 method,
                 url,
@@ -211,7 +212,8 @@ public class HistoryPanel extends AbstractBasePanel {
                 responseStatus,
                 responseHeaders,
                 responseBody,
-                System.currentTimeMillis()
+                System.currentTimeMillis(),
+                threadName
         );
         item.extra = redirectChain;
         if (historyListModel != null) {

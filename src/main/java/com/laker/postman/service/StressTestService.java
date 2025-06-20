@@ -12,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 
 /**
  * 压力测试服务类：用于对指定的 HTTP 接口进行并发压力测试。
@@ -19,43 +21,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class StressTestService {
 
     /**
-     * 新增支持HttpRequestItem参数的stressTest方法，内部统一用HttpRequestExecutor构建和发送请求。
+     * 支持进度回调和每个请求完成回调的重载方法
      */
-    public static StressResult stressTest(HttpRequestItem item, int concurrency, int requestCount) throws InterruptedException {
-        List<Long> times = Collections.synchronizedList(new ArrayList<>());
-        CountDownLatch latch = new CountDownLatch(requestCount);
-        ExecutorService pool = Executors.newFixedThreadPool(concurrency);
-        AtomicInteger errorCount = new AtomicInteger(0);
-        ConcurrentHashMap<Integer, Long> timeData = new ConcurrentHashMap<>();
-        for (int i = 0; i < requestCount; i++) {
-            int reqNum = i + 1;
-            pool.execute(() -> {
-                long start = System.currentTimeMillis();
-                try {
-                    HttpRequestExecutor.PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
-                    HttpService.HttpResponse resp = HttpRequestExecutor.execute(req);
-                    if (resp.code < 200 || resp.code > 299) {
-                        errorCount.incrementAndGet();
-                    }
-                } catch (Exception ex) {
-                    errorCount.incrementAndGet();
-                } finally {
-                    long duration = System.currentTimeMillis() - start;
-                    times.add(duration);
-                    timeData.put(reqNum, duration);
-                    latch.countDown();
-                }
-            });
-        }
-        latch.await();
-        pool.shutdown();
-        return new StressResult(times, errorCount.get(), timeData);
-    }
-
-    /**
-     * 支持进度回调和总耗时统计的重载方法
-     */
-    public static StressResult stressTest(HttpRequestItem item, int concurrency, int requestCount, java.util.function.IntConsumer progressCallback) throws InterruptedException {
+    public static StressResult stressTest(
+            HttpRequestItem item,
+            int concurrency,
+            int requestCount,
+            IntConsumer progressCallback,
+            BiConsumer<HttpRequestItem, HttpService.HttpResponse> perRequestCallback
+    ) throws InterruptedException {
         List<Long> times = Collections.synchronizedList(new ArrayList<>());
         CountDownLatch latch = new CountDownLatch(requestCount);
         ExecutorService pool = Executors.newFixedThreadPool(concurrency);
@@ -67,9 +41,10 @@ public class StressTestService {
             int reqNum = i + 1;
             pool.execute(() -> {
                 long reqStart = System.currentTimeMillis();
+                HttpService.HttpResponse resp = null;
                 try {
                     HttpRequestExecutor.PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
-                    HttpService.HttpResponse resp = HttpRequestExecutor.execute(req);
+                    resp = HttpRequestExecutor.execute(req);
                     if (resp.code < 200 || resp.code > 299) {
                         errorCount.incrementAndGet();
                     }
@@ -81,6 +56,12 @@ public class StressTestService {
                     timeData.put(reqNum, duration);
                     int done = completed.incrementAndGet();
                     if (progressCallback != null) progressCallback.accept(done);
+                    if (perRequestCallback != null) {
+                        try {
+                            perRequestCallback.accept(item, resp);
+                        } catch (Exception ignore) {
+                        }
+                    }
                     latch.countDown();
                 }
             });

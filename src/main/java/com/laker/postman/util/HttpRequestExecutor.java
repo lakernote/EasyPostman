@@ -169,6 +169,7 @@ public class HttpRequestExecutor {
         } else {
             resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
         }
+        resp.threadName = Thread.currentThread().getName();
         // 解析Set-Cookie
         try {
             java.net.URL urlObj = new java.net.URL(req.url);

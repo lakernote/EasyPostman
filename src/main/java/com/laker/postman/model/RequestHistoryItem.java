@@ -14,6 +14,7 @@ public class RequestHistoryItem {
     public final long timestamp;
     // 用于存储重定向链
     public String extra;
+    public String threadName; // 执行线程名
 
     public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp) {
         this.method = method;
@@ -24,6 +25,18 @@ public class RequestHistoryItem {
         this.responseHeaders = responseHeaders;
         this.responseBody = responseBody;
         this.timestamp = timestamp;
+    }
+
+    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, String threadName) {
+        this.method = method;
+        this.url = url;
+        this.requestBody = requestBody;
+        this.requestHeaders = requestHeaders;
+        this.responseStatus = responseStatus;
+        this.responseHeaders = responseHeaders;
+        this.responseBody = responseBody;
+        this.timestamp = timestamp;
+        this.threadName = threadName;
     }
 
     @Override

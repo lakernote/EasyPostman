@@ -395,4 +395,28 @@ public class PostmanImport {
         }
         return postmanItem;
     }
+
+    /**
+     * 导出单个环境为Postman环境变量JSON字符串
+     */
+    public static String toPostmanEnvironmentJson(Environment env) {
+        JSONObject obj = new JSONObject();
+        obj.put("id", UUID.randomUUID().toString());
+        obj.put("name", env.getName());
+        JSONArray values = new JSONArray();
+        if (env.getVariables() != null) {
+            for (Map.Entry<String, String> entry : env.getVariables().entrySet()) {
+                JSONObject v = new JSONObject();
+                v.put("key", entry.getKey());
+                v.put("value", entry.getValue());
+                v.put("enabled", true);
+                values.add(v);
+            }
+        }
+        obj.put("values", values);
+        obj.put("_postman_variable_scope", "environment");
+        obj.put("_postman_exported_at", java.time.ZonedDateTime.now().toString());
+        obj.put("_postman_exported_using", "EasyPostman");
+        return obj.toStringPretty();
+    }
 }

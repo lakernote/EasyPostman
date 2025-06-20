@@ -244,29 +244,29 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                 }
                 // 仅分组节点可新增文件/请求
                 if (userObj instanceof Object[] && "group".equals(((Object[]) userObj)[0])) {
-                    JMenuItem addGroupItem = new JMenuItem("新增文件夹");
+                    JMenuItem addGroupItem = new JMenuItem("Add Group");
                     addGroupItem.addActionListener(e -> addGroupUnderSelected());
                     menu.add(addGroupItem);
-                    JMenuItem addRequestItem = new JMenuItem("新增请求");
+                    JMenuItem addRequestItem = new JMenuItem("Add Request");
                     addRequestItem.addActionListener(e -> addRequestUnderSelected());
                     menu.add(addRequestItem);
                     // 导出为Postman
-                    JMenuItem exportPostmanItem = new JMenuItem("导出为Postman v2.1");
+                    JMenuItem exportPostmanItem = new JMenuItem("Export as Postman v2.1");
                     exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
                     menu.add(exportPostmanItem);
                     menu.addSeparator();
                 }
                 // 请求节点右键菜单增加“复制”
                 if (userObj instanceof Object[] && "request".equals(((Object[]) userObj)[0])) {
-                    JMenuItem copyItem = new JMenuItem("复制");
+                    JMenuItem copyItem = new JMenuItem("Copy");
                     copyItem.addActionListener(e -> copySelectedRequest());
                     menu.add(copyItem);
                     menu.addSeparator();
                 }
                 // 只有非根节点才显示重命名/删除
                 if (selectedNode != rootTreeNode) {
-                    JMenuItem renameItem = new JMenuItem("重命名");
-                    JMenuItem deleteItem = new JMenuItem("删除");
+                    JMenuItem renameItem = new JMenuItem("Rename");
+                    JMenuItem deleteItem = new JMenuItem("Delete");
                     renameItem.addActionListener(e -> renameSelectedItem());
                     deleteItem.addActionListener(e -> deleteSelectedItem());
                     menu.add(renameItem);

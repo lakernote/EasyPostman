@@ -201,12 +201,16 @@ public class EnvironmentPanel extends AbstractBasePanel {
         JMenuItem renameItem = new JMenuItem("Rename");
         JMenuItem copyItem = new JMenuItem("Copy"); // 复制菜单项
         JMenuItem deleteItem = new JMenuItem("Delete");
+        JMenuItem exportPostmanItem = new JMenuItem("Export as Postman");
+        exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
         renameItem.addActionListener(e -> renameSelectedEnvironment());
         copyItem.addActionListener(e -> copySelectedEnvironment()); // 复制事件
         deleteItem.addActionListener(e -> deleteSelectedEnvironment());
         envListMenu.add(renameItem);
-        envListMenu.add(copyItem); // 添加到菜单
+        envListMenu.add(copyItem);
         envListMenu.add(deleteItem);
+        envListMenu.addSeparator();
+        envListMenu.add(exportPostmanItem);
         environmentList.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 if (e.isPopupTrigger() || e.getButton() == MouseEvent.BUTTON3) { // 右键菜单
@@ -510,5 +514,28 @@ public class EnvironmentPanel extends AbstractBasePanel {
             log.info("original variables: {}", originalVariablesSnapshot);
         }
         return isVariablesChanged;
+    }
+
+    // 新增：导出选中环境为Postman格式
+    private void exportSelectedEnvironmentAsPostman() {
+        EnvironmentItem item = environmentList.getSelectedValue();
+        if (item == null) return;
+        Environment env = item.getEnvironment();
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("导出为Postman环境变量");
+        fileChooser.setSelectedFile(new File(env.getName() + "-postman-env.json"));
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try {
+                // 只导出当前环境为Postman格式
+                String postmanEnvJson = PostmanImport.toPostmanEnvironmentJson(env);
+                FileUtil.writeUtf8String(postmanEnvJson, fileToSave);
+                JOptionPane.showMessageDialog(this, "导出成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                log.error("导出Postman环境失败", ex);
+                JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

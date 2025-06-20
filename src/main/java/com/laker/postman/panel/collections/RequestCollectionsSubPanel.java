@@ -250,6 +250,9 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                     JMenuItem addRequestItem = new JMenuItem("Add Request");
                     addRequestItem.addActionListener(e -> addRequestUnderSelected());
                     menu.add(addRequestItem);
+                    JMenuItem duplicateGroupItem = new JMenuItem("Duplicate");
+                    duplicateGroupItem.addActionListener(e -> duplicateSelectedGroup());
+                    menu.add(duplicateGroupItem);
                     // 导出为Postman
                     JMenuItem exportPostmanItem = new JMenuItem("Export as Postman v2.1");
                     exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
@@ -801,6 +804,50 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
         }
     }
 
+    private void duplicateSelectedGroup() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+        if (selectedNode == null) return;
+        Object userObj = selectedNode.getUserObject();
+        if (userObj instanceof Object[] obj && "group".equals(obj[0])) {
+            // 深拷贝分组及其所有子节点
+            DefaultMutableTreeNode copyNode = deepCopyGroupNode(selectedNode);
+            Object[] copyObj = (Object[]) copyNode.getUserObject();
+            copyObj[1] = copyObj[1] + " Copy";
+            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
+            if (parent != null) {
+                int idx = parent.getIndex(selectedNode) + 1;
+                parent.insert(copyNode, idx);
+                treeModel.reload(parent);
+                requestTree.expandPath(new TreePath(parent.getPath()));
+                persistence.saveRequestGroups();
+            }
+        }
+    }
+
+    // 深拷贝分组节点及其所有子节点
+    private DefaultMutableTreeNode deepCopyGroupNode(DefaultMutableTreeNode node) {
+        Object userObj = node.getUserObject();
+        Object[] obj = userObj instanceof Object[] ? ((Object[]) userObj).clone() : null;
+        DefaultMutableTreeNode copy = new DefaultMutableTreeNode(obj);
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            Object childUserObj = child.getUserObject();
+            if (childUserObj instanceof Object[] childObj) {
+                if ("group".equals(childObj[0])) {
+                    copy.add(deepCopyGroupNode(child));
+                } else if ("request".equals(childObj[0])) {
+                    // 深拷贝请求节点
+                    HttpRequestItem item = (HttpRequestItem) childObj[1];
+                    HttpRequestItem copyItem = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
+                    copyItem.setId(java.util.UUID.randomUUID().toString());
+                    Object[] reqObj = new Object[]{"request", copyItem};
+                    copy.add(new DefaultMutableTreeNode(reqObj));
+                }
+            }
+        }
+        return copy;
+    }
+
     // 递归过滤节点
     private boolean filterNodes(DefaultMutableTreeNode src, DefaultMutableTreeNode dest, String keyword) {
         boolean matched = false;
@@ -918,4 +965,3 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
         }
     }
 }
-

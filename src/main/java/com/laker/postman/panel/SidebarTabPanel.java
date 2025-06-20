@@ -52,9 +52,8 @@ public class SidebarTabPanel extends AbstractBasePanel {
                 () -> SingletonPanelFactory.getInstance(EnvironmentPanel.class)));
         tabInfos.add(new TabInfo("批量", new FlatSVGIcon("icons/batch.svg", 20, 20),
                 () -> SingletonPanelFactory.getInstance(BatchRunPanel.class)));
-        tabInfos.add(new TabInfo("压测", new FlatSVGIcon("icons/stress.svg", 20, 20),
+        tabInfos.add(new TabInfo("压测", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
                 RequestStressTestPanel::new));
-        // 新增“历史”Tab，将原consolePanel内容迁移到此Tab
         tabInfos.add(new TabInfo("历史", new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonPanelFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+    <defs>
+        <linearGradient id="featherGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e53935"/>
+            <stop offset="100%" stop-color="#fbc02d"/>
+        </linearGradient>
+    </defs>
+    <g>
+        <!-- 羽毛主体 -->
+        <path d="M7.5 27.5 Q15 5 27.5 4.5 Q22.5 15 7.5 27.5 Z" fill="url(#featherGradient)" stroke="#b71c1c"
+              stroke-width="1"/>
+        <!-- 羽毛中线 -->
+        <path d="M8.75 26.25 Q16.25 7.5 26.25 6.25" fill="none" stroke="#fff" stroke-width="0.75"/>
+        <!-- 羽毛细节 -->
+        <path d="M11.25 22.5 Q16.25 15 22.5 11.25" fill="none" stroke="#fff" stroke-width="0.375"/>
+        <path d="M13.75 20 Q17.5 15 23.75 10" fill="none" stroke="#fff" stroke-width="0.25"/>
+    </g>
+</svg>

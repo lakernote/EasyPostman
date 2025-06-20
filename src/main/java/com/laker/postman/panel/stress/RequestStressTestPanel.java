@@ -461,9 +461,10 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                             String responseStatus = resp != null ? String.valueOf(resp.code) : "ERROR";
                             String responseHeaders = resp != null && resp.headers != null ? resp.headers.toString() : "";
                             String responseBody = resp != null ? resp.body : "";
+                            String connectionInfo = resp != null ? resp.connectionInfo : null;
                             HistoryPanel historyPanel =
                                     SingletonPanelFactory.getInstance(HistoryPanel.class);
-                            historyPanel.addRequestHistory(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, "", resp.threadName);
+                            historyPanel.addRequestHistory(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, "", resp != null ? resp.threadName : null, connectionInfo);
                         } catch (Exception ex) {
                             log.error("保存单次压测请求到历史失败", ex);
                         }
@@ -486,8 +487,10 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                 if (!times.isEmpty()) {
                     List<Long> sorted = new ArrayList<>(times);
                     sorted.sort(Long::compareTo);
-                    tp90 = sorted.get((int) (sorted.size() * 0.9) - 1);
-                    tp99 = sorted.get((int) (sorted.size() * 0.99) - 1);
+                    int idx90 = Math.max(0, (int) (sorted.size() * 0.9) - 1);
+                    int idx99 = Math.max(0, (int) (sorted.size() * 0.99) - 1);
+                    tp90 = sorted.get(idx90);
+                    tp99 = sorted.get(idx99);
                 }
                 // QPS
                 double qps = 0;

@@ -7,8 +7,9 @@ import com.laker.postman.common.table.StatusCodeCellRenderer;
 import com.laker.postman.common.table.generic.GenericTablePanel;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
-import com.laker.postman.service.HttpService;
 import com.laker.postman.util.HttpRequestExecutor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -123,8 +124,8 @@ public class BatchRunPanel extends AbstractBasePanel {
                     String sizeStr = "-";
                     long cost = 0;
                     try {
-                        HttpRequestExecutor.PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
-                        HttpService.HttpResponse resp = HttpRequestExecutor.execute(req);
+                        PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
+                        HttpResponse resp = HttpRequestExecutor.execute(req);
                         code = resp.code;
                         cost = System.currentTimeMillis() - start;
                         if (resp.body != null) {

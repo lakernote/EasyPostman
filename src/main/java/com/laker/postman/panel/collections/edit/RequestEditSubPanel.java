@@ -7,14 +7,11 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonPanelFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
-import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.Postman;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.HttpService;
 import com.laker.postman.util.HttpRequestExecutor;
 import com.laker.postman.util.HttpUtil;
 import com.laker.postman.util.JsScriptExecutor;
@@ -25,6 +22,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,6 +55,7 @@ public class RequestEditSubPanel extends JPanel {
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final JTextArea redirectChainArea; // 重定向链文本区域
+    private String lastResponseFilePath; // 保存最近一次响应的文件路径
 
     /**
      * 设置原始请求数据（脏数据检测）
@@ -269,11 +268,11 @@ public class RequestEditSubPanel extends JPanel {
         responseBodyPanel.getResponseBodyPane().setCaretPosition(0);
     }
 
-    private void setResponseBody(String bodyText) {
-        rawResponseBodyText = bodyText;
-        responseBodyPanel.setBodyText(bodyText);
+    private void setResponseBody(HttpResponse resp) {
+        rawResponseBodyText = resp.body;
+        responseBodyPanel.setBodyText(resp);
         if (extractorPanel != null) {
-            extractorPanel.setRawResponseBodyText(bodyText);
+            extractorPanel.setRawResponseBodyText(resp.body);
         }
     }
 
@@ -316,7 +315,7 @@ public class RequestEditSubPanel extends JPanel {
                 return;
             }
         }
-        HttpRequestExecutor.PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
+        PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
         if (req.url.isEmpty()) {
             JOptionPane.showMessageDialog(this, "请输入有效的 URL");
             return;
@@ -350,6 +349,7 @@ public class RequestEditSubPanel extends JPanel {
             long responseTime;
             String redirectChainText = "";
             List<HttpRequestExecutor.RedirectInfo> redirectInfos;
+            HttpResponse resp;
 
             @Override
             protected Void doInBackground() {
@@ -362,19 +362,12 @@ public class RequestEditSubPanel extends JPanel {
                     });
                     requestHeadersText = reqHeadersBuilder.toString();
                     HttpRequestExecutor.ResponseWithRedirects respWithRedirects = HttpRequestExecutor.executeWithRedirects(req, 10);
-                    HttpService.HttpResponse resp = respWithRedirects.finalResponse;
+                    resp = respWithRedirects.finalResponse;
                     redirectInfos = respWithRedirects.redirects;
                     StringBuilder chainBuilder = getRedirctChainStringBuilder();
                     redirectChainText = chainBuilder.toString();
-                    List<String> statusLines = resp.headers.get(null);
-                    statusText = (statusLines != null && !statusLines.isEmpty()) ? statusLines.get(0) : "Unknown Status";
-                    if (statusText != null && statusText.contains(" ")) {
-                        try {
-                            statusCode = Integer.parseInt(statusText.split(" ")[1].trim());
-                        } catch (Exception ex) {
-                            log.error("解析状态码失败: {}", statusText, ex);
-                        }
-                    }
+                    statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
+                    statusCode = resp.code;
                     StringBuilder headersBuilder = new StringBuilder();
                     resp.headers.forEach((key, value) -> {
                         if (key != null) {
@@ -405,7 +398,6 @@ public class RequestEditSubPanel extends JPanel {
                 for (int i = 0; i < redirectInfos.size(); i++) {
                     HttpRequestExecutor.RedirectInfo info = redirectInfos.get(i);
                     chainBuilder.append("[").append(i + 1).append("] ")
-                            .append(info.statusLine).append(" ")
                             .append(info.url).append("\n");
                     if (info.location != null) {
                         chainBuilder.append("  Location: ").append(info.location).append("\n");
@@ -426,7 +418,8 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 responseHeadersPanel.setHeadersText(headersText);
-                setResponseBody(bodyText);
+                lastResponseFilePath = (resp != null) ? resp.filePath : null;
+                setResponseBody(resp);
                 responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
                 if (redirectChainArea != null) {
                     redirectChainArea.setText(redirectChainText);
@@ -447,19 +440,29 @@ public class RequestEditSubPanel extends JPanel {
                 statusCodeLabel.setForeground(statusColor);
                 responseTimeLabel.setText(String.format("Duration: %d ms", responseTime));
                 String sizeText;
+                int bytes = 0;
                 if (bodyText != null) {
-                    int bytes = bodyText.getBytes().length;
-                    if (bytes < 1024) {
-                        sizeText = String.format("ResponseSize: %d B", bytes);
-                    } else if (bytes < 1024 * 1024) {
-                        sizeText = String.format("ResponseSize: %.1f KB", bytes / 1024.0);
+                    bytes = bodyText.getBytes().length;
+                }
+                if (resp.filePath != null) {
+                    // 如果有文件路径，显示文件大小
+                    File file = new File(resp.filePath);
+                    if (file.exists()) {
+                        bytes = (int) file.length();
                     } else {
-                        sizeText = String.format("ResponseSize: %.1f MB", bytes / (1024.0 * 1024.0));
+                        log.warn("响应文件不存在: {}", resp.filePath);
+                        bytes = 0;
                     }
+                }
+                if (bytes < 1024) {
+                    sizeText = String.format("ResponseSize: %d B", bytes);
+                } else if (bytes < 1024 * 1024) {
+                    sizeText = String.format("ResponseSize: %.1f KB", bytes / 1024.0);
                 } else {
-                    sizeText = "ResponseSize: 0 B";
+                    sizeText = String.format("ResponseSize: %.1f MB", bytes / (1024.0 * 1024.0));
                 }
                 responseSizeLabel.setText(sizeText);
+
                 // postscript 执行
                 String postscript = item.getPostscript();
                 if (postscript != null && !postscript.isBlank()) {
@@ -501,7 +504,8 @@ public class RequestEditSubPanel extends JPanel {
                         headersText,
                         bodyText,
                         redirectChainText,
-                        Thread.currentThread().getName() // 新增线程名
+                        resp.threadName,
+                        resp.connectionInfo
                 );
             }
         }.execute();

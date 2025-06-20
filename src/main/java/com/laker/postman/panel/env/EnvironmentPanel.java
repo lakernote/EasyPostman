@@ -17,6 +17,7 @@ import com.laker.postman.util.PostmanImport;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -69,12 +70,37 @@ public class EnvironmentPanel extends AbstractBasePanel {
         environmentList = new JList<>(environmentListModel);
         environmentList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         environmentList.setCellRenderer(new EnvironmentListCellRenderer());
+        environmentList.setFixedCellWidth(0); // 让JList自适应宽度
+        environmentList.setVisibleRowCount(-1); // 让JList显示所有行
         JScrollPane envListScroll = new JScrollPane(environmentList);
+        envListScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 禁用横向滚动条
         leftPanel.add(envListScroll, BorderLayout.CENTER);
         add(leftPanel, BorderLayout.WEST);
 
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
+        JPanel importExportPanel = getImportExportPanel();
+        rightPanel.add(importExportPanel, BorderLayout.NORTH);
+
+        // 变量表格
+        variablesTablePanel = new EasyNameValueTablePanel();
+        JScrollPane tableScrollPane = new JScrollPane(variablesTablePanel);
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5));
+        rightPanel.add(tableScrollPane, BorderLayout.CENTER);
+
+        // 变量操作按钮
+        JPanel varButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JButton saveVarButton = new JButton("Save");
+        saveVarButton.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 14, new Color(0, 0, 150)));
+        saveVarButton.addActionListener(e -> saveVariables());
+        varButtonPanel.add(saveVarButton);
+        rightPanel.add(varButtonPanel, BorderLayout.SOUTH);
+
+        add(rightPanel, BorderLayout.CENTER);
+    }
+
+    @NotNull
+    private JPanel getImportExportPanel() {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JButton importBtn = new JButton(new FlatSVGIcon("icons/upload.svg", 20, 20));
         importBtn.setText("Import");
@@ -99,23 +125,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
         exportBtn.setIconTextGap(6);
         exportBtn.addActionListener(e -> exportEnvironments());
         importExportPanel.add(exportBtn);
-        rightPanel.add(importExportPanel, BorderLayout.NORTH);
-
-        // 变量表格
-        variablesTablePanel = new EasyNameValueTablePanel();
-        JScrollPane tableScrollPane = new JScrollPane(variablesTablePanel);
-        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5));
-        rightPanel.add(tableScrollPane, BorderLayout.CENTER);
-
-        // 变量操作按钮
-        JPanel varButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        JButton saveVarButton = new JButton("Save");
-        saveVarButton.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 14, new Color(0, 0, 150)));
-        saveVarButton.addActionListener(e -> saveVariables());
-        varButtonPanel.add(saveVarButton);
-        rightPanel.add(varButtonPanel, BorderLayout.SOUTH);
-
-        add(rightPanel, BorderLayout.CENTER);
+        return importExportPanel;
     }
 
     @Override

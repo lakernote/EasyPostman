@@ -5,6 +5,7 @@ import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -50,23 +51,9 @@ public class HistoryPanel extends AbstractBasePanel {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof RequestHistoryItem item) {
                     String text = String.format("[%s] %s", item.method, item.url);
-                    int maxWidth = list.getWidth() - 20;
-                    if (maxWidth > 0) {
-                        FontMetrics fm = label.getFontMetrics(label.getFont());
-                        if (fm.stringWidth(text) > maxWidth) {
-                            String ellipsis = "...";
-                            int len = text.length();
-                            while (len > 0 && fm.stringWidth(text.substring(0, len) + ellipsis) > maxWidth) {
-                                len--;
-                            }
-                            if (len > 0) {
-                                text = text.substring(0, len) + ellipsis;
-                            } else {
-                                text = ellipsis;
-                            }
-                        }
-                    }
+                    text = JComponentUtils.ellipsisText(text, list, 0, 50); // 超出宽度显示省略号
                     label.setText(text);
+                    label.setToolTipText(String.format("[%s] %s", item.method, item.url));
                 }
                 if (isSelected) {
                     label.setFont(label.getFont().deriveFont(Font.BOLD));
@@ -82,19 +69,6 @@ public class HistoryPanel extends AbstractBasePanel {
         listScroll.setPreferredSize(new Dimension(200, 240));
         listScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
 
-        // 鼠标悬浮显示全文tip
-        historyList.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                int idx = historyList.locationToIndex(e.getPoint());
-                if (idx != -1) {
-                    RequestHistoryItem item = historyListModel.get(idx);
-                    historyList.setToolTipText(String.format("[%s] %s", item.method, item.url));
-                } else {
-                    historyList.setToolTipText(null);
-                }
-            }
-        });
 
         // 详情区
         historyDetailPanel = new JPanel(new BorderLayout());
@@ -147,21 +121,45 @@ public class HistoryPanel extends AbstractBasePanel {
 
     }
 
+    // 支持带重定向链、线程名和连接信息的历史记录
+    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String redirectChain, String threadName, String connectionInfo) {
+        RequestHistoryItem item = new RequestHistoryItem(
+                method,
+                url,
+                requestBody,
+                requestHeaders,
+                responseStatus,
+                responseHeaders,
+                responseBody,
+                System.currentTimeMillis(),
+                threadName,
+                connectionInfo
+        );
+        item.extra = redirectChain;
+        if (historyListModel != null) {
+            historyListModel.add(0, item);
+        }
+    }
+
+
     private String formatHistoryDetailPrettyHtml(RequestHistoryItem item) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body style='font-family:monospace;font-size:9px;'>");
         sb.append("<b>【方法】</b> <span style='color:#1976d2;'>").append(item.method).append("</span> ");
         sb.append("<b>【URL】</b> <span style='color:#388e3c;'>").append(item.url).append("</span><br><br>");
         sb.append("<b>【执行线程】</b> <span style='color:#d2691e;'>").append(item.threadName == null ? "(无)" : item.threadName).append("</span><br><br>");
+        if (item.connectionInfo != null && !item.connectionInfo.isEmpty()) {
+            sb.append("<b>【连接】</b> <span style='color:#1976d2;'>").append(escapeHtml(item.connectionInfo)).append("</span><br><br>");
+        }
         sb.append("<b>【请求头】</b><br><pre style='margin:0;'>")
-          .append(item.requestHeaders == null || item.requestHeaders.isEmpty() ? "(无)" : escapeHtml(item.requestHeaders)).append("</pre><br>");
+                .append(item.requestHeaders == null || item.requestHeaders.isEmpty() ? "(无)" : escapeHtml(item.requestHeaders)).append("</pre><br>");
         sb.append("<b>【请求体】</b><br><pre style='margin:0;'>")
-          .append(item.requestBody == null || item.requestBody.isEmpty() ? "(无)" : escapeHtml(item.requestBody)).append("</pre><br>");
+                .append(item.requestBody == null || item.requestBody.isEmpty() ? "(无)" : escapeHtml(item.requestBody)).append("</pre><br>");
         sb.append("<b>【响应状态】</b> <span style='color:#1976d2;'>").append(escapeHtml(item.responseStatus)).append("</span><br>");
         sb.append("<b>【响应头】</b><br><pre style='margin:0;'>")
-          .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(无)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
+                .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(无)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
         sb.append("<b>【响应体】</b><br><pre style='margin:0;'>")
-          .append(item.responseBody == null || item.responseBody.isEmpty() ? "(无)" : escapeHtml(item.responseBody)).append("</pre>");
+                .append(item.responseBody == null || item.responseBody.isEmpty() ? "(无)" : escapeHtml(item.responseBody)).append("</pre>");
         // 重定向链美化
         if (item.extra != null && !item.extra.isEmpty()) {
             sb.append("<br><b>【重定向链】</b><br>");
@@ -199,25 +197,5 @@ public class HistoryPanel extends AbstractBasePanel {
         historyListModel.clear();
         historyDetailPane.setText("<html><body>请选择一条历史记录</body></html>");
         historyDetailPanel.setVisible(true);
-    }
-
-
-    // 新增：支持带重定向链和线程名的历史记录
-    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String redirectChain, String threadName) {
-        RequestHistoryItem item = new RequestHistoryItem(
-                method,
-                url,
-                requestBody,
-                requestHeaders,
-                responseStatus,
-                responseHeaders,
-                responseBody,
-                System.currentTimeMillis(),
-                threadName
-        );
-        item.extra = redirectChain;
-        if (historyListModel != null) {
-            historyListModel.add(0, item);
-        }
     }
 }

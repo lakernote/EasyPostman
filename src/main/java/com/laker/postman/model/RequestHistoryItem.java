@@ -15,6 +15,7 @@ public class RequestHistoryItem {
     // 用于存储重定向链
     public String extra;
     public String threadName; // 执行线程名
+    public String connectionInfo; // 新增：连接信息
 
     public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp) {
         this.method = method;
@@ -28,15 +29,13 @@ public class RequestHistoryItem {
     }
 
     public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, String threadName) {
-        this.method = method;
-        this.url = url;
-        this.requestBody = requestBody;
-        this.requestHeaders = requestHeaders;
-        this.responseStatus = responseStatus;
-        this.responseHeaders = responseHeaders;
-        this.responseBody = responseBody;
-        this.timestamp = timestamp;
+        this(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, timestamp);
         this.threadName = threadName;
+    }
+
+    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, String threadName, String connectionInfo) {
+        this(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, timestamp, threadName);
+        this.connectionInfo = connectionInfo;
     }
 
     @Override

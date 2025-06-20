@@ -8,6 +8,7 @@ import com.laker.postman.panel.batch.BatchRunPanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
+import com.laker.postman.panel.jmeter.JMeterPanel;
 import com.laker.postman.panel.stress.RequestStressTestPanel;
 import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -54,6 +55,8 @@ public class SidebarTabPanel extends AbstractBasePanel {
                 () -> SingletonPanelFactory.getInstance(BatchRunPanel.class)));
         tabInfos.add(new TabInfo("压测", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
                 RequestStressTestPanel::new));
+        tabInfos.add(new TabInfo("Jmeter", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
+                () -> SingletonPanelFactory.getInstance(JMeterPanel.class)));
         tabInfos.add(new TabInfo("历史", new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonPanelFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {

@@ -1,6 +1,8 @@
 package com.laker.postman.service;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.StressResult;
 import com.laker.postman.util.HttpRequestExecutor;
 
@@ -28,7 +30,7 @@ public class StressTestService {
             int concurrency,
             int requestCount,
             IntConsumer progressCallback,
-            BiConsumer<HttpRequestItem, HttpService.HttpResponse> perRequestCallback
+            BiConsumer<HttpRequestItem, HttpResponse> perRequestCallback
     ) throws InterruptedException {
         List<Long> times = Collections.synchronizedList(new ArrayList<>());
         CountDownLatch latch = new CountDownLatch(requestCount);
@@ -41,9 +43,9 @@ public class StressTestService {
             int reqNum = i + 1;
             pool.execute(() -> {
                 long reqStart = System.currentTimeMillis();
-                HttpService.HttpResponse resp = null;
+                HttpResponse resp = null;
                 try {
-                    HttpRequestExecutor.PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
+                    PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
                     resp = HttpRequestExecutor.execute(req);
                     if (resp.code < 200 || resp.code > 299) {
                         errorCount.incrementAndGet();

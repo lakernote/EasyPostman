@@ -1,6 +1,8 @@
 package com.laker.postman.util;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.HttpService;
 import lombok.extern.slf4j.Slf4j;
@@ -10,16 +12,6 @@ import java.util.*;
 
 @Slf4j
 public class HttpRequestExecutor {
-    public static class PreparedRequest {
-        public String url;
-        public String method;
-        public Map<String, String> headers;
-        public String body;
-        public Map<String, String> formData;
-        public Map<String, String> formFiles;
-        public boolean isMultipart;
-        public boolean followRedirects = true; // 新增，默认自动重定向
-    }
 
     // Cookie管理：host -> cookieName -> cookieValue
     private static final Map<String, Map<String, String>> COOKIE_STORE = new HashMap<>();
@@ -83,14 +75,6 @@ public class HttpRequestExecutor {
      */
     public static Map<String, Map<String, String>> getAllCookies() {
         return COOKIE_STORE;
-    }
-
-    /**
-     * 清除所有cookie
-     */
-    public static void clearAllCookies() {
-        COOKIE_STORE.clear();
-        notifyCookieChange();
     }
 
     /**
@@ -162,14 +146,13 @@ public class HttpRequestExecutor {
         return req;
     }
 
-    public static HttpService.HttpResponse execute(PreparedRequest req) throws Exception {
-        HttpService.HttpResponse resp;
+    public static HttpResponse execute(PreparedRequest req) throws Exception {
+        HttpResponse resp;
         if (req.isMultipart) {
             resp = HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
         } else {
             resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
         }
-        resp.threadName = Thread.currentThread().getName();
         // 解析Set-Cookie
         try {
             java.net.URL urlObj = new java.net.URL(req.url);
@@ -288,14 +271,13 @@ public class HttpRequestExecutor {
     public static class RedirectInfo {
         public String url;
         public int statusCode;
-        public String statusLine;
         public Map<String, List<String>> headers;
         public String location;
         public String responseBody;
     }
 
     public static class ResponseWithRedirects {
-        public HttpService.HttpResponse finalResponse;
+        public HttpResponse finalResponse;
         public List<RedirectInfo> redirects = new ArrayList<>();
     }
 
@@ -315,7 +297,7 @@ public class HttpRequestExecutor {
         int redirectCount = 0;
         boolean followRedirects = req.followRedirects;
         while (redirectCount <= maxRedirects) {
-            HttpService.HttpResponse resp;
+            HttpResponse resp;
             if (isMultipart) {
                 resp = HttpService.sendRequestWithMultipart(url, method, headers, formData, formFiles, followRedirects);
             } else {
@@ -324,15 +306,7 @@ public class HttpRequestExecutor {
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();
             info.url = url;
-            List<String> statusLines = resp.headers.get(null);
-            info.statusLine = (statusLines != null && !statusLines.isEmpty()) ? statusLines.get(0) : "";
-            info.statusCode = 0;
-            if (info.statusLine.contains(" ")) {
-                try {
-                    info.statusCode = Integer.parseInt(info.statusLine.split(" ")[1].trim());
-                } catch (Exception ignore) {
-                }
-            }
+            info.statusCode = resp.code;
             info.headers = resp.headers;
             info.responseBody = resp.body;
             info.location = null;

@@ -2,11 +2,11 @@ package com.laker.postman.panel.stress;
 
 import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.SingletonPanelFactory;
-import com.laker.postman.common.dialog.AutoCloseDialog;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.StressResult;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
 import com.laker.postman.service.StressTestService;
+import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
@@ -150,37 +150,25 @@ public class RequestStressTestPanel extends AbstractBasePanel {
 
         // ===== 图表与结果分割区 =====
         JPanel chartPanelWrapper = new JPanel(new BorderLayout());
-        chartPanelWrapper.setPreferredSize(new Dimension(800, 400));
         chartPanelWrapper.setBorder(BorderFactory.createTitledBorder("响应时间趋势"));
-        chartPanelWrapper.setBackground(Color.WHITE);
         createLineChart();
-        chartPanel.setBorder(BorderFactory.createEmptyBorder(12, 18, 12, 18));
         chartPanelWrapper.add(chartPanel, BorderLayout.CENTER);
-        JButton clearChartButton = new JButton("清除图表");
-        clearChartButton.addActionListener(e -> {
-            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-            lineChart.getCategoryPlot().setDataset(dataset);
-        });
-        JPanel chartBtnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        chartBtnPanel.setOpaque(false);
-        chartBtnPanel.add(clearChartButton);
-        chartPanelWrapper.add(chartBtnPanel, BorderLayout.NORTH);
 
         // 结果区美化
         stressResultArea = new JTextPane();
         stressResultArea.setEditable(false);
-        stressResultArea.setFont(new Font("Consolas", Font.PLAIN, 14));
         stressResultArea.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("压测结果"),
+                BorderFactory.createTitledBorder("Result"),
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)));
         JScrollPane stressScroll = new JScrollPane(stressResultArea);
-        stressScroll.setPreferredSize(new Dimension(200, 120));
         stressScroll.setBorder(BorderFactory.createEmptyBorder());
 
         // 分割面板
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, chartPanelWrapper, stressScroll);
-        splitPane.setResizeWeight(0.7);
-        splitPane.setDividerSize(6);
+        splitPane.setResizeWeight(0.4); // 图表占40%
+        splitPane.setOneTouchExpandable(true);
+        splitPane.setDividerSize(2);
+        splitPane.setDividerLocation(300); // 初始位置
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         add(splitPane, BorderLayout.CENTER);
 
@@ -286,12 +274,12 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         // 初始化空图表
         lineChart = ChartFactory.createLineChart(
                 "请求响应时间", // 图表标题
-                "请求编号", // X轴标签
+                "请求", // X轴标签
                 "响应时间 (ms)", // Y轴标签
                 null, // 初始数据集为空
                 PlotOrientation.VERTICAL, // 图表方向
                 true, // 是否显示图例
-                true, // 是否生成提示工具
+                false, // 是否生成提示工具
                 false // 是否生成URL链接
         );
         // 获取 plot 设置线条样式
@@ -316,13 +304,13 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         renderer.setDefaultSeriesVisibleInLegend(true);
 
         // 设置字体，防止中文乱码
-        Font font = new Font("微软雅黑", Font.PLAIN, 12);
-        lineChart.getTitle().setFont(font.deriveFont(14f)); // 设置标题字体
+        Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
+        lineChart.getTitle().setFont(font.deriveFont(13f)); // 设置标题字体
         lineChart.getLegend().setItemFont(font); // 设置图例字体
         plot.getDomainAxis().setTickLabelFont(font); // 设置X轴标签字体
         plot.getDomainAxis().setLabelFont(font); // 设置X轴标签字体
-        plot.getRangeAxis().setTickLabelFont(font); // 设置Y轴标签字体
-        plot.getRangeAxis().setLabelFont(font);// 设置Y轴标签字体
+        plot.getRangeAxis().setTickLabelFont(font);  // 设置Y轴标签字体
+        plot.getRangeAxis().setLabelFont(font);  //
 
         chartPanel = new ChartPanel(lineChart);
         chartPanel.setPreferredSize(new Dimension(300, 300));
@@ -419,8 +407,6 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         private final int concurrency;
         private final int requestCount;
         private final StringBuilder stressResult = new StringBuilder();
-        private long startTime;
-        private long endTime;
 
         public StressTestTask(int concurrency, int requestCount) {
             this.concurrency = concurrency;
@@ -490,8 +476,6 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                     upperChartYBound(); // 调整Y轴上限
                 });
 
-                // 显示完成提示
-                SwingUtilities.invokeLater(() -> AutoCloseDialog.showAutoCloseDialog("提示", "压测完成！", JOptionPane.INFORMATION_MESSAGE, 1500));
             } catch (Exception ex) {
                 stressResult.append("压测出错: ").append(ex.getMessage());
                 log.error("压测失败", ex);

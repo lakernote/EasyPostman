@@ -1,9 +1,10 @@
 package com.laker.postman.panel.batch;
 
+import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.SingletonPanelFactory;
 import com.laker.postman.common.table.ErrorMessageCellRenderer;
-import com.laker.postman.common.table.generic.GenericTablePanel;
 import com.laker.postman.common.table.StatusCodeCellRenderer;
+import com.laker.postman.common.table.generic.GenericTablePanel;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
@@ -23,15 +24,16 @@ import java.util.List;
  * 批量执行请求面板：选择分组，批量顺序执行分组下所有请求，并输出每个请求的状态码、耗时、响应大小等
  */
 @Slf4j
-public class BatchRunPanel extends JPanel {
-    private final JTree groupTree;
-    private final DefaultTreeModel groupTreeModel;
-    private final ResultTableModel resultTableModel;
-    private final GenericTablePanel<ResultRow> resultTablePanel;
-    private final JButton runButton;
-    private final JProgressBar progressBar;
+public class BatchRunPanel extends AbstractBasePanel {
+    private JTree groupTree;
+    private DefaultTreeModel groupTreeModel;
+    private ResultTableModel resultTableModel;
+    private GenericTablePanel<ResultRow> resultTablePanel;
+    private JButton runButton;
+    private JProgressBar progressBar;
 
-    public BatchRunPanel() {
+    @Override
+    protected void initUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 
@@ -73,6 +75,11 @@ public class BatchRunPanel extends JPanel {
 
         add(leftPanel, BorderLayout.WEST);
         add(tableScroll, BorderLayout.CENTER);
+    }
+
+    @Override
+    protected void registerListeners() {
+
     }
 
     // 启动批量执行

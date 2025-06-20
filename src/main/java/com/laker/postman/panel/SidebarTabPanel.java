@@ -51,7 +51,7 @@ public class SidebarTabPanel extends AbstractBasePanel {
         tabInfos.add(new TabInfo("环境", new FlatSVGIcon("icons/env.svg", 20, 20),
                 () -> SingletonPanelFactory.getInstance(EnvironmentPanel.class)));
         tabInfos.add(new TabInfo("批量", new FlatSVGIcon("icons/batch.svg", 20, 20),
-                BatchRunPanel::new));
+                () -> SingletonPanelFactory.getInstance(BatchRunPanel.class)));
         tabInfos.add(new TabInfo("压测", new FlatSVGIcon("icons/stress.svg", 20, 20),
                 RequestStressTestPanel::new));
         // 新增“历史”Tab，将原consolePanel内容迁移到此Tab

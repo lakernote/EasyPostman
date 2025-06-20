@@ -1,5 +1,6 @@
 package com.laker.postman.panel.stress;
 
+import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.SingletonPanelFactory;
 import com.laker.postman.common.dialog.AutoCloseDialog;
 import com.laker.postman.model.HttpRequestItem;
@@ -37,22 +38,20 @@ import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
-public class RequestStressTestPanel extends JPanel {
+public class RequestStressTestPanel extends AbstractBasePanel {
 
-    private final JSpinner concurrencySpinner;
-    private final JSpinner requestCountSpinner;
-    private final JButton stressTestButton;
-    private final JTextPane stressResultArea;
+    private JSpinner concurrencySpinner;
+    private JSpinner requestCountSpinner;
+    private JButton stressTestButton;
+    private JTextPane stressResultArea;
     private ChartPanel chartPanel;   // 图表面板
     private JFreeChart lineChart;    // 折线图对象
-    private final JComboBox<RequestItem> requestComboBox; // 请求选择下拉框
+    private JComboBox<RequestItem> requestComboBox; // 请求选择下拉框
 
     private HttpRequestItem currentRequestItem; // 当前选中的请求项
 
-    /**
-     * 创建压测面板：包含压测配置、结果展示、图表
-     */
-    public RequestStressTestPanel() {
+    @Override
+    protected void initUI() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
         JPanel stressSettingPanel = new JPanel(new GridBagLayout());
@@ -170,6 +169,11 @@ public class RequestStressTestPanel extends JPanel {
         add(splitPane, BorderLayout.CENTER);
 
         SwingUtilities.invokeLater(this::loadRequestsFromCollection);
+    }
+
+    @Override
+    protected void registerListeners() {
+
     }
 
     /**

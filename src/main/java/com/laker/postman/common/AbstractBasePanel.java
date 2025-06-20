@@ -9,6 +9,7 @@ import javax.swing.*;
  * SingletonPanelFactory 可以用来获取面板的单例实例。
  */
 public abstract class AbstractBasePanel extends JPanel {
+
     /**
      * 默认构造函数，调用初始化UI和注册监听方法
      */

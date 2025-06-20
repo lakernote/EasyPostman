@@ -106,28 +106,26 @@ public class SplashWindow extends JWindow {
                     setStatus("加载完成，正在显示主界面...");
                     long start = System.currentTimeMillis();
                     MainFrame mainFrame = get();
-                    mainFrame.setVisible(true);
-                    long cost = System.currentTimeMillis() - start;
-                    log.info("main frame setVisible cost: {} ms", cost);
-                    // 渐变显示主窗口，消除白屏
-                    Timer timer = new Timer(15, null); //
+                    // 渐隐动画关闭 SplashWindow
+                    Timer timer = new Timer(15, null);
                     timer.addActionListener(e -> {
-                        float opacity = mainFrame.getOpacity();
-                        if (opacity < 1f) {
-                            float next = Math.min(1f, opacity + 0.08f);
-                            mainFrame.setOpacity(next);
+                        float opacity = getOpacity();
+                        if (opacity > 0.05f) {
+                            setOpacity(Math.max(0f, opacity - 0.08f));
                         } else {
-                            mainFrame.setOpacity(1f);
                             timer.stop();
+                            setVisible(false);
+                            dispose();
+                            // 显示主界面
+                            SwingUtilities.invokeLater(() -> {
+                                mainFrame.setVisible(true);
+                            });
                         }
                     });
                     timer.start();
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(null, "主窗口加载失败，请重启应用。", "错误", JOptionPane.ERROR_MESSAGE);
                     System.exit(1);
-                } finally {
-                    setVisible(false);
-                    dispose();
                 }
             }
         };

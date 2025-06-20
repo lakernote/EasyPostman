@@ -90,7 +90,7 @@ public class SplashWindow extends JWindow {
                 setStatus("准备就绪");
                 setProgress(100);
                 long cost = System.currentTimeMillis() - start;
-                log.info("主窗口加载耗时: {} ms", cost);
+                log.info("main frame initComponents cost: {} ms", cost);
                 if (cost < MIN_TIME) {
                     try {
                         Thread.sleep(MIN_TIME - cost);
@@ -103,10 +103,14 @@ public class SplashWindow extends JWindow {
             @Override
             protected void done() {
                 try {
+                    setStatus("加载完成，正在显示主界面...");
+                    long start = System.currentTimeMillis();
                     MainFrame mainFrame = get();
                     mainFrame.setVisible(true);
+                    long cost = System.currentTimeMillis() - start;
+                    log.info("main frame setVisible cost: {} ms", cost);
                     // 渐变显示主窗口，消除白屏
-                    Timer timer = new Timer(15, null);
+                    Timer timer = new Timer(15, null); //
                     timer.addActionListener(e -> {
                         float opacity = mainFrame.getOpacity();
                         if (opacity < 1f) {

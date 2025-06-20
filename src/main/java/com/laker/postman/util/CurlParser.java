@@ -1,6 +1,7 @@
 package com.laker.postman.util;
 
 import com.laker.postman.model.CurlRequest;
+import com.laker.postman.model.HttpRequestItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -138,6 +139,7 @@ public class CurlParser {
 
     /**
      * 解析 cURL 命令行参数为 token 列表，支持引号包裹和普通参数
+     *
      * @param cmd cURL 命令字符串
      * @return 参数 token 列表
      */
@@ -164,5 +166,54 @@ public class CurlParser {
             tokens.add(t);
         }
         return tokens;
+    }
+
+    /**
+     * 将 HttpRequestItem 转换为 cURL 命令字符串
+     */
+    public static String toCurl(HttpRequestItem item) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("curl");
+        // method
+        if (item.getMethod() != null && !item.getMethod().equalsIgnoreCase("GET")) {
+            sb.append(" -X ").append(item.getMethod());
+        }
+        // url
+        if (item.getUrl() != null) {
+            sb.append(" \"").append(HttpRequestExecutor.buildUrlWithParams(item.getUrl(), item.getParams())).append("\"");
+        }
+        // headers
+        if (item.getHeaders() != null) {
+            for (var entry : item.getHeaders().entrySet()) {
+                sb.append(" -H \"").append(entry.getKey()).append(": ").append(entry.getValue()).append("\"");
+            }
+        }
+        // body
+        if (item.getBody() != null && !item.getBody().isEmpty()) {
+            sb.append(" --data ").append(escapeShellArg(item.getBody()));
+        }
+        // form-data
+        if (item.getFormData() != null && !item.getFormData().isEmpty()) {
+            for (var entry : item.getFormData().entrySet()) {
+                sb.append(" -F ").append(escapeShellArg(entry.getKey() + "=" + entry.getValue()));
+            }
+        }
+        // form-files
+        if (item.getFormFiles() != null && !item.getFormFiles().isEmpty()) {
+            for (var entry : item.getFormFiles().entrySet()) {
+                sb.append(" -F ").append(escapeShellArg(entry.getKey() + "=@" + entry.getValue()));
+            }
+        }
+        return sb.toString();
+    }
+
+    // shell参数转义
+    private static String escapeShellArg(String s) {
+        if (s == null) return "''";
+        if (s.contains("'")) {
+            return "\"" + s.replace("\"", "\\\"") + "\"";
+        } else {
+            return "'" + s + "'";
+        }
     }
 }

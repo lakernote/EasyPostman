@@ -258,9 +258,13 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                 }
                 // 请求节点右键菜单增加“复制”
                 if (userObj instanceof Object[] && "request".equals(((Object[]) userObj)[0])) {
-                    JMenuItem copyItem = new JMenuItem("Copy");
-                    copyItem.addActionListener(e -> copySelectedRequest());
-                    menu.add(copyItem);
+                    JMenuItem duplicateItem = new JMenuItem("Duplicate");
+                    duplicateItem.addActionListener(e -> duplicateSelectedRequest());
+                    menu.add(duplicateItem);
+                    // 复制为cURL命令
+                    JMenuItem copyAsCurlItem = new JMenuItem("Copy as cUrl");
+                    copyAsCurlItem.addActionListener(e -> copySelectedRequestAsCurl());
+                    menu.add(copyAsCurlItem);
                     menu.addSeparator();
                 }
                 // 只有非根节点才显示重命名/删除
@@ -759,8 +763,8 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
         return treeModel;
     }
 
-    // 新增：复制请求方法
-    private void copySelectedRequest() {
+    // 复制请求方法
+    private void duplicateSelectedRequest() {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
         Object userObj = selectedNode.getUserObject();
@@ -777,6 +781,23 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
             treeModel.reload(parent);
             requestTree.expandPath(new TreePath(parent.getPath()));
             persistence.saveRequestGroups();
+        }
+    }
+
+    // 复制请求为cUrl方法
+    private void copySelectedRequestAsCurl() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+        if (selectedNode == null) return;
+        Object userObj = selectedNode.getUserObject();
+        if (userObj instanceof Object[] obj && "request".equals(obj[0])) {
+            HttpRequestItem item = (HttpRequestItem) obj[1];
+            try {
+                String curl = CurlParser.toCurl(item);
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(curl), null);
+                JOptionPane.showMessageDialog(this, "cUrl命令已复制到剪贴板！", "提示", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "生成cUrl命令失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -897,3 +918,4 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
         }
     }
 }
+

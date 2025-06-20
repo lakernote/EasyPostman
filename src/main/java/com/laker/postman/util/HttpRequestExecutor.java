@@ -190,7 +190,7 @@ public class HttpRequestExecutor {
     }
 
     // 拼接 params 到 url，避免重复
-    private static String buildUrlWithParams(String url, Map<String, String> params) {
+    public static String buildUrlWithParams(String url, Map<String, String> params) {
         if (params == null || params.isEmpty()) return url;
         StringBuilder sb = new StringBuilder(url);
         boolean hasQuestionMark = url.contains("?");
@@ -329,7 +329,8 @@ public class HttpRequestExecutor {
             if (info.statusLine.contains(" ")) {
                 try {
                     info.statusCode = Integer.parseInt(info.statusLine.split(" ")[1].trim());
-                } catch (Exception ignore) {}
+                } catch (Exception ignore) {
+                }
             }
             info.headers = resp.headers;
             info.responseBody = resp.body;
@@ -358,7 +359,8 @@ public class HttpRequestExecutor {
                 if (!setCookieHeaders.isEmpty()) {
                     setCookies(host, setCookieHeaders);
                 }
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             // 判断是否重定向
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
                 // 计算新url

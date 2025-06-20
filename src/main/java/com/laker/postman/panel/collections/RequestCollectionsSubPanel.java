@@ -250,6 +250,10 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
                     JMenuItem addRequestItem = new JMenuItem("新增请求");
                     addRequestItem.addActionListener(e -> addRequestUnderSelected());
                     menu.add(addRequestItem);
+                    // 导出为Postman
+                    JMenuItem exportPostmanItem = new JMenuItem("导出为Postman v2.1");
+                    exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
+                    menu.add(exportPostmanItem);
                     menu.addSeparator();
                 }
                 // 请求节点右键菜单增加“复制”
@@ -867,5 +871,29 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
             }
         }
         return nodeList;
+    }
+
+    // 导出分组为Postman Collection
+    private void exportGroupAsPostman(DefaultMutableTreeNode groupNode) {
+        if (groupNode == null || !(groupNode.getUserObject() instanceof Object[] obj) || !"group".equals(obj[0])) {
+            JOptionPane.showMessageDialog(this, "请选择分组节点导出", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String groupName = String.valueOf(obj[1]);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("导出为Postman Collection");
+        fileChooser.setSelectedFile(new File(groupName + "-postman.json"));
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try {
+                JSONObject postmanCollection = PostmanImport.buildPostmanCollectionFromTreeNode(groupNode, groupName);
+                FileUtil.writeUtf8String(postmanCollection.toStringPretty(), fileToSave);
+                JOptionPane.showMessageDialog(this, "导出成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                log.error("导出Postman失败", ex);
+                JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

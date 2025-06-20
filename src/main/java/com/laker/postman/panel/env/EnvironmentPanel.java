@@ -293,6 +293,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
             }
         }
         EnvironmentService.saveEnvironment(currentEnvironment);
+        variablesTablePanel.updateTableBorder(false);
         // 保存后更新快照为json字符串
         originalVariablesSnapshot = JSONUtil.toJsonStr(rows);
         JOptionPane.showMessageDialog(this, "保存成功！", "提示", JOptionPane.INFORMATION_MESSAGE);

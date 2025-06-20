@@ -2,6 +2,7 @@ package com.laker.postman.panel.stress;
 
 import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.SingletonPanelFactory;
+import com.laker.postman.common.constants.Colors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.StressResult;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
@@ -313,6 +314,9 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         plot.getRangeAxis().setLabelFont(font);  //
 
         chartPanel = new ChartPanel(lineChart);
+        chartPanel.setMouseWheelEnabled(true); // 支持鼠标滚轮缩放
+        chartPanel.setBackground(Colors.PANEL_BACKGROUND);
+        chartPanel.setDisplayToolTips(true); // 显示工具提示
         chartPanel.setPreferredSize(new Dimension(300, 300));
     }
 

@@ -6,6 +6,7 @@ import com.laker.postman.common.constants.Colors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.StressResult;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
+import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.StressTestService;
 import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -47,6 +48,7 @@ public class RequestStressTestPanel extends AbstractBasePanel {
     private JSpinner concurrencySpinner;
     private JSpinner requestCountSpinner;
     private JButton stressTestButton;
+    private JButton cancelButton; // 取消按钮
     private JTextPane stressResultArea;
     private ChartPanel chartPanel;   // 图表面板
     private JFreeChart lineChart;    // 折线图对象
@@ -54,6 +56,7 @@ public class RequestStressTestPanel extends AbstractBasePanel {
     private JProgressBar progressBar; // 进度条
 
     private HttpRequestItem currentRequestItem; // 当前选中的请求项
+    private StressTestTask currentTask; // 当前压测任务
 
     @Override
     protected void initUI() {
@@ -120,11 +123,22 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         refreshButton.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 14, Color.BLUE));
         refreshButton.addActionListener(e -> loadRequestsFromCollection());
         leftBtnPanel.add(refreshButton);
-        stressTestButton = new JButton("压测");
+        stressTestButton = new JButton("Start");
         stressTestButton.setIcon(IconFontSwing.buildIcon(FontAwesome.BOLT, 14, Color.ORANGE));
         stressTestButton.addActionListener(this::stressTest);
         leftBtnPanel.add(stressTestButton);
-        JButton resetStressSettingsButton = new JButton("重置设置");
+        // 取消按钮
+        cancelButton = new JButton("Cancel");
+        cancelButton.setIcon(IconFontSwing.buildIcon(FontAwesome.TIMES, 14, Color.RED));
+        cancelButton.setEnabled(false);
+        cancelButton.setVisible(false);
+        cancelButton.addActionListener(e -> {
+            if (currentTask != null && !currentTask.isDone()) {
+                currentTask.cancel(true);
+            }
+        });
+        leftBtnPanel.add(cancelButton);
+        JButton resetStressSettingsButton = new JButton("Reset");
         resetStressSettingsButton.setIcon(IconFontSwing.buildIcon(FontAwesome.ERASER, 14, Color.GRAY));
         resetStressSettingsButton.addActionListener(e -> {
             concurrencySpinner.setValue(1);
@@ -385,12 +399,16 @@ public class RequestStressTestPanel extends AbstractBasePanel {
      */
     private void stressTest(ActionEvent e) {
         stressTestButton.setEnabled(false); // 禁用按钮防止重复点击
+        cancelButton.setEnabled(true);
+        cancelButton.setVisible(true);
         int concurrency = (Integer) concurrencySpinner.getValue();
         int requestCount = (Integer) requestCountSpinner.getValue();
 
         if (concurrency <= 0 || requestCount <= 0) {
             JOptionPane.showMessageDialog(this, "请输入有效的并发数和请求次数", "错误", JOptionPane.ERROR_MESSAGE);
             stressTestButton.setEnabled(true);
+            cancelButton.setEnabled(false);
+            cancelButton.setVisible(false);
             return;
         }
 
@@ -398,10 +416,13 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         if (currentRequestItem == null) {
             JOptionPane.showMessageDialog(this, "请先选择一个请求", "错误", JOptionPane.ERROR_MESSAGE);
             stressTestButton.setEnabled(true);
+            cancelButton.setEnabled(false);
+            cancelButton.setVisible(false);
             return;
         }
 
-        new StressTestTask(concurrency, requestCount).execute();
+        currentTask = new StressTestTask(concurrency, requestCount);
+        currentTask.execute();
     }
 
     /**
@@ -426,9 +447,14 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                 });
                 HttpRequestItem item = currentRequestItem;
                 StressResult result = StressTestService.stressTest(item, concurrency, requestCount, (completed) -> {
+                    if (isCancelled()) return; // 支持取消
                     int percent = (int) ((completed * 100.0) / requestCount);
                     publish(percent);
                 });
+                if (isCancelled()) {
+                    stressResult.append("压测已取消\n");
+                    return null;
+                }
                 List<Long> times = result.times;
                 int errorCount = result.errorCount;
                 Map<Integer, Long> timeData = result.timeData;
@@ -485,6 +511,8 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                 log.error("压测失败", ex);
             } finally {
                 stressTestButton.setEnabled(true);
+                cancelButton.setEnabled(false);
+                cancelButton.setVisible(false);
                 SwingUtilities.invokeLater(() -> progressBar.setVisible(false));
             }
 
@@ -504,6 +532,29 @@ public class RequestStressTestPanel extends AbstractBasePanel {
             setStyledResult(stressResult.toString());
             // 自动滚动到底部
             stressResultArea.setCaretPosition(stressResultArea.getDocument().getLength());
+            // 自动保存到历史记录
+            try {
+                if (!isCancelled() && currentRequestItem != null) {
+                    // 获取参数和结果
+                    String method = currentRequestItem.getMethod();
+                    String url = currentRequestItem.getUrl();
+                    String requestBody = currentRequestItem.getBody();
+                    String requestHeaders = currentRequestItem.getHeaders() != null ? currentRequestItem.getHeaders().toString() : "";
+                    String resultText = stressResult.toString();
+                    // 这里只保存压测摘要，不保存响应体
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            HistoryPanel historyPanel =
+                                    SingletonPanelFactory.getInstance(com.laker.postman.panel.history.HistoryPanel.class);
+                            historyPanel.addRequestHistory(method, url, requestBody, requestHeaders, "STRESS", "", resultText, "");
+                        } catch (Exception exception) {
+                            log.error("保存压测结果到历史记录失败", exception);
+                        }
+                    });
+                }
+            } catch (Exception exception) {
+                log.error("保存压测结果到历史记录失败", exception);
+            }
         }
     }
 

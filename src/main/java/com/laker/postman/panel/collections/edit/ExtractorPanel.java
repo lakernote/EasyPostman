@@ -44,8 +44,7 @@ public class ExtractorPanel extends JPanel {
         extractorTablePanel.setColumnMaxWidth(2, 200);
         int totalWidth = 200 + 500 + 50;
         extractorTablePanel.setPreferredScrollableViewportHeight(8, totalWidth);
-        JScrollPane scrollPane = new JScrollPane(extractorTablePanel);
-        add(scrollPane, BorderLayout.CENTER);
+        add(extractorTablePanel, BorderLayout.CENTER);
         // 底部按钮面板
         JPanel extractorBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 

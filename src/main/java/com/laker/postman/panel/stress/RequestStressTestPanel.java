@@ -37,6 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * 轻量级Jmeter
+ */
 @Slf4j
 public class RequestStressTestPanel extends AbstractBasePanel {
 
@@ -47,6 +50,7 @@ public class RequestStressTestPanel extends AbstractBasePanel {
     private ChartPanel chartPanel;   // 图表面板
     private JFreeChart lineChart;    // 折线图对象
     private JComboBox<RequestItem> requestComboBox; // 请求选择下拉框
+    private JProgressBar progressBar; // 进度条
 
     private HttpRequestItem currentRequestItem; // 当前选中的请求项
 
@@ -130,6 +134,18 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         buttonPanel.add(rightBtnPanel, BorderLayout.EAST);
         stressSettingPanel.add(buttonPanel, gbc);
         gbc.gridwidth = 1;
+
+        // 进度条
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 4;
+        gbc.weightx = 1.0;
+        progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        progressBar.setVisible(false);
+        stressSettingPanel.add(progressBar, gbc);
+        gbc.gridwidth = 1;
+
         add(stressSettingPanel, BorderLayout.NORTH);
 
         // ===== 图表与结果分割区 =====
@@ -399,10 +415,12 @@ public class RequestStressTestPanel extends AbstractBasePanel {
     /**
      * 压力测试任务类（SwingWorker 子类）
      */
-    private class StressTestTask extends SwingWorker<Void, Void> {
+    private class StressTestTask extends SwingWorker<Void, Integer> {
         private final int concurrency;
         private final int requestCount;
         private final StringBuilder stressResult = new StringBuilder();
+        private long startTime;
+        private long endTime;
 
         public StressTestTask(int concurrency, int requestCount) {
             this.concurrency = concurrency;
@@ -412,9 +430,15 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         @Override
         protected Void doInBackground() {
             try {
+                SwingUtilities.invokeLater(() -> {
+                    progressBar.setValue(0);
+                    progressBar.setVisible(true);
+                });
                 HttpRequestItem item = currentRequestItem;
-                // 使用统一的 HttpRequestExecutor 方式压测
-                StressResult result = StressTestService.stressTest(item, concurrency, requestCount);
+                StressResult result = StressTestService.stressTest(item, concurrency, requestCount, (completed) -> {
+                    int percent = (int) ((completed * 100.0) / requestCount);
+                    publish(percent);
+                });
                 List<Long> times = result.times;
                 int errorCount = result.errorCount;
                 Map<Integer, Long> timeData = result.timeData;
@@ -423,7 +447,20 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                 long max = times.stream().mapToLong(Long::longValue).max().orElse(0);
                 double avg = times.isEmpty() ? 0 : (double) total / times.size();
                 double errorRate = (double) errorCount / requestCount * 100;
-
+                // TP90/TP99
+                double tp90 = 0, tp99 = 0;
+                if (!times.isEmpty()) {
+                    List<Long> sorted = new ArrayList<>(times);
+                    sorted.sort(Long::compareTo);
+                    tp90 = sorted.get((int) (sorted.size() * 0.9) - 1);
+                    tp99 = sorted.get((int) (sorted.size() * 0.99) - 1);
+                }
+                // QPS
+                double qps = 0;
+                if (!times.isEmpty()) {
+                    long duration = result.totalDuration > 0 ? result.totalDuration : (max * times.size());
+                    qps = duration > 0 ? (requestCount * 1000.0 / duration) : 0;
+                }
                 stressResult.append("压测结果:\n")
                         .append("请求: ").append(((RequestItem) Objects.requireNonNull(requestComboBox.getSelectedItem())).getDisplayName()).append("\n")
                         .append("并发数: ").append(concurrency).append("\n")
@@ -432,7 +469,10 @@ public class RequestStressTestPanel extends AbstractBasePanel {
                         .append("错误率: ").append(String.format("%.0f", errorRate)).append("%\n")
                         .append(String.format("平均响应时间: %.0f ms\n", avg))
                         .append("最小响应时间: ").append(min).append(" ms\n")
-                        .append("最大响应时间: ").append(max).append(" ms\n");
+                        .append("最大响应时间: ").append(max).append(" ms\n")
+                        .append(String.format("TP90: %.0f ms\n", tp90))
+                        .append(String.format("TP99: %.0f ms\n", tp99))
+                        .append(String.format("QPS: %.2f\n", qps));
 
                 // 更新图表
                 // 统计和展示时排序
@@ -452,15 +492,23 @@ public class RequestStressTestPanel extends AbstractBasePanel {
 
                 // 显示完成提示
                 SwingUtilities.invokeLater(() -> AutoCloseDialog.showAutoCloseDialog("提示", "压测完成！", JOptionPane.INFORMATION_MESSAGE, 1500));
-
             } catch (Exception ex) {
                 stressResult.append("压测出错: ").append(ex.getMessage());
                 log.error("压测失败", ex);
             } finally {
                 stressTestButton.setEnabled(true);
+                SwingUtilities.invokeLater(() -> progressBar.setVisible(false));
             }
 
             return null;
+        }
+
+        @Override
+        protected void process(List<Integer> chunks) {
+            if (!chunks.isEmpty()) {
+                int value = chunks.get(chunks.size() - 1);
+                progressBar.setValue(value);
+            }
         }
 
         @Override
@@ -511,3 +559,4 @@ public class RequestStressTestPanel extends AbstractBasePanel {
         }
     }
 }
+

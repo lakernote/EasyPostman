@@ -23,6 +23,11 @@ public class StressResult {
     public Map<Integer, Long> timeData;
 
     /**
+     * 总耗时（单位：毫秒）
+     */
+    public long totalDuration;
+
+    /**
      * 构造函数
      *
      * @param times      请求耗时列表
@@ -33,5 +38,15 @@ public class StressResult {
         this.times = times;
         this.errorCount = errorCount;
         this.timeData = timeData;
+    }
+
+    /**
+     * 构造函数（含总耗时）
+     */
+    public StressResult(List<Long> times, int errorCount, Map<Integer, Long> timeData, long totalDuration) {
+        this.times = times;
+        this.errorCount = errorCount;
+        this.timeData = timeData;
+        this.totalDuration = totalDuration;
     }
 }

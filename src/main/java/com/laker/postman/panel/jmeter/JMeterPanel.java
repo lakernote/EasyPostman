@@ -66,6 +66,7 @@ public class JMeterPanel extends AbstractBasePanel {
 
         // 1. 左侧树结构
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("测试计划", NodeType.ROOT));
+        createDefaultRequest(root);
         treeModel = new DefaultTreeModel(root);
         jmeterTree = new JTree(treeModel);
         jmeterTree.setRootVisible(true);
@@ -146,7 +147,8 @@ public class JMeterPanel extends AbstractBasePanel {
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
         JLabel progressLabel = new JLabel();
         progressLabel.setText("0/0");
-        progressLabel.setIcon(new FlatSVGIcon("icons/jmeter.svg"));
+        progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
+        progressLabel.setIcon(new FlatSVGIcon("icons/jmeter.svg", 24, 24)); // 使用FlatLaf SVG图标
         // 设置icon在文字右边
         progressLabel.setHorizontalTextPosition(SwingConstants.LEFT);
         progressPanel.add(progressLabel);
@@ -157,6 +159,23 @@ public class JMeterPanel extends AbstractBasePanel {
         stopBtn.addActionListener(e -> stopRun());
         saveCaseBtn.addActionListener(e -> saveJMeterTreeToFile());
         loadCaseBtn.addActionListener(e -> loadJMeterTreeFromFile());
+
+        // 展开所有节点
+        for (int i = 0; i < jmeterTree.getRowCount(); i++) {
+            jmeterTree.expandRow(i);
+        }
+    }
+
+    private static void createDefaultRequest(DefaultMutableTreeNode root) {
+        // 默认添加一个用户组和一个请求（www.baidu.com）
+        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("用户组", NodeType.THREAD_GROUP));
+        HttpRequestItem defaultReq = new HttpRequestItem();
+        defaultReq.setName("百度首页");
+        defaultReq.setMethod("GET");
+        defaultReq.setUrl("https://www.baidu.com");
+        DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
+        group.add(req);
+        root.add(group);
     }
 
     // ========== 执行与停止核心逻辑 ==========

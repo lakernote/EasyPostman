@@ -46,7 +46,7 @@ public class ScriptPanel extends JPanel {
         helpArea.setEditable(false);
         helpArea.setLineWrap(true);
         helpArea.setWrapStyleWord(true);
-        helpArea.setText("PreScript/PostScript 可用变量：\nrequest, env, postman/pm, responseBody, responseHeaders, status, statusCode 等。\n可在脚本中通过 pm.environment.set('key', 'value') 设置环境变量。\n详细用法请参考文档或悬停提示。");
+        helpArea.setText("PreScript/PostScript 可用变量：\nrequest, env, postman/pm, responseBody, responseHeaders, status, statusCode 等。\n可在脚本中通过 pm.environment.set('key', 'value') 设置环境变量。\n详细用法请参考文档或悬停提示。\n\n【Tab 补全说明】\n- 输入 pm. 后按 Tab 可快速补全 pm 相关方法，如 pm.environment.set。\n- 输入 console.log 后按 Tab 可快速插入日志代码片段。\n- 输入 JSON.parse(responseBody) 后按 Tab 可快速插入解析响应体的代码。\n- 还支持 if、for、function 等常用 JS 语句的补全。\n- 鼠标悬停在补全项上可查看详细说明。\n\n示例：\npm.environment.set('token', '123');\nconsole.log('调试信息');\nvar obj = JSON.parse(responseBody);\nif (statusCode === 200) {\n    // 处理成功\n}\n");
         tabbedPane.addTab("Help", new JScrollPane(helpArea));
 
         add(tabbedPane, BorderLayout.CENTER);
@@ -120,7 +120,6 @@ public class ScriptPanel extends JPanel {
         provider.addCompletion(new BasicCompletion(provider, "responseHeaders", "响应头对象"));
         provider.addCompletion(new BasicCompletion(provider, "status", "响应状态"));
         provider.addCompletion(new BasicCompletion(provider, "statusCode", "响应状态码"));
-        provider.addCompletion(new BasicCompletion(provider, "console", "控制台对象"));
         provider.addCompletion(new BasicCompletion(provider, "console.log", "打印日志到控制台"));
         provider.addCompletion(new BasicCompletion(provider, "setEnvironmentVariable", "设置环境变量"));
         provider.addCompletion(new BasicCompletion(provider, "getEnvironmentVariable", "获取环境变量"));

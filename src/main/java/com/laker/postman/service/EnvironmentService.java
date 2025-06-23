@@ -90,13 +90,13 @@ public class EnvironmentService {
         Environment devEnv = new Environment("开发环境");
         devEnv.setId("dev-" + System.currentTimeMillis());
         devEnv.setActive(true);
-        devEnv.addVariable("baseUrl", "http://localhost:8080");
+        devEnv.addVariable("baseUrl", "https://so.gitee.com");
         devEnv.addVariable("apiKey", "dev-api-key-123");
 
         // 创建测试环境
         Environment testEnv = new Environment("测试环境");
         testEnv.setId("test-" + System.currentTimeMillis());
-        testEnv.addVariable("baseUrl", "https://test-api.example.com");
+        testEnv.addVariable("baseUrl", "https://so.csdn.net/so/search");
         testEnv.addVariable("apiKey", "test-api-key-456");
 
         environments.put(devEnv.getId(), devEnv);

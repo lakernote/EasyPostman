@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +60,19 @@ public class JMeterPanel extends AbstractBasePanel {
     private int successCount = 0;
     private int failCount = 0;
     private long totalTime = 0;
+    // 报表面板相关
+    private JPanel reportPanel;
+    private JTable reportTable;
+    private DefaultTableModel reportTableModel;
+    private JLabel totalLabel, qpsLabel, avgLabel, minLabel, maxLabel, p99Label, successRateLabel;
+    private long minTime = Long.MAX_VALUE;
+    private long maxTime = 0;
+    private long startTime = 0;
+    private long endTime = 0;
+    // 按接口统计
+    private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
+    private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
+    private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
 
 
     @Override
@@ -110,7 +125,18 @@ public class JMeterPanel extends AbstractBasePanel {
         resultSplit.setDividerLocation(260);
         resultTabbedPane = new JTabbedPane();
         resultTabbedPane.addTab("结果树", resultSplit);
-        resultTabbedPane.addTab("报表", new JScrollPane(new JTextArea("报表区")));
+        // 报表面板
+        reportPanel = new JPanel(new BorderLayout());
+        String[] columns = {"接口名称", "总数", "成功", "失败", "QPS", "平均(ms)", "最小(ms)", "最大(ms)", "P99(ms)", "成功率"};
+        reportTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        reportTable = new JTable(reportTableModel);
+        reportTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        JScrollPane tableScroll = new JScrollPane(reportTable);
+        reportPanel.add(tableScroll, BorderLayout.CENTER);
+        resultTabbedPane.addTab("报表", reportPanel);
         resultTabbedPane.addTab("趋势图", new JScrollPane(new JTextArea("趋势图区")));
 
         // 主分割（左树-右属性）
@@ -207,21 +233,26 @@ public class JMeterPanel extends AbstractBasePanel {
 
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
-        saveAllPropertyPanelData(); // 新增：运行前强制保存
+        saveAllPropertyPanelData();
         if (running) return;
         running = true;
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
-        resultTabbedPane.setSelectedIndex(0); // 切换到结果树标签页
-        resultRootNode.removeAllChildren(); // 清空结果树
+        resultTabbedPane.setSelectedIndex(0);
+        resultRootNode.removeAllChildren();
         totalRequests = 0;
         successCount = 0;
         failCount = 0;
         totalTime = 0;
+        minTime = Long.MAX_VALUE;
+        maxTime = 0;
+        apiCostMap.clear();
+        apiSuccessMap.clear();
+        apiFailMap.clear();
+        startTime = System.currentTimeMillis();
         // 统计总请求数
         int total = countTotalRequests((DefaultMutableTreeNode) treeModel.getRoot());
         progressLabel.setText("0/" + total);
-
         runThread = new Thread(() -> {
             try {
                 DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
@@ -231,6 +262,7 @@ public class JMeterPanel extends AbstractBasePanel {
                     running = false;
                     runBtn.setEnabled(true);
                     stopBtn.setEnabled(false);
+                    updateReportPanel();
                 });
             }
         });
@@ -319,6 +351,7 @@ public class JMeterPanel extends AbstractBasePanel {
                 DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
                 Object userObj = child.getUserObject();
                 if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
+                    String apiName = jtNode.httpRequestItem.getName();
                     long start = System.currentTimeMillis();
                     boolean success = true;
                     int finished;
@@ -395,7 +428,13 @@ public class JMeterPanel extends AbstractBasePanel {
                         }
                     }
                     long cost = System.currentTimeMillis() - start;
-                    detail.append("[耗时]: ").append(cost).append("ms\n");
+                    // 统计接口耗时
+                    apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                    if (success) {
+                        apiSuccessMap.merge(apiName, 1, Integer::sum);
+                    } else {
+                        apiFailMap.merge(apiName, 1, Integer::sum);
+                    }
                     DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success,
                             detail.toString(), req, resp));
                     SwingUtilities.invokeLater(() -> {
@@ -405,6 +444,8 @@ public class JMeterPanel extends AbstractBasePanel {
                     if (success) {
                         successCount++;
                         totalTime += cost;
+                        if (cost < minTime) minTime = cost;
+                        if (cost > maxTime) maxTime = cost;
                     } else {
                         failCount++;
                     }
@@ -718,6 +759,37 @@ public class JMeterPanel extends AbstractBasePanel {
         }
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
+    }
+
+    private void updateReportPanel() {
+        endTime = System.currentTimeMillis();
+        // 表格统计
+        reportTableModel.setRowCount(0);
+        for (String api : apiCostMap.keySet()) {
+            List<Long> costs = apiCostMap.get(api);
+            int apiTotal = costs.size();
+            int apiSuccess = apiSuccessMap.getOrDefault(api, 0);
+            int apiFail = apiFailMap.getOrDefault(api, 0);
+            long apiAvg = apiSuccess > 0 ? costs.stream().mapToLong(Long::longValue).sum() / apiSuccess : 0;
+            long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
+            long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
+            long apiP99 = getP99(costs);
+            double apiQps = (endTime > startTime && apiTotal > 0) ? (apiTotal * 1000.0 / (endTime - startTime)) : 0;
+            double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
+            reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, String.format("%.2f%%", apiRate)});
+        }
+    }
+    private List<Long> getAllCosts() {
+        List<Long> all = new ArrayList<>();
+        for (List<Long> l : apiCostMap.values()) all.addAll(l);
+        return all;
+    }
+    private long getP99(List<Long> costs) {
+        if (costs == null || costs.isEmpty()) return 0;
+        List<Long> sorted = new ArrayList<>(costs);
+        Collections.sort(sorted);
+        int idx = (int) Math.ceil(sorted.size() * 0.99) - 1;
+        return sorted.get(Math.max(idx, 0));
     }
 }
 

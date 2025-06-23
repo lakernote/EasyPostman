@@ -550,8 +550,8 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 更新参数面板
         paramsPanel.setMap(mergedParams);
-        urlField.setText(baseUrl);
-        item.setUrl(baseUrl); // 确保 item 的 url 更新为基础 URL
+        urlField.setText(url);
+        item.setUrl(url);
         methodBox.setSelectedItem(item.getMethod());
         // Headers
         headersPanel.setMap(item.getHeaders());

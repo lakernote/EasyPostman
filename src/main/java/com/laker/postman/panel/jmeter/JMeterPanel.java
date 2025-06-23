@@ -719,6 +719,11 @@ public class JMeterPanel extends AbstractBasePanel {
             String newName = JOptionPane.showInputDialog(JMeterPanel.this, "重命名节点:", oldName);
             if (newName != null && !newName.trim().isEmpty()) {
                 jtNode.name = newName.trim();
+                // 同步更新 request 类型的 httpRequestItem name 字段
+                if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
+                    jtNode.httpRequestItem.setName(newName.trim());
+                    requestEditSubPanel.updateRequestForm(jtNode.httpRequestItem);
+                }
                 treeModel.nodeChanged(node);
             }
         });
@@ -825,3 +830,4 @@ public class JMeterPanel extends AbstractBasePanel {
         return sorted.get(Math.max(idx, 0));
     }
 }
+

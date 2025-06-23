@@ -23,7 +23,7 @@ environment variables, batch requests, and stress testing to help efficiently te
 - 🚦 Supports common HTTP methods (GET/POST/PUT/DELETE, etc.)
 - 🌏 Environment variable management for easy switching
 - 🕑 Auto-saved request history for review and reuse
-- 📦 Batch requests & stress testing (simplified JMeter)
+- 📦 Batch requests & stress testing (simplified JMeter), supports report, result tree, and trend chart visualization
 - 📝 Syntax highlighting request editor
 - 🌐 Multi-language support (Simplified Chinese, English, in development)
 - 💾 Local data storage for privacy and security
@@ -38,17 +38,17 @@ environment variables, batch requests, and stress testing to help efficiently te
 
 ## 🖼️ Screenshots
 
-|           Welcome            |        Collection Management         |      Batch Request       |
-|:----------------------------:|:------------------------------------:|:------------------------:|
-| ![Welcome](docs/welcome.png) | ![Collections](docs/collections.png) | ![Batch](docs/batch.png) |
+|      Welcome      | Collection Management |   Environments   |
+|:----------------:|:--------------------:|:----------------:|
+| ![Welcome](docs/welcome.png) | ![Collections](docs/collections.png) | ![Envs](docs/environments.png) |
 
-|          Environments          |           History            |          Stress Test           |
-|:------------------------------:|:----------------------------:|:------------------------------:|
-| ![Envs](docs/environments.png) | ![History](docs/history.png) | ![Stress](docs/stresstest.png) |
+|   History   |   JMeter Report   |  JMeter Result Tree  |
+|:-----------:|:-----------------:|:--------------------:|
+| ![History](docs/history.png) | ![JMeter Report](docs/jmeter-report.png) | ![JMeter Result Tree](docs/jmeter-resulttree.png) |
 
-|          Icon          |
-|:----------------------:|
-| ![Icon](docs/icon.png) |
+|  JMeter Trend  |   Icon   |
+|:--------------:|:--------:|
+| ![JMeter Trend](docs/jmeter-trend.png) | ![Icon](docs/icon.png) |
 
 ---
 

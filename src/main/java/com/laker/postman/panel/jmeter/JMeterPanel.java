@@ -69,10 +69,6 @@ public class JMeterPanel extends AbstractBasePanel {
     private JPanel reportPanel;
     private JTable reportTable;
     private DefaultTableModel reportTableModel;
-    private long minTime = Long.MAX_VALUE;
-    private long maxTime = 0;
-    private long startTime = 0;
-    private long endTime = 0;
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
@@ -280,12 +276,9 @@ public class JMeterPanel extends AbstractBasePanel {
         resultTabbedPane.setSelectedIndex(0);
         resultRootNode.removeAllChildren();
         totalRequests = 0;
-        minTime = Long.MAX_VALUE;
-        maxTime = 0;
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
-        startTime = System.currentTimeMillis();
         // 统计总请求数
         int total = countTotalRequests((DefaultMutableTreeNode) treeModel.getRoot());
         progressLabel.setText("0/" + total);
@@ -479,10 +472,6 @@ public class JMeterPanel extends AbstractBasePanel {
                         resultRootNode.add(reqNode);
                         resultTreeModel.reload(resultRootNode);
                     });
-                    if (success) {
-                        if (cost < minTime) minTime = cost;
-                        if (cost > maxTime) maxTime = cost;
-                    }
                 }
             }
         }
@@ -801,7 +790,6 @@ public class JMeterPanel extends AbstractBasePanel {
     }
 
     private void updateReportPanel() {
-        endTime = System.currentTimeMillis();
         // 表格统计
         reportTableModel.setRowCount(0);
         trendDataset.clear();

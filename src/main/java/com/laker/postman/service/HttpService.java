@@ -25,9 +25,9 @@ public class HttpService {
 
     // OkHttpClient 单例，配置连接池、超时、重试等参数
     private static final OkHttpClient okHttpClient = new OkHttpClient.Builder()
-            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .connectionPool(new ConnectionPool(50, 5, TimeUnit.MINUTES))
             .build();

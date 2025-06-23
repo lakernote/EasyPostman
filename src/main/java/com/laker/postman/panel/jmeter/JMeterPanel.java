@@ -175,6 +175,15 @@ public class JMeterPanel extends AbstractBasePanel {
         defaultReq.setMethod("GET");
         defaultReq.setUrl("https://www.baidu.com");
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
+
+        // 添加默认断言
+        DefaultMutableTreeNode assertionNode = new DefaultMutableTreeNode(new JMeterTreeNode("断言", NodeType.ASSERTION));
+        req.add(assertionNode);
+
+        // 添加默认定时器
+        DefaultMutableTreeNode timerNode = new DefaultMutableTreeNode(new JMeterTreeNode("定时器", NodeType.TIMER));
+        req.add(timerNode);
+
         group.add(req);
         root.add(group);
     }
@@ -711,3 +720,4 @@ public class JMeterPanel extends AbstractBasePanel {
         stopBtn.setEnabled(false);
     }
 }
+

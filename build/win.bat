@@ -102,6 +102,11 @@ jpackage ^
     --copyright "© 2025 Laker" ^
     --win-shortcut ^
     --win-menu ^
+    --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" ^
+    --win-dir-chooser ^
+    --win-per-user-install ^
+    --win-menu-group "EasyTools" ^
+    --win-help-url "https://gitee.com/lakernote/easy-postman"
     --java-options "-Xms128m" ^
     --java-options "-Xmx256m" ^
     --java-options "-Dfile.encoding=UTF-8"

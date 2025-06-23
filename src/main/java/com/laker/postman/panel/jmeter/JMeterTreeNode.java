@@ -20,7 +20,7 @@ public class JMeterTreeNode {
         this.type = type;
         switch (type) {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
-            case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
+            case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;
         }

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.jmeter;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -13,11 +14,11 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
         Object userObj = node.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode) {
             switch (jtNode.type) {
-                case THREAD_GROUP -> label.setIcon(UIManager.getIcon("FileView.directoryIcon"));
-                case REQUEST -> label.setIcon(UIManager.getIcon("FileView.fileIcon"));
-                case ASSERTION -> label.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
-                case TIMER -> label.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
-                case ROOT -> label.setIcon(UIManager.getIcon("FileView.computerIcon"));
+                case THREAD_GROUP -> label.setIcon(new FlatSVGIcon("icons/collections.svg", 16, 16));
+                case REQUEST -> label.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
+                case ASSERTION -> label.setIcon(new FlatSVGIcon("icons/warning.svg", 16, 16));
+                case TIMER -> label.setIcon(new FlatSVGIcon("icons/information.svg", 16, 16));
+                case ROOT -> label.setIcon(new FlatSVGIcon("icons/computer.svg", 16, 16));
             }
         }
         return label;

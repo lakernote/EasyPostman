@@ -4,12 +4,10 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.SingletonPanelFactory;
 import com.laker.postman.common.constants.Colors;
-import com.laker.postman.panel.batch.BatchRunPanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.jmeter.JMeterPanel;
-import com.laker.postman.panel.stress.RequestStressTestPanel;
 import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -32,7 +30,6 @@ public class SidebarTabPanel extends AbstractBasePanel {
     private JTabbedPane tabbedPane;
     private List<TabInfo> tabInfos;
     private JPanel consoleContainer;
-    private boolean isConsoleExpanded = false;
     private JLabel consoleLabel;
     private JPanel consolePanel;
     private JSplitPane splitPane;
@@ -51,10 +48,6 @@ public class SidebarTabPanel extends AbstractBasePanel {
                 () -> SingletonPanelFactory.getInstance(RequestCollectionsPanel.class)));
         tabInfos.add(new TabInfo("环境", new FlatSVGIcon("icons/env.svg", 20, 20),
                 () -> SingletonPanelFactory.getInstance(EnvironmentPanel.class)));
-        tabInfos.add(new TabInfo("批量", new FlatSVGIcon("icons/batch.svg", 20, 20),
-                () -> SingletonPanelFactory.getInstance(BatchRunPanel.class)));
-        tabInfos.add(new TabInfo("压测", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
-                RequestStressTestPanel::new));
         tabInfos.add(new TabInfo("Jmeter", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
                 () -> SingletonPanelFactory.getInstance(JMeterPanel.class)));
         tabInfos.add(new TabInfo("历史", new FlatSVGIcon("icons/history.svg", 20, 20),
@@ -116,7 +109,6 @@ public class SidebarTabPanel extends AbstractBasePanel {
     }
 
     private void setConsoleExpanded(boolean expanded) {
-        isConsoleExpanded = expanded;
         removeAll();
         if (expanded) {
             consoleContainer.removeAll();

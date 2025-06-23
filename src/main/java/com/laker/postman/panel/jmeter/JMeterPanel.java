@@ -6,18 +6,22 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.AbstractBasePanel;
 import com.laker.postman.common.SingletonPanelFactory;
+import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
+import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.HttpRequestExecutor;
 import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
@@ -61,14 +65,10 @@ public class JMeterPanel extends AbstractBasePanel {
     private JButton stopBtn;
     // 统计变量
     private int totalRequests = 0;
-    private int successCount = 0;
-    private int failCount = 0;
-    private long totalTime = 0;
     // 报表面板相关
     private JPanel reportPanel;
     private JTable reportTable;
     private DefaultTableModel reportTableModel;
-    private JLabel totalLabel, qpsLabel, avgLabel, minLabel, maxLabel, p99Label, successRateLabel;
     private long minTime = Long.MAX_VALUE;
     private long maxTime = 0;
     private long startTime = 0;
@@ -149,8 +149,31 @@ public class JMeterPanel extends AbstractBasePanel {
         // 趋势图面板
         trendDataset = new DefaultCategoryDataset();
         JFreeChart trendChart = ChartFactory.createLineChart(
-                "接口响应耗时趋势图", "请求序号", "耗时(ms)", trendDataset);
+                "接口响应耗时趋势图", // 图表标题
+                "请求序号", // X轴标签
+                "耗时(ms)", // Y轴标签
+                trendDataset,
+                PlotOrientation.VERTICAL,
+                true, // 图例
+                false,
+                false
+        );
+        // 设置趋势图样式
+        CategoryPlot plot = trendChart.getCategoryPlot();
+        // 设置字体，防止中文乱码
+        Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
+        trendChart.getTitle().setFont(font.deriveFont(13f));
+        if (trendChart.getLegend() != null) trendChart.getLegend().setItemFont(font);
+        plot.getDomainAxis().setTickLabelFont(font);
+        plot.getDomainAxis().setLabelFont(font);
+        plot.getRangeAxis().setTickLabelFont(font);
+        plot.getRangeAxis().setLabelFont(font);
+        // 设置背景色和交互
         ChartPanel chartPanel = new ChartPanel(trendChart);
+        chartPanel.setMouseWheelEnabled(true); // 支持鼠标滚轮缩放
+        chartPanel.setBackground(Colors.PANEL_BACKGROUND);
+        chartPanel.setDisplayToolTips(true); // 显示工具提示
+        chartPanel.setPreferredSize(new Dimension(300, 300));
         trendPanel = new JPanel(new BorderLayout());
         trendPanel.add(chartPanel, BorderLayout.CENTER);
         resultTabbedPane.addTab("趋势图", trendPanel);
@@ -158,13 +181,13 @@ public class JMeterPanel extends AbstractBasePanel {
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
         mainSplit.setDividerLocation(260);
-        mainSplit.setDividerSize(2);
+        mainSplit.setDividerSize(6);
         mainSplit.setContinuousLayout(true);
 
         // 下部分（主分割+结果Tab）
         JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, resultTabbedPane);
         verticalSplit.setDividerLocation(0.62);
-        verticalSplit.setDividerSize(2);
+        verticalSplit.setDividerSize(6);
         verticalSplit.setContinuousLayout(true);
 
         add(verticalSplit, BorderLayout.CENTER);
@@ -257,9 +280,6 @@ public class JMeterPanel extends AbstractBasePanel {
         resultTabbedPane.setSelectedIndex(0);
         resultRootNode.removeAllChildren();
         totalRequests = 0;
-        successCount = 0;
-        failCount = 0;
-        totalTime = 0;
         minTime = Long.MAX_VALUE;
         maxTime = 0;
         apiCostMap.clear();
@@ -458,12 +478,8 @@ public class JMeterPanel extends AbstractBasePanel {
                         resultTreeModel.reload(resultRootNode);
                     });
                     if (success) {
-                        successCount++;
-                        totalTime += cost;
                         if (cost < minTime) minTime = cost;
                         if (cost > maxTime) maxTime = cost;
-                    } else {
-                        failCount++;
                     }
                 }
             }
@@ -809,4 +825,3 @@ public class JMeterPanel extends AbstractBasePanel {
         return sorted.get(Math.max(idx, 0));
     }
 }
-

@@ -15,6 +15,10 @@ import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import com.laker.postman.util.HttpRequestExecutor;
 import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
@@ -73,6 +77,9 @@ public class JMeterPanel extends AbstractBasePanel {
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
+    // 趋势图面板
+    private JPanel trendPanel;
+    private DefaultCategoryDataset trendDataset;
 
 
     @Override
@@ -130,14 +137,23 @@ public class JMeterPanel extends AbstractBasePanel {
         String[] columns = {"接口名称", "总数", "成功", "失败", "QPS", "平均(ms)", "最小(ms)", "最大(ms)", "P99(ms)", "成功率"};
         reportTableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         reportTable = new JTable(reportTableModel);
         reportTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         JScrollPane tableScroll = new JScrollPane(reportTable);
         reportPanel.add(tableScroll, BorderLayout.CENTER);
         resultTabbedPane.addTab("报表", reportPanel);
-        resultTabbedPane.addTab("趋势图", new JScrollPane(new JTextArea("趋势图区")));
+        // 趋势图面板
+        trendDataset = new DefaultCategoryDataset();
+        JFreeChart trendChart = ChartFactory.createLineChart(
+                "接口响应耗时趋势图", "请求序号", "耗时(ms)", trendDataset);
+        ChartPanel chartPanel = new ChartPanel(trendChart);
+        trendPanel = new JPanel(new BorderLayout());
+        trendPanel.add(chartPanel, BorderLayout.CENTER);
+        resultTabbedPane.addTab("趋势图", trendPanel);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -765,6 +781,7 @@ public class JMeterPanel extends AbstractBasePanel {
         endTime = System.currentTimeMillis();
         // 表格统计
         reportTableModel.setRowCount(0);
+        trendDataset.clear();
         for (String api : apiCostMap.keySet()) {
             List<Long> costs = apiCostMap.get(api);
             int apiTotal = costs.size();
@@ -777,13 +794,13 @@ public class JMeterPanel extends AbstractBasePanel {
             double apiQps = (endTime > startTime && apiTotal > 0) ? (apiTotal * 1000.0 / (endTime - startTime)) : 0;
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
             reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, String.format("%.2f%%", apiRate)});
+            // 趋势图数据
+            for (int i = 0; i < costs.size(); i++) {
+                trendDataset.addValue(costs.get(i), api, String.valueOf(i + 1));
+            }
         }
     }
-    private List<Long> getAllCosts() {
-        List<Long> all = new ArrayList<>();
-        for (List<Long> l : apiCostMap.values()) all.addAll(l);
-        return all;
-    }
+
     private long getP99(List<Long> costs) {
         if (costs == null || costs.isEmpty()) return 0;
         List<Long> sorted = new ArrayList<>(costs);

@@ -326,21 +326,36 @@ public class JMeterPanel extends AbstractBasePanel {
                         DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                         Object subObj = sub.getUserObject();
                         if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
-                            String type = subNode.assertionData.type;
-                            String content = subNode.assertionData.content;
+                            AssertionData assertion = subNode.assertionData;
+                            String type = assertion.type;
                             boolean pass = false;
-                            if ("响应码".equals(type)) {
-                                pass = (responseCode == 200);
-                            } else if ("响应体包含".equals(type)) {
-                                pass = responseBody != null && responseBody.contains(content);
-                            } else if ("JSON路径".equals(type)) {
-                                pass = responseBody != null && responseBody.contains(content);
+                            if ("Response Code".equals(type)) {
+                                String op = assertion.operator;
+                                String valStr = assertion.value;
+                                try {
+                                    int expect = Integer.parseInt(valStr);
+                                    if ("=".equals(op)) pass = (responseCode == expect);
+                                    else if (">".equals(op)) pass = (responseCode > expect);
+                                    else if ("<".equals(op)) pass = (responseCode < expect);
+                                } catch (Exception e) {
+                                    pass = false;
+                                }
+                                detail.append("断言[Response Code] ").append(op).append(valStr).append(": ");
+                            } else if ("Contains".equals(type)) {
+                                pass = responseBody != null && responseBody.contains(assertion.content);
+                                detail.append("断言[Contains] 包含: ").append(assertion.content).append(": ");
+                            } else if ("JSONPath".equals(type)) {
+                                String jsonPath = assertion.value;
+                                String expect = assertion.content;
+                                String actual = com.laker.postman.util.JsonPathUtil.extractJsonPath(responseBody, jsonPath);
+                                pass = Objects.equals(actual, expect);
+                                detail.append("断言[JSONPath] ").append(jsonPath).append(" = ").append(expect).append(", 实际:").append(actual).append(": ");
                             }
                             if (!pass) {
-                                detail.append("断言失败: ").append(type).append(" 内容: ").append(content).append("\n");
+                                detail.append("失败\n");
                                 success = false;
                             } else {
-                                detail.append("断言通过: ").append(type).append(" 内容: ").append(content).append("\n");
+                                detail.append("通过\n");
                             }
                         }
                         if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {

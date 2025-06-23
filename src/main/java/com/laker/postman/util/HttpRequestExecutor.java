@@ -147,15 +147,17 @@ public class HttpRequestExecutor {
     }
 
     public static HttpResponse execute(PreparedRequest req) throws Exception {
+        long start = System.currentTimeMillis();
         HttpResponse resp;
         if (req.isMultipart) {
             resp = HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
         } else {
             resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
         }
+        resp.costMs = System.currentTimeMillis() - start;
         // 解析Set-Cookie
         try {
-            java.net.URL urlObj = new java.net.URL(req.url);
+            URL urlObj = new URL(req.url);
             String host = urlObj.getHost();
             List<String> setCookieHeaders = new ArrayList<>();
             if (resp.headers != null) {

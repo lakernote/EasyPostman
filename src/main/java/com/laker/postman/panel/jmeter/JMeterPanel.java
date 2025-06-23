@@ -389,6 +389,7 @@ public class JMeterPanel extends AbstractBasePanel {
                 if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
                     String apiName = jtNode.httpRequestItem.getName();
                     long start = System.currentTimeMillis();
+                    // 已全部用costMs统计，移除无用的时间戳记录逻辑
                     boolean success = true;
                     int finished;
                     synchronized (this) {
@@ -401,11 +402,13 @@ public class JMeterPanel extends AbstractBasePanel {
                     StringBuilder detail = new StringBuilder();
                     PreparedRequest req = null;
                     HttpResponse resp = null;
+                    long cost = 0;
                     try {
                         req = HttpRequestExecutor.buildPreparedRequest(jtNode.httpRequestItem);
                         resp = HttpRequestExecutor.execute(req);
                         responseBody = resp.body;
                         responseCode = resp.code;
+                        cost = resp.costMs; // 只用resp.costMs
                         detail.append("请求URL: ").append(req.url).append("\n");
                         detail.append("请求方法: ").append(req.method).append("\n");
                         detail.append("执行线程: ").append(resp.threadName).append("\n");
@@ -463,8 +466,7 @@ public class JMeterPanel extends AbstractBasePanel {
                             }
                         }
                     }
-                    long cost = System.currentTimeMillis() - start;
-                    // 统计接口耗时
+                    // 统计接口耗时（统一用resp.costMs）
                     apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
                     if (success) {
                         apiSuccessMap.merge(apiName, 1, Integer::sum);
@@ -812,7 +814,9 @@ public class JMeterPanel extends AbstractBasePanel {
             long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
             long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
             long apiP99 = getP99(costs);
-            double apiQps = (endTime > startTime && apiTotal > 0) ? (apiTotal * 1000.0 / (endTime - startTime)) : 0;
+            // QPS计算：用所有请求的总耗时costMs之和
+            long totalCost = costs.stream().mapToLong(Long::longValue).sum();
+            double apiQps = (totalCost > 0 && apiTotal > 0) ? (apiTotal * 1000.0 / totalCost) : 0;
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
             reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, String.format("%.2f%%", apiRate)});
             // 趋势图数据

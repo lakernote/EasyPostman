@@ -13,4 +13,5 @@ public class HttpResponse {
     public String threadName; // 添加线程名称字段
     public String connectionInfo; // 连接信息字段
     public String filePath; // 下载文件路径字段
+    public long costMs; // 请求耗时，单位毫秒
 }

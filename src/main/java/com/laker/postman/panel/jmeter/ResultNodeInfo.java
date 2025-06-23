@@ -1,7 +1,10 @@
 package com.laker.postman.panel.jmeter;
 
+import cn.hutool.core.date.DateUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+
+import java.util.Date;
 
 // 结果树节点信息
 public class ResultNodeInfo {
@@ -21,6 +24,6 @@ public class ResultNodeInfo {
 
     @Override
     public String toString() {
-        return name + (success ? " [成功]" : " [失败]");
+        return DateUtil.format(new Date(), "HH:mm:ss.SSS") + " " + name;
     }
 }

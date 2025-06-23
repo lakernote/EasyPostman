@@ -28,8 +28,10 @@ public class AssertionPropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
+        gbc.anchor = GridBagConstraints.CENTER;
         add(new JLabel("断言类型:"), gbc);
         gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.CENTER;
         typeCombo = new JComboBox<>(new String[]{
                 "Response Code",
                 "Contains",
@@ -41,6 +43,7 @@ public class AssertionPropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         inputCardLayout = new CardLayout();
         inputPanel = new JPanel(inputCardLayout);
 
@@ -102,6 +105,7 @@ public class AssertionPropertyPanel extends JPanel {
         gbc.gridy = 2;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         JLabel helpLabel = new JLabel("<html>\n<ul style='margin-left:10px'>\n<li><b>Response Code</b>: 断言响应码，支持 <b>=</b>、<b>></b>、<b><</b>，如 <code>=200</code> 表示响应码等于200</li>\n<li><b>Contains</b>: 断言响应体包含指定内容，输入要查找的字符串即可</li>\n<li><b>JSONPath</b>: 断言响应体通过 JSONPath 表达式提取的值等于对比值，支持如 <code>$.data[0].id</code> 语法</li>\n</ul>\n</html>");
         helpLabel.setFont(helpLabel.getFont().deriveFont(Font.PLAIN, 12f));
         add(helpLabel, gbc);

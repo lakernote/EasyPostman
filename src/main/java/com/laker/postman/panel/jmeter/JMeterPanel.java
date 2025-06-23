@@ -179,8 +179,26 @@ public class JMeterPanel extends AbstractBasePanel {
         root.add(group);
     }
 
+    private void saveAllPropertyPanelData() {
+        // 保存所有属性区数据到树节点
+        threadGroupPanel.saveThreadGroupData();
+        assertionPanel.saveAssertionData();
+        timerPanel.saveTimerData();
+        if (requestEditSubPanel != null) {
+            // 保存RequestEditSubPanel表单到当前选中节点
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+            if (node != null) {
+                Object userObj = node.getUserObject();
+                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+                    jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
+                }
+            }
+        }
+    }
+
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
+        saveAllPropertyPanelData(); // 新增：运行前强制保存
         if (running) return;
         running = true;
         runBtn.setEnabled(false);
@@ -392,11 +410,11 @@ public class JMeterPanel extends AbstractBasePanel {
     private DefaultMutableTreeNode resultRootNode;
     private JTextArea resultDetailArea;
 
-    // ========== 用例持久化核心方法（使用Hutool JSON） ==========
     private void saveJMeterTreeToFile() {
+        saveAllPropertyPanelData(); // 确保保存所有属性区数据
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("保存JMeter用例树");
-        fileChooser.setSelectedFile(new File("jmeter-case.json"));
+        fileChooser.setSelectedFile(new File("EasyPostman-Jmeter.json"));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();

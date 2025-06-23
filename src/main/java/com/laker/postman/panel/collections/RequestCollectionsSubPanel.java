@@ -589,10 +589,10 @@ public class RequestCollectionsSubPanel extends AbstractBasePanel {
             rootTreeNode.add(defaultGroupNode);
             // 经典的测试请求示例
             HttpRequestItem example = HttpService.createDefaultRequest();
-            example.setName("经典示例");
+            example.setName("环境变量+脚本示例");
             example.setMethod("GET");
-            example.setUrl("{{baseUrl}}");
-            example.getParams().put("q","lakernote");
+            example.setUrl("{{baseUrl}}?q=lakernote");
+            example.getParams().put("q", "lakernote");
             example.setPrescript("console.log('这是一个预请求脚本');");
             example.setPostscript("console.log('这是一个后置脚本');");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", example}));

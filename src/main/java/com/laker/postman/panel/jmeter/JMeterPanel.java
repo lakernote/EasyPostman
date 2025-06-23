@@ -13,6 +13,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import com.laker.postman.util.HttpRequestExecutor;
+import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -347,7 +348,7 @@ public class JMeterPanel extends AbstractBasePanel {
                             } else if ("JSONPath".equals(type)) {
                                 String jsonPath = assertion.value;
                                 String expect = assertion.content;
-                                String actual = com.laker.postman.util.JsonPathUtil.extractJsonPath(responseBody, jsonPath);
+                                String actual = JsonPathUtil.extractJsonPath(responseBody, jsonPath);
                                 pass = Objects.equals(actual, expect);
                                 detail.append("断言[JSONPath] ").append(jsonPath).append(" = ").append(expect).append(", 实际:").append(actual).append(": ");
                             }

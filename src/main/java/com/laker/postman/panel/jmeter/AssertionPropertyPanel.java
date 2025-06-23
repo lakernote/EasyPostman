@@ -78,12 +78,18 @@ public class AssertionPropertyPanel extends JPanel {
         jpGbc.fill = GridBagConstraints.HORIZONTAL;
         jsonPathPanel.add(new JLabel("JsonPath:"), jpGbc);
         jpGbc.gridx = 1;
+        jpGbc.weightx = 1.0; // 让文本框填满剩余空间
+        jpGbc.fill = GridBagConstraints.HORIZONTAL; // 水平填充
         jsonPathField = new JTextField(10);
         jsonPathPanel.add(jsonPathField, jpGbc);
         jpGbc.gridx = 0;
         jpGbc.gridy = 1;
+        jpGbc.weightx = 0;
+        jpGbc.fill = GridBagConstraints.HORIZONTAL;
         jsonPathPanel.add(new JLabel("对比值:"), jpGbc);
         jpGbc.gridx = 1;
+        jpGbc.weightx = 1.0;
+        jpGbc.fill = GridBagConstraints.HORIZONTAL;
         jsonPathExpectField = new JTextField();
         jsonPathPanel.add(jsonPathExpectField, jpGbc);
 
@@ -96,7 +102,7 @@ public class AssertionPropertyPanel extends JPanel {
         gbc.gridy = 2;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
-        JLabel helpLabel = new JLabel("<html><ul style='margin-left:10px'><li>Response Code: 断言响应码，支持=、>、<，如=200</li><li>Contains: 断言响应体包含指定内容</li><li>JSONPath: 断言JSONPath提取结果等于对比值</li></ul></html>");
+        JLabel helpLabel = new JLabel("<html>\n<ul style='margin-left:10px'>\n<li><b>Response Code</b>: 断言响应码，支持 <b>=</b>、<b>></b>、<b><</b>，如 <code>=200</code> 表示响应码等于200</li>\n<li><b>Contains</b>: 断言响应体包含指定内容，输入要查找的字符串即可</li>\n<li><b>JSONPath</b>: 断言响应体通过 JSONPath 表达式提取的值等于对比值，支持如 <code>$.data[0].id</code> 语法</li>\n</ul>\n</html>");
         helpLabel.setFont(helpLabel.getFont().deriveFont(Font.PLAIN, 12f));
         add(helpLabel, gbc);
 

@@ -27,34 +27,31 @@ import java.util.Scanner;
 import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
-public class TopMenuBarPanel extends JPanel {
+public class TopMenuBarPanel extends AbstractBasePanel {
 
     private static TopMenuBarPanel instance;
     @Getter
     private EnvironmentComboBox environmentComboBox;
     private JMenuBar menuBar;
 
-    private TopMenuBarPanel() {
+    @Override
+    protected void initUI() {
         setLayout(new BorderLayout());
-        // 复合边框：线+内边距
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 1, 0, Color.lightGray),
                 BorderFactory.createEmptyBorder(1, 4, 1, 4)
         ));
-        init();
-    }
-
-    public static TopMenuBarPanel getInstance() {
-        if (instance == null) {
-            instance = new TopMenuBarPanel();
-        }
-        return instance;
-    }
-
-    private void init() {
         initComponents();
+        setBackground(new Color(245, 247, 250));
+        setOpaque(true);
+    }
+
+    @Override
+    protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler(FlatDesktop.QuitResponse::performQuit);
+        FlatDesktop.setQuitHandler((e) -> {
+            ExitDialog.show();
+        });
     }
 
     private void initComponents() {
@@ -143,9 +140,6 @@ public class TopMenuBarPanel extends JPanel {
         rightPanel.setOpaque(false);
         rightPanel.add(environmentComboBox);
         add(rightPanel, BorderLayout.EAST);
-
-        setBackground(new Color(245, 247, 250));
-        setOpaque(true);
     }
 
     private void aboutActionPerformed() {

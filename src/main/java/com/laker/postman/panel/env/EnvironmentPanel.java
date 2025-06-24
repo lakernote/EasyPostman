@@ -5,10 +5,11 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.AbstractBasePanel;
-import com.laker.postman.common.panel.TopMenuBarPanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
+import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.panel.TopMenuBarPanel;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
@@ -132,7 +133,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
     protected void registerListeners() {
         addEnvButton.addActionListener(e -> addEnvironment());
         // 联动菜单栏右上角下拉框
-        EnvironmentComboBox topComboBox = TopMenuBarPanel.getInstance().getEnvironmentComboBox();
+        EnvironmentComboBox topComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
         if (topComboBox != null) {
             topComboBox.setOnEnvironmentChange(env -> {
                 environmentListModel.clear();
@@ -241,7 +242,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
                             // 激活环境
                             EnvironmentService.setActiveEnvironment(env.getId());
                             // 联动顶部下拉框
-                            EnvironmentComboBox comboBox = TopMenuBarPanel.getInstance().getEnvironmentComboBox();
+                            EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
                             if (comboBox != null) {
                                 comboBox.setSelectedEnvironment(env);
                             }
@@ -396,7 +397,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
             EnvironmentService.saveEnvironment(env);
             environmentListModel.addElement(new EnvironmentItem(env));
             environmentList.setSelectedValue(new EnvironmentItem(env), true);
-            EnvironmentComboBox environmentComboBox = TopMenuBarPanel.getInstance().getEnvironmentComboBox();
+            EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
             if (environmentComboBox != null) {
                 environmentComboBox.addItem(new EnvironmentItem(env));
             }
@@ -450,7 +451,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
         if (confirm == JOptionPane.YES_OPTION) {
             environmentListModel.removeElement(new EnvironmentItem(env));
             EnvironmentService.deleteEnvironment(env.getId());
-            TopMenuBarPanel.getInstance().getEnvironmentComboBox().reload(); // 刷新顶部下拉框
+            SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload(); // 刷新顶部下拉框
         }
     }
 
@@ -469,7 +470,7 @@ public class EnvironmentPanel extends AbstractBasePanel {
             EnvironmentService.saveEnvironment(copy);
             EnvironmentItem copyItem = new EnvironmentItem(copy);
             environmentListModel.addElement(copyItem);
-            EnvironmentComboBox environmentComboBox = TopMenuBarPanel.getInstance().getEnvironmentComboBox();
+            EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
             if (environmentComboBox != null) {
                 environmentComboBox.addItem(copyItem);
             }

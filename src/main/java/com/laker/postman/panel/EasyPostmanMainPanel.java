@@ -1,7 +1,7 @@
 package com.laker.postman.panel;
 
-import com.laker.postman.common.SingletonPanelFactory;
-import com.laker.postman.common.TopMenuBarPanel;
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.panel.TopMenuBarPanel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -27,7 +27,7 @@ public class EasyPostmanMainPanel extends JPanel {
         // 顶部菜单栏（含环境选择器）
         add(TopMenuBarPanel.getInstance(), BorderLayout.NORTH);
         // 创建左侧标签页面板（包含集合、环境变量、压测三个标签页）
-        SidebarTabPanel sidebarTabPanel = SingletonPanelFactory.getInstance(SidebarTabPanel.class); // 创建标签页面板实例
+        SidebarTabPanel sidebarTabPanel = SingletonFactory.getInstance(SidebarTabPanel.class); // 创建标签页面板实例
         add(sidebarTabPanel, BorderLayout.CENTER);
     }
 }

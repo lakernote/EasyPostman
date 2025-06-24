@@ -1,5 +1,6 @@
-package com.laker.postman.common;
+package com.laker.postman.common.panel;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.panel.EasyPostmanMainPanel;
 import com.laker.postman.util.FontUtil;
@@ -50,7 +51,7 @@ public class EasyLoadingPanel extends JPanel {
         if (globalLoadingPanel == null) {
             globalLoadingPanel = new EasyLoadingPanel();
         }
-        MainFrame frame = MainFrame.getInstance();
+        MainFrame frame = SingletonFactory.getInstance(MainFrame.class);
         frame.setContentPane(globalLoadingPanel);
         frame.revalidate();
         frame.repaint();
@@ -62,7 +63,7 @@ public class EasyLoadingPanel extends JPanel {
      * @param mainPanel 主内容面板
      */
     private static void hideFrom(JPanel mainPanel) {
-        MainFrame frame = MainFrame.getInstance();
+        MainFrame frame = SingletonFactory.getInstance(MainFrame.class);
         frame.setContentPane(mainPanel);
         frame.revalidate();
         frame.repaint();

@@ -1,11 +1,10 @@
-package com.laker.postman.common;
+package com.laker.postman.common.panel;
 
 import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
-import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
@@ -37,7 +36,7 @@ public class TopMenuBarPanel extends JPanel {
 
     private TopMenuBarPanel() {
         setLayout(new BorderLayout());
-        // 复合边框：下方红色线+内边距
+        // 复合边框：线+内边距
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 1, 0, Color.lightGray),
                 BorderFactory.createEmptyBorder(1, 4, 1, 4)
@@ -179,7 +178,7 @@ public class TopMenuBarPanel extends JPanel {
         panel.add(blog);
         panel.add(github);
         panel.add(gitee);
-        JOptionPane.showMessageDialog(MainFrame.getInstance(), panel, "关于 EasyPostman", JOptionPane.PLAIN_MESSAGE);
+        JOptionPane.showMessageDialog(null, panel, "关于 EasyPostman", JOptionPane.PLAIN_MESSAGE);
     }
 
     /**

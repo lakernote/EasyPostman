@@ -3,7 +3,6 @@ package com.laker.postman.common.frame;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.panel.EasyPostmanMainPanel;
-import com.laker.postman.util.SingletonProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -11,28 +10,26 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+/**
+ * 主窗口类，继承自 JFrame。
+ */
 @Slf4j
 public class MainFrame extends JFrame {
 
     private MainFrame() {
-        super();
-        setName("EasyPostman");
-        setTitle("EasyPostman");
-        setIconImage(Icons.LOGO.getImage());
-    }
-
-    public static MainFrame getInstance() {
-        return SingletonProvider.getInstance(MainFrame.class, MainFrame::new);
+        super(); // 调用父类构造函数
+        setName("EasyPostman"); // 设置窗口名称
+        setTitle("EasyPostman"); // 设置窗口标题
+        setIconImage(Icons.LOGO.getImage()); // 设置窗口图标
     }
 
     public void initComponents() {
-        setContentPane(EasyPostmanMainPanel.getInstance());
-        initWindowSize();
-        initWindowCloseListener();
-        pack();
-        setLocationRelativeTo(null);
+        setContentPane(EasyPostmanMainPanel.getInstance()); // 设置主面板为内容面板
+        initWindowSize(); // 初始化窗口大小
+        initWindowCloseListener(); // 初始化窗口关闭监听器
+        pack(); // 调整窗口大小以适应内容
+        setLocationRelativeTo(null); // 窗口居中显示
     }
-
 
     private void initWindowSize() {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();

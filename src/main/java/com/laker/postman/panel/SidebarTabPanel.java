@@ -1,8 +1,8 @@
 package com.laker.postman.panel;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.AbstractBasePanel;
-import com.laker.postman.common.SingletonPanelFactory;
+import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -45,13 +45,13 @@ public class SidebarTabPanel extends AbstractBasePanel {
         tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
         tabInfos = new ArrayList<>();
         tabInfos.add(new TabInfo("集合", new FlatSVGIcon("icons/collections.svg", 20, 20),
-                () -> SingletonPanelFactory.getInstance(RequestCollectionsPanel.class)));
+                () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
         tabInfos.add(new TabInfo("环境", new FlatSVGIcon("icons/env.svg", 20, 20),
-                () -> SingletonPanelFactory.getInstance(EnvironmentPanel.class)));
+                () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
         tabInfos.add(new TabInfo("Jmeter", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
-                () -> SingletonPanelFactory.getInstance(JMeterPanel.class)));
+                () -> SingletonFactory.getInstance(JMeterPanel.class)));
         tabInfos.add(new TabInfo("历史", new FlatSVGIcon("icons/history.svg", 20, 20),
-                () -> SingletonPanelFactory.getInstance(HistoryPanel.class)));
+                () -> SingletonFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
             tabbedPane.addTab(info.title, new JPanel()); // 占位面板，实际内容在切换时加载 先用空面板占位，后续可以懒加载真正的内容面板（如ensureTabComponentLoaded方法所做的），提升性能和启动速度。
@@ -206,7 +206,7 @@ public class SidebarTabPanel extends AbstractBasePanel {
 
     // 控制台日志追加方法
     public static void appendConsoleLog(String msg) {
-        SidebarTabPanel instance = SingletonPanelFactory.getInstance(SidebarTabPanel.class);
+        SidebarTabPanel instance = SingletonFactory.getInstance(SidebarTabPanel.class);
         if (instance != null && instance.consoleLogArea != null) {
             SwingUtilities.invokeLater(() -> {
                 instance.consoleLogArea.append(msg + "\n");

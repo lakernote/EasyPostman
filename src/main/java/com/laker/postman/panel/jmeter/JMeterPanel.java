@@ -4,8 +4,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.AbstractBasePanel;
-import com.laker.postman.common.SingletonPanelFactory;
+import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
@@ -649,7 +649,7 @@ public class JMeterPanel extends AbstractBasePanel {
         addRequest.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
             if (node == null) return;
-            RequestCollectionsSubPanel collectionPanel = SingletonPanelFactory.getInstance(RequestCollectionsSubPanel.class);
+            RequestCollectionsSubPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
             DefaultTreeModel groupTreeModel = collectionPanel != null ? collectionPanel.getGroupTreeModel() : null;
             if (groupTreeModel == null) {
                 JOptionPane.showMessageDialog(JMeterPanel.this, "未找到请求集合，无法选择", "提示", JOptionPane.WARNING_MESSAGE);

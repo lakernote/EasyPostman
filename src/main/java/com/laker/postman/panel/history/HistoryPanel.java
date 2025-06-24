@@ -1,7 +1,7 @@
 package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.AbstractBasePanel;
+import com.laker.postman.common.panel.AbstractBasePanel;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;

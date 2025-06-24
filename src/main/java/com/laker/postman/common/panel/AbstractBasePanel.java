@@ -1,4 +1,4 @@
-package com.laker.postman.common;
+package com.laker.postman.common.panel;
 
 import javax.swing.*;
 

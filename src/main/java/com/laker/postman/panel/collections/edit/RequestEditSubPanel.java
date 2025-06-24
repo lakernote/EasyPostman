@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.common.SingletonPanelFactory;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
@@ -498,7 +498,7 @@ public class RequestEditSubPanel extends JPanel {
                     autoExecuteExtractorRules(bodyText);
                 }
                 // 新增：保存重定向链到历史，兼容线程名参数
-                SingletonPanelFactory.getInstance(HistoryPanel.class).addRequestHistory(
+                SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(
                         req.method,
                         req.url,
                         req.body,
@@ -697,7 +697,7 @@ public class RequestEditSubPanel extends JPanel {
      * 通过查找并调用环境面板的刷新方法来更新环境变量显示
      */
     private void refreshEnvironmentPanel() {
-        SingletonPanelFactory.getInstance(EnvironmentPanel.class).refreshUI();
+        SingletonFactory.getInstance(EnvironmentPanel.class).refreshUI();
     }
 
 

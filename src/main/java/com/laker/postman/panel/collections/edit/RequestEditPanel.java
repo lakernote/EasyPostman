@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.edit;
 
 import cn.hutool.core.util.IdUtil;
-import com.laker.postman.common.SingletonPanelFactory;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tab.PlusTabComponent;
 import com.laker.postman.model.HttpRequestItem;
@@ -163,7 +163,7 @@ public class RequestEditPanel extends JPanel {
         boolean isNewRequest = id == null || id.isEmpty();
 
         // 查找请求集合面板
-        RequestCollectionsSubPanel collectionPanel = SingletonPanelFactory.getInstance(RequestCollectionsSubPanel.class);
+        RequestCollectionsSubPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
         if (collectionPanel == null) {
             JOptionPane.showMessageDialog(this, "无法找到请求集合面板，保存失败", "错误", JOptionPane.ERROR_MESSAGE);
             return;

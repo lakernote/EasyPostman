@@ -5,7 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.AbstractBasePanel;
+import com.laker.postman.common.panel.AbstractBasePanel;
 import com.laker.postman.common.dialog.LargeInputDialog;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;

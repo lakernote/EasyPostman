@@ -5,6 +5,7 @@ import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,27 +15,11 @@ import java.awt.*;
  */
 @Slf4j
 public class SplashWindow extends JWindow {
-    public static final int MIN_TIME = 1000;
-    private final JLabel statusLabel;
+    public static final int MIN_TIME = 1000; // 最小显示时间，避免闪屏
+    private final JLabel statusLabel; // 状态标签，用于显示加载状态
 
     public SplashWindow() {
-        // 自定义渐变圆角面板
-        JPanel content = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g.create();
-                // 渐变色（可自定义颜色）
-                GradientPaint gp = new GradientPaint(0, 0, new Color(90, 155, 255), getWidth(), getHeight(), new Color(245, 247, 250));
-                g2d.setPaint(gp);
-                // 圆角背景
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 32, 32);
-                g2d.dispose();
-            }
-        };
-        content.setLayout(new BorderLayout(0, 10));
-        content.setOpaque(false);
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        JPanel content = getJPanel();
 
         // Logo
         JLabel logoLabel = new JLabel(new ImageIcon(Icons.LOGO.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH)));
@@ -44,10 +29,12 @@ public class SplashWindow extends JWindow {
         // 应用名称和版本
         JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 2));
         infoPanel.setOpaque(false);
+        // 应用名称
         JLabel appNameLabel = new JLabel("EasyPostman", SwingConstants.CENTER);
         appNameLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 22));
         appNameLabel.setForeground(new Color(60, 90, 180));
         infoPanel.add(appNameLabel);
+        // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
         versionLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
         versionLabel.setForeground(new Color(120, 130, 150));
@@ -64,11 +51,32 @@ public class SplashWindow extends JWindow {
         content.add(bottomPanel, BorderLayout.SOUTH);
 
         setContentPane(content);
-        setSize(450, 280);
-        setLocationRelativeTo(null);
+        setSize(450, 280); // 设置窗口大小
+        setLocationRelativeTo(null);  // 居中显示
         setBackground(new Color(0, 0, 0, 0)); // 透明背景
-        setAlwaysOnTop(true);
-        setVisible(true);
+        setAlwaysOnTop(true); // 窗口总在最上层
+        setVisible(true); // 显示窗口
+    }
+
+    @NotNull
+    private static JPanel getJPanel() {
+        JPanel content = new JPanel() { // 自定义面板，绘制渐变背景和圆角
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g.create();
+                // 渐变色（可自定义颜色）
+                GradientPaint gp = new GradientPaint(0, 0, new Color(90, 155, 255), getWidth(), getHeight(), new Color(245, 247, 250));
+                g2d.setPaint(gp);
+                // 圆角背景
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 32, 32);
+                g2d.dispose();
+            }
+        };
+        content.setLayout(new BorderLayout(0, 10)); // 使用 BorderLayout 布局
+        content.setOpaque(false); // 设置透明背景
+        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18)); // 设置内边距
+        return content;
     }
 
     public void setStatus(String status) {
@@ -83,7 +91,7 @@ public class SplashWindow extends JWindow {
                 long start = System.currentTimeMillis();
                 setStatus("正在加载主界面...");
                 setProgress(30);
-                MainFrame mainFrame = MainFrame.getInstance();
+                MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
                 setStatus("正在初始化组件...");
                 setProgress(60);
                 mainFrame.initComponents();
@@ -104,7 +112,6 @@ public class SplashWindow extends JWindow {
             protected void done() {
                 try {
                     setStatus("加载完成，正在显示主界面...");
-                    long start = System.currentTimeMillis();
                     MainFrame mainFrame = get();
                     // 渐隐动画关闭 SplashWindow
                     Timer timer = new Timer(15, null);

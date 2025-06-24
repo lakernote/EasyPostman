@@ -35,16 +35,18 @@ public class App {
 
             // 3. FlatLaf 统一商务风格属性（圆角、阴影等）
             BusinessStyleUtils.applyBusinessStyle();
+
+            // 4. 注册图标字体，使用 FontAwesome 图标库
             IconFontSwing.register(FontAwesome.getIconFont());
 
-            // 4. 显示 SplashWindow
+            // 5. 显示 SplashWindow
             SplashWindow splash = new SplashWindow();
 
-            // 5. 异步加载主窗口
+            // 6. 异步加载主窗口
             splash.initMainFrame();
         });
 
-        // 6. 设置全局异常处理器，防止程序因未捕获异常崩溃
+        // 7. 设置全局异常处理器，防止程序因未捕获异常崩溃
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             JOptionPane.showMessageDialog(null,

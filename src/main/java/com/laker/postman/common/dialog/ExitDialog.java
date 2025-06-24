@@ -1,5 +1,6 @@
 package com.laker.postman.common.dialog;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 
 import javax.swing.*;
@@ -16,7 +17,7 @@ public class ExitDialog {
         if (result != JOptionPane.YES_OPTION) {
             return;
         }
-        MainFrame.getInstance().dispose();
+        SingletonFactory.getInstance(MainFrame.class).dispose();
         System.exit(0);
     }
 }

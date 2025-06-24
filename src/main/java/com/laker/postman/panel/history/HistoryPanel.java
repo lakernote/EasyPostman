@@ -13,7 +13,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * 历史记录面板，原SidebarTabPanel.createHistoryPanel内容
+ * 历史记录面板
  */
 public class HistoryPanel extends BasePanel {
     private JList<RequestHistoryItem> historyList;
@@ -21,10 +21,16 @@ public class HistoryPanel extends BasePanel {
     private JTextPane historyDetailPane;
     private DefaultListModel<RequestHistoryItem> historyListModel;
 
+    @Override
     protected void initUI() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
         JPanel titlePanel = new JPanel(new BorderLayout());
+        // 复合边框
+        titlePanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY), // 外边框
+                BorderFactory.createEmptyBorder(4, 8, 4, 8) // 内边框
+        ));
         JLabel title = new JLabel("History");
         title.setFont(FontUtil.getDefaultFont(Font.BOLD, 13));
         JButton clearBtn = new JButton(new FlatSVGIcon("icons/clear.svg"));
@@ -38,7 +44,6 @@ public class HistoryPanel extends BasePanel {
         btnPanel.add(clearBtn);
         titlePanel.add(title, BorderLayout.WEST);
         titlePanel.add(btnPanel, BorderLayout.EAST);
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         add(titlePanel, BorderLayout.PAGE_START);
 
         // 历史列表

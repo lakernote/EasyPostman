@@ -5,7 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.dialog.LargeInputDialog;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
@@ -39,7 +39,7 @@ import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
  * 支持请求的增删改查、分组管理、拖拽排序等功能
  */
 @Slf4j
-public class RequestCollectionsSubPanel extends AbstractBasePanel {
+public class RequestCollectionsSubPanel extends BasePanel {
     // 请求集合的根节点
     private DefaultMutableTreeNode rootTreeNode;
     // 请求树组件

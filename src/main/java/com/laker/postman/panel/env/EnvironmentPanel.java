@@ -8,7 +8,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
-import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.Environment;
@@ -34,7 +34,7 @@ import java.util.Map;
  * 环境变量管理面板
  */
 @Slf4j
-public class EnvironmentPanel extends AbstractBasePanel {
+public class EnvironmentPanel extends BasePanel {
     private EasyNameValueTablePanel variablesTablePanel;
     private Environment currentEnvironment;
     private JList<EnvironmentItem> environmentList;

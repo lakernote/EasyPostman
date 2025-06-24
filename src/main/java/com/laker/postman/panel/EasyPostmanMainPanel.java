@@ -26,8 +26,8 @@ public class EasyPostmanMainPanel extends JPanel {
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
         // 顶部菜单栏（含环境选择器）
         add(SingletonFactory.getInstance(TopMenuBarPanel.class), BorderLayout.NORTH);
-        // 创建左侧标签页面板（包含集合、环境变量、压测三个标签页）
-        SidebarTabPanel sidebarTabPanel = SingletonFactory.getInstance(SidebarTabPanel.class); // 创建标签页面板实例
+        // 创建左侧标签页面板
+        SidebarTabPanel sidebarTabPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
         add(sidebarTabPanel, BorderLayout.CENTER);
     }
 }

@@ -1,9 +1,9 @@
 package com.laker.postman.panel;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.AbstractBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Colors;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  * 左侧标签页面板，包含集合、环境变量、压测、批量执行四个标签页
  */
 @Slf4j
-public class SidebarTabPanel extends AbstractBasePanel {
+public class SidebarTabPanel extends BasePanel {
 
     private JTabbedPane tabbedPane;
     private List<TabInfo> tabInfos;

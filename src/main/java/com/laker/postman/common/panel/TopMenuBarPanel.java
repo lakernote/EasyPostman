@@ -27,7 +27,7 @@ import java.util.Scanner;
 import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
-public class TopMenuBarPanel extends AbstractBasePanel {
+public class TopMenuBarPanel extends BasePanel {
     @Getter
     private EnvironmentComboBox environmentComboBox;
 

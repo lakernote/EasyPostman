@@ -1,7 +1,7 @@
 package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;
@@ -15,7 +15,7 @@ import java.awt.event.MouseEvent;
 /**
  * 历史记录面板，原SidebarTabPanel.createHistoryPanel内容
  */
-public class HistoryPanel extends AbstractBasePanel {
+public class HistoryPanel extends BasePanel {
     private JList<RequestHistoryItem> historyList;
     private JPanel historyDetailPanel;
     private JTextPane historyDetailPane;

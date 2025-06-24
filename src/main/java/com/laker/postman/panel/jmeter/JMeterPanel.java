@@ -4,7 +4,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  * JMeter风格完整UI骨架：左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
  */
 @Slf4j
-public class JMeterPanel extends AbstractBasePanel {
+public class JMeterPanel extends BasePanel {
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）

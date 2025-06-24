@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections;
 
-import com.laker.postman.common.panel.AbstractBasePanel;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.panel.collections.edit.RequestEditPanel;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 
 @Slf4j
-public class RequestCollectionsPanel extends AbstractBasePanel {
+public class RequestCollectionsPanel extends BasePanel {
     @Override
     protected void initUI() {
         // 设置布局为 BorderLayout

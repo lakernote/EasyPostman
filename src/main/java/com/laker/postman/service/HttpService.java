@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,8 +176,17 @@ public class HttpService {
             for (Map.Entry<String, String> entry : formFiles.entrySet()) {
                 File file = new File(entry.getValue());
                 if (file.exists()) {
+                    String mimeType = null;
+                    try {
+                        mimeType = Files.probeContentType(file.toPath());
+                    } catch (IOException e) {
+                        log.error(e.getMessage(), e);
+                    }
+                    if (mimeType == null) {
+                        mimeType = "application/octet-stream";
+                    }
                     multipartBuilder.addFormDataPart(entry.getKey(), file.getName(),
-                            RequestBody.create(file, MediaType.parse("application/octet-stream")));
+                            RequestBody.create(file, MediaType.parse(mimeType)));
                 }
             }
         }
@@ -213,7 +223,7 @@ public class HttpService {
         testItem.setMethod("GET");
 
         // 添加一些默认的请求头
-        testItem.getHeaders().put("User-Agent", "EasyTools HTTP Client");
+        testItem.getHeaders().put("User-Agent", "EasyPostman HTTP Client");
         testItem.getHeaders().put("Accept", "*/*");
         return testItem;
     }

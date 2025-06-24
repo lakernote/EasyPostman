@@ -10,10 +10,8 @@ import javax.swing.*;
  */
 public abstract class BasePanel extends JPanel {
 
-    /**
-     * 默认构造函数，调用初始化UI和注册监听方法
-     */
-    protected BasePanel() {
+
+    public void safeInit() {
         initUI();
         registerListeners();
     }

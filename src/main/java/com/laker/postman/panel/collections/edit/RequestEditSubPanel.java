@@ -17,6 +17,7 @@ import com.laker.postman.util.HttpUtil;
 import com.laker.postman.util.JsScriptExecutor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.event.DocumentListener;
@@ -521,6 +522,82 @@ public class RequestEditSubPanel extends JPanel {
         this.name = item.getName();
         // 拆解URL参数
         String url = item.getUrl();
+        urlField.setText(url);
+        // 如果URL中有参数，解析到paramsPanel
+        Map<String, String> mergedParams = getMergedParams(item.getParams(), url);
+        // 更新参数面板
+        paramsPanel.setMap(mergedParams);
+        methodBox.setSelectedItem(item.getMethod());
+        // Headers
+        headersPanel.setMap(item.getHeaders());
+        // 自动补充 User-Agent 和 Accept
+        if (!item.getHeaders().containsKey("User-Agent")) {
+            item.getHeaders().put("User-Agent", "EasyPostman HTTP Client");
+            headersPanel.addRow("User-Agent", "EasyPostman HTTP Client");
+        }
+        if (!item.getHeaders().containsKey("Accept")) {
+            item.getHeaders().put("Accept", "*/*");
+            headersPanel.addRow("Accept", "*/*");
+        }
+        // Body
+        requestBodyPanel.getBodyArea().setText(item.getBody());
+        if (StrUtil.isBlank(item.getBody())) {
+            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_NONE); // 切换到无 Body 模式
+            // form-data 字段还原
+        } else {
+            // 其他模式（如 raw）
+            // raw: 如果请求头没有设置 application/json，则补充（忽略大小写）
+            ensureContentTypeHeader(item.getHeaders(), "application/json", headersPanel);
+        }
+
+        if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
+            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_DATA); // 切换到 form-data 模式
+            EasyTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+            formDataTablePanel.clear();
+            if (item.getFormData() != null) {
+                for (Map.Entry<String, String> entry : item.getFormData().entrySet()) {
+                    formDataTablePanel.addRow(entry.getKey(), "Text", entry.getValue());
+                }
+            }
+            if (item.getFormFiles() != null) {
+                for (Map.Entry<String, String> entry : item.getFormFiles().entrySet()) {
+                    formDataTablePanel.addRow(entry.getKey(), "File", entry.getValue());
+                }
+            }
+            // form-data: 如果请求头没有设置 multipart/form-data，则补充（忽略大小写）
+            ensureContentTypeHeader(item.getHeaders(), "multipart/form-data", headersPanel);
+        } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
+            // 处理 POST-x-www-form-urlencoded
+            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
+            EasyTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+            urlencodedTablePanel.clear();
+            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
+                urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());
+            }
+            // x-www-form-urlencoded: 如果请求头没有设置 application/x-www-form-urlencoded，则补充（忽略大小写）
+            ensureContentTypeHeader(item.getHeaders(), "application/x-www-form-urlencoded", headersPanel);
+        }
+        // 变量提取规则
+        loadExtractorRulesFromRequest(item);
+
+        // 认证Tab
+        authTabPanel.setAuthType(item.getAuthType());
+        authTabPanel.setUsername(item.getAuthUsername());
+        authTabPanel.setPassword(item.getAuthPassword());
+        authTabPanel.setToken(item.getAuthToken());
+
+        // 前置/后置脚本
+        scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
+        scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
+        // 自动重定向复选框
+        requestLinePanel.getFollowRedirectsCheckBox().setSelected(item.isFollowRedirects);
+
+        // 设置原始数据用于脏检测
+        setOriginalRequestItem(item);
+    }
+
+    @NotNull
+    private static Map<String, String> getMergedParams(Map<String, String> params, String url) {
         Map<String, String> urlParams = new LinkedHashMap<>();
         if (url != null && url.contains("?")) {
             int idx = url.indexOf('?');
@@ -544,84 +621,10 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 合并 params，item.getParams() 优先生效
         Map<String, String> mergedParams = new LinkedHashMap<>(urlParams);
-        Map<String, String> params = item.getParams();
         if (params != null) {
             mergedParams.putAll(params);
         }
-        // 更新参数面板
-        paramsPanel.setMap(mergedParams);
-        urlField.setText(url);
-        item.setUrl(url);
-        methodBox.setSelectedItem(item.getMethod());
-        // Headers
-        headersPanel.setMap(item.getHeaders());
-        // Body
-        requestBodyPanel.getBodyArea().setText(item.getBody());
-        if (StrUtil.isBlank(item.getBody())) {
-            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_NONE); // 切换到无 Body 模式
-            // form-data 字段还原
-        } else {
-            // 其他模式（如 raw）
-            // raw: 如果请求头没有设置 application/json，则补充（忽略大小写）
-            if (!HttpUtil.containsContentType(item.getHeaders(), "application/json")) {
-                item.getHeaders().put("Content-Type", "application/json");
-                // 同时更新对应的tablePanel中的Content-Type列
-                headersPanel.addRow("Content-Type", "application/json");
-            }
-        }
-
-        if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
-            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_DATA); // 切换到 form-data 模式
-            EasyTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
-            formDataTablePanel.clear();
-            if (item.getFormData() != null) {
-                for (Map.Entry<String, String> entry : item.getFormData().entrySet()) {
-                    formDataTablePanel.addRow(entry.getKey(), "Text", entry.getValue());
-                }
-            }
-            if (item.getFormFiles() != null) {
-                for (Map.Entry<String, String> entry : item.getFormFiles().entrySet()) {
-                    formDataTablePanel.addRow(entry.getKey(), "File", entry.getValue());
-                }
-            }
-            // form-data: 如果请求头没有设置 multipart/form-data，则补充（忽略大小写）
-            if (!HttpUtil.containsContentType(item.getHeaders(), "multipart/form-data")) {
-                item.getHeaders().put("Content-Type", "multipart/form-data");
-                // 同时更新对应的tablePanel中的Content-Type列
-                headersPanel.addRow("Content-Type", "multipart/form-data");
-            }
-        } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
-            // 处理 POST-x-www-form-urlencoded
-            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
-            EasyTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
-            urlencodedTablePanel.clear();
-            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
-                urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());
-            }
-            // x-www-form-urlencoded: 如果请求头没有设置 application/x-www-form-urlencoded，则补充（忽略大小写）
-            if (!HttpUtil.containsContentType(item.getHeaders(), "application/x-www-form-urlencoded")) {
-                item.getHeaders().put("Content-Type", "application/x-www-form-urlencoded");
-                // 同时更新对应的tablePanel中的Content-Type列
-                headersPanel.addRow("Content-Type", "application/x-www-form-urlencoded");
-            }
-        }
-        // 变量提取规则
-        loadExtractorRulesFromRequest(item);
-
-        // 认证Tab
-        authTabPanel.setAuthType(item.getAuthType());
-        authTabPanel.setUsername(item.getAuthUsername());
-        authTabPanel.setPassword(item.getAuthPassword());
-        authTabPanel.setToken(item.getAuthToken());
-
-        // 前置/后置脚本
-        scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
-        scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
-        // 自动重定向复选框
-        requestLinePanel.getFollowRedirectsCheckBox().setSelected(item.isFollowRedirects);
-
-        // 设置原始数据用于脏检测
-        setOriginalRequestItem(item);
+        return mergedParams;
     }
 
     /**
@@ -740,5 +743,14 @@ public class RequestEditSubPanel extends JPanel {
             paramsPanel.addRow(entry.getKey(), entry.getValue());
         }
     }
-}
 
+    /**
+     * 如果 headers 中不包含指定 Content-Type，则补充，并同步更新 headersPanel
+     */
+    private void ensureContentTypeHeader(Map<String, String> headers, String contentType, EasyNameValueTablePanel headersPanel) {
+        if (!HttpUtil.containsContentType(headers, contentType)) {
+            headers.put("Content-Type", contentType);
+            headersPanel.addRow("Content-Type", contentType);
+        }
+    }
+}

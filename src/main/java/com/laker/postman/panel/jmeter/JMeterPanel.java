@@ -130,7 +130,7 @@ public class JMeterPanel extends BasePanel {
         resultTabbedPane.addTab("结果树", resultSplit);
         // 报表面板
         reportPanel = new JPanel(new BorderLayout());
-        String[] columns = {"接口名称", "总数", "成功", "失败", "QPS", "平均(ms)", "最小(ms)", "最大(ms)", "P99(ms)", "成功率"};
+        String[] columns = {"接口名称", "总数", "成功", "失败", "QPS", "平均(ms)", "最小(ms)", "最大(ms)", "P99(ms)", "总耗时(ms)", "成功率"};
         reportTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -806,7 +806,7 @@ public class JMeterPanel extends BasePanel {
             long totalCost = costs.stream().mapToLong(Long::longValue).sum();
             double apiQps = (totalCost > 0 && apiTotal > 0) ? (apiTotal * 1000.0 / totalCost) : 0;
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
-            reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, String.format("%.2f%%", apiRate)});
+            reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, totalCost, String.format("%.2f%%", apiRate)});
             // 趋势图数据
             for (int i = 0; i < costs.size(); i++) {
                 trendDataset.addValue(costs.get(i), api, String.valueOf(i + 1));
@@ -822,4 +822,3 @@ public class JMeterPanel extends BasePanel {
         return sorted.get(Math.max(idx, 0));
     }
 }
-

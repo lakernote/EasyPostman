@@ -54,7 +54,9 @@ public class EnvironmentPanel extends BasePanel {
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setPreferredSize(new Dimension(250, 400));
         // 顶部搜索+新增
-        JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
+        JPanel searchPanel = new JPanel();
+        searchPanel.setLayout(new BorderLayout(5, 5));
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         searchField = new JTextField();
         searchField.setToolTipText("搜索环境");
 

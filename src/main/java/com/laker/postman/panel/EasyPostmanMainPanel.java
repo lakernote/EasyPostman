@@ -1,6 +1,7 @@
 package com.laker.postman.panel;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.panel.ConsolePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,8 +27,11 @@ public class EasyPostmanMainPanel extends JPanel {
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
         // 顶部菜单栏（含环境选择器）
         add(SingletonFactory.getInstance(TopMenuBarPanel.class), BorderLayout.NORTH);
-        // 创建左侧标签页面板
+        // 中间SidebarTabPanel
         SidebarTabPanel sidebarTabPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
         add(sidebarTabPanel, BorderLayout.CENTER);
+        // 底部控制台面板
+        ConsolePanel consolePanel = SingletonFactory.getInstance(ConsolePanel.class);
+        add(consolePanel, BorderLayout.SOUTH);
     }
 }

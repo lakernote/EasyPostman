@@ -2,21 +2,16 @@ package com.laker.postman.panel;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.jmeter.JMeterPanel;
 import com.laker.postman.util.FontUtil;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -29,14 +24,7 @@ public class SidebarTabPanel extends BasePanel {
 
     private JTabbedPane tabbedPane;
     private List<TabInfo> tabInfos;
-    private JPanel consoleContainer;
-    private JLabel consoleLabel;
-    private JPanel consolePanel;
-    private JSplitPane splitPane;
 
-
-    // 控制台日志区
-    private JTextArea consoleLogArea;
 
     @Override
     protected void initUI() {
@@ -58,97 +46,7 @@ public class SidebarTabPanel extends BasePanel {
             tabbedPane.setTabComponentAt(i, createPostmanTabHeader(info.title, info.icon));
         }
         tabbedPane.setSelectedIndex(0);
-
-        // 2. 控制台日志区
-        consoleContainer = new JPanel(new BorderLayout());
-        consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
-        consoleContainer.setOpaque(false);
-        createConsoleLabel();
-        createConsolePanel();
-        setConsoleExpanded(false);
-    }
-
-    private void createConsolePanel() {
-        // 展开时的 consolePanel，包含日志和关闭按钮
-        consolePanel = new JPanel(new BorderLayout());
-        JLabel title = new JLabel("Console");
-        consoleLogArea = new JTextArea();
-        consoleLogArea.setEditable(false); // 设置为不可编辑
-        consoleLogArea.setLineWrap(true); // 自动换行
-        consoleLogArea.setWrapStyleWord(true); // 换行时按单词换行
-        consoleLogArea.setFocusable(true); // 允许获取焦点，便于复制
-        consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR)); // 显示文本光标
-        JScrollPane logScroll = new JScrollPane(consoleLogArea);
-        logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        logScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        JButton closeBtn = new JButton();
-        closeBtn.setIcon(IconFontSwing.buildIcon(FontAwesome.TIMES, 16, new Color(80, 80, 80)));
-        closeBtn.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
-        closeBtn.setBackground(Colors.PANEL_BACKGROUND);
-        closeBtn.addActionListener(e -> setConsoleExpanded(false));
-
-        // 新增清空按钮
-        JButton clearBtn = new JButton();
-        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
-        clearBtn.setBorder(BorderFactory.createEmptyBorder());
-        clearBtn.setBackground(Colors.PANEL_BACKGROUND);
-        clearBtn.setToolTipText("清空日志");
-        clearBtn.addActionListener(e -> consoleLogArea.setText(""));
-
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(title, BorderLayout.WEST);
-        // 右侧按钮区
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        btnPanel.setOpaque(false);
-        btnPanel.add(clearBtn);
-        btnPanel.add(closeBtn);
-        topPanel.add(btnPanel, BorderLayout.EAST);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-        consolePanel.add(topPanel, BorderLayout.NORTH);
-        consolePanel.add(logScroll, BorderLayout.CENTER);
-    }
-
-    private void setConsoleExpanded(boolean expanded) {
-        removeAll();
-        if (expanded) {
-            consoleContainer.removeAll();
-            consoleContainer.add(consolePanel, BorderLayout.CENTER);
-            splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, consoleContainer);
-            splitPane.setDividerSize(2); // 分割条的大小
-            splitPane.setBorder(null);
-            splitPane.setOneTouchExpandable(true);
-            splitPane.setResizeWeight(1.0); // 让下方panel（console）初始高度最小
-            splitPane.setMinimumSize(new Dimension(0, 10));
-            tabbedPane.setMinimumSize(new Dimension(0, 30));
-            consoleContainer.setMinimumSize(new Dimension(0, 30));
-            add(splitPane, BorderLayout.CENTER);
-            revalidate();
-            repaint();
-            SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(splitPane.getHeight() - 300));
-        } else {
-            add(tabbedPane, BorderLayout.CENTER);
-            consoleContainer.removeAll();
-            consoleContainer.add(consoleLabel, BorderLayout.CENTER);
-            add(consoleContainer, BorderLayout.SOUTH);
-            revalidate();
-            repaint();
-        }
-    }
-
-    private void createConsoleLabel() {
-        consoleLabel = new JLabel("Console");
-        consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
-        consoleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
-        consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
-        consoleLabel.setFocusable(true); // 关键：让label可聚焦
-        consoleLabel.setEnabled(true);
-        consoleLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) { // 用mousePressed替换mouseClicked
-                setConsoleExpanded(true);
-            }
-        });
+        add(tabbedPane, BorderLayout.CENTER);
     }
 
     @Override
@@ -158,19 +56,12 @@ public class SidebarTabPanel extends BasePanel {
         SwingUtilities.invokeLater(() -> ensureTabComponentLoaded(0));
     }
 
-    // Tab切换处理逻辑，便于维护
+    /**
+     * 点击标签页时才加载对应的组件 lazy loading 懒加载
+     */
     private void handleTabChange() {
         int selectedIndex = tabbedPane.getSelectedIndex();
         ensureTabComponentLoaded(selectedIndex);
-        String selectedTitle = tabbedPane.getTitleAt(selectedIndex);
-        switch (selectedTitle) {
-            case "压测":
-                break;
-            case "集合":
-                break;
-            default:
-                break;
-        }
     }
 
     private void ensureTabComponentLoaded(int index) {
@@ -202,17 +93,6 @@ public class SidebarTabPanel extends BasePanel {
         panel.add(titleLabel);
         panel.setBorder(BorderFactory.createEmptyBorder(6, 2, 6, 2));
         return panel;
-    }
-
-    // 控制台日志追加方法
-    public static void appendConsoleLog(String msg) {
-        SidebarTabPanel instance = SingletonFactory.getInstance(SidebarTabPanel.class);
-        if (instance != null && instance.consoleLogArea != null) {
-            SwingUtilities.invokeLater(() -> {
-                instance.consoleLogArea.append(msg + "\n");
-                instance.consoleLogArea.setCaretPosition(instance.consoleLogArea.getText().length());
-            });
-        }
     }
 
     // Tab元数据结构，便于维护和扩展

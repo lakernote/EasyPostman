@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 /**
  * 泛型单例工厂,用于创建和管理单例实例。
@@ -16,6 +15,13 @@ public class SingletonFactory {
 
     /**
      * 获取无参构造的单例实例
+     * “占位符”机制：
+     * 在创建实例前，先往 INSTANCE_MAP 放入一个占位对象，防止递归依赖时重复创建或抛出递归异常。
+     * 这样如果发生循环依赖，后续递归 getInstance 会直接返回占位符，避免死循环或 IllegalStateException。
+     * 这个机制的作用是：
+     * 防止 A 依赖 B，B 又依赖 A 时递归死锁；
+     * 类似 Spring 的三级缓存，允许“半成品”对象先注册，打破依赖环；
+     * 提高健壮性，便于排查和修复循环依赖问题。
      */
     @SuppressWarnings("unchecked")
     public static <T> T getInstance(Class<T> clazz) {
@@ -23,93 +29,28 @@ public class SingletonFactory {
             throw new IllegalArgumentException("Class must not be null");
         }
         log.info("尝试获取单例实例: {}", clazz.getName());
-        return (T) INSTANCE_MAP.computeIfAbsent(clazz, k -> {
-            try {
-                log.info("开始创建单例实例: {}", clazz.getName());
-                var constructor = clazz.getDeclaredConstructor();
-                constructor.setAccessible(true);
-                T instance = constructor.newInstance();
-                log.info("单例实例创建成功: {}", clazz.getName());
-                if (instance instanceof BasePanel panel) {
-                    log.info("初始化面板: {}", clazz.getName());
-                    panel.safeInit();
-                }
-                return instance;
-            } catch (Exception e) {
-                log.error("创建单例失败: {}", clazz.getName(), e);
-                throw new RuntimeException("创建单例失败: " + clazz.getName(), e);
+        // 占位符防止递归依赖
+        Object placeholder = new Object();
+        Object existing = INSTANCE_MAP.putIfAbsent(clazz, placeholder);
+        if (existing != null && existing != placeholder) {
+            return (T) existing;
+        }
+        try {
+            log.info("开始创建单例实例: {}", clazz.getName());
+            var constructor = clazz.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            T instance = constructor.newInstance();
+            log.info("单例实例创建成功: {}", clazz.getName());
+            if (instance instanceof BasePanel panel) {
+                log.info("初始化面板: {}", clazz.getName());
+                panel.safeInit();
             }
-        });
-    }
-
-    /**
-     * 获取带参数构造的单例实例
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T getInstance(Class<T> clazz, Object... args) {
-        if (clazz == null) {
-            throw new IllegalArgumentException("Class must not be null");
+            INSTANCE_MAP.put(clazz, instance); // 替换占位符为真实实例
+            return instance;
+        } catch (Exception e) {
+            log.error("创建单例失败: {}", clazz.getName(), e);
+            INSTANCE_MAP.remove(clazz, placeholder); // 出错时移除占位符
+            throw new RuntimeException("创建单例失败: " + clazz.getName(), e);
         }
-        log.debug("尝试获取带参数构造的单例实例: {}", clazz.getName());
-        return (T) INSTANCE_MAP.computeIfAbsent(clazz, k -> {
-            try {
-                log.info("创建带参数构造的单例实例: {}", clazz.getName());
-                if (args == null || args.length == 0) {
-                    var constructor = clazz.getDeclaredConstructor();
-                    constructor.setAccessible(true);
-                    T instance = constructor.newInstance();
-                    if (instance instanceof BasePanel panel) {
-                        panel.safeInit();
-                    }
-                    return instance;
-                }
-                Class<?>[] argTypes = new Class[args.length];
-                for (int i = 0; i < args.length; i++) {
-                    argTypes[i] = args[i] == null ? Object.class : args[i].getClass();
-                }
-                var constructor = clazz.getDeclaredConstructor(argTypes);
-                constructor.setAccessible(true);
-                T instance = constructor.newInstance(args);
-                if (instance instanceof BasePanel panel) {
-                    panel.safeInit();
-                }
-                return instance;
-            } catch (Exception e) {
-                log.error("创建单例失败: {}", clazz.getName(), e);
-                throw new RuntimeException("创建单例失败: " + clazz.getName(), e);
-            }
-        });
-    }
-
-    /**
-     * 通过自定义工厂方法获取单例实例
-     */
-    public static <T> T getInstance(Class<T> clazz, Supplier<T> supplier) {
-        if (clazz == null || supplier == null) {
-            throw new IllegalArgumentException("Class and supplier must not be null");
-        }
-        log.debug("尝试通过自定义工厂方法获取单例实例: {}", clazz.getName());
-        return clazz.cast(INSTANCE_MAP.computeIfAbsent(clazz, k -> {
-            log.info("通过自定义工厂方法创建单例实例: {}", clazz.getName());
-            return supplier.get();
-        }));
-    }
-
-    /**
-     * 移除指定单例
-     */
-    public static void removeInstance(Class<?> clazz) {
-        if (clazz != null) {
-            log.info("移除单例实例: {}", clazz.getName());
-            INSTANCE_MAP.remove(clazz);
-        }
-    }
-
-    /**
-     * 清空所有单例
-     */
-    public static void clearAll() {
-        log.info("清空所有单例实例");
-        INSTANCE_MAP.clear();
     }
 }

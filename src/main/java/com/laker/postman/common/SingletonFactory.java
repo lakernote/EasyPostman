@@ -33,6 +33,7 @@ public class SingletonFactory {
         Object placeholder = new Object();
         Object existing = INSTANCE_MAP.putIfAbsent(clazz, placeholder);
         if (existing != null && existing != placeholder) {
+            log.info("已存在单例实例: {}", clazz.getName());
             return (T) existing;
         }
         try {

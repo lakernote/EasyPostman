@@ -5,8 +5,9 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.dialog.LargeInputDialog;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.tree.TreeTransferHandler;
@@ -85,7 +86,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
         JButton saveBtn = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
         saveBtn.setText("Save");
         saveBtn.addActionListener(e -> {
-            RequestEditPanel.getInstance().saveCurrentRequest();
+            SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
         });
 
         JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
@@ -198,7 +199,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
             if (selectedNode != null && selectedNode.getUserObject() instanceof Object[] obj) {
                 if ("request".equals(obj[0])) {
                     HttpRequestItem item = (HttpRequestItem) obj[1];
-                    RequestEditPanel.getInstance().showOrCreateTab(item); // 修改为智能Tab切换/新建
+                    SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item); // 修改为智能Tab切换/新建
                 }
             }
         });
@@ -214,7 +215,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
                     if (node.getUserObject() instanceof Object[] obj) {
                         if ("request".equals(obj[0])) {
                             HttpRequestItem item = (HttpRequestItem) obj[1];
-                            RequestEditPanel.getInstance().showOrCreateTab(item);
+                            SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
                         }
                     }
                 }
@@ -304,7 +305,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
                             treeModel.nodeChanged(selectedNode);
                             saveRequestGroups();
                             // 同步更新已打开Tab的标题
-                            RequestEditPanel editPanel = RequestEditPanel.getInstance();
+                            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
                             JTabbedPane tabbedPane = editPanel.getTabbedPane();
                             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                                 Component comp = tabbedPane.getComponentAt(i);
@@ -329,7 +330,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
                 if (selectedNode != null && selectedNode.getParent() != null) {
                     // 先关闭相关Tab
                     Object userObj = selectedNode.getUserObject();
-                    RequestEditPanel editPanel = RequestEditPanel.getInstance();
+                    RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
                     JTabbedPane tabbedPane = editPanel.getTabbedPane();
                     if (userObj instanceof Object[] obj) {
                         if ("request".equals(obj[0])) {
@@ -725,7 +726,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
         persistence.saveRequestGroups();
         // 新增：保存后去除Tab红点
         SwingUtilities.invokeLater(() -> {
-            RequestEditPanel editPanel = RequestEditPanel.getInstance();
+            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
             JTabbedPane tabbedPane = editPanel.getTabbedPane();
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 Component comp = tabbedPane.getComponentAt(i);

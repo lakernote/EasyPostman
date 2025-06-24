@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.edit;
 
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tab.PlusTabComponent;
 import com.laker.postman.model.HttpRequestItem;
@@ -19,34 +20,10 @@ import java.awt.event.KeyEvent;
  * 请求编辑面板，支持多标签页，每个标签页为独立的请求编辑子面板
  */
 @Slf4j
-public class RequestEditPanel extends JPanel {
+public class RequestEditPanel extends BasePanel {
     @Getter
-    private final JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
+    private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
-    private static RequestEditPanel INSTANCE; // 单例模式
-
-    public static RequestEditPanel getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new RequestEditPanel();
-        }
-        return INSTANCE;
-    }
-
-    private RequestEditPanel() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        tabbedPane = new JTabbedPane();
-        add(tabbedPane, BorderLayout.CENTER);
-        addNewTab("请求1");
-        setupSaveShortcut();
-        // 新增：监听tab切换，选中“+”Tab时自动新增
-        tabbedPane.addChangeListener(e -> {
-            int idx = tabbedPane.getSelectedIndex();
-            if (idx == tabbedPane.getTabCount() - 1 && isPlusTab(idx)) {
-                addNewTab(null);
-            }
-        });
-    }
 
     // 新建Tab，可指定标题
     public void addNewTab(String title) {
@@ -320,5 +297,27 @@ public class RequestEditPanel extends JPanel {
         if (tabComp instanceof ClosableTabComponent closable) {
             closable.setDirty(dirty);
         }
+    }
+
+    @Override
+    protected void initUI() {
+        setLayout(new BorderLayout());
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        tabbedPane = new JTabbedPane();
+        add(tabbedPane, BorderLayout.CENTER);
+        addNewTab("请求1");
+        setupSaveShortcut();
+        // 监听tab切换，选中“+”Tab时自动新增
+        tabbedPane.addChangeListener(e -> {
+            int idx = tabbedPane.getSelectedIndex();
+            if (idx == tabbedPane.getTabCount() - 1 && isPlusTab(idx)) {
+                addNewTab(null);
+            }
+        });
+    }
+
+    @Override
+    protected void registerListeners() {
+
     }
 }

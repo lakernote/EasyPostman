@@ -88,11 +88,12 @@ public class EnvironmentPanel extends BasePanel {
         // 变量表格
         variablesTablePanel = new EasyNameValueTablePanel();
         JScrollPane tableScrollPane = new JScrollPane(variablesTablePanel);
-        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5));
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 5));
         rightPanel.add(tableScrollPane, BorderLayout.CENTER);
 
         // 变量操作按钮
         JPanel varButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        varButtonPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 5, 5));
         JButton saveVarButton = new JButton("Save");
         saveVarButton.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 14, new Color(0, 0, 150)));
         saveVarButton.addActionListener(e -> saveVariables());
@@ -105,6 +106,7 @@ public class EnvironmentPanel extends BasePanel {
     @NotNull
     private JPanel getImportExportPanel() {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        importExportPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         JButton importBtn = new JButton(new FlatSVGIcon("icons/upload.svg", 20, 20));
         importBtn.setText("Import");
         importBtn.setToolTipText("导入环境变量");

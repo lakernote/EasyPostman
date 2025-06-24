@@ -70,7 +70,8 @@ public class HistoryPanel extends BasePanel {
             }
         });
         JScrollPane listScroll = new JScrollPane(historyList);
-        listScroll.setPreferredSize(new Dimension(200, 240));
+        listScroll.setPreferredSize(new Dimension(220, 240));
+        listScroll.setMinimumSize(new Dimension(220, 240));
         listScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
 
 

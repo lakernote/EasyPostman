@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import java.awt.*;
@@ -106,15 +107,15 @@ public class RequestEditSubPanel extends JPanel {
         methodBox = requestLinePanel.getMethodBox();
         urlField = requestLinePanel.getUrlField();
         urlField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+            public void insertUpdate(DocumentEvent e) {
                 parseUrlParamsToParamsPanel();
             }
 
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 parseUrlParamsToParamsPanel();
             }
 
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 parseUrlParamsToParamsPanel();
             }
         });
@@ -523,6 +524,7 @@ public class RequestEditSubPanel extends JPanel {
         // 拆解URL参数
         String url = item.getUrl();
         urlField.setText(url);
+        urlField.setCaretPosition(0); // 设置光标到开头
         // 如果URL中有参数，解析到paramsPanel
         Map<String, String> mergedParams = getMergedParams(item.getParams(), url);
         // 更新参数面板

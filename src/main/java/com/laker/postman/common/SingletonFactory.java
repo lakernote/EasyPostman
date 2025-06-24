@@ -55,6 +55,7 @@ public class SingletonFactory {
                 panel.safeInit();
             }
             INSTANCE_MAP.put(clazz, instance); // 替换占位符为真实实例
+            log.info("单例实例已注册到 INSTANCE_MAP: {}", clazz.getName());
             return instance;
         } catch (Exception e) {
             log.error("创建单例失败: {}", clazz.getName(), e);

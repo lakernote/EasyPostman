@@ -110,8 +110,7 @@ public class RequestEditPanel extends JPanel {
         for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
             Component comp = tabbedPane.getComponentAt(i);
             if (comp instanceof RequestEditSubPanel subPanel) {
-                HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                if (id.equals(tabItem.getId())) {
+                if (id.equals(subPanel.getId())) {
                     tabbedPane.setSelectedIndex(i);
                     subPanel.updateRequestForm(item);
                     return;

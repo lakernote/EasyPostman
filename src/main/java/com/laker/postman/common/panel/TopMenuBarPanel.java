@@ -28,10 +28,9 @@ import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
 public class TopMenuBarPanel extends AbstractBasePanel {
-
-    private static TopMenuBarPanel instance;
     @Getter
     private EnvironmentComboBox environmentComboBox;
+
     private JMenuBar menuBar;
 
     @Override
@@ -49,9 +48,7 @@ public class TopMenuBarPanel extends AbstractBasePanel {
     @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler((e) -> {
-            ExitDialog.show();
-        });
+        FlatDesktop.setQuitHandler((e) -> ExitDialog.show());
     }
 
     private void initComponents() {

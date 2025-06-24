@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import cn.hutool.core.map.MapUtil;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -101,38 +102,18 @@ public class HttpRequestExecutor {
             log.error("", exception);
         }
         req.headers = HttpService.processHeaders(headers);
-        // 判断 x-www-form-urlencoded
-        boolean isFormUrlencoded = false;
-        for (String key : req.headers.keySet()) {
-            if ("Content-Type".equalsIgnoreCase(key) &&
-                    req.headers.get(key) != null &&
-                    req.headers.get(key).toLowerCase().contains("application/x-www-form-urlencoded")) {
-                isFormUrlencoded = true;
-                break;
+        // x-www-form-urlencoded 逻辑
+        if (MapUtil.isNotEmpty(item.getUrlencoded())) {
+            req.urlencoded = item.getUrlencoded();
+            // 生成body字符串
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
+                if (!sb.isEmpty()) sb.append("&");
+                sb.append(HttpUtil.encodeURIComponent(entry.getKey()))
+                        .append("=")
+                        .append(HttpUtil.encodeURIComponent(entry.getValue()));
             }
-        }
-        if (isFormUrlencoded && item.getFormData() == null && item.getFormFiles() == null) {
-            // 解析 body 为 k=v&k2=v2 结构，转为编码后字符串
-            String body = item.getBody();
-            if (body != null && !body.isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                String[] pairs = body.split("&");
-                for (String pair : pairs) {
-                    int idx = pair.indexOf('=');
-                    if (idx > 0) {
-                        String k = pair.substring(0, idx);
-                        String v = pair.substring(idx + 1);
-                        if (!sb.isEmpty()) sb.append("&");
-                        sb.append(HttpUtil.encodeURIComponent(k)).append("=").append(HttpUtil.encodeURIComponent(v));
-                    } else if (!pair.isEmpty()) {
-                        if (!sb.isEmpty()) sb.append("&");
-                        sb.append(HttpUtil.encodeURIComponent(pair)).append("=");
-                    }
-                }
-                req.body = sb.toString();
-            } else {
-                req.body = "";
-            }
+            req.body = sb.toString();
         } else {
             req.body = EnvironmentService.replaceVariables(item.getBody());
         }
@@ -141,7 +122,6 @@ public class HttpRequestExecutor {
             req.formData = item.getFormData();
             req.formFiles = item.getFormFiles();
         }
-        // 新增：默认自动重定向，后续可由UI赋值
         req.followRedirects = item.isFollowRedirects != null ? item.isFollowRedirects : true;
         return req;
     }
@@ -149,7 +129,10 @@ public class HttpRequestExecutor {
     public static HttpResponse execute(PreparedRequest req) throws Exception {
         long start = System.currentTimeMillis();
         HttpResponse resp;
-        if (req.isMultipart) {
+        // x-www-form-urlencoded 逻辑
+        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
+        } else if (req.isMultipart) {
             resp = HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
         } else {
             resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);

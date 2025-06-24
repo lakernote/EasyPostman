@@ -182,14 +182,8 @@ public class RequestBodyPanel extends JPanel {
         return formFiles;
     }
 
-    public String getFormUrlencodedBody() {
+    public Map<String, String> getUrlencoded() {
         if (formUrlencodedTablePanel == null) return null;
-        StringBuilder sb = new StringBuilder();
-        java.util.Map<String, String> map = formUrlencodedTablePanel.getMap();
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            if (!sb.isEmpty()) sb.append("&");
-            sb.append(entry.getKey()).append("=").append(entry.getValue() == null ? "" : entry.getValue());
-        }
-        return sb.toString();
+        return formUrlencodedTablePanel.getMap();
     }
 }

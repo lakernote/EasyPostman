@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -153,14 +154,14 @@ public class PostmanImport {
                 } else if ("urlencoded".equals(mode)) {
                     JSONArray arr = body.getJSONArray("urlencoded");
                     if (arr != null && !arr.isEmpty()) {
-                        Map<String, String> formData = new LinkedHashMap<>();
+                        Map<String, String> urlencoded = new LinkedHashMap<>();
                         for (Object o : arr) {
                             JSONObject oObj = (JSONObject) o;
                             if (!oObj.getBool("disabled", false)) {
-                                formData.put(oObj.getStr("key", ""), oObj.getStr("value", ""));
+                                urlencoded.put(oObj.getStr("key", ""), oObj.getStr("value", ""));
                             }
                         }
-                        req.setFormData(formData);
+                        req.setUrlencoded(urlencoded);
                     }
                 }
             }
@@ -281,7 +282,8 @@ public class PostmanImport {
                 }
                 url.put("query", queryArr);
             }
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         // 额外合并 params
         if (item.getParams() != null && !item.getParams().isEmpty()) {
             JSONArray queryArr = url.containsKey("query") ? url.getJSONArray("query") : new JSONArray();
@@ -335,18 +337,15 @@ public class PostmanImport {
             request.put("body", body);
         }
         // urlencoded
-        else if (item.getHeaders() != null && item.getHeaders().containsKey("Content-Type") &&
-                "application/x-www-form-urlencoded".equalsIgnoreCase(item.getHeaders().get("Content-Type")) &&
-                item.getBody() != null && !item.getBody().isEmpty()) {
+        else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
             JSONObject body = new JSONObject();
             body.put("mode", "urlencoded");
             JSONArray arr = new JSONArray();
-            String[] pairs = item.getBody().split("&");
-            for (String pair : pairs) {
-                String[] kv = pair.split("=", 2);
+            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
                 JSONObject o = new JSONObject();
-                o.put("key", kv[0]);
-                o.put("value", kv.length > 1 ? kv[1] : "");
+                o.put("key", entry.getKey());
+                o.put("value", entry.getValue());
+                o.put("type", "text");
                 arr.add(o);
             }
             body.put("urlencoded", arr);

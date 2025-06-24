@@ -27,6 +27,8 @@ public class HttpRequestItem implements Serializable {
     private Map<String, String> formData = new LinkedHashMap<>();
     // form-data 文件字段（key=字段名，value=文件绝对路径）
     private Map<String, String> formFiles = new LinkedHashMap<>();
+    // x-www-form-urlencoded 字段
+    private Map<String, String> urlencoded = new LinkedHashMap<>();
 
     // 变量提取规则列表，存储为[变量名, JSON路径]的对象列表
     private List<ExtractorRule> extractorRules = new ArrayList<>();

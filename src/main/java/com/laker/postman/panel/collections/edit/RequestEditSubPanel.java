@@ -519,11 +519,9 @@ public class RequestEditSubPanel extends JPanel {
         this.name = item.getName();
         // 拆解URL参数
         String url = item.getUrl();
-        String baseUrl = url;
         Map<String, String> urlParams = new LinkedHashMap<>();
         if (url != null && url.contains("?")) {
             int idx = url.indexOf('?');
-            baseUrl = url.substring(0, idx);
             String paramStr = url.substring(idx + 1);
             // 拆解参数并urldecode
             int last = 0;
@@ -575,24 +573,14 @@ public class RequestEditSubPanel extends JPanel {
                     formDataTablePanel.addRow(entry.getKey(), "File", entry.getValue());
                 }
             }
-        } else if ("POST".equalsIgnoreCase(item.getMethod()) &&
-                "application/x-www-form-urlencoded".equalsIgnoreCase(item.getHeaders().get("Content-Type"))) {
+        } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
             // 处理 POST-x-www-form-urlencoded
             requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
             EasyTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             urlencodedTablePanel.clear();
-            String body = item.getBody();
-            if (StrUtil.isNotBlank(body)) {
-                String[] pairs = body.split("&");
-                for (String pair : pairs) {
-                    int idx = pair.indexOf('=');
-                    if (idx > 0) {
-                        String k = pair.substring(0, idx);
-                        String v = pair.substring(idx + 1);
-                        urlencodedTablePanel.addRow(k, v);
-                    } else if (!pair.isEmpty()) {
-                        urlencodedTablePanel.addRow(pair, "");
-                    }
+            if (item.getUrlencoded() != null) {
+                for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
+                    urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());
                 }
             }
         }
@@ -638,9 +626,10 @@ public class RequestEditSubPanel extends JPanel {
                 item.getHeaders().put("Content-Type", "multipart/form-data");
             }
         } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(bodyType)) {
-            item.setBody(requestBodyPanel.getFormUrlencodedBody());
+            item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
+            item.setUrlencoded(requestBodyPanel.getUrlencoded());
             // x-www-form-urlencoded: 如果请求头没有设置 application/x-www-form-urlencoded，则补充（忽略大小写）
             if (!HttpUtil.containsContentType(item.getHeaders(), "application/x-www-form-urlencoded")) {
                 item.getHeaders().put("Content-Type", "application/x-www-form-urlencoded");

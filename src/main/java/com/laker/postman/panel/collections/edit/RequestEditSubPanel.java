@@ -5,10 +5,10 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.panel.ConsolePanel;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
@@ -307,13 +307,13 @@ public class RequestEditSubPanel extends JPanel {
                         bindings,
                         output -> {
                             if (!output.isBlank()) {
-                                SingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog("[PreScript Console]\n" + output);
+                                SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
                             }
                         }
                 );
             } catch (Exception ex) {
                 log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                SingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog("[PreScript Error] " + ex.getMessage());
+                SidebarTabPanel.appendConsoleLog("[PreScript Error] " + ex.getMessage());
                 JOptionPane.showMessageDialog(this, "前置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -479,7 +479,7 @@ public class RequestEditSubPanel extends JPanel {
                                 bindings,
                                 output -> {
                                     if (!output.isBlank()) {
-                                        SingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog("[PostScript Console]\n" + output);
+                                        SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
                                     }
                                 }
                         );
@@ -490,7 +490,7 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     } catch (Exception ex) {
                         log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                        SingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog("[PostScript Error] " + ex.getMessage());
+                        SidebarTabPanel.appendConsoleLog("[PostScript Error] " + ex.getMessage());
                         JOptionPane.showMessageDialog(RequestEditSubPanel.this, "后置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
                     }
                 }

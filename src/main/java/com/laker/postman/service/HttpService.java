@@ -79,12 +79,29 @@ public class HttpService {
         Request.Builder builder = new Request.Builder().url(urlString);
         RequestBody requestBody = null;
         String methodUpper = method.toUpperCase();
+        String contentType = null;
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                if ("Content-Type".equalsIgnoreCase(entry.getKey()) && entry.getValue() != null && !entry.getValue().isEmpty()) {
+                    contentType = entry.getValue();
+                    break;
+                }
+            }
+        }
         // 只为非GET/HEAD方法设置请求体，GET/HEAD不允许有body
         if (!"GET".equals(methodUpper) && !"HEAD".equals(methodUpper)) {
             if (body != null && !body.isEmpty()) {
-                requestBody = RequestBody.create(body, MediaType.parse("application/json; charset=utf-8"));
+                if (contentType == null) {
+                    contentType = "application/json; charset=utf-8";
+                }
+                requestBody = RequestBody.create(body, MediaType.parse(contentType));
             } else {
-                requestBody = RequestBody.create(new byte[0], MediaType.parse("application/json; charset=utf-8"));
+                // OkHttp 要求 POST/PUT/PATCH/DELETE 必须有 requestBody
+                if (contentType != null) {
+                    requestBody = RequestBody.create(new byte[0], MediaType.parse(contentType));
+                } else {
+                    requestBody = RequestBody.create(new byte[0], null);
+                }
             }
         }
         builder.method(methodUpper, requestBody);

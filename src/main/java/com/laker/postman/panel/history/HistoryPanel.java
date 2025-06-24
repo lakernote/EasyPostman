@@ -1,8 +1,8 @@
 package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.constants.Colors;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JComponentUtils;
@@ -60,7 +60,6 @@ public class HistoryPanel extends BasePanel {
                     label.setBackground(new Color(180, 215, 255));
                 } else {
                     label.setFont(label.getFont().deriveFont(Font.PLAIN));
-                    label.setBackground(Color.WHITE);
                 }
                 return label;
             }

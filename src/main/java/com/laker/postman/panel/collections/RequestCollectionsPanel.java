@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * 请求集合面板，包含左侧的请求集合列表和右侧的请求编辑面板
+ */
 @Slf4j
 public class RequestCollectionsPanel extends BasePanel {
     @Override
@@ -15,7 +18,9 @@ public class RequestCollectionsPanel extends BasePanel {
         // 设置布局为 BorderLayout
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+        // 1.创建左侧的请求集合面板
         RequestCollectionsSubPanel requestCollectionsSubPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
+        // 2. 创建右侧的请求编辑面板
         RequestEditPanel rightRequestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class); // 创建请求编辑面板实例
         // 创建水平分割面板，将左侧的集合面板和右侧的请求编辑面板放入其中
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsSubPanel, rightRequestEditPanel);

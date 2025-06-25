@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.edit;
 import lombok.Getter;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionListener;
 
 /**
@@ -14,6 +15,8 @@ public class RequestLinePanel extends JPanel {
     private final JTextField urlField;
     private final JButton sendButton;
     private final JCheckBox followRedirectsCheckBox;
+    private final Color defaultButtonColor;
+    private final Color textColor;
 
     public RequestLinePanel(ActionListener sendAction) {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -25,12 +28,42 @@ public class RequestLinePanel extends JPanel {
         add(urlField);
         add(Box.createHorizontalStrut(10));
         sendButton = new JButton("Send");
+        defaultButtonColor = sendButton.getBackground();
+        textColor = sendButton.getForeground();
         sendButton.addActionListener(sendAction);
         add(sendButton);
         add(Box.createHorizontalStrut(10));
         followRedirectsCheckBox = new JCheckBox("Follow Redirects", true);
         add(followRedirectsCheckBox);
         add(Box.createHorizontalGlue());
+    }
+
+    /**
+     * 切换按钮为 Send 状态
+     */
+    public void setSendButtonToSend(ActionListener sendAction) {
+        for (ActionListener al : sendButton.getActionListeners()) {
+            sendButton.removeActionListener(al);
+        }
+        sendButton.setText("Send");
+        sendButton.setBackground(defaultButtonColor); // Postman浅蓝色
+        sendButton.setForeground(textColor);
+        sendButton.setEnabled(true);
+        sendButton.addActionListener(sendAction);
+    }
+
+    /**
+     * 切换按钮为 Cancel 状态
+     */
+    public void setSendButtonToCancel(ActionListener cancelAction) {
+        for (ActionListener al : sendButton.getActionListeners()) {
+            sendButton.removeActionListener(al);
+        }
+        sendButton.setText("Cancel");
+        sendButton.setBackground(new java.awt.Color(0xD9D9D9)); // Postman浅灰色
+        sendButton.setForeground(new java.awt.Color(0x333333)); // 深灰文字
+        sendButton.setEnabled(true);
+        sendButton.addActionListener(cancelAction);
     }
 
 }

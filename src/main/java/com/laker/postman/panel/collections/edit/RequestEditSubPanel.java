@@ -26,6 +26,7 @@ import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.InterruptedIOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,7 +60,9 @@ public class RequestEditSubPanel extends JPanel {
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final JTextArea redirectChainArea; // 重定向链文本区域
-    private String lastResponseFilePath; // 保存最近一次响应的文件路径
+
+    // 当前请求的 SwingWorker，用于支持取消
+    private volatile SwingWorker<Void, Void> currentWorker;
 
     /**
      * 设置原始请求数据（脏数据检测）
@@ -290,6 +293,14 @@ public class RequestEditSubPanel extends JPanel {
 
     // sendRequest方法替换为调用executeWithRedirects
     private void sendRequest(ActionEvent e) {
+        // 如果当前有请求正在进行，则视为取消操作
+        if (currentWorker != null) {
+            currentWorker.cancel(true);
+            requestLinePanel.setSendButtonToSend(this::sendRequest);
+            statusCodeLabel.setText("Status: Canceled");
+            statusCodeLabel.setForeground(new Color(255, 140, 0));
+            return;
+        }
         HttpRequestItem item = getCurrentRequest();
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
         Postman postman = new Postman(activeEnv);
@@ -344,7 +355,9 @@ public class RequestEditSubPanel extends JPanel {
         responseTimeLabel.setText("Duration: --");
         responseSizeLabel.setText("ResponseSize: --");
         long startTime = System.currentTimeMillis();
-        new SwingWorker<Void, Void>() {
+        // 切换按钮为 Cancel
+        requestLinePanel.setSendButtonToCancel(this::sendRequest);
+        currentWorker = new SwingWorker<>() {
             String requestHeadersText;
             String statusText;
             String headersText;
@@ -382,6 +395,8 @@ public class RequestEditSubPanel extends JPanel {
                     bodyText = resp.body;
                     responseTime = System.currentTimeMillis() - startTime;
                     return null;
+                } catch (InterruptedIOException ignore) {
+                    log.info("{} 请求被取消", req.url);
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     statusText = "发生错误: " + ex.getMessage();
@@ -422,8 +437,14 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 responseHeadersPanel.setHeadersText(headersText);
-                lastResponseFilePath = (resp != null) ? resp.filePath : null;
-                setResponseBody(resp);
+                if (resp != null) {
+                    setResponseBody(resp);
+                } else {
+                    responseBodyPanel.setBodyText(null);
+                    if (redirectChainArea != null) {
+                        redirectChainArea.setText(redirectChainText);
+                    }
+                }
                 responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
                 if (redirectChainArea != null) {
                     redirectChainArea.setText(redirectChainText);
@@ -448,7 +469,7 @@ public class RequestEditSubPanel extends JPanel {
                 if (bodyText != null) {
                     bytes = bodyText.getBytes().length;
                 }
-                if (resp.filePath != null) {
+                if (resp != null && resp.filePath != null) {
                     // 如果有文件路径，显示文件大小
                     File file = new File(resp.filePath);
                     if (file.exists()) {
@@ -469,7 +490,7 @@ public class RequestEditSubPanel extends JPanel {
 
                 // postscript 执行
                 String postscript = item.getPostscript();
-                if (postscript != null && !postscript.isBlank()) {
+                if (postscript != null && !postscript.isBlank() && resp != null) {
                     try {
                         bindings.put("responseBody", bodyText);
                         bindings.put("responseHeaders", headersText);
@@ -499,16 +520,22 @@ public class RequestEditSubPanel extends JPanel {
                     autoExecuteExtractorRules(bodyText);
                 }
                 // 保存到历史
-                SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(
-                        req.method,
-                        req.url,
-                        req.body,
-                        requestHeadersText,
-                        headersText,
-                        resp
-                );
+                if (resp != null) {
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(
+                            req.method,
+                            req.url,
+                            req.body,
+                            requestHeadersText,
+                            headersText,
+                            resp
+                    );
+                }
+                // 恢复按钮为 Send
+                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                currentWorker = null;
             }
-        }.execute();
+        };
+        currentWorker.execute();
     }
 
     /**

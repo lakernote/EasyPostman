@@ -38,6 +38,9 @@ public class ResponseBodyPanel extends JPanel {
     }
 
     public void setBodyText(HttpResponse resp) {
+        if (resp == null) {
+            return;
+        }
         // 提取Content-Disposition文件名
         String contentDisposition = null;
         if (resp.headers != null) {

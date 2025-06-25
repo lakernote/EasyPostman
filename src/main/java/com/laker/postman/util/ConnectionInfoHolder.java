@@ -57,9 +57,9 @@ public class ConnectionInfoHolder {
         public void secureConnectEnd(@NotNull Call call, Handshake handshake) {
             info.setSecureConnectEnd(System.currentTimeMillis());
             if (handshake != null) {
-                info.setTlsVersion(handshake.tlsVersion().javaName());
-                info.setPeerCertificates(handshake.peerCertificates());
-                info.setLocalCertificates(handshake.localCertificates());
+                info.setTlsVersion(handshake.tlsVersion().javaName());  // 获取 TLS 版本
+                info.setPeerCertificates(handshake.peerCertificates()); // 获取对端证书信息
+                info.setLocalCertificates(handshake.localCertificates()); // 获取证书信息
             }
         }
 

@@ -4,9 +4,9 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Colors;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
@@ -614,7 +614,6 @@ public class JMeterPanel extends BasePanel {
                     case TIMER -> {
                         propertyCardLayout.show(propertyPanel, "timer");
                         timerPanel.setTimerData(jtNode);
-                        timerPanel.requestFocusInField();
                     }
                     default -> propertyCardLayout.show(propertyPanel, "empty");
                 }

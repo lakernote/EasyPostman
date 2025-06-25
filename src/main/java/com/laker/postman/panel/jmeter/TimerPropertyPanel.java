@@ -64,8 +64,4 @@ public class TimerPropertyPanel extends JPanel {
         }
         data.delayMs = (Integer) delaySpinner.getValue();
     }
-
-    public void requestFocusInField() {
-        delaySpinner.requestFocusInWindow();
-    }
 }

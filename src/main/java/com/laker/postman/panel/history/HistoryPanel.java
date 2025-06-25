@@ -190,14 +190,6 @@ public class HistoryPanel extends BasePanel {
                 }
                 sb.append("</pre>");
             }
-            if (item.request.urlencoded != null && !item.request.urlencoded.isEmpty()) {
-                hasForm = true;
-                sb.append("<b>x-www-form-urlencoded</b><br><pre style='margin:0;'>");
-                for (var entry : item.request.urlencoded.entrySet()) {
-                    sb.append(escapeHtml(entry.getKey())).append(" = ").append(escapeHtml(entry.getValue())).append("\n");
-                }
-                sb.append("</pre>");
-            }
             if (!hasForm && item.request.body != null && !item.request.body.isEmpty()) {
                 sb.append("<pre style='margin:0;'>").append(escapeHtml(item.request.body)).append("</pre>");
             }
@@ -225,7 +217,8 @@ public class HistoryPanel extends BasePanel {
         }
         sb.append("</pre>");
         // ====== 响应体部分 ======
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>[Response Body]</b></div>");
+        sb.append("<div style='margin:8px 0 4px 0;'><b style='color:#388e3c;'>[Response Body]</b></div>");
+        sb.append("<pre style='margin:0;'>");
         if (item.response != null && item.response.body != null && !item.response.body.isEmpty()) {
             sb.append(escapeHtml(item.response.body));
         } else {

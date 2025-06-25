@@ -14,4 +14,5 @@ public class HttpResponse {
     public String connectionInfo; // 连接信息字段
     public String filePath; // 下载文件路径字段
     public long costMs; // 请求耗时，单位毫秒
+    public String protocol; // 协议类型字段，例如 HTTP/1.1 或 HTTP/2
 }

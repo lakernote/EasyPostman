@@ -130,6 +130,7 @@ public class HttpService {
         response.connectionInfo = lastConnectionInfo.get();
         lastConnectionInfo.remove();
         response.threadName = Thread.currentThread().getName();
+        response.protocol = okResponse.protocol().toString();
         // 检查是否为二进制内容
         String contentType = okResponse.header("Content-Type", "");
         if (contentType != null && (contentType.toLowerCase().contains("application/octet-stream")

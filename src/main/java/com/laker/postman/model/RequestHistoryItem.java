@@ -13,7 +13,8 @@ public class RequestHistoryItem {
     public final String responseHeaders;
     public final long timestamp;
     public String threadName; // 执行线程名
-    public String connectionInfo; // 新增：连接信息
+    public String connectionInfo; // 连接信息
+    public HttpResponse response;
 
     public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp) {
         this.method = method;
@@ -26,15 +27,13 @@ public class RequestHistoryItem {
         this.timestamp = timestamp;
     }
 
-    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, String threadName) {
+    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, HttpResponse response) {
         this(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, timestamp);
-        this.threadName = threadName;
+        this.threadName = response.threadName;
+        this.connectionInfo = response.connectionInfo;
+        this.response = response;
     }
 
-    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, String threadName, String connectionInfo) {
-        this(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, timestamp, threadName);
-        this.connectionInfo = connectionInfo;
-    }
 
     @Override
     public String toString() {

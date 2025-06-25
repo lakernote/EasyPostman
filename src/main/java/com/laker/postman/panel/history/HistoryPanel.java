@@ -3,6 +3,7 @@ package com.laker.postman.panel.history;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JComponentUtils;
@@ -127,7 +128,7 @@ public class HistoryPanel extends BasePanel {
     }
 
     // 支持带重定向链、线程名和连接信息的历史记录
-    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String threadName, String connectionInfo) {
+    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, HttpResponse resp) {
         RequestHistoryItem item = new RequestHistoryItem(
                 method,
                 url,
@@ -137,8 +138,7 @@ public class HistoryPanel extends BasePanel {
                 responseHeaders,
                 responseBody,
                 System.currentTimeMillis(),
-                threadName,
-                connectionInfo
+                resp
         );
         if (historyListModel != null) {
             historyListModel.add(0, item);
@@ -151,6 +151,9 @@ public class HistoryPanel extends BasePanel {
         sb.append("<html><body style='font-family:monospace;font-size:9px;'>");
         sb.append("<b>【方法】</b> <span style='color:#1976d2;'>").append(item.method).append("</span> ");
         sb.append("<b>【URL】</b> <span style='color:#388e3c;'>").append(item.url).append("</span><br><br>");
+        sb.append("<b>【协议】</b> <span style='color:#1976d2;'>")
+                .append(item.response != null && item.response.protocol != null ? item.response.protocol : "(未知)")
+                .append("</span><br><br>");
         sb.append("<b>【执行线程】</b> <span style='color:#d2691e;'>").append(item.threadName == null ? "(无)" : item.threadName).append("</span><br><br>");
         if (item.connectionInfo != null && !item.connectionInfo.isEmpty()) {
             sb.append("<b>【连接】</b> <span style='color:#1976d2;'>").append(escapeHtml(item.connectionInfo)).append("</span><br><br>");

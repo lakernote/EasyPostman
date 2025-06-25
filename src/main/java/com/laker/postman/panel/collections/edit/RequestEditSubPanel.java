@@ -507,8 +507,7 @@ public class RequestEditSubPanel extends JPanel {
                         statusText,
                         headersText,
                         bodyText,
-                        resp.threadName,
-                        resp.connectionInfo
+                        resp
                 );
             }
         }.execute();

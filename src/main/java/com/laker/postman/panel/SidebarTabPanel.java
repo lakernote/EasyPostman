@@ -33,8 +33,6 @@ public class SidebarTabPanel extends BasePanel {
     private JLabel consoleLabel;
     private JPanel consolePanel;
     private JSplitPane splitPane;
-
-
     // 控制台日志区
     private JTextArea consoleLogArea;
 
@@ -141,11 +139,11 @@ public class SidebarTabPanel extends BasePanel {
         consoleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
-        consoleLabel.setFocusable(true); // 关键：让label可聚焦
-        consoleLabel.setEnabled(true);
+        consoleLabel.setFocusable(true); // 让label可聚焦
+        consoleLabel.setEnabled(true); // 确保label可用
         consoleLabel.addMouseListener(new MouseAdapter() {
             @Override
-            public void mousePressed(MouseEvent e) { // 用mousePressed替换mouseClicked
+            public void mousePressed(MouseEvent e) {
                 setConsoleExpanded(true);
             }
         });
@@ -158,19 +156,10 @@ public class SidebarTabPanel extends BasePanel {
         SwingUtilities.invokeLater(() -> ensureTabComponentLoaded(0));
     }
 
-    // Tab切换处理逻辑，便于维护
+    // Tab切换时才加载真正的面板内容
     private void handleTabChange() {
         int selectedIndex = tabbedPane.getSelectedIndex();
         ensureTabComponentLoaded(selectedIndex);
-        String selectedTitle = tabbedPane.getTitleAt(selectedIndex);
-        switch (selectedTitle) {
-            case "压测":
-                break;
-            case "集合":
-                break;
-            default:
-                break;
-        }
     }
 
     private void ensureTabComponentLoaded(int index) {
@@ -178,7 +167,7 @@ public class SidebarTabPanel extends BasePanel {
         TabInfo info = tabInfos.get(index);
         Component comp = tabbedPane.getComponentAt(index);
         if (comp == null || comp.getClass() == JPanel.class) {
-            JPanel realPanel = info.getPanel();
+            JPanel realPanel = info.getPanel(); // 懒加载真正的面板内容
             tabbedPane.setComponentAt(index, realPanel);
         }
     }
@@ -228,7 +217,7 @@ public class SidebarTabPanel extends BasePanel {
             this.panelSupplier = panelSupplier;
         }
 
-        JPanel getPanel() {
+        JPanel getPanel() { // 懒加载面板
             if (panel == null) {
                 panel = panelSupplier.get();
                 log.info("Loaded panel for tab: {}", title);

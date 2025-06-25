@@ -86,12 +86,40 @@ if errorlevel 1 (
 :: Generate a new ProductCode for each build
 for /f %%i in ('powershell -Command "[guid]::NewGuid().ToString()"') do set PRODUCT_CODE=%%i
 
+:: Debugging: Print the generated ProductCode
+echo Generated ProductCode: %PRODUCT_CODE%
+
 :: Step 4: Package with jpackage
 if not exist "%ICON_DIR%" (
     echo Icon file not found: "%ICON_DIR%"
     pause
     exit /b 1
 )
+
+:: Debugging: Print the full jpackage command
+echo Running jpackage with the following command:
+echo jpackage ^
+    --input %DIST_INPUT_DIR% ^
+    --main-jar %JAR_NAME% ^
+    --main-class %MAIN_CLASS% ^
+    --runtime-image target\runtime ^
+    --type msi ^
+    --name "%APP_NAME%" ^
+    --app-version "%VERSION%" ^
+    --dest "%OUTPUT_DIR%" ^
+    --icon "%ICON_DIR%" ^
+    --vendor "Laker" ^
+    --copyright "© 2025 Laker" ^
+    --win-shortcut ^
+    --win-menu ^
+    --win-dir-chooser ^
+    --win-per-user-install ^
+    --win-menu-group "EasyTools" ^
+    --win-help-url "https://gitee.com/lakernote/easy-postman" ^
+    --java-options "-Xms128m" ^
+    --java-options "-Xmx256m" ^
+    --java-options "-Dfile.encoding=UTF-8" ^
+    --win-product-code "%PRODUCT_CODE%"
 
 jpackage ^
     --input %DIST_INPUT_DIR% ^
@@ -107,7 +135,6 @@ jpackage ^
     --copyright "© 2025 Laker" ^
     --win-shortcut ^
     --win-menu ^
-    --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" ^
     --win-dir-chooser ^
     --win-per-user-install ^
     --win-menu-group "EasyTools" ^

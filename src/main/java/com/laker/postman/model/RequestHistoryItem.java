@@ -12,8 +12,6 @@ public class RequestHistoryItem {
     public final String responseBody;
     public final String responseHeaders;
     public final long timestamp;
-    // 用于存储重定向链
-    public String extra;
     public String threadName; // 执行线程名
     public String connectionInfo; // 新增：连接信息
 

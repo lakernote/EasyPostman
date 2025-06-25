@@ -21,6 +21,7 @@ import java.awt.event.KeyEvent;
  */
 @Slf4j
 public class RequestEditPanel extends BasePanel {
+    public static final String REQUEST_STRING = "Request ";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
@@ -31,7 +32,7 @@ public class RequestEditPanel extends BasePanel {
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
         }
-        String tabTitle = title != null ? title : "请求" + (tabbedPane.getTabCount() + 1);
+        String tabTitle = title != null ? title : REQUEST_STRING + (tabbedPane.getTabCount() + 1);
         RequestEditSubPanel subPanel = new RequestEditSubPanel();
         tabbedPane.addTab(tabTitle, subPanel);
         tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1,
@@ -97,7 +98,7 @@ public class RequestEditPanel extends BasePanel {
         // 没有同id Tab则新建
         RequestEditSubPanel subPanel = new RequestEditSubPanel();
         subPanel.updateRequestForm(item);
-        String name = item.getName() != null ? item.getName() : "请求" + (tabbedPane.getTabCount());
+        String name = item.getName() != null ? item.getName() : REQUEST_STRING + (tabbedPane.getTabCount());
         int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
         tabbedPane.insertTab(name, null, subPanel, null, plusTabIdx);
         tabbedPane.setTabComponentAt(plusTabIdx,
@@ -305,7 +306,7 @@ public class RequestEditPanel extends BasePanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         tabbedPane = new JTabbedPane();
         add(tabbedPane, BorderLayout.CENTER);
-        addNewTab("请求1");
+        addNewTab(REQUEST_STRING + "1"); // 默认添加第一个请求Tab
         setupSaveShortcut();
         // 监听tab切换，选中“+”Tab时自动新增
         tabbedPane.addChangeListener(e -> {

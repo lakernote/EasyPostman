@@ -127,7 +127,7 @@ public class HistoryPanel extends BasePanel {
     }
 
     // 支持带重定向链、线程名和连接信息的历史记录
-    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String redirectChain, String threadName, String connectionInfo) {
+    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, String threadName, String connectionInfo) {
         RequestHistoryItem item = new RequestHistoryItem(
                 method,
                 url,
@@ -140,7 +140,6 @@ public class HistoryPanel extends BasePanel {
                 threadName,
                 connectionInfo
         );
-        item.extra = redirectChain;
         if (historyListModel != null) {
             historyListModel.add(0, item);
         }
@@ -165,11 +164,6 @@ public class HistoryPanel extends BasePanel {
                 .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(无)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
         sb.append("<b>【响应体】</b><br><pre style='margin:0;'>")
                 .append(item.responseBody == null || item.responseBody.isEmpty() ? "(无)" : escapeHtml(item.responseBody)).append("</pre>");
-        // 重定向链美化
-        if (item.extra != null && !item.extra.isEmpty()) {
-            sb.append("<br><b>【重定向链】</b><br>");
-            sb.append(formatRedirectChainHtml(item.extra));
-        }
         sb.append("</body></html>");
         return sb.toString();
     }
@@ -179,24 +173,6 @@ public class HistoryPanel extends BasePanel {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
-    private String formatRedirectChainHtml(String chain) {
-        // 按行分割，状态行高亮，Location高亮
-        String[] lines = chain.split("\\n");
-        StringBuilder sb = new StringBuilder();
-        for (String line : lines) {
-            String l = escapeHtml(line);
-            if (l.matches("\\[\\d+] \\S+ \\S+")) {
-                sb.append("<span style='color:#1976d2;font-weight:bold;'>").append(l).append("</span><br>");
-            } else if (l.trim().startsWith("Location:")) {
-                sb.append("<span style='color:#388e3c;'>").append(l).append("</span><br>");
-            } else if (l.trim().isEmpty()) {
-                sb.append("<br>");
-            } else {
-                sb.append(l).append("<br>");
-            }
-        }
-        return sb.toString();
-    }
 
     private void clearRequestHistory() {
         historyListModel.clear();

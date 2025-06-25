@@ -498,7 +498,7 @@ public class RequestEditSubPanel extends JPanel {
                 if (bodyText != null) {
                     autoExecuteExtractorRules(bodyText);
                 }
-                // 新增：保存重定向链到历史，兼容线程名参数
+                // 保存到历史
                 SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(
                         req.method,
                         req.url,
@@ -507,7 +507,6 @@ public class RequestEditSubPanel extends JPanel {
                         statusText,
                         headersText,
                         bodyText,
-                        redirectChainText,
                         resp.threadName,
                         resp.connectionInfo
                 );

@@ -33,7 +33,7 @@ public class BusinessStyleUtils {
         // JTabbedPane 选项卡字体和前景色
         UIManager.put("TabbedPane.selectedForeground", new Color(33, 150, 243));
         // ===== JTextArea 颜色 =====
-        UIManager.put("TextArea.background", new Color(250, 250, 250));
+        UIManager.put("TextArea.background", Colors.PANEL_BACKGROUND);
         UIManager.put("TextArea.caretForeground", new Color(33, 150, 243));
         UIManager.put("TextArea.selectionBackground", Colors.PANEL_BACKGROUND);
         UIManager.put("TextArea.selectionForeground", new Color(33, 150, 243));

@@ -3,18 +3,15 @@ package com.laker.postman.service;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.util.OkHttpRequestBuilder;
+import com.laker.postman.util.OkHttpResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Socket;
-import java.nio.file.Files;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -47,8 +44,19 @@ public class HttpService {
      * @throws Exception 发送请求异常
      */
     public static HttpResponse sendRequest(String urlString, String method, Map<String, String> headers, String body, boolean followRedirects) throws Exception {
+        OkHttpClient client = getOkHttpClient(followRedirects);
+        Request request = OkHttpRequestBuilder.buildRequest(urlString, method, headers, body);
+        return callWithRequest(client, request);
+    }
 
-        return doSendRequest(urlString, method, headers, body, followRedirects);
+    /**
+     * 发送 multipart/form-data 请求，支持文本字段和文件字段（OkHttp 实现）
+     */
+    public static HttpResponse sendRequestWithMultipart(String urlString, String method, Map<String, String> headers,
+                                                        Map<String, String> formData, Map<String, String> formFiles, boolean followRedirects) throws Exception {
+        OkHttpClient client = getOkHttpClient(followRedirects);
+        Request request = OkHttpRequestBuilder.buildMultipartRequest(urlString, method, headers, formData, formFiles);
+        return callWithRequest(client, request);
     }
 
     /**
@@ -72,127 +80,13 @@ public class HttpService {
         return processedHeaders;
     }
 
-    /**
-     * 实际发送 HTTP 请求（使用 OkHttp 实现）
-     */
-    private static HttpResponse doSendRequest(String urlString, String method, Map<String, String> headers, String body, boolean followRedirects) throws Exception {
-        OkHttpClient client = getOkHttpClient(followRedirects);
-        Request.Builder builder = new Request.Builder().url(urlString);
-        RequestBody requestBody = null;
-        String methodUpper = method.toUpperCase();
-        String contentType = null;
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                if ("Content-Type".equalsIgnoreCase(entry.getKey()) && entry.getValue() != null && !entry.getValue().isEmpty()) {
-                    contentType = entry.getValue();
-                    break;
-                }
-            }
-        }
-        // 只为非GET/HEAD方法设置请求体，GET/HEAD不允许有body
-        if (!"GET".equals(methodUpper) && !"HEAD".equals(methodUpper)) {
-            if (body != null && !body.isEmpty()) {
-                if (contentType == null) {
-                    contentType = "application/json; charset=utf-8";
-                }
-                requestBody = RequestBody.create(body, MediaType.parse(contentType));
-            } else {
-                // OkHttp 要求 POST/PUT/PATCH/DELETE 必须有 requestBody
-                if (contentType != null) {
-                    requestBody = RequestBody.create(new byte[0], MediaType.parse(contentType));
-                } else {
-                    requestBody = RequestBody.create(new byte[0], null);
-                }
-            }
-        }
-        builder.method(methodUpper, requestBody);
-        return callWithRequest(headers, client, builder);
-    }
-
     @NotNull
-    private static HttpResponse callWithRequest(Map<String, String> headers, OkHttpClient client, Request.Builder builder) throws IOException {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
-        }
-        Call call = client.newCall(builder.build());
+    private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
+        Call call = client.newCall(request);
         Response okResponse = call.execute();
-        HttpResponse response = new HttpResponse();
-        response.code = okResponse.code();
-        response.headers = new HashMap<>();
-        for (String name : okResponse.headers().names()) {
-            String value = okResponse.header(name);
-            if (value != null) {
-                response.headers.put(name, List.of(value));
-            }
-        }
-        response.connectionInfo = lastConnectionInfo.get();
+        String connectionInfo = lastConnectionInfo.get();
         lastConnectionInfo.remove();
-        response.threadName = Thread.currentThread().getName();
-        response.protocol = okResponse.protocol().toString();
-        // 检查是否为二进制内容
-        String contentType = okResponse.header("Content-Type", "");
-        if (contentType != null && (contentType.toLowerCase().contains("application/octet-stream")
-                || contentType.toLowerCase().contains("application/pdf")
-                || contentType.toLowerCase().contains("image/")
-                || contentType.toLowerCase().contains("audio/")
-                || contentType.toLowerCase().contains("video/"))) {
-            // 保存为临时文件
-            InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
-            if (is != null) {
-                File tempFile = File.createTempFile("download_", null);
-                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                    byte[] buf = new byte[8192];
-                    int len;
-                    while ((len = is.read(buf)) != -1) {
-                        fos.write(buf, 0, len);
-                    }
-                }
-                response.filePath = tempFile.getAbsolutePath();
-                response.body = "[二进制内容，已保存为临时文件]";
-            } else {
-                response.body = "[无响应体]";
-            }
-        } else {
-            response.body = okResponse.body() != null ? okResponse.body().string() : "";
-            response.filePath = null;
-        }
-        return response;
-    }
-
-    /**
-     * 发送 multipart/form-data 请求，支持文本字段和文件字段（OkHttp 实现）
-     */
-    public static HttpResponse sendRequestWithMultipart(String urlString, String method, Map<String, String> headers,
-                                                        Map<String, String> formData, Map<String, String> formFiles, boolean followRedirects) throws Exception {
-        OkHttpClient client = getOkHttpClient(followRedirects);
-        MultipartBody.Builder multipartBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-        if (formData != null) {
-            for (Map.Entry<String, String> entry : formData.entrySet()) {
-                multipartBuilder.addFormDataPart(entry.getKey(), entry.getValue());
-            }
-        }
-        if (formFiles != null) {
-            for (Map.Entry<String, String> entry : formFiles.entrySet()) {
-                File file = new File(entry.getValue());
-                if (file.exists()) {
-                    String mimeType = null;
-                    try {
-                        mimeType = Files.probeContentType(file.toPath());
-                    } catch (IOException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    if (mimeType == null) {
-                        mimeType = "application/octet-stream";
-                    }
-                    multipartBuilder.addFormDataPart(entry.getKey(), file.getName(),
-                            RequestBody.create(file, MediaType.parse(mimeType)));
-                }
-            }
-        }
-        Request.Builder builder = new Request.Builder().url(urlString).method(method, multipartBuilder.build());
-        return callWithRequest(headers, client, builder);
+        return OkHttpResponseHandler.handleResponse(okResponse, connectionInfo);
     }
 
     private static OkHttpClient getOkHttpClient(boolean followRedirects) {

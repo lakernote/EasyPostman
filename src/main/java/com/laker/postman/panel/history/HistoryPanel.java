@@ -17,6 +17,7 @@ import java.awt.event.MouseEvent;
  * 历史记录面板
  */
 public class HistoryPanel extends BasePanel {
+    public static final String EMPTY_BODY_HTML = "<html><body>Please select a record.</body></html>";
     private JList<RequestHistoryItem> historyList;
     private JPanel historyDetailPanel;
     private JTextPane historyDetailPane;
@@ -87,7 +88,7 @@ public class HistoryPanel extends BasePanel {
         detailScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         detailScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         historyDetailPanel.add(detailScroll, BorderLayout.CENTER);
-        historyDetailPane.setText("<html><body>请选择一条历史记录</body></html>");
+        historyDetailPane.setText(EMPTY_BODY_HTML);
         historyDetailPanel.setVisible(true);
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScroll, historyDetailPanel);
@@ -100,7 +101,7 @@ public class HistoryPanel extends BasePanel {
             if (!e.getValueIsAdjusting()) {
                 int idx = historyList.getSelectedIndex();
                 if (idx == -1) {
-                    historyDetailPane.setText("<html><body>请选择一条历史记录</body></html>");
+                    historyDetailPane.setText(EMPTY_BODY_HTML);
                 } else {
                     RequestHistoryItem item = historyListModel.get(idx);
                     historyDetailPane.setText(formatHistoryDetailPrettyHtml(item));
@@ -149,24 +150,26 @@ public class HistoryPanel extends BasePanel {
     private String formatHistoryDetailPrettyHtml(RequestHistoryItem item) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body style='font-family:monospace;font-size:9px;'>");
-        sb.append("<b>【方法】</b> <span style='color:#1976d2;'>").append(item.method).append("</span> ");
-        sb.append("<b>【URL】</b> <span style='color:#388e3c;'>").append(item.url).append("</span><br><br>");
-        sb.append("<b>【协议】</b> <span style='color:#1976d2;'>")
-                .append(item.response != null && item.response.protocol != null ? item.response.protocol : "(未知)")
+        sb.append("<b>[Method]</b> <span style='color:#1976d2;'>").append(item.method).append("</span> ");
+        sb.append("<b>[URL]</b> <span style='color:#388e3c;'>").append(item.url).append("</span><br><br>");
+        sb.append("<b>[Protocol]</b> <span style='color:#1976d2;'>")
+                .append(item.response != null && item.response.protocol != null ? item.response.protocol : "(Unknown)")
                 .append("</span><br><br>");
-        sb.append("<b>【执行线程】</b> <span style='color:#d2691e;'>").append(item.threadName == null ? "(无)" : item.threadName).append("</span><br><br>");
+        sb.append("<b>[Thread]</b> <span style='color:#d2691e;'>").append(item.threadName == null ? "(None)" : item.threadName).append("</span><br><br>");
         if (item.connectionInfo != null && !item.connectionInfo.isEmpty()) {
-            sb.append("<b>【连接】</b> <span style='color:#1976d2;'>").append(escapeHtml(item.connectionInfo)).append("</span><br><br>");
+            sb.append("<b>[Connection]</b> <span style='color:#1976d2;'>").append(escapeHtml(item.connectionInfo)).append("</span><br><br>");
         }
-        sb.append("<b>【请求头】</b><br><pre style='margin:0;'>")
-                .append(item.requestHeaders == null || item.requestHeaders.isEmpty() ? "(无)" : escapeHtml(item.requestHeaders)).append("</pre><br>");
-        sb.append("<b>【请求体】</b><br><pre style='margin:0;'>")
-                .append(item.requestBody == null || item.requestBody.isEmpty() ? "(无)" : escapeHtml(item.requestBody)).append("</pre><br>");
-        sb.append("<b>【响应状态】</b> <span style='color:#1976d2;'>").append(escapeHtml(item.responseStatus)).append("</span><br>");
-        sb.append("<b>【响应头】</b><br><pre style='margin:0;'>")
-                .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(无)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
-        sb.append("<b>【响应体】</b><br><pre style='margin:0;'>")
-                .append(item.responseBody == null || item.responseBody.isEmpty() ? "(无)" : escapeHtml(item.responseBody)).append("</pre>");
+        sb.append("<b>[Request Headers]</b><br><pre style='margin:0;'>")
+                .append(item.requestHeaders == null || item.requestHeaders.isEmpty() ? "(None)" : escapeHtml(item.requestHeaders)).append("</pre><br>");
+        sb.append("<b>[Request Body]</b><br><pre style='margin:0;'>")
+                .append(item.requestBody == null || item.requestBody.isEmpty() ? "(None)" : escapeHtml(item.requestBody)).append("</pre><br>");
+        // 添加分割线
+        sb.append("<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>");
+        sb.append("<b>[Response Status]</b> <span style='color:#1976d2;'>").append(escapeHtml(item.responseStatus)).append("</span><br>");
+        sb.append("<b>[Response Headers]</b><br><pre style='margin:0;'>")
+                .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(None)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
+        sb.append("<b>[Response Body]</b><br><pre style='margin:0;'>")
+                .append(item.responseBody == null || item.responseBody.isEmpty() ? "(None)" : escapeHtml(item.responseBody)).append("</pre>");
         sb.append("</body></html>");
         return sb.toString();
     }
@@ -179,7 +182,7 @@ public class HistoryPanel extends BasePanel {
 
     private void clearRequestHistory() {
         historyListModel.clear();
-        historyDetailPane.setText("<html><body>请选择一条历史记录</body></html>");
+        historyDetailPane.setText(EMPTY_BODY_HTML);
         historyDetailPanel.setVisible(true);
     }
 }

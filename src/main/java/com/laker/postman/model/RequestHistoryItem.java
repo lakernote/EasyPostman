@@ -6,24 +6,19 @@ package com.laker.postman.model;
 public class RequestHistoryItem {
     public final String method;
     public final String url;
-    public final String requestBody;
-    public final String requestHeaders;
     public final int responseCode; // 响应状态码
-    public final String responseBody;
-    public final String responseHeaders;
     public String threadName; // 执行线程名
-    public HttpResponse response;
+    public PreparedRequest request; // 原始请求对象
+    public HttpResponse response; // 响应对象
 
-    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseHeaders, HttpResponse response) {
-        this.method = method;
-        this.url = url;
-        this.requestBody = requestBody;
-        this.requestHeaders = requestHeaders;
+    public RequestHistoryItem(PreparedRequest request, HttpResponse response) {
+        this.method = request.method;
+        this.url = request.url;
         this.responseCode = response.code;
-        this.responseHeaders = responseHeaders;
-        this.responseBody = response.body;
         this.threadName = response.threadName;
+        this.request = request;
         this.response = response;
+
     }
 
 

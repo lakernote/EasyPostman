@@ -521,14 +521,7 @@ public class RequestEditSubPanel extends JPanel {
                 }
                 // 保存到历史
                 if (resp != null) {
-                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(
-                            req.method,
-                            req.url,
-                            req.body,
-                            requestHeadersText,
-                            headersText,
-                            resp
-                    );
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
                 }
                 // 恢复按钮为 Send
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);

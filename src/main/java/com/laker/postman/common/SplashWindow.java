@@ -5,7 +5,6 @@ import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -58,7 +57,6 @@ public class SplashWindow extends JWindow {
         setVisible(true); // 显示窗口
     }
 
-    @NotNull
     private static JPanel getJPanel() {
         JPanel content = new JPanel() { // 自定义面板，绘制渐变背景和圆角
             @Override

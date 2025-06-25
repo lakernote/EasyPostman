@@ -1,6 +1,8 @@
 @echo off
 SETLOCAL ENABLEEXTENSIONS
 
+:: This script requires PowerShell to execute certain commands. Please ensure PowerShell is available on your system.
+
 :: Step 1: Locate project root directory
 cd /d "%~dp0%\.."
 set PROJECT_ROOT=%cd%
@@ -81,6 +83,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:: Generate a new ProductCode for each build
+for /f %%i in ('powershell -Command "[guid]::NewGuid().ToString()"') do set PRODUCT_CODE=%%i
+
 :: Step 4: Package with jpackage
 if not exist "%ICON_DIR%" (
     echo Icon file not found: "%ICON_DIR%"
@@ -106,10 +111,11 @@ jpackage ^
     --win-dir-chooser ^
     --win-per-user-install ^
     --win-menu-group "EasyTools" ^
-    --win-help-url "https://gitee.com/lakernote/easy-postman"
+    --win-help-url "https://gitee.com/lakernote/easy-postman" ^
     --java-options "-Xms128m" ^
     --java-options "-Xmx256m" ^
-    --java-options "-Dfile.encoding=UTF-8"
+    --java-options "-Dfile.encoding=UTF-8" ^
+    --win-product-code "%PRODUCT_CODE%"
 if errorlevel 1 (
     echo ERROR: jpackage failed
     pause

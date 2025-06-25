@@ -1,5 +1,6 @@
 package com.laker.postman.panel.jmeter;
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -381,8 +382,6 @@ public class JMeterPanel extends BasePanel {
                 Object userObj = child.getUserObject();
                 if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
                     String apiName = jtNode.httpRequestItem.getName();
-                    long start = System.currentTimeMillis();
-                    // 已全部用costMs统计，移除无用的时间戳记录逻辑
                     boolean success = true;
                     int finished;
                     synchronized (this) {
@@ -401,15 +400,30 @@ public class JMeterPanel extends BasePanel {
                         resp = HttpRequestExecutor.execute(req);
                         responseBody = resp.body;
                         responseCode = resp.code;
-                        cost = resp.costMs; // 只用resp.costMs
+                        cost = resp.costMs;
                         detail.append("请求URL: ").append(req.url).append("\n");
                         detail.append("请求方法: ").append(req.method).append("\n");
+                        detail.append("请求耗时: ").append(cost).append(" ms\n");
                         detail.append("执行线程: ").append(resp.threadName).append("\n");
-                        detail.append("连接信息: ").append(resp.httpEventInfo.getLocalAddress() + "->" + resp.httpEventInfo.getRemoteAddress()).append("\n");
+                        detail.append("连接信息: ").append(resp.httpEventInfo.getLocalAddress()).append("->").append(resp.httpEventInfo.getRemoteAddress()).append("\n");
                         detail.append("请求头: ").append(req.headers).append("\n");
-                        detail.append("请求体: ").append(req.body).append("\n\n");
+                        detail.append("请求体: ").append(req.body).append("\n");
+                        if (MapUtil.isNotEmpty(req.formData)) {
+                            detail.append("请求表单数据: \n");
+                            for (Map.Entry<String, String> entry : req.formData.entrySet()) {
+                                detail.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                            }
+                        }
+                        if (MapUtil.isNotEmpty(req.formFiles)) {
+                            detail.append("请求表单文件: \n");
+                            for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
+                                detail.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                            }
+                        }
                         detail.append("响应码: ").append(responseCode).append("\n");
                         detail.append("响应体: ").append(responseBody).append("\n");
+                        detail.append("响应体字节数: ").append(resp.bodySize).append("B\n");
+                        detail.append("响应头字节数: ").append(resp.headersSize).append("B\n");
                     } catch (Exception ex) {
                         detail.append("请求异常: ").append(ex.getMessage());
                         success = false;

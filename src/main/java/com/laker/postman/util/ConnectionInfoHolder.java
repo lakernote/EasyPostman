@@ -23,6 +23,7 @@ public class ConnectionInfoHolder {
 
         public EasyEventListener() {
             info = new HttpEventInfo();
+            info.setThreadName(Thread.currentThread().getName());
             eventInfoThreadLocal.set(info);
         }
 

@@ -83,16 +83,33 @@ public class HttpService {
     @NotNull
     private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
         long startTime = System.currentTimeMillis();
+        long queueStart = System.currentTimeMillis(); // 记录newCall前的时间戳
         HttpResponse httpResponse = new HttpResponse();
         Call call = client.newCall(request);
         Response okResponse = null;
         HttpEventInfo httpEventInfo;
+        // 记录连接池状态
+        ConnectionPool pool = client.connectionPool();
+        httpResponse.idleConnectionCount = pool.idleConnectionCount();
+        httpResponse.connectionCount = pool.connectionCount();
         try {
             okResponse = call.execute();
         } finally {
             httpEventInfo = ConnectionInfoHolder.getAndRemove();
+            if (httpEventInfo != null) {
+                httpEventInfo.setQueueStart(queueStart);
+                // 计算排队耗时
+                if (httpEventInfo.getCallStart() > 0) {
+                    httpEventInfo.setQueueingCost(httpEventInfo.getCallStart() - queueStart);
+                }
+                // 计算阻塞耗时
+                if (httpEventInfo.getConnectStart() > 0 && httpEventInfo.getCallStart() > 0) {
+                    httpEventInfo.setStalledCost(httpEventInfo.getConnectStart() - httpEventInfo.getCallStart());
+                }
+            }
             httpResponse.httpEventInfo = httpEventInfo;
             httpResponse.costMs = System.currentTimeMillis() - startTime;
+
         }
         return OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
     }

@@ -34,6 +34,9 @@ public class HttpEventInfo {
     private long responseBodyEnd;
     private long callEnd;
     private long callFailed;
+    private long queueStart; // newCall前的时间戳
+    private long queueingCost; // 排队耗时
+    private long stalledCost; // 阻塞耗时
     // 协议
     private Protocol protocol;
     // TLS/证书
@@ -77,4 +80,3 @@ public class HttpEventInfo {
                 '}';
     }
 }
-

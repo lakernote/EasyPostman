@@ -6,6 +6,7 @@ import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.HttpEventInfo;
 import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
@@ -176,7 +177,7 @@ public class HistoryPanel extends BasePanel {
         if (item.response != null && item.response.httpEventInfo != null) {
             sb.append("<hr style='border:0;border-top:2px solid #1976d2;margin:16px 0 8px 0;'>");
             sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Timing]</b></div>");
-            com.laker.postman.util.HttpEventInfo info = item.response.httpEventInfo;
+            HttpEventInfo info = item.response.httpEventInfo;
             // 计算各阶段耗时
             long dns = info.getDnsEnd() > 0 && info.getDnsStart() > 0 ? info.getDnsEnd() - info.getDnsStart() : -1;
             long connect = info.getConnectEnd() > 0 && info.getConnectStart() > 0 ? info.getConnectEnd() - info.getConnectStart() : -1;
@@ -202,8 +203,13 @@ public class HistoryPanel extends BasePanel {
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#333;'><b>Total</b></td><td style='color:#d32f2f;font-weight:bold;'>")
                     .append(total >= 0 ? total + " ms" : "-")
                     .append("</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Queueing</td><td>-</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Stalled</td><td>-</td></tr>");
+            // 新增Queueing和Stalled展示
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Queueing</td><td>")
+                .append(info.getQueueingCost() > 0 ? info.getQueueingCost() + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Stalled</td><td>")
+                .append(info.getStalledCost() > 0 ? info.getStalledCost() + " ms" : "-")
+                .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>DNS Lookup</td><td>")
                     .append(dns >= 0 ? dns + " ms" : "-")
                     .append("</td></tr>");
@@ -225,7 +231,8 @@ public class HistoryPanel extends BasePanel {
             sb.append("</table>");
             // 简要说明
             sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");
-            sb.append("各阶段含义参考Chrome DevTools：Queueing(排队)、Stalled(阻塞)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。");
+            sb.append("各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>");
+            sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。");
             sb.append("</div>");
             sb.append("</div>");
         }
@@ -243,8 +250,8 @@ public class HistoryPanel extends BasePanel {
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Error</td><td>" + (info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") + "</td></tr>");
             sb.append("<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallStart</td><td>" + formatMillis(info.getCallStart()) + "</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DnsStart</td><td>" + formatMillis(info.getDnsStart()) + "</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DnsEnd</td><td>" + formatMillis(info.getDnsEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DnsStart</td><td>").append(formatMillis(info.getDnsStart())).append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DnsEnd</td><td>").append(formatMillis(info.getDnsEnd())).append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>");

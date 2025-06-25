@@ -129,16 +129,13 @@ public class HistoryPanel extends BasePanel {
     }
 
     // 支持带重定向链、线程名和连接信息的历史记录
-    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, HttpResponse resp) {
+    public void addRequestHistory(String method, String url, String requestBody, String requestHeaders, String responseHeaders, HttpResponse resp) {
         RequestHistoryItem item = new RequestHistoryItem(
                 method,
                 url,
                 requestBody,
                 requestHeaders,
-                responseStatus,
                 responseHeaders,
-                responseBody,
-                System.currentTimeMillis(),
                 resp
         );
         if (historyListModel != null) {
@@ -169,7 +166,7 @@ public class HistoryPanel extends BasePanel {
                 .append(item.requestBody == null || item.requestBody.isEmpty() ? "(None)" : escapeHtml(item.requestBody)).append("</pre><br>");
         // 添加分割线
         sb.append("<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>");
-        sb.append("<b>[Response Status]</b> <span style='color:#1976d2;'>").append(escapeHtml(item.responseStatus)).append("</span><br>");
+        sb.append("<b>[Response Status]</b> <span style='color:#1976d2;'>").append(item.responseCode).append("</span><br>");
         sb.append("<b>[Response Headers]</b><br><pre style='margin:0;'>")
                 .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(None)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
         sb.append("<b>[Response Body]</b><br><pre style='margin:0;'>")
@@ -203,28 +200,28 @@ public class HistoryPanel extends BasePanel {
             sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Timing Timeline]</b></div>");
             sb.append("<table style='border-collapse:collapse;margin:8px 0 8px 0;'>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#333;'><b>Total</b></td><td style='color:#d32f2f;font-weight:bold;'>")
-                .append(total >= 0 ? total + " ms" : "-")
-                .append("</td></tr>");
+                    .append(total >= 0 ? total + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Queueing</td><td>-</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Stalled</td><td>-</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>DNS Lookup</td><td>")
-                .append(dns >= 0 ? dns + " ms" : "-")
-                .append("</td></tr>");
+                    .append(dns >= 0 ? dns + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Initial Connection (TCP)</td><td>")
-                .append(connect >= 0 ? connect + " ms" : "-")
-                .append("</td></tr>");
+                    .append(connect >= 0 ? connect + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>SSL/TLS</td><td>")
-                .append(tls >= 0 ? tls + " ms" : "-")
-                .append("</td></tr>");
+                    .append(tls >= 0 ? tls + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Request Sent</td><td>")
-                .append((reqHeaders >= 0 || reqBody >= 0) ? ((reqHeaders >= 0 ? reqHeaders : 0) + (reqBody >= 0 ? reqBody : 0)) + " ms" : "-")
-                .append("</td></tr>");
+                    .append((reqHeaders >= 0 || reqBody >= 0) ? ((reqHeaders >= 0 ? reqHeaders : 0) + (reqBody >= 0 ? reqBody : 0)) + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'><b>Waiting (TTFB)</b></td><td style='color:#388e3c;font-weight:bold;'>")
-                .append(serverCost >= 0 ? serverCost + " ms" : "-")
-                .append("</td></tr>");
+                    .append(serverCost >= 0 ? serverCost + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Content Download</td><td>")
-                .append(respBody >= 0 ? respBody + " ms" : "-")
-                .append("</td></tr>");
+                    .append(respBody >= 0 ? respBody + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("</table>");
             // 简要说明
             sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");

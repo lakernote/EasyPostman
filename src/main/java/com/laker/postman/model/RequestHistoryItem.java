@@ -8,26 +8,20 @@ public class RequestHistoryItem {
     public final String url;
     public final String requestBody;
     public final String requestHeaders;
-    public final String responseStatus;
+    public final int responseCode; // 响应状态码
     public final String responseBody;
     public final String responseHeaders;
-    public final long timestamp;
     public String threadName; // 执行线程名
     public HttpResponse response;
 
-    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp) {
+    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseHeaders, HttpResponse response) {
         this.method = method;
         this.url = url;
         this.requestBody = requestBody;
         this.requestHeaders = requestHeaders;
-        this.responseStatus = responseStatus;
+        this.responseCode = response.code;
         this.responseHeaders = responseHeaders;
-        this.responseBody = responseBody;
-        this.timestamp = timestamp;
-    }
-
-    public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, HttpResponse response) {
-        this(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, timestamp);
+        this.responseBody = response.body;
         this.threadName = response.threadName;
         this.response = response;
     }

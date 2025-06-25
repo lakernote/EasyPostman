@@ -504,9 +504,7 @@ public class RequestEditSubPanel extends JPanel {
                         req.url,
                         req.body,
                         requestHeadersText,
-                        statusText,
                         headersText,
-                        bodyText,
                         resp
                 );
             }

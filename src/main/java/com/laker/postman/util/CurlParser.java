@@ -72,7 +72,6 @@ public class CurlParser {
         // 解析 URL 查询参数到 params
         if (req.url != null && req.url.contains("?")) {
             String[] urlParts = req.url.split("\\?", 2);
-            req.url = urlParts[0];
             String query = urlParts[1];
             for (String param : query.split("&")) {
                 String[] kv = param.split("=", 2);

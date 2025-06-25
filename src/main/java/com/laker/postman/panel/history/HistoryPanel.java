@@ -141,21 +141,22 @@ public class HistoryPanel extends BasePanel {
     private String formatHistoryDetailPrettyHtml(RequestHistoryItem item) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body style='font-family:monospace;font-size:9px;'>");
-        // ====== 基本信息 Chrome风格单栏 ======
-        sb.append("<div style='margin-bottom:12px;'>");
-        sb.append("<b style='color:#1976d2;'>").append(item.method).append("</b> ");
-        sb.append("<span style='color:#388e3c;'>").append(escapeHtml(item.url)).append("</span><br>");
-        sb.append("<span style='color:#888;'>Status</span>: <b>").append(item.responseCode).append("</b>  ");
-        sb.append("<span style='color:#888;'>Protocol</span>: ")
-                .append(item.response != null && item.response.protocol != null ? item.response.protocol : "-").append("  ");
-        sb.append("<span style='color:#888;'>Thread</span>: ")
-                .append(item.threadName == null ? "-" : escapeHtml(item.threadName)).append("  ");
-        sb.append("<span style='color:#888;'>Connection</span>: ");
-        if (item.response != null && item.response.httpEventInfo != null) {
-            sb.append(escapeHtml(item.response.httpEventInfo.getLocalAddress() + " -> " + item.response.httpEventInfo.getRemoteAddress()));
-        } else {
-            sb.append("-");
-        }
+        // ====== 基本信息简化版，状态码分色 ======
+        sb.append("<div style='margin-bottom:12px;padding:6px 0 6px 0;border-bottom:1px solid #e0e0e0;'>");
+        sb.append("<span style='font-weight:bold;color:#1976d2;font-size:10px;'>")
+                .append(item.method).append("</span> ");
+        sb.append("<span style='color:#388e3c;font-size:10px;word-break:break-all;'>")
+                .append(escapeHtml(item.url)).append("</span><br>");
+        // 状态码分色
+        String codeColor = "#43a047"; // 绿色
+        if (item.responseCode >= 500) codeColor = "#d32f2f"; // 红色
+        else if (item.responseCode >= 400) codeColor = "#ffa000"; // 黄色
+        sb.append("<span style='color:#888;'>Status</span>: <span style='font-weight:bold;color:")
+                .append(codeColor).append(";'>")
+                .append(item.responseCode).append("</span>  ");
+        sb.append("<span style='color:#888;'>Protocol</span>: <span style='color:#1976d2;'>")
+                .append(item.response != null && item.response.protocol != null ? item.response.protocol : "-")
+                .append("</span>");
         sb.append("</div>");
 
         // ====== 请求头部分 ======
@@ -286,7 +287,7 @@ public class HistoryPanel extends BasePanel {
             sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");
             sb.append("各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>");
             sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>");
-            sb.append("OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。");
+            sb.append("OkHttp Idle/Total Connections为请求时刻���接池快照，仅供参考。");
             sb.append("</div>");
             sb.append("</div>");
         }

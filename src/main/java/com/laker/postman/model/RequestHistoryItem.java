@@ -7,7 +7,6 @@ public class RequestHistoryItem {
     public final String method;
     public final String url;
     public final int responseCode; // 响应状态码
-    public String threadName; // 执行线程名
     public PreparedRequest request; // 原始请求对象
     public HttpResponse response; // 响应对象
 
@@ -15,10 +14,8 @@ public class RequestHistoryItem {
         this.method = request.method;
         this.url = request.url;
         this.responseCode = response.code;
-        this.threadName = response.threadName;
         this.request = request;
         this.response = response;
-
     }
 
 

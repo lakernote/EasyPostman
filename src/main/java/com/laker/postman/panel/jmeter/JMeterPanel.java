@@ -405,7 +405,7 @@ public class JMeterPanel extends BasePanel {
                         detail.append("请求URL: ").append(req.url).append("\n");
                         detail.append("请求方法: ").append(req.method).append("\n");
                         detail.append("执行线程: ").append(resp.threadName).append("\n");
-                        detail.append("连接信息: ").append(resp.connectionInfo).append("\n");
+                        detail.append("连接信息: ").append(resp.httpEventInfo.getLocalAddress() + "->" + resp.httpEventInfo.getRemoteAddress()).append("\n");
                         detail.append("请求头: ").append(req.headers).append("\n");
                         detail.append("请求体: ").append(req.body).append("\n\n");
                         detail.append("响应码: ").append(responseCode).append("\n");

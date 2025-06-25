@@ -3,6 +3,8 @@ package com.laker.postman.service;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.util.ConnectionInfoHolder;
+import com.laker.postman.util.HttpEventInfo;
 import com.laker.postman.util.OkHttpRequestBuilder;
 import com.laker.postman.util.OkHttpResponseHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +12,6 @@ import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -28,10 +29,9 @@ public class HttpService {
             .writeTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .connectionPool(new ConnectionPool(50, 5, TimeUnit.MINUTES))
+            .eventListener(new EventListener() {
+            })
             .build();
-
-    // OkHttp 连接信息线程安全存储
-    private static final ThreadLocal<String> lastConnectionInfo = new ThreadLocal<>();
 
     /**
      * 发送 HTTP 请求，支持环境变量替换
@@ -82,30 +82,25 @@ public class HttpService {
 
     @NotNull
     private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
+        long startTime = System.currentTimeMillis();
+        HttpResponse httpResponse = new HttpResponse();
         Call call = client.newCall(request);
-        Response okResponse = call.execute();
-        String connectionInfo = lastConnectionInfo.get();
-        lastConnectionInfo.remove();
-        return OkHttpResponseHandler.handleResponse(okResponse, connectionInfo);
+        Response okResponse = null;
+        HttpEventInfo httpEventInfo;
+        try {
+            okResponse = call.execute();
+        } finally {
+            httpEventInfo = ConnectionInfoHolder.getAndRemove();
+            httpResponse.httpEventInfo = httpEventInfo;
+            httpResponse.costMs = System.currentTimeMillis() - startTime;
+        }
+        return OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
     }
 
     private static OkHttpClient getOkHttpClient(boolean followRedirects) {
         return okHttpClient.newBuilder()
                 .followRedirects(followRedirects)
-                .eventListener(new EventListener() {
-                    @Override
-                    public void connectionAcquired(@NotNull Call call, @NotNull Connection connection) {
-                        try {
-                            Socket socket = connection.socket();
-                            String local = socket.getLocalAddress().getHostAddress() + ":" + socket.getLocalPort();
-                            String remote = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
-                            lastConnectionInfo.set(local + " -> " + remote);
-                        } catch (Exception e) {
-                            log.error("获取连接信息失败", e);
-                            lastConnectionInfo.set("无法获取连接信息");
-                        }
-                    }
-                })
+                .eventListener(ConnectionInfoHolder.getEventListener())
                 .build();
     }
 

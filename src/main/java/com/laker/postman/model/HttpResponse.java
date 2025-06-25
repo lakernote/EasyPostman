@@ -1,5 +1,7 @@
 package com.laker.postman.model;
 
+import com.laker.postman.util.HttpEventInfo;
+
 import java.util.List;
 import java.util.Map;
 
@@ -11,8 +13,8 @@ public class HttpResponse {
     public String body;
     public int code; // 添加响应状态码字段
     public String threadName; // 添加线程名称字段
-    public String connectionInfo; // 连接信息字段
     public String filePath; // 下载文件路径字段
     public long costMs; // 请求耗时，单位毫秒
     public String protocol; // 协议类型字段，例如 HTTP/1.1 或 HTTP/2
+    public HttpEventInfo httpEventInfo;
 }

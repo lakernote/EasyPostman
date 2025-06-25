@@ -127,7 +127,6 @@ public class HttpRequestExecutor {
     }
 
     public static HttpResponse execute(PreparedRequest req) throws Exception {
-        long start = System.currentTimeMillis();
         HttpResponse resp;
         // x-www-form-urlencoded 逻辑
         if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
@@ -137,7 +136,6 @@ public class HttpRequestExecutor {
         } else {
             resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
         }
-        resp.costMs = System.currentTimeMillis() - start;
         // 解析Set-Cookie
         try {
             URL urlObj = new URL(req.url);

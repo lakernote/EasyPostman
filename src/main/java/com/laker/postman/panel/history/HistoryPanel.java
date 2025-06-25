@@ -156,9 +156,13 @@ public class HistoryPanel extends BasePanel {
                 .append(item.response != null && item.response.protocol != null ? item.response.protocol : "(Unknown)")
                 .append("</span><br><br>");
         sb.append("<b>[Thread]</b> <span style='color:#d2691e;'>").append(item.threadName == null ? "(None)" : item.threadName).append("</span><br><br>");
-        if (item.connectionInfo != null && !item.connectionInfo.isEmpty()) {
-            sb.append("<b>[Connection]</b> <span style='color:#1976d2;'>").append(escapeHtml(item.connectionInfo)).append("</span><br><br>");
+        sb.append("<b>[Connection]</b> <span style='color:#1976d2;'>");
+        if (item.response != null && item.response.httpEventInfo != null) {
+            sb.append(escapeHtml(item.response.httpEventInfo.getLocalAddress() + " -> " + item.response.httpEventInfo.getRemoteAddress()));
+        } else {
+            sb.append("(None)");
         }
+        sb.append("</span><br><br>");
         sb.append("<b>[Request Headers]</b><br><pre style='margin:0;'>")
                 .append(item.requestHeaders == null || item.requestHeaders.isEmpty() ? "(None)" : escapeHtml(item.requestHeaders)).append("</pre><br>");
         sb.append("<b>[Request Body]</b><br><pre style='margin:0;'>")
@@ -170,9 +174,110 @@ public class HistoryPanel extends BasePanel {
                 .append(item.responseHeaders == null || item.responseHeaders.isEmpty() ? "(None)" : escapeHtml(item.responseHeaders)).append("</pre><br>");
         sb.append("<b>[Response Body]</b><br><pre style='margin:0;'>")
                 .append(item.responseBody == null || item.responseBody.isEmpty() ? "(None)" : escapeHtml(item.responseBody)).append("</pre>");
+
+        // ====== 阶段耗时统计与美化输出 ======
+        if (item.response != null && item.response.httpEventInfo != null) {
+            sb.append("<hr style='border:0;border-top:2px solid #1976d2;margin:16px 0 8px 0;'>");
+            sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Timing]</b></div>");
+            com.laker.postman.util.HttpEventInfo info = item.response.httpEventInfo;
+            // 计算各阶段耗时
+            long dns = info.getDnsEnd() > 0 && info.getDnsStart() > 0 ? info.getDnsEnd() - info.getDnsStart() : -1;
+            long connect = info.getConnectEnd() > 0 && info.getConnectStart() > 0 ? info.getConnectEnd() - info.getConnectStart() : -1;
+            long tls = info.getSecureConnectEnd() > 0 && info.getSecureConnectStart() > 0 ? info.getSecureConnectEnd() - info.getSecureConnectStart() : -1;
+            long reqHeaders = info.getRequestHeadersEnd() > 0 && info.getRequestHeadersStart() > 0 ? info.getRequestHeadersEnd() - info.getRequestHeadersStart() : -1;
+            long reqBody = info.getRequestBodyEnd() > 0 && info.getRequestBodyStart() > 0 ? info.getRequestBodyEnd() - info.getRequestBodyStart() : -1;
+            long respHeaders = info.getResponseHeadersEnd() > 0 && info.getResponseHeadersStart() > 0 ? info.getResponseHeadersEnd() - info.getResponseHeadersStart() : -1;
+            long respBody = info.getResponseBodyEnd() > 0 && info.getResponseBodyStart() > 0 ? info.getResponseBodyEnd() - info.getResponseBodyStart() : -1;
+            long total = info.getCallEnd() > 0 && info.getCallStart() > 0 ? info.getCallEnd() - info.getCallStart() : -1;
+            // 计算服务端耗时
+            long serverCost = -1;
+            if (info.getResponseHeadersStart() > 0) {
+                if (info.getRequestBodyEnd() > 0) {
+                    serverCost = info.getResponseHeadersStart() - info.getRequestBodyEnd();
+                } else if (info.getRequestHeadersEnd() > 0) {
+                    serverCost = info.getResponseHeadersStart() - info.getRequestHeadersEnd();
+                }
+            }
+            // ====== Chrome DevTools风格表格输出 ======
+            sb.append("<div style='margin:8px 0 8px 0;'>");
+            sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Timing Timeline]</b></div>");
+            sb.append("<table style='border-collapse:collapse;margin:8px 0 8px 0;'>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#333;'><b>Total</b></td><td style='color:#d32f2f;font-weight:bold;'>")
+                .append(total >= 0 ? total + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Queueing</td><td>-</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Stalled</td><td>-</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DNS Lookup</td><td>")
+                .append(dns >= 0 ? dns + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Initial Connection (TCP)</td><td>")
+                .append(connect >= 0 ? connect + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>SSL/TLS</td><td>")
+                .append(tls >= 0 ? tls + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Request Sent</td><td>")
+                .append((reqHeaders >= 0 || reqBody >= 0) ? ((reqHeaders >= 0 ? reqHeaders : 0) + (reqBody >= 0 ? reqBody : 0)) + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'><b>Waiting (TTFB)</b></td><td style='color:#388e3c;font-weight:bold;'>")
+                .append(serverCost >= 0 ? serverCost + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>Content Download</td><td>")
+                .append(respBody >= 0 ? respBody + " ms" : "-")
+                .append("</td></tr>");
+            sb.append("</table>");
+            // 简要说明
+            sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");
+            sb.append("各阶段含义参考Chrome DevTools：Queueing(排队)、Stalled(阻塞)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。");
+            sb.append("</div>");
+            sb.append("</div>");
+        }
+        // ====== eventinfo详细内容 ======
+        if (item.response != null && item.response.httpEventInfo != null) {
+            sb.append("<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0'>");
+            sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Event Info]</b></div>");
+            com.laker.postman.util.HttpEventInfo info = item.response.httpEventInfo;
+            sb.append("<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Remote</td><td>" + escapeHtml(info.getRemoteAddress()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Protocol</td><td>" + (info.getProtocol() != null ? info.getProtocol().toString() : "-") + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>TLS</td><td>" + (info.getTlsVersion() != null ? info.getTlsVersion() : "-") + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Thread</td><td>" + (info.getThreadName() != null ? info.getThreadName() : "-") + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Error</td><td>" + (info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") + "</td></tr>");
+            sb.append("<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallStart</td><td>" + formatMillis(info.getCallStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DnsStart</td><td>" + formatMillis(info.getDnsStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>DnsEnd</td><td>" + formatMillis(info.getDnsEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>SecureConnectEnd</td><td>" + formatMillis(info.getSecureConnectEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>RequestHeadersStart</td><td>" + formatMillis(info.getRequestHeadersStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>RequestHeadersEnd</td><td>" + formatMillis(info.getRequestHeadersEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>RequestBodyStart</td><td>" + formatMillis(info.getRequestBodyStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>RequestBodyEnd</td><td>" + formatMillis(info.getRequestBodyEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>ResponseHeadersStart</td><td>" + formatMillis(info.getResponseHeadersStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>ResponseHeadersEnd</td><td>" + formatMillis(info.getResponseHeadersEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>ResponseBodyStart</td><td>" + formatMillis(info.getResponseBodyStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>ResponseBodyEnd</td><td>" + formatMillis(info.getResponseBodyEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallEnd</td><td>" + formatMillis(info.getCallEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>CallFailed</td><td>" + formatMillis(info.getCallFailed()) + "</td></tr>");
+            sb.append("</table>");
+        }
         sb.append("</body></html>");
         return sb.toString();
     }
+
+    /**
+     * 毫秒时间戳转为 hh:mm:ss.SSS 格式
+     */
+    private String formatMillis(long millis) {
+        if (millis <= 0) return "-";
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss.SSS");
+        java.util.Date date = new java.util.Date(millis);
+        return sdf.format(date);
+    }
+
 
     private String escapeHtml(String s) {
         if (s == null) return "";
@@ -186,3 +291,4 @@ public class HistoryPanel extends BasePanel {
         historyDetailPanel.setVisible(true);
     }
 }
+

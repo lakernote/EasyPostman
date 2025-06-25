@@ -13,7 +13,6 @@ public class RequestHistoryItem {
     public final String responseHeaders;
     public final long timestamp;
     public String threadName; // 执行线程名
-    public String connectionInfo; // 连接信息
     public HttpResponse response;
 
     public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp) {
@@ -30,7 +29,6 @@ public class RequestHistoryItem {
     public RequestHistoryItem(String method, String url, String requestBody, String requestHeaders, String responseStatus, String responseHeaders, String responseBody, long timestamp, HttpResponse response) {
         this(method, url, requestBody, requestHeaders, responseStatus, responseHeaders, responseBody, timestamp);
         this.threadName = response.threadName;
-        this.connectionInfo = response.connectionInfo;
         this.response = response;
     }
 

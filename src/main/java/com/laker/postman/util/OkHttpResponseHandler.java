@@ -16,8 +16,7 @@ import java.util.List;
  */
 @Slf4j
 public class OkHttpResponseHandler {
-    public static HttpResponse handleResponse(Response okResponse, String connectionInfo) throws IOException {
-        HttpResponse response = new HttpResponse();
+    public static HttpResponse handleResponse(Response okResponse, HttpResponse response) throws IOException {
         response.code = okResponse.code();
         response.headers = new HashMap<>();
         for (String name : okResponse.headers().names()) {
@@ -26,7 +25,6 @@ public class OkHttpResponseHandler {
                 response.headers.put(name, List.of(value));
             }
         }
-        response.connectionInfo = connectionInfo;
         response.threadName = Thread.currentThread().getName();
         response.protocol = okResponse.protocol().toString();
         String contentType = okResponse.header("Content-Type", "");
@@ -57,4 +55,3 @@ public class OkHttpResponseHandler {
         return response;
     }
 }
-

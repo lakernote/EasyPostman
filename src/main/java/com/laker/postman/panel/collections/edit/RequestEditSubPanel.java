@@ -25,7 +25,6 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.File;
 import java.io.InterruptedIOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,7 +61,7 @@ public class RequestEditSubPanel extends JPanel {
     private final JTextArea redirectChainArea; // 重定向链文本区域
 
     // 当前请求的 SwingWorker，用于支持取消
-    private volatile SwingWorker<Void, Void> currentWorker;
+    private SwingWorker<Void, Void> currentWorker;
 
     /**
      * 设置原始请求数据（脏数据检测）
@@ -465,20 +464,7 @@ public class RequestEditSubPanel extends JPanel {
                 statusCodeLabel.setForeground(statusColor);
                 responseTimeLabel.setText(String.format("Duration: %d ms", responseTime));
                 String sizeText;
-                int bytes = 0;
-                if (bodyText != null) {
-                    bytes = bodyText.getBytes().length;
-                }
-                if (resp != null && resp.filePath != null) {
-                    // 如果有文件路径，显示文件大小
-                    File file = new File(resp.filePath);
-                    if (file.exists()) {
-                        bytes = (int) file.length();
-                    } else {
-                        log.warn("响应文件不存在: {}", resp.filePath);
-                        bytes = 0;
-                    }
-                }
+                int bytes = resp.bodySize;
                 if (bytes < 1024) {
                     sizeText = String.format("ResponseSize: %d B", bytes);
                 } else if (bytes < 1024 * 1024) {

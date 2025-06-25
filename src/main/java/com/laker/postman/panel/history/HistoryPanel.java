@@ -287,7 +287,7 @@ public class HistoryPanel extends BasePanel {
             sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");
             sb.append("各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>");
             sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>");
-            sb.append("OkHttp Idle/Total Connections为请求时刻���接池快照，仅供参考。");
+            sb.append("OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。");
             sb.append("</div>");
             sb.append("</div>");
         }

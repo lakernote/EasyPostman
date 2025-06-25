@@ -1,11 +1,14 @@
 package com.laker.postman.panel.collections.edit;
 
+import lombok.Getter;
+
 import javax.swing.*;
 import java.awt.event.ActionListener;
 
 /**
  * 顶部请求行面板，包含方法选择、URL输入、发送按钮
  */
+@Getter
 public class RequestLinePanel extends JPanel {
     private final JComboBox<String> methodBox;
     private final JTextField urlField;
@@ -30,19 +33,4 @@ public class RequestLinePanel extends JPanel {
         add(Box.createHorizontalGlue());
     }
 
-    public JComboBox<String> getMethodBox() {
-        return methodBox;
-    }
-
-    public JTextField getUrlField() {
-        return urlField;
-    }
-
-    public JButton getSendButton() {
-        return sendButton;
-    }
-
-    public JCheckBox getFollowRedirectsCheckBox() {
-        return followRedirectsCheckBox;
-    }
 }

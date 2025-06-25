@@ -1,11 +1,14 @@
 package com.laker.postman.panel.collections.edit;
 
+import lombok.Getter;
+
 import javax.swing.*;
 import java.awt.*;
 
 /**
  * 响应头面板，只读展示响应头内容
  */
+@Getter
 public class ResponseHeadersPanel extends JPanel {
     private final JTextArea responseHeadersArea;
 
@@ -22,7 +25,4 @@ public class ResponseHeadersPanel extends JPanel {
         responseHeadersArea.setCaretPosition(0);
     }
 
-    public JTextArea getResponseHeadersArea() {
-        return responseHeadersArea;
-    }
 }

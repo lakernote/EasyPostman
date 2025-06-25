@@ -100,8 +100,8 @@ public class ScriptPanel extends JPanel {
                 Theme theme = Theme.load(in);
                 theme.apply(area);
             }
-        } catch (IOException ignored) {
-            log.error(ignored.getMessage(), ignored);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -120,7 +120,6 @@ public class ScriptPanel extends JPanel {
         provider.addCompletion(new BasicCompletion(provider, "responseHeaders", "响应头对象"));
         provider.addCompletion(new BasicCompletion(provider, "status", "响应状态"));
         provider.addCompletion(new BasicCompletion(provider, "statusCode", "响应状态码"));
-        provider.addCompletion(new BasicCompletion(provider, "console.log", "打印日志到控制台"));
         provider.addCompletion(new BasicCompletion(provider, "setEnvironmentVariable", "设置环境变量"));
         provider.addCompletion(new BasicCompletion(provider, "getEnvironmentVariable", "获取环境变量"));
         provider.addCompletion(new BasicCompletion(provider, "if", "条件语句"));

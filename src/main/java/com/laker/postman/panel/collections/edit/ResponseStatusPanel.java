@@ -1,11 +1,14 @@
 package com.laker.postman.panel.collections.edit;
 
+import lombok.Getter;
+
 import javax.swing.*;
 import java.awt.*;
 
 /**
  * 状态栏面板，展示状态码、响应时间、响应大小
  */
+@Getter
 public class ResponseStatusPanel extends JPanel {
     private final JLabel statusCodeLabel;
     private final JLabel responseTimeLabel;
@@ -22,17 +25,5 @@ public class ResponseStatusPanel extends JPanel {
         add(responseTimeLabel);
         add(new JSeparator(SwingConstants.VERTICAL));
         add(responseSizeLabel);
-    }
-
-    public JLabel getStatusCodeLabel() {
-        return statusCodeLabel;
-    }
-
-    public JLabel getResponseTimeLabel() {
-        return responseTimeLabel;
-    }
-
-    public JLabel getResponseSizeLabel() {
-        return responseSizeLabel;
     }
 }

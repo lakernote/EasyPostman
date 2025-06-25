@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.edit;
 
 import com.laker.postman.model.HttpResponse;
+import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +12,9 @@ import java.util.Map;
  * 响应体面板，展示响应体内容和格式化按钮
  */
 public class ResponseBodyPanel extends JPanel {
+    @Getter
     private final JTextPane responseBodyPane;
+    @Getter
     private final JButton formatButton;
     private final JButton downloadButton;
     private String currentFilePath;
@@ -32,14 +35,6 @@ public class ResponseBodyPanel extends JPanel {
         buttonPanel.add(downloadButton);
         add(buttonPanel, BorderLayout.SOUTH);
         downloadButton.addActionListener(e -> saveFile());
-    }
-
-    public JTextPane getResponseBodyPane() {
-        return responseBodyPane;
-    }
-
-    public JButton getFormatButton() {
-        return formatButton;
     }
 
     public void setBodyText(HttpResponse resp) {

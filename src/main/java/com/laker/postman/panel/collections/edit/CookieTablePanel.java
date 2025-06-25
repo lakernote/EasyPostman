@@ -15,8 +15,7 @@ import java.util.Map;
  * CookieTablePanel: 展示和编辑当前请求host下的cookie
  */
 public class CookieTablePanel extends JPanel {
-    private EasyNameValueTablePanel cookieTablePanel;
-    private String currentHost = null;
+    private final EasyNameValueTablePanel cookieTablePanel;
     @Setter
     private JTextField urlField = null;
 
@@ -53,7 +52,6 @@ public class CookieTablePanel extends JPanel {
         } catch (Exception ignore) {
         }
         if (host == null) host = "";
-        currentHost = host;
         cookieTablePanel.clear();
         Map<String, Map<String, String>> all = HttpRequestExecutor.getAllCookies();
         Map<String, String> cookies = all.getOrDefault(host, new HashMap<>());

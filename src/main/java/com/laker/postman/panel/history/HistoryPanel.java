@@ -184,7 +184,6 @@ public class HistoryPanel extends BasePanel {
             long tls = info.getSecureConnectEnd() > 0 && info.getSecureConnectStart() > 0 ? info.getSecureConnectEnd() - info.getSecureConnectStart() : -1;
             long reqHeaders = info.getRequestHeadersEnd() > 0 && info.getRequestHeadersStart() > 0 ? info.getRequestHeadersEnd() - info.getRequestHeadersStart() : -1;
             long reqBody = info.getRequestBodyEnd() > 0 && info.getRequestBodyStart() > 0 ? info.getRequestBodyEnd() - info.getRequestBodyStart() : -1;
-            long respHeaders = info.getResponseHeadersEnd() > 0 && info.getResponseHeadersStart() > 0 ? info.getResponseHeadersEnd() - info.getResponseHeadersStart() : -1;
             long respBody = info.getResponseBodyEnd() > 0 && info.getResponseBodyStart() > 0 ? info.getResponseBodyEnd() - info.getResponseBodyStart() : -1;
             long total = info.getCallEnd() > 0 && info.getCallStart() > 0 ? info.getCallEnd() - info.getCallStart() : -1;
             // 计算服务端耗时
@@ -205,11 +204,11 @@ public class HistoryPanel extends BasePanel {
                     .append("</td></tr>");
             // 新增Queueing和Stalled展示
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Queueing</td><td>")
-                .append(info.getQueueingCost() > 0 ? info.getQueueingCost() + " ms" : "-")
-                .append("</td></tr>");
+                    .append(info.getQueueingCost() > 0 ? info.getQueueingCost() + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Stalled</td><td>")
-                .append(info.getStalledCost() > 0 ? info.getStalledCost() + " ms" : "-")
-                .append("</td></tr>");
+                    .append(info.getStalledCost() > 0 ? info.getStalledCost() + " ms" : "-")
+                    .append("</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>DNS Lookup</td><td>")
                     .append(dns >= 0 ? dns + " ms" : "-")
                     .append("</td></tr>");
@@ -228,11 +227,19 @@ public class HistoryPanel extends BasePanel {
             sb.append("<tr><td style='padding:2px 8px 2px 0;'>Content Download</td><td>")
                     .append(respBody >= 0 ? respBody + " ms" : "-")
                     .append("</td></tr>");
+            // 新增连接池状态展示
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>OkHttp Idle Connections</td><td>")
+                .append(item.response.idleConnectionCount)
+                .append("</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;'>OkHttp Total Connections</td><td>")
+                .append(item.response.connectionCount)
+                .append("</td></tr>");
             sb.append("</table>");
             // 简要说明
             sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");
             sb.append("各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>");
-            sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。");
+            sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>");
+            sb.append("OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。");
             sb.append("</div>");
             sb.append("</div>");
         }

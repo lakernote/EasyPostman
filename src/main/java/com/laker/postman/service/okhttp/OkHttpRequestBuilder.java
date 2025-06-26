@@ -1,9 +1,6 @@
 package com.laker.postman.service.okhttp;
 
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.Request;
-import okhttp3.RequestBody;
+import okhttp3.*;
 
 import java.io.File;
 import java.util.Map;
@@ -82,6 +79,32 @@ public class OkHttpRequestBuilder {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
+        }
+        return builder.build();
+    }
+
+
+    public static Request buildFormRequest(String url, String method, Map<String, String> headers,
+                                           Map<String, String> urlencoded) {
+        FormBody.Builder formBuilder = new FormBody.Builder();
+        if (urlencoded != null) {
+            for (Map.Entry<String, String> entry : urlencoded.entrySet()) {
+                formBuilder.add(entry.getKey(), entry.getValue());
+            }
+        }
+        RequestBody requestBody = formBuilder.build();
+        Request.Builder builder = new Request.Builder().url(url).method(method, requestBody);
+        boolean hasContentType = false;
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+                if ("Content-Type".equalsIgnoreCase(entry.getKey())) {
+                    hasContentType = true;
+                }
+            }
+        }
+        if (!hasContentType) {
+            builder.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         }
         return builder.build();
     }

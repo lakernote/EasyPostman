@@ -39,7 +39,18 @@ public class HttpService {
     }
 
     /**
-     * 发送 multipart/form-data 请求，支持文本字段和文件字段（OkHttp 实现）
+     * 发送 form-urlencoded 请求
+     */
+    public static HttpResponse sendRequestWithForm(String urlString, String method, Map<String, String> headers,
+                                                   Map<String, String> urlencoded, boolean followRedirects) throws Exception {
+        String baseUri = extractBaseUri(urlString);
+        OkHttpClient client = OkHttpClientManager.getClient(baseUri, followRedirects);
+        Request request = OkHttpRequestBuilder.buildFormRequest(urlString, method, headers, urlencoded);
+        return callWithRequest(client, request);
+    }
+
+    /**
+     * 发送 multipart请求，支持文本字段和文件字段（OkHttp 实现）
      */
     public static HttpResponse sendRequestWithMultipart(String urlString, String method, Map<String, String> headers,
                                                         Map<String, String> formData, Map<String, String> formFiles, boolean followRedirects) throws Exception {

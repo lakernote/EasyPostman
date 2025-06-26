@@ -1,9 +1,9 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
 import com.laker.postman.model.ResponseWithRedirects;
-import com.laker.postman.model.HttpResponse;
 
 import java.net.URL;
 import java.util.LinkedHashMap;
@@ -23,6 +23,7 @@ public class RedirectHandler {
         Map<String, String> headers = new LinkedHashMap<>(origHeaders);
         Map<String, String> formData = req.formData;
         Map<String, String> formFiles = req.formFiles;
+        Map<String, String> urlencoded = req.urlencoded;
         boolean isMultipart = req.isMultipart;
         int redirectCount = 0;
         boolean followRedirects = req.followRedirects;
@@ -36,6 +37,7 @@ public class RedirectHandler {
             currentReq.formFiles = formFiles;
             currentReq.isMultipart = isMultipart;
             currentReq.followRedirects = followRedirects;
+            currentReq.urlencoded = urlencoded;
             HttpResponse resp = HttpSingleRequestExecutor.execute(currentReq);
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();

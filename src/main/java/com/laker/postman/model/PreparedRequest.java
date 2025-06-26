@@ -12,6 +12,8 @@ public class PreparedRequest {
     public String body;
     public Map<String, String> formData;
     public Map<String, String> formFiles;
+    // x-www-form-urlencoded 字段
+    public Map<String, String> urlencoded;
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
 }

@@ -19,6 +19,8 @@ public class HttpSingleRequestExecutor {
     private static HttpResponse sendRequestByType(PreparedRequest req) throws Exception {
         if (req.isMultipart) {
             return HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
+        } else if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            return HttpService.sendRequestWithForm(req.url, req.method, req.headers, req.urlencoded, req.followRedirects);
         } else {
             return HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
         }

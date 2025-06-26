@@ -1,4 +1,4 @@
-package com.laker.postman.service.okhttp;
+package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.model.HttpEventInfo;
 import lombok.extern.slf4j.Slf4j;

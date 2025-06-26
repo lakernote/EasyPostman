@@ -1,4 +1,4 @@
-package com.laker.postman.service.okhttp;
+package com.laker.postman.service.http.okhttp;
 
 import okhttp3.*;
 

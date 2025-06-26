@@ -11,7 +11,8 @@ public class HttpResponse {
     public String body;
     public int code; // 添加响应状态码字段
     public String threadName; // 添加线程名称字段
-    public String filePath; // 下载文件路径字段
+    public String filePath; // 临时文件下载路径字段
+    public String fileName; // 如果是文件下载，从响应头中获取的文件名字段
     public long costMs; // 请求耗时，单位毫秒
     public String protocol; // 协议类型字段，例如 HTTP/1.1 或 HTTP/2
     public int idleConnectionCount; // 空闲连接数

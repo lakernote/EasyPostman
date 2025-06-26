@@ -17,6 +17,7 @@ import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.HttpRequestExecutor;
 import com.laker.postman.util.JsonPathUtil;
+import com.laker.postman.util.PreparedRequestBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -396,7 +397,7 @@ public class JMeterPanel extends BasePanel {
                     HttpResponse resp = null;
                     long cost = 0;
                     try {
-                        req = HttpRequestExecutor.buildPreparedRequest(jtNode.httpRequestItem);
+                        req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
                         resp = HttpRequestExecutor.execute(req);
                         responseBody = resp.body;
                         responseCode = resp.code;

@@ -58,4 +58,3 @@ public class CookieManager {
         return cookieStore;
     }
 }
-

@@ -12,9 +12,10 @@ import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.util.HttpRequestExecutor;
 import com.laker.postman.util.HttpUtil;
 import com.laker.postman.util.JsScriptExecutor;
+import com.laker.postman.util.PreparedRequestBuilder;
+import com.laker.postman.util.RedirectHandler;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -329,7 +330,7 @@ public class RequestEditSubPanel extends JPanel {
                 return;
             }
         }
-        PreparedRequest req = HttpRequestExecutor.buildPreparedRequest(item);
+        PreparedRequest req = PreparedRequestBuilder.build(item);
         if (req.url.isEmpty()) {
             JOptionPane.showMessageDialog(this, "请输入有效的 URL");
             return;
@@ -377,7 +378,7 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     });
                     requestHeadersText = reqHeadersBuilder.toString();
-                    ResponseWithRedirects respWithRedirects = HttpRequestExecutor.executeWithRedirects(req, 10);
+                    ResponseWithRedirects respWithRedirects = RedirectHandler.executeWithRedirects(req, 10);
                     resp = respWithRedirects.finalResponse;
                     redirectInfos = respWithRedirects.redirects;
                     StringBuilder chainBuilder = getRedirctChainStringBuilder();

@@ -1,7 +1,8 @@
 package com.laker.postman.util;
 
-import cn.hutool.core.map.MapUtil;
-import com.laker.postman.model.*;
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.HttpService;
 import lombok.extern.slf4j.Slf4j;
@@ -35,43 +36,6 @@ public class HttpRequestExecutor {
         return COOKIE_MANAGER.getAllCookies();
     }
 
-    /**
-     * 构建通用请求参数，适用于单发、批量、压测等
-     */
-    public static PreparedRequest buildPreparedRequest(HttpRequestItem item) {
-        PreparedRequest req = new PreparedRequest();
-        req.method = item.getMethod();
-        Map<String, String> headers = item.getHeaders() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(item.getHeaders());
-        // 拼接 params 到 url
-        String urlString = buildUrlWithParams(item.getUrl(), item.getParams());
-        req.url = encodeUrlParams(EnvironmentService.replaceVariables(urlString));
-        addContentTypeHeader(headers, item);
-        addAuthorization(headers, item);
-        addCookieHeaderIfNeeded(req.url, headers);
-        req.headers = HttpService.processHeaders(headers);
-        // x-www-form-urlencoded 逻辑
-        if (MapUtil.isNotEmpty(item.getUrlencoded())) {
-            req.urlencoded = item.getUrlencoded();
-            // 生成body字符串
-            StringBuilder sb = new StringBuilder();
-            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
-                if (!sb.isEmpty()) sb.append("&");
-                sb.append(HttpUtil.encodeURIComponent(entry.getKey()))
-                        .append("=")
-                        .append(HttpUtil.encodeURIComponent(entry.getValue()));
-            }
-            req.body = sb.toString();
-        } else {
-            req.body = EnvironmentService.replaceVariables(item.getBody());
-        }
-        req.isMultipart = item.getFormData() != null && !item.getFormData().isEmpty();
-        if (req.isMultipart) {
-            req.formData = item.getFormData();
-            req.formFiles = item.getFormFiles();
-        }
-        req.followRedirects = item.isFollowRedirects != null ? item.isFollowRedirects : true;
-        return req;
-    }
 
     public static HttpResponse execute(PreparedRequest req) throws Exception {
         HttpResponse resp = sendRequestByType(req);
@@ -79,7 +43,7 @@ public class HttpRequestExecutor {
         return resp;
     }
 
-    // 拼接 params 到 url，避免重复
+    // 以下为工具方法，供 PreparedRequestBuilder/RedirectHandler 复用
     public static String buildUrlWithParams(String url, Map<String, String> params) {
         if (params == null || params.isEmpty()) return url;
         StringBuilder sb = new StringBuilder(url);
@@ -100,7 +64,7 @@ public class HttpRequestExecutor {
         return sb.toString();
     }
 
-    private static Set<String> extractUrlParamKeys(String url, boolean hasQuestionMark) {
+    static Set<String> extractUrlParamKeys(String url, boolean hasQuestionMark) {
         Set<String> urlParamKeys = new LinkedHashSet<>();
         if (hasQuestionMark) {
             String paramStr = url.substring(url.indexOf('?') + 1);
@@ -118,8 +82,7 @@ public class HttpRequestExecutor {
         return urlParamKeys;
     }
 
-    // 对 URL 的参数部分做 encodeURIComponent 处理
-    private static String encodeUrlParams(String url) {
+    static String encodeUrlParams(String url) {
         if (url == null || !url.contains("?")) return url;
         int idx = url.indexOf('?');
         String baseUrl = url.substring(0, idx);
@@ -142,20 +105,20 @@ public class HttpRequestExecutor {
         return sb.toString();
     }
 
-    // 根据 Body 类型自动添加 Content-Type 请求头（如果用户没有手动设置）
-    private static void addContentTypeHeader(Map<String, String> headers, HttpRequestItem item) {
+    static void addContentTypeHeader(Map<String, String> headers, HttpRequestItem item) {
         boolean hasContentType = headers.keySet().stream().anyMatch("Content-Type"::equalsIgnoreCase);
         if (!hasContentType) {
             if (item.getFormData() != null && !item.getFormData().isEmpty()) {
                 headers.put("Content-Type", "multipart/form-data");
+            } else if (item.getUrlencoded() != null && !item.getUrlencoded().isEmpty()) {
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
             } else if (item.getBody() != null && !item.getBody().isEmpty()) {
                 headers.put("Content-Type", "application/json");
             }
         }
     }
 
-    // 添加认证头
-    private static void addAuthorization(Map<String, String> headers, HttpRequestItem item) {
+    static void addAuthorization(Map<String, String> headers, HttpRequestItem item) {
         String authType = item.getAuthType();
         if ("basic".equals(authType)) {
             String username = EnvironmentService.replaceVariables(item.getAuthUsername());
@@ -172,10 +135,10 @@ public class HttpRequestExecutor {
         }
     }
 
-    private static void addCookieHeaderIfNeeded(String url, Map<String, String> headers) {
+    static void addCookieHeaderIfNeeded(String url, Map<String, String> headers) {
         try {
             URL urlObj = new URL(url);
-            String host = urlObj.getHost();
+            String host = getHost(urlObj);
             String cookieHeader = getCookieHeader(host);
             if (cookieHeader != null && !cookieHeader.isEmpty()) {
                 headers.put("Cookie", cookieHeader);
@@ -185,20 +148,18 @@ public class HttpRequestExecutor {
         }
     }
 
-    private static HttpResponse sendRequestByType(PreparedRequest req) throws Exception {
-        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
-            return HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
-        } else if (req.isMultipart) {
+    static HttpResponse sendRequestByType(PreparedRequest req) throws Exception {
+        if (req.isMultipart) {
             return HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
         } else {
             return HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
         }
     }
 
-    private static void handleSetCookie(HttpResponse resp, String url) {
+    static void handleSetCookie(HttpResponse resp, String url) {
         try {
             URL urlObj = new URL(url);
-            String host = urlObj.getHost();
+            String host = getHost(urlObj);
             List<String> setCookieHeaders = extractSetCookieHeaders(resp);
             if (!setCookieHeaders.isEmpty()) {
                 setCookies(host, setCookieHeaders);
@@ -207,7 +168,7 @@ public class HttpRequestExecutor {
         }
     }
 
-    private static List<String> extractSetCookieHeaders(HttpResponse resp) {
+    static List<String> extractSetCookieHeaders(HttpResponse resp) {
         List<String> setCookieHeaders = new ArrayList<>();
         if (resp.headers != null) {
             for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
@@ -219,72 +180,7 @@ public class HttpRequestExecutor {
         return setCookieHeaders;
     }
 
-    /**
-     * 支持重定向链的请求执行，返回最终响应和重定向过程
-     */
-    public static ResponseWithRedirects executeWithRedirects(PreparedRequest req, int maxRedirects) throws Exception {
-        ResponseWithRedirects result = new ResponseWithRedirects();
-        String url = req.url;
-        String method = req.method;
-        String body = req.body;
-        Map<String, String> origHeaders = req.headers;
-        Map<String, String> headers = new LinkedHashMap<>(origHeaders);
-        Map<String, String> formData = req.formData;
-        Map<String, String> formFiles = req.formFiles;
-        boolean isMultipart = req.isMultipart;
-        int redirectCount = 0;
-        boolean followRedirects = req.followRedirects;
-        while (redirectCount <= maxRedirects) {
-            HttpResponse resp = isMultipart ?
-                    HttpService.sendRequestWithMultipart(url, method, headers, formData, formFiles, followRedirects) :
-                    HttpService.sendRequest(url, method, headers, body, followRedirects);
-            // 记录本次响应
-            RedirectInfo info = new RedirectInfo();
-            info.url = url;
-            info.statusCode = resp.code;
-            info.headers = resp.headers;
-            info.responseBody = resp.body;
-            info.location = extractLocationHeader(resp);
-            result.redirects.add(info);
-            handleSetCookie(resp, url);
-            // 判断是否重定向
-            if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
-                // 计算新url
-                url = info.location.startsWith("http") ? info.location : new URL(new URL(url), info.location).toString();
-                redirectCount++;
-                // 302/303: 跳转后method变GET，body清空，multipart清空
-                if (info.statusCode == 302 || info.statusCode == 303) {
-                    method = "GET";
-                    body = null;
-                    isMultipart = false;
-                    formData = null;
-                    formFiles = null;
-                }
-                // 307/308: method不变，body不变
-                // 其余情况method不变
-                // 跳转时headers需重置（去掉Content-Type/Content-Length/Host等）
-                headers = new LinkedHashMap<>(origHeaders);
-                headers.remove("Content-Length");
-                headers.remove("Host");
-                headers.remove("Content-Type");
-                continue;
-            } else {
-                // 非重定向，返回最终响应
-                result.finalResponse = resp;
-                break;
-            }
-        }
-        return result;
-    }
-
-    private static String extractLocationHeader(HttpResponse resp) {
-        if (resp.headers != null) {
-            for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                if (entry.getKey() != null && "Location".equalsIgnoreCase(entry.getKey())) {
-                    return entry.getValue().get(0);
-                }
-            }
-        }
-        return null;
+    private static String getHost(URL urlObj) {
+        return urlObj.getHost();
     }
 }

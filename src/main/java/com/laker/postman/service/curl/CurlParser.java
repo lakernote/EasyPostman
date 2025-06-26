@@ -1,7 +1,8 @@
-package com.laker.postman.util;
+package com.laker.postman.service.curl;
 
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.service.http.HttpRequestExecutor;
 
 import java.util.ArrayList;
 import java.util.List;

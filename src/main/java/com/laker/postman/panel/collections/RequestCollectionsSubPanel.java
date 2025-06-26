@@ -15,10 +15,10 @@ import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.edit.RequestEditPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
-import com.laker.postman.service.HttpService;
+import com.laker.postman.service.http.HttpService;
 import com.laker.postman.service.RequestCollectionPersistence;
-import com.laker.postman.util.CurlParser;
-import com.laker.postman.util.PostmanImport;
+import com.laker.postman.service.curl.CurlParser;
+import com.laker.postman.service.postman.PostmanImport;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;

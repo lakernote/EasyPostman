@@ -1,9 +1,14 @@
-package com.laker.postman.service;
+package com.laker.postman.service.http;
 
 import cn.hutool.core.util.IdUtil;
+import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.util.*;
+import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.okhttp.ConnectionInfoHolder;
+import com.laker.postman.service.okhttp.OkHttpClientManager;
+import com.laker.postman.service.okhttp.OkHttpRequestBuilder;
+import com.laker.postman.service.okhttp.OkHttpResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;

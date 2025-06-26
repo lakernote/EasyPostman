@@ -1,10 +1,10 @@
-package com.laker.postman.util;
+package com.laker.postman.service.http;
 
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
 import com.laker.postman.model.ResponseWithRedirects;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.service.HttpService;
+
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.List;

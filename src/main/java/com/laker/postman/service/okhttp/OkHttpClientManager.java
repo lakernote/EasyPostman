@@ -1,4 +1,4 @@
-package com.laker.postman.util;
+package com.laker.postman.service.okhttp;
 
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;

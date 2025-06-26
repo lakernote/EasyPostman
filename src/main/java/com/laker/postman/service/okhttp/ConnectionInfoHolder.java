@@ -1,5 +1,6 @@
-package com.laker.postman.util;
+package com.laker.postman.service.okhttp;
 
+import com.laker.postman.model.HttpEventInfo;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;

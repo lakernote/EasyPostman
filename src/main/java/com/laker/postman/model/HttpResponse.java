@@ -1,7 +1,5 @@
 package com.laker.postman.model;
 
-import com.laker.postman.util.HttpEventInfo;
-
 import java.util.List;
 import java.util.Map;
 

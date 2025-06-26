@@ -1,4 +1,4 @@
-package com.laker.postman.util;
+package com.laker.postman.service.okhttp;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;

@@ -1,7 +1,6 @@
-package com.laker.postman.util;
+package com.laker.postman.model;
 
 import lombok.Data;
-import okhttp3.Handshake;
 import okhttp3.Protocol;
 
 import java.security.cert.Certificate;

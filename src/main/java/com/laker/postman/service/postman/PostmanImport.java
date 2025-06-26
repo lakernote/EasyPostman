@@ -1,4 +1,4 @@
-package com.laker.postman.util;
+package com.laker.postman.service.postman;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;

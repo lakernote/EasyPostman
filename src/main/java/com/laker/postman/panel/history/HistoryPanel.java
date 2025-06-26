@@ -7,7 +7,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.util.FontUtil;
-import com.laker.postman.util.HttpEventInfo;
+import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
@@ -295,7 +295,7 @@ public class HistoryPanel extends BasePanel {
         if (item.response != null && item.response.httpEventInfo != null) {
             sb.append("<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0'>");
             sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Event Info]</b></div>");
-            com.laker.postman.util.HttpEventInfo info = item.response.httpEventInfo;
+            HttpEventInfo info = item.response.httpEventInfo;
             sb.append("<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Remote</td><td>" + escapeHtml(info.getRemoteAddress()) + "</td></tr>");

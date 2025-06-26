@@ -1,10 +1,9 @@
-package com.laker.postman.util;
+package com.laker.postman.service.http;
 
 import cn.hutool.core.map.MapUtil;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.HttpService;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

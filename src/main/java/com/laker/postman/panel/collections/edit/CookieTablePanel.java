@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.edit;
 
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.util.HttpRequestExecutor;
+import com.laker.postman.service.http.HttpRequestExecutor;
 import lombok.Setter;
 
 import javax.swing.*;

@@ -1,10 +1,9 @@
-package com.laker.postman.util;
+package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.HttpService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;

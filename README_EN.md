@@ -12,8 +12,8 @@ environment variables, batch requests, and stress testing to help efficiently te
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 📦 Download: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍏 Mac: EasyPostman-1.0.0.dmg
-    - 🪟 Windows: EasyPostman-1.0.0.msi
+    - 🍏 Mac: EasyPostman-latest.dmg
+    - 🪟 Windows: EasyPostman-latest.msi
 - 💬 WeChat: **lakernote**
 
 ---
@@ -38,17 +38,18 @@ environment variables, batch requests, and stress testing to help efficiently te
 
 ## 🖼️ Screenshots
 
-|      Welcome      | Collection Management |   Environments   |
-|:----------------:|:--------------------:|:----------------:|
-| ![Welcome](docs/welcome.png) | ![Collections](docs/collections.png) | ![Envs](docs/environments.png) |
-
-|   History   |   JMeter Report   |  JMeter Result Tree  |
-|:-----------:|:-----------------:|:--------------------:|
-| ![History](docs/history.png) | ![JMeter Report](docs/jmeter-report.png) | ![JMeter Result Tree](docs/jmeter-resulttree.png) |
-
-|  JMeter Trend  |   Icon   |
-|:--------------:|:--------:|
-| ![JMeter Trend](docs/jmeter-trend.png) | ![Icon](docs/icon.png) |
+| Preview | Preview |
+|:----:|:----:|
+| ![icon](docs/icon.png) | ![welcome](docs/welcome.png) |
+| ![collections-1](docs/collections-1.png) | ![collections-2](docs/collections-2.png) |
+| ![collections-3](docs/collections-3.png) | ![collections-4](docs/collections-4.png) |
+| ![collections-5](docs/collections-5.png) | ![collections-6](docs/collections-6.png) |
+| ![collections-7](docs/collections-7.png) | ![collections-8](docs/collections-8.png) |
+| ![collections](docs/collections.png) | ![environments](docs/environments.png) |
+| ![history-1](docs/history-1.png) | ![history-2](docs/history-2.png) |
+| ![history](docs/history.png) | ![jmeter-2](docs/jmeter-2.png) |
+| ![jmeter-report](docs/jmeter-report.png) | ![jmeter-resulttree](docs/jmeter-resulttree.png) |
+| ![jmeter-trend](docs/jmeter-trend.png) | ![jmeter](docs/jmeter.png) |
 
 ---
 

@@ -9,9 +9,9 @@ EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验
 
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
-- 📦 下载地址: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍏 Mac: EasyPostman-1.0.0.dmg
-    - 🪟 Windows: EasyPostman-1.0.0.msi
+- 📦 安装包下载地址: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+    - 🍏 Mac: EasyPostman-最新版本.dmg
+    - 🪟 Windows: EasyPostman-最新版本.msi
 - 💬 微信：**lakernote**
 
 ---
@@ -36,17 +36,18 @@ EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验
 
 ## 🖼️ 截图预览
 
-|           欢迎页            |             集合管理              |          环境变量           |
-|:------------------------:|:-----------------------------:|:-----------------------:|
-| ![欢迎页](docs/welcome.png) | ![集合管理](docs/collections.png) | ![环境变量](docs/environments.png) |
-
-|           历史记录            |           JMeter 报告            |         JMeter 结果树         |
-|:-------------------------:|:----------------------------:|:----------------------------:|
-| ![历史记录](docs/history.png) | ![JMeter报告](docs/jmeter-report.png) | ![JMeter结果树](docs/jmeter-resulttree.png) |
-
-|         JMeter 趋势图         |          图标          |
-|:------------------------:|:--------------------:|
-| ![JMeter趋势图](docs/jmeter-trend.png) | ![图标](docs/icon.png) |
+| 预览 | 预览 |
+|:----:|:----:|
+| ![icon](docs/icon.png) | ![welcome](docs/welcome.png) |
+| ![collections-1](docs/collections-1.png) | ![collections-2](docs/collections-2.png) |
+| ![collections-3](docs/collections-3.png) | ![collections-4](docs/collections-4.png) |
+| ![collections-5](docs/collections-5.png) | ![collections-6](docs/collections-6.png) |
+| ![collections-7](docs/collections-7.png) | ![collections-8](docs/collections-8.png) |
+| ![collections](docs/collections.png) | ![environments](docs/environments.png) |
+| ![history-1](docs/history-1.png) | ![history-2](docs/history-2.png) |
+| ![history](docs/history.png) | ![jmeter-2](docs/jmeter-2.png) |
+| ![jmeter-report](docs/jmeter-report.png) | ![jmeter-resulttree](docs/jmeter-resulttree.png) |
+| ![jmeter-trend](docs/jmeter-trend.png) | ![jmeter](docs/jmeter.png) |
 
 ---
 

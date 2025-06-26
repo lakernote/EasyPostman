@@ -4,10 +4,7 @@ import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +94,23 @@ public class OkHttpResponseHandler {
                 && !ct.contains("x-java"));
     }
 
+    /**
+     * 保存输入流到临时文件，返回文件对象和写入的字节数
+     */
+    private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix) throws IOException {
+        File tempFile = File.createTempFile(prefix, suffix);
+        int totalBytes = 0;
+        try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = is.read(buf)) != -1) {
+                fos.write(buf, 0, len);
+                totalBytes += len;
+            }
+        }
+        return new FileAndSize(tempFile, totalBytes);
+    }
+
     private static void handleBinaryResponse(Response okResponse, HttpResponse response) throws IOException {
         InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
         String fileName = null;
@@ -123,19 +137,10 @@ public class OkHttpResponseHandler {
         if (fileName == null) fileName = "downloaded_file";
         response.fileName = fileName;
         if (is != null) {
-            File tempFile = File.createTempFile("easyPostman_download_", null);
-            int totalBytes = 0;
-            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                byte[] buf = new byte[8192];
-                int len;
-                while ((len = is.read(buf)) != -1) {
-                    fos.write(buf, 0, len);
-                    totalBytes += len;
-                }
-            }
-            response.filePath = tempFile.getAbsolutePath();
+            FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null);
+            response.filePath = fs.file.getAbsolutePath();
             response.body = "[二进制内容，已保存为临时文件]";
-            response.bodySize = totalBytes;
+            response.bodySize = fs.size;
         } else {
             response.body = "[无响应体]";
             response.bodySize = 0;
@@ -170,23 +175,14 @@ public class OkHttpResponseHandler {
 
     private static void handleTextResponse(Response okResponse, HttpResponse response, long contentLengthHeader) throws IOException {
         String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
-        if (contentLengthHeader > MAX_BODY_SIZE) {
+        if (contentLengthHeader > MAX_BODY_SIZE) { // 如果 Content-Length 大于 10KB，直接保存为临时文件
             InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
             if (is != null) {
-                File tempFile = File.createTempFile("easyPostman_text_download_", null);
-                int totalBytes = 0;
-                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                    byte[] buf = new byte[8192];
-                    int len;
-                    while ((len = is.read(buf)) != -1) {
-                        fos.write(buf, 0, len);
-                        totalBytes += len;
-                    }
-                }
-                response.filePath = tempFile.getAbsolutePath();
+                FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_text_download_", ext != null ? ext : ".txt");
+                response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
                 response.body = "[响应体内容超过10KB，已保存为临时文件，可下载查看完整内容]";
-                response.bodySize = totalBytes;
+                response.bodySize = fs.size;
             } else {
                 response.body = "[无响应体]";
                 response.bodySize = 0;
@@ -194,15 +190,13 @@ public class OkHttpResponseHandler {
             }
         } else if (okResponse.body() != null) {
             String bodyStr = okResponse.body().string();
-            if (bodyStr.getBytes().length > MAX_BODY_SIZE) {
-                File tempFile = File.createTempFile("easyPostman_text_download_", null);
-                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                    fos.write(bodyStr.getBytes());
-                }
-                response.filePath = tempFile.getAbsolutePath();
+            if (bodyStr.getBytes().length > MAX_BODY_SIZE) { // 如果响应体内容超过 10KB，保存为临时文件
+                // 这里也用流写入
+                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bodyStr.getBytes()), "easyPostman_text_download_", ext != null ? ext : ".txt");
+                response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
                 response.body = "[响应体内容超过10KB，已保存为临时文件，可下载查看完整内容]";
-                response.bodySize = bodyStr.getBytes().length;
+                response.bodySize = fs.size;
             } else {
                 response.body = bodyStr;
                 response.bodySize = bodyStr.getBytes().length;
@@ -261,5 +255,16 @@ public class OkHttpResponseHandler {
             return fn.trim();
         }
         return null;
+    }
+
+    // 文件和大小的简单封装
+    private static class FileAndSize {
+        File file;
+        int size;
+
+        FileAndSize(File file, int size) {
+            this.file = file;
+            this.size = size;
+        }
     }
 }

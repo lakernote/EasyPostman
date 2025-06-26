@@ -47,35 +47,4 @@ public class HttpEventInfo {
     private Throwable error;
     // 其他
     private String threadName;
-    // 便于输出
-    @Override
-    public String toString() {
-        return "HttpEventInfo{" +
-                "localAddress='" + localAddress + '\'' +
-                ", remoteAddress='" + remoteAddress + '\'' +
-                ", callStart=" + callStart +
-                ", dnsStart=" + dnsStart +
-                ", dnsEnd=" + dnsEnd +
-                ", connectStart=" + connectStart +
-                ", connectEnd=" + connectEnd +
-                ", secureConnectStart=" + secureConnectStart +
-                ", secureConnectEnd=" + secureConnectEnd +
-                ", requestHeadersStart=" + requestHeadersStart +
-                ", requestHeadersEnd=" + requestHeadersEnd +
-                ", requestBodyStart=" + requestBodyStart +
-                ", requestBodyEnd=" + requestBodyEnd +
-                ", responseHeadersStart=" + responseHeadersStart +
-                ", responseHeadersEnd=" + responseHeadersEnd +
-                ", responseBodyStart=" + responseBodyStart +
-                ", responseBodyEnd=" + responseBodyEnd +
-                ", callEnd=" + callEnd +
-                ", callFailed=" + callFailed +
-                ", protocol=" + protocol +
-                ", tlsVersion='" + tlsVersion + '\'' +
-                ", peerCertificates=" + peerCertificates +
-                ", localCertificates=" + localCertificates +
-                ", errorMessage='" + errorMessage + '\'' +
-                ", threadName='" + threadName + '\'' +
-                '}';
-    }
 }

@@ -15,7 +15,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import com.laker.postman.util.FontUtil;
-import com.laker.postman.service.http.HttpRequestExecutor;
+import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.util.JsonPathUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -398,7 +398,7 @@ public class JMeterPanel extends BasePanel {
                     long cost = 0;
                     try {
                         req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
-                        resp = HttpRequestExecutor.execute(req);
+                        resp = HttpSingleRequestExecutor.execute(req);
                         responseBody = resp.body;
                         responseCode = resp.code;
                         cost = resp.costMs;
@@ -836,3 +836,4 @@ public class JMeterPanel extends BasePanel {
         return sorted.get(Math.max(idx, 0));
     }
 }
+

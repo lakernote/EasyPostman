@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.edit;
 
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.http.HttpRequestExecutor;
+import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import lombok.Setter;
 
 import javax.swing.*;
@@ -24,7 +24,7 @@ public class CookieTablePanel extends JPanel {
     public CookieTablePanel(JTextField urlField) {
         this();
         setUrlField(urlField);
-        HttpRequestExecutor.registerCookieChangeListener(cookieListener);
+        HttpSingleRequestExecutor.registerCookieChangeListener(cookieListener);
     }
 
     public CookieTablePanel() {
@@ -32,13 +32,13 @@ public class CookieTablePanel extends JPanel {
         cookieTablePanel = new EasyNameValueTablePanel();
         cookieTablePanel.setEditable(false);
         add(cookieTablePanel, BorderLayout.CENTER);
-        HttpRequestExecutor.registerCookieChangeListener(cookieListener);
+        HttpSingleRequestExecutor.registerCookieChangeListener(cookieListener);
     }
 
     @Override
     public void removeNotify() {
         super.removeNotify();
-        HttpRequestExecutor.unregisterCookieChangeListener(cookieListener);
+        HttpSingleRequestExecutor.unregisterCookieChangeListener(cookieListener);
     }
 
     private void loadCookies() {
@@ -53,7 +53,7 @@ public class CookieTablePanel extends JPanel {
         }
         if (host == null) host = "";
         cookieTablePanel.clear();
-        Map<String, Map<String, String>> all = HttpRequestExecutor.getAllCookies();
+        Map<String, Map<String, String>> all = HttpSingleRequestExecutor.getAllCookies();
         Map<String, String> cookies = all.getOrDefault(host, new HashMap<>());
         for (Map.Entry<String, String> entry : cookies.entrySet()) {
             cookieTablePanel.addRow(entry.getKey(), entry.getValue());

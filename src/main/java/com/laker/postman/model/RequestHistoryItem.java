@@ -18,7 +18,6 @@ public class RequestHistoryItem {
         this.response = response;
     }
 
-
     @Override
     public String toString() {
         return String.format("[%s] %s", method, url);

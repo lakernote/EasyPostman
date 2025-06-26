@@ -27,9 +27,16 @@ public class RedirectHandler {
         int redirectCount = 0;
         boolean followRedirects = req.followRedirects;
         while (redirectCount <= maxRedirects) {
-            HttpResponse resp = isMultipart ?
-                    HttpService.sendRequestWithMultipart(url, method, headers, formData, formFiles, followRedirects) :
-                    HttpService.sendRequest(url, method, headers, body, followRedirects);
+            PreparedRequest currentReq = new PreparedRequest();
+            currentReq.url = url;
+            currentReq.method = method;
+            currentReq.body = body;
+            currentReq.headers = headers;
+            currentReq.formData = formData;
+            currentReq.formFiles = formFiles;
+            currentReq.isMultipart = isMultipart;
+            currentReq.followRedirects = followRedirects;
+            HttpResponse resp = HttpSingleRequestExecutor.execute(currentReq);
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();
             info.url = url;
@@ -38,7 +45,6 @@ public class RedirectHandler {
             info.responseBody = resp.body;
             info.location = extractLocationHeader(resp);
             result.redirects.add(info);
-            HttpRequestExecutor.handleSetCookie(resp, url);
             // 判断是否重定向
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
                 url = info.location.startsWith("http") ? info.location : new URL(new URL(url), info.location).toString();

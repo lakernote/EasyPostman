@@ -2,7 +2,7 @@ package com.laker.postman.service.curl;
 
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.service.http.HttpRequestExecutor;
+import com.laker.postman.service.http.HttpRequestUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -180,7 +180,7 @@ public class CurlParser {
         }
         // url
         if (item.getUrl() != null) {
-            sb.append(" \"").append(HttpRequestExecutor.buildUrlWithParams(item.getUrl(), item.getParams())).append("\"");
+            sb.append(" \"").append(HttpRequestUtil.buildUrlWithParams(item.getUrl(), item.getParams())).append("\"");
         }
         // headers
         if (item.getHeaders() != null) {

@@ -17,11 +17,11 @@ public class PreparedRequestBuilder {
         req.method = item.getMethod();
         Map<String, String> headers = item.getHeaders() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(item.getHeaders());
         // 拼接 params 到 url
-        String urlString = HttpRequestExecutor.buildUrlWithParams(item.getUrl(), item.getParams());
-        req.url = HttpRequestExecutor.encodeUrlParams(EnvironmentService.replaceVariables(urlString));
-        HttpRequestExecutor.addContentTypeHeader(headers, item);
-        HttpRequestExecutor.addAuthorization(headers, item);
-        HttpRequestExecutor.addCookieHeaderIfNeeded(req.url, headers);
+        String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), item.getParams());
+        req.url = HttpRequestUtil.encodeUrlParams(EnvironmentService.replaceVariables(urlString));
+        HttpRequestUtil.addContentTypeHeader(headers, item);
+        HttpRequestUtil.addAuthorization(headers, item);
+        HttpRequestUtil.addCookieHeaderIfNeeded(req.url, headers);
         req.headers = HttpService.processHeaders(headers);
         // x-www-form-urlencoded 逻辑
         if (MapUtil.isNotEmpty(item.getUrlencoded())) {

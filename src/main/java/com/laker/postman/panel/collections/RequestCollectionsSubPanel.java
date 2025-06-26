@@ -627,7 +627,8 @@ public class RequestCollectionsSubPanel extends BasePanel {
             postUrl.setMethod("POST");
             postUrl.setUrl("https://httpbin.org/post");
             postUrl.getHeaders().put("Content-Type", "application/x-www-form-urlencoded");
-            postUrl.setBody("key1=value1&key2=value2");
+            postUrl.getUrlencoded().put("key1", "value1");
+            postUrl.getUrlencoded().put("key2", "value2");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postUrl}));
 
             // PUT 示例

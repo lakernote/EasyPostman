@@ -364,7 +364,7 @@ public class RequestEditSubPanel extends JPanel {
             int statusCode = 0;
             long responseTime;
             String redirectChainText = "";
-            List<HttpRequestExecutor.RedirectInfo> redirectInfos;
+            List<RedirectInfo> redirectInfos;
             HttpResponse resp;
 
             @Override
@@ -377,7 +377,7 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     });
                     requestHeadersText = reqHeadersBuilder.toString();
-                    HttpRequestExecutor.ResponseWithRedirects respWithRedirects = HttpRequestExecutor.executeWithRedirects(req, 10);
+                    ResponseWithRedirects respWithRedirects = HttpRequestExecutor.executeWithRedirects(req, 10);
                     resp = respWithRedirects.finalResponse;
                     redirectInfos = respWithRedirects.redirects;
                     StringBuilder chainBuilder = getRedirctChainStringBuilder();
@@ -414,7 +414,7 @@ public class RequestEditSubPanel extends JPanel {
                     return chainBuilder;
                 }
                 for (int i = 0; i < redirectInfos.size(); i++) {
-                    HttpRequestExecutor.RedirectInfo info = redirectInfos.get(i);
+                    RedirectInfo info = redirectInfos.get(i);
                     chainBuilder.append("[").append(i + 1).append("] ")
                             .append(info.url).append("\n");
                     if (info.location != null) {

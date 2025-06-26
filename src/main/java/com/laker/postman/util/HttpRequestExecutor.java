@@ -1,9 +1,7 @@
 package com.laker.postman.util;
 
 import cn.hutool.core.map.MapUtil;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.*;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.HttpService;
 import lombok.extern.slf4j.Slf4j;
@@ -14,68 +12,27 @@ import java.util.*;
 @Slf4j
 public class HttpRequestExecutor {
 
-    // Cookie管理：host -> cookieName -> cookieValue
-    private static final Map<String, Map<String, String>> COOKIE_STORE = new HashMap<>();
-
-    // Cookie变更监听
-    private static final List<Runnable> COOKIE_CHANGE_LISTENERS = new ArrayList<>();
+    // Cookie 管理器
+    private static final CookieManager COOKIE_MANAGER = new CookieManager();
 
     public static void registerCookieChangeListener(Runnable listener) {
-        if (listener != null && !COOKIE_CHANGE_LISTENERS.contains(listener)) {
-            COOKIE_CHANGE_LISTENERS.add(listener);
-        }
+        COOKIE_MANAGER.registerListener(listener);
     }
 
     public static void unregisterCookieChangeListener(Runnable listener) {
-        COOKIE_CHANGE_LISTENERS.remove(listener);
+        COOKIE_MANAGER.unregisterListener(listener);
     }
 
-    private static void notifyCookieChange() {
-        for (Runnable r : COOKIE_CHANGE_LISTENERS) {
-            try {
-                r.run();
-            } catch (Exception ignore) {
-            }
-        }
-    }
-
-    /**
-     * 获取指定host的cookie字符串
-     */
     public static String getCookieHeader(String host) {
-        Map<String, String> cookies = COOKIE_STORE.get(host);
-        if (cookies == null || cookies.isEmpty()) return null;
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, String> entry : cookies.entrySet()) {
-            if (!sb.isEmpty()) sb.append("; ");
-            sb.append(entry.getKey()).append("=").append(entry.getValue());
-        }
-        return sb.toString();
+        return COOKIE_MANAGER.getCookieHeader(host);
     }
 
-    /**
-     * 设置指定host的cookie
-     */
     public static void setCookies(String host, List<String> setCookieHeaders) {
-        if (host == null || setCookieHeaders == null) return;
-        Map<String, String> cookies = COOKIE_STORE.computeIfAbsent(host, k -> new HashMap<>());
-        for (String header : setCookieHeaders) {
-            String[] parts = header.split(";");
-            if (parts.length > 0) {
-                String[] kv = parts[0].split("=", 2);
-                if (kv.length == 2) {
-                    cookies.put(kv[0].trim(), kv[1].trim());
-                }
-            }
-        }
-        notifyCookieChange();
+        COOKIE_MANAGER.setCookies(host, setCookieHeaders);
     }
 
-    /**
-     * 获取所有cookie（用于UI展示）
-     */
     public static Map<String, Map<String, String>> getAllCookies() {
-        return COOKIE_STORE;
+        return COOKIE_MANAGER.getAllCookies();
     }
 
     /**
@@ -90,17 +47,7 @@ public class HttpRequestExecutor {
         req.url = encodeUrlParams(EnvironmentService.replaceVariables(urlString));
         addContentTypeHeader(headers, item);
         addAuthorization(headers, item);
-        // 自动加Cookie
-        try {
-            URL urlObj = new java.net.URL(req.url);
-            String host = urlObj.getHost();
-            String cookieHeader = getCookieHeader(host);
-            if (cookieHeader != null && !cookieHeader.isEmpty()) {
-                headers.put("Cookie", cookieHeader);
-            }
-        } catch (Exception exception) {
-            log.error("", exception);
-        }
+        addCookieHeaderIfNeeded(req.url, headers);
         req.headers = HttpService.processHeaders(headers);
         // x-www-form-urlencoded 逻辑
         if (MapUtil.isNotEmpty(item.getUrlencoded())) {
@@ -127,32 +74,8 @@ public class HttpRequestExecutor {
     }
 
     public static HttpResponse execute(PreparedRequest req) throws Exception {
-        HttpResponse resp;
-        // x-www-form-urlencoded 逻辑
-        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
-            resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
-        } else if (req.isMultipart) {
-            resp = HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
-        } else {
-            resp = HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
-        }
-        // 解析Set-Cookie
-        try {
-            URL urlObj = new URL(req.url);
-            String host = urlObj.getHost();
-            List<String> setCookieHeaders = new ArrayList<>();
-            if (resp.headers != null) {
-                for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                    if (entry.getKey() != null && "Set-Cookie".equalsIgnoreCase(entry.getKey())) {
-                        setCookieHeaders.addAll(entry.getValue());
-                    }
-                }
-            }
-            if (!setCookieHeaders.isEmpty()) {
-                setCookies(host, setCookieHeaders);
-            }
-        } catch (Exception ignore) {
-        }
+        HttpResponse resp = sendRequestByType(req);
+        handleSetCookie(resp, req.url);
         return resp;
     }
 
@@ -161,6 +84,23 @@ public class HttpRequestExecutor {
         if (params == null || params.isEmpty()) return url;
         StringBuilder sb = new StringBuilder(url);
         boolean hasQuestionMark = url.contains("?");
+        Set<String> urlParamKeys = extractUrlParamKeys(url, hasQuestionMark);
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (urlParamKeys.contains(entry.getKey())) continue;
+            if (hasQuestionMark) {
+                sb.append("&");
+            } else {
+                sb.append("?");
+                hasQuestionMark = true;
+            }
+            sb.append(HttpUtil.encodeURIComponent(entry.getKey()))
+                    .append("=")
+                    .append(HttpUtil.encodeURIComponent(entry.getValue()));
+        }
+        return sb.toString();
+    }
+
+    private static Set<String> extractUrlParamKeys(String url, boolean hasQuestionMark) {
         Set<String> urlParamKeys = new LinkedHashSet<>();
         if (hasQuestionMark) {
             String paramStr = url.substring(url.indexOf('?') + 1);
@@ -175,19 +115,7 @@ public class HttpRequestExecutor {
                 }
             }
         }
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (urlParamKeys.contains(entry.getKey())) continue;
-            if (hasQuestionMark) {
-                sb.append("&");
-            } else {
-                sb.append("?");
-                hasQuestionMark = true;
-            }
-            sb.append(HttpUtil.encodeURIComponent(entry.getKey()))
-                    .append("=")
-                    .append(HttpUtil.encodeURIComponent(entry.getValue()));
-        }
-        return sb.toString();
+        return urlParamKeys;
     }
 
     // 对 URL 的参数部分做 encodeURIComponent 处理
@@ -216,13 +144,7 @@ public class HttpRequestExecutor {
 
     // 根据 Body 类型自动添加 Content-Type 请求头（如果用户没有手动设置）
     private static void addContentTypeHeader(Map<String, String> headers, HttpRequestItem item) {
-        boolean hasContentType = false;
-        for (String key : headers.keySet()) {
-            if ("Content-Type".equalsIgnoreCase(key)) {
-                hasContentType = true;
-                break;
-            }
-        }
+        boolean hasContentType = headers.keySet().stream().anyMatch("Content-Type"::equalsIgnoreCase);
         if (!hasContentType) {
             if (item.getFormData() != null && !item.getFormData().isEmpty()) {
                 headers.put("Content-Type", "multipart/form-data");
@@ -250,18 +172,51 @@ public class HttpRequestExecutor {
         }
     }
 
-    // 重定向信息结构体
-    public static class RedirectInfo {
-        public String url;
-        public int statusCode;
-        public Map<String, List<String>> headers;
-        public String location;
-        public String responseBody;
+    private static void addCookieHeaderIfNeeded(String url, Map<String, String> headers) {
+        try {
+            URL urlObj = new URL(url);
+            String host = urlObj.getHost();
+            String cookieHeader = getCookieHeader(host);
+            if (cookieHeader != null && !cookieHeader.isEmpty()) {
+                headers.put("Cookie", cookieHeader);
+            }
+        } catch (Exception exception) {
+            log.error("", exception);
+        }
     }
 
-    public static class ResponseWithRedirects {
-        public HttpResponse finalResponse;
-        public List<RedirectInfo> redirects = new ArrayList<>();
+    private static HttpResponse sendRequestByType(PreparedRequest req) throws Exception {
+        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            return HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
+        } else if (req.isMultipart) {
+            return HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects);
+        } else {
+            return HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects);
+        }
+    }
+
+    private static void handleSetCookie(HttpResponse resp, String url) {
+        try {
+            URL urlObj = new URL(url);
+            String host = urlObj.getHost();
+            List<String> setCookieHeaders = extractSetCookieHeaders(resp);
+            if (!setCookieHeaders.isEmpty()) {
+                setCookies(host, setCookieHeaders);
+            }
+        } catch (Exception ignore) {
+        }
+    }
+
+    private static List<String> extractSetCookieHeaders(HttpResponse resp) {
+        List<String> setCookieHeaders = new ArrayList<>();
+        if (resp.headers != null) {
+            for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
+                if (entry.getKey() != null && "Set-Cookie".equalsIgnoreCase(entry.getKey())) {
+                    setCookieHeaders.addAll(entry.getValue());
+                }
+            }
+        }
+        return setCookieHeaders;
     }
 
     /**
@@ -280,49 +235,22 @@ public class HttpRequestExecutor {
         int redirectCount = 0;
         boolean followRedirects = req.followRedirects;
         while (redirectCount <= maxRedirects) {
-            HttpResponse resp;
-            if (isMultipart) {
-                resp = HttpService.sendRequestWithMultipart(url, method, headers, formData, formFiles, followRedirects);
-            } else {
-                resp = HttpService.sendRequest(url, method, headers, body, followRedirects);
-            }
+            HttpResponse resp = isMultipart ?
+                    HttpService.sendRequestWithMultipart(url, method, headers, formData, formFiles, followRedirects) :
+                    HttpService.sendRequest(url, method, headers, body, followRedirects);
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();
             info.url = url;
             info.statusCode = resp.code;
             info.headers = resp.headers;
             info.responseBody = resp.body;
-            info.location = null;
-            if (resp.headers != null) {
-                for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                    if (entry.getKey() != null && "Location".equalsIgnoreCase(entry.getKey())) {
-                        info.location = entry.getValue().get(0);
-                        break;
-                    }
-                }
-            }
+            info.location = extractLocationHeader(resp);
             result.redirects.add(info);
-            // 处理Set-Cookie
-            try {
-                java.net.URL urlObj = new java.net.URL(url);
-                String host = urlObj.getHost();
-                List<String> setCookieHeaders = new ArrayList<>();
-                if (resp.headers != null) {
-                    for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                        if (entry.getKey() != null && "Set-Cookie".equalsIgnoreCase(entry.getKey())) {
-                            setCookieHeaders.addAll(entry.getValue());
-                        }
-                    }
-                }
-                if (!setCookieHeaders.isEmpty()) {
-                    setCookies(host, setCookieHeaders);
-                }
-            } catch (Exception ignore) {
-            }
+            handleSetCookie(resp, url);
             // 判断是否重定向
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
                 // 计算新url
-                url = info.location.startsWith("http") ? info.location : new java.net.URL(new java.net.URL(url), info.location).toString();
+                url = info.location.startsWith("http") ? info.location : new URL(new URL(url), info.location).toString();
                 redirectCount++;
                 // 302/303: 跳转后method变GET，body清空，multipart清空
                 if (info.statusCode == 302 || info.statusCode == 303) {
@@ -347,5 +275,16 @@ public class HttpRequestExecutor {
             }
         }
         return result;
+    }
+
+    private static String extractLocationHeader(HttpResponse resp) {
+        if (resp.headers != null) {
+            for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
+                if (entry.getKey() != null && "Location".equalsIgnoreCase(entry.getKey())) {
+                    return entry.getValue().get(0);
+                }
+            }
+        }
+        return null;
     }
 }

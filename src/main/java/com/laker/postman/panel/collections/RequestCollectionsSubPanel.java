@@ -15,9 +15,9 @@ import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.edit.RequestEditPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
-import com.laker.postman.service.http.HttpService;
 import com.laker.postman.service.RequestCollectionPersistence;
 import com.laker.postman.service.curl.CurlParser;
+import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.postman.PostmanImport;
 import lombok.extern.slf4j.Slf4j;
 
@@ -575,7 +575,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
     private void addRequestUnderSelected() {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
-        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{"request", HttpService.createDefaultRequest()});
+        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{"request", HttpRequestFactory.createDefaultRequest()});
         selectedNode.add(reqNode);
         treeModel.reload(selectedNode);
         requestTree.expandPath(new TreePath(selectedNode.getPath()));
@@ -589,7 +589,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
             DefaultMutableTreeNode defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", "Default Group"});
             rootTreeNode.add(defaultGroupNode);
             // 经典的测试请求示例
-            HttpRequestItem example = HttpService.createDefaultRequest();
+            HttpRequestItem example = HttpRequestFactory.createDefaultRequest();
             example.setName("环境变量+脚本示例");
             example.setMethod("GET");
             example.setUrl("{{baseUrl}}?q=lakernote");
@@ -599,11 +599,11 @@ public class RequestCollectionsSubPanel extends BasePanel {
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", example}));
 
             // GET 示例
-            DefaultMutableTreeNode getNode = new DefaultMutableTreeNode(new Object[]{"request", HttpService.createDefaultRequest()});
+            DefaultMutableTreeNode getNode = new DefaultMutableTreeNode(new Object[]{"request", HttpRequestFactory.createDefaultRequest()});
             defaultGroupNode.add(getNode);
 
             // POST JSON 示例
-            HttpRequestItem postJson = HttpService.createDefaultRequest();
+            HttpRequestItem postJson = HttpRequestFactory.createDefaultRequest();
             postJson.setName("POST-JSON 示例");
             postJson.setMethod("POST");
             postJson.setUrl("https://httpbin.org/post");
@@ -612,7 +612,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postJson}));
 
             // POST form-data 示例
-            HttpRequestItem postFormData = HttpService.createDefaultRequest();
+            HttpRequestItem postFormData = HttpRequestFactory.createDefaultRequest();
             postFormData.setName("POST-form-data 示例");
             postFormData.setMethod("POST");
             postFormData.setUrl("https://httpbin.org/post");
@@ -622,7 +622,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postFormData}));
 
             // POST x-www-form-urlencoded 示例
-            HttpRequestItem postUrl = HttpService.createDefaultRequest();
+            HttpRequestItem postUrl = HttpRequestFactory.createDefaultRequest();
             postUrl.setName("POST-x-www-form-urlencoded 示例");
             postUrl.setMethod("POST");
             postUrl.setUrl("https://httpbin.org/post");
@@ -632,7 +632,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postUrl}));
 
             // PUT 示例
-            HttpRequestItem put = HttpService.createDefaultRequest();
+            HttpRequestItem put = HttpRequestFactory.createDefaultRequest();
             put.setName("PUT 示例");
             put.setMethod("PUT");
             put.setUrl("https://httpbin.org/put");
@@ -641,7 +641,7 @@ public class RequestCollectionsSubPanel extends BasePanel {
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", put}));
 
             // DELETE 示例
-            HttpRequestItem delete = HttpService.createDefaultRequest();
+            HttpRequestItem delete = HttpRequestFactory.createDefaultRequest();
             delete.setName("DELETE 示例");
             delete.setMethod("DELETE");
             delete.setUrl("https://httpbin.org/delete");

@@ -102,8 +102,8 @@ public class HttpRequestUtil {
     public static void addCookieHeaderIfNeeded(String url, Map<String, String> headers) {
         try {
             URL urlObj = new URL(url);
-            String host = HttpSingleRequestExecutor.getCookieHeader(urlObj.getHost());
-            String cookieHeader = HttpSingleRequestExecutor.getCookieHeader(host);
+            String host = urlObj.getHost();
+            String cookieHeader = com.laker.postman.service.http.CookieService.getCookieHeader(host);
             if (cookieHeader != null && !cookieHeader.isEmpty()) {
                 headers.put("Cookie", cookieHeader);
             }
@@ -123,5 +123,27 @@ public class HttpRequestUtil {
         }
         return setCookieHeaders;
     }
-}
 
+
+    /**
+     * 提取 baseUri（协议+host+port），端口为-1时补全默认端口，确保与Chrome一致
+     * 提取 URL 的基本 URI 部分（协议 + 主机 + 端口）
+     *
+     * @param urlString 完整的 URL 字符串
+     * @return 基本 URI 字符串
+     */
+    public static String extractBaseUri(String urlString) {
+        try {
+            java.net.URL url = new java.net.URL(urlString);
+            String protocol = url.getProtocol();
+            String host = url.getHost();
+            int port = url.getPort();
+            int defaultPort = url.getDefaultPort();
+            int usePort = (port == -1) ? defaultPort : port;
+            String portPart = (usePort == -1 || (protocol.equals("http") && usePort == 80) || (protocol.equals("https") && usePort == 443)) ? "" : (":" + usePort);
+            return protocol + "://" + host + portPart;
+        } catch (Exception e) {
+            return urlString; // fallback
+        }
+    }
+}

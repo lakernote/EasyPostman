@@ -22,7 +22,7 @@ public class PreparedRequestBuilder {
         HttpRequestUtil.addContentTypeHeader(headers, item);
         HttpRequestUtil.addAuthorization(headers, item);
         HttpRequestUtil.addCookieHeaderIfNeeded(req.url, headers);
-        req.headers = HttpService.processHeaders(headers);
+        req.headers = HttpHeaderUtil.processHeaders(headers);
         // x-www-form-urlencoded 逻辑
         if (MapUtil.isNotEmpty(item.getUrlencoded())) {
             // 生成body字符串

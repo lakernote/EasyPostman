@@ -1,10 +1,7 @@
 package com.laker.postman.service.http;
 
-import cn.hutool.core.util.IdUtil;
 import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.okhttp.ConnectionInfoHolder;
 import com.laker.postman.service.okhttp.OkHttpClientManager;
 import com.laker.postman.service.okhttp.OkHttpRequestBuilder;
@@ -14,8 +11,9 @@ import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+
+import static com.laker.postman.service.http.HttpRequestUtil.extractBaseUri;
 
 /**
  * HTTP 请求服务类，负责发送 HTTP 请求并返回响应
@@ -51,27 +49,6 @@ public class HttpService {
         return callWithRequest(client, request);
     }
 
-    /**
-     * 处理请求头中的环境变量
-     */
-    public static Map<String, String> processHeaders(Map<String, String> headers) {
-        if (headers == null) return null;
-
-        Map<String, String> processedHeaders = new HashMap<>();
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-
-            // 处理请求头的键和值中的环境变量
-            String processedKey = EnvironmentService.replaceVariables(key);
-            String processedValue = EnvironmentService.replaceVariables(value);
-
-            processedHeaders.put(processedKey, processedValue);
-        }
-
-        return processedHeaders;
-    }
-
     @NotNull
     private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
         long startTime = System.currentTimeMillis();
@@ -104,35 +81,5 @@ public class HttpService {
 
         }
         return OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
-    }
-
-    // 提取 baseUri（协议+host+port），端口为-1时补全默认端口，确保与Chrome一致
-    private static String extractBaseUri(String urlString) {
-        try {
-            java.net.URL url = new java.net.URL(urlString);
-            String protocol = url.getProtocol();
-            String host = url.getHost();
-            int port = url.getPort();
-            int defaultPort = url.getDefaultPort();
-            int usePort = (port == -1) ? defaultPort : port;
-            String portPart = (usePort == -1 || (protocol.equals("http") && usePort == 80) || (protocol.equals("https") && usePort == 443)) ? "" : (":" + usePort);
-            return protocol + "://" + host + portPart;
-        } catch (Exception e) {
-            return urlString; // fallback
-        }
-    }
-
-    public static HttpRequestItem createDefaultRequest() {
-        // 创建一个测试请求
-        HttpRequestItem testItem = new HttpRequestItem();
-        testItem.setId(IdUtil.simpleUUID());
-        testItem.setName("测试请求");
-        testItem.setUrl("https://httpbin.org/get");
-        testItem.setMethod("GET");
-
-        // 添加一些默认的请求头
-        testItem.getHeaders().put("User-Agent", "EasyPostman HTTP Client");
-        testItem.getHeaders().put("Accept", "*/*");
-        return testItem;
     }
 }

@@ -124,7 +124,16 @@ public class OkHttpResponseHandler {
             String url = okResponse.request().url().encodedPath();
             int lastSlash = url.lastIndexOf('/');
             if (lastSlash >= 0 && lastSlash < url.length() - 1) {
-                fileName = url.substring(lastSlash + 1);
+                String rawName = url.substring(lastSlash + 1);
+                // 去除 !、?、# 及其后内容
+                int excl = rawName.indexOf('!');
+                int ques = rawName.indexOf('?');
+                int sharp = rawName.indexOf('#');
+                int cut = rawName.length();
+                if (excl >= 0) cut = excl;
+                if (ques >= 0 && ques < cut) cut = ques;
+                if (sharp >= 0 && sharp < cut) cut = sharp;
+                fileName = rawName.substring(0, cut);
             }
         }
         // 再次 Content-Type 猜扩展名

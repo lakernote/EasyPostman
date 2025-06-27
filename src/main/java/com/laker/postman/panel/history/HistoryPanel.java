@@ -3,11 +3,12 @@ package com.laker.postman.panel.history;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.FontUtil;
-import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
@@ -157,6 +158,20 @@ public class HistoryPanel extends BasePanel {
         sb.append("<span style='color:#888;'>Protocol</span>: <span style='color:#1976d2;'>")
                 .append(item.response != null && item.response.protocol != null ? item.response.protocol : "-")
                 .append("</span>");
+        if (item.response != null) {
+            sb.append("<br><span style='color:#888;'>Thread</span>: <span style='color:#1976d2;'>")
+                    .append(item.response.threadName != null ? escapeHtml(item.response.threadName) : "-")
+                    .append("</span>");
+            if (item.response.httpEventInfo != null) {
+                String local = item.response.httpEventInfo.getLocalAddress();
+                String remote = item.response.httpEventInfo.getRemoteAddress();
+                sb.append("<br><span style='color:#888;'>Connection</span>: <span style='color:#1976d2;'>")
+                        .append(local != null ? escapeHtml(local) : "-")
+                        .append("</span> <span style='color:#888;'>→</span> <span style='color:#1976d2;'>")
+                        .append(remote != null ? escapeHtml(remote) : "-")
+                        .append("</span>");
+            }
+        }
         sb.append("</div>");
 
         // ====== 请求头部分 ======
@@ -217,6 +232,11 @@ public class HistoryPanel extends BasePanel {
             sb.append("(None)");
         }
         sb.append("</pre>");
+        // ====== 响应头字节数 ======
+        if (item.response != null) {
+            sb.append("<div style='color:#888;font-size:10px;margin-bottom:4px;'>Headers Size: ")
+                    .append(HttpUtil.getSizeText(item.response.headersSize)).append("</div>");
+        }
         // ====== 响应体部分 ======
         sb.append("<div style='margin:8px 0 4px 0;'><b style='color:#388e3c;'>[Response Body]</b></div>");
         sb.append("<pre style='margin:0;'>");
@@ -226,6 +246,11 @@ public class HistoryPanel extends BasePanel {
             sb.append("(None)");
         }
         sb.append("</pre>");
+        // ====== 响应体字节数 ======
+        if (item.response != null) {
+            sb.append("<div style='color:#888;font-size:10px;margin-bottom:4px;'>Body Size: ")
+                    .append(HttpUtil.getSizeText(item.response.bodySize)).append("</div>");
+        }
 
         // ====== 阶段耗时统计与美化输出 ======
         if (item.response != null && item.response.httpEventInfo != null) {

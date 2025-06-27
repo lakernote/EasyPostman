@@ -25,9 +25,13 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -324,11 +328,11 @@ public class EnvironmentPanel extends BasePanel {
     private void exportEnvironments() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("导出环境变量");
-        fileChooser.setSelectedFile(new java.io.File("EasyPostman-Environments.json"));
+        fileChooser.setSelectedFile(new File("EasyPostman-Environments.json"));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
-            java.io.File fileToSave = fileChooser.getSelectedFile();
-            try (java.io.Writer writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(fileToSave), java.nio.charset.StandardCharsets.UTF_8)) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
                 java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
                 writer.write(JSONUtil.toJsonPrettyStr(envs));
                 JOptionPane.showMessageDialog(this, "导出成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
@@ -350,17 +354,23 @@ public class EnvironmentPanel extends BasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 java.util.List<Environment> envs = JSONUtil.toList(JSONUtil.readJSONArray(fileToOpen, StandardCharsets.UTF_8), Environment.class);
-                // 直接导入，不清空原有环境
-                for (Environment env : envs) {
-                    EnvironmentService.saveEnvironment(env);
-                }
-                refreshUI(); // 刷新UI
-                JOptionPane.showMessageDialog(this, "导入成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                // 导入新环境
+                refreshListAndComboFromAdd(envs);
             } catch (Exception ex) {
                 log.error("Import Error", ex);
                 JOptionPane.showMessageDialog(this, "导入失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void refreshListAndComboFromAdd(List<Environment> envs) {
+        EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+        for (Environment env : envs) {
+            EnvironmentService.saveEnvironment(env);
+            environmentComboBox.addItem(new EnvironmentItem(env)); // 添加到下拉框
+            environmentListModel.addElement(new EnvironmentItem(env)); // 添加到列表
+        }
+        JOptionPane.showMessageDialog(this, "导入成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -377,11 +387,7 @@ public class EnvironmentPanel extends BasePanel {
                 java.util.List<Environment> envs = PostmanImport.parsePostmanEnvironments(json);
                 if (!envs.isEmpty()) {
                     // 导入新环境
-                    for (Environment env : envs) {
-                        EnvironmentService.saveEnvironment(env);
-                    }
-                    refreshUI(); // 刷新UI
-                    JOptionPane.showMessageDialog(this, "导入成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                    refreshListAndComboFromAdd(envs);
                 } else {
                     JOptionPane.showMessageDialog(this, "未解析到有效环境", "提示", JOptionPane.WARNING_MESSAGE);
                 }

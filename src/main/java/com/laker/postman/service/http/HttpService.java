@@ -63,8 +63,9 @@ public class HttpService {
     @NotNull
     private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
         long startTime = System.currentTimeMillis();
-        long queueStart = System.currentTimeMillis(); // 记录newCall前的时间戳
+
         HttpResponse httpResponse = new HttpResponse();
+        long queueStart = System.currentTimeMillis(); // 记录newCall前的时间戳
         Call call = client.newCall(request);
         Response okResponse = null;
         HttpEventInfo httpEventInfo;

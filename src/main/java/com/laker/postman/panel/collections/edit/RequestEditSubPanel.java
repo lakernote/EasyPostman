@@ -365,7 +365,6 @@ public class RequestEditSubPanel extends JPanel {
             String headersText;
             String bodyText;
             int statusCode = 0;
-            long responseTime;
             String redirectChainText = "";
             List<RedirectInfo> redirectInfos;
             HttpResponse resp;
@@ -395,18 +394,79 @@ public class RequestEditSubPanel extends JPanel {
                     });
                     headersText = headersBuilder.toString();
                     bodyText = resp.body;
-                    responseTime = System.currentTimeMillis() - startTime;
                     return null;
                 } catch (InterruptedIOException ignore) {
                     log.info("{} 请求被取消", req.url);
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     statusText = "发生错误: " + ex.getMessage();
-                    headersText = "";
-                    bodyText = ex.getMessage();
-                    responseTime = System.currentTimeMillis() - startTime;
                 }
                 return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    if (resp == null) {
+                        // 如果响应为空，可能是请求被取消或发生异常
+                        responseHeadersPanel.setHeadersText(statusText);
+                        statusCodeLabel.setText(statusText);
+                        statusCodeLabel.setForeground(Color.RED);
+                        return;
+                    }
+                    responseHeadersPanel.setHeadersText(headersText);
+                    setResponseBody(resp);
+                    responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
+                    if (redirectChainArea != null) {
+                        redirectChainArea.setText(redirectChainText);
+                    }
+                    Color statusColor = getStatusColor();
+                    statusCodeLabel.setText("Status: " + statusText);
+                    statusCodeLabel.setForeground(statusColor);
+                    responseTimeLabel.setText(String.format("Duration: %d ms", resp.costMs));
+                    int bytes = resp.bodySize;
+                    responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
+
+                    // postscript 执行
+                    String postscript = item.getPostscript();
+                    if (postscript != null && !postscript.isBlank() && resp != null) {
+                        try {
+                            bindings.put("responseBody", bodyText);
+                            bindings.put("responseHeaders", headersText);
+                            bindings.put("status", statusText);
+                            bindings.put("statusCode", statusCode);
+                            JsScriptExecutor.executeScript(
+                                    postscript,
+                                    bindings,
+                                    output -> {
+                                        if (!output.isBlank()) {
+                                            SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
+                                        }
+                                    }
+                            );
+                            Environment activeEnv = EnvironmentService.getActiveEnvironment();
+                            if (activeEnv != null) {
+                                EnvironmentService.saveEnvironment(activeEnv);
+                                refreshEnvironmentPanel();
+                            }
+                        } catch (Exception ex) {
+                            log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
+                            SidebarTabPanel.appendConsoleLog("[PostScript Error] " + ex.getMessage());
+                            JOptionPane.showMessageDialog(RequestEditSubPanel.this, "后置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                    if (bodyText != null) {
+                        autoExecuteExtractorRules(bodyText);
+                    }
+                    // 保存到历史
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
+                } catch (Exception ex) {
+                    log.error("请求处理异常: {}", ex.getMessage(), ex);
+                } finally {
+                    // 恢复按钮为 Send
+                    requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                    currentWorker = null;
+                }
             }
 
             private StringBuilder getRedirctChainStringBuilder() {
@@ -436,21 +496,7 @@ public class RequestEditSubPanel extends JPanel {
                 return chainBuilder;
             }
 
-            @Override
-            protected void done() {
-                responseHeadersPanel.setHeadersText(headersText);
-                if (resp != null) {
-                    setResponseBody(resp);
-                } else {
-                    responseBodyPanel.setBodyText(null);
-                    if (redirectChainArea != null) {
-                        redirectChainArea.setText(redirectChainText);
-                    }
-                }
-                responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
-                if (redirectChainArea != null) {
-                    redirectChainArea.setText(redirectChainText);
-                }
+            private Color getStatusColor() {
                 Color statusColor;
                 if (statusCode >= 200 && statusCode < 300) {
                     statusColor = new Color(0, 150, 0);
@@ -461,52 +507,9 @@ public class RequestEditSubPanel extends JPanel {
                 } else if (statusCode >= 300) {
                     statusColor = new Color(0, 120, 200);
                 } else {
-                    statusColor = Color.DARK_GRAY;
+                    statusColor = Color.RED;
                 }
-                statusCodeLabel.setText("Status: " + statusText);
-                statusCodeLabel.setForeground(statusColor);
-                responseTimeLabel.setText(String.format("Duration: %d ms", responseTime));
-                int bytes = resp.bodySize;
-                responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
-
-                // postscript 执行
-                String postscript = item.getPostscript();
-                if (postscript != null && !postscript.isBlank() && resp != null) {
-                    try {
-                        bindings.put("responseBody", bodyText);
-                        bindings.put("responseHeaders", headersText);
-                        bindings.put("status", statusText);
-                        bindings.put("statusCode", statusCode);
-                        JsScriptExecutor.executeScript(
-                                postscript,
-                                bindings,
-                                output -> {
-                                    if (!output.isBlank()) {
-                                        SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
-                                    }
-                                }
-                        );
-                        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-                        if (activeEnv != null) {
-                            EnvironmentService.saveEnvironment(activeEnv);
-                            refreshEnvironmentPanel();
-                        }
-                    } catch (Exception ex) {
-                        log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                        SidebarTabPanel.appendConsoleLog("[PostScript Error] " + ex.getMessage());
-                        JOptionPane.showMessageDialog(RequestEditSubPanel.this, "后置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-                if (bodyText != null) {
-                    autoExecuteExtractorRules(bodyText);
-                }
-                // 保存到历史
-                if (resp != null) {
-                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
-                }
-                // 恢复按钮为 Send
-                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
-                currentWorker = null;
+                return statusColor;
             }
         };
         currentWorker.execute();

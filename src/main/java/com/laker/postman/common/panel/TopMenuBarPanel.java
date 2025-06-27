@@ -79,28 +79,23 @@ public class TopMenuBarPanel extends BasePanel {
         JMenu themeMenu = new JMenu("主题");
         ButtonGroup themeGroup = new ButtonGroup();
         JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem("浅色(Flat Light)");
-        JRadioButtonMenuItem darkTheme = new JRadioButtonMenuItem("深色(Flat Dark)");
         JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem("IntelliJ 风格");
         JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem("Mac Light 风格");
         themeGroup.add(lightTheme);
-        themeGroup.add(darkTheme);
         themeGroup.add(intellijTheme);
         themeGroup.add(macLightTheme);
         themeMenu.add(lightTheme);
-        themeMenu.add(darkTheme);
         themeMenu.add(intellijTheme);
         themeMenu.add(macLightTheme);
         // 根据当前主题设置默认选中项
         String lafClass = UIManager.getLookAndFeel().getClass().getName();
         switch (lafClass) {
             case "com.formdev.flatlaf.FlatLightLaf" -> lightTheme.setSelected(true);
-            case "com.formdev.flatlaf.FlatDarkLaf" -> darkTheme.setSelected(true);
             case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> macLightTheme.setSelected(true);
             default -> intellijTheme.setSelected(true);
         }
         // 切换主题事件
         lightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatLightLaf"));
-        darkTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatDarkLaf"));
         intellijTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatIntelliJLaf"));
         macLightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.themes.FlatMacLightLaf"));
         menuBar.add(themeMenu);
@@ -140,36 +135,47 @@ public class TopMenuBarPanel extends BasePanel {
     }
 
     private void aboutActionPerformed() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        JLabel title = new JLabel("EasyPostman");
-        title.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel version = new JLabel("版本：" + getCurrentVersion());
-        version.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel author = new JLabel("作者：lakernote");
-        author.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel license = new JLabel("协议：Apache-2.0");
-        license.setAlignmentX(Component.CENTER_ALIGNMENT);
-        // 可点击的博客、GitHub、Gitee
-        JLabel blog = createLinkLabel("博客：https://laker.blog.csdn.net", "https://laker.blog.csdn.net");
-        blog.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel github = createLinkLabel("GitHub: https://github.com/lakernote", "https://github.com/lakernote");
-        github.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel gitee = createLinkLabel("Gitee: https://gitee.com/lakernote", "https://gitee.com/lakernote");
-        gitee.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel contact = new JLabel("微信：lakernote");
-        contact.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel.add(Box.createVerticalStrut(8));
-        panel.add(title);
-        panel.add(version);
-        panel.add(author);
-        panel.add(license);
-        panel.add(contact);
-        panel.add(blog);
-        panel.add(github);
-        panel.add(gitee);
-        JOptionPane.showMessageDialog(null, panel, "关于 EasyPostman", JOptionPane.PLAIN_MESSAGE);
+        String iconUrl = getClass().getResource("/icons/icon.png") + "";
+        String html = "<html>"
+                + "<head>"
+                + "<div style='border-radius:16px; border:1px solid #e0e0e0; padding:20px 28px; min-width:340px; max-width:420px;'>"
+                + "<div style='text-align:center;'>"
+                + "<img src='" + iconUrl + "' width='56' height='56' style='margin-bottom:10px;'/>"
+                + "</div>"
+                + "<div style='font-size:16px; font-weight:bold; color:#212529; text-align:center; margin-bottom:6px;'>EasyPostman</div>"
+                + "<div style='font-size:12px; color:#666; text-align:center; margin-bottom:12px;'>版本：" + getCurrentVersion() + "</div>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>作者：lakernote</div>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>协议：Apache-2.0</div>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:8px;'>微信：lakernote</div>"
+                + "<hr style='border:none; border-top:1px solid #eee; margin:10px 0;'>"
+                + "<div style='font-size:9px; margin-bottom:2px;'>"
+                + "<a href='https://laker.blog.csdn.net' style='color:#1a0dab; text-decoration:none;'>博客：https://laker.blog.csdn.net</a>"
+                + "</div>"
+                + "<div style='font-size:9px; margin-bottom:2px;'>"
+                + "<a href='https://github.com/lakernote' style='color:#1a0dab; text-decoration:none;'>GitHub: https://github.com/lakernote</a>"
+                + "</div>"
+                + "<div style='font-size:9px;'>"
+                + "<a href='https://gitee.com/lakernote' style='color:#1a0dab; text-decoration:none;'>Gitee: https://gitee.com/lakernote</a>"
+                + "</div>"
+                + "</div>"
+                + "</body>"
+                + "</html>";
+        JEditorPane editorPane = new JEditorPane("text/html", html);
+        editorPane.setEditable(false);
+        editorPane.setOpaque(false);
+        editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        editorPane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                try {
+                    Desktop.getDesktop().browse(e.getURL().toURI());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "无法打开链接：" + e.getURL(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        // 直接用JEditorPane，不用滚动条，且自适应高度
+        editorPane.setPreferredSize(new Dimension(300, 340));
+        JOptionPane.showMessageDialog(null, editorPane, "关于 EasyPostman", JOptionPane.PLAIN_MESSAGE);
     }
 
     /**
@@ -268,7 +274,6 @@ public class TopMenuBarPanel extends BasePanel {
             FlatAnimatedLafChange.showSnapshot();
             switch (className) {
                 case "com.formdev.flatlaf.FlatLightLaf" -> com.formdev.flatlaf.FlatLightLaf.setup();
-                case "com.formdev.flatlaf.FlatDarkLaf" -> com.formdev.flatlaf.FlatDarkLaf.setup();
                 case "com.formdev.flatlaf.FlatIntelliJLaf" -> com.formdev.flatlaf.FlatIntelliJLaf.setup();
                 case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> com.formdev.flatlaf.themes.FlatMacLightLaf.setup();
                 default -> UIManager.setLookAndFeel(className);

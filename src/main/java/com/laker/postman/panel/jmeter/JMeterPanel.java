@@ -14,10 +14,11 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
-import com.laker.postman.util.FontUtil;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
-import com.laker.postman.util.JsonPathUtil;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -407,6 +408,8 @@ public class JMeterPanel extends BasePanel {
                         detail.append("请求耗时: ").append(cost).append(" ms\n");
                         detail.append("执行线程: ").append(resp.threadName).append("\n");
                         detail.append("连接信息: ").append(resp.httpEventInfo.getLocalAddress()).append("->").append(resp.httpEventInfo.getRemoteAddress()).append("\n");
+                        detail.append("空闲连接数: ").append(resp.idleConnectionCount).append("\n");
+                        detail.append("连接总数: ").append(resp.connectionCount).append("\n");
                         detail.append("请求头: ").append(req.headers).append("\n");
                         detail.append("请求体: ").append(req.body).append("\n");
                         if (MapUtil.isNotEmpty(req.formData)) {
@@ -423,8 +426,8 @@ public class JMeterPanel extends BasePanel {
                         }
                         detail.append("响应码: ").append(responseCode).append("\n");
                         detail.append("响应体: ").append(responseBody).append("\n");
-                        detail.append("响应体字节数: ").append(resp.bodySize).append("B\n");
-                        detail.append("响应头字节数: ").append(resp.headersSize).append("B\n");
+                        detail.append("响应体字节数: ").append(HttpUtil.getSizeText(resp.bodySize)).append("\n");
+                        detail.append("响应头字节数: ").append(HttpUtil.getSizeText(resp.headersSize)).append("\n");
                     } catch (Exception ex) {
                         detail.append("请求异常: ").append(ex.getMessage());
                         success = false;

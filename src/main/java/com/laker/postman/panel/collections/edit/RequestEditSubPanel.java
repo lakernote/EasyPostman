@@ -13,9 +13,9 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpUtil;
-import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
+import com.laker.postman.service.js.JsScriptExecutor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.laker.postman.service.http.HttpUtil.getSizeText;
 
 /**
  * 单个请求编辑子面板，包含 URL、方法选择、Headers、Body 和响应展示
@@ -464,16 +466,8 @@ public class RequestEditSubPanel extends JPanel {
                 statusCodeLabel.setText("Status: " + statusText);
                 statusCodeLabel.setForeground(statusColor);
                 responseTimeLabel.setText(String.format("Duration: %d ms", responseTime));
-                String sizeText;
                 int bytes = resp.bodySize;
-                if (bytes < 1024) {
-                    sizeText = String.format("ResponseSize: %d B", bytes);
-                } else if (bytes < 1024 * 1024) {
-                    sizeText = String.format("ResponseSize: %.1f KB", bytes / 1024.0);
-                } else {
-                    sizeText = String.format("ResponseSize: %.1f MB", bytes / (1024.0 * 1024.0));
-                }
-                responseSizeLabel.setText(sizeText);
+                responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
 
                 // postscript 执行
                 String postscript = item.getPostscript();

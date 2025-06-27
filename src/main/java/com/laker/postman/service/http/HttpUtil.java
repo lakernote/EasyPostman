@@ -53,4 +53,22 @@ public class HttpUtil {
         }
         return false;
     }
+
+    /**
+     * 将字节数转换为人类可读的格式
+     *
+     * @param bytes 字节数
+     * @return 格式化后的字符串，例如 "1.5 MB" 或 "512 KB"
+     */
+    public static String getSizeText(int bytes) {
+        String sizeText = "";
+        if (bytes < 1024) {
+            sizeText = String.format("%d B", bytes);
+        } else if (bytes < 1024 * 1024) {
+            sizeText = String.format("%.1f KB", bytes / 1024.0);
+        } else {
+            sizeText = String.format("%.1f MB", bytes / (1024.0 * 1024.0));
+        }
+        return sizeText;
+    }
 }

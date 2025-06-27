@@ -246,6 +246,7 @@ public class RequestEditSubPanel extends JPanel {
      */
     private void updateTabDirty() {
         SwingUtilities.invokeLater(() -> {
+            if (originalRequestItem == null) return; // 如果没有原始请求数据，则不进行脏检测
             boolean dirty = isModified();
             SingletonFactory.getInstance(RequestEditPanel.class).updateTabDirty(this, dirty);
             updateTablesBorder(dirty);

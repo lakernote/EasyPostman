@@ -250,7 +250,6 @@ public class EasyTablePanel extends JPanel {
             // 滚动到新行并选中
             table.scrollRectToVisible(table.getCellRect(row, 0, true)); // 滚动到新行
             table.setRowSelectionInterval(row, row); // 选中该行
-            updateTableBorder(true);
         }
     }
 
@@ -260,8 +259,18 @@ public class EasyTablePanel extends JPanel {
     private void deleteSelectedRow() {
         int row = table.getSelectedRow();
         if (row >= 0) {
+            boolean isRowEmpty = true;
+            for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                Object value = tableModel.getValueAt(row, col);
+                if (value != null && !value.toString().trim().isEmpty()) {
+                    isRowEmpty = false;
+                    break;
+                }
+            }
             tableModel.removeRow(row);
-            updateTableBorder(true);
+            if (!isRowEmpty) {
+                updateTableBorder(true);
+            }
         }
     }
 
@@ -405,6 +414,6 @@ public class EasyTablePanel extends JPanel {
     private void enableRowDragAndDrop() {
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
-        table.setTransferHandler(new TableRowTransferHandler(tableModel,this));
+        table.setTransferHandler(new TableRowTransferHandler(tableModel, this));
     }
 }

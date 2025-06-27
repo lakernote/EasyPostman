@@ -1,24 +1,26 @@
 package com.laker.postman.panel.collections.edit;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
-import com.laker.postman.model.*;
-import com.laker.postman.panel.SidebarTabPanel;
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.ResponseWithRedirects;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.service.http.HttpService;
+import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
-import com.laker.postman.service.js.JsScriptExecutor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -27,12 +29,10 @@ import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.InterruptedIOException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
-import static com.laker.postman.service.http.HttpUtil.getSizeText;
+import static com.laker.postman.service.http.HttpUtil.*;
 
 /**
  * 单个请求编辑子面板，包含 URL、方法选择、Headers、Body 和响应展示
@@ -62,9 +62,14 @@ public class RequestEditSubPanel extends JPanel {
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final JTextArea redirectChainArea; // 重定向链文本区域
+    private JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
     private SwingWorker<Void, Void> currentWorker;
+    // 当前 SSE 事件源, 用于取消 SSE 请求
+    private EventSource currentEventSource;
+    // WebSocket连接对象
+    private volatile okhttp3.WebSocket currentWebSocket;
 
     /**
      * 设置原始请求数据（脏数据检测）
@@ -129,7 +134,7 @@ public class RequestEditSubPanel extends JPanel {
         add(topPanel, BorderLayout.NORTH);
 
         // 创建请求选项卡面板
-        JTabbedPane reqTabs = new JTabbedPane(); // 2. 创建请求选项卡面板
+        reqTabs = new JTabbedPane(); // 2. 创建请求选项卡面板
         reqTabs.setMinimumSize(new Dimension(400, 120));
 
         // 2.1 Params
@@ -168,13 +173,13 @@ public class RequestEditSubPanel extends JPanel {
 
         // 响应Tabs
         JTabbedPane responseTabs = new JTabbedPane();
-        // 响应头面板
-        responseHeadersPanel = new ResponseHeadersPanel();
-        responseTabs.addTab("Headers", responseHeadersPanel);
         // Response body panel
         responseBodyPanel = new ResponseBodyPanel();
         responseTabs.addTab("Body", responseBodyPanel);
         responseBodyPanel.getFormatButton().addActionListener(e -> formatResponseBody());
+        // 响应头面板
+        responseHeadersPanel = new ResponseHeadersPanel();
+        responseTabs.addTab("Headers", responseHeadersPanel);
         // 重定向链Tab
         this.redirectChainArea = new JTextArea();
         redirectChainArea.setEditable(false);
@@ -192,6 +197,9 @@ public class RequestEditSubPanel extends JPanel {
         splitPane.setResizeWeight(0.5);
         add(splitPane, BorderLayout.CENTER);
 
+        // WebSocket消息发送按钮事件绑定（只绑定一次）
+        requestBodyPanel.getWsSendButton().addActionListener(e -> sendWebSocketMessage());
+        requestBodyPanel.getWsSendButton().setEnabled(false);
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
     }
@@ -286,80 +294,32 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-    private String highlightJson(String json) {
-        String s = json.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-        s = s.replaceAll("(\"[^\"]+\")\\s*:", "<span style='color:#1565c0;'>$1</span>:"); // 保持兼容，Java正则里\\"
-        s = s.replaceAll(":\\s*(\".*?\")", ": <span style='color:#43a047;'>$1</span>");
-        s = s.replaceAll(":\\s*([\\d.eE+-]+)", ": <span style='color:#8e24aa;'>$1</span>");
-        return s;
-    }
 
-    // sendRequest方法替换为调用executeWithRedirects
     private void sendRequest(ActionEvent e) {
-        // 如果当前有请求正在进行，则视为取消操作
         if (currentWorker != null) {
-            currentWorker.cancel(true);
-            requestLinePanel.setSendButtonToSend(this::sendRequest);
-            statusCodeLabel.setText("Status: Canceled");
-            statusCodeLabel.setForeground(new Color(255, 140, 0));
+            cancelCurrentRequest();
             return;
         }
         HttpRequestItem item = getCurrentRequest();
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        Postman postman = new Postman(activeEnv);
-        Map<String, Object> bindings = new HashMap<>();
-        bindings.put("request", item);
-        bindings.put("env", activeEnv);
-        bindings.put("postman", postman);
-        bindings.put("pm", postman);
-        // prescript 执行
-        String prescript = item.getPrescript();
-        if (prescript != null && !prescript.isBlank()) {
-            try {
-                bindings.put("request", item);
-                JsScriptExecutor.executeScript(
-                        prescript,
-                        bindings,
-                        output -> {
-                            if (!output.isBlank()) {
-                                SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
-                            }
-                        }
-                );
-            } catch (Exception ex) {
-                log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                SidebarTabPanel.appendConsoleLog("[PreScript Error] " + ex.getMessage());
-                JOptionPane.showMessageDialog(this, "前置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
+        Map<String, Object> bindings = prepareBindings(item);
+        if (!executePrescript(item, bindings)) return;
         PreparedRequest req = PreparedRequestBuilder.build(item);
-        if (req.url.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请输入有效的 URL");
-            return;
+        if (!validateRequest(req, item)) return;
+        updateUIForRequesting();
+        // 协议分发
+        if (isSSERequest(req)) {
+            handleSseRequest(item, req, bindings);
+            requestBodyPanel.showWebSocketSendPanel(false);
+        } else if (isWebSocketRequest(req)) {
+            handleWebSocketRequest(item, req, bindings);
+        } else {
+            handleHttpRequest(item, req, bindings);
+            requestBodyPanel.showWebSocketSendPanel(false);
         }
-        if (req.method == null || req.method.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请选择请求方法");
-            return;
-        }
-        if (req.body != null && "GET".equalsIgnoreCase(req.method) && item.getBody() != null && !item.getBody().isEmpty()) {
-            int confirm = JOptionPane.showConfirmDialog(
-                    this,
-                    "GET 请求通常不包含请求体，是否继续发送？",
-                    "确认",
-                    JOptionPane.YES_NO_OPTION
-            );
-            if (confirm != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
-        statusCodeLabel.setText("Status: Requesting...");
-        statusCodeLabel.setForeground(new Color(255, 140, 0));
-        responseTimeLabel.setText("Duration: --");
-        responseSizeLabel.setText("ResponseSize: --");
-        long startTime = System.currentTimeMillis();
-        // 切换按钮为 Cancel
-        requestLinePanel.setSendButtonToCancel(this::sendRequest);
+    }
+
+    // 普通HTTP请求处理
+    private void handleHttpRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
         currentWorker = new SwingWorker<>() {
             String requestHeadersText;
             String statusText;
@@ -367,35 +327,19 @@ public class RequestEditSubPanel extends JPanel {
             String bodyText;
             int statusCode = 0;
             String redirectChainText = "";
-            List<RedirectInfo> redirectInfos;
             HttpResponse resp;
 
             @Override
             protected Void doInBackground() {
                 try {
-                    StringBuilder reqHeadersBuilder = new StringBuilder();
-                    req.headers.forEach((key, value) -> {
-                        if (key != null) {
-                            reqHeadersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
-                        }
-                    });
-                    requestHeadersText = reqHeadersBuilder.toString();
+                    requestHeadersText = buildRequestHeadersText(req);
                     ResponseWithRedirects respWithRedirects = RedirectHandler.executeWithRedirects(req, 10);
                     resp = respWithRedirects.finalResponse;
-                    redirectInfos = respWithRedirects.redirects;
-                    StringBuilder chainBuilder = getRedirctChainStringBuilder();
-                    redirectChainText = chainBuilder.toString();
+                    redirectChainText = getRedirctChainStringBuilder(respWithRedirects.redirects).toString();
                     statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
                     statusCode = resp.code;
-                    StringBuilder headersBuilder = new StringBuilder();
-                    resp.headers.forEach((key, value) -> {
-                        if (key != null) {
-                            headersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
-                        }
-                    });
-                    headersText = headersBuilder.toString();
+                    headersText = buildResponseHeadersText(resp);
                     bodyText = resp.body;
-                    return null;
                 } catch (InterruptedIOException ignore) {
                     log.info("{} 请求被取消", req.url);
                 } catch (Exception ex) {
@@ -407,114 +351,249 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                try {
-                    if (resp == null) {
-                        // 如果响应为空，可能是请求被取消或发生异常
-                        responseHeadersPanel.setHeadersText(statusText);
-                        statusCodeLabel.setText(statusText);
-                        statusCodeLabel.setForeground(Color.RED);
-                        return;
-                    }
-                    responseHeadersPanel.setHeadersText(headersText);
-                    setResponseBody(resp);
-                    responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
-                    if (redirectChainArea != null) {
-                        redirectChainArea.setText(redirectChainText);
-                    }
-                    Color statusColor = getStatusColor();
-                    statusCodeLabel.setText("Status: " + statusText);
-                    statusCodeLabel.setForeground(statusColor);
-                    responseTimeLabel.setText(String.format("Duration: %d ms", resp.costMs));
-                    int bytes = resp.bodySize;
-                    responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
+                handleResponse(item, bindings, resp, statusText, statusCode, headersText, bodyText);
+                updateUIForResponse(statusText, statusCode, resp, headersText, redirectChainText);
+                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                currentWorker = null;
 
-                    // postscript 执行
-                    String postscript = item.getPostscript();
-                    if (postscript != null && !postscript.isBlank() && resp != null) {
-                        try {
-                            bindings.put("responseBody", bodyText);
-                            bindings.put("responseHeaders", headersText);
-                            bindings.put("status", statusText);
-                            bindings.put("statusCode", statusCode);
-                            JsScriptExecutor.executeScript(
-                                    postscript,
-                                    bindings,
-                                    output -> {
-                                        if (!output.isBlank()) {
-                                            SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
-                                        }
-                                    }
-                            );
-                            Environment activeEnv = EnvironmentService.getActiveEnvironment();
-                            if (activeEnv != null) {
-                                EnvironmentService.saveEnvironment(activeEnv);
-                                refreshEnvironmentPanel();
+                if (resp != null && resp.isSse) {
+                    // 弹窗提示用户是否切换到SSE监听模式
+                    SwingUtilities.invokeLater(() -> {
+                        int result = JOptionPane.showConfirmDialog(RequestEditSubPanel.this,
+                                "检测到 SSE 响应，是否切换到 SSE 监听模式？\n同意后将自动在 Header 区域增加 Accept: text/event-stream。",
+                                "SSE切换提示",
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.QUESTION_MESSAGE);
+                        if (result == JOptionPane.YES_OPTION) {
+                            // 检查 header 区域是否已存在 Accept: text/event-stream（忽略大小写）
+                            boolean hasSseAccept = headersPanel.getMap().keySet().stream()
+                                    .anyMatch(k -> k != null && k.equalsIgnoreCase("Accept") &&
+                                            "text/event-stream".equalsIgnoreCase(headersPanel.getMap().get(k)));
+                            if (!hasSseAccept) {
+                                headersPanel.addRow("Accept", "text/event-stream");
                             }
-                        } catch (Exception ex) {
-                            log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                            SidebarTabPanel.appendConsoleLog("[PostScript Error] " + ex.getMessage());
-                            JOptionPane.showMessageDialog(RequestEditSubPanel.this, "后置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
+                            reqTabs.setSelectedComponent(headersPanel);
+                            // 定位到headerpanel table的最后一行
+                            headersPanel.scrollRectToVisible();
+                            JOptionPane.showMessageDialog(RequestEditSubPanel.this,
+                                    "已自动添加 SSE 头部，即将重新发起请求。",
+                                    "操作提示",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            sendRequest(null);
                         }
-                    }
-                    if (bodyText != null) {
-                        autoExecuteExtractorRules(bodyText);
-                    }
-                    // 保存到历史
-                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
-                } catch (Exception ex) {
-                    log.error("请求处理异常: {}", ex.getMessage(), ex);
-                } finally {
-                    // 恢复按钮为 Send
-                    requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
-                    currentWorker = null;
+                    });
                 }
-            }
-
-            private StringBuilder getRedirctChainStringBuilder() {
-                // 构建重定向链文本
-                StringBuilder chainBuilder = new StringBuilder();
-                if (CollUtil.size(redirectInfos) < 2) { // 如果没有重定向或只有一个请求
-                    chainBuilder.append("No redirects\n");
-                    return chainBuilder;
-                }
-                for (int i = 0; i < redirectInfos.size(); i++) {
-                    RedirectInfo info = redirectInfos.get(i);
-                    chainBuilder.append("[").append(i + 1).append("] ")
-                            .append(info.url).append("\n");
-                    if (info.location != null) {
-                        chainBuilder.append("  Location: ").append(info.location).append("\n");
-                    }
-                    if (info.headers != null) {
-                        for (Map.Entry<String, List<String>> entry : info.headers.entrySet()) {
-                            if (entry.getKey() != null) {
-                                chainBuilder.append("  ").append(entry.getKey()).append(": ")
-                                        .append(String.join(", ", entry.getValue())).append("\n");
-                            }
-                        }
-                    }
-                    chainBuilder.append("\n");
-                }
-                return chainBuilder;
-            }
-
-            private Color getStatusColor() {
-                Color statusColor;
-                if (statusCode >= 200 && statusCode < 300) {
-                    statusColor = new Color(0, 150, 0);
-                } else if (statusCode >= 400 && statusCode < 500) {
-                    statusColor = new Color(230, 130, 0);
-                } else if (statusCode >= 500) {
-                    statusColor = new Color(200, 0, 0);
-                } else if (statusCode >= 300) {
-                    statusColor = new Color(0, 120, 200);
-                } else {
-                    statusColor = Color.RED;
-                }
-                return statusColor;
             }
         };
         currentWorker.execute();
     }
+
+    // SSE请求处理
+    private void handleSseRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
+        currentWorker = new SwingWorker<>() {
+            HttpResponse resp;
+            StringBuilder sseBodyBuilder;
+            long startTime;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    if (!isSSERequest(req)) {
+                        req.headers.remove("accept"); // 如果不是SSE请求，移除Accept头
+                        req.headers.remove("Accept");
+                        req.headers.put("Accept", "text/event-stream"); // 确保设置为SSE类型
+                    }
+                    startTime = System.currentTimeMillis();
+                    resp = new HttpResponse();
+                    sseBodyBuilder = new StringBuilder();
+                    SseUiCallback callback = new SseUiCallback() {
+                        @Override
+                        public void onOpen(HttpResponse r, String headersText) {
+                            SwingUtilities.invokeLater(() -> {
+                                updateUIForResponse(String.valueOf(r.code), r.code, r, headersText, "SSE连接已打开");
+                            });
+                        }
+
+                        @Override
+                        public void onEvent(HttpResponse r) {
+                            SwingUtilities.invokeLater(() -> {
+                                setResponseBody(r);
+                                responseSizeLabel.setText("ResponseSize: " + getSizeText(r.bodySize));
+                            });
+                        }
+
+                        @Override
+                        public void onClosed(HttpResponse r) {
+                            SwingUtilities.invokeLater(() -> {
+                                updateUIForResponse(String.valueOf(r.code), r.code, r, buildResponseHeadersText(r), "SSE连接已关闭");
+                                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                            });
+                            currentEventSource = null;
+                            currentWorker = null;
+                        }
+
+                        @Override
+                        public void onFailure(String errorMsg, HttpResponse r) {
+                            SwingUtilities.invokeLater(() -> {
+                                statusCodeLabel.setText("SSE连接失败: " + errorMsg);
+                                statusCodeLabel.setForeground(Color.RED);
+                                updateUIForResponse("SSE连接失败", 0, r, "", "SSE连接失败");
+                                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                            });
+                            currentEventSource = null;
+                            currentWorker = null;
+                        }
+                    };
+                    currentEventSource = HttpSingleRequestExecutor.executeSSE(req, new SseEventListener(callback, resp, sseBodyBuilder, startTime));
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
+                    SwingUtilities.invokeLater(() -> {
+                        statusCodeLabel.setText("SSE发生错误: " + ex.getMessage());
+                        statusCodeLabel.setForeground(Color.RED);
+                    });
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                if (resp != null) {
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
+                }
+            }
+        };
+        currentWorker.execute();
+    }
+
+    // WebSocket请求处理
+    private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
+        currentWorker = new SwingWorker<>() {
+            okhttp3.WebSocket webSocket;
+            HttpResponse resp = new HttpResponse();
+            StringBuilder wsBodyBuilder = new StringBuilder();
+            long startTime;
+            volatile boolean closed = false;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    startTime = System.currentTimeMillis();
+                    webSocket = HttpSingleRequestExecutor.executeWebSocket(req, new okhttp3.WebSocketListener() {
+                        @Override
+                        public void onOpen(okhttp3.WebSocket webSocket, okhttp3.Response response) {
+                            resp.headers = new LinkedHashMap<>();
+                            for (String name : response.headers().names()) {
+                                resp.headers.put(name, response.headers(name));
+                            }
+                            resp.code = response.code();
+                            resp.protocol = response.protocol().toString();
+                            HttpService.fillHttpEventInfo(resp, startTime, startTime);
+                            currentWebSocket = webSocket;
+                            SwingUtilities.invokeLater(() -> {
+                                updateUIForResponse(String.valueOf(resp.code), resp.code, resp, buildResponseHeadersText(resp), "WebSocket已连接");
+                                reqTabs.setSelectedComponent(requestBodyPanel);
+                                requestBodyPanel.getWsSendButton().setEnabled(true);
+                                requestBodyPanel.showWebSocketSendPanel(true);
+                                requestBodyPanel.getWsSendButton().requestFocusInWindow();
+                                requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
+                            });
+                        }
+
+                        @Override
+                        public void onMessage(okhttp3.WebSocket webSocket, String text) {
+                            appendWebSocketMessage(text);
+                        }
+
+                        @Override
+                        public void onMessage(okhttp3.WebSocket webSocket, okio.ByteString bytes) {
+                            appendWebSocketMessage(bytes.utf8());
+                        }
+
+                        private void appendWebSocketMessage(String text) {
+                            wsBodyBuilder.append(text).append("\n");
+                            resp.body = wsBodyBuilder.toString();
+                            resp.bodySize = resp.body.getBytes().length;
+                            SwingUtilities.invokeLater(() -> {
+                                setResponseBody(resp);
+                                responseSizeLabel.setText("ResponseSize: " + getSizeText(resp.bodySize));
+                            });
+                        }
+
+                        @Override
+                        public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
+                            handleWebSocketClose("WebSocket已关闭: " + reason);
+                        }
+
+                        @Override
+                        public void onClosed(okhttp3.WebSocket webSocket, int code, String reason) {
+                            handleWebSocketClose("WebSocket已关闭: " + reason);
+                        }
+
+                        private void handleWebSocketClose(String message) {
+                            closed = true;
+                            long cost = System.currentTimeMillis() - startTime;
+                            resp.body = wsBodyBuilder.toString();
+                            resp.bodySize = resp.body.getBytes().length;
+                            resp.costMs = cost;
+                            currentWebSocket = null;
+                            SwingUtilities.invokeLater(() -> {
+                                updateUIForResponse("closed", resp.code, resp, buildResponseHeadersText(resp), message);
+                                requestBodyPanel.getWsSendButton().setEnabled(false);
+                                requestBodyPanel.showWebSocketSendPanel(false);
+                                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(okhttp3.WebSocket webSocket, Throwable t, okhttp3.Response response) {
+                            closed = true;
+                            long cost = System.currentTimeMillis() - startTime;
+                            resp.body = wsBodyBuilder.toString();
+                            resp.bodySize = resp.body.getBytes().length;
+                            resp.costMs = cost;
+                            SwingUtilities.invokeLater(() -> {
+                                statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
+                                statusCodeLabel.setForeground(Color.RED);
+                                updateUIForResponse("WebSocket连接失败", 0, resp, "", "WebSocket连接失败");
+                                requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                            });
+                        }
+                    });
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
+                    SwingUtilities.invokeLater(() -> {
+                        statusCodeLabel.setText("WebSocket发生错误: " + ex.getMessage());
+                        statusCodeLabel.setForeground(Color.RED);
+                        requestBodyPanel.getWsSendButton().setEnabled(false);
+                        requestBodyPanel.showWebSocketSendPanel(false);
+                    });
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                if (resp != null) {
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
+                }
+            }
+        };
+        currentWorker.execute();
+    }
+
+    // WebSocket消息发送逻辑
+    private void sendWebSocketMessage() {
+        String msg = requestBodyPanel.getRawBody();
+        if (currentWebSocket != null && msg != null && !msg.isBlank()) {
+            currentWebSocket.send(msg);
+            // 在响应区追加发送内容
+            responseBodyPanel.getResponseBodyPane().setText(
+                    responseBodyPanel.getResponseBodyPane().getText() + "[发送]: " + msg + "\n"
+            );
+            requestBodyPanel.getBodyArea().setText("");
+        }
+    }
+
 
     /**
      * 更新表单内容（用于切换请求或保存后刷新）
@@ -534,11 +613,15 @@ public class RequestEditSubPanel extends JPanel {
         // Headers
         headersPanel.setMap(item.getHeaders());
         // 自动补充 User-Agent 和 Accept
-        if (!item.getHeaders().containsKey("User-Agent")) {
+        // 判断是否已存在 User-Agent（忽略大小写）
+        boolean hasUserAgent = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase("User-Agent"));
+        if (!hasUserAgent) {
             item.getHeaders().put("User-Agent", "EasyPostman HTTP Client");
             headersPanel.addRow("User-Agent", "EasyPostman HTTP Client");
         }
-        if (!item.getHeaders().containsKey("Accept")) {
+        // 判断是否已存在 Accept（忽略大小写）
+        boolean hasAccept = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase("Accept"));
+        if (!hasAccept) {
             item.getHeaders().put("Accept", "*/*");
             headersPanel.addRow("Accept", "*/*");
         }
@@ -593,41 +676,9 @@ public class RequestEditSubPanel extends JPanel {
         scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
         scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
         // 自动重定向复选框
-        requestLinePanel.getFollowRedirectsCheckBox().setSelected(item.isFollowRedirects);
-
+        requestLinePanel.getFollowRedirectsCheckBox().setSelected(item.isFollowRedirects());
         // 设置原始数据用于脏检测
         setOriginalRequestItem(item);
-    }
-
-    @NotNull
-    private static Map<String, String> getMergedParams(Map<String, String> params, String url) {
-        Map<String, String> urlParams = new LinkedHashMap<>();
-        if (url != null && url.contains("?")) {
-            int idx = url.indexOf('?');
-            String paramStr = url.substring(idx + 1);
-            // 拆解参数并urldecode
-            int last = 0;
-            while (last < paramStr.length()) {
-                int amp = paramStr.indexOf('&', last);
-                String pair = (amp == -1) ? paramStr.substring(last) : paramStr.substring(last, amp);
-                int eqIdx = pair.indexOf('=');
-                if (eqIdx > 0) {
-                    String k = pair.substring(0, eqIdx);
-                    String v = pair.substring(eqIdx + 1);
-                    urlParams.put(k, v);
-                } else if (!pair.isEmpty()) {
-                    urlParams.put(pair, "");
-                }
-                if (amp == -1) break;
-                last = amp + 1;
-            }
-        }
-        // 合并 params，item.getParams() 优先生效
-        Map<String, String> mergedParams = new LinkedHashMap<>(urlParams);
-        if (params != null) {
-            mergedParams.putAll(params);
-        }
-        return mergedParams;
     }
 
     /**
@@ -649,7 +700,7 @@ public class RequestEditSubPanel extends JPanel {
             item.setFormFiles(requestBodyPanel.getFormFiles());
             item.setBody(""); // form-data模式下，body通常不直接使用
         } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(bodyType)) {
-            item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
+            item.setBody(""); // x-www-form-urlencoded模式下，body通常不���接使用
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
             item.setUrlencoded(requestBodyPanel.getUrlencoded());
@@ -672,7 +723,7 @@ public class RequestEditSubPanel extends JPanel {
         item.setPrescript(scriptPanel.getPrescript());
         item.setPostscript(scriptPanel.getPostscript());
         // 自动重定向
-        item.setIsFollowRedirects(requestLinePanel.getFollowRedirectsCheckBox().isSelected());
+        item.setFollowRedirects(requestLinePanel.getFollowRedirectsCheckBox().isSelected());
         return item;
     }
 
@@ -703,41 +754,13 @@ public class RequestEditSubPanel extends JPanel {
         SingletonFactory.getInstance(EnvironmentPanel.class).refreshUI();
     }
 
-
     /**
      * 解析url中的参数到paramsPanel，并与现有params合并去重
      */
     private void parseUrlParamsToParamsPanel() {
         String url = urlField.getText();
-        if (url == null) return;
-        int idx = url.indexOf('?');
-        if (idx < 0 || idx == url.length() - 1) return;
-        String paramStr = url.substring(idx + 1);
-        if (!paramStr.contains("=")) return; // 没有=号，不解析为参数
-        Map<String, String> urlParams = new LinkedHashMap<>();
-        int last = 0;
-        while (last < paramStr.length()) {
-            int amp = paramStr.indexOf('&', last);
-            String pair = (amp == -1) ? paramStr.substring(last) : paramStr.substring(last, amp);
-            int eqIdx = pair.indexOf('=');
-            String k, v;
-            if (eqIdx >= 0) {
-                k = pair.substring(0, eqIdx);
-                v = pair.substring(eqIdx + 1);
-            } else {
-                // 没有=号的pair不处理
-                last = (amp == -1) ? paramStr.length() : amp + 1;
-                continue;
-            }
-            if (StrUtil.isNotBlank(k) && StrUtil.isNotBlank(v)) {
-                urlParams.put(k, v);
-            }
-            if (amp == -1) break;
-            last = amp + 1;
-        }
-        if (urlParams.isEmpty()) {
-            return;
-        }
+        Map<String, String> urlParams = getParamsMapFromUrl(url);
+        if (urlParams == null) return;
         Map<String, String> merged = new LinkedHashMap<>(paramsPanel.getMap());
         merged.putAll(urlParams);
         // 清空并填充paramsPanel
@@ -747,13 +770,173 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-    /**
-     * 如果 headers 中不包含指定 Content-Type，则补充，并同步更新 headersPanel
-     */
-    private void ensureContentTypeHeader(Map<String, String> headers, String contentType, EasyNameValueTablePanel headersPanel) {
-        if (!HttpUtil.containsContentType(headers, contentType)) {
-            headers.put("Content-Type", contentType);
-            headersPanel.addRow("Content-Type", contentType);
+
+    // 取消当前请求
+    private void cancelCurrentRequest() {
+        if (currentEventSource != null) {
+            currentEventSource.cancel(); // 取消SSE请求
+            currentEventSource = null;
+        }
+        if (currentWebSocket != null) {
+            currentWebSocket.close(1000, "User canceled"); // 关闭WebSocket连接
+            currentWebSocket = null;
+        }
+        currentWorker.cancel(true);
+        requestLinePanel.setSendButtonToSend(this::sendRequest);
+        statusCodeLabel.setText("Status: Canceled");
+        statusCodeLabel.setForeground(new Color(255, 140, 0));
+        currentWorker = null;
+    }
+
+
+    // UI状态：请求中
+    private void updateUIForRequesting() {
+        statusCodeLabel.setText("Status: Requesting...");
+        statusCodeLabel.setForeground(new Color(255, 140, 0));
+        responseTimeLabel.setText("Duration: --");
+        responseSizeLabel.setText("ResponseSize: --");
+        requestLinePanel.setSendButtonToCancel(this::sendRequest);
+    }
+
+    // UI状态：响应完成
+    private void updateUIForResponse(String statusText, int statusCode, HttpResponse resp, String headersText, String redirectChainText) {
+        if (resp == null) {
+            responseHeadersPanel.setHeadersText(statusText);
+            statusCodeLabel.setText(statusText);
+            statusCodeLabel.setForeground(Color.RED);
+            return;
+        }
+        responseHeadersPanel.setHeadersText(headersText);
+        setResponseBody(resp);
+        responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
+        if (redirectChainArea != null) {
+            redirectChainArea.setText(redirectChainText);
+        }
+        Color statusColor = getStatusColor(statusCode);
+        statusCodeLabel.setText("Status: " + statusText);
+        statusCodeLabel.setForeground(statusColor);
+        responseTimeLabel.setText(String.format("Duration: %d ms", resp.costMs));
+        int bytes = resp.bodySize;
+        responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
+    }
+
+    // 处理响应、后置脚本、变量提取、历史
+    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, String statusText, int statusCode, String headersText, String bodyText) {
+        try {
+            executePostscript(item, bindings, resp, statusText, statusCode, headersText, bodyText);
+            if (bodyText != null) {
+                autoExecuteExtractorRules(bodyText);
+            }
+            // 保存到历史
+            if (resp != null) {
+                SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
+            }
+        } catch (Exception ex) {
+            log.error("请求处理异常: {}", ex.getMessage(), ex);
         }
     }
+
+
+    // 构建请求头文本
+    private String buildRequestHeadersText(PreparedRequest req) {
+        StringBuilder reqHeadersBuilder = new StringBuilder();
+        req.headers.forEach((key, value) -> {
+            if (key != null) {
+                reqHeadersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
+            }
+        });
+        return reqHeadersBuilder.toString();
+    }
+
+    // 构建响应头文本
+    private String buildResponseHeadersText(HttpResponse resp) {
+        StringBuilder headersBuilder = new StringBuilder();
+        resp.headers.forEach((key, value) -> {
+            if (key != null) {
+                headersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
+            }
+        });
+        return headersBuilder.toString();
+    }
+
+
+    // SSE UI回调接口
+    private interface SseUiCallback {
+        void onOpen(HttpResponse resp, String headersText);
+
+        void onEvent(HttpResponse resp);
+
+        void onClosed(HttpResponse resp);
+
+        void onFailure(String errorMsg, HttpResponse resp);
+    }
+
+    // SSE事件监听器
+    private static class SseEventListener extends EventSourceListener {
+        private final SseUiCallback callback;
+        private final HttpResponse resp;
+        private final StringBuilder sseBodyBuilder;
+        private final long startTime;
+
+        public SseEventListener(SseUiCallback callback, HttpResponse resp, StringBuilder sseBodyBuilder, long startTime) {
+            this.callback = callback;
+            this.resp = resp;
+            this.sseBodyBuilder = sseBodyBuilder;
+            this.startTime = startTime;
+        }
+
+        @Override
+        public void onOpen(EventSource eventSource, okhttp3.Response response) {
+            resp.headers = new LinkedHashMap<>();
+            for (String name : response.headers().names()) {
+                resp.headers.put(name, response.headers(name));
+            }
+            resp.code = response.code();
+            resp.protocol = response.protocol().toString();
+            HttpService.fillHttpEventInfo(resp, startTime, startTime);
+            callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
+        }
+
+        @Override
+        public void onClosed(EventSource eventSource) {
+            long cost = System.currentTimeMillis() - startTime;
+            resp.body = sseBodyBuilder.toString();
+            resp.bodySize = resp.body.getBytes().length;
+            resp.costMs = cost;
+            callback.onClosed(resp);
+        }
+
+        @Override
+        public void onFailure(EventSource eventSource, Throwable throwable, okhttp3.Response response) {
+            log.error("sse onFailure,response status: {},response headers: {}", response.code(), response.headers(), throwable);
+            String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
+            long cost = System.currentTimeMillis() - startTime;
+            resp.body = sseBodyBuilder.toString();
+            resp.bodySize = resp.body.getBytes().length;
+            resp.costMs = cost;
+            callback.onFailure(errorMsg, resp);
+        }
+
+        @Override
+        public void onEvent(EventSource eventSource, String id, String type, String data) {
+            if (data != null && !data.isBlank()) {
+                sseBodyBuilder.append(data).append("\n");
+                resp.body = sseBodyBuilder.toString();
+                resp.bodySize = resp.body.getBytes().length;
+                callback.onEvent(resp);
+            }
+        }
+
+        // 静态方法，避免内部类访问外部实例
+        private static String buildResponseHeadersTextStatic(HttpResponse resp) {
+            StringBuilder headersBuilder = new StringBuilder();
+            resp.headers.forEach((key, value) -> {
+                if (key != null) {
+                    headersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
+                }
+            });
+            return headersBuilder.toString();
+        }
+    }
+
 }

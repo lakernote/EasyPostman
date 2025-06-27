@@ -24,6 +24,7 @@ public class RequestBodyPanel extends JPanel {
     public static final String BODY_TYPE_FORM_URLENCODED = "x-www-form-urlencoded";
     public static final String BODY_TYPE_RAW = "raw";
     public static final String RAW_TYPE_JSON = "JSON";
+    public static final String RAW_TYPE_WEBSOCKET = "WebSocket";
 
     @Getter
     private final JComboBox<String> bodyTypeComboBox;
@@ -39,6 +40,8 @@ public class RequestBodyPanel extends JPanel {
     private final JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_RAW;
     private String currentRawType = RAW_TYPE_JSON;
+    @Getter
+    private JButton wsSendButton;
 
     public RequestBodyPanel() {
         setLayout(new BorderLayout());
@@ -52,10 +55,13 @@ public class RequestBodyPanel extends JPanel {
         bodyTypePanel.add(Box.createHorizontalStrut(10));
         formatLabel = new JLabel("Format:");
         bodyTypePanel.add(formatLabel);
-        String[] rawTypes = {RAW_TYPE_JSON};
+        String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_WEBSOCKET};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
-        rawTypeComboBox.addActionListener(e -> currentRawType = (String) rawTypeComboBox.getSelectedItem());
+        rawTypeComboBox.addActionListener(e -> {
+            currentRawType = (String) rawTypeComboBox.getSelectedItem();
+            updateSendButtonVisibility();
+        });
         rawTypeComboBox.setVisible(isBodyTypeRAW());
         formatLabel.setVisible(isBodyTypeRAW());
         bodyTypePanel.add(rawTypeComboBox);
@@ -104,12 +110,18 @@ public class RequestBodyPanel extends JPanel {
     private JPanel createRawPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         bodyArea = new JTextArea(5, 20);
+        bodyArea.setBackground(Color.WHITE);
         bodyArea.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(bodyArea);
         panel.add(scrollPane, BorderLayout.CENTER);
+        JPanel bottomPanel = new JPanel(new BorderLayout());
         JButton formatButton = new JButton("Format Body");
         formatButton.addActionListener(e -> formatBody());
-        panel.add(formatButton, BorderLayout.SOUTH);
+        bottomPanel.add(formatButton, BorderLayout.WEST);
+        wsSendButton = new JButton("发送");
+        wsSendButton.setVisible(false);
+        bottomPanel.add(wsSendButton, BorderLayout.EAST);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -185,5 +197,31 @@ public class RequestBodyPanel extends JPanel {
     public Map<String, String> getUrlencoded() {
         if (formUrlencodedTablePanel == null) return null;
         return formUrlencodedTablePanel.getMap();
+    }
+
+    // 切换到WebSocket消息发送面板
+    public void showWebSocketSendPanel(boolean show) {
+        // 自动切换到Body Tab的 type=raw 且 format=WebSocket
+        bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
+        currentBodyType = BODY_TYPE_RAW;
+        bodyCardLayout.show(bodyCardPanel, BODY_TYPE_RAW);
+        rawTypeComboBox.setVisible(true);
+        formatLabel.setVisible(true);
+        if (show) {
+            rawTypeComboBox.setSelectedItem(RAW_TYPE_WEBSOCKET);
+            currentRawType = RAW_TYPE_WEBSOCKET;
+        } else {
+            rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
+            currentRawType = RAW_TYPE_JSON;
+        }
+        updateSendButtonVisibility();
+    }
+
+    private void updateSendButtonVisibility() {
+        if (isBodyTypeRAW() && RAW_TYPE_WEBSOCKET.equals(currentRawType)) {
+            wsSendButton.setVisible(true);
+        } else {
+            wsSendButton.setVisible(false);
+        }
     }
 }

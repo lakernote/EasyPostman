@@ -523,12 +523,12 @@ public class RequestCollectionsSubPanel extends BasePanel {
      * 从cURL命令导入请求项到集合
      */
     private void importCurlToCollection() {
-        String curlText = LargeInputDialog.show(this, "从cURL导入", "请输入cURL命令:");
+        String curlText = LargeInputDialog.show(null, "从cURL导入", "请输入cURL命令:");
         if (curlText == null || curlText.trim().isEmpty()) return;
         try {
             CurlRequest curlRequest = CurlParser.parse(curlText);
             if (curlRequest.url == null) {
-                JOptionPane.showMessageDialog(this, "无法解析cURL命令", "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "无法解析cURL命令", "错误", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             // 构造HttpRequestItem

@@ -66,4 +66,14 @@ public class RequestLinePanel extends JPanel {
         sendButton.addActionListener(cancelAction);
     }
 
+    public void setSendButtonToClose(ActionListener cancelAction) {
+        for (ActionListener al : sendButton.getActionListeners()) {
+            sendButton.removeActionListener(al);
+        }
+        sendButton.setText("Close");
+        sendButton.setBackground(new java.awt.Color(0xD9D9D9)); // Postman浅灰色
+        sendButton.setForeground(new java.awt.Color(0x333333)); // 深灰文字
+        sendButton.setEnabled(true);
+        sendButton.addActionListener(cancelAction);
+    }
 }

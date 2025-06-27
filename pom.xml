@@ -20,9 +20,9 @@
         <hutool.version>5.8.29</hutool.version>
         <jiconfont-swing.version>1.0.1</jiconfont-swing.version>
         <jiconfont-font_awesome.version>4.7.0.1</jiconfont-font_awesome.version>
-        <kafka-clients.version>3.7.1</kafka-clients.version>
         <logback-classic.version>1.5.13</logback-classic.version>
         <jfreechart.version>1.5.5</jfreechart.version>
+        <okhttp.version>4.12.0</okhttp.version>
     </properties>
     <dependencies>
 
@@ -112,7 +112,12 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.12.0</version>
+            <version>${okhttp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-sse</artifactId>
+            <version>${okhttp.version}</version>
         </dependency>
     </dependencies>
     <build>

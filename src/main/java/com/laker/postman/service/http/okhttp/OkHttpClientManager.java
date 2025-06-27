@@ -46,7 +46,9 @@ public class OkHttpClientManager {
                     // 是否自动跟随重定向
                     .followRedirects(followRedirects)
                     // 事件监听器（用于统计连接信息等） 用 eventListenerFactory()，传入 EventListener.Factory，每次 newCall 时都能生成新的 EventListener 实例。
-                    .eventListenerFactory(call -> ConnectionInfoHolder.getEventListener());
+                    .eventListenerFactory(call -> ConnectionInfoHolder.getEventListener())
+                    .cache(null)
+                    .pingInterval(30, TimeUnit.SECONDS);
 
             //  Cookie 管理（如需全局 CookieJar）
             // builder.cookieJar(new CustomCookieJar());

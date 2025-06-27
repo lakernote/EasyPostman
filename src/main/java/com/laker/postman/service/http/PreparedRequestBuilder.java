@@ -29,7 +29,7 @@ public class PreparedRequestBuilder {
             req.formData = replaceVariables(item.getFormData());
             req.formFiles = replaceVariables(item.getFormFiles());
         }
-        req.followRedirects = item.isFollowRedirects != null ? item.isFollowRedirects : true;
+        req.followRedirects = item.isFollowRedirects();
         return req;
     }
 

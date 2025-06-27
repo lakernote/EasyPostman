@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 
 import java.io.*;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +19,7 @@ public class OkHttpResponseHandler {
 
     public static HttpResponse handleResponse(Response okResponse, HttpResponse response) throws IOException {
         response.code = okResponse.code();
-        response.headers = new HashMap<>();
+        response.headers = new LinkedHashMap<>();
         int headersSize = 0;
         for (String name : okResponse.headers().names()) {
             String value = okResponse.header(name);
@@ -37,6 +37,12 @@ public class OkHttpResponseHandler {
 
         if (isBinaryContent(contentType)) {
             handleBinaryResponse(okResponse, response);
+        } else if (isSSEContent(contentType)) {
+            response.body = "[SSE流响应，无法直接处理]";
+            response.bodySize = 0;
+            response.isSse = true;
+            okResponse.body().close();
+            okResponse.close();
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
@@ -52,6 +58,13 @@ public class OkHttpResponseHandler {
         }
         return -1;
     }
+
+    private static boolean isSSEContent(String contentType) {
+        if (contentType == null) return false;
+        String ct = contentType.toLowerCase();
+        return ct.contains("text/event-stream");
+    }
+
 
     private static boolean isBinaryContent(String contentType) {
         if (contentType == null) return false;

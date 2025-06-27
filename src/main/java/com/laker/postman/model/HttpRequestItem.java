@@ -48,7 +48,7 @@ public class HttpRequestItem implements Serializable {
     private String postscript = "";
 
     // 是否自动重定向（默认true）
-    public Boolean isFollowRedirects = true;
+    private boolean isFollowRedirects = true;
 
     /**
      * 变量提取规则类

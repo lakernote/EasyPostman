@@ -253,6 +253,14 @@ public class EasyTablePanel extends JPanel {
         }
     }
 
+    public void scrollRectToVisible(){
+        int row = table.getRowCount() - 1; // 滚动到最后一行
+        if (row >= 0) {
+            table.scrollRectToVisible(table.getCellRect(row, 0, true));
+            table.setRowSelectionInterval(row, row); // 选中最后一行
+        }
+    }
+
     /**
      * 右键menu: 删除选中的行
      */

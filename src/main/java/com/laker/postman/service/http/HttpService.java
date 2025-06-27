@@ -1,5 +1,6 @@
 package com.laker.postman.service.http;
 
+import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.http.okhttp.ConnectionInfoHolder;
@@ -8,7 +9,9 @@ import com.laker.postman.service.http.okhttp.OkHttpRequestBuilder;
 import com.laker.postman.service.http.okhttp.OkHttpResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.jetbrains.annotations.NotNull;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
+import okhttp3.sse.EventSources;
 
 import java.io.IOException;
 import java.util.Map;
@@ -60,7 +63,28 @@ public class HttpService {
         return callWithRequest(client, request);
     }
 
-    @NotNull
+    /**
+     * 发送 SSE 请求，使用 OkHttp SSE
+     */
+    public static EventSource sendSseRequest(String urlString, String method, Map<String, String> headers, String body, boolean followRedirects, EventSourceListener listener) throws Exception {
+        String baseUri = extractBaseUri(urlString);
+        OkHttpClient client = OkHttpClientManager.getClient(baseUri, followRedirects);
+        Request request = OkHttpRequestBuilder.buildRequest(urlString, method, headers, body);
+        return EventSources.createFactory(client).newEventSource(request, listener);
+    }
+
+
+    /**
+     * 发送 WebSocket 请求，使用 OkHttp WebSocket
+     */
+    public static WebSocket sendWebSocket(String urlString, String method, Map<String, String> headers, String body, boolean followRedirects, WebSocketListener listener) throws Exception {
+        String baseUri = extractBaseUri(urlString);
+        OkHttpClient client = OkHttpClientManager.getClient(baseUri, followRedirects);
+        Request request = OkHttpRequestBuilder.buildRequest(urlString, method, headers, body);
+        return client.newWebSocket(request, listener);
+    }
+
+
     private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
         long startTime = System.currentTimeMillis();
 
@@ -68,7 +92,6 @@ public class HttpService {
         long queueStart = System.currentTimeMillis(); // 记录newCall前的时间戳
         Call call = client.newCall(request);
         Response okResponse = null;
-        HttpEventInfo httpEventInfo;
         // 记录连接池状态
         ConnectionPool pool = client.connectionPool();
         httpResponse.idleConnectionCount = pool.idleConnectionCount();
@@ -76,22 +99,26 @@ public class HttpService {
         try {
             okResponse = call.execute();
         } finally {
-            httpEventInfo = ConnectionInfoHolder.getAndRemove();
-            if (httpEventInfo != null) {
-                httpEventInfo.setQueueStart(queueStart);
-                // 计算排队耗时
-                if (httpEventInfo.getCallStart() > 0) {
-                    httpEventInfo.setQueueingCost(httpEventInfo.getCallStart() - queueStart);
-                }
-                // 计算阻塞耗时
-                if (httpEventInfo.getConnectStart() > 0 && httpEventInfo.getCallStart() > 0) {
-                    httpEventInfo.setStalledCost(httpEventInfo.getConnectStart() - httpEventInfo.getCallStart());
-                }
-            }
-            httpResponse.httpEventInfo = httpEventInfo;
-            httpResponse.costMs = System.currentTimeMillis() - startTime;
-
+            fillHttpEventInfo(httpResponse, queueStart, startTime);
         }
         return OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
+    }
+
+
+    public static void fillHttpEventInfo(HttpResponse httpResponse, long queueStart, long startTime) {
+        HttpEventInfo httpEventInfo = ConnectionInfoHolder.getAndRemove();
+        if (httpEventInfo != null) {
+            httpEventInfo.setQueueStart(queueStart);
+            // 计算排队耗时
+            if (httpEventInfo.getCallStart() > 0) {
+                httpEventInfo.setQueueingCost(httpEventInfo.getCallStart() - queueStart);
+            }
+            // 计算阻塞耗时
+            if (httpEventInfo.getConnectStart() > 0 && httpEventInfo.getCallStart() > 0) {
+                httpEventInfo.setStalledCost(httpEventInfo.getConnectStart() - httpEventInfo.getCallStart());
+            }
+        }
+        httpResponse.httpEventInfo = httpEventInfo;
+        httpResponse.costMs = System.currentTimeMillis() - startTime;
     }
 }

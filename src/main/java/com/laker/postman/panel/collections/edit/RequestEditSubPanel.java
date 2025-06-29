@@ -496,6 +496,10 @@ public class RequestEditSubPanel extends JPanel {
                                 requestBodyPanel.showWebSocketSendPanel(true);
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
+                                JOptionPane.showMessageDialog(null,
+                                        "WebSocket连接已建立，您可以开始发送消息。",
+                                        "WebSocket连接成功",
+                                        JOptionPane.INFORMATION_MESSAGE);
                             });
                         }
 
@@ -801,7 +805,6 @@ public class RequestEditSubPanel extends JPanel {
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, int statusCode, HttpResponse resp, String headersText, String redirectChainText) {
         if (resp == null) {
-            responseHeadersPanel.setHeadersText(statusText);
             statusCodeLabel.setText(statusText);
             statusCodeLabel.setForeground(Color.RED);
             return;

@@ -647,6 +647,10 @@ public class RequestCollectionsSubPanel extends BasePanel {
             delete.setUrl("https://httpbin.org/delete");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", delete}));
 
+            // WebSocket 示例
+            HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
+            defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", websocket}));
+
             treeModel.reload();
             persistence.saveRequestGroups();
             requestTree.expandPath(new TreePath(defaultGroupNode.getPath()));

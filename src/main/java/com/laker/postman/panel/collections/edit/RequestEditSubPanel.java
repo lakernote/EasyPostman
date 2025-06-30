@@ -321,10 +321,7 @@ public class RequestEditSubPanel extends JPanel {
     // 普通HTTP请求处理
     private void handleHttpRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
         currentWorker = new SwingWorker<>() {
-            String requestHeadersText;
             String statusText;
-            String headersText;
-            String bodyText;
             int statusCode = 0;
             String redirectChainText = "";
             HttpResponse resp;
@@ -332,14 +329,11 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    requestHeadersText = buildRequestHeadersText(req);
                     ResponseWithRedirects respWithRedirects = RedirectHandler.executeWithRedirects(req, 10);
                     resp = respWithRedirects.finalResponse;
                     redirectChainText = getRedirctChainStringBuilder(respWithRedirects.redirects).toString();
                     statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
                     statusCode = resp.code;
-                    headersText = buildResponseHeadersText(resp);
-                    bodyText = resp.body;
                 } catch (InterruptedIOException ignore) {
                     log.info("{} 请求被取消", req.url);
                 } catch (Exception ex) {
@@ -351,8 +345,8 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                handleResponse(item, bindings, resp, statusText, statusCode, headersText, bodyText);
-                updateUIForResponse(statusText, statusCode, resp, headersText, redirectChainText);
+                handleResponse(item, bindings, resp);
+                updateUIForResponse(statusText, statusCode, resp, redirectChainText);
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
 
@@ -410,7 +404,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r.code, r, headersText, null);
+                                updateUIForResponse(String.valueOf(r.code), r.code, r, null);
                             });
                         }
 
@@ -425,7 +419,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosed(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r.code, r, buildResponseHeadersText(r), null);
+                                updateUIForResponse(String.valueOf(r.code), r.code, r, null);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -437,7 +431,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("SSE连接失败: " + errorMsg);
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("SSE连接失败", 0, r, "", null);
+                                updateUIForResponse("SSE连接失败", 0, r, null);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -490,7 +484,7 @@ public class RequestEditSubPanel extends JPanel {
                             HttpService.fillHttpEventInfo(resp, startTime, startTime);
                             currentWebSocket = webSocket;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(resp.code), resp.code, resp, buildResponseHeadersText(resp), null);
+                                updateUIForResponse(String.valueOf(resp.code), resp.code, resp, null);
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().setEnabled(true);
                                 requestBodyPanel.showWebSocketSendPanel(true);
@@ -541,7 +535,7 @@ public class RequestEditSubPanel extends JPanel {
                             resp.costMs = cost;
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse("closed", resp.code, resp, buildResponseHeadersText(resp), null);
+                                updateUIForResponse("closed", resp.code, resp, null);
                                 requestBodyPanel.getWsSendButton().setEnabled(false);
                                 requestBodyPanel.showWebSocketSendPanel(false);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
@@ -558,7 +552,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("WebSocket连接失败", 0, resp, "", null);
+                                updateUIForResponse("WebSocket连接失败", 0, resp, null);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                         }
@@ -803,15 +797,14 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // UI状态：响应完成
-    private void updateUIForResponse(String statusText, int statusCode, HttpResponse resp, String headersText, String redirectChainText) {
+    private void updateUIForResponse(String statusText, int statusCode, HttpResponse resp, String redirectChainText) {
         if (resp == null) {
             statusCodeLabel.setText(statusText);
             statusCodeLabel.setForeground(Color.RED);
             return;
         }
-        responseHeadersPanel.setHeadersText(headersText);
+        responseHeadersPanel.setHeaders(resp.headers);
         setResponseBody(resp);
-        responseHeadersPanel.getResponseHeadersArea().setCaretPosition(0);
         if (redirectChainArea != null) {
             redirectChainArea.setText(redirectChainText);
         }
@@ -824,16 +817,18 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // 处理响应、后置脚本、变量提取、历史
-    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, String statusText, int statusCode, String headersText, String bodyText) {
+    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp) {
+        if (resp == null) {
+            log.error("响应为空，无法处理后续操作");
+            return;
+        }
+        String bodyText = resp.body;
         try {
-            executePostscript(item, bindings, resp, statusText, statusCode, headersText, bodyText);
+            executePostscript(item, bindings, resp, bodyText);
             if (bodyText != null) {
                 autoExecuteExtractorRules(bodyText);
             }
-            // 保存到历史
-            if (resp != null) {
-                SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
-            }
+            SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
         } catch (Exception ex) {
             log.error("请求处理异常: {}", ex.getMessage(), ex);
         }
@@ -849,17 +844,6 @@ public class RequestEditSubPanel extends JPanel {
             }
         });
         return reqHeadersBuilder.toString();
-    }
-
-    // 构建响应头文本
-    private String buildResponseHeadersText(HttpResponse resp) {
-        StringBuilder headersBuilder = new StringBuilder();
-        resp.headers.forEach((key, value) -> {
-            if (key != null) {
-                headersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
-            }
-        });
-        return headersBuilder.toString();
     }
 
 

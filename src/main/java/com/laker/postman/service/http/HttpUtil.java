@@ -194,15 +194,14 @@ public class HttpUtil {
     }
 
 
-    public static void executePostscript(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, String statusText, int statusCode, String headersText, String bodyText) {
+    public static void executePostscript(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, String bodyText) {
         // postscript 执行
         String postscript = item.getPostscript();
         if (postscript != null && !postscript.isBlank() && resp != null) {
             try {
                 bindings.put("responseBody", bodyText);
-                bindings.put("responseHeaders", headersText);
-                bindings.put("status", statusText);
-                bindings.put("statusCode", statusCode);
+                bindings.put("responseHeaders", resp.headers);
+                bindings.put("statusCode", resp.code);
                 JsScriptExecutor.executeScript(
                         postscript,
                         bindings,

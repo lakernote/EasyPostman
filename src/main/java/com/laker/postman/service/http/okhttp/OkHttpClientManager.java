@@ -46,15 +46,14 @@ public class OkHttpClientManager {
                     // 是否自动跟随重定向
                     .followRedirects(followRedirects)
                     .cache(null)
-                    .pingInterval(30, TimeUnit.SECONDS)
-                    // 添加日志拦截器
-                    .addInterceptor(new ConsoleLogInterceptor());
+                    .pingInterval(30, TimeUnit.SECONDS);
 
             //  Cookie 管理（如需全局 CookieJar）
             // builder.cookieJar(new CustomCookieJar());
             if (logEvent) {
                 // 事件监听器（用于统计连接信息等） 用 eventListenerFactory()，传入 EventListener.Factory，每次 newCall 时都能生成新的 EventListener 实例。
                 builder.eventListenerFactory(call -> new EasyConsoleEventListener());// 只适用普通 HTTP 请求
+                builder.addInterceptor(new ConsoleLogInterceptor());
             }
 
             return builder.build();

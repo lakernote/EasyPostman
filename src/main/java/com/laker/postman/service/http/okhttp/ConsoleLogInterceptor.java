@@ -6,16 +6,13 @@ import okio.Buffer;
 
 import java.io.IOException;
 
-/**
- * 日志拦截器，将请求参数和响应内容输出到SidebarTabPanel控制台
- */
 public class ConsoleLogInterceptor implements Interceptor {
     private String headersToString(Headers headers) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < headers.size(); i++) {
             String name = headers.name(i);
             String value = headers.value(i);
-            if (name.equalsIgnoreCase("set-cookie")) {
+            if (name.equalsIgnoreCase("cookie")) {
                 // 只保留可见字符，避免乱码
                 value = value.replaceAll("[^\\x20-\\x7E]", "");
             }

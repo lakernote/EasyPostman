@@ -410,7 +410,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r.code, r, headersText, "SSE连接已打开");
+                                updateUIForResponse(String.valueOf(r.code), r.code, r, headersText, null);
                             });
                         }
 
@@ -425,7 +425,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosed(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r.code, r, buildResponseHeadersText(r), "SSE连接已关闭");
+                                updateUIForResponse(String.valueOf(r.code), r.code, r, buildResponseHeadersText(r), null);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -437,7 +437,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("SSE连接失败: " + errorMsg);
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("SSE连接失败", 0, r, "", "SSE连接失败");
+                                updateUIForResponse("SSE连接失败", 0, r, "", null);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -490,7 +490,7 @@ public class RequestEditSubPanel extends JPanel {
                             HttpService.fillHttpEventInfo(resp, startTime, startTime);
                             currentWebSocket = webSocket;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(resp.code), resp.code, resp, buildResponseHeadersText(resp), "WebSocket已连接");
+                                updateUIForResponse(String.valueOf(resp.code), resp.code, resp, buildResponseHeadersText(resp), null);
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().setEnabled(true);
                                 requestBodyPanel.showWebSocketSendPanel(true);
@@ -541,7 +541,7 @@ public class RequestEditSubPanel extends JPanel {
                             resp.costMs = cost;
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse("closed", resp.code, resp, buildResponseHeadersText(resp), message);
+                                updateUIForResponse("closed", resp.code, resp, buildResponseHeadersText(resp), null);
                                 requestBodyPanel.getWsSendButton().setEnabled(false);
                                 requestBodyPanel.showWebSocketSendPanel(false);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
@@ -558,7 +558,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("WebSocket连接失败", 0, resp, "", "WebSocket连接失败");
+                                updateUIForResponse("WebSocket连接失败", 0, resp, "", null);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                         }
@@ -896,7 +896,6 @@ public class RequestEditSubPanel extends JPanel {
             }
             resp.code = response.code();
             resp.protocol = response.protocol().toString();
-            HttpService.fillHttpEventInfo(resp, startTime, startTime);
             callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
         }
 

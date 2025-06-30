@@ -18,6 +18,7 @@ import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import com.laker.postman.service.RequestCollectionPersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
+import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.postman.PostmanImport;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +27,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -811,8 +813,8 @@ public class RequestCollectionsSubPanel extends BasePanel {
         if (userObj instanceof Object[] obj && "request".equals(obj[0])) {
             HttpRequestItem item = (HttpRequestItem) obj[1];
             try {
-                String curl = CurlParser.toCurl(item);
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(curl), null);
+                String curl = CurlParser.toCurl(PreparedRequestBuilder.build(item));
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(curl), null); // 将cUrl命令复制到剪贴板
                 JOptionPane.showMessageDialog(this, "cUrl命令已复制到剪贴板！", "提示", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "生成cUrl命令失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);

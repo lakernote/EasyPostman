@@ -1,8 +1,7 @@
 package com.laker.postman.service.curl;
 
 import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.service.http.HttpRequestUtil;
+import com.laker.postman.model.PreparedRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -169,38 +168,38 @@ public class CurlParser {
     }
 
     /**
-     * 将 HttpRequestItem 转换为 cURL 命令字符串
+     * 将 PreparedRequest 转换为 cURL 命令字符串
      */
-    public static String toCurl(HttpRequestItem item) {
+    public static String toCurl(PreparedRequest preparedRequest) {
         StringBuilder sb = new StringBuilder();
         sb.append("curl");
         // method
-        if (item.getMethod() != null && !item.getMethod().equalsIgnoreCase("GET")) {
-            sb.append(" -X ").append(item.getMethod());
+        if (preparedRequest.method != null && !"GET".equalsIgnoreCase(preparedRequest.method)) {
+            sb.append(" -X ").append(preparedRequest.method.toUpperCase());
         }
         // url
-        if (item.getUrl() != null) {
-            sb.append(" \"").append(HttpRequestUtil.buildUrlWithParams(item.getUrl(), item.getParams())).append("\"");
+        if (preparedRequest.url != null) {
+            sb.append(" \"").append(preparedRequest.url).append("\"");
         }
         // headers
-        if (item.getHeaders() != null) {
-            for (var entry : item.getHeaders().entrySet()) {
+        if (preparedRequest.headers != null) {
+            for (var entry : preparedRequest.headers.entrySet()) {
                 sb.append(" -H \"").append(entry.getKey()).append(": ").append(entry.getValue()).append("\"");
             }
         }
         // body
-        if (item.getBody() != null && !item.getBody().isEmpty()) {
-            sb.append(" --data ").append(escapeShellArg(item.getBody()));
+        if (preparedRequest.body != null && !preparedRequest.body.isEmpty()) {
+            sb.append(" --data ").append(escapeShellArg(preparedRequest.body));
         }
         // form-data
-        if (item.getFormData() != null && !item.getFormData().isEmpty()) {
-            for (var entry : item.getFormData().entrySet()) {
+        if (preparedRequest.formData != null && !preparedRequest.formData.isEmpty()) {
+            for (var entry : preparedRequest.formData.entrySet()) {
                 sb.append(" -F ").append(escapeShellArg(entry.getKey() + "=" + entry.getValue()));
             }
         }
         // form-files
-        if (item.getFormFiles() != null && !item.getFormFiles().isEmpty()) {
-            for (var entry : item.getFormFiles().entrySet()) {
+        if (preparedRequest.formFiles != null && !preparedRequest.formFiles.isEmpty()) {
+            for (var entry : preparedRequest.formFiles.entrySet()) {
                 sb.append(" -F ").append(escapeShellArg(entry.getKey() + "=@" + entry.getValue()));
             }
         }

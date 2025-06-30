@@ -207,7 +207,7 @@ public class RequestBodyPanel extends JPanel {
         formatLabel.setVisible(true);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         currentRawType = RAW_TYPE_JSON;
-        if (isBodyTypeRAW()) {
+        if (show) {
             wsSendButton.setVisible(true);
             formatLabel.setVisible(false);
             rawTypeComboBox.setVisible(false);

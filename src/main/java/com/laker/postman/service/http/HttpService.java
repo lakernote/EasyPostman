@@ -1,6 +1,5 @@
 package com.laker.postman.service.http;
 
-import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.http.okhttp.ConnectionInfoHolder;

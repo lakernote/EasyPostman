@@ -33,7 +33,7 @@ public class LogEventSourceListener extends EventSourceListener {
 
     @Override
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
-        SidebarTabPanel.appendConsoleLog("[SSE] onFailure: " + t.getMessage());
+        SidebarTabPanel.appendConsoleLog("[SSE] onFailure: " + (t != null ? t.getMessage() : "Unknown error"));
         delegate.onFailure(eventSource, t, response);
     }
 }

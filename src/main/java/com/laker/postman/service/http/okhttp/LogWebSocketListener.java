@@ -45,7 +45,7 @@ public class LogWebSocketListener extends WebSocketListener {
 
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-        SidebarTabPanel.appendConsoleLog("[WebSocket] onFailure: " + t.getMessage());
+        SidebarTabPanel.appendConsoleLog("[WebSocket] onFailure: " + (t != null ? t.getMessage() : "Unknown error"));
         delegate.onFailure(webSocket, t, response);
     }
 }

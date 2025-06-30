@@ -5,7 +5,6 @@ import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
-import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -179,37 +176,6 @@ public class TopMenuBarPanel extends BasePanel {
     }
 
     /**
-     * 创建可点击的 JLabel 链接（无下划线样式）
-     */
-    private JLabel createLinkLabel(String text, String url) {
-        JLabel label = new JLabel(
-                "<html><span style='color:#1a0dab;cursor:pointer;'>" + text + "</span></html>");
-        label.setForeground(new Color(26, 13, 171)); // Google 蓝色
-        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        label.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                try {
-                    Desktop.getDesktop().browse(new URI(url));
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "无法打开链接：" + url, "错误", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                label.setForeground(new Color(66, 133, 244)); // 鼠标悬停变色
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                label.setForeground(new Color(26, 13, 171));
-            }
-        });
-        return label;
-    }
-
-    /**
      * 检查更新：访问 Gitee Release API，获取最新版本号并与本地对比。
      */
     private void checkUpdate() {
@@ -252,7 +218,7 @@ public class TopMenuBarPanel extends BasePanel {
                     JOptionPane.showMessageDialog(null, errorMsg, "检查更新", JOptionPane.ERROR_MESSAGE);
                 } else if (latestVersion == null) {
                     JOptionPane.showMessageDialog(null, "未获取到最新版本信息。", "检查更新", JOptionPane.WARNING_MESSAGE);
-                } else if (latestVersion.equals(currentVersion)) {
+                } else if (compareVersion(latestVersion, currentVersion) <= 0) {
                     JOptionPane.showMessageDialog(null, "已是最新版本（" + currentVersion + "）", "检查更新", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     int r = JOptionPane.showConfirmDialog(null, "发现新版本：" + latestVersion + "\n是否前往下载？", "检查更新", JOptionPane.YES_NO_OPTION);
@@ -267,6 +233,32 @@ public class TopMenuBarPanel extends BasePanel {
             }
         };
         worker.execute();
+    }
+
+    /**
+     * 比较两个版本号字符串，返回-1表示v1小于v2，0表示相等，1表示v1大于v2。
+     */
+    private int compareVersion(String v1, String v2) {
+        if (v1 == null || v2 == null) return 0;
+        String s1 = v1.startsWith("v") ? v1.substring(1) : v1;
+        String s2 = v2.startsWith("v") ? v2.substring(1) : v2;
+        String[] arr1 = s1.split("\\.");
+        String[] arr2 = s2.split("\\.");
+        int len = Math.max(arr1.length, arr2.length);
+        for (int i = 0; i < len; i++) {
+            int n1 = i < arr1.length ? parseIntSafe(arr1[i]) : 0;
+            int n2 = i < arr2.length ? parseIntSafe(arr2[i]) : 0;
+            if (n1 != n2) return Integer.compare(n1, n2);
+        }
+        return 0;
+    }
+
+    private int parseIntSafe(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private void switchLaf(String className) {

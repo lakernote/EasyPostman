@@ -407,7 +407,6 @@ public class JMeterPanel extends BasePanel {
                         detail.append("请求方法: ").append(req.method).append("\n");
                         detail.append("请求耗时: ").append(cost).append(" ms\n");
                         detail.append("执行线程: ").append(resp.threadName).append("\n");
-                        detail.append("连接信息: ").append(resp.httpEventInfo.getLocalAddress()).append("->").append(resp.httpEventInfo.getRemoteAddress()).append("\n");
                         detail.append("空闲连接数: ").append(resp.idleConnectionCount).append("\n");
                         detail.append("连接总数: ").append(resp.connectionCount).append("\n");
                         detail.append("请求头: ").append(req.headers).append("\n");

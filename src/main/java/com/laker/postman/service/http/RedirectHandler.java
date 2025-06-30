@@ -38,6 +38,7 @@ public class RedirectHandler {
             currentReq.isMultipart = isMultipart;
             currentReq.followRedirects = followRedirects;
             currentReq.urlencoded = urlencoded;
+            currentReq.logEvent =true; // 记录事件日志
             HttpResponse resp = HttpSingleRequestExecutor.execute(currentReq);
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();

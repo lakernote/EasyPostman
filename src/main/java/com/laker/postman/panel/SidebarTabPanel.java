@@ -194,7 +194,7 @@ public class SidebarTabPanel extends BasePanel {
     }
 
     // 控制台日志追加方法
-    public static void appendConsoleLog(String msg) {
+    public synchronized static void appendConsoleLog(String msg) {
         SidebarTabPanel instance = SingletonFactory.getInstance(SidebarTabPanel.class);
         if (instance.consoleLogArea != null) {
             SwingUtilities.invokeLater(() -> {

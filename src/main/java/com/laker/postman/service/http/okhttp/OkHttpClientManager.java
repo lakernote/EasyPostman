@@ -30,7 +30,7 @@ public class OkHttpClientManager {
      * @param followRedirects 是否自动跟随重定向
      * @return OkHttpClient
      */
-    public static OkHttpClient getClient(String baseUri, boolean followRedirects) {
+    public static OkHttpClient getClient(String baseUri, boolean followRedirects, boolean logEvent) {
         return clientMap.computeIfAbsent(baseUri + "|" + followRedirects, k -> {
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     // 连接超时
@@ -45,15 +45,24 @@ public class OkHttpClientManager {
                     .retryOnConnectionFailure(true)
                     // 是否自动跟随重定向
                     .followRedirects(followRedirects)
-                    // 事件监听器（用于统计连接信息等） 用 eventListenerFactory()，传入 EventListener.Factory，每次 newCall 时都能生成新的 EventListener 实例。
-                    .eventListenerFactory(call -> ConnectionInfoHolder.getEventListener())
                     .cache(null)
-                    .pingInterval(30, TimeUnit.SECONDS);
+                    .pingInterval(30, TimeUnit.SECONDS)
+                    // 添加日志拦截器
+                    .addInterceptor(new ConsoleLogInterceptor());
 
             //  Cookie 管理（如需全局 CookieJar）
             // builder.cookieJar(new CustomCookieJar());
+            if (logEvent) {
+                // 事件监听器（用于统计连接信息等） 用 eventListenerFactory()，传入 EventListener.Factory，每次 newCall 时都能生成新的 EventListener 实例。
+                builder.eventListenerFactory(call -> new EasyConsoleEventListener());// 只适用普通 HTTP 请求
+            }
 
             return builder.build();
         });
+    }
+
+    public static OkHttpClient getClient(String baseUri, boolean followRedirects) {
+        // 直接调用上面的 getClient 方法
+        return getClient(baseUri, followRedirects, false);
     }
 }

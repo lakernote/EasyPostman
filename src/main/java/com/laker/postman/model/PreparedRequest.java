@@ -16,4 +16,5 @@ public class PreparedRequest {
     public Map<String, String> urlencoded;
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
+    public boolean logEvent = false; // 默认不记录事件日志
 }

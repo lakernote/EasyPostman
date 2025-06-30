@@ -36,7 +36,38 @@ public class EasyConsoleEventListener extends EventListener {
         long now = System.nanoTime();
         long elapsedMs = (now - callStartNanos) / 1_000_000;
         try {
-            SidebarTabPanel.appendConsoleLog("[HTTP Event] [" + threadName + "] [" + stage + "] +" + elapsedMs + "ms: " + msg);
+            if ("callStart".equals(stage)) {
+                SidebarTabPanel.appendConsoleLog("\n—————————————— 新请求 ——————————————", SidebarTabPanel.LogType.CUSTOM);
+            }
+            boolean isErrorStage = "callFailed".equals(stage) || "requestFailed".equals(stage) || "responseFailed".equals(stage) || "connectFailed".equals(stage);
+            if (isErrorStage && msg != null && msg.contains("at ")) {
+                SidebarTabPanel.appendConsoleLog("———— 异常堆栈 ————", SidebarTabPanel.LogType.CUSTOM);
+            }
+            SidebarTabPanel.LogType logType;
+            switch (stage) {
+                case "callFailed":
+                case "requestFailed":
+                case "responseFailed":
+                case "connectFailed":
+                    logType = SidebarTabPanel.LogType.ERROR;
+                    break;
+                case "connectStart":
+                case "connectEnd":
+                case "connectionAcquired":
+                case "connectionReleased":
+                    logType = SidebarTabPanel.LogType.DEBUG;
+                    break;
+                case "secureConnectStart":
+                case "secureConnectEnd":
+                    logType = SidebarTabPanel.LogType.TRACE;
+                    break;
+                case "callEnd":
+                    logType = SidebarTabPanel.LogType.SUCCESS;
+                    break;
+                default:
+                    logType = SidebarTabPanel.LogType.INFO;
+            }
+            SidebarTabPanel.appendConsoleLog("[HTTP Event] [" + threadName + "] [" + stage + "] +" + elapsedMs + "ms: " + msg, logType);
         } catch (Exception e) {
             // 防止日志异常影响主流程
         }

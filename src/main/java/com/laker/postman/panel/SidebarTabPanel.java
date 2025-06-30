@@ -14,6 +14,7 @@ import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -34,7 +35,13 @@ public class SidebarTabPanel extends BasePanel {
     private JPanel consolePanel;
     private JSplitPane splitPane;
     // 控制台日志区
-    private JTextArea consoleLogArea;
+    private JTextPane consoleLogArea;
+    private StyledDocument consoleDoc;
+
+    // 日志类型
+    public enum LogType {
+        INFO, ERROR, SUCCESS, WARN, DEBUG, TRACE, CUSTOM
+    }
 
     @Override
     protected void initUI() {
@@ -69,13 +76,11 @@ public class SidebarTabPanel extends BasePanel {
     private void createConsolePanel() {
         // 展开时的 consolePanel，包含日志和关闭按钮
         consolePanel = new JPanel(new BorderLayout());
-        JLabel title = new JLabel("Console");
-        consoleLogArea = new JTextArea();
+        consoleLogArea = new JTextPane();
         consoleLogArea.setEditable(false); // 设置为不可编辑
-        consoleLogArea.setLineWrap(true); // 自动换行
-        consoleLogArea.setWrapStyleWord(true); // 换行时按单词换行
         consoleLogArea.setFocusable(true); // 允许获取焦点，便于复制
         consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR)); // 显示文本光标
+        consoleDoc = consoleLogArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
         logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         logScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -91,16 +96,74 @@ public class SidebarTabPanel extends BasePanel {
         clearBtn.setBorder(BorderFactory.createEmptyBorder());
         clearBtn.setBackground(Colors.PANEL_BACKGROUND);
         clearBtn.setToolTipText("清空日志");
-        clearBtn.addActionListener(e -> consoleLogArea.setText(""));
+        clearBtn.addActionListener(e -> {
+            try {
+                consoleDoc.remove(0, consoleDoc.getLength());
+            } catch (BadLocationException ex) {
+                // ignore
+            }
+        });
+
+        // 搜索功能
+        JTextField searchField = new JTextField(10);
+        JButton prevBtn = new JButton("上一个");
+        JButton nextBtn = new JButton("下一个");
+        prevBtn.setFocusable(false);
+        nextBtn.setFocusable(false);
+        searchField.setToolTipText("搜索日志内容");
+        // 支持回车键触发“下一个”搜索
+        searchField.addActionListener(e -> nextBtn.doClick());
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.add(new JLabel("搜索:"));
+        searchPanel.add(searchField);
+        searchPanel.add(prevBtn);
+        searchPanel.add(nextBtn);
+
+        // 搜索实现
+        final int[] lastMatchPos = {-1};
+        final String[] lastKeyword = {""};
+        nextBtn.addActionListener(e -> {
+            String keyword = searchField.getText();
+            if (keyword.isEmpty()) return;
+            String text = consoleLogArea.getText();
+            int start = lastKeyword[0].equals(keyword) ? lastMatchPos[0] + 1 : 0;
+            int pos = text.indexOf(keyword, start);
+            if (pos == -1 && start > 0) {
+                // 循环查找
+                pos = text.indexOf(keyword, 0);
+            }
+            if (pos != -1) {
+                highlightSearchResult(pos, keyword.length());
+                lastMatchPos[0] = pos;
+                lastKeyword[0] = keyword;
+            }
+        });
+        prevBtn.addActionListener(e -> {
+            String keyword = searchField.getText();
+            if (keyword.isEmpty()) return;
+            String text = consoleLogArea.getText();
+            int start = lastKeyword[0].equals(keyword) ? lastMatchPos[0] - 1 : text.length();
+            int pos = text.lastIndexOf(keyword, start);
+            if (pos == -1 && start < text.length()) {
+                // 循环查找
+                pos = text.lastIndexOf(keyword);
+            }
+            if (pos != -1) {
+                highlightSearchResult(pos, keyword.length());
+                lastMatchPos[0] = pos;
+                lastKeyword[0] = keyword;
+            }
+        });
 
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(title, BorderLayout.WEST);
         // 右侧按钮区
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnPanel.setOpaque(false);
         btnPanel.add(clearBtn);
         btnPanel.add(closeBtn);
         topPanel.add(btnPanel, BorderLayout.EAST);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
         topPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         consolePanel.add(topPanel, BorderLayout.NORTH);
         consolePanel.add(logScroll, BorderLayout.CENTER);
@@ -195,12 +258,61 @@ public class SidebarTabPanel extends BasePanel {
 
     // 控制台日志追加方法
     public synchronized static void appendConsoleLog(String msg) {
+        appendConsoleLog(msg, LogType.INFO);
+    }
+
+    public synchronized static void appendConsoleLog(String msg, LogType type) {
         SidebarTabPanel instance = SingletonFactory.getInstance(SidebarTabPanel.class);
-        if (instance.consoleLogArea != null) {
+        if (instance.consoleLogArea != null && instance.consoleDoc != null) {
             SwingUtilities.invokeLater(() -> {
-                instance.consoleLogArea.append(msg + "\n");
-                instance.consoleLogArea.setCaretPosition(instance.consoleLogArea.getText().length());
+                Style style = instance.consoleLogArea.addStyle("logStyle", null);
+                switch (type) {
+                    case ERROR:
+                        StyleConstants.setForeground(style, new Color(220, 53, 69)); // 红色
+                        StyleConstants.setBold(style, true);
+                        break;
+                    case SUCCESS:
+                        StyleConstants.setForeground(style, new Color(40, 167, 69)); // 绿色
+                        StyleConstants.setBold(style, true);
+                        break;
+                    case WARN:
+                        StyleConstants.setForeground(style, new Color(255, 193, 7)); // 橙色
+                        StyleConstants.setBold(style, true);
+                        break;
+                    case DEBUG:
+                        StyleConstants.setForeground(style, new Color(0, 123, 255)); // 蓝色
+                        StyleConstants.setBold(style, false);
+                        break;
+                    case TRACE:
+                        StyleConstants.setForeground(style, new Color(111, 66, 193)); // 紫色
+                        StyleConstants.setBold(style, false);
+                        break;
+                    case CUSTOM:
+                        StyleConstants.setForeground(style, new Color(23, 162, 184)); // 青色
+                        StyleConstants.setBold(style, false);
+                        break;
+                    default:
+                        StyleConstants.setForeground(style, new Color(33, 37, 41)); // 深灰
+                        StyleConstants.setBold(style, false);
+                }
+                try {
+                    instance.consoleDoc.insertString(instance.consoleDoc.getLength(), msg + "\n", style);
+                    instance.consoleLogArea.setCaretPosition(instance.consoleDoc.getLength());
+                } catch (BadLocationException e) {
+                    // ignore
+                }
             });
+        }
+    }
+
+    // 高亮搜索结果方法
+    private void highlightSearchResult(int pos, int len) {
+        try {
+            consoleLogArea.getHighlighter().removeAllHighlights();
+            consoleLogArea.getHighlighter().addHighlight(pos, pos + len, new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW));
+            consoleLogArea.setCaretPosition(pos + len);
+        } catch (BadLocationException ex) {
+            // ignore
         }
     }
 

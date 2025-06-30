@@ -21,6 +21,7 @@ environment variables, batch requests, and stress testing to help efficiently te
 ## ✨ Features
 
 - 🚦 Supports common HTTP methods (GET/POST/PUT/DELETE, etc.)
+- 📡 Supports SSE (Server-Sent Events) and WebSocket protocols
 - 🌏 Environment variable management for easy switching
 - 🕑 Auto-saved request history for review and reuse
 - 📦 Batch requests & stress testing (simplified JMeter), supports report, result tree, and trend chart visualization

@@ -37,16 +37,34 @@ public class ResponseHeadersPanel extends JPanel {
         // 右键菜单
         JPopupMenu popupMenu = new JPopupMenu();
         JMenuItem copySelected = new JMenuItem("Copy Selected");
+        JMenuItem copyCell = new JMenuItem("Copy Cell");
         JMenuItem copyAll = new JMenuItem("Copy All");
+        JMenuItem selectAll = new JMenuItem("Select All");
         popupMenu.add(copySelected);
+        popupMenu.add(copyCell);
         popupMenu.add(copyAll);
+        popupMenu.add(selectAll);
         headersTable.setComponentPopupMenu(popupMenu);
         // 复制选中行
         copySelected.addActionListener(e -> copySelectedRows());
         // 复制全部
         copyAll.addActionListener(e -> copyAllRows());
-        // 双击复制 value
+        // 复制单元格
+        copyCell.addActionListener(e -> copySelectedCell());
+        // 全选
+        selectAll.addActionListener(e -> headersTable.selectAll());
+        // 鼠标右键自动选中行/单元格
         headersTable.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                if (e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e)) {
+                    int row = headersTable.rowAtPoint(e.getPoint());
+                    int col = headersTable.columnAtPoint(e.getPoint());
+                    if (row != -1 && col != -1) {
+                        headersTable.changeSelection(row, col, false, false);
+                    }
+                }
+            }
+
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && headersTable.getSelectedRow() != -1) {
                     int row = headersTable.getSelectedRow();
@@ -90,5 +108,14 @@ public class ResponseHeadersPanel extends JPanel {
                     .append(tableModel.getValueAt(i, 1)).append("\n");
         }
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(sb.toString()), null);
+    }
+
+    private void copySelectedCell() {
+        int row = headersTable.getSelectedRow();
+        int col = headersTable.getSelectedColumn();
+        if (row == -1 || col == -1) return;
+        int modelRow = headersTable.convertRowIndexToModel(row);
+        String value = String.valueOf(tableModel.getValueAt(modelRow, col));
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(value), null);
     }
 }

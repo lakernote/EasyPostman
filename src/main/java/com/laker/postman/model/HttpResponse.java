@@ -21,4 +21,5 @@ public class HttpResponse {
     public int bodySize; // 响应体字节数
     public int headersSize; // 响应头字节数
     public boolean isSse = false; // 是否为SSE响应
+    public List<RedirectInfo> redirects;
 }

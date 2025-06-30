@@ -322,8 +322,6 @@ public class RequestEditSubPanel extends JPanel {
     private void handleHttpRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
         currentWorker = new SwingWorker<>() {
             String statusText;
-            int statusCode = 0;
-            String redirectChainText = "";
             HttpResponse resp;
 
             @Override
@@ -331,9 +329,8 @@ public class RequestEditSubPanel extends JPanel {
                 try {
                     ResponseWithRedirects respWithRedirects = RedirectHandler.executeWithRedirects(req, 10);
                     resp = respWithRedirects.finalResponse;
-                    redirectChainText = getRedirctChainStringBuilder(respWithRedirects.redirects).toString();
+                    resp.redirects = respWithRedirects.redirects;
                     statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
-                    statusCode = resp.code;
                 } catch (InterruptedIOException ignore) {
                     log.info("{} 请求被取消", req.url);
                 } catch (Exception ex) {
@@ -346,7 +343,7 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 handleResponse(item, bindings, resp);
-                updateUIForResponse(statusText, statusCode, resp, redirectChainText);
+                updateUIForResponse(statusText, resp);
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
 
@@ -404,7 +401,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r.code, r, null);
+                                updateUIForResponse(String.valueOf(r.code), r);
                             });
                         }
 
@@ -419,7 +416,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosed(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r.code, r, null);
+                                updateUIForResponse(String.valueOf(r.code), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -431,7 +428,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("SSE连接失败: " + errorMsg);
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("SSE连接失败", 0, r, null);
+                                updateUIForResponse("SSE连接失败", r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -484,7 +481,7 @@ public class RequestEditSubPanel extends JPanel {
                             HttpService.fillHttpEventInfo(resp, startTime, startTime);
                             currentWebSocket = webSocket;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(resp.code), resp.code, resp, null);
+                                updateUIForResponse(String.valueOf(resp.code), resp);
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().setEnabled(true);
                                 requestBodyPanel.showWebSocketSendPanel(true);
@@ -535,7 +532,7 @@ public class RequestEditSubPanel extends JPanel {
                             resp.costMs = cost;
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse("closed", resp.code, resp, null);
+                                updateUIForResponse("closed", resp);
                                 requestBodyPanel.getWsSendButton().setEnabled(false);
                                 requestBodyPanel.showWebSocketSendPanel(false);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
@@ -552,7 +549,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("WebSocket连接失败", 0, resp, null);
+                                updateUIForResponse("WebSocket连接失败", resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                         }
@@ -797,7 +794,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // UI状态：响应完成
-    private void updateUIForResponse(String statusText, int statusCode, HttpResponse resp, String redirectChainText) {
+    private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
             statusCodeLabel.setText(statusText);
             statusCodeLabel.setForeground(Color.RED);
@@ -806,9 +803,9 @@ public class RequestEditSubPanel extends JPanel {
         responseHeadersPanel.setHeaders(resp.headers);
         setResponseBody(resp);
         if (redirectChainArea != null) {
-            redirectChainArea.setText(redirectChainText);
+            redirectChainArea.setText(getRedirctChainStringBuilder(resp.redirects).toString());
         }
-        Color statusColor = getStatusColor(statusCode);
+        Color statusColor = getStatusColor(resp.code);
         statusCodeLabel.setText("Status: " + statusText);
         statusCodeLabel.setForeground(statusColor);
         responseTimeLabel.setText(String.format("Duration: %d ms", resp.costMs));

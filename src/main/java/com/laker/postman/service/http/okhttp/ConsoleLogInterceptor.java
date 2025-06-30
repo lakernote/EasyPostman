@@ -1,11 +1,13 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.panel.SidebarTabPanel;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.Buffer;
 
 import java.io.IOException;
 
+@Slf4j
 public class ConsoleLogInterceptor implements Interceptor {
     private String headersToString(Headers headers) {
         StringBuilder sb = new StringBuilder();
@@ -39,13 +41,15 @@ public class ConsoleLogInterceptor implements Interceptor {
                 logBuilder.append("Body: ").append(bodyToString(request.body())).append("\n");
             }
         }
-        SidebarTabPanel.appendConsoleLog(logBuilder.toString());
+        SidebarTabPanel.appendConsoleLog(logBuilder.toString(), SidebarTabPanel.LogType.DEBUG);
 
         Response response = null;
         try {
             response = chain.proceed(request);
         } catch (Exception e) {
-            SidebarTabPanel.appendConsoleLog("[HTTP Error] " + e.getMessage());
+            // 捕获异常并记录错误日志
+            log.error("[HTTP Request] ", e);
+            SidebarTabPanel.appendConsoleLog("[HTTP Error] " + e.getMessage(), SidebarTabPanel.LogType.ERROR);
             throw e;
         }
         StringBuilder respLog = new StringBuilder();
@@ -58,7 +62,7 @@ public class ConsoleLogInterceptor implements Interceptor {
         if (response.body() != null) {
             respLog.append("Body: [Response body not logged for security reasons]\n");
         }
-        SidebarTabPanel.appendConsoleLog(respLog.toString());
+        SidebarTabPanel.appendConsoleLog(respLog.toString(), SidebarTabPanel.LogType.SUCCESS);
         return response;
     }
 

@@ -20,7 +20,7 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
             fileEditor = new FileCellEditor(table);
             return fileEditor.getTableCellEditorComponent(table, value, isSelected, row, column);
         } else {
-            fileEditor = null; // 修复：切换到Text时清空fileEditor，避免取值错误
+            fileEditor = null;
             return textEditor.getTableCellEditorComponent(table, value, isSelected, row, column);
         }
     }

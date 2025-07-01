@@ -16,6 +16,19 @@ public class HttpRequestFactory {
         return testItem;
     }
 
+    // 默认的重定向请求
+    public static HttpRequestItem createDefaultRedirectRequest() {
+        // 创建一个测试重定向请求
+        HttpRequestItem testItem = new HttpRequestItem();
+        testItem.setId(cn.hutool.core.util.IdUtil.simpleUUID());
+        testItem.setName("重定向示例");
+        testItem.setUrl("https://httpbin.org/redirect/1");
+        testItem.setMethod("GET");
+        // 添加一些默认的请求头
+        testItem.getHeaders().put("User-Agent", "EasyPostman Redirect Client");
+        return testItem;
+    }
+
     public static HttpRequestItem createDefaultWebSocketRequest() {
         // 创建一个测试 WebSocket 请求
         HttpRequestItem testItem = new HttpRequestItem();

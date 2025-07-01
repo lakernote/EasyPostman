@@ -653,6 +653,10 @@ public class RequestCollectionsSubPanel extends BasePanel {
             HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", websocket}));
 
+            // 重定向 示例
+            HttpRequestItem redirect = HttpRequestFactory.createDefaultRedirectRequest();
+            defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", redirect}));
+
             treeModel.reload();
             persistence.saveRequestGroups();
             requestTree.expandPath(new TreePath(defaultGroupNode.getPath()));

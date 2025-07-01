@@ -70,6 +70,10 @@ public class EasyConsoleEventListener extends EventListener {
                     logColor = new Color(40, 167, 69);
                     bold = true;
                     break;
+                case "responseHeadersEnd:redirect":
+                    logColor = new Color(255, 165, 0); // 橙色
+                    bold = true;
+                    break;
                 default:
                     logColor = new Color(33, 37, 41);
                     bold = false;
@@ -307,7 +311,28 @@ public class EasyConsoleEventListener extends EventListener {
     public void responseHeadersEnd(Call call, Response response) {
         info.setResponseHeadersEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
+        boolean isRedirect = response.isRedirect();
+        sb.append("Redirect: ").append(isRedirect).append("\n");
         sb.append("response code: ").append(response.code()).append(" ").append(response.message()).append("\n");
+        sb.append("protocol: ").append(response.protocol()).append("\n");
+        sb.append("Content-Type: ").append(response.header("Content-Type", "")).append("\n");
+        sb.append("Content-Length: ").append(response.header("Content-Length", "")).append("\n");
+        if (isRedirect) {
+            sb.append("Location: ").append(response.header("Location", "")).append("\n");
+        }
+        if (response.cacheResponse() != null) {
+            sb.append("Cache: HIT\n");
+        } else {
+            sb.append("Cache: MISS\n");
+        }
+        if (response.networkResponse() != null) { // 如果有 networkResponse，说明是网络请求
+            sb.append("Network: YES\n");
+        } else {
+            sb.append("Network: NO\n");
+        }
+        if (response.priorResponse() != null) { // 如果有 priorResponse，说明是重定向或缓存的响应
+            sb.append("PriorResponse: YES\n");
+        }
         Headers headers = response.headers();
         for (int i = 0; i < headers.size(); i++) {
             String name = headers.name(i);
@@ -318,7 +343,12 @@ public class EasyConsoleEventListener extends EventListener {
             }
             sb.append(name).append(": ").append(value).append("\n");
         }
-        log("responseHeadersEnd", sb.toString());
+        // 如果是重定向，使用橙色高亮
+        if (isRedirect) {
+            log("responseHeadersEnd:redirect", sb.toString());
+        } else {
+            log("responseHeadersEnd", sb.toString());
+        }
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.model.PreparedRequest;
 import okhttp3.*;
 
 import java.io.File;
@@ -9,12 +10,13 @@ import java.util.Map;
  * OkHttp 请求构建工具类
  */
 public class OkHttpRequestBuilder {
-    public static Request buildRequest(String url, String method, Map<String, String> headers, String body) {
-        Request.Builder builder = new Request.Builder().url(url);
-        String methodUpper = method.toUpperCase();
+    public static Request buildRequest(PreparedRequest req) {
+        Request.Builder builder = new Request.Builder().url(req.url);
+        builder.tag(req.id);
+        String methodUpper = req.method.toUpperCase();
         String contentType = null;
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
+        if (req.headers != null) {
+            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 if ("Content-Type".equalsIgnoreCase(entry.getKey()) && entry.getValue() != null && !entry.getValue().isEmpty()) {
                     contentType = entry.getValue();
                     break;
@@ -23,11 +25,11 @@ public class OkHttpRequestBuilder {
         }
         RequestBody requestBody = null;
         if (!"GET".equals(methodUpper) && !"HEAD".equals(methodUpper)) {
-            if (body != null && !body.isEmpty()) {
+            if (req.body != null && !req.body.isEmpty()) {
                 if (contentType == null) {
                     contentType = "application/json; charset=utf-8";
                 }
-                requestBody = RequestBody.create(body, MediaType.parse(contentType));
+                requestBody = RequestBody.create(req.body, MediaType.parse(contentType));
             } else {
                 if (contentType != null) {
                     requestBody = RequestBody.create(new byte[0], MediaType.parse(contentType));
@@ -37,8 +39,8 @@ public class OkHttpRequestBuilder {
             }
         }
         builder.method(methodUpper, requestBody);
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
+        if (req.headers != null) {
+            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
@@ -48,16 +50,15 @@ public class OkHttpRequestBuilder {
     /**
      * 构建 multipart/form-data 的 OkHttp Request
      */
-    public static Request buildMultipartRequest(String url, String method, Map<String, String> headers,
-                                                Map<String, String> formData, Map<String, String> formFiles) {
+    public static Request buildMultipartRequest(PreparedRequest req) {
         MultipartBody.Builder multipartBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-        if (formData != null) {
-            for (Map.Entry<String, String> entry : formData.entrySet()) {
+        if (req.formData != null) {
+            for (Map.Entry<String, String> entry : req.formData.entrySet()) {
                 multipartBuilder.addFormDataPart(entry.getKey(), entry.getValue());
             }
         }
-        if (formFiles != null) {
-            for (Map.Entry<String, String> entry : formFiles.entrySet()) {
+        if (req.formFiles != null) {
+            for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
                 File file = new File(entry.getValue());
                 if (file.exists()) {
                     String mimeType = null;
@@ -74,9 +75,10 @@ public class OkHttpRequestBuilder {
                 }
             }
         }
-        Request.Builder builder = new Request.Builder().url(url).method(method, multipartBuilder.build());
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
+        Request.Builder builder = new Request.Builder().url(req.url).method(req.method, multipartBuilder.build());
+        builder.tag(req.id);
+        if (req.headers != null) {
+            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
@@ -84,19 +86,19 @@ public class OkHttpRequestBuilder {
     }
 
 
-    public static Request buildFormRequest(String url, String method, Map<String, String> headers,
-                                           Map<String, String> urlencoded) {
+    public static Request buildFormRequest(PreparedRequest req) {
         FormBody.Builder formBuilder = new FormBody.Builder();
-        if (urlencoded != null) {
-            for (Map.Entry<String, String> entry : urlencoded.entrySet()) {
+        if (req.urlencoded != null) {
+            for (Map.Entry<String, String> entry : req.urlencoded.entrySet()) {
                 formBuilder.add(entry.getKey(), entry.getValue());
             }
         }
         RequestBody requestBody = formBuilder.build();
-        Request.Builder builder = new Request.Builder().url(url).method(method, requestBody);
+        Request.Builder builder = new Request.Builder().url(req.url).method(req.method, requestBody);
+        builder.tag(req.id);
         boolean hasContentType = false;
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
+        if (req.headers != null) {
+            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
                 if ("Content-Type".equalsIgnoreCase(entry.getKey())) {
                     hasContentType = true;

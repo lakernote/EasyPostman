@@ -13,6 +13,7 @@ import java.util.Map;
 public class PreparedRequestBuilder {
     public static PreparedRequest build(HttpRequestItem item) {
         PreparedRequest req = new PreparedRequest();
+        req.id = item.getId();
         req.method = item.getMethod();
         Map<String, String> headers = item.getHeaders() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(item.getHeaders());
         // 拼接 params 到 url

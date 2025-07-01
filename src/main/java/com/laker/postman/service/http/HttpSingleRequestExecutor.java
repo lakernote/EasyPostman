@@ -19,21 +19,21 @@ public class HttpSingleRequestExecutor {
         return resp;
     }
 
-    public static EventSource executeSSE(PreparedRequest req, EventSourceListener listener) throws Exception {
-        return HttpService.sendSseRequest(req.url, req.method, req.headers, req.body, req.followRedirects, listener);
+    public static EventSource executeSSE(PreparedRequest req, EventSourceListener listener) {
+        return HttpService.sendSseRequest(req, listener);
     }
 
-    public static okhttp3.WebSocket executeWebSocket(PreparedRequest req, WebSocketListener listener) throws Exception {
-        return HttpService.sendWebSocket(req.url, req.method, req.headers, req.body, req.followRedirects, listener);
+    public static okhttp3.WebSocket executeWebSocket(PreparedRequest req, WebSocketListener listener) {
+        return HttpService.sendWebSocket(req, listener);
     }
 
     private static HttpResponse sendRequestByType(PreparedRequest req) throws Exception {
         if (req.isMultipart) {
-            return HttpService.sendRequestWithMultipart(req.url, req.method, req.headers, req.formData, req.formFiles, req.followRedirects, req.logEvent);
+            return HttpService.sendRequestWithMultipart(req);
         } else if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
-            return HttpService.sendRequestWithForm(req.url, req.method, req.headers, req.urlencoded, req.followRedirects, req.logEvent);
+            return HttpService.sendRequestWithForm(req);
         } else {
-            return HttpService.sendRequest(req.url, req.method, req.headers, req.body, req.followRedirects, req.logEvent);
+            return HttpService.sendRequest(req);
         }
     }
 }

@@ -17,12 +17,16 @@ public class HttpEventInfo {
     private String remoteAddress;
     // 各阶段时间戳
     private long callStart;
+    private long proxySelectStart;
+    private long proxySelectEnd;
     private long dnsStart;
     private long dnsEnd;
     private long connectStart;
-    private long connectEnd;
     private long secureConnectStart;
     private long secureConnectEnd;
+    private long connectEnd;
+    private long connectionAcquired;
+    private long connectionReleased;
     private long requestHeadersStart;
     private long requestHeadersEnd;
     private long requestBodyStart;
@@ -33,6 +37,7 @@ public class HttpEventInfo {
     private long responseBodyEnd;
     private long callEnd;
     private long callFailed;
+    private long canceled;
     private long queueStart; // newCall前的时间戳
     private long queueingCost; // 排队耗时
     private long stalledCost; // 阻塞耗时

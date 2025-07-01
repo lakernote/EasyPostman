@@ -1,6 +1,5 @@
 package com.laker.postman.service.http;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
@@ -15,7 +14,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -127,34 +125,6 @@ public class HttpUtil {
             return Color.RED;
         }
     }
-
-    public static StringBuilder getRedirctChainStringBuilder(java.util.List<RedirectInfo> redirectInfos) {
-        // 构建重定向链文本
-        StringBuilder chainBuilder = new StringBuilder();
-        if (CollUtil.size(redirectInfos) < 2) { // 如果没有重定向或只有一个请求
-            chainBuilder.append("No redirects\n");
-            return chainBuilder;
-        }
-        for (int i = 0; i < redirectInfos.size(); i++) {
-            RedirectInfo info = redirectInfos.get(i);
-            chainBuilder.append("[").append(i + 1).append("] ")
-                    .append(info.url).append("\n");
-            if (info.location != null) {
-                chainBuilder.append("  Location: ").append(info.location).append("\n");
-            }
-            if (info.headers != null) {
-                for (Map.Entry<String, List<String>> entry : info.headers.entrySet()) {
-                    if (entry.getKey() != null) {
-                        chainBuilder.append("  ").append(entry.getKey()).append(": ")
-                                .append(String.join(", ", entry.getValue())).append("\n");
-                    }
-                }
-            }
-            chainBuilder.append("\n");
-        }
-        return chainBuilder;
-    }
-
 
     // 绑定脚本变量
     public static Map<String, Object> prepareBindings(HttpRequestItem item) {

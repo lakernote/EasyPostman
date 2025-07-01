@@ -1,9 +1,10 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
-import com.laker.postman.model.ResponseWithRedirects;
+import com.laker.postman.panel.collections.edit.RequestEditPanel;
 
 import java.net.URL;
 import java.util.LinkedHashMap;
@@ -14,8 +15,7 @@ import java.util.Map;
  * 负责处理重定向链
  */
 public class RedirectHandler {
-    public static ResponseWithRedirects executeWithRedirects(PreparedRequest req, int maxRedirects) throws Exception {
-        ResponseWithRedirects result = new ResponseWithRedirects();
+    public static HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects) throws Exception {
         String url = req.url;
         String method = req.method;
         String body = req.body;
@@ -29,6 +29,7 @@ public class RedirectHandler {
         boolean followRedirects = req.followRedirects;
         while (redirectCount <= maxRedirects) {
             PreparedRequest currentReq = new PreparedRequest();
+            currentReq.id = req.id;
             currentReq.url = url;
             currentReq.method = method;
             currentReq.body = body;
@@ -38,7 +39,7 @@ public class RedirectHandler {
             currentReq.isMultipart = isMultipart;
             currentReq.followRedirects = followRedirects;
             currentReq.urlencoded = urlencoded;
-            currentReq.logEvent =true; // 记录事件日志
+            currentReq.logEvent = true; // 记录事件日志
             HttpResponse resp = HttpSingleRequestExecutor.execute(currentReq);
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();
@@ -47,7 +48,6 @@ public class RedirectHandler {
             info.headers = resp.headers;
             info.responseBody = resp.body;
             info.location = extractLocationHeader(resp);
-            result.redirects.add(info);
             // 判断是否重定向
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
                 url = info.location.startsWith("http") ? info.location : new URL(new URL(url), info.location).toString();
@@ -59,16 +59,22 @@ public class RedirectHandler {
                     formData = null;
                     formFiles = null;
                 }
+                StringBuilder sb = new StringBuilder();
+                sb.append("[重定向] ");
+                sb.append("状态码: ").append(info.statusCode).append(", ");
+                sb.append("URL: ").append(info.url);
+                sb.append(", Location: ").append(info.location);
+                SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(req.id).getNetworkLogPanel().appendLog(sb.toString(), java.awt.Color.ORANGE, true);
+
                 headers = new LinkedHashMap<>(origHeaders);
                 headers.remove("Content-Length");
                 headers.remove("Host");
                 headers.remove("Content-Type");
             } else {
-                result.finalResponse = resp;
-                break;
+                return resp;
             }
         }
-        return result;
+        return null;
     }
 
     private static String extractLocationHeader(HttpResponse resp) {

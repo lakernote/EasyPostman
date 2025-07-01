@@ -1,18 +1,24 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.panel.SidebarTabPanel;
+import com.laker.postman.panel.collections.edit.NetworkLogPanel;
+import com.laker.postman.panel.collections.edit.RequestEditPanel;
+import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.jetbrains.annotations.NotNull;
 
+import java.awt.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 事件监听器，既记录详细连接事件和耗时，也统计连接信息
@@ -21,12 +27,13 @@ import java.util.List;
 public class EasyConsoleEventListener extends EventListener {
     private static final ThreadLocal<HttpEventInfo> eventInfoThreadLocal = new ThreadLocal<>();
     private final long callStartNanos;
-    private final String threadName;
     private final HttpEventInfo info;
+    private String reqItemId;
+    private RequestEditSubPanel editSubPanel;
 
     public EasyConsoleEventListener() {
         this.callStartNanos = System.nanoTime();
-        this.threadName = Thread.currentThread().getName();
+        String threadName = Thread.currentThread().getName();
         this.info = new HttpEventInfo();
         info.setThreadName(threadName);
         eventInfoThreadLocal.set(info);
@@ -36,76 +43,107 @@ public class EasyConsoleEventListener extends EventListener {
         long now = System.nanoTime();
         long elapsedMs = (now - callStartNanos) / 1_000_000;
         try {
-            if ("callStart".equals(stage)) {
-                SidebarTabPanel.appendConsoleLog("\n—————————————— 新请求 ——————————————", SidebarTabPanel.LogType.CUSTOM);
-            }
-            boolean isErrorStage = "callFailed".equals(stage) || "requestFailed".equals(stage) || "responseFailed".equals(stage) || "connectFailed".equals(stage);
-            if (isErrorStage && msg != null && msg.contains("at ")) {
-                SidebarTabPanel.appendConsoleLog("———— 异常堆栈 ————", SidebarTabPanel.LogType.CUSTOM);
-            }
-            SidebarTabPanel.LogType logType;
+            Color logColor;
+            boolean bold;
             switch (stage) {
                 case "callFailed":
                 case "requestFailed":
                 case "responseFailed":
                 case "connectFailed":
-                    logType = SidebarTabPanel.LogType.ERROR;
+                    logColor = new Color(220, 53, 69);
+                    bold = true;
                     break;
                 case "connectStart":
                 case "connectEnd":
                 case "connectionAcquired":
                 case "connectionReleased":
-                    logType = SidebarTabPanel.LogType.DEBUG;
+                    logColor = new Color(0, 123, 255);
+                    bold = false;
                     break;
                 case "secureConnectStart":
                 case "secureConnectEnd":
-                    logType = SidebarTabPanel.LogType.TRACE;
+                    logColor = new Color(111, 66, 193);
+                    bold = false;
                     break;
+                case "callStart":
                 case "callEnd":
-                    logType = SidebarTabPanel.LogType.SUCCESS;
+                    logColor = new Color(40, 167, 69);
+                    bold = true;
                     break;
                 default:
-                    logType = SidebarTabPanel.LogType.INFO;
+                    logColor = new Color(33, 37, 41);
+                    bold = false;
             }
-            SidebarTabPanel.appendConsoleLog("[HTTP Event] [" + threadName + "] [" + stage + "] +" + elapsedMs + "ms: " + msg, logType);
+            String logMsg = "[" + stage + "] +" + elapsedMs + "ms: " + msg;
+            // 输出到 NetworkLogPanel
+            try {
+                if (editSubPanel == null) {
+                    editSubPanel = SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(reqItemId);
+                }
+                NetworkLogPanel netPanel = editSubPanel.getNetworkLogPanel();
+                netPanel.appendLog(logMsg, logColor, bold);
+            } catch (Exception ignore) {
+            }
         } catch (Exception e) {
             // 防止日志异常影响主流程
         }
     }
 
     @Override
-    public void callStart(@NotNull Call call) {
+    public void callStart(Call call) {
         info.setCallStart(System.currentTimeMillis());
-        log("callStart", call.request().method() + " " + call.request().url());
+        Request request = call.request();
+        this.reqItemId = Objects.requireNonNull(request.tag()).toString();
+        log("callStart", request.method() + " " + request.url());
     }
 
     @Override
-    public void dnsStart(@NotNull Call call, String domainName) {
+    public void proxySelectStart(Call call, HttpUrl url) {
+        info.setProxySelectStart(System.currentTimeMillis());
+        log("proxySelectStart", "Selecting proxy for " + url);
+    }
+
+    @Override
+    public void proxySelectEnd(Call call, HttpUrl url, List<Proxy> proxies) {
+        info.setProxySelectEnd(System.currentTimeMillis());
+        StringBuilder sb = new StringBuilder();
+        sb.append("Proxies: ");
+        for (Proxy proxy : proxies) {
+            sb.append(proxy.type()).append(" ");
+            if (proxy.address() instanceof InetSocketAddress address) {
+                sb.append(address.getHostName()).append(":").append(address.getPort()).append(" ");
+            }
+        }
+        log("proxySelectEnd", sb.toString());
+    }
+
+    @Override
+    public void dnsStart(Call call, String domainName) {
         info.setDnsStart(System.currentTimeMillis());
         log("dnsStart", domainName);
     }
 
     @Override
-    public void dnsEnd(@NotNull Call call, String domainName, List<InetAddress> inetAddressList) {
+    public void dnsEnd(Call call, String domainName, List<InetAddress> inetAddressList) {
         info.setDnsEnd(System.currentTimeMillis());
         log("dnsEnd", domainName + " -> " + inetAddressList);
     }
 
     @Override
-    public void connectStart(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy) {
+    public void connectStart(Call call, InetSocketAddress inetSocketAddress, Proxy proxy) {
         info.setConnectStart(System.currentTimeMillis());
         info.setRemoteAddress(inetSocketAddress.toString());
         log("connectStart", inetSocketAddress + " via " + proxy.type());
     }
 
     @Override
-    public void secureConnectStart(@NotNull Call call) {
+    public void secureConnectStart(Call call) {
         info.setSecureConnectStart(System.currentTimeMillis());
         log("secureConnectStart", "TLS handshake start");
     }
 
     @Override
-    public void secureConnectEnd(@NotNull Call call, Handshake handshake) {
+    public void secureConnectEnd(Call call, Handshake handshake) {
         info.setSecureConnectEnd(System.currentTimeMillis());
         if (handshake != null) {
             info.setTlsVersion(handshake.tlsVersion().javaName());
@@ -115,12 +153,41 @@ public class EasyConsoleEventListener extends EventListener {
         // 记录handshake信息
         if (handshake != null) {
             StringBuilder handshakeInfo = new StringBuilder();
-            handshakeInfo.append("TLS version: ").append(handshake.tlsVersion()).append(", ");
-            handshakeInfo.append("Cipher suite: ").append(handshake.cipherSuite()).append(", ");
+            handshakeInfo.append("SSL connection using ")
+                    .append(handshake.tlsVersion())
+                    .append(" / ")
+                    .append(handshake.cipherSuite())
+                    .append("\n");
             List<Certificate> peerCertificates = handshake.peerCertificates();
-            handshakeInfo.append("Peer certificates: ").append(peerCertificates.size()).append(", ");
-            List<Certificate> localCertificates = handshake.localCertificates();
-            handshakeInfo.append("Local certificates: ").append(localCertificates.size());
+            if (!peerCertificates.isEmpty()) {
+                Certificate cert = peerCertificates.get(0);
+                if (cert instanceof X509Certificate) {
+                    X509Certificate x509 = (X509Certificate) cert;
+                    handshakeInfo.append("Server certificate:\n");
+                    handshakeInfo.append(" subject: ").append(x509.getSubjectDN()).append("\n");
+                    handshakeInfo.append(" start date: ").append(x509.getNotBefore()).append(" GMT\n");
+                    handshakeInfo.append(" expire date: ").append(x509.getNotAfter()).append(" GMT\n");
+                    Collection<List<?>> altNames = null;
+                    try {
+                        altNames = x509.getSubjectAlternativeNames();
+                    } catch (Exception ignored) {
+                    }
+                    if (altNames != null) {
+                        handshakeInfo.append(" subjectAltName: ");
+                        for (List<?> altName : altNames) {
+                            if (altName.size() > 1) {
+                                handshakeInfo.append(altName.get(1)).append(", ");
+                            }
+                        }
+                        if (handshakeInfo.charAt(handshakeInfo.length() - 2) == ',') {
+                            handshakeInfo.setLength(handshakeInfo.length() - 2);
+                        }
+                        handshakeInfo.append("\n");
+                    }
+                    handshakeInfo.append(" issuer: ").append(x509.getIssuerDN()).append("\n");
+                }
+            }
+            handshakeInfo.append("SSL certificate verify ok.\n");
             log("secureConnectEnd", handshakeInfo.toString());
         } else {
             log("secureConnectEnd", "no handshake");
@@ -128,19 +195,22 @@ public class EasyConsoleEventListener extends EventListener {
     }
 
     @Override
-    public void connectEnd(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, Protocol protocol) {
+    public void connectEnd(Call call, InetSocketAddress inetSocketAddress, Proxy proxy, Protocol protocol) {
         info.setConnectEnd(System.currentTimeMillis());
         info.setProtocol(protocol);
         log("connectEnd", inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol);
     }
 
     @Override
-    public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, Protocol protocol, IOException ioe) {
-        log("connectFailed", ioe.getMessage());
+    public void connectFailed(Call call, InetSocketAddress inetSocketAddress, Proxy proxy, Protocol protocol, IOException ioe) {
+        info.setErrorMessage(ioe.getMessage());
+        info.setError(ioe);
+        log("connectFailed", inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol + ", error: " + ioe.getMessage());
     }
 
     @Override
-    public void connectionAcquired(@NotNull Call call, @NotNull Connection connection) {
+    public void connectionAcquired(Call call, Connection connection) {
+        info.setConnectionAcquired(System.currentTimeMillis());
         try {
             Socket socket = connection.socket();
             String local = socket.getLocalAddress().getHostAddress() + ":" + socket.getLocalPort();
@@ -151,70 +221,134 @@ public class EasyConsoleEventListener extends EventListener {
             info.setLocalAddress("无法获取");
             info.setRemoteAddress("无法获取");
         }
-        log("connectionAcquired", connection.toString());
+        log("connectionAcquired", "Connection acquired: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
-    public void connectionReleased(@NotNull Call call, @NotNull Connection connection) {
-        log("connectionReleased", connection.toString());
+    public void connectionReleased(Call call, Connection connection) {
+        info.setConnectionReleased(System.currentTimeMillis());
+        log("connectionReleased", "Connection released: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
-    public void requestHeadersStart(@NotNull Call call) {
+    public void requestHeadersStart(Call call) {
         info.setRequestHeadersStart(System.currentTimeMillis());
-        log("requestHeadersStart", "");
+        Request request = call.request();
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n");
+        Headers headers = request.headers();
+        for (int i = 0; i < headers.size(); i++) {
+            String name = headers.name(i);
+            String value = headers.value(i);
+            if (name.equalsIgnoreCase("cookie")) {
+                // 只保留可见字符，避免乱码
+                value = value.replaceAll("[^\\x20-\\x7E]", "");
+            }
+            sb.append(name).append(": ").append(value).append("\n");
+        }
+        log("requestHeadersStart", sb.toString());
     }
 
     @Override
-    public void requestHeadersEnd(@NotNull Call call, @NotNull Request request) {
+    public void requestHeadersEnd(Call call, Request request) {
         info.setRequestHeadersEnd(System.currentTimeMillis());
         log("requestHeadersEnd", "");
     }
 
     @Override
-    public void requestBodyStart(@NotNull Call call) {
+    public void requestBodyStart(Call call) {
         info.setRequestBodyStart(System.currentTimeMillis());
-        log("requestBodyStart", "");
+        Request request = call.request();
+        if (request.body() != null) {
+            MediaType contentType = request.body().contentType();
+            if (contentType != null && (contentType.type().equalsIgnoreCase("multipart") || contentType.type().equalsIgnoreCase("application") && contentType.subtype().toLowerCase().contains("octet-stream"))) {
+                log("requestBodyStart", "Request body is file or binary, not logged");
+            } else {
+                try {
+                    okio.Buffer buffer = new okio.Buffer();
+                    request.body().writeTo(buffer);
+                    String bodyString = buffer.readUtf8();
+                    if (!bodyString.isEmpty()) {
+                        log("requestBodyStart", "\n" + bodyString);
+                    } else {
+                        log("requestBodyStart", "Request body is empty");
+                    }
+                } catch (Exception e) {
+                    log("requestBodyStart", "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
+                }
+            }
+        } else {
+            log("requestBodyStart", "No request body");
+        }
+
     }
 
     @Override
-    public void requestBodyEnd(@NotNull Call call, long byteCount) {
+    public void requestBodyEnd(Call call, long byteCount) {
         info.setRequestBodyEnd(System.currentTimeMillis());
         log("requestBodyEnd", "bytes=" + byteCount);
     }
 
+
     @Override
-    public void responseHeadersStart(@NotNull Call call) {
+    public void requestFailed(Call call, IOException ioe) {
+        info.setErrorMessage(ioe.getMessage());
+        info.setError(ioe);
+        log("requestFailed", ioe.getMessage() + "\n" + getStackTrace(ioe));
+    }
+
+    @Override
+    public void responseHeadersStart(Call call) {
         info.setResponseHeadersStart(System.currentTimeMillis());
         log("responseHeadersStart", "");
     }
 
     @Override
-    public void responseHeadersEnd(@NotNull Call call, @NotNull Response response) {
+    public void responseHeadersEnd(Call call, Response response) {
         info.setResponseHeadersEnd(System.currentTimeMillis());
-        log("responseHeadersEnd", "code=" + response.code());
+        StringBuilder sb = new StringBuilder();
+        sb.append("response code: ").append(response.code()).append(" ").append(response.message()).append("\n");
+        Headers headers = response.headers();
+        for (int i = 0; i < headers.size(); i++) {
+            String name = headers.name(i);
+            String value = headers.value(i);
+            if (name.equalsIgnoreCase("set-cookie")) {
+                // 只保留可见字符，避免乱码
+                value = value.replaceAll("[^\\x20-\\x7E]", "");
+            }
+            sb.append(name).append(": ").append(value).append("\n");
+        }
+        log("responseHeadersEnd", sb.toString());
     }
 
     @Override
-    public void responseBodyStart(@NotNull Call call) {
+    public void responseBodyStart(Call call) {
         info.setResponseBodyStart(System.currentTimeMillis());
         log("responseBodyStart", "");
     }
 
     @Override
-    public void responseBodyEnd(@NotNull Call call, long byteCount) {
+    public void responseBodyEnd(Call call, long byteCount) {
         info.setResponseBodyEnd(System.currentTimeMillis());
         log("responseBodyEnd", "bytes=" + byteCount);
+
     }
 
     @Override
-    public void callEnd(@NotNull Call call) {
+    public void responseFailed(Call call, IOException ioe) {
+        info.setErrorMessage(ioe.getMessage());
+        info.setError(ioe);
+        log("responseFailed", ioe.getMessage() + "\n" + getStackTrace(ioe));
+    }
+
+    @Override
+    public void callEnd(Call call) {
         info.setCallEnd(System.currentTimeMillis());
         log("callEnd", "done");
     }
 
     @Override
-    public void callFailed(@NotNull Call call, @NotNull IOException ioe) {
+    public void callFailed(Call call, IOException ioe) {
         info.setCallFailed(System.currentTimeMillis());
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
@@ -222,14 +356,34 @@ public class EasyConsoleEventListener extends EventListener {
     }
 
     @Override
-    public void requestFailed(@NotNull Call call, @NotNull IOException ioe) {
-        log("requestFailed", ioe.getMessage() + "\n" + getStackTrace(ioe));
+    public void canceled(Call call) {
+        info.setCanceled(System.currentTimeMillis());
+        log("canceled", "Call was canceled");
+    }
+
+
+    @Override
+    public void satisfactionFailure(Call call, Response response) {
+        info.setErrorMessage("Response does not satisfy request: " + response.code() + " " + response.message());
+        log("satisfactionFailure", "Response does not satisfy request: " + response.code() + " " + response.message());
+    }
+
+
+    @Override
+    public void cacheHit(Call call, Response response) {
+        log("cacheHit", "Response served from cache: " + response.code() + " " + response.message());
     }
 
     @Override
-    public void responseFailed(@NotNull Call call, @NotNull IOException ioe) {
-        log("responseFailed", ioe.getMessage() + "\n" + getStackTrace(ioe));
+    public void cacheMiss(Call call) {
+        log("cacheMiss", "No cache hit for this call");
     }
+
+    @Override
+    public void cacheConditionalHit(Call call, Response cachedResponse) {
+        log("cacheConditionalHit", "Response served from conditional cache: " + cachedResponse.code() + " " + cachedResponse.message());
+    }
+
 
     // 辅助方法：获取异常堆栈
     private String getStackTrace(Throwable t) {

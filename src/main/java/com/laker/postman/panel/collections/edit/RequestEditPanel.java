@@ -33,7 +33,7 @@ public class RequestEditPanel extends BasePanel {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
         }
         String tabTitle = title != null ? title : REQUEST_STRING + (tabbedPane.getTabCount() + 1);
-        RequestEditSubPanel subPanel = new RequestEditSubPanel();
+        RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID());
         tabbedPane.addTab(tabTitle, subPanel);
         tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1,
                 new ClosableTabComponent(tabTitle, subPanel, tabbedPane, this::saveCurrentRequest));
@@ -96,7 +96,7 @@ public class RequestEditPanel extends BasePanel {
             }
         }
         // 没有同id Tab则新建
-        RequestEditSubPanel subPanel = new RequestEditSubPanel();
+        RequestEditSubPanel subPanel = new RequestEditSubPanel(id);
         subPanel.updateRequestForm(item);
         String name = item.getName() != null ? item.getName() : REQUEST_STRING + (tabbedPane.getTabCount());
         int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
@@ -320,5 +320,21 @@ public class RequestEditPanel extends BasePanel {
     @Override
     protected void registerListeners() {
 
+    }
+
+
+    public RequestEditSubPanel getRequestEditSubPanel(String reqItemId) {
+        // 通过 RequestEditPanel 获取 tabbedPane
+        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        JTabbedPane tabbedPane = requestEditPanel.getTabbedPane();
+        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel subPanel) {
+                if (reqItemId.equals(subPanel.getId())) {
+                    return subPanel;
+                }
+            }
+        }
+        return null;
     }
 }

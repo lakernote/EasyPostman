@@ -9,11 +9,9 @@ import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.ResponseWithRedirects;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.http.HttpService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
@@ -61,7 +59,8 @@ public class RequestEditSubPanel extends JPanel {
     private final ScriptPanel scriptPanel;
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
-    private final JTextArea redirectChainArea; // 重定向链文本区域
+    @Getter
+    private final NetworkLogPanel networkLogPanel; // 网络日志面板
     private JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
@@ -108,7 +107,8 @@ public class RequestEditSubPanel extends JPanel {
         return isModified;
     }
 
-    public RequestEditSubPanel() {
+    public RequestEditSubPanel(String id) {
+        this.id = id;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
@@ -180,11 +180,9 @@ public class RequestEditSubPanel extends JPanel {
         // 响应头面板
         responseHeadersPanel = new ResponseHeadersPanel();
         responseTabs.addTab("Headers", responseHeadersPanel);
-        // 重定向链Tab
-        this.redirectChainArea = new JTextArea();
-        redirectChainArea.setEditable(false);
-        JScrollPane redirectScroll = new JScrollPane(redirectChainArea);
-        responseTabs.addTab("Redirects", redirectScroll);
+        // Network Log Tab（包含重定向链和网络日志）
+        networkLogPanel = new NetworkLogPanel();
+        responseTabs.addTab("Network Logs", networkLogPanel);
         // Variable extraction
         extractorPanel = new ExtractorPanel();
         extractorPanel.setRulesSupplier(() -> getCurrentRequest().getExtractorRules());
@@ -327,10 +325,10 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    ResponseWithRedirects respWithRedirects = RedirectHandler.executeWithRedirects(req, 10);
-                    resp = respWithRedirects.finalResponse;
-                    resp.redirects = respWithRedirects.redirects;
-                    statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
+                    resp = RedirectHandler.executeWithRedirects(req, 10);
+                    if (resp != null) {
+                        statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
+                    }
                 } catch (InterruptedIOException ignore) {
                     log.info("{} 请求被取消", req.url);
                 } catch (Exception ex) {
@@ -478,7 +476,6 @@ public class RequestEditSubPanel extends JPanel {
                             }
                             resp.code = response.code();
                             resp.protocol = response.protocol().toString();
-                            HttpService.fillHttpEventInfo(resp, startTime, startTime);
                             currentWebSocket = webSocket;
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse(String.valueOf(resp.code), resp);
@@ -695,7 +692,7 @@ public class RequestEditSubPanel extends JPanel {
             item.setFormFiles(requestBodyPanel.getFormFiles());
             item.setBody(""); // form-data模式下，body通常不直接使用
         } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(bodyType)) {
-            item.setBody(""); // x-www-form-urlencoded模式下，body通常不���接使用
+            item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
             item.setUrlencoded(requestBodyPanel.getUrlencoded());
@@ -791,6 +788,7 @@ public class RequestEditSubPanel extends JPanel {
         responseTimeLabel.setText("Duration: --");
         responseSizeLabel.setText("ResponseSize: --");
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
+        networkLogPanel.clearLog();
     }
 
     // UI状态：响应完成
@@ -802,9 +800,6 @@ public class RequestEditSubPanel extends JPanel {
         }
         responseHeadersPanel.setHeaders(resp.headers);
         setResponseBody(resp);
-        if (redirectChainArea != null) {
-            redirectChainArea.setText(getRedirctChainStringBuilder(resp.redirects).toString());
-        }
         Color statusColor = getStatusColor(resp.code);
         statusCodeLabel.setText("Status: " + statusText);
         statusCodeLabel.setForeground(statusColor);

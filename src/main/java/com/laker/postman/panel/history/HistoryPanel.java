@@ -272,46 +272,59 @@ public class HistoryPanel extends BasePanel {
                     serverCost = info.getResponseHeadersStart() - info.getRequestHeadersEnd();
                 }
             }
+            // 复用连接判断
+            String reused = "-";
+            if (info.getConnectionAcquired() > 0) {
+                if (info.getConnectStart() == 0 || (info.getConnectionAcquired() < info.getConnectStart())) {
+                    reused = "Yes";
+                } else {
+                    reused = "No";
+                }
+            }
             sb.append("<div style='margin:8px 0 8px 0;'>");
             sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Timing Timeline]</b></div>");
             sb.append("<table style='border-collapse:collapse;margin:8px 0 8px 0;'>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#333;'><b>Total</b></td><td style='color:#d32f2f;font-weight:bold;'>")
                     .append(total >= 0 ? total + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>总耗时（CallStart→CallEnd，整个请求生命周期）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>Queueing</td><td>")
                     .append(info.getQueueingCost() > 0 ? info.getQueueingCost() + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>QueueStart→CallStart，排队等待调度</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>Stalled</td><td>")
                     .append(info.getStalledCost() > 0 ? info.getStalledCost() + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>CallStart→ConnectStart，阻塞（包含DNS解析）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>DNS Lookup</td><td>")
                     .append(dns >= 0 ? dns + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>DnsStart→DnsEnd，域名解析（Stalled子阶段）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>Initial Connection (TCP)</td><td>")
                     .append(connect >= 0 ? connect + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>ConnectStart→ConnectEnd，TCP连接建立（包含SSL/TLS）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>SSL/TLS</td><td>")
                     .append(tls >= 0 ? tls + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>SecureConnectStart→SecureConnectEnd，SSL/TLS握手（TCP连接子阶段）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>Request Sent</td><td>")
                     .append((reqHeaders >= 0 || reqBody >= 0) ? ((reqHeaders >= 0 ? reqHeaders : 0) + (reqBody >= 0 ? reqBody : 0)) + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'><b>Waiting (TTFB)</b></td><td style='color:#388e3c;font-weight:bold;'>")
                     .append(serverCost >= 0 ? serverCost + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理（TTFB）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>Content Download</td><td>")
                     .append(respBody >= 0 ? respBody + " ms" : "-")
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>ResponseBodyStart→ResponseBodyEnd，响应体下载</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0'>Connection Reused</td><td>")
+                    .append(reused)
+                    .append("</td><td style='color:#888;font-size:10px;'>本次请求是否复用连接</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>OkHttp Idle Connections</td><td>")
                     .append(item.response.idleConnectionCount)
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>OkHttp空闲连接数（快照）</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>OkHttp Total Connections</td><td>")
                     .append(item.response.connectionCount)
-                    .append("</td></tr>");
+                    .append("</td><td style='color:#888;font-size:10px;'>OkHttp总连接数（快照）</td></tr>");
             sb.append("</table>");
             sb.append("<div style='font-size:10px;color:#888;margin-top:2px;'>");
             sb.append("各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>");
             sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>");
+            sb.append("Connection Reused=Yes 表示本次请求未新建TCP连接。<br>");
             sb.append("OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。");
             sb.append("</div>");
             sb.append("</div>");
@@ -322,6 +335,7 @@ public class HistoryPanel extends BasePanel {
             sb.append("<div style='font-size:11px;'><b style='color:#1976d2;'>[Event Info]</b></div>");
             HttpEventInfo info = item.response.httpEventInfo;
             sb.append("<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Remote</td><td>" + escapeHtml(info.getRemoteAddress()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Protocol</td><td>" + (info.getProtocol() != null ? info.getProtocol().toString() : "-") + "</td></tr>");
@@ -329,13 +343,15 @@ public class HistoryPanel extends BasePanel {
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Thread</td><td>" + (info.getThreadName() != null ? info.getThreadName() : "-") + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Error</td><td>" + (info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") + "</td></tr>");
             sb.append("<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallStart</td><td>" + formatMillis(info.getCallStart()) + "</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0'>DnsStart</td><td>").append(formatMillis(info.getDnsStart())).append("</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0'>DnsEnd</td><td>").append(formatMillis(info.getDnsEnd())).append("</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>");
-            sb.append("<tr><td style='padding:2px 8px 2px 0'>SecureConnectEnd</td><td>" + formatMillis(info.getSecureConnectEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsStart</td><td>" + formatMillis(info.getDnsStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsEnd</td><td>" + formatMillis(info.getDnsEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectEnd</td><td>" + formatMillis(info.getSecureConnectEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectionAcquired</td><td>" + formatMillis(info.getConnectionAcquired()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestHeadersStart</td><td>" + formatMillis(info.getRequestHeadersStart()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestHeadersEnd</td><td>" + formatMillis(info.getRequestHeadersEnd()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestBodyStart</td><td>" + formatMillis(info.getRequestBodyStart()) + "</td></tr>");
@@ -344,8 +360,10 @@ public class HistoryPanel extends BasePanel {
             sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersEnd</td><td>" + formatMillis(info.getResponseHeadersEnd()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseBodyStart</td><td>" + formatMillis(info.getResponseBodyStart()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseBodyEnd</td><td>" + formatMillis(info.getResponseBodyEnd()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0'>ConnectionReleased</td><td>" + formatMillis(info.getConnectionReleased()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallEnd</td><td>" + formatMillis(info.getCallEnd()) + "</td></tr>");
             sb.append("<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>CallFailed</td><td>" + formatMillis(info.getCallFailed()) + "</td></tr>");
+            sb.append("<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>Canceled</td><td>" + formatMillis(info.getCanceled()) + "</td></tr>");
             sb.append("</table>");
         }
         sb.append("</body></html>");

@@ -107,7 +107,7 @@ public class JMeterPanel extends BasePanel {
         propertyPanel.add(new JLabel("请选择左侧节点进行编辑"), "empty");
         threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, "threadGroup");
-        requestEditSubPanel = new RequestEditSubPanel();
+        requestEditSubPanel = new RequestEditSubPanel("");
         propertyPanel.add(requestEditSubPanel, "request");
         assertionPanel = new AssertionPropertyPanel();
         propertyPanel.add(assertionPanel, "assertion");

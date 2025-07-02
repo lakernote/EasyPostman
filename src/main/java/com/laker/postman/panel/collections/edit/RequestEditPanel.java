@@ -137,15 +137,11 @@ public class RequestEditPanel extends BasePanel {
             return;
         }
 
-        String id = currentItem.getId();
-        boolean isNewRequest = id == null || id.isEmpty();
+        String name = currentItem.getName();
+        boolean isNewRequest = name == null;
 
         // 查找请求集合面板
         RequestCollectionsSubPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
-        if (collectionPanel == null) {
-            JOptionPane.showMessageDialog(this, "无法找到请求集合面板，保存失败", "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
 
         if (isNewRequest) {
             // 新请求：弹出对话框让用户输入名称和选择文件夹

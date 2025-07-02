@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
@@ -15,7 +16,9 @@ import java.util.Map;
 @Slf4j
 public class OkHttpResponseHandler {
 
-    private static final int MAX_BODY_SIZE = 10 * 1024; // 10KB
+    private static int getMaxBodySize() {
+        return SettingManager.getMaxBodySize();
+    }
 
     public static HttpResponse handleResponse(Response okResponse, HttpResponse response) throws IOException {
         response.code = okResponse.code();
@@ -197,7 +200,7 @@ public class OkHttpResponseHandler {
 
     private static void handleTextResponse(Response okResponse, HttpResponse response, long contentLengthHeader) throws IOException {
         String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
-        if (contentLengthHeader > MAX_BODY_SIZE) { // 如果 Content-Length 大于 10KB，直接保存为临时文件
+        if (contentLengthHeader > getMaxBodySize()) { // 如果 Content-Length 大于设置值，直接保存为临时文件
             InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
             if (is != null) {
                 FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_text_download_", ext != null ? ext : ".txt");
@@ -212,7 +215,7 @@ public class OkHttpResponseHandler {
             }
         } else if (okResponse.body() != null) {
             String bodyStr = okResponse.body().string();
-            if (bodyStr.getBytes().length > MAX_BODY_SIZE) { // 如果响应体内容超过 10KB，保存为临时文件
+            if (bodyStr.getBytes().length > getMaxBodySize()) { // 如果响应体内容超过设置值，保存为临时文件
                 // 这里也用流写入
                 FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bodyStr.getBytes()), "easyPostman_text_download_", ext != null ? ext : ".txt");
                 response.filePath = fs.file.getAbsolutePath();

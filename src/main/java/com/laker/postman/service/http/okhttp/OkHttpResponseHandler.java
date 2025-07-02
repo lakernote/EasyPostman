@@ -5,6 +5,7 @@ import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 
+import javax.swing.*;
 import java.io.*;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,6 +19,10 @@ public class OkHttpResponseHandler {
 
     private static int getMaxBodySize() {
         return SettingManager.getMaxBodySize();
+    }
+
+    private static int getMaxDownloadSize() {
+        return SettingManager.getMaxDownloadSize();
     }
 
     public static HttpResponse handleResponse(Response okResponse, HttpResponse response) throws IOException {
@@ -161,6 +166,20 @@ public class OkHttpResponseHandler {
         // 最后默认名
         if (fileName == null) fileName = "downloaded_file";
         response.fileName = fileName;
+        int maxDownloadSize = getMaxDownloadSize();
+        long contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
+        if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
+            if (is != null) is.close();
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null,
+                        String.format("二进制内容超出最大下载限制%dMB（当前限制：%d MB）", contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
+                        "下载限制", JOptionPane.WARNING_MESSAGE);
+            });
+            response.body = String.format("[二进制内容超出最大下载限制，未下载。当前限制：%d MB]", maxDownloadSize / 1024 / 1024);
+            response.bodySize = 0;
+            response.filePath = null;
+            return;
+        }
         if (is != null) {
             FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null);
             response.filePath = fs.file.getAbsolutePath();
@@ -200,27 +219,28 @@ public class OkHttpResponseHandler {
 
     private static void handleTextResponse(Response okResponse, HttpResponse response, long contentLengthHeader) throws IOException {
         String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
-        if (contentLengthHeader > getMaxBodySize()) { // 如果 Content-Length 大于设置值，直接保存为临时文件
-            InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
-            if (is != null) {
-                FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_text_download_", ext != null ? ext : ".txt");
-                response.filePath = fs.file.getAbsolutePath();
-                response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
-                response.body = "[响应体内容超过10KB，已保存为临时文件，可下载查看完整内容]";
-                response.bodySize = fs.size;
-            } else {
-                response.body = "[无响应体]";
-                response.bodySize = 0;
-                response.filePath = null;
-            }
-        } else if (okResponse.body() != null) {
+        int maxDownloadSize = getMaxDownloadSize();
+        if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
+            if (okResponse.body() != null) okResponse.body().close();
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null,
+                        String.format("文本内容超出最大下载限制%dMB（当前限制：%d MB）", contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
+                        "下载限制", JOptionPane.WARNING_MESSAGE);
+            });
+            response.body = String.format("[文本内容超出最大下载限制，未下载。当前限制：%d MB]", maxDownloadSize / 1024 / 1024);
+            response.bodySize = 0;
+            response.filePath = null;
+            return;
+        }
+        if (okResponse.body() != null) {
             String bodyStr = okResponse.body().string();
             if (bodyStr.getBytes().length > getMaxBodySize()) { // 如果响应体内容超过设置值，保存为临时文件
                 // 这里也用流写入
                 FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bodyStr.getBytes()), "easyPostman_text_download_", ext != null ? ext : ".txt");
                 response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
-                response.body = "[响应体内容超过10KB，已保存为临时文件，可下载查看完整内容]";
+                int maxBodySizeKB = getMaxBodySize() / 1024;
+                response.body = String.format("[响应体内容超过%dKB，已保存为临时文件，可下载查看完整内容]", maxBodySizeKB);
                 response.bodySize = fs.size;
             } else {
                 response.body = bodyStr;

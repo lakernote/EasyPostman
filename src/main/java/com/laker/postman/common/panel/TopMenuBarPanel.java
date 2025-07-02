@@ -5,7 +5,7 @@ import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
-import com.laker.postman.common.setting.SettingPanel;
+import com.laker.postman.common.setting.SettingDialog;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -121,8 +121,9 @@ public class TopMenuBarPanel extends BasePanel {
         JMenu settingMenu = new JMenu("设置");
         JMenuItem settingMenuItem = new JMenuItem("全局设置");
         settingMenuItem.addActionListener(e -> {
-            SettingPanel panel = new SettingPanel();
-            JOptionPane.showMessageDialog(null, panel, "全局设置", JOptionPane.PLAIN_MESSAGE);
+            Window window = SwingUtilities.getWindowAncestor(this);
+            SettingDialog dialog = new SettingDialog(window);
+            dialog.setVisible(true);
         });
         settingMenu.add(settingMenuItem);
         menuBar.add(settingMenu);

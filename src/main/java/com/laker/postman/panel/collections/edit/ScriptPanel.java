@@ -128,9 +128,13 @@ public class ScriptPanel extends JPanel {
         provider.addCompletion(new BasicCompletion(provider, "while", "循环语句"));
         provider.addCompletion(new BasicCompletion(provider, "function", "函数定义"));
         provider.addCompletion(new BasicCompletion(provider, "return", "返回语句"));
-        // 代码片段
+        // 代码片段 JsPolyfillInjector
         provider.addCompletion(new ShorthandCompletion(provider, "pm.environment.set", "pm.environment.set('key', 'value');", "设置环境变量"));
         provider.addCompletion(new ShorthandCompletion(provider, "pm.environment.get", "pm.environment.get('key');", "获取环境变量"));
+        provider.addCompletion(new ShorthandCompletion(provider, "btoa", "btoa('内容');", "将字符串转换为 Base64 编码"));
+        provider.addCompletion(new ShorthandCompletion(provider, "atob", "atob('内容');", "将 Base64 编码转换为字符串"));
+        provider.addCompletion(new ShorthandCompletion(provider, "encodeURIComponent", "encodeURIComponent('内容');", "对字符串进行 URL 编码"));
+        provider.addCompletion(new ShorthandCompletion(provider, "decodeURIComponent", "decodeURIComponent('内容');", "对 URL 编码的字符串进行解码"));
         provider.addCompletion(new ShorthandCompletion(provider, "console.log", "console.log('内容');", "打印日志"));
         provider.addCompletion(new ShorthandCompletion(provider, "JSON.parse(responseBody)", "JSON.parse(responseBody);", "解析响应体为 JSON 对象"));
         provider.addCompletion(new ShorthandCompletion(provider, "JSON.stringify", "JSON.stringify(obj);", "将对象转换为 JSON 字符串"));

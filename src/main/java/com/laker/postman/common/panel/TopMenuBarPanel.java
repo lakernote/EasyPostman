@@ -98,6 +98,17 @@ public class TopMenuBarPanel extends BasePanel {
         macLightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.themes.FlatMacLightLaf"));
         menuBar.add(themeMenu);
 
+        // ---------设置菜单
+        JMenu settingMenu = new JMenu("设置");
+        JMenuItem settingMenuItem = new JMenuItem("全局设置");
+        settingMenuItem.addActionListener(e -> {
+            Window window = SwingUtilities.getWindowAncestor(this);
+            SettingDialog dialog = new SettingDialog(window);
+            dialog.setVisible(true);
+        });
+        settingMenu.add(settingMenuItem);
+        menuBar.add(settingMenu);
+
         // ---------帮助菜单
         JMenu helpMenu = new JMenu("帮助");
         // 新增“检查更新”菜单项
@@ -116,17 +127,6 @@ public class TopMenuBarPanel extends BasePanel {
         aboutMenuItem.addActionListener(e -> aboutActionPerformed());
         aboutMenu.add(aboutMenuItem);
         menuBar.add(aboutMenu);
-
-        // ---------设置菜单
-        JMenu settingMenu = new JMenu("设置");
-        JMenuItem settingMenuItem = new JMenuItem("全局设置");
-        settingMenuItem.addActionListener(e -> {
-            Window window = SwingUtilities.getWindowAncestor(this);
-            SettingDialog dialog = new SettingDialog(window);
-            dialog.setVisible(true);
-        });
-        settingMenu.add(settingMenuItem);
-        menuBar.add(settingMenu);
 
         // 菜单栏放左侧
         add(menuBar, BorderLayout.WEST);

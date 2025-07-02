@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.PreparedRequest;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
@@ -31,14 +32,15 @@ public class OkHttpClientManager {
      * @return OkHttpClient
      */
     public static OkHttpClient getClient(String baseUri, PreparedRequest request) {
-        return clientMap.computeIfAbsent(baseUri + "|" + request.followRedirects, k -> {
+        int timeoutMs = SettingManager.getRequestTimeout();
+        return clientMap.computeIfAbsent(baseUri + "|" + request.followRedirects + "|" + timeoutMs, k -> {
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     // 连接超时
-                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     // 读超时
-                    .readTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     // 写超时
-                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     // 连接池配置
                     .connectionPool(new ConnectionPool(MAX_IDLE_CONNECTIONS, KEEP_ALIVE_DURATION, TimeUnit.SECONDS))
                     // 失败自动重试

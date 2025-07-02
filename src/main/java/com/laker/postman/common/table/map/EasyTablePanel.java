@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -93,6 +95,36 @@ public class EasyTablePanel extends JPanel {
         popupMenu = createPopupMenu();
         // 添加鼠标监听器
         addTableListener();
+
+        // 实时写入TableModel: 为每列文本编辑器添加DocumentListener
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            TableCellEditor editor = table.getDefaultEditor(Object.class);
+            if (editor instanceof DefaultCellEditor) {
+                java.awt.Component comp = ((DefaultCellEditor) editor).getComponent();
+                if (comp instanceof JTextField textField) {
+                    textField.getDocument().addDocumentListener(new DocumentListener() {
+                        @Override
+                        public void insertUpdate(DocumentEvent e) {
+                            if (table.isEditing()) table.getCellEditor().stopCellEditing();
+                        }
+
+                        @Override
+                        public void removeUpdate(DocumentEvent e) {
+                            if (table.isEditing()) table.getCellEditor().stopCellEditing();
+                        }
+
+                        @Override
+                        public void changedUpdate(DocumentEvent e) {
+                            if (table.isEditing()) table.getCellEditor().stopCellEditing();
+                        }
+                    });
+                } else {
+                    log.warn("DefaultCellEditor component is not a JTextField, cannot add DocumentListener.");
+                }
+            } else {
+                log.warn("DefaultCellEditor is not an instance of DefaultCellEditor, cannot add DocumentListener.");
+            }
+        }
     }
 
     /**
@@ -253,7 +285,7 @@ public class EasyTablePanel extends JPanel {
         }
     }
 
-    public void scrollRectToVisible(){
+    public void scrollRectToVisible() {
         int row = table.getRowCount() - 1; // 滚动到最后一行
         if (row >= 0) {
             table.scrollRectToVisible(table.getCellRect(row, 0, true));

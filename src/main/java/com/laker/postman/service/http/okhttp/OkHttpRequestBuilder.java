@@ -41,7 +41,11 @@ public class OkHttpRequestBuilder {
         builder.method(methodUpper, requestBody);
         if (req.headers != null) {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (key != null && !key.isEmpty()) {
+                    builder.addHeader(key, value == null ? "" : value);
+                }
             }
         }
         return builder.build();
@@ -79,7 +83,11 @@ public class OkHttpRequestBuilder {
         builder.tag(req.id);
         if (req.headers != null) {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (key != null && !key.isEmpty()) {
+                    builder.addHeader(key, value == null ? "" : value);
+                }
             }
         }
         return builder.build();
@@ -90,7 +98,11 @@ public class OkHttpRequestBuilder {
         FormBody.Builder formBuilder = new FormBody.Builder();
         if (req.urlencoded != null) {
             for (Map.Entry<String, String> entry : req.urlencoded.entrySet()) {
-                formBuilder.add(entry.getKey(), entry.getValue());
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (key != null && !key.isEmpty()) {
+                    formBuilder.add(key, value == null ? "" : value);
+                }
             }
         }
         RequestBody requestBody = formBuilder.build();
@@ -99,8 +111,12 @@ public class OkHttpRequestBuilder {
         boolean hasContentType = false;
         if (req.headers != null) {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-                if ("Content-Type".equalsIgnoreCase(entry.getKey())) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (key != null && !key.isEmpty()) {
+                    builder.addHeader(key, value == null ? "" : value);
+                }
+                if ("Content-Type".equalsIgnoreCase(key)) {
                     hasContentType = true;
                 }
             }

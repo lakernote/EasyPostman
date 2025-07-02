@@ -62,9 +62,14 @@ public class EasyTablePanel extends JPanel {
     private boolean editable = true; // 新增字段，默认可编辑
 
     /**
+     * 控制自动补空行的标志，防止批量操作时触发自动补空行
+     */
+    private boolean suppressAutoAppendRow = false;
+
+    /**
      * 构造方法，初始化表格和右键菜单。
      *
-     * @param columns 表头列名数组
+     * @param columns 表头列名数��
      *                <br>示例：new String[]{"Name", "Age", "Email"}
      */
     public EasyTablePanel(String[] columns) {
@@ -125,6 +130,7 @@ public class EasyTablePanel extends JPanel {
                 log.warn("DefaultCellEditor is not an instance of DefaultCellEditor, cannot add DocumentListener.");
             }
         }
+        addAutoAppendRowFeature();
     }
 
     /**
@@ -189,7 +195,7 @@ public class EasyTablePanel extends JPanel {
              * 显示右键菜单
              */
             private void showMenu(MouseEvent e) {
-                if (!editable) return; // 不可编辑时不弹出菜单
+                if (!editable) return; // 如果不可编辑，则不显示右键菜单
                 int row = table.rowAtPoint(e.getPoint());
                 if (row >= 0) {
                     table.setRowSelectionInterval(row, row);
@@ -319,13 +325,17 @@ public class EasyTablePanel extends JPanel {
      * <br>【调用示例】panel.clear();
      */
     public void clear() {
+        suppressAutoAppendRow = true;
         tableModel.setRowCount(0);
+        suppressAutoAppendRow = false;
+        ensureOneEmptyRow();
     }
 
     /**
      * 用 List<Map<String, Object>> 填充表格
      */
     public void setRows(List<Map<String, Object>> rows) {
+        suppressAutoAppendRow = true;
         tableModel.setRowCount(0);
         if (rows != null) {
             for (Map<String, Object> row : rows) {
@@ -334,6 +344,45 @@ public class EasyTablePanel extends JPanel {
                     values[i] = row.get(tableModel.getColumnName(i));
                 }
                 tableModel.addRow(values);
+            }
+        }
+        suppressAutoAppendRow = false;
+        ensureOneEmptyRow();
+    }
+
+    /**
+     * 保证表格底部只有一行空行
+     */
+    private void ensureOneEmptyRow() {
+        int rowCount = tableModel.getRowCount();
+        if (rowCount == 0) {
+            tableModel.addRow(new Object[columns.length]);
+            return;
+        }
+        // 检查最后一行是否为空
+        boolean lastIsEmpty = true;
+        for (int col = 0; col < columns.length; col++) {
+            Object value = tableModel.getValueAt(rowCount - 1, col);
+            if (value != null && !value.toString().trim().isEmpty()) {
+                lastIsEmpty = false;
+                break;
+            }
+        }
+        if (!lastIsEmpty) {
+            tableModel.addRow(new Object[columns.length]);
+        }
+        // 移除多余的空行
+        for (int i = rowCount - 2; i >= 0; i--) {
+            boolean empty = true;
+            for (int col = 0; col < columns.length; col++) {
+                Object value = tableModel.getValueAt(i, col);
+                if (value != null && !value.toString().trim().isEmpty()) {
+                    empty = false;
+                    break;
+                }
+            }
+            if (empty) {
+                tableModel.removeRow(i);
             }
         }
     }
@@ -345,7 +394,10 @@ public class EasyTablePanel extends JPanel {
      *               <br>【调用示例】panel.addRow("a", "b", "c");
      */
     public void addRow(Object... values) {
+        suppressAutoAppendRow = true;
         tableModel.addRow(values);
+        suppressAutoAppendRow = false;
+        ensureOneEmptyRow();
     }
 
     /**
@@ -408,7 +460,7 @@ public class EasyTablePanel extends JPanel {
         table.getColumnModel().getColumn(columnIndex).setMaxWidth(width);
     }
 
-    // 设置表格可见高度（行数和总宽度）
+    // 设置表格可见高度��行数和总宽度）
     public void setPreferredScrollableViewportHeight(int rowCount, int totalWidth) {
         table.setPreferredScrollableViewportSize(new Dimension(totalWidth, table.getRowHeight() * rowCount));
     }
@@ -455,5 +507,63 @@ public class EasyTablePanel extends JPanel {
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
         table.setTransferHandler(new TableRowTransferHandler(tableModel, this));
+    }
+
+    /**
+     * 自动在最后一行有内容时添加新空行，实现类似 Postman 的交互体验
+     */
+    private void addAutoAppendRowFeature() {
+        tableModel.addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent e) {
+                if (!editable || suppressAutoAppendRow) return;
+                int rowCount = tableModel.getRowCount();
+                if (rowCount == 0) {
+                    tableModel.addRow(new Object[columns.length]);
+                    return;
+                }
+                // 检查最后一行是否有内容
+                boolean hasContent = false;
+                for (int col = 0; col < columns.length; col++) {
+                    Object value = tableModel.getValueAt(rowCount - 1, col);
+                    if (value != null && !value.toString().trim().isEmpty()) {
+                        hasContent = true;
+                        break;
+                    }
+                }
+                // 如果最后一行有内容，则自动添加一行空白行
+                if (hasContent) {
+                    // 避免重复添加空行
+                    boolean needAdd = true;
+                    if (rowCount >= 2) {
+                        boolean lastIsEmpty = true;
+                        for (int col = 0; col < columns.length; col++) {
+                            Object value = tableModel.getValueAt(rowCount - 1, col);
+                            if (value != null && !value.toString().trim().isEmpty()) {
+                                lastIsEmpty = false;
+                                break;
+                            }
+                        }
+                        boolean prevIsEmpty = true;
+                        for (int col = 0; col < columns.length; col++) {
+                            Object value = tableModel.getValueAt(rowCount - 2, col);
+                            if (value != null && !value.toString().trim().isEmpty()) {
+                                prevIsEmpty = false;
+                                break;
+                            }
+                        }
+                        // 如果最后一行和倒数第二行都为空，则不再添加
+                        if (lastIsEmpty && prevIsEmpty) needAdd = false;
+                    }
+                    if (needAdd) {
+                        tableModel.addRow(new Object[columns.length]);
+                    }
+                }
+            }
+        });
+        // 初始化时至少有一行空行
+        if (tableModel.getRowCount() == 0) {
+            tableModel.addRow(new Object[columns.length]);
+        }
     }
 }

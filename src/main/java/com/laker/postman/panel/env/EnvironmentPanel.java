@@ -527,14 +527,58 @@ public class EnvironmentPanel extends BasePanel {
 
     // 判断当前表格内容和快照是否一致，使用JSON序列化比较
     private boolean isVariablesChanged() {
-        String curJson = JSONUtil.toJsonStr(variablesTablePanel.getRows());
-        boolean isVariablesChanged = !StrUtil.equals(curJson, originalVariablesSnapshot);
+        List<Map<String, Object>> rows = getRows();
+        String curJson = JSONUtil.toJsonStr(rows);
+        List<Map> snapshotRows = new ArrayList<>();
+        try {
+            snapshotRows = JSONUtil.toList(originalVariablesSnapshot, Map.class);
+        } catch (Exception ignore) {
+        }
+        // 也移除快照最后一行空行
+        if (!snapshotRows.isEmpty()) {
+            Map last = snapshotRows.get(snapshotRows.size() - 1);
+            boolean empty = true;
+            if (last != null) {
+                for (Object v : last.values()) {
+                    if (v != null && !(v instanceof String && ((String) v).trim().isEmpty())) {
+                        empty = false;
+                        break;
+                    }
+                }
+            }
+            if (empty) {
+                snapshotRows.remove(snapshotRows.size() - 1);
+            }
+        }
+        String snapshotJson = JSONUtil.toJsonStr(snapshotRows);
+        boolean isVariablesChanged = !StrUtil.equals(curJson, snapshotJson);
         if (isVariablesChanged) {
-            log.info("env name: {}", currentEnvironment.getName());
+            log.info("env name: {}", currentEnvironment != null ? currentEnvironment.getName() : "null");
             log.info("current  variables: {}", curJson);
-            log.info("original variables: {}", originalVariablesSnapshot);
+            log.info("original variables: {}", snapshotJson);
         }
         return isVariablesChanged;
+    }
+
+    private List<Map<String, Object>> getRows() {
+        List<Map<String, Object>> rows = new ArrayList<>(variablesTablePanel.getRows());
+        // 直接移除最后一行空行（所有字段都为 null 或空串）
+        if (!rows.isEmpty()) {
+            Map<String, Object> last = rows.get(rows.size() - 1);
+            boolean empty = true;
+            if (last != null) {
+                for (Object v : last.values()) {
+                    if (v != null && !(v instanceof String && ((String) v).trim().isEmpty())) {
+                        empty = false;
+                        break;
+                    }
+                }
+            }
+            if (empty) {
+                rows.remove(rows.size() - 1);
+            }
+        }
+        return rows;
     }
 
     // 新增：导出选中环境为Postman格式
@@ -560,3 +604,4 @@ public class EnvironmentPanel extends BasePanel {
         }
     }
 }
+

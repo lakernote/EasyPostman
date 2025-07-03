@@ -4,6 +4,7 @@ import com.laker.postman.model.PreparedRequest;
 import okhttp3.*;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Map;
 
 /**
@@ -58,7 +59,11 @@ public class OkHttpRequestBuilder {
         MultipartBody.Builder multipartBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
         if (req.formData != null) {
             for (Map.Entry<String, String> entry : req.formData.entrySet()) {
-                multipartBuilder.addFormDataPart(entry.getKey(), entry.getValue());
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (key != null && !key.isEmpty()) {
+                    multipartBuilder.addFormDataPart(key, value == null ? "" : value);
+                }
             }
         }
         if (req.formFiles != null) {
@@ -67,7 +72,7 @@ public class OkHttpRequestBuilder {
                 if (file.exists()) {
                     String mimeType = null;
                     try {
-                        mimeType = java.nio.file.Files.probeContentType(file.toPath());
+                        mimeType = Files.probeContentType(file.toPath());
                     } catch (Exception e) {
                         // ignore
                     }

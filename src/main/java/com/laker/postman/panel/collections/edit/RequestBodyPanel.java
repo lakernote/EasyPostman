@@ -199,15 +199,13 @@ public class RequestBodyPanel extends JPanel {
 
     // 切换到WebSocket消息发送面板
     public void showWebSocketSendPanel(boolean show) {
-        // 自动切换到Body Tab的 type=raw 且 format=WebSocket
-        bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
-        currentBodyType = BODY_TYPE_RAW;
-        bodyCardLayout.show(bodyCardPanel, BODY_TYPE_RAW);
-        rawTypeComboBox.setVisible(true);
-        formatLabel.setVisible(true);
-        rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
-        currentRawType = RAW_TYPE_JSON;
         if (show) {
+            // 自动切换到Body Tab的 type=raw
+            bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
+            currentBodyType = BODY_TYPE_RAW;
+            bodyCardLayout.show(bodyCardPanel, BODY_TYPE_RAW);
+            rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
+            currentRawType = RAW_TYPE_JSON;
             wsSendButton.setVisible(true);
             formatLabel.setVisible(false);
             rawTypeComboBox.setVisible(false);
@@ -216,11 +214,11 @@ public class RequestBodyPanel extends JPanel {
             formatButton.setVisible(false);
         } else {
             wsSendButton.setVisible(false);
-            formatLabel.setVisible(true);
-            rawTypeComboBox.setVisible(true);
+//            formatLabel.setVisible(true);
+//            rawTypeComboBox.setVisible(true);
             bodyTypeComboBox.setVisible(true);
             bodyTypeLable.setVisible(true);
-            formatButton.setVisible(true);
+//            formatButton.setVisible(true);
         }
     }
 }

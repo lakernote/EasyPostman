@@ -26,6 +26,7 @@ import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -35,6 +36,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
 
@@ -995,5 +999,61 @@ public class RequestCollectionsSubPanel extends BasePanel {
             }
         }
     }
-}
 
+    // 创建一个可多选的请求/分组选择树（用于Runner面板弹窗）
+    public JTree createRequestSelectionTree() {
+        DefaultTreeModel model = new DefaultTreeModel(cloneTreeNode(rootTreeNode));
+        JTree tree = new JTree(model);
+        tree.setRootVisible(false);
+        tree.setShowsRootHandles(true);
+        tree.setCellRenderer(new RequestTreeCellRenderer());
+        tree.setRowHeight(28);
+        tree.setBackground(new Color(245, 247, 250));
+        // 支持多选
+        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+        return tree;
+    }
+
+    // 递归克隆树节点（只克隆结构和userObject，不共享引用）
+    // 生成一份只读、临时的树结构，用于弹窗选择，保证主界面集合树的安全和稳定
+    private DefaultMutableTreeNode cloneTreeNode(DefaultMutableTreeNode node) {
+        Object userObj = node.getUserObject();
+        DefaultMutableTreeNode copy = new DefaultMutableTreeNode(userObj instanceof Object[] ? ((Object[]) userObj).clone() : userObj);
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            copy.add(cloneTreeNode(child));
+        }
+        return copy;
+    }
+
+    // 获取树中选中的所有请求（包含分组下所有请求）
+    public java.util.List<HttpRequestItem> getSelectedRequestsFromTree(JTree tree) {
+        java.util.List<HttpRequestItem> result = new java.util.ArrayList<>();
+        javax.swing.tree.TreePath[] paths = tree.getSelectionPaths();
+        if (paths == null) return result;
+        for (javax.swing.tree.TreePath path : paths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            collectRequestsRecursively(node, result);
+        }
+        // 去重（按id）
+        Map<String, HttpRequestItem> map = new LinkedHashMap<>();
+        for (HttpRequestItem item : result) {
+            map.put(item.getId(), item);
+        }
+        return new ArrayList<>(map.values());
+    }
+
+    // 递归收集请求
+    private void collectRequestsRecursively(DefaultMutableTreeNode node, java.util.List<HttpRequestItem> list) {
+        Object userObj = node.getUserObject();
+        if (userObj instanceof Object[] obj) {
+            if ("request".equals(obj[0])) {
+                list.add((HttpRequestItem) obj[1]);
+            } else if ("group".equals(obj[0])) {
+                for (int i = 0; i < node.getChildCount(); i++) {
+                    collectRequestsRecursively((DefaultMutableTreeNode) node.getChildAt(i), list);
+                }
+            }
+        }
+    }
+}

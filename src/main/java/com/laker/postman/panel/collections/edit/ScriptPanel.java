@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.edit;
 
+import com.laker.postman.common.dialog.SnippetDialog;
+import com.laker.postman.model.Snippet;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.BasicCompletion;
@@ -18,9 +20,7 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * 脚本面板，包含 PreScript、PostScript、Help 三个 Tab，并支持脏监听
- */
+
 @Slf4j
 public class ScriptPanel extends JPanel {
     private final RSyntaxTextArea prescriptArea;
@@ -50,6 +50,28 @@ public class ScriptPanel extends JPanel {
         tabbedPane.addTab("Help", new JScrollPane(helpArea));
 
         add(tabbedPane, BorderLayout.CENTER);
+
+        // 右下角添加 Snippets 按钮
+        JButton snippetBtn = new JButton("Snippets");
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
+        btnPanel.add(snippetBtn);
+        add(btnPanel, BorderLayout.SOUTH);
+        snippetBtn.addActionListener(e -> {
+            int tab = tabbedPane.getSelectedIndex();
+            SnippetDialog dialog = new SnippetDialog();
+            dialog.setVisible(true);
+            Snippet selected = dialog.getSelectedSnippet();
+            if (selected != null) {
+                String codeToInsert = "\n" + selected.code;
+                if (tab == 0) { // PreScript
+                    prescriptArea.replaceSelection(codeToInsert);
+                    prescriptArea.requestFocus();
+                } else if (tab == 1) { // PostScript
+                    postscriptArea.replaceSelection(codeToInsert);
+                    postscriptArea.requestFocus();
+                }
+            }
+        });
     }
 
     public void setPrescript(String text) {

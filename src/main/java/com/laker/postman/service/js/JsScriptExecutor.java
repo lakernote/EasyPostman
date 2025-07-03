@@ -48,7 +48,7 @@ public class JsScriptExecutor {
                 .out(outputStream)
                 .err(outputStream)
                 .engine(Engine.newBuilder()
-                        .option("engine.WarnInterpreterOnly","false")
+                        .option("engine.WarnInterpreterOnly", "false")
                         .build())
                 .build()) {
             if (bindings != null) {
@@ -62,7 +62,6 @@ public class JsScriptExecutor {
             // 最后 flush 一次，防止遗漏未输出的内容
             outputStream.flush();
         } catch (IOException e) {
-            e.printStackTrace();
             if (outputCallback != null) {
                 outputCallback.onOutput("Error executing script: " + e.getMessage());
             }

@@ -127,15 +127,25 @@ public class HttpUtil {
     }
 
     // 绑定脚本变量
-    public static Map<String, Object> prepareBindings(HttpRequestItem item) {
+    public static Map<String, Object> prepareBindings(PreparedRequest req) {
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
         Postman postman = new Postman(activeEnv);
         Map<String, Object> bindings = new HashMap<>();
-        bindings.put("request", item);
+        bindings.put("request", req);
         bindings.put("env", activeEnv);
         bindings.put("postman", postman);
         bindings.put("pm", postman);
         return bindings;
+    }
+
+
+    public static void postBindings(Map<String, Object> bindings, HttpResponse resp) {
+        Postman pm = (Postman) bindings.get("pm");
+        pm.setResponse(resp);
+        bindings.put("response", resp);
+        bindings.put("responseBody", resp.body);
+        bindings.put("responseHeaders", resp.headers);
+        bindings.put("statusCode", resp.code);
     }
 
 
@@ -169,9 +179,6 @@ public class HttpUtil {
         String postscript = item.getPostscript();
         if (postscript != null && !postscript.isBlank() && resp != null) {
             try {
-                bindings.put("responseBody", bodyText);
-                bindings.put("responseHeaders", resp.headers);
-                bindings.put("statusCode", resp.code);
                 JsScriptExecutor.executeScript(
                         postscript,
                         bindings,

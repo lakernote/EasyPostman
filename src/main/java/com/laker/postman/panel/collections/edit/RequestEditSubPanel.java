@@ -13,6 +13,7 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import lombok.Getter;
@@ -299,9 +300,9 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
         HttpRequestItem item = getCurrentRequest();
-        Map<String, Object> bindings = prepareBindings(item);
-        if (!executePrescript(item, bindings)) return;
         PreparedRequest req = PreparedRequestBuilder.build(item);
+        Map<String, Object> bindings = prepareBindings(req);
+        if (!executePrescript(item, bindings)) return;
         if (!validateRequest(req, item)) return;
         updateUIForRequesting();
         // 协议分发
@@ -816,6 +817,7 @@ public class RequestEditSubPanel extends JPanel {
         }
         String bodyText = resp.body;
         try {
+            HttpUtil.postBindings(bindings, resp);
             executePostscript(item, bindings, resp, bodyText);
             if (bodyText != null) {
                 autoExecuteExtractorRules(bodyText);

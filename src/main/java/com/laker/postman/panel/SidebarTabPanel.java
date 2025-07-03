@@ -8,6 +8,7 @@ import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.jmeter.JMeterPanel;
+import com.laker.postman.panel.runner.RunnerPanel;
 import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -53,6 +54,8 @@ public class SidebarTabPanel extends BasePanel {
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
         tabInfos.add(new TabInfo("环境", new FlatSVGIcon("icons/env.svg", 20, 20),
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
+        tabInfos.add(new TabInfo("批量执行", new FlatSVGIcon("icons/runner.svg", 20, 20),
+                () -> SingletonFactory.getInstance(RunnerPanel.class)));
         tabInfos.add(new TabInfo("Jmeter", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
                 () -> SingletonFactory.getInstance(JMeterPanel.class)));
         tabInfos.add(new TabInfo("历史", new FlatSVGIcon("icons/history.svg", 20, 20),

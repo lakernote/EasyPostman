@@ -44,6 +44,7 @@ public class Environment {
         return variables.get(key);
     }
 
+    // for javascript
     public void unset(String key) {
         if (key != null) {
             variables.remove(key);

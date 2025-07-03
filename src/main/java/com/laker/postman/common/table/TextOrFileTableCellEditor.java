@@ -2,6 +2,11 @@ package com.laker.postman.common.table;
 
 import javax.swing.*;
 import javax.swing.event.CellEditorListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class TextOrFileTableCellEditor extends DefaultCellEditor {
     private final DefaultCellEditor textEditor = new DefaultCellEditor(new JTextField());
@@ -10,10 +15,36 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
 
     public TextOrFileTableCellEditor() {
         super(new JTextField());
+        // 自动写入model: 为textEditor的JTextField添加DocumentListener
+        Component comp = textEditor.getComponent();
+        if (comp instanceof JTextField textField) {
+            textField.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    if (textEditor.getCellEditorListeners().length > 0) {
+                        stopCellEditing();
+                    }
+                }
+
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    if (textEditor.getCellEditorListeners().length > 0) {
+                        stopCellEditing();
+                    }
+                }
+
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    if (textEditor.getCellEditorListeners().length > 0) {
+                        stopCellEditing();
+                    }
+                }
+            });
+        }
     }
 
     @Override
-    public java.awt.Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         Object type = table.getValueAt(row, 1);
         if ("File".equals(type)) {
             // 每次都新建，传 table 作为父组件

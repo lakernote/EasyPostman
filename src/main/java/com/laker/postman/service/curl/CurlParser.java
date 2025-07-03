@@ -57,7 +57,9 @@ public class CurlParser {
             else if (token.equals("-d") || token.equals("--data")
                     || token.equals("--data-raw") || token.equals("--data-binary")) {
                 if (i + 1 < tokens.size()) {
-                    req.body = tokens.get(++i);
+                    String rawBody = tokens.get(++i);
+                    // 处理 --data-raw 的转义字符，还原为正常 JSON
+                    req.body = unescapeJava(rawBody);
                     if (req.method == null) req.method = "POST"; // 有 body 默认 POST
                     String contentType = req.headers.getOrDefault("Content-Type", "");
                     // 如果是 multipart/form-data 格式，解析表单数据
@@ -214,5 +216,31 @@ public class CurlParser {
         } else {
             return "'" + s + "'";
         }
+    }
+
+    // 工具方法：将 \n、\t 等转义字符还原为真实字符
+    private static String unescapeJava(String str) {
+        if (str == null) return null;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '\\' && i + 1 < str.length()) {
+                char next = str.charAt(i + 1);
+                switch (next) {
+                    case 'n': sb.append('\n'); i++; break;
+                    case 'r': sb.append('\r'); i++; break;
+                    case 't': sb.append('\t'); i++; break;
+                    case 'b': sb.append('\b'); i++; break;
+                    case 'f': sb.append('\f'); i++; break;
+                    case '\\': sb.append('\\'); i++; break;
+                    case '\'': sb.append('\''); i++; break;
+                    case '"': sb.append('"'); i++; break;
+                    default: sb.append(c); break;
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 }

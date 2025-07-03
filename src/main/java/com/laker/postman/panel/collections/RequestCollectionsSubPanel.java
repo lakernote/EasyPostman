@@ -27,12 +27,14 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
 
@@ -179,16 +181,35 @@ public class RequestCollectionsSubPanel extends BasePanel {
         JMenuItem importEasyToolsItem = new JMenuItem("Import from EasyPostman", new FlatSVGIcon("icons/easy.svg", 20, 20));
         importEasyToolsItem.setToolTipText("Import collections exported by EasyTools");
         importEasyToolsItem.addActionListener(e -> importRequestCollection());
-        JMenuItem importPostmanItem = new JMenuItem("Import from Postman", new FlatSVGIcon("icons/postman.svg", 20, 20));
-        importPostmanItem.setToolTipText("Import collections exported by Postman");
+        JMenuItem importPostmanItem = new JMenuItem("Import from Postman v2.1", new FlatSVGIcon("icons/postman.svg", 20, 20));
+        importPostmanItem.setToolTipText("Import collections exported by Postman v2.1");
         importPostmanItem.addActionListener(e -> importPostmanCollection());
         JMenuItem importCurlItem = new JMenuItem("Import from cURL", new FlatSVGIcon("icons/curl.svg", 20, 20));
         importCurlItem.setToolTipText("Paste cURL command to import request");
-        importCurlItem.addActionListener(e -> importCurlToCollection());
+        importCurlItem.addActionListener(e -> importCurlToCollection(null));
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
         importMenu.add(importCurlItem);
-        importBtn.addActionListener(e -> importMenu.show(importBtn, 0, importBtn.getHeight()));
+        importBtn.addActionListener(e -> {
+            // 智能检测剪贴板内容
+            String clipboardText = null;
+            try {
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                Transferable t = clipboard.getContents(null);
+                if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                    clipboardText = (String) t.getTransferData(DataFlavor.stringFlavor);
+                }
+            } catch (Exception ignored) {
+            }
+            if (clipboardText != null && clipboardText.trim().toLowerCase().startsWith("curl")) {
+                int result = JOptionPane.showConfirmDialog(null, "检测到剪贴板有 cURL 命令，是否导入？", "导入cURL", JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    importCurlToCollection(clipboardText); // 自动填充
+                    return;
+                }
+            }
+            importMenu.show(importBtn, 0, importBtn.getHeight());
+        });
         return importBtn;
     }
 
@@ -519,13 +540,8 @@ public class RequestCollectionsSubPanel extends BasePanel {
         }
     }
 
-    // 新增：cURL导入逻辑
-
-    /**
-     * 从cURL命令导入请求项到集合
-     */
-    private void importCurlToCollection() {
-        String curlText = LargeInputDialog.show(null, "从cURL导入", "请输入cURL命令:");
+    private void importCurlToCollection(String defaultCurl) {
+        String curlText = LargeInputDialog.show(null, "从cURL导入", "请输入cURL命令:", defaultCurl);
         if (curlText == null || curlText.trim().isEmpty()) return;
         try {
             CurlRequest curlRequest = CurlParser.parse(curlText);
@@ -535,7 +551,6 @@ public class RequestCollectionsSubPanel extends BasePanel {
             }
             // 构造HttpRequestItem
             HttpRequestItem item = new HttpRequestItem();
-            item.setId(UUID.randomUUID().toString());
             item.setName(curlRequest.url);
             item.setUrl(curlRequest.url);
             item.setMethod(curlRequest.method);
@@ -544,18 +559,12 @@ public class RequestCollectionsSubPanel extends BasePanel {
             item.setParams(curlRequest.params);
             item.setFormData(curlRequest.formData);
             item.setFormFiles(curlRequest.formFiles);
-            // 导入到默认分组
-            DefaultMutableTreeNode defaultGroupNode = findGroupNode(rootTreeNode, "cURL");
-            if (defaultGroupNode == null) {
-                defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", "cURL"});
-                rootTreeNode.add(defaultGroupNode);
+            // 统一用RequestEditPanel弹窗选择分组和命名
+            boolean saved = RequestEditPanel.saveRequestWithGroupDialog(item);
+            // 导入成功后清空剪贴板
+            if (saved) {
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
             }
-            DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{"request", item});
-            defaultGroupNode.add(reqNode);
-            treeModel.reload();
-            persistence.saveRequestGroups();
-            requestTree.expandPath(new TreePath(defaultGroupNode.getPath()));
-            JOptionPane.showMessageDialog(this, "cURL已成功导入！", "成功", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "解析cURL出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
@@ -987,3 +996,4 @@ public class RequestCollectionsSubPanel extends BasePanel {
         }
     }
 }
+

@@ -1,7 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.setting.SettingManager;
-import com.laker.postman.model.PreparedRequest;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 
@@ -31,9 +30,10 @@ public class OkHttpClientManager {
      * @param baseUri 协议+host+port
      * @return OkHttpClient
      */
-    public static OkHttpClient getClient(String baseUri, PreparedRequest request) {
+    public static OkHttpClient getClient(String baseUri, boolean followRedirects) {
         int timeoutMs = SettingManager.getRequestTimeout();
-        return clientMap.computeIfAbsent(baseUri + "|" + request.followRedirects + "|" + timeoutMs, k -> {
+        String key = baseUri + "|" + followRedirects;
+        return clientMap.computeIfAbsent(key, k -> {
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     // 连接超时
                     .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -46,16 +46,12 @@ public class OkHttpClientManager {
                     // 失败自动重试
                     .retryOnConnectionFailure(true)
                     // 是否自动跟随重定向
-                    .followRedirects(request.followRedirects)
+                    .followRedirects(followRedirects)
                     .cache(null)
                     .pingInterval(30, TimeUnit.SECONDS);
 
             //  Cookie 管理（如需全局 CookieJar）
             // builder.cookieJar(new CustomCookieJar());
-            if (request.logEvent) {
-                // 事件监听器（用于统计连接信息等） 用 eventListenerFactory()，传入 EventListener.Factory，每次 newCall 时都能生成新的 EventListener 实例。
-                builder.eventListenerFactory(call -> new EasyConsoleEventListener());// 只适用普通 HTTP 请求
-            }
 
             return builder.build();
         });

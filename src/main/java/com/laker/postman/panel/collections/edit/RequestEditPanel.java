@@ -7,10 +7,14 @@ import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tab.PlusTabComponent;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -161,35 +165,32 @@ public class RequestEditPanel extends BasePanel {
     }
 
     /**
-     * 保存新请求（分组选择优化为树结构）
+     * 公共方法：弹窗让用户选择分组并输入请求名称，返回分组Object[]和请求名
+     *
+     * @param groupTreeModel 分组树模型
+     * @param defaultName    默认请求名，可为null
+     * @return Object[]{Object[] groupObj, String requestName}，若取消返回null
      */
-    private void saveNewRequest(RequestCollectionsSubPanel collectionPanel, HttpRequestItem item) {
-        // 获取分组树模型（假设有 getGroupTreeModel 方法，否则递归构建）
-        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
+    public static Object[] showGroupAndNameDialog(TreeModel groupTreeModel, String defaultName) {
         if (groupTreeModel == null || groupTreeModel.getRoot() == null) {
             JOptionPane.showMessageDialog(null, "请先创建一个分组", "提示", JOptionPane.INFORMATION_MESSAGE);
-            return;
+            return null;
         }
-
-        // 优化UI：使用更紧凑的垂直Box布局，分组树只显示group节点
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
-
-        // 请求名称输入
         JPanel namePanel = new JPanel(new BorderLayout(8, 0));
         JLabel nameLabel = new JLabel("请求名称:");
         nameLabel.setPreferredSize(new Dimension(70, 28));
         JTextField nameField = new JTextField(20);
         nameField.setPreferredSize(new Dimension(180, 28));
+        if (defaultName != null) nameField.setText(defaultName);
         namePanel.add(nameLabel, BorderLayout.WEST);
         namePanel.add(nameField, BorderLayout.CENTER);
         namePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         namePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(namePanel);
         panel.add(Box.createVerticalStrut(12));
-
-        // 分组树选择
         JPanel groupPanel = new JPanel(new BorderLayout(8, 0));
         JLabel groupLabel = new JLabel("选择分组:");
         groupLabel.setPreferredSize(new Dimension(70, 28));
@@ -202,22 +203,19 @@ public class RequestEditPanel extends BasePanel {
         groupPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
         groupPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(groupPanel);
-
-        // 显示对话框
         int result = JOptionPane.showConfirmDialog(null, panel, "保存请求", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(null, "请输入请求名称", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
+                return null;
             }
             javax.swing.tree.TreePath selectedPath = groupTree.getSelectionPath();
             if (selectedPath == null) {
                 JOptionPane.showMessageDialog(null, "请选择分组", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
+                return null;
             }
             Object selectedGroupNode = selectedPath.getLastPathComponent();
-            // 取出 Object[] 作为分组参数
             Object[] groupObj = null;
             if (selectedGroupNode instanceof javax.swing.tree.DefaultMutableTreeNode node) {
                 Object userObj = node.getUserObject();
@@ -227,47 +225,93 @@ public class RequestEditPanel extends BasePanel {
             }
             if (groupObj == null) {
                 JOptionPane.showMessageDialog(null, "请选择有效的分组节点", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
+                return null;
             }
-            item.setName(requestName);
-            // 为请求生成一个新的ID
-            item.setId(IdUtil.simpleUUID());
-            collectionPanel.saveRequestToGroup(groupObj, item);
-            int currentTabIndex = tabbedPane.getSelectedIndex();
-            if (currentTabIndex >= 0) {
-                // 更新当前Tab标题
-                tabbedPane.setTitleAt(currentTabIndex, requestName);
-                // 更新自定义标签组件
-                Component tabComp = tabbedPane.getTabComponentAt(currentTabIndex);
-                if (tabComp instanceof ClosableTabComponent) {
-                    tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName, getCurrentSubPanel(), tabbedPane, this::saveCurrentRequest));
-                }
-                // 同步刷新当前编辑面板内容
-                RequestEditSubPanel subPanel = getCurrentSubPanel();
-                if (subPanel != null) {
-                    subPanel.updateRequestForm(item);
-                }
-            }
-            JOptionPane.showMessageDialog(null, "请求已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
+            return new Object[]{groupObj, requestName};
         }
+        return null;
     }
 
-    private JTree getGroupTree(TreeModel groupTreeModel) {
-        JTree groupTree = new JTree(groupTreeModel);
+    private static JTree getGroupTree(TreeModel groupTreeModel) {
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) groupTreeModel.getRoot();
+        TreeModel filteredModel = new DefaultTreeModel(rootNode) {
+            @Override
+            public int getChildCount(Object parent) {
+                if (parent == rootNode) {
+                    // 根节点不过滤，直接返回所有子节点
+                    return rootNode.getChildCount();
+                }
+                if (parent instanceof DefaultMutableTreeNode node) {
+                    Object userObj = node.getUserObject();
+                    if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
+                        int groupCount = 0;
+                        for (int i = 0; i < node.getChildCount(); i++) {
+                            Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
+                            if (childObj instanceof Object[] cArr && "group".equals(cArr[0])) {
+                                groupCount++;
+                            }
+                        }
+                        return groupCount;
+                    }
+                }
+                return 0;
+            }
+
+            @Override
+            public Object getChild(Object parent, int index) {
+                if (parent == rootNode) {
+                    return rootNode.getChildAt(index);
+                }
+                if (parent instanceof DefaultMutableTreeNode node) {
+                    int groupIdx = -1;
+                    for (int i = 0; i < node.getChildCount(); i++) {
+                        Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
+                        if (childObj instanceof Object[] cArr && "group".equals(cArr[0])) {
+                            groupIdx++;
+                            if (groupIdx == index) {
+                                return node.getChildAt(i);
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public boolean isLeaf(Object node) {
+                if (node == rootNode) {
+                    return rootNode.getChildCount() == 0;
+                }
+                if (node instanceof DefaultMutableTreeNode treeNode) {
+                    Object userObj = treeNode.getUserObject();
+                    if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
+                        for (int i = 0; i < treeNode.getChildCount(); i++) {
+                            Object childObj = ((DefaultMutableTreeNode) treeNode.getChildAt(i)).getUserObject();
+                            if (childObj instanceof Object[] cArr && "group".equals(cArr[0])) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                }
+                return true;
+            }
+        };
+        JTree groupTree = new JTree(filteredModel);
         groupTree.setRootVisible(false);
         groupTree.setShowsRootHandles(true);
-        // 只显示group节点，非group节点隐藏
         groupTree.setCellRenderer(new javax.swing.tree.DefaultTreeCellRenderer() {
             @Override
             public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
                 super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-                if (value instanceof javax.swing.tree.DefaultMutableTreeNode node) {
+                if (value instanceof DefaultMutableTreeNode node) {
                     Object userObj = node.getUserObject();
                     if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
                         setText(String.valueOf(arr[1]));
-                        setIcon(getDefaultClosedIcon());
+                        // 橙色实心文件夹，模拟Postman分组
+                        setIcon(IconFontSwing.buildIcon(FontAwesome.FOLDER_O, 14, new Color(255, 140, 0)));
                     } else {
-                        setText(""); // 非group节点不显示
+                        setText("");
                         setIcon(null);
                     }
                 }
@@ -275,6 +319,33 @@ public class RequestEditPanel extends BasePanel {
             }
         });
         return groupTree;
+    }
+
+    /**
+     * 保存新请求（分组选择优化为树结构）
+     */
+    private void saveNewRequest(RequestCollectionsSubPanel collectionPanel, HttpRequestItem item) {
+        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
+        Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
+        if (result == null) return;
+        Object[] groupObj = (Object[]) result[0];
+        String requestName = (String) result[1];
+        item.setName(requestName);
+        item.setId(IdUtil.simpleUUID());
+        collectionPanel.saveRequestToGroup(groupObj, item);
+        int currentTabIndex = tabbedPane.getSelectedIndex();
+        if (currentTabIndex >= 0) {
+            tabbedPane.setTitleAt(currentTabIndex, requestName);
+            Component tabComp = tabbedPane.getTabComponentAt(currentTabIndex);
+            if (tabComp instanceof ClosableTabComponent) {
+                tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName, getCurrentSubPanel(), tabbedPane, this::saveCurrentRequest));
+            }
+            RequestEditSubPanel subPanel = getCurrentSubPanel();
+            if (subPanel != null) {
+                subPanel.updateRequestForm(item);
+            }
+        }
+        JOptionPane.showMessageDialog(null, "请求已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -332,5 +403,24 @@ public class RequestEditPanel extends BasePanel {
             }
         }
         return null;
+    }
+
+    /**
+     * 通过弹窗让用户选择分组和命名，保存 HttpRequestItem 到集合（公用方法，适用于cURL导入等场景）
+     *
+     * @param item 要保存的请求
+     */
+    public static boolean saveRequestWithGroupDialog(HttpRequestItem item) {
+        RequestCollectionsSubPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
+        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
+        Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
+        if (result == null) return false;
+        Object[] groupObj = (Object[]) result[0];
+        String requestName = (String) result[1];
+        item.setName(requestName);
+        item.setId(IdUtil.simpleUUID());
+        collectionPanel.saveRequestToGroup(groupObj, item);
+        JOptionPane.showMessageDialog(null, "请求已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
+        return true;
     }
 }

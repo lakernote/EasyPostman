@@ -1,5 +1,6 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -11,6 +12,7 @@ import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static com.laker.postman.service.http.HttpRequestUtil.extractBaseUri;
 
@@ -21,6 +23,22 @@ import static com.laker.postman.service.http.HttpRequestUtil.extractBaseUri;
 public class HttpService {
 
     /**
+     * 构建支持动态 eventListenerFactory 和超时的 OkHttpClient
+     */
+    private static OkHttpClient buildDynamicClient(OkHttpClient baseClient, boolean logEvent, int timeoutMs) {
+        OkHttpClient.Builder builder = baseClient.newBuilder();
+        if (logEvent) {
+            builder.eventListenerFactory(call -> new EasyConsoleEventListener());
+        }
+        if (timeoutMs > 0) {
+            builder.connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                    .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                    .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS);
+        }
+        return builder.build();
+    }
+
+    /**
      * 发送 HTTP 请求，支持环境变量替换
      *
      * @return HttpResponse 响应对象
@@ -28,9 +46,12 @@ public class HttpService {
      */
     public static HttpResponse sendRequest(PreparedRequest req) throws Exception {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient client = OkHttpClientManager.getClient(baseUri, req);
+        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        int timeoutMs = SettingManager.getRequestTimeout();
+        OkHttpClient client = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
-        return callWithRequest(client, request);
+        Call call = client.newCall(request);
+        return callWithRequest(call, client);
     }
 
     /**
@@ -38,9 +59,12 @@ public class HttpService {
      */
     public static HttpResponse sendRequestWithForm(PreparedRequest req) throws Exception {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient client = OkHttpClientManager.getClient(baseUri, req);
+        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        int timeoutMs = SettingManager.getRequestTimeout();
+        OkHttpClient client = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
         Request request = OkHttpRequestBuilder.buildFormRequest(req);
-        return callWithRequest(client, request);
+        Call call = client.newCall(request);
+        return callWithRequest(call, client);
     }
 
     /**
@@ -48,42 +72,46 @@ public class HttpService {
      */
     public static HttpResponse sendRequestWithMultipart(PreparedRequest req) throws Exception {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient client = OkHttpClientManager.getClient(baseUri, req);
+        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        int timeoutMs = SettingManager.getRequestTimeout();
+        OkHttpClient client = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
         Request request = OkHttpRequestBuilder.buildMultipartRequest(req);
-        return callWithRequest(client, request);
+        Call call = client.newCall(request);
+        return callWithRequest(call, client);
     }
 
     /**
-     * 发送 SSE 请求，使用 OkHttp SSE
+     * 发送 SSE 请求，支持动态 eventListenerFactory 和超时配置
      */
     public static EventSource sendSseRequest(PreparedRequest req, EventSourceListener listener) {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient client = OkHttpClientManager.getClient(baseUri, req);
+        int timeoutMs = SettingManager.getRequestTimeout();
+        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        OkHttpClient customClient = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
-        return EventSources.createFactory(client).newEventSource(request, new LogEventSourceListener(listener));
+        return EventSources.createFactory(customClient).newEventSource(request, new LogEventSourceListener(listener));
     }
 
-
     /**
-     * 发送 WebSocket 请求，使用 OkHttp WebSocket
+     * 发送 WebSocket 请求，支持动态 eventListenerFactory 和超时配置
      */
     public static WebSocket sendWebSocket(PreparedRequest req, WebSocketListener listener) {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient client = OkHttpClientManager.getClient(baseUri, req);
+        int timeoutMs = SettingManager.getRequestTimeout();
+        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        OkHttpClient customClient = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
-        return client.newWebSocket(request, new LogWebSocketListener(listener));
+        return customClient.newWebSocket(request, new LogWebSocketListener(listener));
     }
 
 
-    private static HttpResponse callWithRequest(OkHttpClient client, Request request) throws IOException {
+    private static HttpResponse callWithRequest(Call call, OkHttpClient client) throws IOException {
         long startTime = System.currentTimeMillis();
         HttpResponse httpResponse = new HttpResponse();
-        Call call = client.newCall(request);
-        Response okResponse = null;
-        // 记录连接池状态
         ConnectionPool pool = client.connectionPool();
         httpResponse.idleConnectionCount = pool.idleConnectionCount();
         httpResponse.connectionCount = pool.connectionCount();
+        Response okResponse = null;
         try {
             okResponse = call.execute();
         } finally {
@@ -93,7 +121,7 @@ public class HttpService {
     }
 
 
-    public static void fillHttpEventInfo(HttpResponse httpResponse, long startTime) {
+    private static void fillHttpEventInfo(HttpResponse httpResponse, long startTime) {
         HttpEventInfo httpEventInfo = EasyConsoleEventListener.getAndRemove();
         if (httpEventInfo != null) {
             httpEventInfo.setQueueStart(startTime);

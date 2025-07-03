@@ -529,33 +529,11 @@ public class EnvironmentPanel extends BasePanel {
     private boolean isVariablesChanged() {
         List<Map<String, Object>> rows = getRows();
         String curJson = JSONUtil.toJsonStr(rows);
-        List<Map> snapshotRows = new ArrayList<>();
-        try {
-            snapshotRows = JSONUtil.toList(originalVariablesSnapshot, Map.class);
-        } catch (Exception ignore) {
-        }
-        // 也移除快照最后一行空行
-        if (!snapshotRows.isEmpty()) {
-            Map last = snapshotRows.get(snapshotRows.size() - 1);
-            boolean empty = true;
-            if (last != null) {
-                for (Object v : last.values()) {
-                    if (v != null && !(v instanceof String && ((String) v).trim().isEmpty())) {
-                        empty = false;
-                        break;
-                    }
-                }
-            }
-            if (empty) {
-                snapshotRows.remove(snapshotRows.size() - 1);
-            }
-        }
-        String snapshotJson = JSONUtil.toJsonStr(snapshotRows);
-        boolean isVariablesChanged = !StrUtil.equals(curJson, snapshotJson);
+        boolean isVariablesChanged = !StrUtil.equals(curJson, originalVariablesSnapshot);
         if (isVariablesChanged) {
             log.info("env name: {}", currentEnvironment != null ? currentEnvironment.getName() : "null");
             log.info("current  variables: {}", curJson);
-            log.info("original variables: {}", snapshotJson);
+            log.info("original variables: {}", originalVariablesSnapshot);
         }
         return isVariablesChanged;
     }

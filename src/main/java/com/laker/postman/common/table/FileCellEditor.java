@@ -34,6 +34,8 @@ public class FileCellEditor extends DefaultCellEditor {
                 filePath = fileChooser.getSelectedFile().getAbsolutePath();
                 button.setText(filePath);
                 button.setForeground(new Color(76, 130, 206));
+                // 自动写入model
+                SwingUtilities.invokeLater(this::stopCellEditing);
             }
         });
     }

@@ -101,11 +101,16 @@ public class EasyTablePanel extends JPanel {
         // 添加鼠标监听器
         addTableListener();
 
+        addAutoStopEdit();
+        addAutoAppendRowFeature();
+    }
+
+    private void addAutoStopEdit() {
         // 实时写入TableModel: 为每列文本编辑器添加DocumentListener
         for (int i = 0; i < table.getColumnCount(); i++) {
             TableCellEditor editor = table.getDefaultEditor(Object.class);
             if (editor instanceof DefaultCellEditor) {
-                java.awt.Component comp = ((DefaultCellEditor) editor).getComponent();
+                Component comp = ((DefaultCellEditor) editor).getComponent();
                 if (comp instanceof JTextField textField) {
                     textField.getDocument().addDocumentListener(new DocumentListener() {
                         @Override
@@ -130,7 +135,6 @@ public class EasyTablePanel extends JPanel {
                 log.warn("DefaultCellEditor is not an instance of DefaultCellEditor, cannot add DocumentListener.");
             }
         }
-        addAutoAppendRowFeature();
     }
 
     /**

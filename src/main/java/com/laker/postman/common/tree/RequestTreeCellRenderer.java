@@ -1,6 +1,7 @@
 package com.laker.postman.common.tree;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.service.http.HttpUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 
@@ -31,7 +32,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
                 HttpRequestItem item = (HttpRequestItem) obj[1];
                 String method = item.getMethod();
                 String name = item.getName();
-                String methodColor = getMethodColor(method);
+                String methodColor = HttpUtil.getMethodColor(method);
                 setIcon(null);
                 setText("<html><span style='color:" + methodColor + ";font-weight:bold;font-size:8px'>" + (method == null ? "" : method) + "</span> <span style='font-size:9px'>" + name + "</span></html>");
             }
@@ -41,16 +42,4 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         return this;
     }
 
-    private static String getMethodColor(String method) {
-        String methodColor;
-        switch (method == null ? "" : method.toUpperCase()) {
-            case "GET" -> methodColor = "#4CAF50";      // GET: 绿色（Postman风格）
-            case "POST" -> methodColor = "#FF9800";     // POST: 橙色
-            case "PUT" -> methodColor = "#2196F3";      // PUT: 蓝色
-            case "PATCH" -> methodColor = "#9C27B0";    // PATCH: 紫色
-            case "DELETE" -> methodColor = "#F44336";   // DELETE: 红色
-            default -> methodColor = "#7f8c8d";          // 其它: 灰色
-        }
-        return methodColor;
-    }
 }

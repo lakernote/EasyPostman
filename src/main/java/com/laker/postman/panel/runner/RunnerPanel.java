@@ -109,6 +109,38 @@ public class RunnerPanel extends JPanel {
         };
         table.getColumnModel().getColumn(6).setCellRenderer(assertionRenderer);
 
+        // 方法列渲染器，调用HttpUtil.getMethodColor
+        DefaultTableCellRenderer methodRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null) {
+                    String color = HttpUtil.getMethodColor(value.toString());
+                    c.setForeground(Color.decode(color));
+                }
+                return c;
+            }
+        };
+        table.getColumnModel().getColumn(3).setCellRenderer(methodRenderer);
+
+        // 状态列渲染器，调用HttpUtil.getStatusColor
+        DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null) {
+                    try {
+                        int code = Integer.parseInt(value.toString());
+                        c.setForeground(HttpUtil.getStatusColor(code));
+                    } catch (Exception ignore) {
+                        c.setForeground(Color.RED);
+                    }
+                }
+                return c;
+            }
+        };
+        table.getColumnModel().getColumn(5).setCellRenderer(statusRenderer);
+
         // 详情列渲染为按钮
         DefaultTableCellRenderer detailRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -317,12 +349,14 @@ public class RunnerPanel extends JPanel {
         reqPane.setContentType("text/html");
         reqPane.setEditable(false);
         reqPane.setText(buildRequestHtml(req));
+        reqPane.setCaretPosition(0); // 确保滚动到顶部
         tabbedPane.addTab("Request", new JScrollPane(reqPane));
         // 响应信息（HTML）
         JEditorPane respPane = new JEditorPane();
         respPane.setContentType("text/html");
         respPane.setEditable(false);
         respPane.setText(buildResponseHtml(resp));
+        respPane.setCaretPosition(0); // 确保滚动到顶部
         tabbedPane.addTab("Response", new JScrollPane(respPane));
         dialog.add(tabbedPane, BorderLayout.CENTER);
 
@@ -419,3 +453,4 @@ public class RunnerPanel extends JPanel {
                 .replace("'", "&#39;");
     }
 }
+

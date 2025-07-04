@@ -126,6 +126,20 @@ public class HttpUtil {
         }
     }
 
+
+    public static String getMethodColor(String method) {
+        String methodColor;
+        switch (method == null ? "" : method.toUpperCase()) {
+            case "GET" -> methodColor = "#4CAF50";      // GET: 绿色（Postman风格）
+            case "POST" -> methodColor = "#FF9800";     // POST: 橙色
+            case "PUT" -> methodColor = "#2196F3";      // PUT: 蓝色
+            case "PATCH" -> methodColor = "#9C27B0";    // PATCH: 紫色
+            case "DELETE" -> methodColor = "#F44336";   // DELETE: 红色
+            default -> methodColor = "#7f8c8d";          // 其它: 灰色
+        }
+        return methodColor;
+    }
+
     // 绑定脚本变量
     public static Map<String, Object> prepareBindings(PreparedRequest req) {
         Environment activeEnv = EnvironmentService.getActiveEnvironment();

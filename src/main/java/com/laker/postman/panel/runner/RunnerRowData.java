@@ -3,6 +3,9 @@ package com.laker.postman.panel.runner;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.TestResult;
+
+import java.util.List;
 
 public class RunnerRowData {
     public boolean selected;
@@ -15,6 +18,7 @@ public class RunnerRowData {
     public HttpRequestItem requestItem;
     public PreparedRequest preparedRequest;
     public HttpResponse response;
+    public List<TestResult> testResults;
 
     public RunnerRowData(HttpRequestItem item, PreparedRequest prepared) {
         this.selected = true;
@@ -27,5 +31,6 @@ public class RunnerRowData {
         this.requestItem = item;
         this.preparedRequest = prepared;
         this.response = null;
+        this.testResults = null;
     }
 }

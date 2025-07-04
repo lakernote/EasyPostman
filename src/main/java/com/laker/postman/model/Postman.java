@@ -2,8 +2,12 @@ package com.laker.postman.model;
 
 import org.graalvm.polyglot.Value;
 
+import java.util.ArrayList;
+import java.util.List;
+
 // 模拟 Postman 对象
 public class Postman {
+    public List<TestResult> testResults = new ArrayList<>();
     public Environment environment;
     public Environment env;
     public ResponseAssertion response;
@@ -29,11 +33,9 @@ public class Postman {
         if (fn != null && fn.canExecute()) {
             try {
                 fn.executeVoid();
-                // 这里可以记录断言通过
-                System.out.println("[Test] " + name + " 通过");
+                testResults.add(new TestResult(name, true, null));
             } catch (Exception e) {
-                // 这里可以记录断言失败
-                System.err.println("[Test] " + name + " 失败: " + e.getMessage());
+                testResults.add(new TestResult(name, false, e.getMessage()));
                 throw e;
             }
         }

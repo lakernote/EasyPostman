@@ -5,6 +5,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.Postman;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
@@ -258,12 +259,13 @@ public class RunnerPanel extends JPanel {
                 RunnerRowData row = tableModel.getRow(i);
                 if (row.selected) {
                     long start = System.currentTimeMillis();
-                    String status = "未执行";
-                    String assertion = "";
+                    String status;
+                    String assertion = "not executed";
                     HttpRequestItem item = row.requestItem;
                     PreparedRequest req = row.preparedRequest;
                     boolean preOk = true;
                     Map<String, Object> bindings = HttpUtil.prepareBindings(req);
+                    Postman pm = (Postman) bindings.get("pm");
                     String prescript = item.getPrescript();
                     if (prescript != null && !prescript.isBlank()) {
                         try {
@@ -309,8 +311,18 @@ public class RunnerPanel extends JPanel {
                                                     }
                                             );
                                             assertion = "Pass";
+                                            // 保存断言结果
+                                            row.testResults = new java.util.ArrayList<>();
+                                            if (pm.testResults != null) {
+                                                row.testResults.addAll(pm.testResults);
+                                            }
                                         } catch (Exception assertionEx) {
                                             assertion = assertionEx.getMessage();
+                                            // 保存断言结果（即使有异常也保存）
+                                            row.testResults = new java.util.ArrayList<>();
+                                            if (pm.testResults != null) {
+                                                row.testResults.addAll(pm.testResults);
+                                            }
                                         }
                                     } else {
                                         assertion = "Pass";
@@ -375,6 +387,15 @@ public class RunnerPanel extends JPanel {
         respPane.setText(buildResponseHtml(resp));
         respPane.setCaretPosition(0); // 确保滚动到顶部
         tabbedPane.addTab("Response", new JScrollPane(respPane));
+        // Tests 断言结果Tab
+        if (runnerRowData.testResults != null && !runnerRowData.testResults.isEmpty()) {
+            JEditorPane testsPane = new JEditorPane();
+            testsPane.setContentType("text/html");
+            testsPane.setEditable(false);
+            testsPane.setText(buildTestsHtml(runnerRowData.testResults));
+            testsPane.setCaretPosition(0);
+            tabbedPane.addTab("Tests", new JScrollPane(testsPane));
+        }
         dialog.add(tabbedPane, BorderLayout.CENTER);
 
         JButton closeButton = new JButton("Close");
@@ -458,6 +479,30 @@ public class RunnerPanel extends JPanel {
                     .append("</pre>");
         }
         sb.append("</body></html>");
+        return sb.toString();
+    }
+
+    private String buildTestsHtml(List<? extends Object> testResults) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
+        sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
+        sb.append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
+        for (Object obj : testResults) {
+            try {
+                String name = (String) obj.getClass().getField("name").get(obj);
+                boolean passed = (boolean) obj.getClass().getField("passed").get(obj);
+                String message = (String) obj.getClass().getField("message").get(obj);
+                sb.append("<tr>");
+                sb.append("<td>").append(escapeHtml(name)).append("</td>");
+                sb.append("<td style='color:")
+                        .append(passed ? "#28a745'>&#10004; Pass" : "#dc3545'>&#10008; Fail")
+                        .append("</td>");
+                sb.append("<td>").append(message == null ? "" : escapeHtml(message)).append("</td>");
+                sb.append("</tr>");
+            } catch (Exception ignore) {
+            }
+        }
+        sb.append("</table></body></html>");
         return sb.toString();
     }
 

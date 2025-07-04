@@ -33,23 +33,27 @@ public class RunnerPanel extends JPanel {
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
         setPreferredSize(new Dimension(700, 400));
 
-        // 按钮面板放到顶部
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        // 优化顶部工具栏布局
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+
+        // 按钮组（左侧）
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        btnPanel.setOpaque(false);
         JButton loadBtn = new JButton("Load");
         loadBtn.setIcon(new FlatSVGIcon("icons/load.svg"));
-        loadBtn.setPreferredSize(new Dimension(110, 32));
+        loadBtn.setPreferredSize(new Dimension(90, 28));
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
         btnPanel.add(loadBtn);
         runBtn = new JButton("Run");
         runBtn.setIcon(new FlatSVGIcon("icons/run.svg"));
-        runBtn.setPreferredSize(new Dimension(110, 32));
+        runBtn.setPreferredSize(new Dimension(90, 28));
         runBtn.addActionListener(e -> runSelectedRequests());
         runBtn.setEnabled(false);
         btnPanel.add(runBtn);
         JButton clearBtn = new JButton("Clear");
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
-        clearBtn.setPreferredSize(new Dimension(110, 32));
+        clearBtn.setPreferredSize(new Dimension(90, 28));
         clearBtn.addActionListener(e -> {
             tableModel.clear();
             runBtn.setEnabled(false);
@@ -57,14 +61,18 @@ public class RunnerPanel extends JPanel {
             progressBar.setString("0%");
         });
         btnPanel.add(clearBtn);
+        topPanel.add(btnPanel, BorderLayout.WEST);
 
-        // 进度条
+        // 进度条（右侧）
         progressBar = new JProgressBar();
         progressBar.setStringPainted(true);
-        progressBar.setPreferredSize(new Dimension(400, 24));
-        btnPanel.add(progressBar);
+        progressBar.setPreferredSize(new Dimension(260, 24));
+        JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        progressPanel.setOpaque(false);
+        progressPanel.add(progressBar);
+        topPanel.add(progressPanel, BorderLayout.EAST);
 
-        add(btnPanel, BorderLayout.NORTH);
+        add(topPanel, BorderLayout.NORTH);
 
         tableModel = new RunnerTableModel();
         table = new JTable(tableModel) {

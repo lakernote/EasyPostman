@@ -3,6 +3,7 @@ package com.laker.postman.common.dialog;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.model.Snippet;
+import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -17,6 +18,7 @@ public class SnippetDialog extends JDialog {
     private final JList<Snippet> snippetList;
     private final DefaultListModel<Snippet> listModel;
     private final JTextField searchField;
+    @Getter
     private Snippet selectedSnippet;
     private static final List<Snippet> snippets = List.of(
             new Snippet("断言-状态码为200", "pm.test('Status code is 200', function () {\n    pm.response.to.have.status(200);\n});", "断言响应状态码为200"),
@@ -81,7 +83,7 @@ public class SnippetDialog extends JDialog {
                 }
             }
         });
-        JButton insertBtn = new JButton("插入");
+        JButton insertBtn = new JButton("Insert");
         insertBtn.addActionListener(e -> {
             selectedSnippet = snippetList.getSelectedValue();
             if (selectedSnippet != null) {
@@ -95,7 +97,7 @@ public class SnippetDialog extends JDialog {
         });
         snippetList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                if (evt.getClickCount() == 2) {
+                if (evt.getClickCount() == 2) { // 双击事件
                     selectedSnippet = snippetList.getSelectedValue();
                     if (selectedSnippet != null) {
                         dispose();
@@ -103,16 +105,17 @@ public class SnippetDialog extends JDialog {
                 }
             }
         });
-        JPanel southPanel = new JPanel(new BorderLayout());
-        southPanel.add(insertBtn, BorderLayout.EAST);
+        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        southPanel.add(insertBtn);
+        JButton closeBtn = new JButton("Close");
+        closeBtn.addActionListener(e -> dispose());
+        southPanel.add(closeBtn);
         add(searchField, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(southPanel, BorderLayout.SOUTH);
-        setSize(400, 300);
+        setSize(400, 500);
         setLocationRelativeTo(owner);
+        setResizable(false); // 禁止窗口大小调整
     }
 
-    public Snippet getSelectedSnippet() {
-        return selectedSnippet;
-    }
 }

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * 左侧标签页面板，包含集合、环境变量、压测、批量执行四个标签页
+ * 左侧标签页面板
  */
 @Slf4j
 public class SidebarTabPanel extends BasePanel {
@@ -50,15 +50,15 @@ public class SidebarTabPanel extends BasePanel {
         // 1. 创建标签页
         tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
         tabInfos = new ArrayList<>();
-        tabInfos.add(new TabInfo("集合", new FlatSVGIcon("icons/collections.svg", 20, 20),
+        tabInfos.add(new TabInfo("Collections", new FlatSVGIcon("icons/collections.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
-        tabInfos.add(new TabInfo("环境", new FlatSVGIcon("icons/env.svg", 20, 20),
+        tabInfos.add(new TabInfo("Environments", new FlatSVGIcon("icons/env.svg", 20, 20),
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
-        tabInfos.add(new TabInfo("批量执行", new FlatSVGIcon("icons/runner.svg", 20, 20),
+        tabInfos.add(new TabInfo("Functional", new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RunnerPanel.class)));
-        tabInfos.add(new TabInfo("Jmeter", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
+        tabInfos.add(new TabInfo("Performance", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
                 () -> SingletonFactory.getInstance(JMeterPanel.class)));
-        tabInfos.add(new TabInfo("历史", new FlatSVGIcon("icons/history.svg", 20, 20),
+        tabInfos.add(new TabInfo("History", new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
@@ -244,11 +244,11 @@ public class SidebarTabPanel extends BasePanel {
     private Component createPostmanTabHeader(String title, Icon icon) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));  //
-        panel.setPreferredSize(new Dimension(60, 60)); // 设置合适的宽高
+        panel.setPreferredSize(new Dimension(81, 60)); // 设置合适的宽高
         panel.setOpaque(false); // 设置透明背景
         JLabel iconLabel = new JLabel(icon); // 使用传入的图标
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 图标居中对齐
-        iconLabel.setPreferredSize(new Dimension(28, 28));
+        iconLabel.setPreferredSize(new Dimension(32, 32));
         JLabel titleLabel = new JLabel(title); // 使用传入的标题
         titleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 文本居中对齐

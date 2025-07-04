@@ -25,13 +25,13 @@ public class JsScriptExecutor {
             private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
             @Override
-            public void write(int b) throws IOException {
+            public void write(int b) {
                 buffer.write(b);
             }
 
             @Override
-            public void flush() throws IOException {
-                String chunk = buffer.toString(StandardCharsets.UTF_8.name());
+            public void flush() {
+                String chunk = buffer.toString(StandardCharsets.UTF_8);
                 buffer.reset(); // 清空缓冲区
                 if (outputCallback != null && !chunk.isEmpty()) {
                     for (String line : chunk.split("\n")) {
@@ -66,13 +66,6 @@ public class JsScriptExecutor {
                 outputCallback.onOutput("Error executing script: " + e.getMessage());
             }
         }
-    }
-
-    /**
-     * 简化调用：无输出回调
-     */
-    public static void executeScript(String script, Map<String, Object> bindings) throws Exception {
-        executeScript(script, bindings, null);
     }
 
     /**

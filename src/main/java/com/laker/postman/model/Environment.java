@@ -51,6 +51,11 @@ public class Environment {
         }
     }
 
+    // for javascript
+    public void clear() {
+        variables.clear();
+    }
+
     public String getVariable(String key) {
         return variables.get(key);
     }

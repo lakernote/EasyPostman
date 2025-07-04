@@ -2,8 +2,9 @@ package com.laker.postman.panel.runner;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.datatransfer.*;
-import java.io.IOException;
+import javax.swing.table.TableModel;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 
 /**
  * 支持JTable行拖拽的TransferHandler
@@ -39,20 +40,32 @@ public class TableRowTransferHandler extends TransferHandler {
         if (!canImport(support)) return false;
         JTable.DropLocation dl = (JTable.DropLocation) support.getDropLocation();
         int index = dl.getRow();
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        TableModel model = table.getModel();
         if (rows == null) return false;
+        if (model instanceof RunnerTableModel runnerModel) {
+            // 只支持单行拖拽（可扩展为多行）
+            for (int i = 0; i < rows.length; i++) {
+                int from = rows[i];
+                int to = index;
+                runnerModel.moveRow(from, to);
+                if (to > from) index--; // 移动后下标变化
+            }
+            table.getSelectionModel().setSelectionInterval(index, index + rows.length - 1);
+            return true;
+        }
         // 复制行数据
-        Object[][] rowData = new Object[rows.length][model.getColumnCount()];
+        DefaultTableModel defModel = (DefaultTableModel) model;
+        Object[][] rowData = new Object[rows.length][defModel.getColumnCount()];
         for (int i = 0; i < rows.length; i++) {
-            for (int j = 0; j < model.getColumnCount(); j++) {
-                rowData[i][j] = model.getValueAt(rows[i], j);
+            for (int j = 0; j < defModel.getColumnCount(); j++) {
+                rowData[i][j] = defModel.getValueAt(rows[i], j);
             }
         }
         // 插入到目标位置
         addIndex = index;
         addCount = rowData.length;
         for (int i = 0; i < rowData.length; i++) {
-            model.insertRow(index++, rowData[i]);
+            defModel.insertRow(index++, rowData[i]);
         }
         // 选中新插入的行
         table.getSelectionModel().setSelectionInterval(addIndex, addIndex + addCount - 1);
@@ -62,15 +75,20 @@ public class TableRowTransferHandler extends TransferHandler {
     @Override
     protected void exportDone(JComponent c, Transferable t, int action) {
         if (action == MOVE && rows != null) {
-            DefaultTableModel model = (DefaultTableModel) table.getModel();
-            // 删除原有行（从后往前删）
-            if (addIndex > rows[0]) {
-                for (int i = rows.length - 1; i >= 0; i--) {
-                    model.removeRow(rows[i]);
-                }
+            TableModel model = table.getModel();
+            if (model instanceof RunnerTableModel) {
+                // 数据已在 moveRow 中同步，无需再删
             } else {
-                for (int i = rows.length - 1; i >= 0; i--) {
-                    model.removeRow(rows[i] + addCount);
+                DefaultTableModel defModel = (DefaultTableModel) model;
+                // 删除原有行（从后往前删）
+                if (addIndex > rows[0]) {
+                    for (int i = rows.length - 1; i >= 0; i--) {
+                        defModel.removeRow(rows[i]);
+                    }
+                } else {
+                    for (int i = rows.length - 1; i >= 0; i--) {
+                        defModel.removeRow(rows[i] + addCount);
+                    }
                 }
             }
         }
@@ -79,4 +97,3 @@ public class TableRowTransferHandler extends TransferHandler {
         addIndex = -1;
     }
 }
-

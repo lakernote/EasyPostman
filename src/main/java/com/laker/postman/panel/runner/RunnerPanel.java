@@ -16,24 +16,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 public class RunnerPanel extends JPanel {
     private final JTable table;
-    private DefaultTableModel tableModel;
+    private RunnerTableModel tableModel;
     private final JButton runBtn;
     private JProgressBar progressBar;
-    // 用于缓存每行的HttpRequestItem
-    private final java.util.List<HttpRequestItem> loadedRequestItems = new ArrayList<>();
-    // 用于缓存每行的PreparedRequest
-    private final java.util.List<PreparedRequest> loadedPreparedRequests = new ArrayList<>();
-    // 保存每行的响应信息
-    private final java.util.List<HttpResponse> loadedResponses = new ArrayList<>();
 
     public RunnerPanel() {
         setLayout(new BorderLayout());
@@ -55,10 +47,7 @@ public class RunnerPanel extends JPanel {
         JButton clearBtn = new JButton("清空");
         clearBtn.setPreferredSize(new Dimension(110, 32));
         clearBtn.addActionListener(e -> {
-            tableModel.setRowCount(0);
-            loadedRequestItems.clear();
-            loadedPreparedRequests.clear();
-            loadedResponses.clear();
+            tableModel.clear();
             runBtn.setEnabled(false);
             progressBar.setValue(0);
             progressBar.setString("0%");
@@ -73,18 +62,7 @@ public class RunnerPanel extends JPanel {
 
         add(btnPanel, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(new Object[]{"选择", "请求名称", "URL", "方法", "耗时(ms)", "状态", "断言", "详情"}, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 0) return Boolean.class;
-                return super.getColumnClass(columnIndex);
-            }
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 0 || column == 7; // 详情列可点击
-            }
-        };
+        tableModel = new RunnerTableModel();
         table = new JTable(tableModel) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -205,15 +183,9 @@ public class RunnerPanel extends JPanel {
 
     // 加载选中的请求到表格
     public void loadRequests(List<HttpRequestItem> requests) {
-        tableModel.setRowCount(0);
-        loadedRequestItems.clear();
-        loadedPreparedRequests.clear();
-        loadedResponses.clear();
+        tableModel.clear();
         for (HttpRequestItem item : requests) {
-            tableModel.addRow(new Object[]{true, item.getName(), item.getUrl(), item.getMethod(), "", "", ""});
-            loadedRequestItems.add(item);
-            loadedPreparedRequests.add(PreparedRequestBuilder.build(item));
-            loadedResponses.add(null); // 初始化响应为null
+            tableModel.addRow(new RunnerRowData(item, PreparedRequestBuilder.build(item)));
         }
         table.setEnabled(true);
         runBtn.setEnabled(true);
@@ -234,13 +206,13 @@ public class RunnerPanel extends JPanel {
         new Thread(() -> {
             int finished = 0;
             for (int i = 0; i < rowCount; i++) {
-                Boolean selected = (Boolean) tableModel.getValueAt(i, 0);
-                if (selected != null && selected) {
+                RunnerRowData row = tableModel.getRow(i);
+                if (row.selected) {
                     long start = System.currentTimeMillis();
                     String status = "未执行";
                     String assertion = "";
-                    HttpRequestItem item = loadedRequestItems.get(i);
-                    PreparedRequest req = loadedPreparedRequests.get(i);
+                    HttpRequestItem item = row.requestItem;
+                    PreparedRequest req = row.preparedRequest;
                     boolean preOk = true;
                     Map<String, Object> bindings = HttpUtil.prepareBindings(req);
                     String prescript = item.getPrescript();
@@ -260,7 +232,6 @@ public class RunnerPanel extends JPanel {
                             preOk = false;
                         }
                     }
-
                     HttpResponse resp = null;
                     if (!preOk) {
                         status = "前置脚本失败";
@@ -313,10 +284,7 @@ public class RunnerPanel extends JPanel {
                     String finalAssertion = assertion;
                     HttpResponse finalResp = resp;
                     SwingUtilities.invokeLater(() -> {
-                        tableModel.setValueAt(finalStatus, rowIdx, 5);
-                        tableModel.setValueAt(finalAssertion, rowIdx, 6);
-                        tableModel.setValueAt(cost, rowIdx, 4);
-                        loadedResponses.set(rowIdx, finalResp); // 保存响应
+                        tableModel.setResponse(rowIdx, finalResp, cost, finalStatus, finalAssertion);
                     });
                 }
                 finished++;
@@ -335,8 +303,9 @@ public class RunnerPanel extends JPanel {
 
     // 显示详情对话框
     private void showDetailDialog(int row) {
-        PreparedRequest req = loadedPreparedRequests.get(row);
-        HttpResponse resp = loadedResponses.size() > row ? loadedResponses.get(row) : null;
+        RunnerRowData runnerRowData = tableModel.getRow(row);
+        PreparedRequest req = runnerRowData.preparedRequest;
+        HttpResponse resp = runnerRowData.response;
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail", true);
         dialog.setSize(700, 600);
         dialog.setLocationRelativeTo(this);
@@ -450,4 +419,3 @@ public class RunnerPanel extends JPanel {
                 .replace("'", "&#39;");
     }
 }
-

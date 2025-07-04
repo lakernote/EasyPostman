@@ -36,16 +36,19 @@ public class RunnerPanel extends JPanel {
         // 按钮面板放到顶部
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
-        JButton loadBtn = new JButton("加载请求");
+        JButton loadBtn = new JButton("Load");
+        loadBtn.setIcon(new FlatSVGIcon("icons/load.svg"));
         loadBtn.setPreferredSize(new Dimension(110, 32));
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
         btnPanel.add(loadBtn);
-        runBtn = new JButton("批量运行");
+        runBtn = new JButton("Run");
+        runBtn.setIcon(new FlatSVGIcon("icons/run.svg"));
         runBtn.setPreferredSize(new Dimension(110, 32));
         runBtn.addActionListener(e -> runSelectedRequests());
         runBtn.setEnabled(false);
         btnPanel.add(runBtn);
-        JButton clearBtn = new JButton("清空");
+        JButton clearBtn = new JButton("Clear");
+        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setPreferredSize(new Dimension(110, 32));
         clearBtn.addActionListener(e -> {
             tableModel.clear();
@@ -152,7 +155,7 @@ public class RunnerPanel extends JPanel {
                 btn.setContentAreaFilled(false);
                 btn.setOpaque(false);
                 btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                btn.setIcon(new FlatSVGIcon("icons/eye-flat.svg"));
+                btn.setIcon(new FlatSVGIcon("icons/detail.svg"));
                 return btn;
             }
         };
@@ -459,4 +462,3 @@ public class RunnerPanel extends JPanel {
                 .replace("'", "&#39;");
     }
 }
-

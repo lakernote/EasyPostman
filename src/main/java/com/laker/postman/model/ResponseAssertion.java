@@ -14,8 +14,11 @@ public class ResponseAssertion {
     public ResponseAssertion have = this;
     public ResponseAssertion be = this;
 
+    public long responseTime; // 新增字段
+
     public ResponseAssertion(HttpResponse response) {
         this.response = response;
+        this.responseTime = response != null ? response.costMs : -1; // 构造时赋值
     }
 
     public ResponseAssertion to() {
@@ -70,10 +73,6 @@ public class ResponseAssertion {
         return null;
     }
 
-    // 获取响应时间
-    public long responseTime() {
-        return response != null ? response.costMs : -1;
-    }
 
     // pm.expect 断言入口
     public Expectation expect(Object actual) {

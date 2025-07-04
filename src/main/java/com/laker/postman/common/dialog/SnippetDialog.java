@@ -29,7 +29,7 @@ public class SnippetDialog extends JDialog {
             new Snippet("断言-正则匹配", "pm.test('Body正则匹配', function () {\n    pm.expect(pm.response.text()).to.match(/success/);\n});", "断言响应体正则匹配"),
 
             new Snippet("提取JSON字段到环境变量", "var jsonData = pm.response.json();\npm.environment.set('token', jsonData.token);", "提取token到环境变量"),
-            new Snippet("提取Header到环境变量", "var token = pm.response.headers.get('X-Token');\npm.environment.set('token', token);", "提取响应头到环境变量"),
+            new Snippet("提取Header到环境变量", "var token = pm.response.headers('X-Token');\npm.environment.set('token', token);", "提取响应头到环境变量"),
 
             new Snippet("pm.environment.set", "pm.environment.set('key', 'value');", "设置环境变量"),
             new Snippet("pm.environment.get", "pm.environment.get('key');", "获取环境变量"),

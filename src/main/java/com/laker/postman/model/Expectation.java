@@ -1,7 +1,7 @@
 package com.laker.postman.model;
 
-import java.util.regex.Pattern;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 支持 pm.expect(xxx) 断言的链式断言对象
@@ -56,4 +56,3 @@ public class Expectation {
         }
     }
 }
-

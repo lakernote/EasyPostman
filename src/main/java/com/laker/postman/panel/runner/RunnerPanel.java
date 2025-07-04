@@ -248,6 +248,16 @@ public class RunnerPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "没有可运行的请求", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        // 清空耗时、状态、断言、详情等
+        for (int i = 0; i < rowCount; i++) {
+            RunnerRowData row = tableModel.getRow(i);
+            row.response = null;
+            row.cost = 0;
+            row.status = null;
+            row.assertion = null;
+            row.testResults = null;
+            tableModel.fireTableRowsUpdated(i, i);
+        }
         runBtn.setEnabled(false);
         progressBar.setMinimum(0);
         progressBar.setMaximum(rowCount);

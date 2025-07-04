@@ -1,6 +1,7 @@
 package com.laker.postman.panel.runner;
 
 import cn.hutool.core.util.StrUtil;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
@@ -141,12 +142,17 @@ public class RunnerPanel extends JPanel {
         };
         table.getColumnModel().getColumn(5).setCellRenderer(statusRenderer);
 
-        // 详情列渲染为按钮
+        // 详情列渲染为扁平SVG按钮
         DefaultTableCellRenderer detailRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JButton btn = new JButton("查看");
-                btn.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+                JButton btn = new JButton();
+                btn.setBorderPainted(false);
+                btn.setFocusPainted(false);
+                btn.setContentAreaFilled(false);
+                btn.setOpaque(false);
+                btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                btn.setIcon(new FlatSVGIcon("icons/eye-flat.svg"));
                 return btn;
             }
         };

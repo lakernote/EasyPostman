@@ -67,7 +67,7 @@ public class RunnerPanel extends JPanel {
 
         add(btnPanel, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(new Object[]{"选择", "请求名称", "URL", "方法", "耗时(ms)", "状态", "断言"}, 0) {
+        tableModel = new DefaultTableModel(new Object[]{"选择", "请求名称", "URL", "方法", "耗时(ms)", "状态", "断言", "详情"}, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
                 if (columnIndex == 0) return Boolean.class;
@@ -76,10 +76,15 @@ public class RunnerPanel extends JPanel {
 
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 0;
+                return column == 0 || column == 7; // 详情列可点击
             }
         };
-        table = new JTable(tableModel);
+        table = new JTable(tableModel) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 0 || column == 7;
+            }
+        };
         table.setRowHeight(28);
         table.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         table.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 13));
@@ -113,14 +118,21 @@ public class RunnerPanel extends JPanel {
                     c.setForeground(new Color(40, 167, 69));
                     c.setBackground(new Color(220, 255, 220)); // 浅绿色背景
                 }
-                if (isSelected) {
-                    c.setBackground(table.getSelectionBackground());
-                    c.setForeground(table.getSelectionForeground());
-                }
                 return c;
             }
         };
         table.getColumnModel().getColumn(6).setCellRenderer(assertionRenderer);
+
+        // 详情列渲染为按钮
+        DefaultTableCellRenderer detailRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JButton btn = new JButton("查看");
+                btn.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+                return btn;
+            }
+        };
+        table.getColumnModel().getColumn(7).setCellRenderer(detailRenderer);
 
         table.setGridColor(new Color(220, 220, 220));
         table.setSelectionBackground(new Color(220, 235, 252));
@@ -131,6 +143,19 @@ public class RunnerPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(scrollPane, BorderLayout.CENTER);
+
+        // 鼠标点击详情按钮事件
+        // 监听表格点击
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                if (col == 7 && row >= 0) {
+                    showDetailDialog(row);
+                }
+            }
+        });
     }
 
 
@@ -290,5 +315,28 @@ public class RunnerPanel extends JPanel {
                 progressBar.setString("Done");
             });
         }).start();
+    }
+
+    // 显示详情对话框
+    private void showDetailDialog(int row) {
+        HttpRequestItem item = loadedRequestItems.get(row);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "请求详情", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        JTextArea textArea = new JTextArea();
+        textArea.setText(item.toString());
+        textArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        dialog.add(scrollPane, BorderLayout.CENTER);
+
+        JButton closeButton = new JButton("关闭");
+        closeButton.addActionListener(e -> dialog.dispose());
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(closeButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
     }
 }

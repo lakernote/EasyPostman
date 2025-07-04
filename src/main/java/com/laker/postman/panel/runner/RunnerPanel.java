@@ -148,6 +148,10 @@ public class RunnerPanel extends JPanel {
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setFillsViewportHeight(true);
+        // 启用行拖拽
+        table.setDragEnabled(true);
+        table.setDropMode(DropMode.INSERT_ROWS);
+        table.setTransferHandler(new TableRowTransferHandler(table));
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(scrollPane, BorderLayout.CENTER);
@@ -446,3 +450,4 @@ public class RunnerPanel extends JPanel {
                 .replace("'", "&#39;");
     }
 }
+

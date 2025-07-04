@@ -10,6 +10,7 @@ import java.util.Map;
  */
 public class ResponseAssertion {
     private HttpResponse response;
+    public Headers headers;
     public ResponseAssertion to = this;
     public ResponseAssertion have = this;
     public ResponseAssertion be = this;
@@ -19,6 +20,7 @@ public class ResponseAssertion {
     public ResponseAssertion(HttpResponse response) {
         this.response = response;
         this.responseTime = response != null ? response.costMs : -1; // 构造时赋值
+        this.headers = new Headers(this);
     }
 
     public ResponseAssertion to() {
@@ -73,9 +75,34 @@ public class ResponseAssertion {
         return null;
     }
 
+    // 获取header值
+    public String getHeader(String name) {
+        if (response == null || response.headers == null) return null;
+        for (Map.Entry<String, List<String>> entry : response.headers.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(name)) {
+                List<String> values = entry.getValue();
+                if (values != null && !values.isEmpty()) {
+                    return values.get(0);
+                }
+            }
+        }
+        return null;
+    }
 
     // pm.expect 断言入口
     public Expectation expect(Object actual) {
         return new Expectation(actual);
+    }
+
+    public static class Headers {
+        private final ResponseAssertion responseAssertion;
+
+        public Headers(ResponseAssertion responseAssertion) {
+            this.responseAssertion = responseAssertion;
+        }
+
+        public String get(String name) {
+            return responseAssertion.getHeader(name);
+        }
     }
 }

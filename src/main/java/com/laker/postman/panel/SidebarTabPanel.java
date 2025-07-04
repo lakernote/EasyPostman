@@ -56,7 +56,7 @@ public class SidebarTabPanel extends BasePanel {
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
         tabInfos.add(new TabInfo("Functional", new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RunnerPanel.class)));
-        tabInfos.add(new TabInfo("Performance", new FlatSVGIcon("icons/jmeter.svg", 20, 20),
+        tabInfos.add(new TabInfo("Performance", new FlatSVGIcon("icons/performance.svg", 20, 20),
                 () -> SingletonFactory.getInstance(JMeterPanel.class)));
         tabInfos.add(new TabInfo("History", new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonFactory.getInstance(HistoryPanel.class)));

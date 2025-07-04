@@ -30,6 +30,10 @@ public class RunnerPanel extends JPanel {
     private JProgressBar progressBar;
     // 用于缓存每行的HttpRequestItem
     private final java.util.List<HttpRequestItem> loadedRequestItems = new ArrayList<>();
+    // 用于缓存每行的PreparedRequest
+    private final java.util.List<PreparedRequest> loadedPreparedRequests = new ArrayList<>();
+    // 保存每行的响应信息
+    private final java.util.List<HttpResponse> loadedResponses = new ArrayList<>();
 
     public RunnerPanel() {
         setLayout(new BorderLayout());
@@ -53,6 +57,8 @@ public class RunnerPanel extends JPanel {
         clearBtn.addActionListener(e -> {
             tableModel.setRowCount(0);
             loadedRequestItems.clear();
+            loadedPreparedRequests.clear();
+            loadedResponses.clear();
             runBtn.setEnabled(false);
             progressBar.setValue(0);
             progressBar.setString("0%");
@@ -105,6 +111,10 @@ public class RunnerPanel extends JPanel {
             table.getColumnModel().getColumn(5).setMinWidth(60);
             table.getColumnModel().getColumn(5).setMaxWidth(240);
             table.getColumnModel().getColumn(5).setPreferredWidth(70);
+            // 优化详情列宽度
+            table.getColumnModel().getColumn(7).setMinWidth(60);
+            table.getColumnModel().getColumn(7).setMaxWidth(80);
+            table.getColumnModel().getColumn(7).setPreferredWidth(70);
         }
         // 设置断言列渲染器，异常时标红
         DefaultTableCellRenderer assertionRenderer = new DefaultTableCellRenderer() {
@@ -112,11 +122,9 @@ public class RunnerPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 if (value instanceof String content && !"Pass".equals(content) && StrUtil.isNotBlank(content)) {
-                    c.setForeground(Color.WHITE);
-                    c.setBackground(new Color(220, 53, 69)); // Bootstrap danger 红色
+                    c.setForeground(new Color(220, 53, 69));
                 } else if ("Pass".equals(value)) {
                     c.setForeground(new Color(40, 167, 69));
-                    c.setBackground(new Color(220, 255, 220)); // 浅绿色背景
                 }
                 return c;
             }
@@ -195,9 +203,13 @@ public class RunnerPanel extends JPanel {
     public void loadRequests(List<HttpRequestItem> requests) {
         tableModel.setRowCount(0);
         loadedRequestItems.clear();
+        loadedPreparedRequests.clear();
+        loadedResponses.clear();
         for (HttpRequestItem item : requests) {
             tableModel.addRow(new Object[]{true, item.getName(), item.getUrl(), item.getMethod(), "", "", ""});
             loadedRequestItems.add(item);
+            loadedPreparedRequests.add(PreparedRequestBuilder.build(item));
+            loadedResponses.add(null); // 初始化响应为null
         }
         table.setEnabled(true);
         runBtn.setEnabled(true);
@@ -224,8 +236,7 @@ public class RunnerPanel extends JPanel {
                     String status = "未执行";
                     String assertion = "";
                     HttpRequestItem item = loadedRequestItems.get(i);
-                    PreparedRequest req = PreparedRequestBuilder.build(item);
-                    // 预处理脚本
+                    PreparedRequest req = loadedPreparedRequests.get(i);
                     boolean preOk = true;
                     Map<String, Object> bindings = HttpUtil.prepareBindings(req);
                     String prescript = item.getPrescript();
@@ -246,21 +257,20 @@ public class RunnerPanel extends JPanel {
                         }
                     }
 
+                    HttpResponse resp = null;
                     if (!preOk) {
                         status = "前置脚本失败";
                     } else {
-
                         if (HttpUtil.isSSERequest(req)) {
                             status = "SSE请求，无法批量执行";
                         } else if (HttpUtil.isWebSocketRequest(req)) {
                             status = "WebSocket请求，无法批量执行";
                         } else {
                             try {
-                                HttpResponse resp = HttpSingleRequestExecutor.execute(req);
+                                resp = HttpSingleRequestExecutor.execute(req);
                                 status = String.valueOf(resp.code);
                                 // 后置脚本
                                 try {
-                                    // postscript 执行
                                     String postscript = item.getPostscript();
                                     if (postscript != null && !postscript.isBlank()) {
                                         HttpUtil.postBindings(bindings, resp);
@@ -297,10 +307,12 @@ public class RunnerPanel extends JPanel {
                     int rowIdx = i;
                     String finalStatus = status;
                     String finalAssertion = assertion;
+                    HttpResponse finalResp = resp;
                     SwingUtilities.invokeLater(() -> {
                         tableModel.setValueAt(finalStatus, rowIdx, 5);
                         tableModel.setValueAt(finalAssertion, rowIdx, 6);
                         tableModel.setValueAt(cost, rowIdx, 4);
+                        loadedResponses.set(rowIdx, finalResp); // 保存响应
                     });
                 }
                 finished++;
@@ -319,24 +331,118 @@ public class RunnerPanel extends JPanel {
 
     // 显示详情对话框
     private void showDetailDialog(int row) {
-        HttpRequestItem item = loadedRequestItems.get(row);
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "请求详情", true);
-        dialog.setSize(400, 300);
+        PreparedRequest req = loadedPreparedRequests.get(row);
+        HttpResponse resp = loadedResponses.size() > row ? loadedResponses.get(row) : null;
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail", true);
+        dialog.setSize(700, 600);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
 
-        JTextArea textArea = new JTextArea();
-        textArea.setText(item.toString());
-        textArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        dialog.add(scrollPane, BorderLayout.CENTER);
+        JTabbedPane tabbedPane = new JTabbedPane();
+        // 请求信息（HTML）
+        JEditorPane reqPane = new JEditorPane();
+        reqPane.setContentType("text/html");
+        reqPane.setEditable(false);
+        reqPane.setText(buildRequestHtml(req));
+        tabbedPane.addTab("Request", new JScrollPane(reqPane));
+        // 响应信息（HTML）
+        JEditorPane respPane = new JEditorPane();
+        respPane.setContentType("text/html");
+        respPane.setEditable(false);
+        respPane.setText(buildResponseHtml(resp));
+        tabbedPane.addTab("Response", new JScrollPane(respPane));
+        dialog.add(tabbedPane, BorderLayout.CENTER);
 
-        JButton closeButton = new JButton("关闭");
+        JButton closeButton = new JButton("Close");
         closeButton.addActionListener(e -> dialog.dispose());
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(closeButton);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         dialog.setVisible(true);
+    }
+
+    private String buildRequestHtml(PreparedRequest req) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
+        sb.append("<b>URL:</b> ").append(escapeHtml(req.url)).append("<br/>");
+        sb.append("<b>方法:</b> ").append(escapeHtml(req.method)).append("<br/>");
+        if (req.headers != null && !req.headers.isEmpty()) {
+            sb.append("<b>请求头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+        if (req.body != null && !req.body.isEmpty()) {
+            sb.append("<b>请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                    .append(escapeHtml(req.body)).append("</pre>");
+        }
+        if (req.formData != null && !req.formData.isEmpty()) {
+            sb.append("<b>Form Data:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.formData.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+        if (req.formFiles != null && !req.formFiles.isEmpty()) {
+            sb.append("<b>Form Files:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            sb.append("<b>x-www-form-urlencoded:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.urlencoded.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+        sb.append("</body></html>");
+        return sb.toString();
+    }
+
+    private String buildResponseHtml(HttpResponse resp) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
+        if (resp == null) {
+            sb.append("<span style='color:gray;'>无响应信息</span>");
+        } else {
+            sb.append("<b>状态码:</b> ").append(resp.code).append("<br/>");
+            if (resp.headers != null && !resp.headers.isEmpty()) {
+                sb.append("<b>响应头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+                for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
+                    sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>");
+                    List<String> values = entry.getValue();
+                    if (values != null && !values.isEmpty()) {
+                        for (int i = 0; i < values.size(); i++) {
+                            sb.append(escapeHtml(values.get(i)));
+                            if (i < values.size() - 1) sb.append(", ");
+                        }
+                    }
+                    sb.append("</td></tr>");
+                }
+                sb.append("</table>");
+            }
+            sb.append("<b>响应体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                    .append(resp.body != null ? escapeHtml(resp.body) : "<无响应体>")
+                    .append("</pre>");
+        }
+        sb.append("</body></html>");
+        return sb.toString();
+    }
+
+    private String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }

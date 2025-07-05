@@ -2,7 +2,6 @@ package com.laker.postman.panel.runner;
 
 import cn.hutool.core.util.StrUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
@@ -217,34 +216,12 @@ public class RunnerPanel extends BasePanel {
 
     // 弹出选择请求/分组对话框
     private void showLoadRequestsDialog() {
-        RequestCollectionsLeftPanel requestCollectionsLeftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Select Request or Group", true);
-        dialog.setSize(400, 500);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout());
-
-        // 用JTree展示集合树，支持多选
-        JTree tree = requestCollectionsLeftPanel.createRequestSelectionTree();
-        JScrollPane treeScroll = new JScrollPane(tree);
-        dialog.add(treeScroll, BorderLayout.CENTER);
-
-        JButton okBtn = new JButton("OK");
-        okBtn.addActionListener(e -> {
-            List<HttpRequestItem> selected = requestCollectionsLeftPanel.getSelectedRequestsFromTree(tree);
-            if (selected.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Please select at least one request", "Tip", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            loadRequests(selected);
-            dialog.dispose();
-        });
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.addActionListener(e -> dialog.dispose());
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btns.add(okBtn);
-        btns.add(cancelBtn);
-        dialog.add(btns, BorderLayout.SOUTH);
-        dialog.setVisible(true);
+        RequestCollectionsLeftPanel.showMultiSelectRequestDialog(
+                selected -> {
+                    if (selected == null || selected.isEmpty()) return;
+                    loadRequests(selected);
+                }
+        );
     }
 
     // 加载选中的请求到表格

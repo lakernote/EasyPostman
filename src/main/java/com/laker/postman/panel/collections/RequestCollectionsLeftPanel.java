@@ -7,6 +7,7 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.dialog.LargeInputDialog;
+import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
@@ -38,7 +39,9 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
 
@@ -1055,5 +1058,41 @@ public class RequestCollectionsLeftPanel extends BasePanel {
                 }
             }
         }
+    }
+
+    /**
+     * 弹出多选请求对话框，回调返回选中的HttpRequestItem列表
+     */
+    public static void showMultiSelectRequestDialog(Consumer<List<HttpRequestItem>> onSelected) {
+        RequestCollectionsLeftPanel requestCollectionsLeftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), "Select Requests (Multi-select)", true);
+        dialog.setSize(400, 500);
+        dialog.setResizable(false);
+        dialog.setLocationRelativeTo(null);
+        dialog.setLayout(new BorderLayout());
+
+        // 用JTree展示集合树，支持多选
+        JTree tree = requestCollectionsLeftPanel.createRequestSelectionTree();
+        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+        JScrollPane treeScroll = new JScrollPane(tree);
+        dialog.add(treeScroll, BorderLayout.CENTER);
+
+        JButton okBtn = new JButton("OK");
+        okBtn.addActionListener(e -> {
+            List<HttpRequestItem> selected = requestCollectionsLeftPanel.getSelectedRequestsFromTree(tree);
+            if (selected.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Please select at least one request", "Tip", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            onSelected.accept(selected);
+            dialog.dispose();
+        });
+        JButton cancelBtn = new JButton("Cancel");
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btns.add(okBtn);
+        btns.add(cancelBtn);
+        dialog.add(btns, BorderLayout.SOUTH);
+        dialog.setVisible(true);
     }
 }

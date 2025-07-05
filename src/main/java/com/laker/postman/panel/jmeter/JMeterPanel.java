@@ -5,10 +5,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
-import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -665,39 +663,27 @@ public class JMeterPanel extends BasePanel {
         addRequest.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
             if (node == null) return;
-            RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-            DefaultTreeModel groupTreeModel = collectionPanel != null ? collectionPanel.getGroupTreeModel() : null;
-            if (groupTreeModel == null) {
-                JOptionPane.showMessageDialog(JMeterPanel.this, "未找到请求集合，无法选择", "提示", JOptionPane.WARNING_MESSAGE);
+            Object userObj = node.getUserObject();
+            if (!(userObj instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.THREAD_GROUP) {
+                JOptionPane.showMessageDialog(JMeterPanel.this, "请选择一个用户组节点进行添加", "提示", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            JTree collectionTree = new JTree(groupTreeModel);
-            collectionTree.setRootVisible(false);
-            collectionTree.setShowsRootHandles(true);
-            collectionTree.setCellRenderer(new RequestTreeCellRenderer());
-            JScrollPane scrollPane = new JScrollPane(collectionTree);
-            scrollPane.setPreferredSize(new Dimension(320, 320));
-            int result = JOptionPane.showConfirmDialog(JMeterPanel.this, scrollPane, "选择请求", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-            if (result == JOptionPane.OK_OPTION) {
-                TreePath selPath = collectionTree.getSelectionPath();
-                if (selPath != null) {
-                    DefaultMutableTreeNode selNode = (DefaultMutableTreeNode) selPath.getLastPathComponent();
-                    Object userObj = selNode.getUserObject();
-                    if (userObj instanceof Object[] arr && "request".equals(arr[0])) {
-                        HttpRequestItem reqItem = (HttpRequestItem) arr[1];
-                        DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
-                        treeModel.insertNodeInto(req, node, node.getChildCount());
-                        jmeterTree.expandPath(new TreePath(node.getPath()));
-                        // 选中并填充右侧属性区
-                        TreePath newPath = new TreePath(req.getPath());
-                        jmeterTree.setSelectionPath(newPath);
-                        propertyCardLayout.show(propertyPanel, "request");
-                        requestEditSubPanel.updateRequestForm(reqItem);
-                        return;
-                    }
+            // 多选请求弹窗
+            RequestCollectionsLeftPanel.showMultiSelectRequestDialog(selectedList -> {
+                if (selectedList == null || selectedList.isEmpty()) return;
+                List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
+                for (com.laker.postman.model.HttpRequestItem reqItem : selectedList) {
+                    DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
+                    treeModel.insertNodeInto(req, node, node.getChildCount());
+                    newNodes.add(req);
                 }
-                JOptionPane.showMessageDialog(JMeterPanel.this, "请选择一个请求节点", "提示", JOptionPane.WARNING_MESSAGE);
-            }
+                jmeterTree.expandPath(new TreePath(node.getPath()));
+                // 选中第一个新加的请求节点
+                TreePath newPath = new TreePath(newNodes.get(0).getPath());
+                jmeterTree.setSelectionPath(newPath);
+                propertyCardLayout.show(propertyPanel, "request");
+                requestEditSubPanel.updateRequestForm(((JMeterTreeNode) newNodes.get(0).getUserObject()).httpRequestItem);
+            });
         });
         // 添加断言
         addAssertion.addActionListener(e -> {

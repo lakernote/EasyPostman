@@ -27,6 +27,7 @@ public class RedirectHandler {
         boolean isMultipart = req.isMultipart;
         int redirectCount = 0;
         boolean followRedirects = req.followRedirects;
+        URL prevUrl = new URL(url);
         while (redirectCount <= maxRedirects) {
             PreparedRequest currentReq = new PreparedRequest();
             currentReq.id = req.id;
@@ -50,14 +51,29 @@ public class RedirectHandler {
             info.location = extractLocationHeader(resp);
             // 判断是否重定向
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
-                url = info.location.startsWith("http") ? info.location : new URL(new URL(url), info.location).toString();
+                URL nextUrl = info.location.startsWith("http") ? new URL(info.location) : new URL(prevUrl, info.location);
+                boolean isCrossDomain = !prevUrl.getHost().equalsIgnoreCase(nextUrl.getHost());
+                url = nextUrl.toString();
                 redirectCount++;
-                if (info.statusCode == 302 || info.statusCode == 303) {
+                // 处理 method/body
+                if (info.statusCode == 301 || info.statusCode == 302 || info.statusCode == 303) {
                     method = "GET";
                     body = null;
                     isMultipart = false;
                     formData = null;
                     formFiles = null;
+                    urlencoded = null;
+                } else if (info.statusCode == 307 || info.statusCode == 308) {
+                    // 保持原 method/body
+                }
+                // 处理 headers
+                headers = new LinkedHashMap<>(headers); // 基于上一次请求 header
+                headers.remove("Content-Length"); // 移除 Content-Length 头
+                headers.remove("Host"); // 移除 Host 头
+                headers.remove("Content-Type"); // 移除 Content-Type 头
+                if (isCrossDomain) {
+                    headers.remove("Authorization"); // 跨域请求时移除 Authorization
+                    headers.remove("Cookie"); // 跨域请求时移除 Cookie
                 }
                 StringBuilder sb = new StringBuilder();
                 sb.append("[重定向] ");
@@ -65,11 +81,7 @@ public class RedirectHandler {
                 sb.append("URL: ").append(info.url);
                 sb.append(", Location: ").append(info.location);
                 SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(req.id).getNetworkLogPanel().appendLog(sb.toString(), java.awt.Color.ORANGE, true);
-
-                headers = new LinkedHashMap<>(origHeaders);
-                headers.remove("Content-Length");
-                headers.remove("Host");
-                headers.remove("Content-Type");
+                prevUrl = nextUrl;
             } else {
                 return resp;
             }

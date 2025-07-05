@@ -3,6 +3,7 @@ package com.laker.postman.panel.runner;
 import cn.hutool.core.util.StrUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.Postman;
@@ -25,22 +26,36 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class RunnerPanel extends JPanel {
-    private final JTable table;
+public class RunnerPanel extends BasePanel {
+    private JTable table;
     private RunnerTableModel tableModel;
-    private final JButton runBtn;
+    private JButton runBtn;
     private JProgressBar progressBar;
 
-    public RunnerPanel() {
+    @Override
+    protected void initUI() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
         setPreferredSize(new Dimension(700, 400));
+        add(createTopPanel(), BorderLayout.NORTH);
+        add(createTablePanel(), BorderLayout.CENTER);
+    }
 
-        // 优化顶部工具栏布局
+    private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        topPanel.add(createButtonPanel(), BorderLayout.WEST);
+        progressBar = new JProgressBar();
+        progressBar.setStringPainted(true);
+        progressBar.setPreferredSize(new Dimension(260, 24));
+        JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        progressPanel.setOpaque(false);
+        progressPanel.add(progressBar);
+        topPanel.add(progressPanel, BorderLayout.EAST);
+        return topPanel;
+    }
 
-        // 按钮组（左侧）
+    private JPanel createButtonPanel() {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         btnPanel.setOpaque(false);
         JButton loadBtn = new JButton("Load");
@@ -64,19 +79,10 @@ public class RunnerPanel extends JPanel {
             progressBar.setString("0%");
         });
         btnPanel.add(clearBtn);
-        topPanel.add(btnPanel, BorderLayout.WEST);
+        return btnPanel;
+    }
 
-        // 进度条（右侧）
-        progressBar = new JProgressBar();
-        progressBar.setStringPainted(true);
-        progressBar.setPreferredSize(new Dimension(260, 24));
-        JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        progressPanel.setOpaque(false);
-        progressPanel.add(progressBar);
-        topPanel.add(progressPanel, BorderLayout.EAST);
-
-        add(topPanel, BorderLayout.NORTH);
-
+    private JScrollPane createTablePanel() {
         tableModel = new RunnerTableModel();
         table = new JTable(tableModel) {
             @Override
@@ -87,30 +93,51 @@ public class RunnerPanel extends JPanel {
         table.setRowHeight(28);
         table.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         table.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 13));
-        // 优化选择列宽度
+        setTableColumnWidths();
+        setTableRenderers();
+        table.setGridColor(new Color(220, 220, 220));
+        table.setSelectionBackground(new Color(220, 235, 252));
+        table.setSelectionForeground(Color.BLACK);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+        table.setFillsViewportHeight(true);
+        table.setDragEnabled(true);
+        table.setDropMode(DropMode.INSERT_ROWS);
+        table.setTransferHandler(new TableRowTransferHandler(table));
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        return scrollPane;
+    }
+
+    private void setTableColumnWidths() {
         if (table.getColumnModel().getColumnCount() > 0) {
             table.getColumnModel().getColumn(0).setMinWidth(50);
             table.getColumnModel().getColumn(0).setMaxWidth(60);
             table.getColumnModel().getColumn(0).setPreferredWidth(55);
-            // 优化方法列宽度
             table.getColumnModel().getColumn(3).setMinWidth(60);
             table.getColumnModel().getColumn(3).setMaxWidth(80);
             table.getColumnModel().getColumn(3).setPreferredWidth(70);
-            // 优化耗时列宽度
             table.getColumnModel().getColumn(4).setMinWidth(80);
             table.getColumnModel().getColumn(4).setMaxWidth(120);
             table.getColumnModel().getColumn(4).setPreferredWidth(100);
-            // 优化状态列宽度
             table.getColumnModel().getColumn(5).setMinWidth(60);
             table.getColumnModel().getColumn(5).setMaxWidth(240);
             table.getColumnModel().getColumn(5).setPreferredWidth(70);
-            // 优化详情列宽度
             table.getColumnModel().getColumn(7).setMinWidth(60);
             table.getColumnModel().getColumn(7).setMaxWidth(80);
             table.getColumnModel().getColumn(7).setPreferredWidth(70);
         }
-        // 设置断言列渲染器，异常时标红
-        DefaultTableCellRenderer assertionRenderer = new DefaultTableCellRenderer() {
+    }
+
+    private void setTableRenderers() {
+        table.getColumnModel().getColumn(6).setCellRenderer(createAssertionRenderer());
+        table.getColumnModel().getColumn(3).setCellRenderer(createMethodRenderer());
+        table.getColumnModel().getColumn(5).setCellRenderer(createStatusRenderer());
+        table.getColumnModel().getColumn(7).setCellRenderer(createDetailRenderer());
+    }
+
+    private DefaultTableCellRenderer createAssertionRenderer() {
+        return new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -122,10 +149,10 @@ public class RunnerPanel extends JPanel {
                 return c;
             }
         };
-        table.getColumnModel().getColumn(6).setCellRenderer(assertionRenderer);
+    }
 
-        // 方法列渲染器，调用HttpUtil.getMethodColor
-        DefaultTableCellRenderer methodRenderer = new DefaultTableCellRenderer() {
+    private DefaultTableCellRenderer createMethodRenderer() {
+        return new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -136,10 +163,10 @@ public class RunnerPanel extends JPanel {
                 return c;
             }
         };
-        table.getColumnModel().getColumn(3).setCellRenderer(methodRenderer);
+    }
 
-        // 状态列渲染器，调用HttpUtil.getStatusColor
-        DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
+    private DefaultTableCellRenderer createStatusRenderer() {
+        return new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -154,10 +181,10 @@ public class RunnerPanel extends JPanel {
                 return c;
             }
         };
-        table.getColumnModel().getColumn(5).setCellRenderer(statusRenderer);
+    }
 
-        // 详情列渲染为扁平SVG按钮
-        DefaultTableCellRenderer detailRenderer = new DefaultTableCellRenderer() {
+    private DefaultTableCellRenderer createDetailRenderer() {
+        return new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 JButton btn = new JButton();
@@ -170,22 +197,10 @@ public class RunnerPanel extends JPanel {
                 return btn;
             }
         };
-        table.getColumnModel().getColumn(7).setCellRenderer(detailRenderer);
+    }
 
-        table.setGridColor(new Color(220, 220, 220));
-        table.setSelectionBackground(new Color(220, 235, 252));
-        table.setSelectionForeground(Color.BLACK);
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(false);
-        table.setFillsViewportHeight(true);
-        // 启用行拖拽
-        table.setDragEnabled(true);
-        table.setDropMode(DropMode.INSERT_ROWS);
-        table.setTransferHandler(new TableRowTransferHandler(table));
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(scrollPane, BorderLayout.CENTER);
-
+    @Override
+    protected void registerListeners() {
         // 鼠标点击详情按钮事件
         // 监听表格点击
         table.addMouseListener(new MouseAdapter() {
@@ -199,7 +214,6 @@ public class RunnerPanel extends JPanel {
             }
         });
     }
-
 
     // 弹出选择请求/分组对话框
     private void showLoadRequestsDialog() {
@@ -250,7 +264,16 @@ public class RunnerPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "没有可运行的请求", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        // 清空耗时、状态、断言、详情等
+        clearRunResults(rowCount);
+        runBtn.setEnabled(false);
+        progressBar.setMinimum(0);
+        progressBar.setMaximum(rowCount);
+        progressBar.setValue(0);
+        progressBar.setString("0 / " + rowCount);
+        new Thread(() -> executeBatchRequests(rowCount)).start();
+    }
+
+    private void clearRunResults(int rowCount) {
         for (int i = 0; i < rowCount; i++) {
             RunnerRowData row = tableModel.getRow(i);
             row.response = null;
@@ -260,118 +283,139 @@ public class RunnerPanel extends JPanel {
             row.testResults = null;
             tableModel.fireTableRowsUpdated(i, i);
         }
-        runBtn.setEnabled(false);
-        progressBar.setMinimum(0);
-        progressBar.setMaximum(rowCount);
-        progressBar.setValue(0);
-        progressBar.setString("0 / " + rowCount);
-        new Thread(() -> {
-            int finished = 0;
-            for (int i = 0; i < rowCount; i++) {
-                RunnerRowData row = tableModel.getRow(i);
-                if (row.selected) {
-                    long start = System.currentTimeMillis();
-                    String status;
-                    String assertion = "not executed";
-                    HttpRequestItem item = row.requestItem;
-                    PreparedRequest req = row.preparedRequest;
-                    boolean preOk = true;
-                    Map<String, Object> bindings = HttpUtil.prepareBindings(req);
-                    Postman pm = (Postman) bindings.get("pm");
-                    String prescript = item.getPrescript();
-                    if (prescript != null && !prescript.isBlank()) {
+    }
+
+    private void executeBatchRequests(int rowCount) {
+        int finished = 0;
+        for (int i = 0; i < rowCount; i++) {
+            RunnerRowData row = tableModel.getRow(i);
+            if (row.selected) {
+                BatchResult result = executeSingleRequest(row);
+                int rowIdx = i;
+                SwingUtilities.invokeLater(() -> {
+                    tableModel.setResponse(rowIdx, result.resp, result.cost, result.status, result.assertion);
+                });
+            }
+            finished++;
+            int finalFinished = finished;
+            SwingUtilities.invokeLater(() -> {
+                progressBar.setValue(finalFinished);
+                progressBar.setString(finalFinished + " / " + rowCount);
+            });
+        }
+        SwingUtilities.invokeLater(() -> {
+            runBtn.setEnabled(true);
+            progressBar.setString("Done");
+        });
+    }
+
+    private static class BatchResult {
+        HttpResponse resp;
+        long cost;
+        String status;
+        String assertion;
+    }
+
+    private BatchResult executeSingleRequest(RunnerRowData row) {
+        BatchResult result = new BatchResult();
+        long start = System.currentTimeMillis();
+        String status = "";
+        String assertion = "not executed";
+        HttpRequestItem item = row.requestItem;
+        PreparedRequest req = row.preparedRequest;
+        boolean preOk = true;
+        Map<String, Object> bindings = HttpUtil.prepareBindings(req);
+        Postman pm = (Postman) bindings.get("pm");
+        String prescript = item.getPrescript();
+        if (prescript != null && !prescript.isBlank()) {
+            try {
+                JsScriptExecutor.executeScript(
+                        prescript,
+                        bindings,
+                        output -> {
+                            if (!output.isBlank()) {
+                                SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
+                            }
+                        }
+                );
+            } catch (Exception ex) {
+                log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
+                preOk = false;
+            }
+        }
+        HttpResponse resp = null;
+        if (!preOk) {
+            status = "前置脚本失败";
+        } else if (HttpUtil.isSSERequest(req)) {
+            status = "SSE请求，无法批量执行";
+        } else if (HttpUtil.isWebSocketRequest(req)) {
+            status = "WebSocket请求，无法批量执行";
+        } else {
+            try {
+                resp = HttpSingleRequestExecutor.execute(req);
+                status = String.valueOf(resp.code);
+                // 后置脚本
+                try {
+                    String postscript = item.getPostscript();
+                    if (postscript != null && !postscript.isBlank()) {
+                        HttpUtil.postBindings(bindings, resp);
                         try {
                             JsScriptExecutor.executeScript(
-                                    prescript,
+                                    postscript,
                                     bindings,
                                     output -> {
                                         if (!output.isBlank()) {
-                                            SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
+                                            SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
                                         }
                                     }
                             );
-                        } catch (Exception ex) {
-                            log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                            preOk = false;
-                        }
-                    }
-                    HttpResponse resp = null;
-                    if (!preOk) {
-                        status = "前置脚本失败";
-                    } else {
-                        if (HttpUtil.isSSERequest(req)) {
-                            status = "SSE请求，无法批量执行";
-                        } else if (HttpUtil.isWebSocketRequest(req)) {
-                            status = "WebSocket请求，无法批量执行";
-                        } else {
-                            try {
-                                resp = HttpSingleRequestExecutor.execute(req);
-                                status = String.valueOf(resp.code);
-                                // 后置脚本
-                                try {
-                                    String postscript = item.getPostscript();
-                                    if (postscript != null && !postscript.isBlank()) {
-                                        HttpUtil.postBindings(bindings, resp);
-                                        try {
-                                            JsScriptExecutor.executeScript(
-                                                    postscript,
-                                                    bindings,
-                                                    output -> {
-                                                        if (!output.isBlank()) {
-                                                            SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
-                                                        }
-                                                    }
-                                            );
-                                            assertion = "Pass";
-                                            // 保存断言结果
-                                            row.testResults = new java.util.ArrayList<>();
-                                            if (pm.testResults != null) {
-                                                row.testResults.addAll(pm.testResults);
-                                            }
-                                        } catch (Exception assertionEx) {
-                                            assertion = assertionEx.getMessage();
-                                            // 保存断言结果（即使有异常也保存）
-                                            row.testResults = new java.util.ArrayList<>();
-                                            if (pm.testResults != null) {
-                                                row.testResults.addAll(pm.testResults);
-                                            }
-                                        }
-                                    } else {
-                                        assertion = "Pass";
-                                    }
-                                } catch (Exception ex) {
-                                    log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                                    status = ex.getMessage();
-                                    assertion = ex.getMessage();
-                                }
-                            } catch (Exception ex) {
-                                log.error("请求执行失败", ex);
-                                status = ex.getMessage();
-                                assertion = ex.getMessage();
+                            assertion = "Pass";
+                            // 保存断言结果
+                            row.testResults = new java.util.ArrayList<>();
+                            if (pm.testResults != null) {
+                                row.testResults.addAll(pm.testResults);
+                            }
+                        } catch (Exception assertionEx) {
+                            assertion = assertionEx.getMessage();
+                            // 保存断言结果（即使有异常也保存）
+                            row.testResults = new java.util.ArrayList<>();
+                            if (pm.testResults != null) {
+                                row.testResults.addAll(pm.testResults);
                             }
                         }
+                    } else {
+                        assertion = "Pass";
                     }
-                    long cost = System.currentTimeMillis() - start;
-                    int rowIdx = i;
-                    String finalStatus = status;
-                    String finalAssertion = assertion;
-                    HttpResponse finalResp = resp;
-                    SwingUtilities.invokeLater(() -> {
-                        tableModel.setResponse(rowIdx, finalResp, cost, finalStatus, finalAssertion);
-                    });
+                } catch (Exception ex) {
+                    log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
+                    status = ex.getMessage();
+                    assertion = ex.getMessage();
                 }
-                finished++;
-                int finalFinished = finished;
-                SwingUtilities.invokeLater(() -> {
-                    progressBar.setValue(finalFinished);
-                    progressBar.setString(finalFinished + " / " + rowCount);
-                });
+            } catch (Exception ex) {
+                log.error("请求执行失败", ex);
+                status = ex.getMessage();
+                assertion = ex.getMessage();
             }
-            SwingUtilities.invokeLater(() -> {
-                runBtn.setEnabled(true);
-                progressBar.setString("Done");
-            });
-        }).start();
+        }
+        long cost = System.currentTimeMillis() - start;
+        result.resp = resp;
+        result.cost = cost;
+        result.status = status;
+        result.assertion = assertion;
+        return result;
+    }
+
+    // HTML构建方法提取到工具类
+    private String buildRequestHtml(PreparedRequest req) {
+        return RunnerHtmlUtil.buildRequestHtml(req);
+    }
+
+    private String buildResponseHtml(HttpResponse resp) {
+        return RunnerHtmlUtil.buildResponseHtml(resp);
+    }
+
+    private String buildTestsHtml(List<? extends Object> testResults) {
+        return RunnerHtmlUtil.buildTestsHtml(testResults);
     }
 
     // 显示详情对话框
@@ -419,105 +463,6 @@ public class RunnerPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private String buildRequestHtml(PreparedRequest req) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
-        sb.append("<b>URL:</b> ").append(escapeHtml(req.url)).append("<br/>");
-        sb.append("<b>方法:</b> ").append(escapeHtml(req.method)).append("<br/>");
-        if (req.headers != null && !req.headers.isEmpty()) {
-            sb.append("<b>请求头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-        if (req.body != null && !req.body.isEmpty()) {
-            sb.append("<b>请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                    .append(escapeHtml(req.body)).append("</pre>");
-        }
-        if (req.formData != null && !req.formData.isEmpty()) {
-            sb.append("<b>Form Data:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.formData.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-        if (req.formFiles != null && !req.formFiles.isEmpty()) {
-            sb.append("<b>Form Files:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
-            sb.append("<b>x-www-form-urlencoded:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.urlencoded.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-        sb.append("</body></html>");
-        return sb.toString();
-    }
-
-    private String buildResponseHtml(HttpResponse resp) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
-        if (resp == null) {
-            sb.append("<span style='color:gray;'>无响应信息</span>");
-        } else {
-            sb.append("<b>状态码:</b> ").append(resp.code).append("<br/>");
-            if (resp.headers != null && !resp.headers.isEmpty()) {
-                sb.append("<b>响应头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-                for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                    sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>");
-                    List<String> values = entry.getValue();
-                    if (values != null && !values.isEmpty()) {
-                        for (int i = 0; i < values.size(); i++) {
-                            sb.append(escapeHtml(values.get(i)));
-                            if (i < values.size() - 1) sb.append(", ");
-                        }
-                    }
-                    sb.append("</td></tr>");
-                }
-                sb.append("</table>");
-            }
-            sb.append("<b>响应体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                    .append(resp.body != null ? escapeHtml(resp.body) : "<无响应体>")
-                    .append("</pre>");
-        }
-        sb.append("</body></html>");
-        return sb.toString();
-    }
-
-    private String buildTestsHtml(List<? extends Object> testResults) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
-        sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
-        sb.append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
-        for (Object obj : testResults) {
-            try {
-                String name = (String) obj.getClass().getField("name").get(obj);
-                boolean passed = (boolean) obj.getClass().getField("passed").get(obj);
-                String message = (String) obj.getClass().getField("message").get(obj);
-                sb.append("<tr>");
-                sb.append("<td>").append(escapeHtml(name)).append("</td>");
-                sb.append("<td style='color:")
-                        .append(passed ? "#28a745'>&#10004; Pass" : "#dc3545'>&#10008; Fail")
-                        .append("</td>");
-                sb.append("<td>").append(message == null ? "" : escapeHtml(message)).append("</td>");
-                sb.append("</tr>");
-            } catch (Exception ignore) {
-            }
-        }
-        sb.append("</table></body></html>");
-        return sb.toString();
-    }
-
     private String escapeHtml(String s) {
         if (s == null) return "";
         return s.replace("&", "&amp;")
@@ -527,3 +472,4 @@ public class RunnerPanel extends JPanel {
                 .replace("'", "&#39;");
     }
 }
+

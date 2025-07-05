@@ -98,7 +98,7 @@ public class SidebarTabPanel extends BasePanel {
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setBorder(BorderFactory.createEmptyBorder());
         clearBtn.setBackground(Colors.PANEL_BACKGROUND);
-        clearBtn.setToolTipText("清空日志");
+        clearBtn.setToolTipText("Clear Log");
         clearBtn.addActionListener(e -> {
             try {
                 consoleDoc.remove(0, consoleDoc.getLength());
@@ -109,16 +109,16 @@ public class SidebarTabPanel extends BasePanel {
 
         // 搜索功能
         JTextField searchField = new JTextField(10);
-        JButton prevBtn = new JButton("上一个");
-        JButton nextBtn = new JButton("下一个");
+        JButton prevBtn = new JButton("Prev");
+        JButton nextBtn = new JButton("Next");
         prevBtn.setFocusable(false);
         nextBtn.setFocusable(false);
-        searchField.setToolTipText("搜索日志内容");
+        searchField.setToolTipText("Search log content");
         // 支持回车键触发“下一个”搜索
         searchField.addActionListener(e -> nextBtn.doClick());
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         searchPanel.setOpaque(false);
-        searchPanel.add(new JLabel("搜索:"));
+        searchPanel.add(new JLabel("Search:"));
         searchPanel.add(searchField);
         searchPanel.add(prevBtn);
         searchPanel.add(nextBtn);

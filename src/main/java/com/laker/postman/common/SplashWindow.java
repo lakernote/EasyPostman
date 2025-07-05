@@ -43,7 +43,7 @@ public class SplashWindow extends JWindow {
         // 状态
         JPanel bottomPanel = new JPanel(new BorderLayout(0, 5));
         bottomPanel.setOpaque(false);
-        statusLabel = new JLabel("正在启动 EasyPostman...", SwingConstants.CENTER);
+        statusLabel = new JLabel("Starting EasyPostman...", SwingConstants.CENTER);
         statusLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 15));
         statusLabel.setForeground(new Color(80, 120, 200));
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
@@ -87,13 +87,13 @@ public class SplashWindow extends JWindow {
             @Override
             protected MainFrame doInBackground() {
                 long start = System.currentTimeMillis();
-                setStatus("正在加载主界面...");
+                setStatus("Loading main window...");
                 setProgress(30);
                 MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-                setStatus("正在初始化组件...");
+                setStatus("Initializing components...");
                 setProgress(60);
                 mainFrame.initComponents();
-                setStatus("准备就绪");
+                setStatus("Ready");
                 setProgress(100);
                 long cost = System.currentTimeMillis() - start;
                 log.info("main frame initComponents cost: {} ms", cost);
@@ -109,7 +109,7 @@ public class SplashWindow extends JWindow {
             @Override
             protected void done() {
                 try {
-                    setStatus("加载完成，正在显示主界面...");
+                    setStatus("Done, showing main window...");
                     MainFrame mainFrame = get();
                     // 渐隐动画关闭 SplashWindow
                     Timer timer = new Timer(15, null);
@@ -129,7 +129,7 @@ public class SplashWindow extends JWindow {
                     });
                     timer.start();
                 } catch (Exception e) {
-                    JOptionPane.showMessageDialog(null, "主窗口加载失败，请重启应用。", "错误", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Failed to load main window, please restart the application.", "Error", JOptionPane.ERROR_MESSAGE);
                     System.exit(1);
                 }
             }

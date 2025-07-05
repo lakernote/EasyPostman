@@ -53,20 +53,20 @@ public class TopMenuBarPanel extends BasePanel {
         menuBar = new JMenuBar();
         menuBar.setBorder(BorderFactory.createEmptyBorder());
         // ---------文件菜单
-        JMenu fileMenu = new JMenu("文件");
-        JMenuItem exitMenuItem = new JMenuItem("退出");
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem exitMenuItem = new JMenuItem("Exit");
         exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         exitMenuItem.setMnemonic('X');
         exitMenuItem.addActionListener(e -> ExitDialog.show());
-        JMenuItem logMenuItem = new JMenuItem("日志");
+        JMenuItem logMenuItem = new JMenuItem("Log");
         logMenuItem.addActionListener(e -> {
             try {
                 Desktop.getDesktop().open(new File(SystemUtil.LOG_DIR));
             } catch (IOException ex) {
                 log.error("Failed to open log directory", ex);
                 JOptionPane.showMessageDialog(null,
-                        "无法打开日志目录，请检查日志。",
-                        "错误", JOptionPane.ERROR_MESSAGE);
+                        "Failed to open log directory. Please check the log.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
         fileMenu.add(logMenuItem);
@@ -74,11 +74,11 @@ public class TopMenuBarPanel extends BasePanel {
         menuBar.add(fileMenu);
 
         // ---------主题菜单
-        JMenu themeMenu = new JMenu("主题");
+        JMenu themeMenu = new JMenu("Theme");
         ButtonGroup themeGroup = new ButtonGroup();
-        JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem("浅色(Flat Light)");
-        JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem("IntelliJ 风格");
-        JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem("Mac Light 风格");
+        JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem("Light (Flat Light)");
+        JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem("IntelliJ Style");
+        JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem("Mac Light Style");
         themeGroup.add(lightTheme);
         themeGroup.add(intellijTheme);
         themeGroup.add(macLightTheme);
@@ -99,8 +99,8 @@ public class TopMenuBarPanel extends BasePanel {
         menuBar.add(themeMenu);
 
         // ---------设置菜单
-        JMenu settingMenu = new JMenu("设置");
-        JMenuItem settingMenuItem = new JMenuItem("全局设置");
+        JMenu settingMenu = new JMenu("Settings");
+        JMenuItem settingMenuItem = new JMenuItem("Global Settings");
         settingMenuItem.addActionListener(e -> {
             Window window = SwingUtilities.getWindowAncestor(this);
             SettingDialog dialog = new SettingDialog(window);
@@ -110,20 +110,20 @@ public class TopMenuBarPanel extends BasePanel {
         menuBar.add(settingMenu);
 
         // ---------帮助菜单
-        JMenu helpMenu = new JMenu("帮助");
+        JMenu helpMenu = new JMenu("Help");
         // 新增“检查更新”菜单项
-        JMenuItem updateMenuItem = new JMenuItem("检查更新");
+        JMenuItem updateMenuItem = new JMenuItem("Check for Updates");
         updateMenuItem.addActionListener(e -> checkUpdate());
         helpMenu.add(updateMenuItem);
         // 新增“反馈建议”菜单项
-        JMenuItem feedbackMenuItem = new JMenuItem("反馈建议");
-        feedbackMenuItem.addActionListener(e -> JOptionPane.showMessageDialog(null, "请通过 Gitee 或 GitHub 提交 issue。", "反馈建议", JOptionPane.INFORMATION_MESSAGE));
+        JMenuItem feedbackMenuItem = new JMenuItem("Feedback");
+        feedbackMenuItem.addActionListener(e -> JOptionPane.showMessageDialog(null, "Please submit issues via Gitee or GitHub.", "Feedback", JOptionPane.INFORMATION_MESSAGE));
         helpMenu.add(feedbackMenuItem);
         menuBar.add(helpMenu);
 
         // ---------关于菜单
-        JMenu aboutMenu = new JMenu("关于");
-        JMenuItem aboutMenuItem = new JMenuItem("关于 EasyPostman");
+        JMenu aboutMenu = new JMenu("About");
+        JMenuItem aboutMenuItem = new JMenuItem("About EasyPostman");
         aboutMenuItem.addActionListener(e -> aboutActionPerformed());
         aboutMenu.add(aboutMenuItem);
         menuBar.add(aboutMenu);
@@ -158,7 +158,7 @@ public class TopMenuBarPanel extends BasePanel {
                 + "<div style='font-size:10px; color:#444; margin-bottom:8px;'>微信：lakernote</div>"
                 + "<hr style='border:none; border-top:1px solid #eee; margin:10px 0;'>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
-                + "<a href='https://laker.blog.csdn.net' style='color:#1a0dab; text-decoration:none;'>博客：https://laker.blog.csdn.net</a>"
+                + "<a href='https://laker.blog.csdn.net' style='color:#1a0dab; text-decoration:none;'>Blog: https://laker.blog.csdn.net</a>"
                 + "</div>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
                 + "<a href='https://github.com/lakernote' style='color:#1a0dab; text-decoration:none;'>GitHub: https://github.com/lakernote</a>"
@@ -178,13 +178,13 @@ public class TopMenuBarPanel extends BasePanel {
                 try {
                     Desktop.getDesktop().browse(e.getURL().toURI());
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "无法打开链接：" + e.getURL(), "错误", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Failed to open link: " + e.getURL(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         // 直接用JEditorPane，不用滚动条，且自适应高度
         editorPane.setPreferredSize(new Dimension(300, 340));
-        JOptionPane.showMessageDialog(null, editorPane, "关于 EasyPostman", JOptionPane.PLAIN_MESSAGE);
+        JOptionPane.showMessageDialog(null, editorPane, "About EasyPostman", JOptionPane.PLAIN_MESSAGE);
     }
 
     /**
@@ -215,10 +215,10 @@ public class TopMenuBarPanel extends BasePanel {
                             latestVersion = jsonObj.getStr("tag_name");
                         }
                     } else {
-                        errorMsg = "网络错误，状态码：" + code;
+                        errorMsg = "Network error, status code: " + code;
                     }
                 } catch (Exception ex) {
-                    errorMsg = "检查更新失败：" + ex.getMessage();
+                    errorMsg = "Check for updates failed: " + ex.getMessage();
                 }
                 return null;
             }
@@ -227,18 +227,18 @@ public class TopMenuBarPanel extends BasePanel {
             protected void done() {
                 String currentVersion = getCurrentVersion();
                 if (errorMsg != null) {
-                    JOptionPane.showMessageDialog(null, errorMsg, "检查更新", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, errorMsg, "Check for Updates", JOptionPane.ERROR_MESSAGE);
                 } else if (latestVersion == null) {
-                    JOptionPane.showMessageDialog(null, "未获取到最新版本信息。", "检查更新", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Failed to get the latest version info.", "Check for Updates", JOptionPane.WARNING_MESSAGE);
                 } else if (compareVersion(latestVersion, currentVersion) <= 0) {
-                    JOptionPane.showMessageDialog(null, "已是最新版本（" + currentVersion + "）", "检查更新", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Already the latest version (" + currentVersion + ")", "Check for Updates", JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    int r = JOptionPane.showConfirmDialog(null, "发现新版本：" + latestVersion + "\n是否前往下载？", "检查更新", JOptionPane.YES_NO_OPTION);
+                    int r = JOptionPane.showConfirmDialog(null, "New version found: " + latestVersion + "\nGo to download?", "Check for Updates", JOptionPane.YES_NO_OPTION);
                     if (r == JOptionPane.YES_OPTION) {
                         try {
                             Desktop.getDesktop().browse(new URI(releaseUrl));
                         } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(null, "无法打开浏览器：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(null, "Failed to open browser: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 }

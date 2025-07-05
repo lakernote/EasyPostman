@@ -48,7 +48,7 @@ import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
  * 支持请求的增删改查、分组管理、拖拽排序等功能
  */
 @Slf4j
-public class RequestCollectionsSubPanel extends BasePanel {
+public class RequestCollectionsLeftPanel extends BasePanel {
     // 请求集合的根节点
     private DefaultMutableTreeNode rootTreeNode;
     // 请求树组件

@@ -8,7 +8,7 @@ import java.util.List;
 
 public class RunnerTableModel extends AbstractTableModel {
 
-    private final String[] columns = {"选择", "请求名称", "URL", "方法", "耗时(ms)", "状态", "断言", "详情"};
+    private final String[] columns = {"Select", "Name", "URL", "Method", "Time(ms)", "Status", "Assertion", "Detail"};
     private final List<RunnerRowData> rows = new ArrayList<>();
 
     @Override
@@ -49,7 +49,7 @@ public class RunnerTableModel extends AbstractTableModel {
             case 4 -> row.cost;
             case 5 -> row.status;
             case 6 -> row.assertion;
-            case 7 -> "查看";
+            case 7 -> "View";
             default -> null;
         };
     }

@@ -6,7 +6,7 @@ import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tab.PlusTabComponent;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
+import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
@@ -145,7 +145,7 @@ public class RequestEditPanel extends BasePanel {
         boolean isNewRequest = name == null;
 
         // 查找请求集合面板
-        RequestCollectionsSubPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
+        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
 
         if (isNewRequest) {
             // 新请求：弹出对话框让用户输入名称和选择文件夹
@@ -324,7 +324,7 @@ public class RequestEditPanel extends BasePanel {
     /**
      * 保存新请求（分组选择优化为树结构）
      */
-    private void saveNewRequest(RequestCollectionsSubPanel collectionPanel, HttpRequestItem item) {
+    private void saveNewRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
         Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
         if (result == null) return;
@@ -351,7 +351,7 @@ public class RequestEditPanel extends BasePanel {
     /**
      * 更新已存在的请求
      */
-    private void updateExistingRequest(RequestCollectionsSubPanel collectionPanel, HttpRequestItem item) {
+    private void updateExistingRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
         if (!collectionPanel.updateExistingRequest(item)) {
             JOptionPane.showMessageDialog(this, "更新请求失败", "错误", JOptionPane.ERROR_MESSAGE);
         }
@@ -411,7 +411,7 @@ public class RequestEditPanel extends BasePanel {
      * @param item 要保存的请求
      */
     public static boolean saveRequestWithGroupDialog(HttpRequestItem item) {
-        RequestCollectionsSubPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
+        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
         Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
         if (result == null) return false;

@@ -8,7 +8,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.Postman;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.SidebarTabPanel;
-import com.laker.postman.panel.collections.RequestCollectionsSubPanel;
+import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -19,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Map;
 
@@ -186,9 +188,9 @@ public class RunnerPanel extends JPanel {
 
         // 鼠标点击详情按钮事件
         // 监听表格点击
-        table.addMouseListener(new java.awt.event.MouseAdapter() {
+        table.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
                 int col = table.columnAtPoint(e.getPoint());
                 if (col == 7 && row >= 0) {
@@ -201,28 +203,28 @@ public class RunnerPanel extends JPanel {
 
     // 弹出选择请求/分组对话框
     private void showLoadRequestsDialog() {
-        RequestCollectionsSubPanel requestCollectionsSubPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "选择请求或分组", true);
+        RequestCollectionsLeftPanel requestCollectionsLeftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Select Request or Group", true);
         dialog.setSize(400, 500);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
 
         // 用JTree展示集合树，支持多选
-        JTree tree = requestCollectionsSubPanel.createRequestSelectionTree();
+        JTree tree = requestCollectionsLeftPanel.createRequestSelectionTree();
         JScrollPane treeScroll = new JScrollPane(tree);
         dialog.add(treeScroll, BorderLayout.CENTER);
 
-        JButton okBtn = new JButton("确定");
+        JButton okBtn = new JButton("OK");
         okBtn.addActionListener(e -> {
-            List<HttpRequestItem> selected = requestCollectionsSubPanel.getSelectedRequestsFromTree(tree);
+            List<HttpRequestItem> selected = requestCollectionsLeftPanel.getSelectedRequestsFromTree(tree);
             if (selected.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "请选择至少一个请求", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Please select at least one request", "Tip", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             loadRequests(selected);
             dialog.dispose();
         });
-        JButton cancelBtn = new JButton("取消");
+        JButton cancelBtn = new JButton("Cancel");
         cancelBtn.addActionListener(e -> dialog.dispose());
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btns.add(okBtn);

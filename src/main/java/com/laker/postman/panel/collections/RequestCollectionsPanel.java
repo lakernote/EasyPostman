@@ -19,11 +19,11 @@ public class RequestCollectionsPanel extends BasePanel {
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
         // 1.创建左侧的请求集合面板
-        RequestCollectionsSubPanel requestCollectionsSubPanel = SingletonFactory.getInstance(RequestCollectionsSubPanel.class);
+        RequestCollectionsLeftPanel requestCollectionsLeftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         // 2. 创建右侧的请求编辑面板
         RequestEditPanel rightRequestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class); // 创建请求编辑面板实例
         // 创建水平分割面板，将左侧的集合面板和右侧的请求编辑面板放入其中
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsSubPanel, rightRequestEditPanel);
+        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditPanel);
         mainSplit.setContinuousLayout(true); // 分割条拖动时实时更新布局
         mainSplit.setDividerLocation(300); // 设置初始分割位置
         mainSplit.setDividerSize(1);

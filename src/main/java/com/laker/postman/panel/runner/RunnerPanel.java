@@ -319,31 +319,14 @@ public class RunnerPanel extends BasePanel {
     private BatchResult executeSingleRequest(RunnerRowData row) {
         BatchResult result = new BatchResult();
         long start = System.currentTimeMillis();
-        String status = "";
-        String assertion = "not executed";
         HttpRequestItem item = row.requestItem;
         PreparedRequest req = row.preparedRequest;
-        boolean preOk = true;
         Map<String, Object> bindings = HttpUtil.prepareBindings(req);
         Postman pm = (Postman) bindings.get("pm");
-        String prescript = item.getPrescript();
-        if (prescript != null && !prescript.isBlank()) {
-            try {
-                JsScriptExecutor.executeScript(
-                        prescript,
-                        bindings,
-                        output -> {
-                            if (!output.isBlank()) {
-                                SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
-                            }
-                        }
-                );
-            } catch (Exception ex) {
-                log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                preOk = false;
-            }
-        }
+        boolean preOk = runPreScript(item, bindings);
         HttpResponse resp = null;
+        String status;
+        String assertion = "not executed";
         if (!preOk) {
             status = "前置脚本失败";
         } else if (HttpUtil.isSSERequest(req)) {
@@ -354,43 +337,7 @@ public class RunnerPanel extends BasePanel {
             try {
                 resp = HttpSingleRequestExecutor.execute(req);
                 status = String.valueOf(resp.code);
-                // 后置脚本
-                try {
-                    String postscript = item.getPostscript();
-                    if (postscript != null && !postscript.isBlank()) {
-                        HttpUtil.postBindings(bindings, resp);
-                        try {
-                            JsScriptExecutor.executeScript(
-                                    postscript,
-                                    bindings,
-                                    output -> {
-                                        if (!output.isBlank()) {
-                                            SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
-                                        }
-                                    }
-                            );
-                            assertion = "Pass";
-                            // 保存断言结果
-                            row.testResults = new java.util.ArrayList<>();
-                            if (pm.testResults != null) {
-                                row.testResults.addAll(pm.testResults);
-                            }
-                        } catch (Exception assertionEx) {
-                            assertion = assertionEx.getMessage();
-                            // 保存断言结果（即使有异常也保存）
-                            row.testResults = new java.util.ArrayList<>();
-                            if (pm.testResults != null) {
-                                row.testResults.addAll(pm.testResults);
-                            }
-                        }
-                    } else {
-                        assertion = "Pass";
-                    }
-                } catch (Exception ex) {
-                    log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                    status = ex.getMessage();
-                    assertion = ex.getMessage();
-                }
+                assertion = runPostScriptAndAssert(item, bindings, resp, row, pm);
             } catch (Exception ex) {
                 log.error("请求执行失败", ex);
                 status = ex.getMessage();
@@ -405,7 +352,58 @@ public class RunnerPanel extends BasePanel {
         return result;
     }
 
-    // HTML构建方法提取到工具类
+    private boolean runPreScript(HttpRequestItem item, Map<String, Object> bindings) {
+        String prescript = item.getPrescript();
+        if (prescript != null && !prescript.isBlank()) {
+            try {
+                JsScriptExecutor.executeScript(
+                        prescript,
+                        bindings,
+                        output -> {
+                            if (!output.isBlank()) {
+                                SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
+                            }
+                        }
+                );
+                return true;
+            } catch (Exception ex) {
+                log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String runPostScriptAndAssert(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, RunnerRowData row, Postman pm) {
+        String assertion = "Pass";
+        String postscript = item.getPostscript();
+        if (postscript != null && !postscript.isBlank()) {
+            HttpUtil.postBindings(bindings, resp);
+            try {
+                JsScriptExecutor.executeScript(
+                        postscript,
+                        bindings,
+                        output -> {
+                            if (!output.isBlank()) {
+                                SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
+                            }
+                        }
+                );
+                row.testResults = new java.util.ArrayList<>();
+                if (pm.testResults != null) {
+                    row.testResults.addAll(pm.testResults);
+                }
+            } catch (Exception assertionEx) {
+                assertion = assertionEx.getMessage();
+                row.testResults = new java.util.ArrayList<>();
+                if (pm.testResults != null) {
+                    row.testResults.addAll(pm.testResults);
+                }
+            }
+        }
+        return assertion;
+    }
+
     private String buildRequestHtml(PreparedRequest req) {
         return RunnerHtmlUtil.buildRequestHtml(req);
     }
@@ -462,14 +460,4 @@ public class RunnerPanel extends BasePanel {
 
         dialog.setVisible(true);
     }
-
-    private String escapeHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
 }
-

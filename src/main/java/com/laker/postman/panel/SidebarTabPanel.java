@@ -52,7 +52,7 @@ public class SidebarTabPanel extends BasePanel {
         tabInfos = new ArrayList<>();
         tabInfos.add(new TabInfo("Collections", new FlatSVGIcon("icons/collections.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
-        tabInfos.add(new TabInfo("Environments", new FlatSVGIcon("icons/env.svg", 20, 20),
+        tabInfos.add(new TabInfo("Environments", new FlatSVGIcon("icons/environments.svg", 20, 20),
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
         tabInfos.add(new TabInfo("Functional", new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RunnerPanel.class)));
@@ -250,7 +250,7 @@ public class SidebarTabPanel extends BasePanel {
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 图标居中对齐
         iconLabel.setPreferredSize(new Dimension(32, 32));
         JLabel titleLabel = new JLabel(title); // 使用传入的标题
-        titleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+        titleLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 文本居中对齐
         panel.add(iconLabel);
         panel.add(Box.createVerticalStrut(2)); // 图标和文本之间的间距

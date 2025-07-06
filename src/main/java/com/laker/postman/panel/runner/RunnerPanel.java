@@ -3,12 +3,10 @@ package com.laker.postman.panel.runner;
 import cn.hutool.core.util.StrUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.panel.BasePanel;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.Postman;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.history.HistoryHtmlBuilder;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -312,6 +310,7 @@ public class RunnerPanel extends BasePanel {
             status = "WebSocket请求，无法批量执行";
         } else {
             try {
+                req.logEvent = true; // 确保日志事件开启
                 resp = HttpSingleRequestExecutor.execute(req);
                 status = String.valueOf(resp.code);
                 assertion = runPostScriptAndAssert(item, bindings, resp, row, pm);
@@ -427,6 +426,22 @@ public class RunnerPanel extends BasePanel {
             testsPane.setCaretPosition(0);
             tabbedPane.addTab("Tests", new JScrollPane(testsPane));
         }
+        // Timing & Event Info Tab
+        if (resp != null && resp.httpEventInfo != null) {
+            JEditorPane timingPane = new JEditorPane();
+            timingPane.setContentType("text/html");
+            timingPane.setEditable(false);
+            timingPane.setText(buildTimingHtml(req, resp));
+            timingPane.setCaretPosition(0);
+            tabbedPane.addTab("Timing", new JScrollPane(timingPane));
+
+            JEditorPane eventInfoPane = new JEditorPane();
+            eventInfoPane.setContentType("text/html");
+            eventInfoPane.setEditable(false);
+            eventInfoPane.setText(buildEventInfoHtml(req, resp));
+            eventInfoPane.setCaretPosition(0);
+            tabbedPane.addTab("Event Info", new JScrollPane(eventInfoPane));
+        }
         dialog.add(tabbedPane, BorderLayout.CENTER);
 
         JButton closeButton = new JButton("Close");
@@ -436,5 +451,18 @@ public class RunnerPanel extends BasePanel {
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         dialog.setVisible(true);
+    }
+
+    // 复用HistoryHtmlBuilder的Timing和Event Info渲染逻辑
+    private String buildTimingHtml(PreparedRequest request, HttpResponse resp) {
+        // 构造一个临时RequestHistoryItem以复用HistoryHtmlBuilder
+        RequestHistoryItem item = new com.laker.postman.model.RequestHistoryItem(request, resp);
+        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_Timing(item);
+    }
+
+    private String buildEventInfoHtml(PreparedRequest request, HttpResponse resp) {
+        RequestHistoryItem item = new com.laker.postman.model.RequestHistoryItem(request, resp);
+        item.response = resp;
+        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_EventInfo(item);
     }
 }

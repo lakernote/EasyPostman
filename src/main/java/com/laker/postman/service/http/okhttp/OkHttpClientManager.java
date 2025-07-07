@@ -2,8 +2,11 @@ package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.setting.SettingManager;
 import okhttp3.ConnectionPool;
+import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
 
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +21,10 @@ public class OkHttpClientManager {
     // 连接池参数
     private static final int MAX_IDLE_CONNECTIONS = 6;
     private static final long KEEP_ALIVE_DURATION = 90L;
+
+    // 全局 CookieManager，支持标准 CookiePolicy
+    private static final CookieManager GLOBAL_COOKIE_MANAGER = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+    private static final JavaNetCookieJar GLOBAL_COOKIE_JAR = new JavaNetCookieJar(GLOBAL_COOKIE_MANAGER);
 
     /**
      * 获取或创建指定 baseUri 的 OkHttpClient 实例。
@@ -50,10 +57,14 @@ public class OkHttpClientManager {
                     .cache(null)
                     .pingInterval(30, TimeUnit.SECONDS);
 
-            //  Cookie 管理（如需全局 CookieJar）
-            // builder.cookieJar(new CustomCookieJar());
+            // 使用全局 JavaNetCookieJar，支持完整 Cookie 规范
+            builder.cookieJar(GLOBAL_COOKIE_JAR);
 
             return builder.build();
         });
+    }
+
+    public static CookieManager getGlobalCookieManager() {
+        return GLOBAL_COOKIE_MANAGER;
     }
 }

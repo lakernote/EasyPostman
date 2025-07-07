@@ -7,16 +7,11 @@ import okhttp3.WebSocketListener;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 
-import java.util.List;
-
 @Slf4j
 public class HttpSingleRequestExecutor {
 
     public static HttpResponse execute(PreparedRequest req) throws Exception {
-        HttpResponse resp = sendRequestByType(req);
-        List<String> setCookieHeaders = HttpRequestUtil.extractSetCookieHeaders(resp);
-        CookieService.handleSetCookie(req.url, setCookieHeaders);
-        return resp;
+        return sendRequestByType(req);
     }
 
     public static EventSource executeSSE(PreparedRequest req, EventSourceListener listener) {

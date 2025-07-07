@@ -117,6 +117,8 @@ public class HttpService {
         } finally {
             fillHttpEventInfo(httpResponse, startTime);
         }
+        // 响应后主动通知Cookie变化，刷新CookieTablePanel
+        CookieService.notifyCookieChanged();
         return OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
     }
 

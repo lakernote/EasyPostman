@@ -1,62 +1,84 @@
 package com.laker.postman.panel.collections.edit;
 
-import com.laker.postman.common.table.map.EasyNameValueTablePanel;
-import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.CookieService;
-import lombok.Setter;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.List;
 
 /**
- * CookieTablePanel: 展示和编辑当前请求host下的cookie
+ * CookieTablePanel: 高仿Postman，展示和管理所有Cookie（含属性/删除/清空）
  */
 public class CookieTablePanel extends JPanel {
-    private final EasyNameValueTablePanel cookieTablePanel;
-    @Setter
-    private JTextField urlField = null;
-
+    private final JTable table;
+    private final DefaultTableModel model;
+    private final JButton btnDelete;
+    private final JButton btnClear;
     private final Runnable cookieListener = this::loadCookies;
-
-    public CookieTablePanel(JTextField urlField) {
-        this();
-        setUrlField(urlField);
-        CookieService.registerCookieChangeListener(cookieListener);
-    }
 
     public CookieTablePanel() {
         setLayout(new BorderLayout());
-        cookieTablePanel = new EasyNameValueTablePanel();
-        cookieTablePanel.setEditable(false);
-        add(cookieTablePanel, BorderLayout.CENTER);
+        String[] columns = {"Name", "Value", "Domain", "Path", "Expires", "Secure", "HttpOnly"};
+        model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        table = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(table);
+        add(scrollPane, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnDelete = new JButton("删除选中");
+        btnClear = new JButton("清空所有");
+        btnPanel.add(btnDelete);
+        btnPanel.add(btnClear);
+        add(btnPanel, BorderLayout.SOUTH);
+
+        btnDelete.addActionListener(e -> deleteSelectedCookie());
+        btnClear.addActionListener(e -> clearAllCookies());
+
         CookieService.registerCookieChangeListener(cookieListener);
+        loadCookies();
+    }
+
+    private void loadCookies() {
+        model.setRowCount(0);
+        List<CookieService.CookieInfo> cookies = CookieService.getAllCookieInfos();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        for (CookieService.CookieInfo c : cookies) {
+            String expires = c.expires > 0 ? sdf.format(c.expires) : "Session";
+            model.addRow(new Object[]{
+                    c.name, c.value, c.domain, c.path, expires, c.secure, c.httpOnly
+            });
+        }
+    }
+
+    private void deleteSelectedCookie() {
+        int row = table.getSelectedRow();
+        if (row >= 0) {
+            String name = (String) model.getValueAt(row, 0);
+            String domain = (String) model.getValueAt(row, 2);
+            String path = (String) model.getValueAt(row, 3);
+            CookieService.removeCookie(name, domain, path);
+            loadCookies();
+        }
+    }
+
+    private void clearAllCookies() {
+        int confirm = JOptionPane.showConfirmDialog(this, "确定要清空所有Cookie吗？", "确认", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            CookieService.clearAllCookies();
+            loadCookies();
+        }
     }
 
     @Override
     public void removeNotify() {
         super.removeNotify();
         CookieService.unregisterCookieChangeListener(cookieListener);
-    }
-
-    private void loadCookies() {
-        String url = urlField != null ? urlField.getText() : null;
-        String host = null;
-        try {
-            if (url != null && !url.isEmpty()) {
-                url = EnvironmentService.replaceVariables(url);
-                host = new URL(url).getHost();
-            }
-        } catch (Exception ignore) {
-        }
-        if (host == null) host = "";
-        cookieTablePanel.clear();
-        Map<String, Map<String, String>> all = CookieService.getAllCookies();
-        Map<String, String> cookies = all.getOrDefault(host, new HashMap<>());
-        for (Map.Entry<String, String> entry : cookies.entrySet()) {
-            cookieTablePanel.addRow(entry.getKey(), entry.getValue());
-        }
     }
 }

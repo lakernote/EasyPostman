@@ -58,7 +58,7 @@ public class RequestEditSubPanel extends JPanel {
     private final ResponseBodyPanel responseBodyPanel;
     @Getter
     private final NetworkLogPanel networkLogPanel; // 网络日志面板
-    private JTabbedPane reqTabs; // 请求选项卡面板
+    private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
     private SwingWorker<Void, Void> currentWorker;
@@ -153,7 +153,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab("Scripts", scriptPanel);
 
         // 2.5 Cookie 面板
-        CookieTablePanel cookiePanel = new CookieTablePanel(urlField);
+        CookieTablePanel cookiePanel = new CookieTablePanel();
         reqTabs.addTab("Cookies", cookiePanel);
 
         // 3. 响应面板

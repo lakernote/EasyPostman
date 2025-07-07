@@ -21,7 +21,6 @@ public class PreparedRequestBuilder {
         req.url = HttpRequestUtil.encodeUrlParams(EnvironmentService.replaceVariables(urlString));
         HttpRequestUtil.addContentTypeHeader(headers, item);
         HttpRequestUtil.addAuthorization(headers, item);
-        HttpRequestUtil.addCookieHeaderIfNeeded(req.url, headers);
         req.headers = replaceVariables(headers);
         req.body = EnvironmentService.replaceVariables(item.getBody());
         req.urlencoded = replaceVariables(item.getUrlencoded());

@@ -1,11 +1,12 @@
 package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.EnvironmentService;
 
-import java.net.URL;
-import java.util.*;
+import java.util.Base64;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class HttpRequestUtil {
     public static String buildUrlWithParams(String url, Map<String, String> params) {
@@ -98,32 +99,6 @@ public class HttpRequestUtil {
             }
         }
     }
-
-    public static void addCookieHeaderIfNeeded(String url, Map<String, String> headers) {
-        try {
-            URL urlObj = new URL(url);
-            String host = urlObj.getHost();
-            String cookieHeader = com.laker.postman.service.http.CookieService.getCookieHeader(host);
-            if (cookieHeader != null && !cookieHeader.isEmpty()) {
-                headers.put("Cookie", cookieHeader);
-            }
-        } catch (Exception exception) {
-            // log error if needed
-        }
-    }
-
-    public static List<String> extractSetCookieHeaders(HttpResponse resp) {
-        List<String> setCookieHeaders = new ArrayList<>();
-        if (resp.headers != null) {
-            for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                if (entry.getKey() != null && "Set-Cookie".equalsIgnoreCase(entry.getKey())) {
-                    setCookieHeaders.addAll(entry.getValue());
-                }
-            }
-        }
-        return setCookieHeaders;
-    }
-
 
     /**
      * 提取 baseUri（协议+host+port），端口为-1时补全默认端口，确保与Chrome一致

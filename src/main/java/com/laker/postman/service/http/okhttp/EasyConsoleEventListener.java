@@ -237,7 +237,12 @@ public class EasyConsoleEventListener extends EventListener {
     @Override
     public void requestHeadersStart(Call call) {
         info.setRequestHeadersStart(System.currentTimeMillis());
-        Request request = call.request();
+        log("requestHeadersStart", "");
+    }
+
+    @Override
+    public void requestHeadersEnd(Call call, Request request) {
+        info.setRequestHeadersEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         Headers headers = request.headers();
@@ -250,13 +255,7 @@ public class EasyConsoleEventListener extends EventListener {
             }
             sb.append(name).append(": ").append(value).append("\n");
         }
-        log("requestHeadersStart", sb.toString());
-    }
-
-    @Override
-    public void requestHeadersEnd(Call call, Request request) {
-        info.setRequestHeadersEnd(System.currentTimeMillis());
-        log("requestHeadersEnd", "");
+        log("requestHeadersEnd", sb.toString());
     }
 
     @Override

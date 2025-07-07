@@ -81,6 +81,10 @@ public class JMeterPanel extends BasePanel {
     private static final int JMETER_MAX_IDLE_CONNECTIONS = 200;
     private static final long JMETER_KEEP_ALIVE_DURATION = 60L;
 
+    // 搜索框相关
+    private JTextField searchField;
+    private JButton searchBtn;
+
 
     @Override
     protected void initUI() {
@@ -117,6 +121,16 @@ public class JMeterPanel extends BasePanel {
         propertyCardLayout.show(propertyPanel, "empty");
 
         // 3. 结果树面板
+        // ========== 结果树搜索框 ==========
+        JPanel resultTreePanel = new JPanel(new BorderLayout());
+        JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
+        searchField = new JTextField();
+        searchField.setToolTipText("搜索结果树...");
+        searchBtn = new JButton("搜索");
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.add(searchBtn, BorderLayout.EAST);
+        resultTreePanel.add(searchPanel, BorderLayout.NORTH);
+        // 结果树
         resultRootNode = new DefaultMutableTreeNode("结果树");
         resultTreeModel = new DefaultTreeModel(resultRootNode);
         resultTree = new JTree(resultTreeModel);
@@ -125,6 +139,7 @@ public class JMeterPanel extends BasePanel {
         resultTree.setCellRenderer(new ResultTreeCellRenderer());
         JScrollPane resultTreeScroll = new JScrollPane(resultTree);
         resultTreeScroll.setPreferredSize(new Dimension(320, 400));
+        resultTreePanel.add(resultTreeScroll, BorderLayout.CENTER);
         // 详情tab
         resultDetailTabbedPane = new JTabbedPane();
         resultDetailTabbedPane.addTab("Request", new JScrollPane(new JEditorPane()));
@@ -132,7 +147,7 @@ public class JMeterPanel extends BasePanel {
         resultDetailTabbedPane.addTab("Tests", new JScrollPane(new JEditorPane()));
         resultDetailTabbedPane.addTab("Timing", new JScrollPane(new JEditorPane()));
         resultDetailTabbedPane.addTab("Event Info", new JScrollPane(new JEditorPane()));
-        JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultTreeScroll, resultDetailTabbedPane);
+        JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultTreePanel, resultDetailTabbedPane);
         resultSplit.setDividerLocation(260);
         resultTabbedPane = new JTabbedPane();
         resultTabbedPane.addTab("结果树", resultSplit);
@@ -526,7 +541,7 @@ public class JMeterPanel extends BasePanel {
                                     }
                             );
                         } catch (Exception ex) {
-                            log.error("前置脚��执行失败: {}", ex.getMessage(), ex);
+                            log.error("前置脚��执行���败: {}", ex.getMessage(), ex);
                             errorMsg = "前置脚本执行失败: " + ex.getMessage();
                             preOk = false;
                             success = false;
@@ -945,6 +960,10 @@ public class JMeterPanel extends BasePanel {
                 }
             }
         });
+
+        // ========== 结果树搜索功能 ==========
+        searchBtn.addActionListener(e -> searchResultTree(searchField.getText()));
+        searchField.addActionListener(e -> searchResultTree(searchField.getText()));
     }
 
     // 设置tab页内容
@@ -1047,5 +1066,27 @@ public class JMeterPanel extends BasePanel {
         int idx = (int) Math.ceil(sorted.size() * 0.99) - 1;
         return sorted.get(Math.max(idx, 0));
     }
-}
 
+    // ========== 结果树搜索方法 ==========
+    private void searchResultTree(String keyword) {
+        if (keyword == null || keyword.isBlank()) return;
+        DefaultMutableTreeNode root = resultRootNode;
+        TreePath path = findNodePath(root, keyword);
+        if (path != null) {
+            resultTree.setSelectionPath(path); // 设置选中路径
+            resultTree.scrollPathToVisible(path); // 滚动到可见
+        }
+    }
+
+    private TreePath findNodePath(DefaultMutableTreeNode node, String keyword) {
+        // 递归查找，匹配节点toString()
+        if (node.toString().contains(keyword)) {
+            return new TreePath(node.getPath());
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            TreePath childPath = findNodePath((DefaultMutableTreeNode) node.getChildAt(i), keyword);
+            if (childPath != null) return childPath;
+        }
+        return null;
+    }
+}

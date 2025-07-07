@@ -85,6 +85,18 @@ public class CookieService {
         }
     }
 
+    public static void addCookie(String name, String value, String domain, String path, boolean secure, boolean httpOnly) {
+        try {
+            HttpCookie cookie = new HttpCookie(name, value);
+            cookie.setDomain(domain);
+            cookie.setPath(path == null || path.isEmpty() ? "/" : path);
+            cookie.setSecure(secure);
+            cookie.setHttpOnly(httpOnly);
+            GLOBAL_COOKIE_MANAGER.getCookieStore().add(null, cookie);
+            notifyCookieChanged();
+        } catch (Exception ignore) {}
+    }
+
     public static class CookieInfo {
         public String name;
         public String value;

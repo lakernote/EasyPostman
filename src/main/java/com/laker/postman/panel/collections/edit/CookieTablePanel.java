@@ -16,6 +16,7 @@ public class CookieTablePanel extends JPanel {
     private final DefaultTableModel model;
     private final JButton btnDelete;
     private final JButton btnClear;
+    private final JButton btnAdd;
     private final Runnable cookieListener = this::loadCookies;
 
     public CookieTablePanel() {
@@ -34,10 +35,13 @@ public class CookieTablePanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnDelete = new JButton("删除选中");
         btnClear = new JButton("清空所有");
+        btnAdd = new JButton("新增");
+        btnPanel.add(btnAdd);
         btnPanel.add(btnDelete);
         btnPanel.add(btnClear);
         add(btnPanel, BorderLayout.SOUTH);
 
+        btnAdd.addActionListener(e -> addCookieDialog());
         btnDelete.addActionListener(e -> deleteSelectedCookie());
         btnClear.addActionListener(e -> clearAllCookies());
 
@@ -73,6 +77,41 @@ public class CookieTablePanel extends JPanel {
         if (confirm == JOptionPane.YES_OPTION) {
             CookieService.clearAllCookies();
             loadCookies();
+        }
+    }
+
+    private void addCookieDialog() {
+        JTextField nameField = new JTextField();
+        JTextField valueField = new JTextField();
+        JTextField domainField = new JTextField();
+        JTextField pathField = new JTextField("/");
+        JCheckBox secureBox = new JCheckBox("Secure");
+        JCheckBox httpOnlyBox = new JCheckBox("HttpOnly");
+        JPanel panel = new JPanel(new GridLayout(0, 2));
+        panel.add(new JLabel("Name:"));
+        panel.add(nameField);
+        panel.add(new JLabel("Value:"));
+        panel.add(valueField);
+        panel.add(new JLabel("Domain:"));
+        panel.add(domainField);
+        panel.add(new JLabel("Path:"));
+        panel.add(pathField);
+        panel.add(secureBox);
+        panel.add(httpOnlyBox);
+        int result = JOptionPane.showConfirmDialog(this, panel, "新增 Cookie", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            String name = nameField.getText().trim();
+            String value = valueField.getText().trim();
+            String domain = domainField.getText().trim();
+            String path = pathField.getText().trim();
+            boolean secure = secureBox.isSelected();
+            boolean httpOnly = httpOnlyBox.isSelected();
+            if (!name.isEmpty() && !domain.isEmpty()) {
+                CookieService.addCookie(name, value, domain, path, secure, httpOnly);
+                loadCookies();
+            } else {
+                JOptionPane.showMessageDialog(this, "Name和Domain不能为空", "错误", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 

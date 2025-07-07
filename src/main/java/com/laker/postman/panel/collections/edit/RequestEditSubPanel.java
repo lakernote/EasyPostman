@@ -9,9 +9,7 @@ import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
-import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -42,8 +40,6 @@ public class RequestEditSubPanel extends JPanel {
     private final JComboBox<String> methodBox;
     private final EasyNameValueTablePanel paramsPanel;
     private final EasyNameValueTablePanel headersPanel;
-    // 变量提取面板
-    private final ExtractorPanel extractorPanel;
     @Getter
     private String id;
     private String name;
@@ -103,7 +99,6 @@ public class RequestEditSubPanel extends JPanel {
             headersPanel.updateTableBorder(false);
             requestBodyPanel.getFormDataTablePanel().updateTableBorder(false);
             requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(false);
-            extractorPanel.getExtractorTablePabel().updateTableBorder(false);
         }
         return isModified;
     }
@@ -184,12 +179,6 @@ public class RequestEditSubPanel extends JPanel {
         // Network Log Tab（包含重定向链和网络日志）
         networkLogPanel = new NetworkLogPanel();
         responseTabs.addTab("Network Logs", networkLogPanel);
-        // Variable extraction
-        extractorPanel = new ExtractorPanel();
-        extractorPanel.setRulesSupplier(() -> getCurrentRequest().getExtractorRules());
-        extractorPanel.setEnvSupplier(EnvironmentService::getActiveEnvironment);
-        extractorPanel.setRefreshEnvPanel(this::refreshEnvironmentPanel);
-        responseTabs.addTab("Extractor", extractorPanel);
         responsePanel.add(responseTabs, BorderLayout.CENTER);
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(1);
@@ -223,9 +212,6 @@ public class RequestEditSubPanel extends JPanel {
         requestBodyPanel.getFormDataTablePanel().addTableModelListener(e -> updateTabDirty());
         // 监听formUrlencodedTableModel
         requestBodyPanel.getFormUrlencodedTablePanel().addTableModelListener(e -> updateTabDirty());
-        // 监听extractorPanelTable
-        extractorPanel.getExtractorTablePabel().addTableModelListener(e -> updateTabDirty());
-        extractorPanel.autoExtractCheckBox.addActionListener(e -> updateTabDirty());
         // 监听脚本面板
         scriptPanel.addDirtyListeners(this::updateTabDirty);
 
@@ -265,7 +251,6 @@ public class RequestEditSubPanel extends JPanel {
         requestBodyPanel.getFormDataTablePanel().updateTableBorder(isModified);
         paramsPanel.updateTableBorder(isModified);
         headersPanel.updateTableBorder(isModified);
-        extractorPanel.getExtractorTablePabel().updateTableBorder(isModified);
     }
 
     private void formatResponseBody() {
@@ -288,9 +273,6 @@ public class RequestEditSubPanel extends JPanel {
     private void setResponseBody(HttpResponse resp) {
         rawResponseBodyText = resp.body;
         responseBodyPanel.setBodyText(resp);
-        if (extractorPanel != null) {
-            extractorPanel.setRawResponseBodyText(resp.body);
-        }
     }
 
 
@@ -656,8 +638,6 @@ public class RequestEditSubPanel extends JPanel {
             // x-www-form-urlencoded: 如果请求头没有设置 application/x-www-form-urlencoded，则补充（忽略大小写）
             ensureContentTypeHeader(item.getHeaders(), "application/x-www-form-urlencoded", headersPanel);
         }
-        // 变量提取规则
-        loadExtractorRulesFromRequest(item);
 
         // 认证Tab
         authTabPanel.setAuthType(item.getAuthType());
@@ -702,11 +682,7 @@ public class RequestEditSubPanel extends JPanel {
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
         }
-        // 提取规则处理
-        if (extractorPanel != null) {
-            item.setExtractorRules(extractorPanel.getExtractorRules());
-            item.setAutoExtractVariables(extractorPanel.isAutoExtract());
-        }
+
         // 认证Tab收集
         item.setAuthType(authTabPanel.getAuthType());
         item.setAuthUsername(authTabPanel.getUsername());
@@ -718,33 +694,6 @@ public class RequestEditSubPanel extends JPanel {
         // 自动重定向
         item.setFollowRedirects(requestLinePanel.getFollowRedirectsCheckBox().isSelected());
         return item;
-    }
-
-    /**
-     * 从请求对象加载提取规则到表格中
-     */
-    private void loadExtractorRulesFromRequest(HttpRequestItem item) {
-        if (extractorPanel != null) {
-            extractorPanel.loadExtractorRules(item.getExtractorRules(), item.isAutoExtractVariables());
-        }
-    }
-
-    /**
-     * 自动执行所有变量提取规则
-     */
-    private void autoExecuteExtractorRules(String responseText) {
-        if (extractorPanel != null) {
-            extractorPanel.setRawResponseBodyText(responseText);
-            extractorPanel.autoExecuteExtractorRules();
-        }
-    }
-
-    /**
-     * 刷新环境面板
-     * 通过查找并调用环境面板的刷新方法来更新环境变量显示
-     */
-    private void refreshEnvironmentPanel() {
-        SingletonFactory.getInstance(EnvironmentPanel.class).refreshUI();
     }
 
     /**
@@ -819,25 +768,10 @@ public class RequestEditSubPanel extends JPanel {
         try {
             HttpUtil.postBindings(bindings, resp);
             executePostscript(item, bindings, resp, bodyText);
-            if (bodyText != null) {
-                autoExecuteExtractorRules(bodyText);
-            }
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
         } catch (Exception ex) {
             log.error("请求处理异常: {}", ex.getMessage(), ex);
         }
-    }
-
-
-    // 构建请求头文本
-    private String buildRequestHeadersText(PreparedRequest req) {
-        StringBuilder reqHeadersBuilder = new StringBuilder();
-        req.headers.forEach((key, value) -> {
-            if (key != null) {
-                reqHeadersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
-            }
-        });
-        return reqHeadersBuilder.toString();
     }
 
 

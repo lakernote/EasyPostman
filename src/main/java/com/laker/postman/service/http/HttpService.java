@@ -111,7 +111,7 @@ public class HttpService {
         ConnectionPool pool = client.connectionPool();
         httpResponse.idleConnectionCount = pool.idleConnectionCount();
         httpResponse.connectionCount = pool.connectionCount();
-        Response okResponse = null;
+        Response okResponse;
         try {
             okResponse = call.execute();
         } finally {

@@ -183,7 +183,7 @@ public class TopMenuBarPanel extends BasePanel {
             }
         });
         // 直接用JEditorPane，不用滚动条，且自适应高度
-        editorPane.setPreferredSize(new Dimension(300, 340));
+        editorPane.setPreferredSize(new Dimension(340, 360));
         JOptionPane.showMessageDialog(null, editorPane, "About EasyPostman", JOptionPane.PLAIN_MESSAGE);
     }
 
@@ -191,6 +191,15 @@ public class TopMenuBarPanel extends BasePanel {
      * 检查更新：访问 Gitee Release API，获取最新版本号并与本地对比。
      */
     private void checkUpdate() {
+        // 显示正在检查更新的对话框
+        final JDialog loadingDialog = new JDialog((Frame) null, "检查更新", true);
+        loadingDialog.setResizable(false);
+        JLabel loadingLabel = new JLabel("正在检查更新...", SwingConstants.CENTER);
+        loadingLabel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        loadingDialog.getContentPane().add(loadingLabel);
+        loadingDialog.pack();
+        loadingDialog.setLocationRelativeTo(null);
+        // 在后台线程中检查更新
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             String latestVersion = null;
             final String releaseUrl = "https://gitee.com/lakernote/easy-postman/releases";
@@ -225,6 +234,7 @@ public class TopMenuBarPanel extends BasePanel {
 
             @Override
             protected void done() {
+                loadingDialog.dispose(); // 关闭加载对话框
                 String currentVersion = getCurrentVersion();
                 if (errorMsg != null) {
                     JOptionPane.showMessageDialog(null, errorMsg, "Check for Updates", JOptionPane.ERROR_MESSAGE);
@@ -245,6 +255,8 @@ public class TopMenuBarPanel extends BasePanel {
             }
         };
         worker.execute();
+        // 弹出加载对话框（在EDT线程中）
+        SwingUtilities.invokeLater(() -> loadingDialog.setVisible(true));
     }
 
     /**

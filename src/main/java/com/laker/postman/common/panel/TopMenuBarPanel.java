@@ -192,12 +192,13 @@ public class TopMenuBarPanel extends BasePanel {
      */
     private void checkUpdate() {
         // 显示正在检查更新的对话框
-        final JDialog loadingDialog = new JDialog((Frame) null, "检查更新", true);
+        final JDialog loadingDialog = new JDialog((Frame) null, "Checking for Updates", true);
         loadingDialog.setResizable(false);
-        JLabel loadingLabel = new JLabel("正在检查更新...", SwingConstants.CENTER);
+        JLabel loadingLabel = new JLabel("Checking for updates...", SwingConstants.CENTER);
         loadingLabel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
         loadingDialog.getContentPane().add(loadingLabel);
         loadingDialog.pack();
+        loadingDialog.setSize(320, 120); // 调整对话框大小
         loadingDialog.setLocationRelativeTo(null);
         // 在后台线程中检查更新
         SwingWorker<Void, Void> worker = new SwingWorker<>() {

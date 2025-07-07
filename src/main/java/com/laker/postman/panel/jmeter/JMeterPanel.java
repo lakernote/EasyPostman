@@ -29,6 +29,7 @@ import org.jfree.data.category.DefaultCategoryDataset;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -141,6 +142,65 @@ public class JMeterPanel extends BasePanel {
         };
         JTable reportTable = new JTable(reportTableModel);
         reportTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        // 设置数据列居中
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        // 失败列红色渲染器（0为黑色，大于0为红色）
+        DefaultTableCellRenderer failRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                try {
+                    int failCount = Integer.parseInt(value == null ? "0" : value.toString());
+                    c.setForeground(failCount > 0 ? Color.RED : Color.BLACK);
+                } catch (Exception e) {
+                    c.setForeground(Color.BLACK);
+                }
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+        // 成功率列绿色渲染器
+        DefaultTableCellRenderer rateRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                String rateStr = value != null ? value.toString() : "";
+                if (rateStr.endsWith("%")) {
+                    try {
+                        double rate = Double.parseDouble(rateStr.replace("%", ""));
+                        if (rate >= 99) {
+                            c.setForeground(new Color(0, 153, 0)); // 深绿色
+                        } else if (rate >= 90) {
+                            c.setForeground(new Color(51, 153, 255)); // 蓝色
+                        } else {
+                            c.setForeground(Color.RED);
+                        }
+                    } catch (Exception e) {
+                        c.setForeground(Color.BLACK);
+                    }
+                } else {
+                    c.setForeground(Color.BLACK);
+                }
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+        // 需要居中的列索引
+        int[] centerColumns = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        for (int col : centerColumns) {
+            if (col == 3) { // 失败列
+                reportTable.getColumnModel().getColumn(col).setCellRenderer(failRenderer);
+            } else if (col == 10) { // 成功率列
+                reportTable.getColumnModel().getColumn(col).setCellRenderer(rateRenderer);
+            } else {
+                reportTable.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+            }
+        }
+        // 支持表头排序
+        reportTable.setAutoCreateRowSorter(true);
+        // 设置表头加粗
+        reportTable.getTableHeader().setFont(reportTable.getTableHeader().getFont().deriveFont(Font.BOLD));
         JScrollPane tableScroll = new JScrollPane(reportTable);
         reportPanel.add(tableScroll, BorderLayout.CENTER);
         resultTabbedPane.addTab("报表", reportPanel);
@@ -214,7 +274,7 @@ public class JMeterPanel extends BasePanel {
         progressLabel.setText("0/0");
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
         progressLabel.setIcon(new FlatSVGIcon("icons/jmeter.svg", 24, 24)); // 使用FlatLaf SVG图标
-        // 设置icon在文字右边
+        // ���置icon在文字右边
         progressLabel.setHorizontalTextPosition(SwingConstants.LEFT);
         progressPanel.add(progressLabel);
         topPanel.add(progressPanel, BorderLayout.EAST);
@@ -413,7 +473,7 @@ public class JMeterPanel extends BasePanel {
                                     }
                             );
                         } catch (Exception ex) {
-                            log.error("前置脚本执行失败: {}", ex.getMessage(), ex);
+                            log.error("前置脚��执行失败: {}", ex.getMessage(), ex);
                             errorMsg = "前置脚本执行失败: " + ex.getMessage();
                             preOk = false;
                             success = false;
@@ -881,6 +941,10 @@ public class JMeterPanel extends BasePanel {
         // 表格统计
         reportTableModel.setRowCount(0);
         trendDataset.clear();
+        int totalApi = 0, totalSuccess = 0, totalFail = 0;
+        long totalCost = 0, totalAvg = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
+        double totalQps = 0, totalRate = 0;
+        int apiCount = 0;
         for (String api : apiCostMap.keySet()) {
             List<Long> costs = apiCostMap.get(api);
             int apiTotal = costs.size();
@@ -890,15 +954,34 @@ public class JMeterPanel extends BasePanel {
             long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
             long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
             long apiP99 = getP99(costs);
-            // QPS计算：用所有请求的总耗时costMs之和
-            long totalCost = costs.stream().mapToLong(Long::longValue).sum();
-            double apiQps = (totalCost > 0 && apiTotal > 0) ? (apiTotal * 1000.0 / totalCost) : 0;
+            long apiTotalCost = costs.stream().mapToLong(Long::longValue).sum();
+            double apiQps = (apiTotalCost > 0 && apiTotal > 0) ? (apiTotal * 1000.0 / apiTotalCost) : 0;
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
-            reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, totalCost, String.format("%.2f%%", apiRate)});
+            reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
+            // 累加total
+            totalApi += apiTotal;
+            totalSuccess += apiSuccess;
+            totalFail += apiFail;
+            totalCost += apiTotalCost;
+            totalAvg += apiAvg;
+            totalMin = Math.min(totalMin, apiMin);
+            totalMax = Math.max(totalMax, apiMax);
+            totalP99 += apiP99;
+            totalQps += apiQps;
+            totalRate += apiRate;
+            apiCount++;
             // 趋势图数据
             for (int i = 0; i < costs.size(); i++) {
                 trendDataset.addValue(costs.get(i), api, String.valueOf(i + 1));
             }
+        }
+        // 添加total行
+        if (apiCount > 0) {
+            long avgAvg = totalAvg / apiCount;
+            long avgP99 = totalP99 / apiCount;
+            double avgQps = totalQps / apiCount;
+            double avgRate = totalRate / apiCount;
+            reportTableModel.addRow(new Object[]{"总计", totalApi, totalSuccess, totalFail, String.format("%.2f", avgQps), avgAvg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
         }
     }
 
@@ -910,3 +993,4 @@ public class JMeterPanel extends BasePanel {
         return sorted.get(Math.max(idx, 0));
     }
 }
+

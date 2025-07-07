@@ -328,7 +328,7 @@ public class RunnerPanel extends BasePanel {
         }
         long cost = System.currentTimeMillis() - start;
         result.resp = resp;
-        result.cost = cost;
+        result.cost = resp == null ? cost : resp.costMs;
         result.status = status;
         result.assertion = assertion;
         return result;

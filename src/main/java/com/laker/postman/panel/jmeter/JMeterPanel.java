@@ -1,6 +1,5 @@
 package com.laker.postman.panel.jmeter;
 
-import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -8,6 +7,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 import com.laker.postman.panel.history.HistoryHtmlBuilder;
@@ -67,16 +67,11 @@ public class JMeterPanel extends BasePanel {
     private JButton stopBtn;
     // 统计变量
     private int totalRequests = 0;
-    // 报表面板相关
-    private JPanel reportPanel;
-    private JTable reportTable;
     private DefaultTableModel reportTableModel;
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
-    // 趋势图面板
-    private JPanel trendPanel;
     private DefaultCategoryDataset trendDataset;
 
 
@@ -135,7 +130,8 @@ public class JMeterPanel extends BasePanel {
         resultTabbedPane = new JTabbedPane();
         resultTabbedPane.addTab("结果树", resultSplit);
         // 报表面板
-        reportPanel = new JPanel(new BorderLayout());
+        // 报表面板相关
+        JPanel reportPanel = new JPanel(new BorderLayout());
         String[] columns = {"接口名称", "总数", "成功", "失败", "QPS", "平均(ms)", "最小(ms)", "最大(ms)", "P99(ms)", "总耗时(ms)", "成功率"};
         reportTableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -143,7 +139,7 @@ public class JMeterPanel extends BasePanel {
                 return false;
             }
         };
-        reportTable = new JTable(reportTableModel);
+        JTable reportTable = new JTable(reportTableModel);
         reportTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         JScrollPane tableScroll = new JScrollPane(reportTable);
         reportPanel.add(tableScroll, BorderLayout.CENTER);
@@ -176,7 +172,8 @@ public class JMeterPanel extends BasePanel {
         chartPanel.setBackground(Colors.PANEL_BACKGROUND);
         chartPanel.setDisplayToolTips(true); // 显示工具提示
         chartPanel.setPreferredSize(new Dimension(300, 300));
-        trendPanel = new JPanel(new BorderLayout());
+        // 趋势图面板
+        JPanel trendPanel = new JPanel(new BorderLayout());
         trendPanel.add(chartPanel, BorderLayout.CENTER);
         resultTabbedPane.addTab("趋势图", trendPanel);
 
@@ -394,12 +391,9 @@ public class JMeterPanel extends BasePanel {
                         finished = totalRequests;
                     }
                     SwingUtilities.invokeLater(() -> progressLabel.setText(finished + "/" + total));
-                    String responseBody = null;
-                    int responseCode = -1;
-                    StringBuilder detail = new StringBuilder();
                     PreparedRequest req;
                     HttpResponse resp = null;
-                    long cost = 0;
+                    String errorMsg = "";
                     List<TestResult> testResults = new ArrayList<>();
                     // ====== 前置脚本 ======
                     req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
@@ -414,53 +408,32 @@ public class JMeterPanel extends BasePanel {
                                     bindings,
                                     output -> {
                                         if (!output.isBlank()) {
-                                            com.laker.postman.panel.SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
+                                            SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
                                         }
                                     }
                             );
                         } catch (Exception ex) {
-                            detail.append("前置脚本执行异常: ").append(ex.getMessage()).append("\n");
+                            log.error("前置脚本执行失败: {}", ex.getMessage(), ex);
+                            errorMsg = "前置脚本执行失败: " + ex.getMessage();
                             preOk = false;
                             success = false;
                         }
                     }
                     if (preOk) {
+                        long startTime = System.currentTimeMillis();
+                        long costMs = 0;
                         try {
                             req.logEvent = true; // 记录事件日志
                             resp = HttpSingleRequestExecutor.execute(req);
-                            responseBody = resp.body;
-                            responseCode = resp.code;
-                            cost = resp.costMs;
-                            detail.append("请求URL: ").append(req.url).append("\n");
-                            detail.append("请求方法: ").append(req.method).append("\n");
-                            detail.append("请求耗时: ").append(cost).append(" ms\n");
-                            detail.append("执行线程: ").append(resp.threadName).append("\n");
-                            detail.append("空闲连接数: ").append(resp.idleConnectionCount).append("\n");
-                            detail.append("连接总数: ").append(resp.connectionCount).append("\n");
-                            detail.append("请求头: ").append(req.headers).append("\n");
-                            detail.append("请求体: ").append(req.body).append("\n");
-                            if (MapUtil.isNotEmpty(req.formData)) {
-                                detail.append("请求表单数据: \n");
-                                for (Map.Entry<String, String> entry : req.formData.entrySet()) {
-                                    detail.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-                                }
-                            }
-                            if (MapUtil.isNotEmpty(req.formFiles)) {
-                                detail.append("请求表单文件: \n");
-                                for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
-                                    detail.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-                                }
-                            }
-                            detail.append("响应码: ").append(responseCode).append("\n");
-                            detail.append("响应体: ").append(responseBody).append("\n");
-                            detail.append("响应体字节数: ").append(HttpUtil.getSizeText(resp.bodySize)).append("\n");
-                            detail.append("响应头字节数: ").append(HttpUtil.getSizeText(resp.headersSize)).append("\n");
                         } catch (Exception ex) {
-                            detail.append("请求异常: ").append(ex.getMessage());
+                            log.error("请求执行失败: {}", ex.getMessage(), ex);
+                            errorMsg = "请求执行失败: " + ex.getMessage();
                             success = false;
+                        } finally {
+                            costMs = System.currentTimeMillis() - startTime;
                         }
                         // 断言处理（JMeter树断言）
-                        for (int j = 0; j < child.getChildCount(); j++) {
+                        for (int j = 0; j < child.getChildCount() && resp != null; j++) {
                             DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                             Object subObj = sub.getUserObject();
                             if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
@@ -472,27 +445,22 @@ public class JMeterPanel extends BasePanel {
                                     String valStr = assertion.value;
                                     try {
                                         int expect = Integer.parseInt(valStr);
-                                        if ("=".equals(op)) pass = (responseCode == expect);
-                                        else if (">".equals(op)) pass = (responseCode > expect);
-                                        else if ("<".equals(op)) pass = (responseCode < expect);
-                                    } catch (Exception e) {
+                                        if ("=".equals(op)) pass = (resp.code == expect);
+                                        else if (">".equals(op)) pass = (resp.code > expect);
+                                        else if ("<".equals(op)) pass = (resp.code < expect);
+                                    } catch (Exception ignored) {
                                     }
-                                    detail.append("断言[Response Code] ").append(op).append(valStr).append(": ");
                                 } else if ("Contains".equals(type)) {
-                                    pass = responseBody != null && responseBody.contains(assertion.content);
-                                    detail.append("断言[Contains] 包含: ").append(assertion.content).append(": ");
+                                    pass = resp.body.contains(assertion.content);
                                 } else if ("JSONPath".equals(type)) {
                                     String jsonPath = assertion.value;
                                     String expect = assertion.content;
-                                    String actual = JsonPathUtil.extractJsonPath(responseBody, jsonPath);
-                                    pass = java.util.Objects.equals(actual, expect);
-                                    detail.append("断言[JSONPath] ").append(jsonPath).append(" = ").append(expect).append(", 实际:").append(actual).append(": ");
+                                    String actual = JsonPathUtil.extractJsonPath(resp.body, jsonPath);
+                                    pass = Objects.equals(actual, expect);
                                 }
                                 if (!pass) {
-                                    detail.append("失败\n");
                                     success = false;
-                                } else {
-                                    detail.append("通过\n");
+                                    errorMsg = "断言失败: " + type + " - " + assertion.content;
                                 }
                                 testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
                             }
@@ -506,7 +474,7 @@ public class JMeterPanel extends BasePanel {
                         }
                         // ====== 后置脚本 ======
                         String postscript = jtNode.httpRequestItem.getPostscript();
-                        if (postscript != null && !postscript.isBlank()) {
+                        if (resp != null && postscript != null && !postscript.isBlank()) {
                             HttpUtil.postBindings(bindings, resp);
                             try {
                                 JsScriptExecutor.executeScript(
@@ -514,7 +482,7 @@ public class JMeterPanel extends BasePanel {
                                         bindings,
                                         output -> {
                                             if (!output.isBlank()) {
-                                                com.laker.postman.panel.SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
+                                                SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
                                             }
                                         }
                                 );
@@ -522,23 +490,25 @@ public class JMeterPanel extends BasePanel {
                                     testResults.addAll(pm.testResults);
                                 }
                             } catch (Exception assertionEx) {
+                                log.error("后置脚本执行失败: {}", assertionEx.getMessage(), assertionEx);
                                 if (pm.testResults != null) {
                                     testResults.addAll(pm.testResults);
                                 }
-                                detail.append("后置脚本异常: ").append(assertionEx.getMessage()).append("\n");
+                                errorMsg = assertionEx.getMessage();
                                 success = false;
                             }
                         }
+                        // 统计接口耗时（统一用resp.costMs）
+                        apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(resp == null ? costMs : resp.costMs);
+
                     }
-                    // 统计接口耗时（统一用resp.costMs）
-                    apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+
                     if (success) {
                         apiSuccessMap.merge(apiName, 1, Integer::sum);
                     } else {
                         apiFailMap.merge(apiName, 1, Integer::sum);
                     }
-                    DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success,
-                            detail.toString(), req, resp, testResults));
+                    DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));
                     SwingUtilities.invokeLater(() -> {
                         resultRootNode.add(reqNode);
                         resultTreeModel.reload(resultRootNode);

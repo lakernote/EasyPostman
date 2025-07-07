@@ -7,7 +7,6 @@ public class SettingPanel extends JPanel {
     private final JTextField maxBodySizeField;
     private final JTextField requestTimeoutField;
     private final JTextField maxDownloadSizeField;
-    private final JButton saveBtn;
 
     public SettingPanel() {
         setLayout(new BorderLayout(10, 10));
@@ -48,11 +47,21 @@ public class SettingPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(maxDownloadSizeField, gbc);
 
-        saveBtn = new JButton("保存");
+        JButton saveBtn = new JButton("Save");
         saveBtn.addActionListener(e -> saveSettings());
+
+        JButton cancelBtn = new JButton("Cancel");
+        cancelBtn.addActionListener(e -> {
+            // 获取顶层窗口并关闭
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window instanceof JDialog dialog) {
+                dialog.dispose();
+            }
+        });
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnPanel.add(saveBtn);
+        btnPanel.add(cancelBtn);
 
         add(formPanel, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);

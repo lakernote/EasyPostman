@@ -14,9 +14,6 @@ import java.util.List;
 public class CookieTablePanel extends JPanel {
     private final JTable table;
     private final DefaultTableModel model;
-    private final JButton btnDelete;
-    private final JButton btnClear;
-    private final JButton btnAdd;
     private final Runnable cookieListener = this::loadCookies;
 
     public CookieTablePanel() {
@@ -33,9 +30,9 @@ public class CookieTablePanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnDelete = new JButton("删除选中");
-        btnClear = new JButton("清空所有");
-        btnAdd = new JButton("新增");
+        JButton btnDelete = new JButton("Delete Selected");
+        JButton btnClear = new JButton("Clear All");
+        JButton btnAdd = new JButton("Add");
         btnPanel.add(btnAdd);
         btnPanel.add(btnDelete);
         btnPanel.add(btnClear);
@@ -98,7 +95,7 @@ public class CookieTablePanel extends JPanel {
         panel.add(pathField);
         panel.add(secureBox);
         panel.add(httpOnlyBox);
-        int result = JOptionPane.showConfirmDialog(this, panel, "新增 Cookie", JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(this, panel, "新增 Cookie", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String name = nameField.getText().trim();
             String value = valueField.getText().trim();

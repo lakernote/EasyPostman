@@ -21,6 +21,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class RunnerPanel extends BasePanel {
@@ -235,17 +236,18 @@ public class RunnerPanel extends BasePanel {
     // 批量运行
     private void runSelectedRequests() {
         int rowCount = tableModel.getRowCount();
-        if (rowCount == 0) {
+        int selectedCount = (int) IntStream.range(0, rowCount).mapToObj(i -> tableModel.getRow(i)).filter(row -> row != null && row.selected).count();
+        if (selectedCount == 0) {
             JOptionPane.showMessageDialog(this, "没有可运行的请求", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
         clearRunResults(rowCount);
         runBtn.setEnabled(false);
         progressBar.setMinimum(0);
-        progressBar.setMaximum(rowCount);
+        progressBar.setMaximum(selectedCount);
         progressBar.setValue(0);
-        progressBar.setString("0 / " + rowCount);
-        new Thread(() -> executeBatchRequests(rowCount)).start();
+        progressBar.setString("0 / " + selectedCount);
+        new Thread(() -> executeBatchRequests(rowCount, selectedCount)).start();
     }
 
     private void clearRunResults(int rowCount) {
@@ -260,7 +262,7 @@ public class RunnerPanel extends BasePanel {
         }
     }
 
-    private void executeBatchRequests(int rowCount) {
+    private void executeBatchRequests(int rowCount, int selectedCount) {
         int finished = 0;
         for (int i = 0; i < rowCount; i++) {
             RunnerRowData row = tableModel.getRow(i);
@@ -274,13 +276,13 @@ public class RunnerPanel extends BasePanel {
                 SwingUtilities.invokeLater(() -> {
                     tableModel.setResponse(rowIdx, result.resp, result.cost, result.status, result.assertion);
                 });
+                finished++;
+                int finalFinished = finished;
+                SwingUtilities.invokeLater(() -> {
+                    progressBar.setValue(finalFinished);
+                    progressBar.setString(finalFinished + " / " + selectedCount);
+                });
             }
-            finished++;
-            int finalFinished = finished;
-            SwingUtilities.invokeLater(() -> {
-                progressBar.setValue(finalFinished);
-                progressBar.setString(finalFinished + " / " + rowCount);
-            });
         }
         SwingUtilities.invokeLater(() -> {
             runBtn.setEnabled(true);

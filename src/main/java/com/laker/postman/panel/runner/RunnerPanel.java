@@ -264,6 +264,10 @@ public class RunnerPanel extends BasePanel {
         int finished = 0;
         for (int i = 0; i < rowCount; i++) {
             RunnerRowData row = tableModel.getRow(i);
+            if (row == null || row.requestItem == null || row.preparedRequest == null) {
+                log.warn("Row {} is invalid, skipping execution", i);
+                continue; // 跳过无效行
+            }
             if (row.selected) {
                 BatchResult result = executeSingleRequest(row);
                 int rowIdx = i;

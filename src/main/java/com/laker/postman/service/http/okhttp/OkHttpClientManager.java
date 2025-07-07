@@ -22,9 +22,32 @@ public class OkHttpClientManager {
     private static final int MAX_IDLE_CONNECTIONS = 6;
     private static final long KEEP_ALIVE_DURATION = 90L;
 
+    // 连接池参数（可动态调整）
+    private static volatile int maxIdleConnections = MAX_IDLE_CONNECTIONS;
+    private static volatile long keepAliveDuration = KEEP_ALIVE_DURATION;
+
     // 全局 CookieManager，支持标准 CookiePolicy
     private static final CookieManager GLOBAL_COOKIE_MANAGER = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
     private static final JavaNetCookieJar GLOBAL_COOKIE_JAR = new JavaNetCookieJar(GLOBAL_COOKIE_MANAGER);
+
+    /**
+     * 动态设置连接池参数（压测时可调大）
+     */
+    public static void setConnectionPoolConfig(int maxIdle, long keepAliveSeconds) {
+        maxIdleConnections = maxIdle;
+        keepAliveDuration = keepAliveSeconds;
+        clientMap.clear(); // 清空，确保新参数生效
+    }
+
+    /**
+     * 动态设置连接池参数（压测时可调大）
+     */
+    public static void setDefaultConnectionPoolConfig() {
+        maxIdleConnections = MAX_IDLE_CONNECTIONS;
+        keepAliveDuration = KEEP_ALIVE_DURATION;
+        clientMap.clear(); // 清空，确保新参数生效
+    }
+
 
     /**
      * 获取或创建指定 baseUri 的 OkHttpClient 实例。
@@ -49,7 +72,7 @@ public class OkHttpClientManager {
                     // 写超时
                     .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     // 连接池配置
-                    .connectionPool(new ConnectionPool(MAX_IDLE_CONNECTIONS, KEEP_ALIVE_DURATION, TimeUnit.SECONDS))
+                    .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
                     // 失败自动重试
                     .retryOnConnectionFailure(true)
                     // 是否自动跟随重定向

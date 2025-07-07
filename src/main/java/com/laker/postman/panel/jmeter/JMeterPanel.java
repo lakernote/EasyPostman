@@ -15,6 +15,7 @@ import com.laker.postman.panel.runner.RunnerHtmlUtil;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JsonPathUtil;
@@ -75,6 +76,10 @@ public class JMeterPanel extends BasePanel {
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
     // 趋势图相关
     private DefaultCategoryDataset trendDataset;
+
+
+    private static final int JMETER_MAX_IDLE_CONNECTIONS = 200;
+    private static final long JMETER_KEEP_ALIVE_DURATION = 60L;
 
 
     @Override
@@ -376,6 +381,8 @@ public class JMeterPanel extends BasePanel {
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
         saveAllPropertyPanelData();
+        // 压测前动态调整连接池参数
+        OkHttpClientManager.setConnectionPoolConfig(JMETER_MAX_IDLE_CONNECTIONS, JMETER_KEEP_ALIVE_DURATION);
         if (running) return;
         running = true;
         runBtn.setEnabled(false);
@@ -399,6 +406,8 @@ public class JMeterPanel extends BasePanel {
                     runBtn.setEnabled(true);
                     stopBtn.setEnabled(false);
                     updateReportPanel();
+                    // 恢复默认连接池参数
+                    OkHttpClientManager.setDefaultConnectionPoolConfig();
                 });
             }
         });
@@ -979,6 +988,8 @@ public class JMeterPanel extends BasePanel {
         }
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
+        // 停止时恢复默认连接池参数
+        OkHttpClientManager.setDefaultConnectionPoolConfig();
     }
 
     private void updateReportPanel() {

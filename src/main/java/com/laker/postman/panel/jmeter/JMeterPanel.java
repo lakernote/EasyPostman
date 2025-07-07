@@ -73,6 +73,7 @@ public class JMeterPanel extends BasePanel {
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
+    // 趋势图相关
     private DefaultCategoryDataset trendDataset;
 
 
@@ -145,42 +146,80 @@ public class JMeterPanel extends BasePanel {
         // 设置数据列居中
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        // 失败列红色渲染器（0为黑色，大于0为红色）
+        // 失败列红色渲染器（0为黑色，大于0为红色，总计行为蓝色加粗）
         DefaultTableCellRenderer failRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                try {
-                    int failCount = Integer.parseInt(value == null ? "0" : value.toString());
-                    c.setForeground(failCount > 0 ? Color.RED : Color.BLACK);
-                } catch (Exception e) {
-                    c.setForeground(Color.BLACK);
+                int modelRow = table.convertRowIndexToModel(row);
+                boolean isTotal = "总计".equals(reportTableModel.getValueAt(modelRow, 0));
+                if (isTotal) {
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                    c.setForeground(new Color(0, 102, 204));
+                    c.setBackground(new Color(230, 240, 255));
+                } else {
+                    try {
+                        int failCount = Integer.parseInt(value == null ? "0" : value.toString());
+                        c.setForeground(failCount > 0 ? Color.RED : Color.BLACK);
+                        c.setBackground(Color.WHITE);
+                    } catch (Exception e) {
+                        c.setForeground(Color.BLACK);
+                        c.setBackground(Color.WHITE);
+                    }
                 }
                 setHorizontalAlignment(SwingConstants.CENTER);
                 return c;
             }
         };
-        // 成功率列绿色渲染器
+        // 成功率列绿色渲染器（总计行为蓝色加粗）
         DefaultTableCellRenderer rateRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                String rateStr = value != null ? value.toString() : "";
-                if (rateStr.endsWith("%")) {
-                    try {
-                        double rate = Double.parseDouble(rateStr.replace("%", ""));
-                        if (rate >= 99) {
-                            c.setForeground(new Color(0, 153, 0)); // 深绿色
-                        } else if (rate >= 90) {
-                            c.setForeground(new Color(51, 153, 255)); // 蓝色
-                        } else {
-                            c.setForeground(Color.RED);
+                int modelRow = table.convertRowIndexToModel(row);
+                boolean isTotal = "总计".equals(reportTableModel.getValueAt(modelRow, 0));
+                if (isTotal) {
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                    c.setForeground(new Color(0, 102, 204));
+                    c.setBackground(new Color(230, 240, 255));
+                } else {
+                    String rateStr = value != null ? value.toString() : "";
+                    if (rateStr.endsWith("%")) {
+                        try {
+                            double rate = Double.parseDouble(rateStr.replace("%", ""));
+                            if (rate >= 99) {
+                                c.setForeground(new Color(0, 153, 0)); // 深绿色
+                            } else if (rate >= 90) {
+                                c.setForeground(new Color(51, 153, 255)); // 蓝色
+                            } else {
+                                c.setForeground(Color.RED);
+                            }
+                        } catch (Exception e) {
+                            c.setForeground(Color.BLACK);
                         }
-                    } catch (Exception e) {
+                    } else {
                         c.setForeground(Color.BLACK);
                     }
+                    c.setBackground(Color.WHITE);
+                }
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+        // 通用居中渲染器（总计行美化）
+        DefaultTableCellRenderer generalRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                int modelRow = table.convertRowIndexToModel(row);
+                boolean isTotal = "总计".equals(reportTableModel.getValueAt(modelRow, 0));
+                if (isTotal) {
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                    c.setForeground(new Color(0, 102, 204));
+                    c.setBackground(new Color(230, 240, 255));
                 } else {
                     c.setForeground(Color.BLACK);
+                    c.setBackground(Color.WHITE);
                 }
                 setHorizontalAlignment(SwingConstants.CENTER);
                 return c;
@@ -194,11 +233,9 @@ public class JMeterPanel extends BasePanel {
             } else if (col == 10) { // 成功率列
                 reportTable.getColumnModel().getColumn(col).setCellRenderer(rateRenderer);
             } else {
-                reportTable.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+                reportTable.getColumnModel().getColumn(col).setCellRenderer(generalRenderer);
             }
         }
-        // 支持表头排序
-        reportTable.setAutoCreateRowSorter(true);
         // 设置表头加粗
         reportTable.getTableHeader().setFont(reportTable.getTableHeader().getFont().deriveFont(Font.BOLD));
         JScrollPane tableScroll = new JScrollPane(reportTable);
@@ -226,6 +263,13 @@ public class JMeterPanel extends BasePanel {
         plot.getDomainAxis().setLabelFont(font);
         plot.getRangeAxis().setTickLabelFont(font);
         plot.getRangeAxis().setLabelFont(font);
+        // Y轴自动调整
+        plot.getRangeAxis().setAutoRange(true);
+        // X轴标签旋转45度，防止重叠
+        org.jfree.chart.axis.CategoryAxis domainAxis = plot.getDomainAxis();
+        domainAxis.setCategoryLabelPositions(org.jfree.chart.axis.CategoryLabelPositions.UP_45);
+        // X轴标签间隔显示（如每隔10个显示1个）
+        domainAxis.setMaximumCategoryLabelWidthRatio(0.8f);
         // 设置背景色和交互
         ChartPanel chartPanel = new ChartPanel(trendChart);
         chartPanel.setMouseWheelEnabled(true); // 支持鼠标滚轮缩放

@@ -210,7 +210,6 @@ public class HttpUtil {
             } catch (Exception ex) {
                 log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
                 SidebarTabPanel.appendConsoleLog("[PostScript Error] " + ex.getMessage());
-                JOptionPane.showMessageDialog(null, "后置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

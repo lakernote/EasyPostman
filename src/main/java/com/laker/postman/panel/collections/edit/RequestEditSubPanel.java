@@ -6,10 +6,9 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.history.HistoryPanel;
+import com.laker.postman.panel.runner.RunnerHtmlUtil;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -65,6 +64,9 @@ public class RequestEditSubPanel extends JPanel {
     private EventSource currentEventSource;
     // WebSocket连接对象
     private volatile okhttp3.WebSocket currentWebSocket;
+
+    private JEditorPane testsPane;
+    private JScrollPane testsScrollPane;
 
     /**
      * 设置原始请求数据（脏数据检测）
@@ -174,6 +176,12 @@ public class RequestEditSubPanel extends JPanel {
         // Network Log Tab（包含重定向链和网络日志）
         networkLogPanel = new NetworkLogPanel();
         responseTabs.addTab("Network Logs", networkLogPanel);
+        // Tests Tab
+        testsPane = new JEditorPane();
+        testsPane.setContentType("text/html");
+        testsPane.setEditable(false);
+        testsScrollPane = new JScrollPane(testsPane);
+        responseTabs.addTab("Tests", testsScrollPane);
         responsePanel.add(responseTabs, BorderLayout.CENTER);
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(1);
@@ -745,12 +753,23 @@ public class RequestEditSubPanel extends JPanel {
         try {
             HttpUtil.postBindings(bindings, resp);
             executePostscript(item, bindings, resp, bodyText);
+            Postman pm = (Postman) bindings.get("pm");
+            setTestResults(pm.testResults);
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
             log.error("请求处理异常: {}", ex.getMessage(), ex);
         }
     }
 
+
+    /**
+     * 设置测试结果到Tests Tab
+     */
+    private void setTestResults(java.util.List<TestResult> testResults) {
+        String html = RunnerHtmlUtil.buildTestsHtml(testResults);
+        testsPane.setText(html);
+        testsPane.setCaretPosition(0);
+    }
 
     // SSE UI回调接口
     private interface SseUiCallback {

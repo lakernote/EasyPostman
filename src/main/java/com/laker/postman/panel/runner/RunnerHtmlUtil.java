@@ -2,6 +2,7 @@ package com.laker.postman.panel.runner;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.TestResult;
 
 import java.util.List;
 import java.util.Map;
@@ -86,27 +87,32 @@ public class RunnerHtmlUtil {
         return sb.toString();
     }
 
-    public static String buildTestsHtml(List<?> testResults) {
+    public static String buildTestsHtml(List<TestResult> testResults) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
-        sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
-        sb.append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
-        for (Object obj : testResults) {
-            try {
-                String name = (String) obj.getClass().getField("name").get(obj);
-                boolean passed = (boolean) obj.getClass().getField("passed").get(obj);
-                String message = (String) obj.getClass().getField("message").get(obj);
-                sb.append("<tr>");
-                sb.append("<td>").append(escapeHtml(name)).append("</td>");
-                sb.append("<td style='color:")
-                        .append(passed ? "#28a745'>&#10004; Pass" : "#dc3545'>&#10008; Fail")
-                        .append("</td>");
-                sb.append("<td>").append(message == null ? "" : escapeHtml(message)).append("</td>");
-                sb.append("</tr>");
-            } catch (Exception ignore) {
+        if (testResults == null || testResults.isEmpty()) {
+            sb.append("<div style='color:gray;padding:16px;'>无测试结果</div>");
+        } else {
+            sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
+            sb.append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
+            for (TestResult testResult : testResults) {
+                try {
+                    String name = testResult.name;
+                    boolean passed = testResult.passed;
+                    String message = testResult.message;
+                    sb.append("<tr>");
+                    sb.append("<td>").append(escapeHtml(name)).append("</td>");
+                    sb.append("<td style='color:")
+                            .append(passed ? "#28a745'>&#10004; Pass" : "#dc3545'>&#10008; Fail")
+                            .append("</td>");
+                    sb.append("<td>").append(message == null ? "" : escapeHtml(message)).append("</td>");
+                    sb.append("</tr>");
+                } catch (Exception ignore) {
+                }
             }
+            sb.append("</table>");
         }
-        sb.append("</table></body></html>");
+        sb.append("</body></html>");
         return sb.toString();
     }
 

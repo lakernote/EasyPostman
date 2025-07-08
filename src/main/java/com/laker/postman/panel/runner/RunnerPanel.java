@@ -394,7 +394,7 @@ public class RunnerPanel extends BasePanel {
         return RunnerHtmlUtil.buildResponseHtml(resp);
     }
 
-    private String buildTestsHtml(List<? extends Object> testResults) {
+    private String buildTestsHtml(List<TestResult> testResults) {
         return RunnerHtmlUtil.buildTestsHtml(testResults);
     }
 

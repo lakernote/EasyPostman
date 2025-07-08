@@ -41,7 +41,7 @@ public class RequestBodyPanel extends JPanel {
     private String currentRawType = RAW_TYPE_JSON;
     @Getter
     private JButton wsSendButton;
-    private JLabel bodyTypeLable;
+    private final JLabel bodyTypeLable;
     private JButton formatButton;
 
     public RequestBodyPanel() {
@@ -116,7 +116,7 @@ public class RequestBodyPanel extends JPanel {
         formatButton = new JButton("Format Body");
         formatButton.addActionListener(e -> formatBody());
         bottomPanel.add(formatButton, BorderLayout.WEST);
-        wsSendButton = new JButton("发送");
+        wsSendButton = new JButton("Send Message");
         wsSendButton.setVisible(false);
         bottomPanel.add(wsSendButton, BorderLayout.EAST);
         panel.add(bottomPanel, BorderLayout.SOUTH);

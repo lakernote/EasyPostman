@@ -105,8 +105,7 @@ public class RequestEditSubPanel extends JPanel {
     public RequestEditSubPanel(String id) {
         this.id = id;
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 设置边距为0
         // 1. 顶部请求行面板
         requestLinePanel = new RequestLinePanel(this::sendRequest);
         methodBox = requestLinePanel.getMethodBox();
@@ -157,8 +156,6 @@ public class RequestEditSubPanel extends JPanel {
 
         // 3. 响应面板
         JPanel responsePanel = new JPanel(new BorderLayout());
-        responsePanel.setBorder(BorderFactory.createTitledBorder("Response"));
-
         // 状态栏面板
         ResponseStatusPanel responseStatusPanel = new ResponseStatusPanel();
         statusCodeLabel = responseStatusPanel.getStatusCodeLabel();

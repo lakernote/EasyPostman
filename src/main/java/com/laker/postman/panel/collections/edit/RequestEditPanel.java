@@ -375,7 +375,7 @@ public class RequestEditPanel extends BasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 去掉默认边框
         tabbedPane = new JTabbedPane();
         add(tabbedPane, BorderLayout.CENTER);
         addNewTab(REQUEST_STRING + "1"); // 默认添加第一个请求Tab

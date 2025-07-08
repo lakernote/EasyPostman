@@ -140,7 +140,7 @@ public class EasyTablePanel extends JPanel {
         JMenuItem delItem = new JMenuItem("Remove");
         // 删除行事件
         delItem.addActionListener(e -> deleteSelectedRow());
-        JMenuItem copyItem = new JMenuItem("Copy");
+        JMenuItem copyItem = new JMenuItem("Duplicate");
         copyItem.addActionListener(e -> copySelectedRow());
         menu.add(addItem);
         menu.add(delItem);

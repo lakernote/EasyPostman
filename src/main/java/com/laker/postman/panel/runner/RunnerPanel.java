@@ -404,7 +404,7 @@ public class RunnerPanel extends BasePanel {
         PreparedRequest req = runnerRowData.preparedRequest;
         HttpResponse resp = runnerRowData.response;
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail", true);
-        dialog.setSize(700, 600);
+        dialog.setSize(800, 600);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
 

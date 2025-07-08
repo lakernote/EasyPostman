@@ -7,8 +7,9 @@ import cn.hutool.json.JSONUtil;
 public class JsonPathUtil {
     /**
      * 从JSON对象中提取指定路径的值，支持简单的$.a.b[0].c格式
+     *
      * @param jsonObj 可以是JSONObject/JSONArray/String
-     * @param path 形如$.a.b[0].c
+     * @param path    形如$.a.b[0].c
      * @return 提取到的值，找不到返回null
      */
     public static String extractJsonPath(Object jsonObj, String path) {
@@ -26,7 +27,11 @@ public class JsonPathUtil {
                 String arrayName = segment.substring(0, segment.indexOf("["));
                 String indexStr = segment.substring(segment.indexOf("[") + 1, segment.indexOf("]"));
                 int index;
-                try { index = Integer.parseInt(indexStr); } catch (Exception e) { return null; }
+                try {
+                    index = Integer.parseInt(indexStr);
+                } catch (Exception e) {
+                    return null;
+                }
                 if (current instanceof JSONObject obj) {
                     Object arr = obj.get(arrayName);
                     if (arr instanceof JSONArray jsonArr) {
@@ -44,4 +49,3 @@ public class JsonPathUtil {
         return current != null ? current.toString() : null;
     }
 }
-

@@ -323,7 +323,7 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                handleResponse(item, bindings, resp);
+                handleResponse(item, bindings, req, resp);
                 updateUIForResponse(statusText, resp);
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
@@ -430,7 +430,7 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 if (resp != null) {
-                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
                 }
             }
         };
@@ -549,7 +549,7 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 if (resp != null) {
-                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
                 }
             }
         };
@@ -759,7 +759,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // 处理响应、后置脚本、变量提取、历史
-    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp) {
+    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, PreparedRequest req, HttpResponse resp) {
         if (resp == null) {
             log.error("响应为空，无法处理后续操作");
             return;
@@ -768,7 +768,7 @@ public class RequestEditSubPanel extends JPanel {
         try {
             HttpUtil.postBindings(bindings, resp);
             executePostscript(item, bindings, resp, bodyText);
-            SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(PreparedRequestBuilder.build(item), resp);
+            SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
             log.error("请求处理异常: {}", ex.getMessage(), ex);
         }

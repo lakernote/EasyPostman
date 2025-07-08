@@ -1,5 +1,8 @@
 package com.laker.postman.model;
 
+
+import okhttp3.Headers;
+
 import java.util.Map;
 
 /**
@@ -10,7 +13,9 @@ public class PreparedRequest {
     public String url;
     public String method;
     public Map<String, String> headers;
+    public Headers okHttpHeaders; // OkHttp 特有的 Headers 对象
     public String body;
+    public String okHttpRequestBody; // 真实OkHttp请求体内容
     public Map<String, String> formData;
     public Map<String, String> formFiles;
     // x-www-form-urlencoded 字段
@@ -18,4 +23,5 @@ public class PreparedRequest {
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
     public boolean logEvent = false; // 默认不记录事件日志
+
 }

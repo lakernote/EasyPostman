@@ -25,10 +25,10 @@ public class HttpService {
     /**
      * 构建支持动态 eventListenerFactory 和超时的 OkHttpClient
      */
-    private static OkHttpClient buildDynamicClient(OkHttpClient baseClient, boolean logEvent, int timeoutMs) {
+    private static OkHttpClient buildDynamicClient(OkHttpClient baseClient, PreparedRequest preparedRequest, int timeoutMs) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
-        if (logEvent) {
-            builder.eventListenerFactory(call -> new EasyConsoleEventListener());
+        if (preparedRequest.logEvent) {
+            builder.eventListenerFactory(call -> new EasyConsoleEventListener(preparedRequest));
         }
         if (timeoutMs > 0) {
             builder.connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -48,7 +48,7 @@ public class HttpService {
         String baseUri = extractBaseUri(req.url);
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
         int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient client = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
+        OkHttpClient client = buildDynamicClient(baseClient, req, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
         Call call = client.newCall(request);
         return callWithRequest(call, client);
@@ -61,7 +61,7 @@ public class HttpService {
         String baseUri = extractBaseUri(req.url);
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
         int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient client = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
+        OkHttpClient client = buildDynamicClient(baseClient, req, timeoutMs);
         Request request = OkHttpRequestBuilder.buildFormRequest(req);
         Call call = client.newCall(request);
         return callWithRequest(call, client);
@@ -74,7 +74,7 @@ public class HttpService {
         String baseUri = extractBaseUri(req.url);
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
         int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient client = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
+        OkHttpClient client = buildDynamicClient(baseClient, req, timeoutMs);
         Request request = OkHttpRequestBuilder.buildMultipartRequest(req);
         Call call = client.newCall(request);
         return callWithRequest(call, client);
@@ -87,7 +87,7 @@ public class HttpService {
         String baseUri = extractBaseUri(req.url);
         int timeoutMs = SettingManager.getRequestTimeout();
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        OkHttpClient customClient = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
+        OkHttpClient customClient = buildDynamicClient(baseClient, req, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
         return EventSources.createFactory(customClient).newEventSource(request, new LogEventSourceListener(listener));
     }
@@ -99,7 +99,7 @@ public class HttpService {
         String baseUri = extractBaseUri(req.url);
         int timeoutMs = SettingManager.getRequestTimeout();
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        OkHttpClient customClient = buildDynamicClient(baseClient, req.logEvent, timeoutMs);
+        OkHttpClient customClient = buildDynamicClient(baseClient, req, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
         return customClient.newWebSocket(request, new LogWebSocketListener(listener));
     }

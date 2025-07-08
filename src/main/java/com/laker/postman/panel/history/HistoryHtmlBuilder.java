@@ -77,9 +77,11 @@ public class HistoryHtmlBuilder {
         StringBuilder sb = new StringBuilder();
         sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>[Request Headers]</b></div>");
         sb.append("<pre style='margin:0;'>");
-        if (item.request != null && item.request.headers != null && !item.request.headers.isEmpty()) {
-            for (var entry : item.request.headers.entrySet()) {
-                sb.append(escapeHtml(entry.getKey())).append(": ").append(escapeHtml(entry.getValue())).append("\n");
+        if (item.request != null && item.request.okHttpHeaders != null && item.request.okHttpHeaders.size() > 0) {
+            for (int i = 0; i < item.request.okHttpHeaders.size(); i++) {
+                String name = item.request.okHttpHeaders.name(i);
+                String value = item.request.okHttpHeaders.value(i);
+                sb.append(escapeHtml(name)).append(": ").append(escapeHtml(value)).append("\n");
             }
         } else {
             sb.append("(None)");
@@ -93,6 +95,12 @@ public class HistoryHtmlBuilder {
         sb.append("<div style='margin:8px 0 4px 0;'><b style='color:#1976d2;'>[Request Body]</b></div>");
         boolean hasForm = false;
         if (item.request != null) {
+            // 优先展示真实OkHttp请求体内容（如有）
+            if (item.request.okHttpRequestBody != null && !item.request.okHttpRequestBody.isEmpty()) {
+                sb.append("<b>真实请求体</b><br><pre style='margin:0;background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                        .append(escapeHtml(item.request.okHttpRequestBody)).append("</pre>");
+            }
+
             if (item.request.formData != null && !item.request.formData.isEmpty()) {
                 hasForm = true;
                 sb.append("<b>form-data</b><br><pre style='margin:0;'>");
@@ -110,9 +118,10 @@ public class HistoryHtmlBuilder {
                 sb.append("</pre>");
             }
             if (!hasForm && item.request.body != null && !item.request.body.isEmpty()) {
+                sb.append("<b>request-body</b><br><pre style='margin:0;'>");
                 sb.append("<pre style='margin:0;'>").append(escapeHtml(item.request.body)).append("</pre>");
             }
-            if (!hasForm && (item.request.body == null || item.request.body.isEmpty())) {
+            if (!hasForm && (item.request.body == null || item.request.body.isEmpty()) && (item.request.okHttpRequestBody == null || item.request.okHttpRequestBody.isEmpty())) {
                 sb.append("<pre style='margin:0;'>(None)</pre>");
             }
         } else {
@@ -215,7 +224,7 @@ public class HistoryHtmlBuilder {
                 .append("</td><td style='color:#888;font-size:9px;'>RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送</td></tr>");
         sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'><b>Waiting (TTFB)</b></td><td style='color:#388e3c;font-weight:bold;'>")
                 .append(serverCost >= 0 ? serverCost + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理（TTFB）</td></tr>");
+                .append("</td><td style='color:#888;font-size:9px;'>RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理（TTFB���</td></tr>");
         sb.append("<tr><td style='padding:2px 8px 2px 0'>Content Download</td><td>")
                 .append(respBody >= 0 ? respBody + " ms" : "-")
                 .append("</td><td style='color:#888;font-size:9px;'>ResponseBodyStart→ResponseBodyEnd，响应体下载</td></tr>");

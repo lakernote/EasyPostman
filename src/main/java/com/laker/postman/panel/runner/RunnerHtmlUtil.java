@@ -12,13 +12,21 @@ public class RunnerHtmlUtil {
         sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
         sb.append("<b>URL:</b> ").append(escapeHtml(req.url)).append("<br/>");
         sb.append("<b>方法:</b> ").append(escapeHtml(req.method)).append("<br/>");
-        if (req.headers != null && !req.headers.isEmpty()) {
+        // 优先展示 okHttpHeaders，兼容多值和顺序
+        if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
             sb.append("<b>请求头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.headers.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            for (int i = 0; i < req.okHttpHeaders.size(); i++) {
+                String name = req.okHttpHeaders.name(i);
+                String value = req.okHttpHeaders.value(i);
+                sb.append("<tr><td>").append(escapeHtml(name)).append(":</td><td>")
+                        .append(escapeHtml(value)).append("</td></tr>");
             }
             sb.append("</table>");
+        }
+        // 优先展示真实OkHttp请求体内容
+        if (req.okHttpRequestBody != null && !req.okHttpRequestBody.isEmpty()) {
+            sb.append("<b>真实请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
         }
         if (req.body != null && !req.body.isEmpty()) {
             sb.append("<b>请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
@@ -115,4 +123,3 @@ public class RunnerHtmlUtil {
                 .replace("'", "&#39;");
     }
 }
-

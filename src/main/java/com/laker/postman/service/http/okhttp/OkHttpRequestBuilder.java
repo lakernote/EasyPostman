@@ -13,7 +13,6 @@ import java.util.Map;
 public class OkHttpRequestBuilder {
     public static Request buildRequest(PreparedRequest req) {
         Request.Builder builder = new Request.Builder().url(req.url);
-        builder.tag(req.id);
         String methodUpper = req.method.toUpperCase();
         String contentType = null;
         if (req.headers != null) {
@@ -85,7 +84,6 @@ public class OkHttpRequestBuilder {
             }
         }
         Request.Builder builder = new Request.Builder().url(req.url).method(req.method, multipartBuilder.build());
-        builder.tag(req.id);
         if (req.headers != null) {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 String key = entry.getKey();
@@ -112,7 +110,6 @@ public class OkHttpRequestBuilder {
         }
         RequestBody requestBody = formBuilder.build();
         Request.Builder builder = new Request.Builder().url(req.url).method(req.method, requestBody);
-        builder.tag(req.id);
         boolean hasContentType = false;
         if (req.headers != null) {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {

@@ -42,6 +42,8 @@ public class RedirectHandler {
             currentReq.urlencoded = urlencoded;
             currentReq.logEvent = true; // 记录事件日志
             HttpResponse resp = HttpSingleRequestExecutor.execute(currentReq);
+            req.okHttpHeaders = currentReq.okHttpHeaders; // 更新请求头
+            req.okHttpRequestBody = currentReq.okHttpRequestBody; // 更新真实请求体内容
             // 记录本次响应
             RedirectInfo info = new RedirectInfo();
             info.url = url;

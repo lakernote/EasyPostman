@@ -2,6 +2,7 @@ package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.edit.NetworkLogPanel;
 import com.laker.postman.panel.collections.edit.RequestEditPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
@@ -18,7 +19,6 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 事件监听器，既记录详细连接事件和耗时，也统计连接信息
@@ -30,13 +30,16 @@ public class EasyConsoleEventListener extends EventListener {
     private final HttpEventInfo info;
     private String reqItemId;
     private RequestEditSubPanel editSubPanel;
+    private PreparedRequest preparedRequest;
 
-    public EasyConsoleEventListener() {
+    public EasyConsoleEventListener(PreparedRequest preparedRequest) {
         this.callStartNanos = System.nanoTime();
         String threadName = Thread.currentThread().getName();
         this.info = new HttpEventInfo();
         info.setThreadName(threadName);
         eventInfoThreadLocal.set(info);
+        this.preparedRequest = preparedRequest;
+        this.reqItemId = preparedRequest.id;
     }
 
     private void log(String stage, String msg) {
@@ -97,7 +100,6 @@ public class EasyConsoleEventListener extends EventListener {
     public void callStart(Call call) {
         info.setCallStart(System.currentTimeMillis());
         Request request = call.request();
-        this.reqItemId = Objects.requireNonNull(request.tag()).toString();
         log("callStart", request.method() + " " + request.url());
     }
 
@@ -246,6 +248,7 @@ public class EasyConsoleEventListener extends EventListener {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         Headers headers = request.headers();
+        preparedRequest.okHttpHeaders = headers;
         for (int i = 0; i < headers.size(); i++) {
             String name = headers.name(i);
             String value = headers.value(i);
@@ -264,23 +267,51 @@ public class EasyConsoleEventListener extends EventListener {
         Request request = call.request();
         if (request.body() != null) {
             MediaType contentType = request.body().contentType();
-            if (contentType != null && (contentType.type().equalsIgnoreCase("multipart") || contentType.type().equalsIgnoreCase("application") && contentType.subtype().toLowerCase().contains("octet-stream"))) {
-                log("requestBodyStart", "Request body is file or binary, not logged");
+            String desc = null;
+            String type = null;
+            if (contentType != null) {
+                type = contentType.type().toLowerCase();
+                String subtype = contentType.subtype().toLowerCase();
+                if (type.equals("multipart")) {
+                    desc = "[multipart/form-data]";
+                } else if (type.equals("application") && (subtype.contains("octet-stream") || subtype.contains("binary"))) {
+                    desc = "[binary/octet-stream]";
+                } else if (type.equals("image") || type.equals("audio") || type.equals("video")) {
+                    desc = "[" + type + "/" + subtype + "]";
+                }
+            }
+            if (desc != null) {
+                // 尝试获取文件名
+                if (type.equals("multipart")) {
+                    desc = "[multipart/form-data] (see form files)";
+                } else {
+                    try {
+                        if (request.body().contentLength() > 0 && request.body().getClass().getSimpleName().toLowerCase().contains("file")) {
+                            desc += " (file upload)";
+                        }
+                    } catch (IOException ignored) {
+                    }
+                }
+                preparedRequest.okHttpRequestBody = desc;
+                log("requestBodyStart", desc);
             } else {
                 try {
                     okio.Buffer buffer = new okio.Buffer();
                     request.body().writeTo(buffer);
                     String bodyString = buffer.readUtf8();
+                    preparedRequest.okHttpRequestBody = bodyString;
                     if (!bodyString.isEmpty()) {
                         log("requestBodyStart", "\n" + bodyString);
                     } else {
                         log("requestBodyStart", "Request body is empty");
                     }
                 } catch (Exception e) {
+                    preparedRequest.okHttpRequestBody = "[读取请求体失败: " + e.getMessage() + "]";
                     log("requestBodyStart", "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
                 }
             }
         } else {
+            preparedRequest.okHttpRequestBody = null;
             log("requestBodyStart", "No request body");
         }
 

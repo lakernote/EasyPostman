@@ -36,7 +36,6 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setEditable(false);
         responseBodyPane.setCodeFoldingEnabled(true);
         responseBodyPane.setLineWrap(true);
-        responseBodyPane.setBackground(Color.WHITE);
         responseBodyPane.setHighlightCurrentLine(false); // 关闭选中行高亮
         RTextScrollPane scrollPane = new RTextScrollPane(responseBodyPane);
         add(scrollPane, BorderLayout.CENTER);

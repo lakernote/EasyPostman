@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.edit;
 import cn.hutool.core.util.XmlUtil;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.HttpResponse;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -24,9 +25,7 @@ public class ResponseBodyPanel extends JPanel {
     private final JButton downloadButton;
     private String currentFilePath;
     private String fileName = "downloaded_file"; // 默认下载文件名
-    private final JTextField searchField;
-    private int lastSearchIndex = -1;
-    private String lastKeyword = "";
+    private final FlatTextField searchField;
     private Map<String, List<String>> lastHeaders;
     private final JComboBox<String> syntaxComboBox;
 
@@ -53,7 +52,11 @@ public class ResponseBodyPanel extends JPanel {
         toolBar.add(leftPanel, BorderLayout.WEST);
         // 右侧搜索区
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
-        searchField = new JTextField(16);
+        searchField = new FlatTextField();
+        searchField.setLeadingIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
+        searchField.setPlaceholderText("Search...");
+        searchField.setShowClearButton(true);
+        searchField.setPreferredSize(new Dimension(200, 30));
         JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
         prevButton.setToolTipText("Previous");
         JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
@@ -105,9 +108,6 @@ public class ResponseBodyPanel extends JPanel {
         if (text == null || text.isEmpty()) return;
         int caret = responseBodyPane.getCaretPosition();
         int pos = -1;
-        if (!keyword.equals(lastKeyword)) {
-            lastSearchIndex = -1;
-        }
         if (forward) {
             // 向后查找
             int start = caret;
@@ -135,8 +135,6 @@ public class ResponseBodyPanel extends JPanel {
             responseBodyPane.setCaretPosition(pos);
             responseBodyPane.select(pos, pos + keyword.length());
             responseBodyPane.requestFocusInWindow();
-            lastSearchIndex = pos;
-            lastKeyword = keyword;
         } else {
             JOptionPane.showMessageDialog(this, "Not found: " + keyword);
         }

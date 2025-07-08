@@ -955,7 +955,10 @@ public class JMeterPanel extends BasePanel {
                 for (int i = 0; i < resultDetailTabbedPane.getTabCount(); i++) {
                     JScrollPane scroll = (JScrollPane) resultDetailTabbedPane.getComponentAt(i);
                     JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
-                    pane.setText("");
+                    pane.setContentType("text/html");
+                    pane.setEditable(false);
+                    pane.setText("<html><body><i>无数据</i></body></html>");
+                    pane.setCaretPosition(0);
                 }
             }
         });

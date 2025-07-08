@@ -16,7 +16,7 @@ public class ResponseStatusPanel extends JPanel {
 
     public ResponseStatusPanel() {
         setLayout(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 10));
         statusCodeLabel = new JLabel("Status: --");
         responseTimeLabel = new JLabel("Duration: --");
         responseSizeLabel = new JLabel("ResponseSize: --");

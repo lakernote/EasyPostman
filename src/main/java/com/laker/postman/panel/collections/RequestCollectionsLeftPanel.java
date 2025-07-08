@@ -5,6 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.dialog.LargeInputDialog;
 import com.laker.postman.common.frame.MainFrame;
@@ -59,7 +60,7 @@ public class RequestCollectionsLeftPanel extends BasePanel {
     // 树模型，用于管理树节点
     private DefaultTreeModel treeModel;
 
-    private JTextField searchField;
+    private FlatTextField searchField;
 
     private RequestCollectionPersistence persistence;
 
@@ -169,8 +170,10 @@ public class RequestCollectionsLeftPanel extends BasePanel {
     }
 
     private void getSearchField() {
-        searchField = new JTextField();
-        searchField.setToolTipText("搜索分组或请求名称");
+        searchField = new FlatTextField();
+        searchField.setLeadingIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
+        searchField.setPlaceholderText("Search...");
+        searchField.setShowClearButton(true);
         searchField.setPreferredSize(new Dimension(180, 28));
         searchField.setMaximumSize(new Dimension(180, 28));
     }

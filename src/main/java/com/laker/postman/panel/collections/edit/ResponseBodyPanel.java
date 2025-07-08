@@ -44,27 +44,26 @@ public class ResponseBodyPanel extends JPanel {
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setLayout(new BorderLayout());
-        // 左侧搜索区
+        // 左侧操作区
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        syntaxComboBox = new JComboBox<>(new String[]{
+                "Auto Detect", "JSON", "XML", "HTML", "JavaScript", "CSS", "Plain Text"
+        });
+        leftPanel.add(syntaxComboBox);
+        toolBar.add(leftPanel, BorderLayout.WEST);
+        // 右侧搜索区
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         searchField = new JTextField(16);
         JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
         prevButton.setToolTipText("Previous");
         JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
         nextButton.setToolTipText("Next");
-        leftPanel.add(searchField);
-        leftPanel.add(prevButton);
-        leftPanel.add(nextButton);
-        toolBar.add(leftPanel, BorderLayout.WEST);
-        // 右侧操作区
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        rightPanel.add(searchField);
+        rightPanel.add(prevButton);
+        rightPanel.add(nextButton);
         JButton formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 16, 16));
         formatButton.setToolTipText("Format");
-        syntaxComboBox = new JComboBox<>(new String[]{
-                "Auto Detect", "JSON", "XML", "HTML", "JavaScript", "CSS", "Plain Text"
-        });
         rightPanel.add(formatButton);
-        rightPanel.add(new JLabel("Syntax: "));
-        rightPanel.add(syntaxComboBox);
         downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", 16, 16));
         downloadButton.setToolTipText("Download");
         downloadButton.setVisible(false);
@@ -111,17 +110,24 @@ public class ResponseBodyPanel extends JPanel {
         }
         if (forward) {
             // 向后查找
-            pos = text.indexOf(keyword, caret + (lastSearchIndex == caret ? 1 : 0));
-            if (pos == -1 || pos == caret) {
+            int start = caret;
+            if (responseBodyPane.getSelectedText() != null && responseBodyPane.getSelectedText().equals(keyword)) {
+                start = caret + 1;
+            }
+            pos = text.indexOf(keyword, start);
+            if (pos == -1) {
                 // 循环查找
                 pos = text.indexOf(keyword);
             }
         } else {
             // 向前查找
-            int searchStart = caret - 1;
-            if (searchStart < 0) searchStart = text.length() - 1;
-            pos = text.lastIndexOf(keyword, searchStart);
-            if (pos == -1 || pos == caret) {
+            int start = caret - 1;
+            if (responseBodyPane.getSelectedText() != null && responseBodyPane.getSelectedText().equals(keyword)) {
+                start = caret - keyword.length() - 1;
+            }
+            if (start < 0) start = text.length() - 1;
+            pos = text.lastIndexOf(keyword, start);
+            if (pos == -1) {
                 pos = text.lastIndexOf(keyword);
             }
         }
@@ -214,8 +220,22 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setText(text);
         // 动态选择高亮类型，参考 postman
         String syntax = detectSyntax(text, contentType);
-        // 设置下拉框和高亮
-        syntaxComboBox.setSelectedIndex(0); // 自动识别
+        // 自动匹配下拉框选项
+        int syntaxIndex = 0;
+        if (SyntaxConstants.SYNTAX_STYLE_JSON.equals(syntax)) {
+            syntaxIndex = 1;
+        } else if (SyntaxConstants.SYNTAX_STYLE_XML.equals(syntax)) {
+            syntaxIndex = 2;
+        } else if (SyntaxConstants.SYNTAX_STYLE_HTML.equals(syntax)) {
+            syntaxIndex = 3;
+        } else if (SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT.equals(syntax)) {
+            syntaxIndex = 4;
+        } else if (SyntaxConstants.SYNTAX_STYLE_CSS.equals(syntax)) {
+            syntaxIndex = 5;
+        } else if (SyntaxConstants.SYNTAX_STYLE_NONE.equals(syntax)) {
+            syntaxIndex = 6;
+        }
+        syntaxComboBox.setSelectedIndex(syntaxIndex);
         responseBodyPane.setSyntaxEditingStyle(syntax);
         if (filePath != null && !filePath.isEmpty()) {
             downloadButton.setVisible(true);

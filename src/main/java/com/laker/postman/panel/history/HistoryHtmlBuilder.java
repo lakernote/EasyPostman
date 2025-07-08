@@ -4,6 +4,8 @@ import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.http.HttpUtil;
 
+import java.util.Map;
+
 public class HistoryHtmlBuilder {
     public static String formatHistoryDetailPrettyHtml(RequestHistoryItem item) {
         StringBuilder sb = new StringBuilder();
@@ -97,7 +99,7 @@ public class HistoryHtmlBuilder {
         if (item.request != null) {
             // 优先展示真实OkHttp请求体内容（如有）
             if (item.request.okHttpRequestBody != null && !item.request.okHttpRequestBody.isEmpty()) {
-                sb.append("<b>真实请求体</b><br><pre style='margin:0;background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                sb.append("<b>请求体</b><br><pre style='margin:0;background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
                         .append(escapeHtml(item.request.okHttpRequestBody)).append("</pre>");
             }
 
@@ -117,10 +119,15 @@ public class HistoryHtmlBuilder {
                 }
                 sb.append("</pre>");
             }
-            if (!hasForm && item.request.body != null && !item.request.body.isEmpty()) {
-                sb.append("<b>request-body</b><br><pre style='margin:0;'>");
-                sb.append("<pre style='margin:0;'>").append(escapeHtml(item.request.body)).append("</pre>");
+
+            if (item.request.urlencoded != null && !item.request.urlencoded.isEmpty()) {
+                sb.append("<b>x-www-form-urlencoded</b><br><pre style='margin:0;'>");
+                for (Map.Entry<String, String> entry : item.request.urlencoded.entrySet()) {
+                    sb.append(escapeHtml(entry.getKey())).append(" = ").append(escapeHtml(entry.getValue())).append("\n");
+                }
+                sb.append("</pre>");
             }
+
             if (!hasForm && (item.request.body == null || item.request.body.isEmpty()) && (item.request.okHttpRequestBody == null || item.request.okHttpRequestBody.isEmpty())) {
                 sb.append("<pre style='margin:0;'>(None)</pre>");
             }

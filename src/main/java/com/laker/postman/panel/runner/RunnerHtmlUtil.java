@@ -25,12 +25,8 @@ public class RunnerHtmlUtil {
         }
         // 优先展示真实OkHttp请求体内容
         if (req.okHttpRequestBody != null && !req.okHttpRequestBody.isEmpty()) {
-            sb.append("<b>真实请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
-        }
-        if (req.body != null && !req.body.isEmpty()) {
             sb.append("<b>请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                    .append(escapeHtml(req.body)).append("</pre>");
+                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
         }
         if (req.formData != null && !req.formData.isEmpty()) {
             sb.append("<b>Form Data:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");

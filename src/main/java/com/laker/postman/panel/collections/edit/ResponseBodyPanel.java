@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.edit;
 
 import cn.hutool.core.util.XmlUtil;
+import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
@@ -164,10 +165,14 @@ public class ResponseBodyPanel extends JPanel {
 
     private void formatContent() {
         String text = responseBodyPane.getText();
+        if (text == null || text.isEmpty()) {
+            return;
+        }
         String contentType = getCurrentContentTypeFromHeaders();
         try {
             if (contentType.contains("json")) {
-                String pretty = JSONUtil.formatJsonStr(text);
+                JSON json = JSONUtil.parse(text); // 确保是有效的 JSON
+                String pretty = JSONUtil.toJsonPrettyStr(json);
                 responseBodyPane.setText(pretty);
             } else if (contentType.contains("xml")) {
                 String pretty = XmlUtil.format(text);

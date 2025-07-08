@@ -67,7 +67,7 @@ public class EasyTablePanel extends JPanel {
     /**
      * 构造方法，初始化表格和右键菜单。
      *
-     * @param columns 表头列名数��
+     * @param columns 表头列名数组
      *                <br>示例：new String[]{"Name", "Age", "Email"}
      */
     public EasyTablePanel(String[] columns) {
@@ -429,7 +429,6 @@ public class EasyTablePanel extends JPanel {
         table.getColumnModel().getColumn(columnIndex).setMaxWidth(width);
     }
 
-    // 设置表格可见高度��行数和总宽度）
     public void setPreferredScrollableViewportHeight(int rowCount, int totalWidth) {
         table.setPreferredScrollableViewportSize(new Dimension(totalWidth, table.getRowHeight() * rowCount));
     }

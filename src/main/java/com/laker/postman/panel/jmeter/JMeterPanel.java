@@ -58,7 +58,7 @@ public class JMeterPanel extends BasePanel {
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
     private CardLayout propertyCardLayout;
-    private JTabbedPane resultTabbedPane; // 底���/右侧结果Tab
+    private JTabbedPane resultTabbedPane; // 结果Tab
     private ThreadGroupPropertyPanel threadGroupPanel;
     private AssertionPropertyPanel assertionPanel;
     private TimerPropertyPanel timerPanel;
@@ -338,7 +338,6 @@ public class JMeterPanel extends BasePanel {
         progressLabel.setText("0/0");
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
         progressLabel.setIcon(new FlatSVGIcon("icons/jmeter.svg", 24, 24)); // 使用FlatLaf SVG图标
-        // ���置icon在文字右边
         progressLabel.setHorizontalTextPosition(SwingConstants.LEFT);
         progressPanel.add(progressLabel);
         topPanel.add(progressPanel, BorderLayout.EAST);
@@ -541,7 +540,7 @@ public class JMeterPanel extends BasePanel {
                                     }
                             );
                         } catch (Exception ex) {
-                            log.error("前置脚��执行���败: {}", ex.getMessage(), ex);
+                            log.error("前置脚本: {}", ex.getMessage(), ex);
                             errorMsg = "前置脚本执行失败: " + ex.getMessage();
                             preOk = false;
                             success = false;

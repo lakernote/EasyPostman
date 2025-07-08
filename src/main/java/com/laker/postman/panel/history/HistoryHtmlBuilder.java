@@ -224,7 +224,7 @@ public class HistoryHtmlBuilder {
                 .append("</td><td style='color:#888;font-size:9px;'>RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送</td></tr>");
         sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'><b>Waiting (TTFB)</b></td><td style='color:#388e3c;font-weight:bold;'>")
                 .append(serverCost >= 0 ? serverCost + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理（TTFB���</td></tr>");
+                .append("</td><td style='color:#888;font-size:9px;'>RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理</td></tr>");
         sb.append("<tr><td style='padding:2px 8px 2px 0'>Content Download</td><td>")
                 .append(respBody >= 0 ? respBody + " ms" : "-")
                 .append("</td><td style='color:#888;font-size:9px;'>ResponseBodyStart→ResponseBodyEnd，响应体下载</td></tr>");

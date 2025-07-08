@@ -50,7 +50,6 @@ public class RequestEditSubPanel extends JPanel {
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
     private final RequestBodyPanel requestBodyPanel;
-    private String rawResponseBodyText = null; // 保存原始响应体内容
     private HttpRequestItem originalRequestItem;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;
@@ -172,7 +171,6 @@ public class RequestEditSubPanel extends JPanel {
         // Response body panel
         responseBodyPanel = new ResponseBodyPanel();
         responseTabs.addTab("Body", responseBodyPanel);
-        responseBodyPanel.getFormatButton().addActionListener(e -> formatResponseBody());
         // 响应头面板
         responseHeadersPanel = new ResponseHeadersPanel();
         responseTabs.addTab("Headers", responseHeadersPanel);
@@ -253,25 +251,7 @@ public class RequestEditSubPanel extends JPanel {
         headersPanel.updateTableBorder(isModified);
     }
 
-    private void formatResponseBody() {
-        String text = rawResponseBodyText != null ? rawResponseBodyText : responseBodyPanel.getResponseBodyPane().getText();
-        if (JSONUtil.isTypeJSON(text)) {
-            try {
-                String prettyJson = JSONUtil.formatJsonStr(text);
-                responseBodyPanel.getResponseBodyPane().setContentType("text/html");
-                responseBodyPanel.getResponseBodyPane().setText("<pre>" + highlightJson(prettyJson) + "</pre>");
-            } catch (Exception e) {
-                responseBodyPanel.getResponseBodyPane().setContentType("text/plain");
-                responseBodyPanel.getResponseBodyPane().setText(text);
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "响应体不是有效的 JSON，无法格式化");
-        }
-        responseBodyPanel.getResponseBodyPane().setCaretPosition(0);
-    }
-
     private void setResponseBody(HttpResponse resp) {
-        rawResponseBodyText = resp.body;
         responseBodyPanel.setBodyText(resp);
     }
 

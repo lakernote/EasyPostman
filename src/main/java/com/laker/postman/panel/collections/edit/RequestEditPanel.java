@@ -5,8 +5,10 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tab.PlusTabComponent;
+import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
+import com.laker.postman.service.curl.CurlParser;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
@@ -17,6 +19,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
@@ -31,7 +34,7 @@ public class RequestEditPanel extends BasePanel {
 
 
     // 新建Tab，可指定标题
-    public void addNewTab(String title) {
+    public RequestEditSubPanel addNewTab(String title) {
         // 先移除+Tab
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
@@ -44,6 +47,7 @@ public class RequestEditPanel extends BasePanel {
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
+        return subPanel;
     }
 
     // 添加“+”Tab
@@ -353,6 +357,7 @@ public class RequestEditPanel extends BasePanel {
      */
     private void updateExistingRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
         if (!collectionPanel.updateExistingRequest(item)) {
+            log.error("更新请求失败: {}", item.getId() + " - " + item.getName());
             JOptionPane.showMessageDialog(this, "更新请求失败", "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -379,6 +384,36 @@ public class RequestEditPanel extends BasePanel {
         tabbedPane.addChangeListener(e -> {
             int idx = tabbedPane.getSelectedIndex();
             if (idx == tabbedPane.getTabCount() - 1 && isPlusTab(idx)) {
+                // 检测剪贴板cURL
+                String curlText = RequestCollectionsLeftPanel.getClipboardCurlText();
+                if (curlText != null) {
+                    int result = JOptionPane.showConfirmDialog(this, "检测到剪贴板有 cURL 命令，是否导入到新请求？", "导入cURL", JOptionPane.YES_NO_OPTION);
+                    if (result == JOptionPane.YES_OPTION) {
+                        try {
+                            CurlRequest curlRequest = CurlParser.parse(curlText);
+                            if (curlRequest.url != null) {
+                                HttpRequestItem item = new HttpRequestItem();
+                                item.setName(null);
+                                item.setUrl(curlRequest.url);
+                                item.setMethod(curlRequest.method);
+                                item.setHeaders(curlRequest.headers);
+                                item.setBody(curlRequest.body);
+                                item.setParams(curlRequest.params);
+                                item.setFormData(curlRequest.formData);
+                                item.setFormFiles(curlRequest.formFiles);
+                                // 新建Tab并填充内容
+                                RequestEditSubPanel tab = addNewTab(null);
+                                item.setId(tab.getId());
+                                tab.updateRequestForm(item);
+                                // 清空剪贴板内容
+                                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+                                return;
+                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(this, "解析cURL出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
                 addNewTab(null);
             }
         });

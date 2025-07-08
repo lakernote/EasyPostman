@@ -1095,4 +1095,23 @@ public class RequestCollectionsLeftPanel extends BasePanel {
         dialog.add(btns, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }
+
+    /**
+     * 检查剪贴板是否有cURL命令，有则返回文本，否则返回null
+     */
+    public static String getClipboardCurlText() {
+        try {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            Transferable t = clipboard.getContents(null);
+            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                String text = (String) t.getTransferData(DataFlavor.stringFlavor);
+                if (text.trim().toLowerCase().startsWith("curl")) {
+                    return text.trim();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("获取剪贴板cURL文本失败", e);
+        }
+        return null;
+    }
 }

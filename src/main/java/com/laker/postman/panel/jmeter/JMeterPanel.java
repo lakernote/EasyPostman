@@ -88,6 +88,7 @@ public class JMeterPanel extends BasePanel {
     private JTextField searchField;
     private JButton searchBtn;
 
+    private JLabel elapsedLabel; // 显示已用时
 
     @Override
     protected void initUI() {
@@ -343,6 +344,11 @@ public class JMeterPanel extends BasePanel {
         progressLabel.setIcon(new FlatSVGIcon("icons/jmeter.svg", 24, 24)); // 使用FlatLaf SVG图标
         progressLabel.setHorizontalTextPosition(SwingConstants.LEFT);
         progressPanel.add(progressLabel);
+        // ========== 实时耗时显示 ==========
+        elapsedLabel = new JLabel("已用时: 0 ms");
+        elapsedLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
+        progressPanel.add(elapsedLabel);
+
         topPanel.add(progressPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
@@ -398,7 +404,6 @@ public class JMeterPanel extends BasePanel {
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
         saveAllPropertyPanelData();
-        // 压测前动态调整连接池参数
         OkHttpClientManager.setConnectionPoolConfig(JMETER_MAX_IDLE_CONNECTIONS, JMETER_KEEP_ALIVE_DURATION);
         if (running) return;
         running = true;
@@ -410,9 +415,11 @@ public class JMeterPanel extends BasePanel {
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
-        // 统计总请求数
+        allRequestStartTimes.clear();
+        allRequestEndTimes.clear();
         int total = countTotalRequests((DefaultMutableTreeNode) treeModel.getRoot());
         progressLabel.setText("0/" + total);
+        elapsedLabel.setText("已用时: 0 ms");
         runThread = new Thread(() -> {
             try {
                 DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
@@ -423,7 +430,6 @@ public class JMeterPanel extends BasePanel {
                     runBtn.setEnabled(true);
                     stopBtn.setEnabled(false);
                     updateReportPanel();
-                    // 恢复默认连接池参数
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
                 });
             }
@@ -644,6 +650,16 @@ public class JMeterPanel extends BasePanel {
                     SwingUtilities.invokeLater(() -> {
                         resultRootNode.add(reqNode);
                         resultTreeModel.reload(resultRootNode);
+                        // ====== 刷新耗时UI ======
+                        if (!allRequestStartTimes.isEmpty()) {
+                            List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
+                            long minStart = Collections.min(snapshot);
+                            long now = System.currentTimeMillis();
+                            long elapsed = now - minStart;
+                            elapsedLabel.setText("已用时: " + elapsed + " ms");
+                        } else {
+                            elapsedLabel.setText("已用时: 0 ms");
+                        }
                     });
                 }
             }
@@ -1014,7 +1030,6 @@ public class JMeterPanel extends BasePanel {
         }
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
-        // 停止时恢复默认连接池参数
         OkHttpClientManager.setDefaultConnectionPoolConfig();
     }
 

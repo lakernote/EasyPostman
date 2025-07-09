@@ -204,6 +204,15 @@ public class ResponseBodyPanel extends JPanel {
 
     public void setBodyText(HttpResponse resp) {
         if (resp == null) {
+            responseBodyPane.setText("");
+            currentFilePath = null;
+            fileName = "downloaded_file";
+            lastHeaders = null;
+            downloadButton.setVisible(false);
+            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            responseBodyPane.setCaretPosition(0);
+            searchField.setText("");
+            syntaxComboBox.setSelectedIndex(0);
             return;
         }
         this.currentFilePath = resp.filePath;

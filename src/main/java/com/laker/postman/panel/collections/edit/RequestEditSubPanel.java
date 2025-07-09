@@ -26,6 +26,7 @@ import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.InterruptedIOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -769,6 +770,13 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 只禁用 responseBodyPanel
         responseBodyPanel.setEnabled(false);
+        // 清空响应内容
+        responseHeadersPanel.setHeaders(new LinkedHashMap<>());
+        responseBodyPanel.setBodyText(null);
+        // 清空网络日志
+        networkLogPanel.clearLog();
+        // 清空测试结果
+        setTestResults(new ArrayList<>());
     }
 
     // UI状态：响应完成

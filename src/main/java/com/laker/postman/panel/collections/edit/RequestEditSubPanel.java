@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.edit;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -69,6 +70,7 @@ public class RequestEditSubPanel extends JPanel {
     private JScrollPane testsScrollPane;
 
     private final JButton[] tabButtons;
+    private final int testsTabIndex = 2; // Tests按钮在tabButtons中的下标
 
     public RequestEditSubPanel(String id) {
         this.id = id;
@@ -821,6 +823,21 @@ public class RequestEditSubPanel extends JPanel {
         String html = RunnerHtmlUtil.buildTestsHtml(testResults);
         testsPane.setText(html);
         testsPane.setCaretPosition(0);
+        // 动态设置Tests按钮文本和颜色
+        if (tabButtons != null && tabButtons.length > testsTabIndex) {
+            JButton testsBtn = tabButtons[testsTabIndex];
+            if (CollectionUtil.isNotEmpty(testResults)) {
+                boolean allPassed = testResults.stream().allMatch(r -> r.passed);
+                String countText = "(" + testResults.size() + ")";
+                String color = allPassed ? "#009900" : "#d32f2f"; // 绿色/红色
+                String countHtml = "Tests<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
+                testsBtn.setText("<html>" + countHtml + "</html>");
+                testsBtn.setForeground(Color.BLACK); // 保持主色为黑色
+            } else {
+                testsBtn.setText("Tests");
+                testsBtn.setForeground(Color.BLACK); // 默认色
+            }
+        }
     }
 
     // SSE UI回调接口
@@ -926,3 +943,4 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 }
+

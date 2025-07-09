@@ -29,6 +29,10 @@ public class ResponseBodyPanel extends JPanel {
     private final FlatTextField searchField;
     private Map<String, List<String>> lastHeaders;
     private final JComboBox<String> syntaxComboBox;
+    private final JButton formatButton;
+    private final JButton prevButton;
+    private final JButton nextButton;
+    RTextScrollPane scrollPane;
 
     public ResponseBodyPanel() {
         setLayout(new BorderLayout());
@@ -37,7 +41,7 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setCodeFoldingEnabled(true);
         responseBodyPane.setLineWrap(true);
         responseBodyPane.setHighlightCurrentLine(false); // 关闭选中行高亮
-        RTextScrollPane scrollPane = new RTextScrollPane(responseBodyPane);
+        scrollPane = new RTextScrollPane(responseBodyPane);
         add(scrollPane, BorderLayout.CENTER);
         // 顶部工具栏优化：左侧为搜索，右侧为格式化、语法下拉、下载
         JToolBar toolBar = new JToolBar();
@@ -57,14 +61,14 @@ public class ResponseBodyPanel extends JPanel {
         searchField.setPlaceholderText("Search...");
         searchField.setShowClearButton(true);
         searchField.setPreferredSize(new Dimension(200, 30));
-        JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
+        prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
         prevButton.setToolTipText("Previous");
-        JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+        nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
         nextButton.setToolTipText("Next");
         rightPanel.add(searchField);
         rightPanel.add(prevButton);
         rightPanel.add(nextButton);
-        JButton formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 16, 16));
+        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 16, 16));
         formatButton.setToolTipText("Format");
         rightPanel.add(formatButton);
         downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", 16, 16));
@@ -268,5 +272,18 @@ public class ResponseBodyPanel extends JPanel {
             if (t.toLowerCase().contains("<?xml")) return SyntaxConstants.SYNTAX_STYLE_XML;
         }
         return SyntaxConstants.SYNTAX_STYLE_NONE;
+    }
+
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        responseBodyPane.setEnabled(enabled);
+        syntaxComboBox.setEnabled(enabled);
+        searchField.setEnabled(enabled);
+        downloadButton.setEnabled(enabled);
+        scrollPane.setEnabled(enabled);
+
+        if (formatButton != null) formatButton.setEnabled(enabled);
+        if (prevButton != null) prevButton.setEnabled(enabled);
+        if (nextButton != null) nextButton.setEnabled(enabled);
     }
 }

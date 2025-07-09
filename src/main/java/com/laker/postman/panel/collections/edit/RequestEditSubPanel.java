@@ -68,6 +68,8 @@ public class RequestEditSubPanel extends JPanel {
     private JEditorPane testsPane;
     private JScrollPane testsScrollPane;
 
+    private final JButton[] tabButtons;
+
     public RequestEditSubPanel(String id) {
         this.id = id;
         setLayout(new BorderLayout());
@@ -128,6 +130,7 @@ public class RequestEditSubPanel extends JPanel {
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         String[] tabNames = {"Body", "Headers", "Tests", "Network Log"};
         JButton[] tabButtons = new JButton[tabNames.length];
+        this.tabButtons = tabButtons;
         for (int i = 0; i < tabNames.length; i++) {
             tabButtons[i] = new TabButton(tabNames[i], i);
             tabBar.add(tabButtons[i]);
@@ -178,7 +181,7 @@ public class RequestEditSubPanel extends JPanel {
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(1);
-        splitPane.setResizeWeight(0.5);
+        splitPane.setResizeWeight(0.4); // 设置分割线位置，0.4表示请求部分占40%
         add(splitPane, BorderLayout.CENTER);
 
         // WebSocket消息发送按钮事件绑定（只绑定一次）
@@ -755,6 +758,12 @@ public class RequestEditSubPanel extends JPanel {
         responseSizeLabel.setText("ResponseSize: --");
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
         networkLogPanel.clearLog();
+        // 禁用响应区tab按钮
+        for (JButton btn : tabButtons) {
+            btn.setEnabled(false);
+        }
+        // 只禁用 responseBodyPanel
+        responseBodyPanel.setEnabled(false);
     }
 
     // UI状态：响应完成
@@ -762,6 +771,12 @@ public class RequestEditSubPanel extends JPanel {
         if (resp == null) {
             statusCodeLabel.setText("Status:" + statusText);
             statusCodeLabel.setForeground(Color.RED);
+            // 恢复tab按钮
+            for (JButton btn : tabButtons) {
+                btn.setEnabled(true);
+            }
+            // 恢复 responseBodyPanel
+            responseBodyPanel.setEnabled(true);
             return;
         }
         responseHeadersPanel.setHeaders(resp.headers);
@@ -772,6 +787,12 @@ public class RequestEditSubPanel extends JPanel {
         responseTimeLabel.setText(String.format("Duration: %d ms", resp.costMs));
         int bytes = resp.bodySize;
         responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
+        // 恢复tab按钮
+        for (JButton btn : tabButtons) {
+            btn.setEnabled(true);
+        }
+        // 恢复 responseBodyPanel
+        responseBodyPanel.setEnabled(true);
     }
 
     // 处理响应、后置脚本、变量提取、历史

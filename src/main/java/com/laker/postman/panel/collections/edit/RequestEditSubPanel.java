@@ -158,31 +158,65 @@ public class RequestEditSubPanel extends JPanel {
 
         // 3. 响应面板
         JPanel responsePanel = new JPanel(new BorderLayout());
-        // 状态栏面板
-        ResponseStatusPanel responseStatusPanel = new ResponseStatusPanel();
-        statusCodeLabel = responseStatusPanel.getStatusCodeLabel();
-        responseTimeLabel = responseStatusPanel.getResponseTimeLabel();
-        responseSizeLabel = responseStatusPanel.getResponseSizeLabel();
-        responsePanel.add(responseStatusPanel, BorderLayout.NORTH);
+        // 顶部区域：tabBar在左，statusBar在右
+        JPanel topResponseBar = new JPanel(new BorderLayout());
+        // Tab栏（自定义按钮实现）
+        JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        String[] tabNames = {"Body", "Headers", "Tests", "Network Log"};
+        JButton[] tabButtons = new JButton[tabNames.length];
+        for (int i = 0; i < tabNames.length; i++) {
+            tabButtons[i] = new JButton(tabNames[i]);
+            tabButtons[i].setFocusPainted(false);
+            tabButtons[i].setBorderPainted(false);
+            tabButtons[i].setContentAreaFilled(false);
+            tabButtons[i].setOpaque(true);
+            tabButtons[i].setBackground(i == 0 ? new Color(220, 220, 220) : null);
+            tabBar.add(tabButtons[i]);
+        }
+        topResponseBar.add(tabBar, BorderLayout.WEST);
+        // 状态栏（不可点击）
+        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+        statusCodeLabel = new JLabel();
+        responseTimeLabel = new JLabel();
+        responseSizeLabel = new JLabel();
+        statusBar.add(statusCodeLabel);
+        statusBar.add(responseTimeLabel);
+        statusBar.add(responseSizeLabel);
+        topResponseBar.add(statusBar, BorderLayout.EAST);
+        responsePanel.add(topResponseBar, BorderLayout.NORTH);
 
-        // 响应Tabs
-        JTabbedPane responseTabs = new JTabbedPane();
-        // Response body panel
+        // CardLayout内容区
+        JPanel cardPanel = new JPanel(new CardLayout());
         responseBodyPanel = new ResponseBodyPanel();
-        responseTabs.addTab("Body", responseBodyPanel);
-        // 响应头面板
         responseHeadersPanel = new ResponseHeadersPanel();
-        responseTabs.addTab("Headers", responseHeadersPanel);
-        // Network Log Tab（包含重定向链和网络日志）
-        networkLogPanel = new NetworkLogPanel();
-        responseTabs.addTab("Network Logs", networkLogPanel);
-        // Tests Tab
+        JPanel testsPanel = new JPanel(new BorderLayout());
         testsPane = new JEditorPane();
         testsPane.setContentType("text/html");
         testsPane.setEditable(false);
         testsScrollPane = new JScrollPane(testsPane);
-        responseTabs.addTab("Tests", testsScrollPane);
-        responsePanel.add(responseTabs, BorderLayout.CENTER);
+        testsPanel.add(testsScrollPane, BorderLayout.CENTER);
+        testsPanel.setBorder(BorderFactory.createTitledBorder("Tests"));
+        networkLogPanel = new NetworkLogPanel();
+        cardPanel.add(responseBodyPanel, "Body");
+        cardPanel.add(responseHeadersPanel, "Headers");
+        cardPanel.add(testsPanel, "Tests");
+        cardPanel.add(networkLogPanel, "Network Log");
+        responsePanel.add(cardPanel, BorderLayout.CENTER);
+
+        // Tab按钮切换逻辑
+        for (int i = 0; i < tabButtons.length; i++) {
+            final int idx = i;
+            tabButtons[i].addActionListener(e -> {
+                CardLayout cl = (CardLayout) cardPanel.getLayout();
+                cl.show(cardPanel, tabNames[idx]);
+                for (int j = 0; j < tabButtons.length; j++) {
+                    tabButtons[j].setBackground(j == idx ? new Color(220, 220, 220) : null);
+                }
+            });
+        }
+        // 默认显示Body
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, "Body");
+
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(1);
         splitPane.setResizeWeight(0.5);
@@ -851,3 +885,4 @@ public class RequestEditSubPanel extends JPanel {
     }
 
 }
+

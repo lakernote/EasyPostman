@@ -20,7 +20,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         gbc.gridy = 0;
         add(new JLabel("用户数:"), gbc);
         gbc.gridx = 1;
-        numThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
+        numThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
         add(numThreadsSpinner, gbc);
         gbc.gridx = 0;
         gbc.gridy = 1;

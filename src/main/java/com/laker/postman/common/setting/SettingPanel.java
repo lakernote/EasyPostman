@@ -1,14 +1,19 @@
 package com.laker.postman.common.setting;
 
+import com.laker.postman.common.panel.BasePanel;
+
 import javax.swing.*;
 import java.awt.*;
 
-public class SettingPanel extends JPanel {
-    private final JTextField maxBodySizeField;
-    private final JTextField requestTimeoutField;
-    private final JTextField maxDownloadSizeField;
+public class SettingPanel extends BasePanel {
+    private JTextField maxBodySizeField;
+    private JTextField requestTimeoutField;
+    private JTextField maxDownloadSizeField;
+    JButton saveBtn;
+    JButton cancelBtn;
 
-    public SettingPanel() {
+    @Override
+    protected void initUI() {
         setLayout(new BorderLayout(10, 10));
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -46,11 +51,19 @@ public class SettingPanel extends JPanel {
         formPanel.add(maxDownloadSizeLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(maxDownloadSizeField, gbc);
+        saveBtn = new JButton("Save");
+        cancelBtn = new JButton("Cancel");
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.add(cancelBtn);
+        btnPanel.add(saveBtn);
 
-        JButton saveBtn = new JButton("Save");
+        add(formPanel, BorderLayout.CENTER);
+        add(btnPanel, BorderLayout.SOUTH);
+    }
+
+    @Override
+    protected void registerListeners() {
         saveBtn.addActionListener(e -> saveSettings());
-
-        JButton cancelBtn = new JButton("Cancel");
         cancelBtn.addActionListener(e -> {
             // 获取顶层窗口并关闭
             Window window = SwingUtilities.getWindowAncestor(this);
@@ -58,14 +71,8 @@ public class SettingPanel extends JPanel {
                 dialog.dispose();
             }
         });
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnPanel.add(saveBtn);
-        btnPanel.add(cancelBtn);
-
-        add(formPanel, BorderLayout.CENTER);
-        add(btnPanel, BorderLayout.SOUTH);
     }
+
 
     private void saveSettings() {
         try {

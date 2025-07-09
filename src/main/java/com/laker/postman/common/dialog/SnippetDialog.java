@@ -29,7 +29,6 @@ public class SnippetDialog extends JDialog {
             new Snippet("断言-字段存在", "pm.test('字段存在', function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('data');\n});", "断言JSON中存在data字段"),
             new Snippet("断言-数组长度", "pm.test('数组长度为3', function () {\n    var arr = pm.response.json().list;\n    pm.expect(arr.length).to.eql(3);\n});", "断言数组长度为3"),
             new Snippet("断言-正则匹配", "pm.test('Body正则匹配', function () {\n    pm.expect(pm.response.text()).to.match(/success/);\n});", "断言响应体正则匹配"),
-            new Snippet("循环遍历数组", "var arr = pm.response.json().list;\narr.forEach(function(item) {\n    // 处理每个item\n});", "遍历JSON数组字段list"),
 
             new Snippet("提取-JSON字段到环境变量", "var jsonData = pm.response.json();\npm.environment.set('token', jsonData.token);", "提取token到环境变量"),
             new Snippet("提取-Header到环境变量", "var token = pm.response.headers.get('X-Token');\npm.environment.set('token', token);", "提取响应头X-Token到环境变量"),
@@ -39,6 +38,9 @@ public class SnippetDialog extends JDialog {
             new Snippet("获取环境变量", "pm.environment.get('key');", "获取环境变量"),
             new Snippet("删除环境变量", "pm.environment.unset('key');", "删除环境变量"),
             new Snippet("清空环境变量", "pm.environment.clear();", "清空所有环境变量"),
+
+            new Snippet("循环遍历数组", "var arr = pm.response.json().list;\narr.forEach(function(item) {\n    // 处理每个item\n});", "遍历JSON数组字段list"),
+            new Snippet("条件判断", "if (pm.response.code === 200) {\n    // 成功逻辑\n} else {\n    // 失败逻辑\n}", "根据响应状态码进行条件判断"),
             new Snippet("打印日志", "console.log('日志内容');", "打印日志到控制台")
     );
 

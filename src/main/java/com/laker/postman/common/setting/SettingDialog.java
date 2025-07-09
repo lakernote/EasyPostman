@@ -1,5 +1,7 @@
 package com.laker.postman.common.setting;
 
+import com.laker.postman.common.SingletonFactory;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -8,11 +10,10 @@ public class SettingDialog extends JDialog {
         super(owner, "全局设置", ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
-        SettingPanel panel = new SettingPanel();
+        SettingPanel panel = SingletonFactory.getInstance(SettingPanel.class);
         add(panel, BorderLayout.CENTER);
         setSize(500, 300);
         setLocationRelativeTo(owner);
-        setResizable(false);
-        // 不全屏，不最大化
+        setResizable(false); // 设置窗口不可调整大小
     }
 }

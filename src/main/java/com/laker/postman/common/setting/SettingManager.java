@@ -56,10 +56,10 @@ public class SettingManager {
             try {
                 return Integer.parseInt(val);
             } catch (NumberFormatException e) {
-                return 30_000;
+                return 0;
             }
         }
-        return 30_000; // 默认30秒
+        return 0;
     }
 
     public static void setRequestTimeout(int timeout) {

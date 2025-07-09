@@ -96,6 +96,11 @@ public class SettingPanel extends BasePanel {
             SettingManager.setRequestTimeout(timeout);
             SettingManager.setMaxDownloadSize(maxDownloadMB * 1024 * 1024);
             JOptionPane.showMessageDialog(this, "设置已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
+            // 获取顶层窗口并关闭
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window instanceof JDialog dialog) {
+                dialog.dispose();
+            }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "请输入有效的数字", "错误", JOptionPane.ERROR_MESSAGE);
         }

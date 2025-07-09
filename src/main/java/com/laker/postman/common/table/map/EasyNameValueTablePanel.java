@@ -33,7 +33,7 @@ public class EasyNameValueTablePanel extends EasyTablePanel {
             Object key = row.get(nameCol); // 获取第一列作为key
             Object value = row.get(valueCol); // 获取第二列作为value
             if (key != null && !key.toString().trim().isEmpty()) { // 确保key不为空
-                map.put(key.toString(), value == null ? null : value.toString()); // 将value转换为String，null值也处理
+                map.put(key.toString(), value == null ? "" : value.toString()); // 将value转换为String，null值也处理
             }
         }
 

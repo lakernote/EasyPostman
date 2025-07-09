@@ -266,13 +266,13 @@ public class RequestEditSubPanel extends JPanel {
             log.info("oriJson: {}", oriJson);
             log.info("curJson: {}", curJson);
         }
-        if (!isModified) {
-            // all EasyNameValueTablePanel and EasyTablePanel updateTableBorder
-            paramsPanel.updateTableBorder(false);
-            headersPanel.updateTableBorder(false);
-            requestBodyPanel.getFormDataTablePanel().updateTableBorder(false);
-            requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(false);
-        }
+//        if (!isModified) {
+//            // all EasyNameValueTablePanel and EasyTablePanel updateTableBorder
+//            paramsPanel.updateTableBorder(false);
+//            headersPanel.updateTableBorder(false);
+//            requestBodyPanel.getFormDataTablePanel().updateTableBorder(false);
+//            requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(false);
+//        }
         return isModified;
     }
 
@@ -289,10 +289,10 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     public void updateTablesBorder(boolean isModified) {
-        requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(isModified);
-        requestBodyPanel.getFormDataTablePanel().updateTableBorder(isModified);
-        paramsPanel.updateTableBorder(isModified);
-        headersPanel.updateTableBorder(isModified);
+//        requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(isModified);
+//        requestBodyPanel.getFormDataTablePanel().updateTableBorder(isModified);
+//        paramsPanel.updateTableBorder(isModified);
+//        headersPanel.updateTableBorder(isModified);
     }
 
     private void setResponseBody(HttpResponse resp) {

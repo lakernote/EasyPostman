@@ -329,7 +329,16 @@ public class EasyTablePanel extends JPanel {
                 for (int i = 0; i < values.length; i++) {
                     values[i] = row.get(tableModel.getColumnName(i));
                 }
-                tableModel.addRow(values);
+                // 修正：自动补齐或截断长度
+                Object[] fixedValues = new Object[columns.length];
+                for (int i = 0; i < columns.length; i++) {
+                    if (i < values.length) {
+                        fixedValues[i] = values[i];
+                    } else {
+                        fixedValues[i] = null;
+                    }
+                }
+                tableModel.addRow(fixedValues);
             }
         }
         suppressAutoAppendRow = false;
@@ -381,7 +390,18 @@ public class EasyTablePanel extends JPanel {
      */
     public void addRow(Object... values) {
         suppressAutoAppendRow = true;
-        tableModel.addRow(values);
+        // 修正：自动补齐或截断长度，防止越界
+        Object[] fixedValues = new Object[columns.length];
+        if (values != null) {
+            for (int i = 0; i < columns.length; i++) {
+                if (i < values.length) {
+                    fixedValues[i] = values[i];
+                } else {
+                    fixedValues[i] = null;
+                }
+            }
+        }
+        tableModel.addRow(fixedValues);
         suppressAutoAppendRow = false;
         ensureOneEmptyRow();
     }
@@ -473,16 +493,16 @@ public class EasyTablePanel extends JPanel {
 
     // 整体高亮时边框提示
     public void updateTableBorder(boolean modified) {
-        if (modified) {
-            table.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(255, 140, 0), 3), // 更鲜明橙色且加粗
-                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-        } else {
-            table.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(220, 225, 230)),
-                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-        }
-        table.repaint();
+//        if (modified) {
+//            table.setBorder(BorderFactory.createCompoundBorder(
+//                    BorderFactory.createLineBorder(new Color(255, 140, 0), 3), // 更鲜明橙色且加粗
+//                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
+//        } else {
+//            table.setBorder(BorderFactory.createCompoundBorder(
+//                    BorderFactory.createLineBorder(new Color(220, 225, 230)),
+//                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
+//        }
+//        table.repaint();
     }
 
     /**

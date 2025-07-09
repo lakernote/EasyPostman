@@ -68,46 +68,10 @@ public class RequestEditSubPanel extends JPanel {
     private JEditorPane testsPane;
     private JScrollPane testsScrollPane;
 
-    /**
-     * 设置原始请求数据（脏数据检测）
-     */
-    public void setOriginalRequestItem(HttpRequestItem item) {
-        if (item != null && item.getName() != null) {
-            // 深拷贝，避免引用同一对象导致脏检测失效
-            this.originalRequestItem = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
-        } else {
-            this.originalRequestItem = null;
-        }
-    }
-
-    /**
-     * 判断当前表单内容是否被修改（与原始请求对比）
-     */
-    public boolean isModified() {
-        if (originalRequestItem == null) return false;
-        HttpRequestItem current = getCurrentRequest();
-        String oriJson = JSONUtil.toJsonStr(originalRequestItem);
-        String curJson = JSONUtil.toJsonStr(current);
-        boolean isModified = !oriJson.equals(curJson);
-        if (isModified) {
-            log.info("Request form has been modified,Request Name: {}", current.getName());
-            log.info("oriJson: {}", oriJson);
-            log.info("curJson: {}", curJson);
-        }
-        if (!isModified) {
-            // all EasyNameValueTablePanel and EasyTablePanel updateTableBorder
-            paramsPanel.updateTableBorder(false);
-            headersPanel.updateTableBorder(false);
-            requestBodyPanel.getFormDataTablePanel().updateTableBorder(false);
-            requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(false);
-        }
-        return isModified;
-    }
-
     public RequestEditSubPanel(String id) {
         this.id = id;
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 设置边距为0
+        setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0)); // 设置边距为0
         // 1. 顶部请求行面板
         requestLinePanel = new RequestLinePanel(this::sendRequest);
         methodBox = requestLinePanel.getMethodBox();
@@ -165,12 +129,7 @@ public class RequestEditSubPanel extends JPanel {
         String[] tabNames = {"Body", "Headers", "Tests", "Network Log"};
         JButton[] tabButtons = new JButton[tabNames.length];
         for (int i = 0; i < tabNames.length; i++) {
-            tabButtons[i] = new JButton(tabNames[i]);
-            tabButtons[i].setFocusPainted(false);
-            tabButtons[i].setBorderPainted(false);
-            tabButtons[i].setContentAreaFilled(false);
-            tabButtons[i].setOpaque(true);
-            tabButtons[i].setBackground(i == 0 ? new Color(220, 220, 220) : null);
+            tabButtons[i] = new TabButton(tabNames[i], i);
             tabBar.add(tabButtons[i]);
         }
         topResponseBar.add(tabBar, BorderLayout.WEST);
@@ -195,7 +154,6 @@ public class RequestEditSubPanel extends JPanel {
         testsPane.setEditable(false);
         testsScrollPane = new JScrollPane(testsPane);
         testsPanel.add(testsScrollPane, BorderLayout.CENTER);
-        testsPanel.setBorder(BorderFactory.createTitledBorder("Tests"));
         networkLogPanel = new NetworkLogPanel();
         cardPanel.add(responseBodyPanel, "Body");
         cardPanel.add(responseHeadersPanel, "Headers");
@@ -209,8 +167,9 @@ public class RequestEditSubPanel extends JPanel {
             tabButtons[i].addActionListener(e -> {
                 CardLayout cl = (CardLayout) cardPanel.getLayout();
                 cl.show(cardPanel, tabNames[idx]);
-                for (int j = 0; j < tabButtons.length; j++) {
-                    tabButtons[j].setBackground(j == idx ? new Color(220, 220, 220) : null);
+                selectedTabIndex = idx;
+                for (JButton btn : tabButtons) {
+                    btn.repaint();
                 }
             });
         }
@@ -269,6 +228,43 @@ public class RequestEditSubPanel extends JPanel {
                 updateTabDirty();
             }
         });
+    }
+
+
+    /**
+     * 设置原始请求数据（脏数据检测）
+     */
+    public void setOriginalRequestItem(HttpRequestItem item) {
+        if (item != null && item.getName() != null) {
+            // 深拷贝，避免引用同一对象导致脏检测失效
+            this.originalRequestItem = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
+        } else {
+            this.originalRequestItem = null;
+        }
+    }
+
+    /**
+     * 判断当前表单内容是否被修改（与原始请求对比）
+     */
+    public boolean isModified() {
+        if (originalRequestItem == null) return false;
+        HttpRequestItem current = getCurrentRequest();
+        String oriJson = JSONUtil.toJsonStr(originalRequestItem);
+        String curJson = JSONUtil.toJsonStr(current);
+        boolean isModified = !oriJson.equals(curJson);
+        if (isModified) {
+            log.info("Request form has been modified,Request Name: {}", current.getName());
+            log.info("oriJson: {}", oriJson);
+            log.info("curJson: {}", curJson);
+        }
+        if (!isModified) {
+            // all EasyNameValueTablePanel and EasyTablePanel updateTableBorder
+            paramsPanel.updateTableBorder(false);
+            headersPanel.updateTableBorder(false);
+            requestBodyPanel.getFormDataTablePanel().updateTableBorder(false);
+            requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(false);
+        }
+        return isModified;
     }
 
     /**
@@ -884,5 +880,28 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-}
+    private int selectedTabIndex = 0;
 
+    // 自定义TabButton，支持底部高亮
+    private class TabButton extends JButton {
+        private final int tabIndex;
+
+        public TabButton(String text, int tabIndex) {
+            super(text);
+            this.tabIndex = tabIndex;
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(true);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (selectedTabIndex == tabIndex) {
+                g.setColor(new Color(141, 188, 223)); // Google蓝
+                g.fillRect(0, getHeight() - 3, getWidth(), 3);
+            }
+        }
+    }
+}

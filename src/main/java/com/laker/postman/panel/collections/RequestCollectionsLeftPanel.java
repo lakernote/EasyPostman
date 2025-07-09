@@ -596,11 +596,51 @@ public class RequestCollectionsLeftPanel extends BasePanel {
     private void addRequestUnderSelected() {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
+        // 先检测剪贴板是否有cURL命令
+        String curlText = getClipboardCurlText();
+        if (curlText != null) {
+            // 直接导入cURL到当前分组
+            importCurlToGroup(curlText, selectedNode);
+            return;
+        }
+        // 添加空请求
         DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{"request", HttpRequestFactory.createDefaultRequest()});
         selectedNode.add(reqNode);
         treeModel.reload(selectedNode);
         requestTree.expandPath(new TreePath(selectedNode.getPath()));
         persistence.saveRequestGroups();
+    }
+
+    // 支持指定分组导入cURL
+    private void importCurlToGroup(String curlText, DefaultMutableTreeNode groupNode) {
+        String input = LargeInputDialog.show(null, "从cURL导入", "请输入cURL命令:", curlText);
+        if (input == null || input.trim().isEmpty()) return;
+        try {
+            CurlRequest curlRequest = CurlParser.parse(input);
+            if (curlRequest.url == null) {
+                JOptionPane.showMessageDialog(null, "无法解析cURL命令", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            HttpRequestItem item = new HttpRequestItem();
+            item.setName(curlRequest.url);
+            item.setUrl(curlRequest.url);
+            item.setMethod(curlRequest.method);
+            item.setHeaders(curlRequest.headers);
+            item.setBody(curlRequest.body);
+            item.setParams(curlRequest.params);
+            item.setFormData(curlRequest.formData);
+            item.setFormFiles(curlRequest.formFiles);
+            // 直接保存到当前分组
+            DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{"request", item});
+            groupNode.add(reqNode);
+            treeModel.reload(groupNode);
+            requestTree.expandPath(new TreePath(groupNode.getPath()));
+            persistence.saveRequestGroups();
+            // 导入成功后清空剪贴板
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "解析cURL出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // 创建默认请求组和测试请求
@@ -1118,3 +1158,4 @@ public class RequestCollectionsLeftPanel extends BasePanel {
         return null;
     }
 }
+

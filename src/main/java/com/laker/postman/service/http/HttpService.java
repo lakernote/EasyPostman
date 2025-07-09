@@ -119,7 +119,9 @@ public class HttpService {
         }
         // 响应后主动通知Cookie变化，刷新CookieTablePanel
         CookieService.notifyCookieChanged();
-        return OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
+        OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
+        httpResponse.costMs = System.currentTimeMillis() - startTime;
+        return httpResponse;
     }
 
 
@@ -137,6 +139,5 @@ public class HttpService {
             }
         }
         httpResponse.httpEventInfo = httpEventInfo;
-        httpResponse.costMs = System.currentTimeMillis() - startTime;
     }
 }

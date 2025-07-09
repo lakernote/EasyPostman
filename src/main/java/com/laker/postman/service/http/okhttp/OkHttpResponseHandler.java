@@ -25,7 +25,7 @@ public class OkHttpResponseHandler {
         return SettingManager.getMaxDownloadSize();
     }
 
-    public static HttpResponse handleResponse(Response okResponse, HttpResponse response) throws IOException {
+    public static void handleResponse(Response okResponse, HttpResponse response) throws IOException {
         response.code = okResponse.code();
         response.headers = new LinkedHashMap<>();
         int headersSize = 0;
@@ -54,7 +54,6 @@ public class OkHttpResponseHandler {
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
-        return response;
     }
 
     private static long parseContentLength(String contentLengthStr) {

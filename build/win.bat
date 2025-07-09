@@ -107,8 +107,8 @@ jpackage ^
     --win-per-user-install ^
     --win-menu-group "EasyTools" ^
     --win-help-url "https://gitee.com/lakernote/easy-postman" ^
-    --java-options "-Xms128m" ^
-    --java-options "-Xmx256m" ^
+    --java-options "-Xms256m" ^
+    --java-options "-Xmx512m" ^
     --java-options "-Dfile.encoding=UTF-8"
 
 if errorlevel 1 (

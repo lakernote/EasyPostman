@@ -69,6 +69,9 @@ public class JMeterPanel extends BasePanel {
     private JButton stopBtn;
     // 统计变量
     private int totalRequests = 0;
+    // 记录所有请求的开始和结束时间
+    private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
+    private final List<Long> allRequestEndTimes = Collections.synchronizedList(new ArrayList<>());
     private DefaultTableModel reportTableModel;
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
@@ -548,6 +551,7 @@ public class JMeterPanel extends BasePanel {
                     }
                     if (preOk) {
                         long startTime = System.currentTimeMillis();
+                        allRequestStartTimes.add(startTime); // 记录开始时间
                         long costMs = 0;
                         try {
                             req.logEvent = true; // 记录事件日志
@@ -558,6 +562,7 @@ public class JMeterPanel extends BasePanel {
                             success = false;
                         } finally {
                             costMs = System.currentTimeMillis() - startTime;
+                            allRequestEndTimes.add(startTime + costMs); // 记录结束时间
                         }
                         // 断言处理（JMeter树断言）
                         for (int j = 0; j < child.getChildCount() && resp != null; j++) {
@@ -1018,20 +1023,26 @@ public class JMeterPanel extends BasePanel {
         reportTableModel.setRowCount(0);
         trendDataset.clear();
         int totalApi = 0, totalSuccess = 0, totalFail = 0;
-        long totalCost = 0, totalAvg = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
-        double totalQps = 0, totalRate = 0;
+        long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
+        double totalRate = 0;
         int apiCount = 0;
         for (String api : apiCostMap.keySet()) {
             List<Long> costs = apiCostMap.get(api);
             int apiTotal = costs.size();
             int apiSuccess = apiSuccessMap.getOrDefault(api, 0);
             int apiFail = apiFailMap.getOrDefault(api, 0);
-            long apiAvg = apiSuccess > 0 ? costs.stream().mapToLong(Long::longValue).sum() / apiSuccess : 0;
+            long apiAvg = apiTotal > 0 ? costs.stream().mapToLong(Long::longValue).sum() / apiTotal : 0;
             long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
             long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
             long apiP99 = getP99(costs);
             long apiTotalCost = costs.stream().mapToLong(Long::longValue).sum();
-            double apiQps = (apiTotalCost > 0 && apiTotal > 0) ? (apiTotal * 1000.0 / apiTotalCost) : 0;
+            double apiQps = 0;
+            if (!allRequestStartTimes.isEmpty() && !allRequestEndTimes.isEmpty()) {
+                long minStart = Collections.min(allRequestStartTimes);
+                long maxEnd = Collections.max(allRequestEndTimes);
+                long spanMs = Math.max(1, maxEnd - minStart); // 防止除0
+                apiQps = apiTotal * 1000.0 / spanMs;
+            }
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
             reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
             // 累加total
@@ -1039,11 +1050,9 @@ public class JMeterPanel extends BasePanel {
             totalSuccess += apiSuccess;
             totalFail += apiFail;
             totalCost += apiTotalCost;
-            totalAvg += apiAvg;
             totalMin = Math.min(totalMin, apiMin);
             totalMax = Math.max(totalMax, apiMax);
             totalP99 += apiP99;
-            totalQps += apiQps;
             totalRate += apiRate;
             apiCount++;
             // 趋势图数据
@@ -1053,11 +1062,17 @@ public class JMeterPanel extends BasePanel {
         }
         // 添加total行
         if (apiCount > 0) {
-            long avgAvg = totalAvg / apiCount;
             long avgP99 = totalP99 / apiCount;
-            double avgQps = totalQps / apiCount;
             double avgRate = totalRate / apiCount;
-            reportTableModel.addRow(new Object[]{"总计", totalApi, totalSuccess, totalFail, String.format("%.2f", avgQps), avgAvg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
+            double totalQps = 0;
+            if (!allRequestStartTimes.isEmpty() && !allRequestEndTimes.isEmpty()) {
+                long minStart = Collections.min(allRequestStartTimes);
+                long maxEnd = Collections.max(allRequestEndTimes);
+                long spanMs = Math.max(1, maxEnd - minStart); // 防止除0
+                totalQps = totalApi * 1000.0 / spanMs;
+            }
+            long avgAvg = totalApi > 0 ? totalCost / totalApi : 0;
+            reportTableModel.addRow(new Object[]{"总计", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avgAvg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
         }
     }
 

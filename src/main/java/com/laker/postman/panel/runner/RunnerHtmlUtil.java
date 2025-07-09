@@ -64,6 +64,13 @@ public class RunnerHtmlUtil {
             sb.append("<span style='color:gray;'>无响应信息</span>");
         } else {
             sb.append("<b>状态码:</b> ").append(resp.code).append("<br/>");
+            String protocol = resp.protocol != null ? escapeHtml(resp.protocol) : "-";
+            String thread = resp.threadName != null ? escapeHtml(resp.threadName) : "-";
+            String local = resp.httpEventInfo != null && resp.httpEventInfo.getLocalAddress() != null ? escapeHtml(resp.httpEventInfo.getLocalAddress()) : "-";
+            String remote = resp.httpEventInfo != null && resp.httpEventInfo.getRemoteAddress() != null ? escapeHtml(resp.httpEventInfo.getRemoteAddress()) : "-";
+            sb.append("<b>Protocol:</b> ").append(protocol).append("<br/>");
+            sb.append("<b>Thread:</b> ").append(thread).append("<br/>");
+            sb.append("<b>Connection:</b> ").append(local).append(" <span style='color:#888;'>→</span> ").append(remote).append("<br/>");
             if (resp.headers != null && !resp.headers.isEmpty()) {
                 sb.append("<b>响应头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
                 for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {

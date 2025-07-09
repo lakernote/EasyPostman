@@ -297,8 +297,9 @@ public class RequestEditSubPanel extends JPanel {
                     if (resp != null) {
                         statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
                     }
-                } catch (InterruptedIOException ignore) {
-                    log.info("{} 请求被取消", req.url);
+                } catch (InterruptedIOException ex) {
+                    log.warn(ex.getMessage());
+                    statusText = ex.getMessage();
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     statusText = "发生错误: " + ex.getMessage();
@@ -308,8 +309,8 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                handleResponse(item, bindings, req, resp);
                 updateUIForResponse(statusText, resp);
+                handleResponse(item, bindings, req, resp);
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
 
@@ -729,7 +730,7 @@ public class RequestEditSubPanel extends JPanel {
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
-            statusCodeLabel.setText(statusText);
+            statusCodeLabel.setText("Status:" + statusText);
             statusCodeLabel.setForeground(Color.RED);
             return;
         }

@@ -212,18 +212,24 @@ public class EasyTablePanel extends JPanel {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                int hoverRow = -1;
-                Object hoverObj = table.getClientProperty("hoverRow");
-                if (hoverObj instanceof Integer) hoverRow = (Integer) hoverObj;
-                String cellValue = value == null ? null : value.toString();
-                if (isSelected) {
-                    c.setBackground(table.getSelectionBackground());
-                } else if (row == hoverRow) {
-                    c.setBackground(new Color(230, 240, 255));
-                } else if (cellValue == null || cellValue.trim().isEmpty()) {
-                    c.setBackground(Colors.EMPTY_CELL_YELLOW);
+                int lastRow = table.getRowCount() - 1;
+                if (row == lastRow) { // 最后一行特殊处理
+                    // 更明显的可输入提示
+                    c.setBackground(new Color(230, 240, 254)); // 比 new Color(250, 252, 255) 略深
                 } else {
-                    c.setBackground(row % 2 == 0 ? new Color(250, 252, 255) : Color.WHITE);
+                    int hoverRow = -1;
+                    Object hoverObj = table.getClientProperty("hoverRow");
+                    if (hoverObj instanceof Integer) hoverRow = (Integer) hoverObj;
+                    String cellValue = value == null ? null : value.toString();
+                    if (isSelected) {
+                        c.setBackground(table.getSelectionBackground());
+                    } else if (row == hoverRow) {
+                        c.setBackground(new Color(230, 240, 255));
+                    } else if (cellValue == null || cellValue.trim().isEmpty()) {
+                        c.setBackground(Colors.EMPTY_CELL_YELLOW);
+                    } else {
+                        c.setBackground(row % 2 == 0 ? new Color(250, 252, 255) : Color.WHITE);
+                    }
                 }
                 return c;
             }

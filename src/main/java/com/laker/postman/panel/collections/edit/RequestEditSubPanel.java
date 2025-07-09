@@ -66,7 +66,7 @@ public class RequestEditSubPanel extends JPanel {
     private EventSource currentEventSource;
     // WebSocket连接对象
     private volatile okhttp3.WebSocket currentWebSocket;
-
+    JSplitPane splitPane;
     private JEditorPane testsPane;
     private JScrollPane testsScrollPane;
 
@@ -185,9 +185,9 @@ public class RequestEditSubPanel extends JPanel {
         // 默认显示Body
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, "Body");
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
+        splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(1);
-        splitPane.setResizeWeight(0.4); // 设置分割线位置，0.4表示请求部分占40%
+        splitPane.setResizeWeight(0.6); // 设置分割线位置，表示请求部分占60%
         add(splitPane, BorderLayout.CENTER);
 
         // WebSocket消息发送按钮事件绑定（只绑定一次）

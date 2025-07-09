@@ -83,6 +83,28 @@ public class RequestCollectionsLeftPanel extends BasePanel {
     private JPanel getBtnPanel() {
         // 按钮面板
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4)); // 增加间距
+        JButton addGroupBtn = getAddGroupBtn();
+
+        JButton saveBtn = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
+        saveBtn.setText("Save");
+        saveBtn.addActionListener(e -> {
+            SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
+        });
+
+        JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
+        exportBtn.setText("Export");
+        exportBtn.setFocusPainted(false);
+        exportBtn.setBackground(Color.WHITE);
+        exportBtn.setIconTextGap(6);
+        exportBtn.addActionListener(e -> exportRequestCollection());
+
+        btnPanel.add(addGroupBtn);
+        btnPanel.add(saveBtn);
+        btnPanel.add(exportBtn);
+        return btnPanel;
+    }
+
+    private JButton getAddGroupBtn() {
         JButton addGroupBtn = new JButton(new FlatSVGIcon("icons/plus.svg", 20, 20));
         addGroupBtn.setText("Group");
         addGroupBtn.addActionListener(e -> {
@@ -94,25 +116,7 @@ public class RequestCollectionsLeftPanel extends BasePanel {
                 saveRequestGroups();
             }
         });
-
-        JButton saveBtn = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
-        saveBtn.setText("Save");
-        saveBtn.addActionListener(e -> {
-            SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
-        });
-
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
-        exportBtn.setText("Export");
-        exportBtn.setToolTipText("导出请求集合为本地文件");
-        exportBtn.setFocusPainted(false);
-        exportBtn.setBackground(Color.WHITE);
-        exportBtn.setIconTextGap(6);
-        exportBtn.addActionListener(e -> exportRequestCollection());
-
-        btnPanel.add(addGroupBtn);
-        btnPanel.add(saveBtn);
-        btnPanel.add(exportBtn);
-        return btnPanel;
+        return addGroupBtn;
     }
 
     private JScrollPane getTreeScrollPane() {
@@ -187,19 +191,7 @@ public class RequestCollectionsLeftPanel extends BasePanel {
         importBtn.setBackground(Color.WHITE);
         importBtn.setIconTextGap(6);
         // 合并导入菜单
-        JPopupMenu importMenu = new JPopupMenu();
-        JMenuItem importEasyToolsItem = new JMenuItem("Import from EasyPostman", new FlatSVGIcon("icons/easy.svg", 20, 20));
-        importEasyToolsItem.setToolTipText("Import collections exported by EasyTools");
-        importEasyToolsItem.addActionListener(e -> importRequestCollection());
-        JMenuItem importPostmanItem = new JMenuItem("Import from Postman v2.1", new FlatSVGIcon("icons/postman.svg", 20, 20));
-        importPostmanItem.setToolTipText("Import collections exported by Postman v2.1");
-        importPostmanItem.addActionListener(e -> importPostmanCollection());
-        JMenuItem importCurlItem = new JMenuItem("Import from cURL", new FlatSVGIcon("icons/curl.svg", 20, 20));
-        importCurlItem.setToolTipText("Paste cURL command to import request");
-        importCurlItem.addActionListener(e -> importCurlToCollection(null));
-        importMenu.add(importEasyToolsItem);
-        importMenu.add(importPostmanItem);
-        importMenu.add(importCurlItem);
+        JPopupMenu importMenu = getImportMenu();
         importBtn.addActionListener(e -> {
             // 智能检测剪贴板内容
             String clipboardText = null;
@@ -221,6 +213,23 @@ public class RequestCollectionsLeftPanel extends BasePanel {
             importMenu.show(importBtn, 0, importBtn.getHeight());
         });
         return importBtn;
+    }
+
+    private JPopupMenu getImportMenu() {
+        JPopupMenu importMenu = new JPopupMenu();
+        JMenuItem importEasyToolsItem = new JMenuItem("Import from EasyPostman", new FlatSVGIcon("icons/easy.svg", 20, 20));
+        importEasyToolsItem.setToolTipText("Import collections exported by EasyTools");
+        importEasyToolsItem.addActionListener(e -> importRequestCollection());
+        JMenuItem importPostmanItem = new JMenuItem("Import from Postman v2.1", new FlatSVGIcon("icons/postman.svg", 20, 20));
+        importPostmanItem.setToolTipText("Import collections exported by Postman v2.1");
+        importPostmanItem.addActionListener(e -> importPostmanCollection());
+        JMenuItem importCurlItem = new JMenuItem("Import from cURL", new FlatSVGIcon("icons/curl.svg", 20, 20));
+        importCurlItem.setToolTipText("Paste cURL command to import request");
+        importCurlItem.addActionListener(e -> importCurlToCollection(null));
+        importMenu.add(importEasyToolsItem);
+        importMenu.add(importPostmanItem);
+        importMenu.add(importCurlItem);
+        return importMenu;
     }
 
     @Override

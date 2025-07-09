@@ -104,23 +104,26 @@ public class RequestEditSubPanel extends JPanel {
         // 2.1 Params
         paramsPanel = new EasyNameValueTablePanel("Key", "Value");
         reqTabs.addTab("Params", paramsPanel); // 2.1 添加参数选项卡
-        // 2.2 Headers
-        headersPanel = new EasyNameValueTablePanel("Key", "Value");
-        reqTabs.addTab("Headers", headersPanel); // 2.2 添加 Headers 选项卡
 
-        // 2.3 Body 面板
-        requestBodyPanel = new RequestBodyPanel();
-        reqTabs.addTab("Body", requestBodyPanel); // 2.3 添加 Body 选项卡
 
-        // 2.4 Auth 面板
+        // 2.2 Auth 面板
         authTabPanel = new AuthTabPanel();
-        reqTabs.addTab("Authorization", authTabPanel); // 2.4 添加 认证 选项卡
+        reqTabs.addTab("Authorization", authTabPanel);
 
-        // 新增：脚本Tab，抽离为 ScriptPanel
+        // 2.3 Headers
+        headersPanel = new EasyNameValueTablePanel("Key", "Value");
+        reqTabs.addTab("Headers", headersPanel);
+
+        // 2.4 Body 面板
+        requestBodyPanel = new RequestBodyPanel();
+        reqTabs.addTab("Body", requestBodyPanel);
+
+
+        // 2.5 脚本Tab
         scriptPanel = new ScriptPanel();
         reqTabs.addTab("Scripts", scriptPanel);
 
-        // 2.5 Cookie 面板
+        // 2.6 Cookie 面板
         CookieTablePanel cookiePanel = new CookieTablePanel();
         reqTabs.addTab("Cookies", cookiePanel);
 

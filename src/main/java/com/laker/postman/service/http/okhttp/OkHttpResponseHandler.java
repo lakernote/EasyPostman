@@ -121,11 +121,12 @@ public class OkHttpResponseHandler {
     private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix) throws IOException {
         File tempFile = File.createTempFile(prefix, suffix);
         int totalBytes = 0;
-        try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-            byte[] buf = new byte[8192];
+        // 使用 BufferedOutputStream 并将缓冲区增大到 64KB
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
+            byte[] buf = new byte[64 * 1024];
             int len;
             while ((len = is.read(buf)) != -1) {
-                fos.write(buf, 0, len);
+                bos.write(buf, 0, len);
                 totalBytes += len;
             }
         }

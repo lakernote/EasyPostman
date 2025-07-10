@@ -4,6 +4,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.*;
@@ -86,8 +87,6 @@ public class JMeterPanel extends BasePanel {
 
     // 搜索框相关
     private JTextField searchField;
-    private JButton searchBtn;
-
     private JLabel elapsedLabel; // 显示已用时
 
     @Override
@@ -128,11 +127,8 @@ public class JMeterPanel extends BasePanel {
         // ========== 结果树搜索框 ==========
         JPanel resultTreePanel = new JPanel(new BorderLayout());
         JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
-        searchField = new JTextField();
-        searchField.setToolTipText("搜索结果树...");
-        searchBtn = new JButton("搜索");
+        searchField = new SearchTextField();
         searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(searchBtn, BorderLayout.EAST);
         resultTreePanel.add(searchPanel, BorderLayout.NORTH);
         // 结果树
         resultRootNode = new DefaultMutableTreeNode("结果树");
@@ -984,8 +980,6 @@ public class JMeterPanel extends BasePanel {
             }
         });
 
-        // ========== 结果树搜索功能 ==========
-        searchBtn.addActionListener(e -> searchResultTree(searchField.getText()));
         searchField.addActionListener(e -> searchResultTree(searchField.getText()));
     }
 

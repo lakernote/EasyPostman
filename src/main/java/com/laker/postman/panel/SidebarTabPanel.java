@@ -2,6 +2,7 @@ package com.laker.postman.panel;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
@@ -108,7 +109,7 @@ public class SidebarTabPanel extends BasePanel {
         });
 
         // 搜索功能
-        JTextField searchField = new JTextField(10);
+        JTextField searchField = new SearchTextField();
         JButton prevBtn = new JButton("Prev");
         JButton nextBtn = new JButton("Next");
         prevBtn.setFocusable(false);
@@ -118,7 +119,6 @@ public class SidebarTabPanel extends BasePanel {
         searchField.addActionListener(e -> nextBtn.doClick());
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         searchPanel.setOpaque(false);
-        searchPanel.add(new JLabel("Search:"));
         searchPanel.add(searchField);
         searchPanel.add(prevBtn);
         searchPanel.add(nextBtn);

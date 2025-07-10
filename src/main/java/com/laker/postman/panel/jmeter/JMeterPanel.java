@@ -24,9 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.CategoryPlot;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.time.Second;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
@@ -45,6 +45,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.List;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,7 +80,11 @@ public class JMeterPanel extends BasePanel {
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
     // 趋势图相关
-    private DefaultCategoryDataset trendDataset;
+    private TimeSeriesCollection trendDataset;
+    private TimeSeries userCountSeries;
+    private TimeSeries responseTimeSeries;
+    private TimeSeries qpsSeries;
+    private TimeSeries errorPercentSeries;
 
 
     private static final int JMETER_MAX_IDLE_CONNECTIONS = 200;
@@ -91,6 +96,9 @@ public class JMeterPanel extends BasePanel {
 
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
+
+    // 定时采样线程
+    private Timer trendTimer;
 
     @Override
     protected void initUI() {
@@ -265,19 +273,26 @@ public class JMeterPanel extends BasePanel {
         reportPanel.add(tableScroll, BorderLayout.CENTER);
         resultTabbedPane.addTab("报表", reportPanel);
         // 趋势图面板
-        trendDataset = new DefaultCategoryDataset();
-        JFreeChart trendChart = ChartFactory.createLineChart(
-                "接口响应耗时趋势图", // 图表标题
-                "请求序号", // X轴标签
+        trendDataset = new TimeSeriesCollection();
+        userCountSeries = new TimeSeries("用户数");
+        responseTimeSeries = new TimeSeries("响应时间(ms)");
+        qpsSeries = new TimeSeries("QPS");
+        errorPercentSeries = new TimeSeries("Error %");
+        trendDataset.addSeries(userCountSeries);
+        trendDataset.addSeries(responseTimeSeries);
+        trendDataset.addSeries(qpsSeries);
+        trendDataset.addSeries(errorPercentSeries);
+        JFreeChart trendChart = ChartFactory.createTimeSeriesChart(
+                "接口响应趋势图", // 图表标题
+                "时间", // X轴标签
                 "耗时(ms)", // Y轴标签
                 trendDataset,
-                PlotOrientation.VERTICAL,
                 true, // 图例
                 false,
                 false
         );
         // 设置趋势图样式
-        CategoryPlot plot = trendChart.getCategoryPlot();
+        org.jfree.chart.plot.XYPlot plot = trendChart.getXYPlot();
         // 设置字体，防止中文乱码
         Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
         trendChart.getTitle().setFont(font.deriveFont(13f));
@@ -288,11 +303,7 @@ public class JMeterPanel extends BasePanel {
         plot.getRangeAxis().setLabelFont(font);
         // Y轴自动调整
         plot.getRangeAxis().setAutoRange(true);
-        // X轴标签旋转45度，防止重叠
-        org.jfree.chart.axis.CategoryAxis domainAxis = plot.getDomainAxis();
-        domainAxis.setCategoryLabelPositions(org.jfree.chart.axis.CategoryLabelPositions.UP_45);
-        // X轴标签间隔显示（如每隔10个显示1个）
-        domainAxis.setMaximumCategoryLabelWidthRatio(0.8f);
+        // X轴标签旋转45度，防止重叠（仅对CategoryPlot有效，XYPlot不支持）
         // 设置背景色和交互
         ChartPanel chartPanel = new ChartPanel(trendChart);
         chartPanel.setMouseWheelEnabled(true); // 支持鼠标滚轮缩放
@@ -417,6 +428,17 @@ public class JMeterPanel extends BasePanel {
         apiFailMap.clear();
         allRequestStartTimes.clear();
         allRequestEndTimes.clear();
+        // 启动趋势图定时采样
+        if (trendTimer != null) {
+            trendTimer.cancel();
+        }
+        trendTimer = new Timer();
+        trendTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                SwingUtilities.invokeLater(() -> sampleTrendData());
+            }
+        }, 0, 1000);
         // 统计总用户数
         int totalThreads;
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
@@ -434,10 +456,61 @@ public class JMeterPanel extends BasePanel {
                     stopBtn.setEnabled(false);
                     updateReportPanel();
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
+                    // 正常执行完成时也停止定时采样
+                    stopTrendTimer();
                 });
             }
         });
         runThread.start();
+    }
+
+    // 停止定时采样方法
+    private void stopTrendTimer() {
+        if (trendTimer != null) {
+            trendTimer.cancel();
+            trendTimer = null;
+        }
+    }
+
+    // 每秒采样统计方法
+    private void sampleTrendData() {
+        int users = activeThreads.get();
+        long now = System.currentTimeMillis();
+        Second second = new Second(new Date(now));
+        // 统计本秒内的请求
+        int totalReq = 0, errorReq = 0;
+        long totalRespTime = 0;
+        synchronized (allRequestEndTimes) {
+            for (int i = allRequestEndTimes.size() - 1; i >= 0; i--) {
+                long end = allRequestEndTimes.get(i);
+                if (end >= now - 1000 && end <= now) {
+                    totalReq++;
+                    // 这里只能估算errorReq，具体实现需结合请求结果
+                } else if (end < now - 1000) {
+                    break;
+                }
+            }
+        }
+        // 统计平均响应时间
+        synchronized (allRequestStartTimes) {
+            for (int i = allRequestStartTimes.size() - 1; i >= 0; i--) {
+                long start = allRequestStartTimes.get(i);
+                if (start >= now - 1000 && start <= now) {
+                    totalRespTime += (now - start);
+                } else if (start < now - 1000) {
+                    break;
+                }
+            }
+        }
+        double avgRespTime = totalReq > 0 ? (double) totalRespTime / totalReq : 0;
+        double qps = totalReq;
+        double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
+        // 更新趋势图数据
+        log.info("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second,users, avgRespTime, qps, errorPercent);
+        userCountSeries.addOrUpdate(second, users);
+        responseTimeSeries.addOrUpdate(second, avgRespTime);
+        qpsSeries.addOrUpdate(second, qps);
+        errorPercentSeries.addOrUpdate(second, errorPercent);
     }
 
     // 统计单个线程组的总请求数
@@ -1021,12 +1094,13 @@ public class JMeterPanel extends BasePanel {
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
         OkHttpClientManager.setDefaultConnectionPoolConfig();
+        // 停止趋势图定时采样
+        stopTrendTimer();
     }
 
     private void updateReportPanel() {
         // 表格统计
         reportTableModel.setRowCount(0);
-        trendDataset.clear();
         int totalApi = 0, totalSuccess = 0, totalFail = 0;
         long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
         double totalRate = 0;
@@ -1060,10 +1134,6 @@ public class JMeterPanel extends BasePanel {
             totalP99 += apiP99;
             totalRate += apiRate;
             apiCount++;
-            // 趋势图数据
-            for (int i = 0; i < costs.size(); i++) {
-                trendDataset.addValue(costs.get(i), api, String.valueOf(i + 1));
-            }
         }
         // 添加total行
         if (apiCount > 0) {
@@ -1121,3 +1191,4 @@ public class JMeterPanel extends BasePanel {
         return matched ? filteredNode : null;
     }
 }
+

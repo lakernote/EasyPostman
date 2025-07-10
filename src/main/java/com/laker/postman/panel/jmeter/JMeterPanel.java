@@ -192,13 +192,13 @@ public class JMeterPanel extends BasePanel {
         // 设置数据列居中
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        // 失败列红色渲染器（0为黑色，大于0为红色，总计行为蓝色加粗）
+        // 失败列红色渲染器（0为黑色，大于0为红色，Total行为蓝色加粗）
         DefaultTableCellRenderer failRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "总计".equals(reportTableModel.getValueAt(modelRow, 0));
+                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
                 if (isTotal) {
                     c.setFont(c.getFont().deriveFont(Font.BOLD));
                     c.setForeground(new Color(0, 102, 204));
@@ -217,13 +217,13 @@ public class JMeterPanel extends BasePanel {
                 return c;
             }
         };
-        // 成功率列绿色渲染器（总计行为蓝色加粗）
+        // 成功率列绿色渲染器（Total行为蓝色加粗）
         DefaultTableCellRenderer rateRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "总计".equals(reportTableModel.getValueAt(modelRow, 0));
+                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
                 if (isTotal) {
                     c.setFont(c.getFont().deriveFont(Font.BOLD));
                     c.setForeground(new Color(0, 102, 204));
@@ -252,13 +252,13 @@ public class JMeterPanel extends BasePanel {
                 return c;
             }
         };
-        // 通用居中渲染器（总计行美化）
+        // 通用居中渲染器（Total行美化）
         DefaultTableCellRenderer generalRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "总计".equals(reportTableModel.getValueAt(modelRow, 0));
+                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
                 if (isTotal) {
                     c.setFont(c.getFont().deriveFont(Font.BOLD));
                     c.setForeground(new Color(0, 102, 204));
@@ -1233,7 +1233,7 @@ public class JMeterPanel extends BasePanel {
                 totalQps = totalApi * 1000.0 / spanMs;
             }
             long avgAvg = totalApi > 0 ? totalCost / totalApi : 0;
-            reportTableModel.addRow(new Object[]{"总计", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avgAvg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
+            reportTableModel.addRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avgAvg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
         }
     }
 

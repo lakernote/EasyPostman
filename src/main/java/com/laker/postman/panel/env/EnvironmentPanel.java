@@ -16,8 +16,6 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanImport;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -95,10 +93,10 @@ public class EnvironmentPanel extends BasePanel {
         rightPanel.add(tableScrollPane, BorderLayout.CENTER);
 
         // 变量操作按钮
-        JPanel varButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JPanel varButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
         varButtonPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 5, 5));
-        JButton saveVarButton = new JButton("Save");
-        saveVarButton.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 14, new Color(0, 0, 150)));
+        JButton saveVarButton = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
+        saveVarButton.setText("Save");
         saveVarButton.addActionListener(e -> saveVariables());
         varButtonPanel.add(saveVarButton);
         rightPanel.add(varButtonPanel, BorderLayout.SOUTH);

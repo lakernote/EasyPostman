@@ -71,7 +71,6 @@ public class RequestEditSubPanel extends JPanel {
     private JScrollPane testsScrollPane;
 
     private final JButton[] tabButtons;
-    private final int testsTabIndex = 2; // Tests按钮在tabButtons中的下标
 
     public RequestEditSubPanel(String id) {
         this.id = id;
@@ -156,6 +155,8 @@ public class RequestEditSubPanel extends JPanel {
         // CardLayout内容区
         JPanel cardPanel = new JPanel(new CardLayout());
         responseBodyPanel = new ResponseBodyPanel();
+        responseBodyPanel.setEnabled(false); // 响应体面板初始不可编辑
+        responseBodyPanel.setBodyText(null); // 初始无响应内容
         responseHeadersPanel = new ResponseHeadersPanel();
         JPanel testsPanel = new JPanel(new BorderLayout());
         testsPane = new JEditorPane();
@@ -266,13 +267,6 @@ public class RequestEditSubPanel extends JPanel {
             log.info("oriJson: {}", oriJson);
             log.info("curJson: {}", curJson);
         }
-//        if (!isModified) {
-//            // all EasyNameValueTablePanel and EasyTablePanel updateTableBorder
-//            paramsPanel.updateTableBorder(false);
-//            headersPanel.updateTableBorder(false);
-//            requestBodyPanel.getFormDataTablePanel().updateTableBorder(false);
-//            requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(false);
-//        }
         return isModified;
     }
 
@@ -835,6 +829,8 @@ public class RequestEditSubPanel extends JPanel {
         testsPane.setText(html);
         testsPane.setCaretPosition(0);
         // 动态设置Tests按钮文本和颜色
+        // Tests按钮在tabButtons中的下标
+        int testsTabIndex = 2;
         if (tabButtons != null && tabButtons.length > testsTabIndex) {
             JButton testsBtn = tabButtons[testsTabIndex];
             if (CollectionUtil.isNotEmpty(testResults)) {

@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.edit;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.table.FileCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellRenderer;
@@ -46,23 +47,31 @@ public class RequestBodyPanel extends JPanel {
 
     public RequestBodyPanel() {
         setLayout(new BorderLayout());
-        JPanel bodyTypePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel bodyTypePanel = new JPanel(new BorderLayout());
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bodyTypeLable = new JLabel("Type:");
-        bodyTypePanel.add(bodyTypeLable);
+        leftPanel.add(bodyTypeLable);
         String[] bodyTypes = {BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
-        bodyTypePanel.add(bodyTypeComboBox);
-        bodyTypePanel.add(Box.createHorizontalStrut(10));
+        leftPanel.add(bodyTypeComboBox);
+        leftPanel.add(Box.createHorizontalStrut(10));
         formatLabel = new JLabel("Format:");
-        bodyTypePanel.add(formatLabel);
+        leftPanel.add(formatLabel);
         String[] rawTypes = {RAW_TYPE_JSON};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         rawTypeComboBox.setVisible(isBodyTypeRAW());
         formatLabel.setVisible(isBodyTypeRAW());
-        bodyTypePanel.add(rawTypeComboBox);
+        leftPanel.add(rawTypeComboBox);
+        bodyTypePanel.add(leftPanel, BorderLayout.WEST);
+        // 创建 formatButton 并放在右侧
+        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 20, 20));
+        formatButton.addActionListener(e -> formatBody());
+        formatButton.setVisible(isBodyTypeRAW());
+        formatButton.setPreferredSize(new Dimension(32, 32)); // 推荐比图标略大
+        bodyTypePanel.add(formatButton, BorderLayout.EAST);
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
         bodyCardPanel = new JPanel(bodyCardLayout);
@@ -113,9 +122,7 @@ public class RequestBodyPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(bodyArea);
         panel.add(scrollPane, BorderLayout.CENTER);
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        formatButton = new JButton("Format Body");
-        formatButton.addActionListener(e -> formatBody());
-        bottomPanel.add(formatButton, BorderLayout.WEST);
+        // formatButton 已经在顶部面板创建并添加，这里无需再创建
         wsSendButton = new JButton("Send Message");
         wsSendButton.setVisible(false);
         bottomPanel.add(wsSendButton, BorderLayout.EAST);
@@ -126,8 +133,10 @@ public class RequestBodyPanel extends JPanel {
     private void switchBodyType(String bodyType) {
         currentBodyType = bodyType;
         bodyCardLayout.show(bodyCardPanel, bodyType);
-        rawTypeComboBox.setVisible(BODY_TYPE_RAW.equals(bodyType));
-        formatLabel.setVisible(BODY_TYPE_RAW.equals(bodyType));
+        boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
+        rawTypeComboBox.setVisible(isRaw);
+        formatLabel.setVisible(isRaw);
+        formatButton.setVisible(isRaw);
     }
 
     private void formatBody() {

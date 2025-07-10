@@ -328,6 +328,8 @@ public class JMeterPanel extends BasePanel {
         plot.getDomainAxis().setLabelFont(font);
         plot.getRangeAxis().setTickLabelFont(font);
         plot.getRangeAxis().setLabelFont(font);
+        plot.setBackgroundPaint(Color.WHITE);
+        trendChart.setBackgroundPaint(Color.WHITE);
         // Y轴自动调整
         plot.getRangeAxis().setAutoRange(true);
         // 下拉框切换显示series

@@ -46,7 +46,6 @@ public class EnvironmentPanel extends BasePanel {
     private DefaultListModel<EnvironmentItem> environmentListModel;
     private JTextField searchField;
     private JButton addEnvButton;
-
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
 
     @Override
@@ -217,7 +216,7 @@ public class EnvironmentPanel extends BasePanel {
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
         JMenuItem renameItem = new JMenuItem("Rename");
-        JMenuItem copyItem = new JMenuItem("Copy"); // 复制菜单项
+        JMenuItem copyItem = new JMenuItem("Duplicate"); // 复制菜单项
         JMenuItem deleteItem = new JMenuItem("Delete");
         JMenuItem exportPostmanItem = new JMenuItem("Export as Postman");
         exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
@@ -579,4 +578,3 @@ public class EnvironmentPanel extends BasePanel {
         }
     }
 }
-

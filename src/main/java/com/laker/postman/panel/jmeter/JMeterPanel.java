@@ -1095,24 +1095,33 @@ public class JMeterPanel extends BasePanel {
 
     // ========== 结果树搜索方法 ==========
     private void searchResultTree(String keyword) {
-        if (keyword == null || keyword.isBlank()) return;
-        DefaultMutableTreeNode root = resultRootNode;
-        TreePath path = findNodePath(root, keyword);
-        if (path != null) {
-            resultTree.setSelectionPath(path); // 设置选中路径
-            resultTree.scrollPathToVisible(path); // 滚动到可见
+        if (keyword == null || keyword.isBlank()) {
+            // 关键字为空，显示全部
+            resultTreeModel.setRoot(resultRootNode);
+            resultTree.updateUI();
+            return;
+        }
+        // 过滤结果树，仅显示匹配的节点及其父节点
+        DefaultMutableTreeNode filteredRoot = filterResultTree(resultRootNode, keyword);
+        resultTreeModel.setRoot(filteredRoot);
+        resultTree.updateUI();
+        // 展开所有节点
+        for (int i = 0; i < resultTree.getRowCount(); i++) {
+            resultTree.expandRow(i);
         }
     }
 
-    private TreePath findNodePath(DefaultMutableTreeNode node, String keyword) {
-        // 递归查找，匹配节点toString()
-        if (node.toString().contains(keyword)) {
-            return new TreePath(node.getPath());
-        }
+    private DefaultMutableTreeNode filterResultTree(DefaultMutableTreeNode node, String keyword) {
+        boolean matched = node.toString().contains(keyword);
+        DefaultMutableTreeNode filteredNode = new DefaultMutableTreeNode(node.getUserObject());
         for (int i = 0; i < node.getChildCount(); i++) {
-            TreePath childPath = findNodePath((DefaultMutableTreeNode) node.getChildAt(i), keyword);
-            if (childPath != null) return childPath;
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            DefaultMutableTreeNode filteredChild = filterResultTree(child, keyword);
+            if (filteredChild != null) {
+                filteredNode.add(filteredChild);
+                matched = true;
+            }
         }
-        return null;
+        return matched ? filteredNode : null;
     }
 }

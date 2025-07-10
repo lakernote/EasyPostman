@@ -185,10 +185,14 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 默认显示Body
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, "Body");
+        // 默认禁用响应区tab按钮
+        for (JButton btn : tabButtons) {
+            btn.setEnabled(false);
+        }
 
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(1);
-        splitPane.setResizeWeight(0.6); // 设置分割线位置，表示请求部分占60%
+        splitPane.setResizeWeight(0.5); // 设置分割线位置，表示请求部分占50%
         add(splitPane, BorderLayout.CENTER);
 
         // WebSocket消息发送按钮事件绑定（只绑定一次）

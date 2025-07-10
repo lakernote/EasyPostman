@@ -317,7 +317,6 @@ public class EnvironmentPanel extends BasePanel {
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
         originalVariablesSnapshot = JSONUtil.toJsonStr(rows);
-        JOptionPane.showMessageDialog(this, "保存成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -43,6 +45,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
@@ -161,7 +164,7 @@ public class JMeterPanel extends BasePanel {
         JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultTreePanel, resultDetailTabbedPane);
         resultSplit.setDividerLocation(260);
         resultTabbedPane = new JTabbedPane();
-        resultTabbedPane.addTab("结果树", resultSplit);
+
         // 报表面板
         // 报表面板相关
         JPanel reportPanel = new JPanel(new BorderLayout());
@@ -271,7 +274,6 @@ public class JMeterPanel extends BasePanel {
         reportTable.getTableHeader().setFont(reportTable.getTableHeader().getFont().deriveFont(Font.BOLD));
         JScrollPane tableScroll = new JScrollPane(reportTable);
         reportPanel.add(tableScroll, BorderLayout.CENTER);
-        resultTabbedPane.addTab("报表", reportPanel);
         // 趋势图面板
         trendDataset = new TimeSeriesCollection();
         userCountSeries = new TimeSeries("用户数");
@@ -282,10 +284,9 @@ public class JMeterPanel extends BasePanel {
         trendDataset.addSeries(responseTimeSeries);
         trendDataset.addSeries(qpsSeries);
         trendDataset.addSeries(errorPercentSeries);
-        // 新增：趋势类型下拉框
+        // 趋势类型下拉框
         String[] trendOptions = {"全部", "用户数", "响应时间", "QPS", "错误率"};
         JComboBox<String> trendTypeCombo = new JComboBox<>(trendOptions);
-        // 优化命名
         JFreeChart trendChart = ChartFactory.createTimeSeriesChart(
                 "接口性能趋势", // 图表标题
                 "时间", // X轴标签
@@ -296,7 +297,7 @@ public class JMeterPanel extends BasePanel {
                 false
         );
         // 设置趋势图样式
-        org.jfree.chart.plot.XYPlot plot = trendChart.getXYPlot();
+        XYPlot plot = trendChart.getXYPlot();
         // 设置字体，防止中文乱码
         Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
         trendChart.getTitle().setFont(font.deriveFont(13f));
@@ -307,10 +308,12 @@ public class JMeterPanel extends BasePanel {
         plot.getRangeAxis().setLabelFont(font);
         // Y轴自动调整
         plot.getRangeAxis().setAutoRange(true);
-        // 新增：下拉框切换显示series
+        // 下拉框切换显示series
         trendTypeCombo.addActionListener(e -> {
             String selected = (String) trendTypeCombo.getSelectedItem();
             trendDataset.removeAllSeries();
+            // 动态设置Y轴格式
+            NumberFormat numberFormat = null;
             switch (selected) {
                 case "全部" -> {
                     trendDataset.addSeries(userCountSeries);
@@ -322,6 +325,7 @@ public class JMeterPanel extends BasePanel {
                 case "用户数" -> {
                     trendDataset.addSeries(userCountSeries);
                     plot.getRangeAxis().setLabel("用户数");
+                    numberFormat = java.text.NumberFormat.getIntegerInstance();
                 }
                 case "响应时间" -> {
                     trendDataset.addSeries(responseTimeSeries);
@@ -334,7 +338,12 @@ public class JMeterPanel extends BasePanel {
                 case "错误率" -> {
                     trendDataset.addSeries(errorPercentSeries);
                     plot.getRangeAxis().setLabel("错误率(%)");
+                    numberFormat = java.text.NumberFormat.getNumberInstance();
+                    numberFormat.setMaximumFractionDigits(2);
                 }
+            }
+            if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
+                numberAxis.setNumberFormatOverride(numberFormat);
             }
         });
         ChartPanel chartPanel = new ChartPanel(trendChart);
@@ -349,7 +358,10 @@ public class JMeterPanel extends BasePanel {
         trendTopPanel.add(trendTypeCombo);
         trendPanel.add(trendTopPanel, BorderLayout.NORTH);
         trendPanel.add(chartPanel, BorderLayout.CENTER);
+
         resultTabbedPane.addTab("趋势图", trendPanel);
+        resultTabbedPane.addTab("报表", reportPanel);
+        resultTabbedPane.addTab("结果树", resultSplit);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -542,7 +554,7 @@ public class JMeterPanel extends BasePanel {
         double qps = totalReq;
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
         // 更新趋势图数据
-        log.info("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second,users, avgRespTime, qps, errorPercent);
+        log.info("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);
         userCountSeries.addOrUpdate(second, users);
         responseTimeSeries.addOrUpdate(second, avgRespTime);
         qpsSeries.addOrUpdate(second, qps);

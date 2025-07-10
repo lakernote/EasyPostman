@@ -1,6 +1,5 @@
 package com.laker.postman.common.table.map;
 
-import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.table.TableRowTransferHandler;
 import com.laker.postman.util.FontUtil;
 import lombok.Getter;
@@ -9,14 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,7 +23,6 @@ import java.util.Map;
  * <pre>
  *  1.通用的表格面板，支持多列
  *  2.支持通过右键菜单添加和删除行。
- *  3.空单元格会高亮显示，便于用户注意到未填写的内容。
  * </pre>
  * <p>
  * 【入参示例】
@@ -75,7 +71,7 @@ public class EasyTablePanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(248, 250, 252));
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 230)),
+                BorderFactory.createLineBorder(new Color(237, 237, 237)),
                 BorderFactory.createEmptyBorder(8, 8, 8, 8)));
         // 初始化表格模型
         tableModel = new DefaultTableModel(columns, 0) {
@@ -98,7 +94,7 @@ public class EasyTablePanel extends JPanel {
         popupMenu = createPopupMenu();
         // 添加鼠标监听器
         addTableListener();
-
+        // 确保至少有一行空行
         addAutoAppendRowFeature();
     }
 
@@ -106,25 +102,23 @@ public class EasyTablePanel extends JPanel {
      * 初始化表格UI样式
      */
     private void initTableUI() {
-        table.setFillsViewportHeight(true);
-        table.setRowHeight(28);
+        table.setFillsViewportHeight(true); // 填充视口高度
+        table.setRowHeight(30); // 设置行高
         table.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         table.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
         table.getTableHeader().setBackground(new Color(240, 242, 245));
         table.getTableHeader().setForeground(new Color(33, 33, 33));
-        table.setGridColor(new Color(230, 230, 230));
-        table.setSelectionBackground(new Color(200, 220, 245));
-        table.setSelectionForeground(new Color(33, 150, 243));
-        table.setIntercellSpacing(new Dimension(0, 2));
-        table.setShowHorizontalLines(false);
-        table.setShowVerticalLines(false);
-        table.setRowMargin(0);
+        table.setGridColor(new Color(237, 237, 237)); // 设置表格线颜色
+        table.setShowHorizontalLines(true); // 显示横线
+        table.setShowVerticalLines(true);   // 显示竖线
+        table.setIntercellSpacing(new Dimension(2, 2)); // 设置单元格间距
+        table.setRowMargin(2); // 设置行间距为0
         table.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 230)),
+                BorderFactory.createLineBorder(new Color(237, 237, 237)),
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-        table.setOpaque(false);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+        table.setOpaque(false); // 设置表格透明
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS); // 自动调整列宽
+        table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION); // 单选模式
     }
 
     /**
@@ -193,54 +187,20 @@ public class EasyTablePanel extends JPanel {
         };
         table.addMouseListener(tableMouseListener);
 
-        // 鼠标悬停高亮
-        table.addMouseMotionListener(new MouseMotionAdapter() {
-            int lastRow = -1;
-
-            @Override
-            public void mouseMoved(java.awt.event.MouseEvent e) {
-                int row = table.rowAtPoint(e.getPoint());
-                if (row != lastRow) {
-                    lastRow = row;
-                    table.putClientProperty("hoverRow", row);
-                    table.repaint();
-                }
-            }
-        });
-        // 设置所有列的默认渲染器,如果单元格内容为空则高亮显示，并兼容斑马纹、选中、悬停
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                int lastRow = table.getRowCount() - 1;
-                if (row == lastRow) { // 最后一行特殊处理
-                    // 更明显的可输入提示
-                    c.setBackground(new Color(230, 240, 254)); // 比 new Color(250, 252, 255) 略深
-                } else {
-                    int hoverRow = -1;
-                    Object hoverObj = table.getClientProperty("hoverRow");
-                    if (hoverObj instanceof Integer) hoverRow = (Integer) hoverObj;
-                    String cellValue = value == null ? null : value.toString();
-                    if (isSelected) {
-                        c.setBackground(table.getSelectionBackground());
-                    } else if (row == hoverRow) {
-                        c.setBackground(new Color(230, 240, 255));
-                    } else if (cellValue == null || cellValue.trim().isEmpty()) {
-                        c.setBackground(Colors.EMPTY_CELL_YELLOW);
-                    } else {
-                        c.setBackground(row % 2 == 0 ? new Color(250, 252, 255) : Color.WHITE);
-                    }
-                }
-                return c;
-            }
-        });
-        tableModel.addTableModelListener(e -> {
-            // 当表格内容update，更新边框提示 新增和删除在右键菜单中处理
-            if (e.getType() == TableModelEvent.UPDATE
-                    && e.getFirstRow() == e.getLastRow()) { // 只处理单行更新
-                updateTableBorder(true);
-            }
-        });
+//        // 鼠标悬停高亮
+//        table.addMouseMotionListener(new MouseMotionAdapter() {
+//            int lastRow = -1;
+//
+//            @Override
+//            public void mouseMoved(java.awt.event.MouseEvent e) {
+//                int row = table.rowAtPoint(e.getPoint());
+//                if (row != lastRow) {
+//                    lastRow = row;
+//                    table.putClientProperty("hoverRow", row);
+//                    table.repaint();
+//                }
+//            }
+//        });
     }
 
     public void addTableModelListener(TableModelListener l) {
@@ -297,18 +257,7 @@ public class EasyTablePanel extends JPanel {
     private void deleteSelectedRow() {
         int row = table.getSelectedRow();
         if (row >= 0) {
-            boolean isRowEmpty = true;
-            for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                Object value = tableModel.getValueAt(row, col);
-                if (value != null && !value.toString().trim().isEmpty()) {
-                    isRowEmpty = false;
-                    break;
-                }
-            }
             tableModel.removeRow(row);
-            if (!isRowEmpty) {
-                updateTableBorder(true);
-            }
         }
     }
 
@@ -497,20 +446,6 @@ public class EasyTablePanel extends JPanel {
         table.repaint();
     }
 
-    // 整体高亮时边框提示
-    public void updateTableBorder(boolean modified) {
-//        if (modified) {
-//            table.setBorder(BorderFactory.createCompoundBorder(
-//                    BorderFactory.createLineBorder(new Color(255, 140, 0), 3), // 更鲜明橙色且加粗
-//                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-//        } else {
-//            table.setBorder(BorderFactory.createCompoundBorder(
-//                    BorderFactory.createLineBorder(new Color(220, 225, 230)),
-//                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-//        }
-//        table.repaint();
-    }
-
     /**
      * 启用JTable行拖动排序
      */
@@ -524,51 +459,48 @@ public class EasyTablePanel extends JPanel {
      * 自动在最后一行有内容时添加新空行，实现类似 Postman 的交互体验
      */
     private void addAutoAppendRowFeature() {
-        tableModel.addTableModelListener(new TableModelListener() {
-            @Override
-            public void tableChanged(TableModelEvent e) {
-                if (!editable || suppressAutoAppendRow) return;
-                int rowCount = tableModel.getRowCount();
-                if (rowCount == 0) {
+        tableModel.addTableModelListener(e -> {
+            if (!editable || suppressAutoAppendRow) return;
+            int rowCount = tableModel.getRowCount();
+            if (rowCount == 0) {
+                tableModel.addRow(new Object[columns.length]);
+                return;
+            }
+            // 检查最后一行是否有内容
+            boolean hasContent = false;
+            for (int col = 0; col < columns.length; col++) {
+                Object value = tableModel.getValueAt(rowCount - 1, col);
+                if (value != null && !value.toString().trim().isEmpty()) {
+                    hasContent = true;
+                    break;
+                }
+            }
+            // 如果最后一行有内容，则自动添加一行空白行
+            if (hasContent) {
+                // 避免重复添加空行
+                boolean needAdd = true;
+                if (rowCount >= 2) {
+                    boolean lastIsEmpty = true;
+                    for (int col = 0; col < columns.length; col++) {
+                        Object value = tableModel.getValueAt(rowCount - 1, col);
+                        if (value != null && !value.toString().trim().isEmpty()) {
+                            lastIsEmpty = false;
+                            break;
+                        }
+                    }
+                    boolean prevIsEmpty = true;
+                    for (int col = 0; col < columns.length; col++) {
+                        Object value = tableModel.getValueAt(rowCount - 2, col);
+                        if (value != null && !value.toString().trim().isEmpty()) {
+                            prevIsEmpty = false;
+                            break;
+                        }
+                    }
+                    // 如果最后一行和倒数第二行都为空，则不再添加
+                    if (lastIsEmpty && prevIsEmpty) needAdd = false;
+                }
+                if (needAdd) {
                     tableModel.addRow(new Object[columns.length]);
-                    return;
-                }
-                // 检查最后一行是否有内容
-                boolean hasContent = false;
-                for (int col = 0; col < columns.length; col++) {
-                    Object value = tableModel.getValueAt(rowCount - 1, col);
-                    if (value != null && !value.toString().trim().isEmpty()) {
-                        hasContent = true;
-                        break;
-                    }
-                }
-                // 如果最后一行有内容，则自动添加一行空白行
-                if (hasContent) {
-                    // 避免重复添加空行
-                    boolean needAdd = true;
-                    if (rowCount >= 2) {
-                        boolean lastIsEmpty = true;
-                        for (int col = 0; col < columns.length; col++) {
-                            Object value = tableModel.getValueAt(rowCount - 1, col);
-                            if (value != null && !value.toString().trim().isEmpty()) {
-                                lastIsEmpty = false;
-                                break;
-                            }
-                        }
-                        boolean prevIsEmpty = true;
-                        for (int col = 0; col < columns.length; col++) {
-                            Object value = tableModel.getValueAt(rowCount - 2, col);
-                            if (value != null && !value.toString().trim().isEmpty()) {
-                                prevIsEmpty = false;
-                                break;
-                            }
-                        }
-                        // 如果最后一行和倒数第二行都为空，则不再添加
-                        if (lastIsEmpty && prevIsEmpty) needAdd = false;
-                    }
-                    if (needAdd) {
-                        tableModel.addRow(new Object[columns.length]);
-                    }
                 }
             }
         });

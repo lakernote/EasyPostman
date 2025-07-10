@@ -184,7 +184,6 @@ public class EnvironmentPanel extends BasePanel {
                 }
                 currentEnvironment = item.getEnvironment();
                 loadVariables(currentEnvironment);
-                variablesTablePanel.updateTableBorder(false);
             }
         });
         // 环境列表右键菜单
@@ -316,7 +315,6 @@ public class EnvironmentPanel extends BasePanel {
             }
         }
         EnvironmentService.saveEnvironment(currentEnvironment);
-        variablesTablePanel.updateTableBorder(false);
         // 保存后更新快照为json字符串
         originalVariablesSnapshot = JSONUtil.toJsonStr(rows);
         JOptionPane.showMessageDialog(this, "保存成功！", "提示", JOptionPane.INFORMATION_MESSAGE);

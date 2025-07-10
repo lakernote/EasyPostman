@@ -94,10 +94,6 @@ public class TableRowTransferHandler extends TransferHandler {
                     }
                 }
             }
-            // 拖拽完成后，更新表格边框高亮
-            if (tablePanel != null) {
-                tablePanel.updateTableBorder(true);
-            }
         }
         rows = null;
         addCount = 0;

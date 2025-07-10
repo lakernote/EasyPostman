@@ -298,6 +298,12 @@ public class JMeterPanel extends BasePanel {
         );
         // 设置趋势图样式
         XYPlot plot = trendChart.getXYPlot();
+        // 设置series颜色
+        org.jfree.chart.renderer.xy.XYLineAndShapeRenderer renderer = (org.jfree.chart.renderer.xy.XYLineAndShapeRenderer) plot.getRenderer();
+        renderer.setSeriesPaint(0, new Color(34, 139, 230)); // 用户数-亮蓝色
+        renderer.setSeriesPaint(1, new Color(255, 193, 7)); // 响应时间-琥珀黄
+        renderer.setSeriesPaint(2, new Color(76, 175, 80)); // QPS-草绿色
+        renderer.setSeriesPaint(3, new Color(244, 67, 54)); // 错误率-柔和红
         // 设置字体，防止中文乱码
         Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
         trendChart.getTitle().setFont(font.deriveFont(13f));
@@ -321,25 +327,34 @@ public class JMeterPanel extends BasePanel {
                     trendDataset.addSeries(qpsSeries);
                     trendDataset.addSeries(errorPercentSeries);
                     plot.getRangeAxis().setLabel("指标值");
+                    // 恢复所有series颜色
+                    renderer.setSeriesPaint(0, new Color(34, 139, 230)); // 用户数-亮蓝色
+                    renderer.setSeriesPaint(1, new Color(255, 193, 7)); // 响应时间-琥珀黄
+                    renderer.setSeriesPaint(2, new Color(76, 175, 80)); // QPS-草绿色
+                    renderer.setSeriesPaint(3, new Color(244, 67, 54)); // 错误率-柔和红
                 }
                 case "用户数" -> {
                     trendDataset.addSeries(userCountSeries);
                     plot.getRangeAxis().setLabel("用户数");
                     numberFormat = java.text.NumberFormat.getIntegerInstance();
+                    renderer.setSeriesPaint(0, new Color(34, 139, 230)); // 用户数-亮蓝色
                 }
                 case "响应时间" -> {
                     trendDataset.addSeries(responseTimeSeries);
                     plot.getRangeAxis().setLabel("响应时间(ms)");
+                    renderer.setSeriesPaint(0, new Color(255, 193, 7)); // ���应时间-琥珀黄
                 }
                 case "QPS" -> {
                     trendDataset.addSeries(qpsSeries);
                     plot.getRangeAxis().setLabel("QPS");
+                    renderer.setSeriesPaint(0, new Color(76, 175, 80)); // QPS-草绿色
                 }
                 case "错误率" -> {
                     trendDataset.addSeries(errorPercentSeries);
                     plot.getRangeAxis().setLabel("错误率(%)");
                     numberFormat = java.text.NumberFormat.getNumberInstance();
                     numberFormat.setMaximumFractionDigits(2);
+                    renderer.setSeriesPaint(0, new Color(244, 67, 54)); // 错误率-柔和红
                 }
             }
             if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
@@ -1167,7 +1182,7 @@ public class JMeterPanel extends BasePanel {
             if (!allRequestStartTimes.isEmpty() && !allRequestEndTimes.isEmpty()) {
                 long minStart = Collections.min(allRequestStartTimes);
                 long maxEnd = Collections.max(allRequestEndTimes);
-                long spanMs = Math.max(1, maxEnd - minStart); // 防止除0
+                long spanMs = Math.max(1, maxEnd - minStart);
                 apiQps = apiTotal * 1000.0 / spanMs;
             }
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;

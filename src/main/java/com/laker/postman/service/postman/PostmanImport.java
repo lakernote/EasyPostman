@@ -10,6 +10,8 @@ import com.laker.postman.model.HttpRequestItem;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.*;
 
+import static com.laker.postman.panel.collections.edit.AuthTabPanel.*;
+
 /**
  * Postman导入工具类
  */
@@ -98,7 +100,7 @@ public class PostmanImport {
             if (auth != null) {
                 String authType = auth.getStr("type", "");
                 if ("basic".equals(authType)) {
-                    req.setAuthType("basic");
+                    req.setAuthType(AUTH_TYPE_BASIC);
                     JSONArray basicArr = auth.getJSONArray("basic");
                     String username = null, password = null;
                     if (basicArr != null) {
@@ -111,7 +113,7 @@ public class PostmanImport {
                     req.setAuthUsername(username);
                     req.setAuthPassword(password);
                 } else if ("bearer".equals(authType)) {
-                    req.setAuthType("bearer");
+                    req.setAuthType(AUTH_TYPE_BEARER);
                     JSONArray bearerArr = auth.getJSONArray("bearer");
                     if (bearerArr != null && !bearerArr.isEmpty()) {
                         for (Object o : bearerArr) {
@@ -122,7 +124,7 @@ public class PostmanImport {
                         }
                     }
                 } else {
-                    req.setAuthType("none");
+                    req.setAuthType(AUTH_TYPE_NONE);
                 }
             }
             // body
@@ -352,15 +354,15 @@ public class PostmanImport {
             request.put("body", body);
         }
         // auth
-        if (item.getAuthType() != null && !"none".equals(item.getAuthType())) {
+        if (item.getAuthType() != null && !AUTH_TYPE_NONE.equals(item.getAuthType())) {
             JSONObject auth = new JSONObject();
-            if ("basic".equals(item.getAuthType())) {
+            if (AUTH_TYPE_BASIC.equals(item.getAuthType())) {
                 auth.put("type", "basic");
                 JSONArray arr = new JSONArray();
                 arr.add(new JSONObject().put("key", "username").put("value", item.getAuthUsername()));
                 arr.add(new JSONObject().put("key", "password").put("value", item.getAuthPassword()));
                 auth.put("basic", arr);
-            } else if ("bearer".equals(item.getAuthType())) {
+            } else if (AUTH_TYPE_BEARER.equals(item.getAuthType())) {
                 auth.put("type", "bearer");
                 JSONArray arr = new JSONArray();
                 arr.add(new JSONObject().put("key", "token").put("value", item.getAuthToken()));

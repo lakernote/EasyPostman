@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.laker.postman.panel.collections.edit.AuthTabPanel.AUTH_TYPE_NONE;
+
 /**
  * HttpRequestItem 类表示一个HTTP请求的配置项
  * 包含请求的基本信息、头部、参数、认证等
@@ -37,7 +39,7 @@ public class HttpRequestItem implements Serializable {
     private boolean autoExtractVariables = true;
 
     // 认证相关字段
-    private String authType = "none"; // 认证类型（none/basic/bearer）
+    private String authType = AUTH_TYPE_NONE; // 认证类型（none/basic/bearer）
     private String authUsername = ""; // Basic用户名
     private String authPassword = ""; // Basic密码
     private String authToken = "";    // Bearer Token

@@ -8,6 +8,9 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.laker.postman.panel.collections.edit.AuthTabPanel.AUTH_TYPE_BASIC;
+import static com.laker.postman.panel.collections.edit.AuthTabPanel.AUTH_TYPE_BEARER;
+
 public class HttpRequestUtil {
     public static String buildUrlWithParams(String url, Map<String, String> params) {
         if (params == null || params.isEmpty()) return url;
@@ -85,14 +88,14 @@ public class HttpRequestUtil {
 
     public static void addAuthorization(Map<String, String> headers, HttpRequestItem item) {
         String authType = item.getAuthType();
-        if ("basic".equals(authType)) {
+        if (AUTH_TYPE_BASIC.equals(authType)) {
             String username = EnvironmentService.replaceVariables(item.getAuthUsername());
             String password = EnvironmentService.replaceVariables(item.getAuthPassword());
             if (!headers.containsKey("Authorization") && username != null) {
                 String token = Base64.getEncoder().encodeToString((username + ":" + (password == null ? "" : password)).getBytes());
                 headers.put("Authorization", "Basic " + token);
             }
-        } else if ("bearer".equals(authType)) {
+        } else if (AUTH_TYPE_BEARER.equals(authType)) {
             String token = EnvironmentService.replaceVariables(item.getAuthToken());
             if (!headers.containsKey("Authorization") && token != null && !token.isEmpty()) {
                 headers.put("Authorization", "Bearer " + token);

@@ -4,6 +4,8 @@ import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 通用可关闭Tab组件，支持右上角红点脏标记
@@ -108,8 +110,15 @@ public class ClosableTabComponent extends JPanel {
         });
         closeOthers.addActionListener(e -> {
             int thisIdx = tabbedPane.indexOfComponent(panel);
-            for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
-                if (tabbedPane.getComponentAt(i) instanceof RequestEditSubPanel subPanel && i != thisIdx) {
+            List<Component> toRemove = new ArrayList<>();
+            for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                Component comp = tabbedPane.getComponentAt(i);
+                if (comp instanceof RequestEditSubPanel && i != thisIdx) {
+                    toRemove.add(comp);
+                }
+            }
+            for (Component comp : toRemove) {
+                if (comp instanceof RequestEditSubPanel subPanel) {
                     if (subPanel.isModified()) {
                         int result = JOptionPane.showConfirmDialog(tabbedPane,
                                 "有未保存的更改，是否保存？",
@@ -121,13 +130,20 @@ public class ClosableTabComponent extends JPanel {
                             saveCallback.run();
                         }
                     }
-                    tabbedPane.remove(i);
                 }
+                tabbedPane.remove(comp);
             }
         });
         closeAll.addActionListener(e -> {
-            for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
-                if (tabbedPane.getComponentAt(i) instanceof RequestEditSubPanel subPanel) {
+            List<Component> toRemove = new ArrayList<>();
+            for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                Component comp = tabbedPane.getComponentAt(i);
+                if (comp instanceof RequestEditSubPanel) {
+                    toRemove.add(comp);
+                }
+            }
+            for (Component comp : toRemove) {
+                if (comp instanceof RequestEditSubPanel subPanel) {
                     if (subPanel.isModified()) {
                         int result = JOptionPane.showConfirmDialog(tabbedPane,
                                 "有未保存的更改，是否保存？",
@@ -139,8 +155,8 @@ public class ClosableTabComponent extends JPanel {
                             saveCallback.run();
                         }
                     }
-                    tabbedPane.remove(i);
                 }
+                tabbedPane.remove(comp);
             }
         });
         menu.add(closeCurrent);

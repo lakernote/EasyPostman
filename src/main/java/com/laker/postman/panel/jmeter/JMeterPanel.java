@@ -49,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
@@ -68,8 +70,6 @@ public class JMeterPanel extends BasePanel {
     private Thread runThread;
     private JButton runBtn;
     private JButton stopBtn;
-    // 统计变量
-    private int totalRequests = 0;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
     private final List<Long> allRequestEndTimes = Collections.synchronizedList(new ArrayList<>());
@@ -88,6 +88,9 @@ public class JMeterPanel extends BasePanel {
     // 搜索框相关
     private JTextField searchField;
     private JLabel elapsedLabel; // 显示已用时
+
+    // 活跃线程计数器
+    private final AtomicInteger activeThreads = new AtomicInteger(0);
 
     @Override
     protected void initUI() {
@@ -337,11 +340,13 @@ public class JMeterPanel extends BasePanel {
         JLabel progressLabel = new JLabel();
         progressLabel.setText("0/0");
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
-        progressLabel.setIcon(new FlatSVGIcon("icons/jmeter.svg", 24, 24)); // 使用FlatLaf SVG图标
-        progressLabel.setHorizontalTextPosition(SwingConstants.LEFT);
+        progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)); // 使用FlatLaf SVG图标
+        progressLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+        progressPanel.setToolTipText("当前活跃用户数/总用户数");
         progressPanel.add(progressLabel);
         // ========== 实时耗时显示 ==========
-        elapsedLabel = new JLabel("已用时: 0 ms");
+        elapsedLabel = new JLabel("0 ms");
+        elapsedLabel.setIcon(new FlatSVGIcon("icons/time.svg", 20, 20));
         elapsedLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
         progressPanel.add(elapsedLabel);
 
@@ -407,19 +412,21 @@ public class JMeterPanel extends BasePanel {
         stopBtn.setEnabled(true);
         resultTabbedPane.setSelectedIndex(0);
         resultRootNode.removeAllChildren();
-        totalRequests = 0;
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
         allRequestStartTimes.clear();
         allRequestEndTimes.clear();
-        int total = countTotalRequests((DefaultMutableTreeNode) treeModel.getRoot());
-        progressLabel.setText("0/" + total);
-        elapsedLabel.setText("已用时: 0 ms");
+        // 统计总用户数
+        int totalThreads;
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
+        totalThreads = IntStream.range(0, rootNode.getChildCount()).mapToObj(i -> (DefaultMutableTreeNode) rootNode.getChildAt(i)).map(DefaultMutableTreeNode::getUserObject).filter(userObj -> userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP).map(userObj -> (JMeterTreeNode) userObj).map(jtNode -> jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData()).mapToInt(tg -> tg.numThreads).sum();
+        // 当前已启动线程数 = 0，启动后动态刷新
+        progressLabel.setText(0 + "/" + totalThreads);
+        elapsedLabel.setText("0 ms");
         runThread = new Thread(() -> {
             try {
-                DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
-                runJMeterTreeWithProgress(rootNode, progressLabel, total);
+                runJMeterTreeWithProgress(rootNode, progressLabel, totalThreads);
             } finally {
                 SwingUtilities.invokeLater(() -> {
                     running = false;
@@ -431,20 +438,6 @@ public class JMeterPanel extends BasePanel {
             }
         });
         runThread.start();
-    }
-
-    // 统计总请求数（线程组之间相加，线程组内为loop*numThread*请求数）
-    private int countTotalRequests(DefaultMutableTreeNode node) {
-        Object userObj = node.getUserObject();
-        if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.ROOT) {
-            int total = 0;
-            for (int i = 0; i < node.getChildCount(); i++) {
-                DefaultMutableTreeNode tgNode = (DefaultMutableTreeNode) node.getChildAt(i);
-                total += countThreadGroupRequests(tgNode);
-            }
-            return total;
-        }
-        return 0;
     }
 
     // 统计单个线程组的总请求数
@@ -466,7 +459,7 @@ public class JMeterPanel extends BasePanel {
     }
 
     // 带进度的执行
-    private void runJMeterTreeWithProgress(DefaultMutableTreeNode rootNode, JLabel progressLabel, int total) {
+    private void runJMeterTreeWithProgress(DefaultMutableTreeNode rootNode, JLabel progressLabel, int totalThreads) {
         if (!running) return;
         Object userObj = rootNode.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode) {
@@ -474,7 +467,7 @@ public class JMeterPanel extends BasePanel {
                 List<Thread> tgThreads = new ArrayList<>();
                 for (int i = 0; i < rootNode.getChildCount(); i++) {
                     DefaultMutableTreeNode tgNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
-                    Thread t = new Thread(() -> runJMeterTreeWithProgress(tgNode, progressLabel, total));
+                    Thread t = new Thread(() -> runJMeterTreeWithProgress(tgNode, progressLabel, totalThreads));
                     tgThreads.add(t);
                     t.start();
                 }
@@ -494,7 +487,16 @@ public class JMeterPanel extends BasePanel {
                         executor.shutdownNow();
                         return;
                     }
-                    executor.submit(() -> runThreadGroupWithProgress(rootNode, loops, progressLabel, total));
+                    executor.submit(() -> {
+                        activeThreads.incrementAndGet();
+                        SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                        try {
+                            runTask(rootNode, loops);
+                        } finally {
+                            activeThreads.decrementAndGet();
+                            SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                        }
+                    });
                 }
                 executor.shutdown();
                 try {
@@ -509,7 +511,7 @@ public class JMeterPanel extends BasePanel {
         }
     }
 
-    private void runThreadGroupWithProgress(DefaultMutableTreeNode groupNode, int loops, JLabel progressLabel, int total) {
+    private void runTask(DefaultMutableTreeNode groupNode, int loops) {
         for (int l = 0; l < loops && running; l++) {
             for (int i = 0; i < groupNode.getChildCount() && running; i++) {
                 DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
@@ -517,12 +519,6 @@ public class JMeterPanel extends BasePanel {
                 if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
                     String apiName = jtNode.httpRequestItem.getName();
                     boolean success = true;
-                    int finished;
-                    synchronized (this) {
-                        totalRequests++;
-                        finished = totalRequests;
-                    }
-                    SwingUtilities.invokeLater(() -> progressLabel.setText(finished + "/" + total));
                     PreparedRequest req;
                     HttpResponse resp = null;
                     String errorMsg = "";
@@ -652,9 +648,9 @@ public class JMeterPanel extends BasePanel {
                             long minStart = Collections.min(snapshot);
                             long now = System.currentTimeMillis();
                             long elapsed = now - minStart;
-                            elapsedLabel.setText("已用时: " + elapsed + " ms");
+                            elapsedLabel.setText(elapsed + " ms");
                         } else {
-                            elapsedLabel.setText("已用时: 0 ms");
+                            elapsedLabel.setText("0 ms");
                         }
                     });
                 }

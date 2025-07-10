@@ -5,6 +5,7 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.model.HttpResponse;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -56,11 +57,7 @@ public class ResponseBodyPanel extends JPanel {
         toolBar.add(leftPanel, BorderLayout.WEST);
         // 右侧搜索区
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
-        searchField = new FlatTextField();
-        searchField.setLeadingIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
-        searchField.setPlaceholderText("Search...");
-        searchField.setShowClearButton(true);
-        searchField.setPreferredSize(new Dimension(200, 30));
+        searchField = new SearchTextField();
         prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
         prevButton.setToolTipText("Previous");
         nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
@@ -139,8 +136,6 @@ public class ResponseBodyPanel extends JPanel {
             responseBodyPane.setCaretPosition(pos);
             responseBodyPane.select(pos, pos + keyword.length());
             responseBodyPane.requestFocusInWindow();
-        } else {
-            JOptionPane.showMessageDialog(this, "Not found: " + keyword);
         }
     }
 

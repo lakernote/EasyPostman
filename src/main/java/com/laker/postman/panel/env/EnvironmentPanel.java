@@ -7,6 +7,7 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
@@ -61,8 +62,7 @@ public class EnvironmentPanel extends BasePanel {
         JPanel searchPanel = new JPanel();
         searchPanel.setLayout(new BorderLayout(5, 5));
         searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        searchField = new JTextField();
-        searchField.setToolTipText("搜索环境");
+        searchField = new SearchTextField();
 
         addEnvButton = new JButton(new FlatSVGIcon("icons/plus.svg", 20, 20));
         addEnvButton.setToolTipText("新增环境");

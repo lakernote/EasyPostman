@@ -7,6 +7,7 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.dialog.LargeInputDialog;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.panel.BasePanel;
@@ -174,12 +175,7 @@ public class RequestCollectionsLeftPanel extends BasePanel {
     }
 
     private void getSearchField() {
-        searchField = new FlatTextField();
-        searchField.setLeadingIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
-        searchField.setPlaceholderText("Search...");
-        searchField.setShowClearButton(true);
-        searchField.setPreferredSize(new Dimension(180, 28));
-        searchField.setMaximumSize(new Dimension(180, 28));
+        searchField = new SearchTextField();
     }
 
     private JButton getImportBtn() {

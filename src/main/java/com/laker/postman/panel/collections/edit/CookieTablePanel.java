@@ -30,7 +30,7 @@ public class CookieTablePanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnDelete = new JButton("Delete Selected");
+        JButton btnDelete = new JButton("Delete");
         JButton btnClear = new JButton("Clear All");
         JButton btnAdd = new JButton("Add");
         btnPanel.add(btnAdd);

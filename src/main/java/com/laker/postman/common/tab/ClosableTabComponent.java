@@ -111,6 +111,7 @@ public class ClosableTabComponent extends JPanel {
         closeOthers.addActionListener(e -> {
             int thisIdx = tabbedPane.indexOfComponent(panel);
             List<Component> toRemove = new ArrayList<>();
+            int firstDirtyIdx = -1;
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 Component comp = tabbedPane.getComponentAt(i);
                 if (comp instanceof RequestEditSubPanel && i != thisIdx) {
@@ -120,22 +121,32 @@ public class ClosableTabComponent extends JPanel {
             for (Component comp : toRemove) {
                 if (comp instanceof RequestEditSubPanel subPanel) {
                     if (subPanel.isModified()) {
+                        int idx = tabbedPane.indexOfComponent(comp);
+                        if (firstDirtyIdx == -1) firstDirtyIdx = idx;
                         int result = JOptionPane.showConfirmDialog(tabbedPane,
-                                "有未保存的更改，是否保存？",
+                                "有未保存的更改，是否保存？\n将定位到该Tab。",
                                 "未保存的更改",
                                 JOptionPane.YES_NO_CANCEL_OPTION,
                                 JOptionPane.WARNING_MESSAGE);
-                        if (result == JOptionPane.CANCEL_OPTION) continue;
+                        if (result == JOptionPane.CANCEL_OPTION) {
+                            tabbedPane.setSelectedIndex(idx);
+                            return;
+                        }
                         if (result == JOptionPane.YES_OPTION && saveCallback != null) {
+                            tabbedPane.setSelectedIndex(idx);
                             saveCallback.run();
                         }
                     }
                 }
                 tabbedPane.remove(comp);
             }
+            // 操作完成后，定位到当前tab
+            int idx = tabbedPane.indexOfComponent(panel);
+            if (idx >= 0) tabbedPane.setSelectedIndex(idx);
         });
         closeAll.addActionListener(e -> {
             List<Component> toRemove = new ArrayList<>();
+            int firstDirtyIdx = -1;
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 Component comp = tabbedPane.getComponentAt(i);
                 if (comp instanceof RequestEditSubPanel) {
@@ -145,13 +156,19 @@ public class ClosableTabComponent extends JPanel {
             for (Component comp : toRemove) {
                 if (comp instanceof RequestEditSubPanel subPanel) {
                     if (subPanel.isModified()) {
+                        int idx = tabbedPane.indexOfComponent(comp);
+                        if (firstDirtyIdx == -1) firstDirtyIdx = idx;
                         int result = JOptionPane.showConfirmDialog(tabbedPane,
-                                "有未保存的更改，是否保存？",
+                                "有未保存的更改，是否保存？\n将定位到该Tab。",
                                 "未保存的更改",
                                 JOptionPane.YES_NO_CANCEL_OPTION,
                                 JOptionPane.WARNING_MESSAGE);
-                        if (result == JOptionPane.CANCEL_OPTION) continue;
+                        if (result == JOptionPane.CANCEL_OPTION) {
+                            tabbedPane.setSelectedIndex(idx);
+                            return;
+                        }
                         if (result == JOptionPane.YES_OPTION && saveCallback != null) {
+                            tabbedPane.setSelectedIndex(idx);
                             saveCallback.run();
                         }
                     }

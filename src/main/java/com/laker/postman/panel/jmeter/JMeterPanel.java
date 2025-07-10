@@ -76,7 +76,19 @@ public class JMeterPanel extends BasePanel {
     private JButton stopBtn;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
-    private final List<Long> allRequestEndTimes = Collections.synchronizedList(new ArrayList<>());
+
+    // 用于统计每个请求的结束时间和成功状态
+    private static class RequestResult {
+        long endTime;
+        boolean success;
+
+        public RequestResult(long endTime, boolean success) {
+            this.endTime = endTime;
+            this.success = success;
+        }
+    }
+
+    private final List<RequestResult> allRequestResults = Collections.synchronizedList(new ArrayList<>());
     private DefaultTableModel reportTableModel;
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
@@ -490,7 +502,11 @@ public class JMeterPanel extends BasePanel {
         apiSuccessMap.clear();
         apiFailMap.clear();
         allRequestStartTimes.clear();
-        allRequestEndTimes.clear();
+        // 清理趋势图历史数据
+        if (userCountSeries != null) userCountSeries.clear();
+        if (responseTimeSeries != null) responseTimeSeries.clear();
+        if (qpsSeries != null) qpsSeries.clear();
+        if (errorPercentSeries != null) errorPercentSeries.clear();
         // 启动趋势图定时采样
         if (trendTimer != null) {
             trendTimer.cancel();
@@ -543,13 +559,13 @@ public class JMeterPanel extends BasePanel {
         // 统计本秒内的请求
         int totalReq = 0, errorReq = 0;
         long totalRespTime = 0;
-        synchronized (allRequestEndTimes) {
-            for (int i = allRequestEndTimes.size() - 1; i >= 0; i--) {
-                long end = allRequestEndTimes.get(i);
-                if (end >= now - 1000 && end <= now) {
+        synchronized (allRequestResults) {
+            for (int i = allRequestResults.size() - 1; i >= 0; i--) {
+                RequestResult result = allRequestResults.get(i);
+                if (result.endTime >= now - 1000 && result.endTime <= now) {
                     totalReq++;
-                    // 这里只能估算errorReq，具体实现需结合请求结果
-                } else if (end < now - 1000) {
+                    if (!result.success) errorReq++;
+                } else if (result.endTime < now - 1000) {
                     break;
                 }
             }
@@ -696,7 +712,6 @@ public class JMeterPanel extends BasePanel {
                             success = false;
                         } finally {
                             costMs = System.currentTimeMillis() - startTime;
-                            allRequestEndTimes.add(startTime + costMs); // 记录结束时间
                         }
                         // 断言处理（JMeter树断言）
                         for (int j = 0; j < child.getChildCount() && resp != null; j++) {
@@ -764,8 +779,10 @@ public class JMeterPanel extends BasePanel {
                                 success = false;
                             }
                         }
+                        long cost = resp == null ? costMs : resp.costMs;
+                        allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
                         // 统计接口耗时（统一用resp.costMs）
-                        apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(resp == null ? costMs : resp.costMs);
+                        apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
 
                     }
 
@@ -1179,9 +1196,9 @@ public class JMeterPanel extends BasePanel {
             long apiP99 = getP99(costs);
             long apiTotalCost = costs.stream().mapToLong(Long::longValue).sum();
             double apiQps = 0;
-            if (!allRequestStartTimes.isEmpty() && !allRequestEndTimes.isEmpty()) {
+            if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
                 long minStart = Collections.min(allRequestStartTimes);
-                long maxEnd = Collections.max(allRequestEndTimes);
+                long maxEnd = Collections.max(allRequestResults.stream().map(result -> result.endTime).toList());
                 long spanMs = Math.max(1, maxEnd - minStart);
                 apiQps = apiTotal * 1000.0 / spanMs;
             }
@@ -1203,9 +1220,9 @@ public class JMeterPanel extends BasePanel {
             long avgP99 = totalP99 / apiCount;
             double avgRate = totalRate / apiCount;
             double totalQps = 0;
-            if (!allRequestStartTimes.isEmpty() && !allRequestEndTimes.isEmpty()) {
+            if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
                 long minStart = Collections.min(allRequestStartTimes);
-                long maxEnd = Collections.max(allRequestEndTimes);
+                long maxEnd = Collections.max(allRequestResults.stream().map(result -> result.endTime).toList());
                 long spanMs = Math.max(1, maxEnd - minStart); // 防止除0
                 totalQps = totalApi * 1000.0 / spanMs;
             }

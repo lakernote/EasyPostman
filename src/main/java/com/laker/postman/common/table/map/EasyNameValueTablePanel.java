@@ -26,14 +26,15 @@ public class EasyNameValueTablePanel extends EasyTablePanel {
      * 获取表格内容为Map（第一列为key，第二列为value）
      */
     public Map<String, String> getMap() {
-
         Map<String, String> map = new LinkedHashMap<>();
         List<Map<String, Object>> rows = getRows();
         for (Map<String, Object> row : rows) {
-            Object key = row.get(nameCol); // 获取第一列作为key
-            Object value = row.get(valueCol); // 获取第二列作为value
-            if (key != null && !key.toString().trim().isEmpty()) { // 确保key不为空
-                map.put(key.toString(), value == null ? "" : value.toString()); // 将value转换为String，null值也处理
+            Object keyObj = row.get(nameCol);
+            Object valueObj = row.get(valueCol);
+            String key = keyObj == null ? "" : keyObj.toString().trim();
+            String value = valueObj == null ? "" : valueObj.toString().trim();
+            if (!key.isEmpty()) { // 确保key不为空
+                map.put(key, value);
             }
         }
 

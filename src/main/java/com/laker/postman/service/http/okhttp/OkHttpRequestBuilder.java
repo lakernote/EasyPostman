@@ -43,9 +43,10 @@ public class OkHttpRequestBuilder {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();
-                if (key != null && !key.isEmpty()) {
+                if (isValidHeaderName(key)) {
                     builder.addHeader(key, value == null ? "" : value);
                 }
+                // 非法 header name 自动跳过
             }
         }
         return builder.build();
@@ -88,9 +89,10 @@ public class OkHttpRequestBuilder {
             for (Map.Entry<String, String> entry : req.headers.entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();
-                if (key != null && !key.isEmpty()) {
+                if (isValidHeaderName(key)) {
                     builder.addHeader(key, value == null ? "" : value);
                 }
+                // 非法 header name 自动跳过
             }
         }
         return builder.build();
@@ -127,5 +129,20 @@ public class OkHttpRequestBuilder {
             builder.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         }
         return builder.build();
+    }
+
+    /**
+     * 判断 header name 是否为合法的 ASCII 字符且不包含非法字符
+     */
+    private static boolean isValidHeaderName(String key) {
+        if (key == null || key.isEmpty()) return false;
+        for (int i = 0; i < key.length(); i++) {
+            char c = key.charAt(i);
+            // 仅允许 33~126 范围的 ASCII 字符，且不能包含冒号
+            if (c < 33 || c > 126 || c == ':') {
+                return false;
+            }
+        }
+        return true;
     }
 }

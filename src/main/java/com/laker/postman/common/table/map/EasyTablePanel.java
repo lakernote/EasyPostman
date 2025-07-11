@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
@@ -53,7 +53,7 @@ public class EasyTablePanel extends JPanel {
      * 获取表格是否可编辑
      */
     @Getter
-    private boolean editable = true; // 新增字段，默认可编辑
+    private boolean editable = true; // 新增字段默认可编辑
 
     /**
      * 控制自动补空行的标志，防止批量操作时触发自动补空行
@@ -86,8 +86,9 @@ public class EasyTablePanel extends JPanel {
         enableRowDragAndDrop();
         // 初始化表格UI
         initTableUI();
+        // 设置空值渲染器
+        setEmptyCellWhiteBackgroundRenderer();
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(new Color(248, 250, 252));
         add(scrollPane, BorderLayout.CENTER);
         // 创建右键菜单
@@ -186,21 +187,6 @@ public class EasyTablePanel extends JPanel {
             }
         };
         table.addMouseListener(tableMouseListener);
-
-//        // 鼠标悬停高亮
-//        table.addMouseMotionListener(new MouseMotionAdapter() {
-//            int lastRow = -1;
-//
-//            @Override
-//            public void mouseMoved(java.awt.event.MouseEvent e) {
-//                int row = table.rowAtPoint(e.getPoint());
-//                if (row != lastRow) {
-//                    lastRow = row;
-//                    table.putClientProperty("hoverRow", row);
-//                    table.repaint();
-//                }
-//            }
-//        });
     }
 
     public void addTableModelListener(TableModelListener l) {
@@ -507,6 +493,31 @@ public class EasyTablePanel extends JPanel {
         // 初始化时至少有一行空行
         if (tableModel.getRowCount() == 0) {
             tableModel.addRow(new Object[columns.length]);
+        }
+    }
+
+    /**
+     * 设置空值、null值、空白行单元格为白色背景
+     */
+    private void setEmptyCellWhiteBackgroundRenderer() {
+        TableCellRenderer defaultRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value == null || (value instanceof String && ((String) value).trim().isEmpty())) {
+                    c.setBackground(Color.WHITE);
+                } else {
+                    if (isSelected) {
+                        c.setBackground(table.getSelectionBackground());
+                    } else {
+                        c.setBackground(table.getBackground());
+                    }
+                }
+                return c;
+            }
+        };
+        for (int i = 0; i < columns.length; i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(defaultRenderer);
         }
     }
 }

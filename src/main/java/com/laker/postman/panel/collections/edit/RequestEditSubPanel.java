@@ -282,15 +282,7 @@ public class RequestEditSubPanel extends JPanel {
             if (originalRequestItem == null) return; // 如果没有原始请求数据，则不进行脏检测
             boolean dirty = isModified();
             SingletonFactory.getInstance(RequestEditPanel.class).updateTabDirty(this, dirty);
-            updateTablesBorder(dirty);
         });
-    }
-
-    public void updateTablesBorder(boolean isModified) {
-//        requestBodyPanel.getFormUrlencodedTablePanel().updateTableBorder(isModified);
-//        requestBodyPanel.getFormDataTablePanel().updateTableBorder(isModified);
-//        paramsPanel.updateTableBorder(isModified);
-//        headersPanel.updateTableBorder(isModified);
     }
 
     private void setResponseBody(HttpResponse resp) {

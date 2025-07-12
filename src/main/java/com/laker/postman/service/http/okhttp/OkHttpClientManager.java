@@ -35,6 +35,10 @@ public class OkHttpClientManager {
     public static void setConnectionPoolConfig(int maxIdle, long keepAliveSeconds) {
         maxIdleConnections = maxIdle;
         keepAliveDuration = keepAliveSeconds;
+        // 主动关闭所有旧连接，避免资源泄漏
+        for (OkHttpClient client : clientMap.values()) {
+            client.connectionPool().evictAll(); // 清空旧连接池
+        }
         clientMap.clear(); // 清空，确保新参数生效
     }
 
@@ -44,6 +48,10 @@ public class OkHttpClientManager {
     public static void setDefaultConnectionPoolConfig() {
         maxIdleConnections = MAX_IDLE_CONNECTIONS;
         keepAliveDuration = KEEP_ALIVE_DURATION;
+        // 主动关闭所有旧连接，避免资源泄漏
+        for (OkHttpClient client : clientMap.values()) {
+            client.connectionPool().evictAll(); // 清空旧连接池
+        }
         clientMap.clear(); // 清空，确保新参数生效
     }
 

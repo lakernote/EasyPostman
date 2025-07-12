@@ -9,6 +9,8 @@ public class SettingPanel extends BasePanel {
     private JTextField maxBodySizeField;
     private JTextField requestTimeoutField;
     private JTextField maxDownloadSizeField;
+    private JTextField jmeterMaxIdleField;
+    private JTextField jmeterKeepAliveField;
     JButton saveBtn;
     JButton cancelBtn;
 
@@ -51,6 +53,25 @@ public class SettingPanel extends BasePanel {
         formPanel.add(maxDownloadSizeLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(maxDownloadSizeField, gbc);
+
+        JLabel jmeterMaxIdleLabel = new JLabel("最大空闲连接数:");
+        jmeterMaxIdleField = new JTextField(10);
+        jmeterMaxIdleField.setText(String.valueOf(SettingManager.getJmeterMaxIdleConnections()));
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        formPanel.add(jmeterMaxIdleLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(jmeterMaxIdleField, gbc);
+
+        JLabel jmeterKeepAliveLabel = new JLabel("连接保活时间 (秒):");
+        jmeterKeepAliveField = new JTextField(10);
+        jmeterKeepAliveField.setText(String.valueOf(SettingManager.getJmeterKeepAliveSeconds()));
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        formPanel.add(jmeterKeepAliveLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(jmeterKeepAliveField, gbc);
+
         saveBtn = new JButton("Save");
         cancelBtn = new JButton("Cancel");
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -91,10 +112,22 @@ public class SettingPanel extends BasePanel {
                 JOptionPane.showMessageDialog(this, "不能小于0", "提示", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            int jmeterMaxIdle = Integer.parseInt(jmeterMaxIdleField.getText().trim());
+            if (jmeterMaxIdle <= 0) {
+                JOptionPane.showMessageDialog(this, "最大连接数必须大于0", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            long jmeterKeepAlive = Long.parseLong(jmeterKeepAliveField.getText().trim());
+            if (jmeterKeepAlive <= 0) {
+                JOptionPane.showMessageDialog(this, "连接保活时间必须大于0", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             // 保存时换算为字节
             SettingManager.setMaxBodySize(sizeKB * 1024);
             SettingManager.setRequestTimeout(timeout);
             SettingManager.setMaxDownloadSize(maxDownloadMB * 1024 * 1024);
+            SettingManager.setJmeterMaxIdleConnections(jmeterMaxIdle);
+            SettingManager.setJmeterKeepAliveSeconds(jmeterKeepAlive);
             JOptionPane.showMessageDialog(this, "设置已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
             // 获取顶层窗口并关闭
             Window window = SwingUtilities.getWindowAncestor(this);

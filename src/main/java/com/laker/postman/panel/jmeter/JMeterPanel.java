@@ -7,6 +7,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
@@ -497,7 +498,7 @@ public class JMeterPanel extends BasePanel {
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
         saveAllPropertyPanelData();
-        OkHttpClientManager.setConnectionPoolConfig(JMETER_MAX_IDLE_CONNECTIONS, JMETER_KEEP_ALIVE_DURATION);
+        OkHttpClientManager.setConnectionPoolConfig(getJmeterMaxIdleConnections(), getJmeterKeepAliveSeconds());
         if (running) return;
         running = true;
         runBtn.setEnabled(false);
@@ -1276,5 +1277,12 @@ public class JMeterPanel extends BasePanel {
         }
         return matched ? filteredNode : null;
     }
-}
 
+    private static int getJmeterMaxIdleConnections() {
+        return SettingManager.getJmeterMaxIdleConnections();
+    }
+
+    private static long getJmeterKeepAliveSeconds() {
+        return SettingManager.getJmeterKeepAliveSeconds();
+    }
+}

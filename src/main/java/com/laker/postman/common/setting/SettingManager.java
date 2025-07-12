@@ -83,4 +83,38 @@ public class SettingManager {
         props.setProperty("max_download_size", String.valueOf(size));
         save();
     }
+
+    public static int getJmeterMaxIdleConnections() {
+        String val = props.getProperty("jmeter_max_idle_connections");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 200;
+            }
+        }
+        return 200;
+    }
+
+    public static void setJmeterMaxIdleConnections(int maxIdle) {
+        props.setProperty("jmeter_max_idle_connections", String.valueOf(maxIdle));
+        save();
+    }
+
+    public static long getJmeterKeepAliveSeconds() {
+        String val = props.getProperty("jmeter_keep_alive_seconds");
+        if (val != null) {
+            try {
+                return Long.parseLong(val);
+            } catch (NumberFormatException e) {
+                return 60L;
+            }
+        }
+        return 60L;
+    }
+
+    public static void setJmeterKeepAliveSeconds(long seconds) {
+        props.setProperty("jmeter_keep_alive_seconds", String.valueOf(seconds));
+        save();
+    }
 }

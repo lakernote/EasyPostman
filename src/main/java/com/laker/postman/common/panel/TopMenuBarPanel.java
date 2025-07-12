@@ -1,11 +1,14 @@
 package com.laker.postman.common.panel;
 
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.common.setting.SettingDialog;
+import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -192,19 +196,19 @@ public class TopMenuBarPanel extends BasePanel {
      */
     private void checkUpdate() {
         // 显示正在检查更新的对话框
-        final JDialog loadingDialog = new JDialog((Frame) null, "Checking for Updates", true);
+        final JDialog loadingDialog = new JDialog((Frame) null, "检查更新", true);
         loadingDialog.setResizable(false);
-        JLabel loadingLabel = new JLabel("Checking for updates...", SwingConstants.CENTER);
+        JLabel loadingLabel = new JLabel("正在检查更新...", SwingConstants.CENTER);
         loadingLabel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
         loadingDialog.getContentPane().add(loadingLabel);
         loadingDialog.pack();
-        loadingDialog.setSize(320, 120); // 调整对话框大小
+        loadingDialog.setSize(320, 120);
         loadingDialog.setLocationRelativeTo(null);
-        // 在后台线程中检查更新
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             String latestVersion = null;
-            final String releaseUrl = "https://gitee.com/lakernote/easy-postman/releases";
+            String releaseUrl = "https://gitee.com/lakernote/easy-postman/releases";
             String errorMsg = null;
+            JSONObject latestReleaseJson = null;
 
             @Override
             protected Void doInBackground() {
@@ -220,44 +224,367 @@ public class TopMenuBarPanel extends BasePanel {
                         try (InputStream is = conn.getInputStream();
                              Scanner scanner = new Scanner(is, StandardCharsets.UTF_8)) {
                             String json = scanner.useDelimiter("\\A").next();
-                            log.info("Received update info: {}", json);
-                            JSONObject jsonObj = new JSONObject(json);
-                            latestVersion = jsonObj.getStr("tag_name");
+                            latestReleaseJson = new JSONObject(json);
+                            latestVersion = latestReleaseJson.getStr("tag_name");
                         }
                     } else {
-                        errorMsg = "Network error, status code: " + code;
+                        errorMsg = "网络错误，状态码：" + code;
                     }
                 } catch (Exception ex) {
-                    errorMsg = "Check for updates failed: " + ex.getMessage();
+                    errorMsg = "检查更新失败：" + ex.getMessage();
                 }
                 return null;
             }
 
             @Override
             protected void done() {
-                loadingDialog.dispose(); // 关闭加载对话框
+                loadingDialog.dispose();
                 String currentVersion = getCurrentVersion();
                 if (errorMsg != null) {
-                    JOptionPane.showMessageDialog(null, errorMsg, "Check for Updates", JOptionPane.ERROR_MESSAGE);
-                } else if (latestVersion == null) {
-                    JOptionPane.showMessageDialog(null, "Failed to get the latest version info.", "Check for Updates", JOptionPane.WARNING_MESSAGE);
-                } else if (compareVersion(latestVersion, currentVersion) <= 0) {
-                    JOptionPane.showMessageDialog(null, "Already the latest version (" + currentVersion + ")", "Check for Updates", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    int r = JOptionPane.showConfirmDialog(null, "New version found: " + latestVersion + "\nGo to download?", "Check for Updates", JOptionPane.YES_NO_OPTION);
-                    if (r == JOptionPane.YES_OPTION) {
-                        try {
-                            Desktop.getDesktop().browse(new URI(releaseUrl));
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(null, "Failed to open browser: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        }
+                    JOptionPane.showMessageDialog(null, errorMsg, "检查更新", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (latestVersion == null) {
+                    JOptionPane.showMessageDialog(null, "未获取到最新版本信息。", "检查更新", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                if (compareVersion(latestVersion, currentVersion) <= 0) {
+                    JOptionPane.showMessageDialog(null, "当前已是最新版本 (" + currentVersion + ")", "检查更新", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+                // 新版本弹窗
+                Object[] options = {"手动下载", "自动下载并安装", "取消"};
+                int r = JOptionPane.showOptionDialog(null,
+                        "发现新版本：" + latestVersion + "\n请选择升级方式：",
+                        "检查更新",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        null,
+                        options,
+                        options[1]);
+                if (r == 0) {
+                    try {
+                        Desktop.getDesktop().browse(new URI(releaseUrl));
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "打开浏览器失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                     }
+                } else if (r == 1) {
+                    // 自动下载并安装
+                    startDownloadWithProgress(latestReleaseJson);
                 }
             }
         };
         worker.execute();
-        // 弹出加载对话框（在EDT线程中）
         SwingUtilities.invokeLater(() -> loadingDialog.setVisible(true));
+    }
+
+    /**
+     * 自动下载最新安装包并显示进度弹窗，支持取消
+     */
+    private void startDownloadWithProgress(JSONObject latestReleaseJson) {
+        JSONArray assets = latestReleaseJson.getJSONArray("assets");
+        String installerUrl = null;
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("win")) {
+            for (int i = 0; i < assets.size(); i++) {
+                JSONObject asset = assets.getJSONObject(i);
+                String name = asset.getStr("name");
+                if (name != null && name.endsWith(".msi")) {
+                    installerUrl = asset.getStr("browser_download_url");
+                    break;
+                }
+            }
+        } else {
+            for (int i = 0; i < assets.size(); i++) {
+                JSONObject asset = assets.getJSONObject(i);
+                String name = asset.getStr("name");
+                if (name != null && name.endsWith(".dmg")) {
+                    installerUrl = asset.getStr("browser_download_url");
+                    break;
+                }
+            }
+        }
+        if (installerUrl == null) {
+            JOptionPane.showMessageDialog(null, "未找到最新安装包（.msi/.dmg）下载链接。", "自动下载并安装", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        // 优化下载弹窗UI，增加图标、剩余时间、重试按钮
+        JDialog downloadingDialog = new JDialog((Frame) null, "自动下载并安装", true);
+        downloadingDialog.setResizable(false);
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(24, 36, 24, 36));
+        panel.setBackground(new Color(245, 247, 250));
+        panel.setOpaque(true);
+        // 图标
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/download.svg"));
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(iconLabel);
+        panel.add(Box.createVerticalStrut(8));
+        // 状态提示
+        JLabel statusLabel = new JLabel("正在连接服务器...", SwingConstants.CENTER);
+        statusLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
+        statusLabel.setForeground(new Color(33, 37, 41));
+        statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(statusLabel);
+        panel.add(Box.createVerticalStrut(12));
+        // 进度条
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        progressBar.setPreferredSize(new Dimension(320, 32));
+        progressBar.setMaximumSize(new Dimension(320, 32));
+        progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        progressBar.setBackground(new Color(240, 242, 245));
+        progressBar.setForeground(new Color(33, 150, 243));
+        panel.add(progressBar);
+        // 三行信息：下载进度、下载速度、预估时间（布局优化，防止晃动）
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        infoPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = GridBagConstraints.RELATIVE;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        Dimension infoLabelSize = new Dimension(220, 24);
+        JLabel sizeLabel = new JLabel("下载进度：-- / -- MB", SwingConstants.LEFT);
+        sizeLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
+        sizeLabel.setForeground(new Color(80, 80, 80));
+        sizeLabel.setPreferredSize(infoLabelSize);
+        sizeLabel.setMinimumSize(infoLabelSize);
+        sizeLabel.setMaximumSize(infoLabelSize);
+        infoPanel.add(sizeLabel, gbc);
+        JLabel speedLabel = new JLabel("下载速度：-- KB/s", SwingConstants.LEFT);
+        speedLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
+        speedLabel.setForeground(new Color(80, 80, 80));
+        speedLabel.setPreferredSize(infoLabelSize);
+        speedLabel.setMinimumSize(infoLabelSize);
+        speedLabel.setMaximumSize(infoLabelSize);
+        infoPanel.add(speedLabel, gbc);
+        JLabel timeLabel = new JLabel("预估时间：-- s", SwingConstants.LEFT);
+        timeLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
+        timeLabel.setForeground(new Color(80, 80, 80));
+        timeLabel.setPreferredSize(infoLabelSize);
+        timeLabel.setMinimumSize(infoLabelSize);
+        timeLabel.setMaximumSize(infoLabelSize);
+        infoPanel.add(timeLabel, gbc);
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(infoPanel);
+        // 取消和重试按钮
+        JPanel btnPanel = new JPanel();
+        btnPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 16, 0));
+        btnPanel.setOpaque(false);
+        JButton cancelButton = new JButton("取消下载");
+        cancelButton.setFont(FontUtil.getDefaultFont(Font.PLAIN, 14));
+        cancelButton.setBackground(new Color(220, 230, 245));
+        cancelButton.setForeground(new Color(33, 37, 41));
+        cancelButton.setFocusPainted(false);
+        cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
+        cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton retryButton = new JButton("重试");
+        retryButton.setFont(FontUtil.getDefaultFont(Font.PLAIN, 14));
+        retryButton.setBackground(new Color(220, 230, 245));
+        retryButton.setForeground(new Color(33, 37, 41));
+        retryButton.setFocusPainted(false);
+        retryButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
+        retryButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        retryButton.setVisible(false);
+        btnPanel.add(cancelButton);
+        btnPanel.add(retryButton);
+        panel.add(Box.createVerticalStrut(18));
+        panel.add(btnPanel);
+        downloadingDialog.getContentPane().add(panel);
+        downloadingDialog.pack();
+        downloadingDialog.setSize(420, 320);
+        downloadingDialog.setLocationRelativeTo(null);
+        final boolean[] cancelFlag = {false};
+        final boolean[] errorFlag = {false};
+        cancelButton.addActionListener(e -> {
+            cancelFlag[0] = true;
+            downloadingDialog.dispose();
+        });
+        retryButton.addActionListener(e -> {
+            downloadingDialog.dispose();
+            startDownloadWithProgress(latestReleaseJson);
+        });
+        String finalInstallerUrl = installerUrl;
+        SwingWorker<Void, Integer> downloadWorker = new SwingWorker<>() {
+            String error = null;
+            File downloadedFile = null;
+            long lastTime = 0;
+            long lastDownloaded = 0;
+            int totalSize = 0;
+            long startTime = 0;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    statusLabel.setText("正在连接服务器...");
+                    URL downloadUrl = new URL(finalInstallerUrl);
+                    String fileName = finalInstallerUrl.substring(finalInstallerUrl.lastIndexOf('/') + 1);
+                    File tempFile = File.createTempFile("EasyPostman-", fileName);
+                    HttpURLConnection downloadConn = (HttpURLConnection) downloadUrl.openConnection();
+                    totalSize = downloadConn.getContentLength();
+                    if (totalSize <= 0) {
+                        SwingUtilities.invokeLater(() -> progressBar.setIndeterminate(true));
+                    } else {
+                        SwingUtilities.invokeLater(() -> {
+                            progressBar.setIndeterminate(false);
+                            progressBar.setMaximum(100);
+                        });
+                    }
+                    downloadConn.setConnectTimeout(5000);
+                    downloadConn.setReadTimeout(5000);
+                    try {
+                        InputStream in = null;
+                        FileOutputStream out = null;
+                        try {
+                            in = downloadConn.getInputStream();
+                            out = new FileOutputStream(tempFile);
+                            byte[] buf = new byte[102400];
+                            int len;
+                            int downloaded = 0;
+                            int lastPercent = 0;
+                            lastTime = System.currentTimeMillis();
+                            lastDownloaded = 0;
+                            startTime = System.currentTimeMillis();
+                            statusLabel.setText("正在下载最新安装包...");
+                            // 优化：只在内容变化时刷新，避免乱晃
+                            String lastSizeStr = "";
+                            String lastSpeedStr = "";
+                            int lastRemainSec = -1;
+                            while ((len = in.read(buf)) != -1) {
+                                if (cancelFlag[0]) break;
+                                out.write(buf, 0, len);
+                                downloaded += len;
+                                long now = System.currentTimeMillis();
+                                double elapsedSec = (now - startTime) / 1000.0;
+                                double speed = elapsedSec > 0 ? downloaded / elapsedSec : 0; // bytes/sec
+                                // 定长字符串，始终补齐空格，防止乱晃
+                                String sizeStr;
+                                if (downloaded == 0 && totalSize == 0) {
+                                    sizeStr = "下载进度：-- / -- MB";
+                                } else {
+                                    sizeStr = String.format("下载进度：%7.1f / %7.1f MB", downloaded / 1024.0 / 1024, totalSize / 1024.0 / 1024);
+                                }
+                                String speedStr = String.format("下载速度：%7.1f KB/s ", speed / 1024);
+                                int remainSec;
+                                String timeStr;
+                                if (speed > 0 && totalSize > 0) {
+                                    remainSec = (int) ((totalSize - downloaded) / speed);
+                                    timeStr = String.format("预估时间：%5d s ", remainSec);
+                                } else {
+                                    remainSec = -1;
+                                    timeStr = "预估时间：      s ";
+                                }
+                                // 只有内容变化时才刷新，避免乱晃
+                                String finalLastSizeStr = lastSizeStr;
+                                String finalLastSpeedStr = lastSpeedStr;
+                                int finalLastRemainSec = lastRemainSec;
+                                SwingUtilities.invokeLater(() -> {
+                                    if (!sizeStr.equals(finalLastSizeStr)) {
+                                        sizeLabel.setText(sizeStr);
+                                    }
+                                    if (!speedStr.equals(finalLastSpeedStr)) {
+                                        speedLabel.setText(speedStr);
+                                    }
+                                    if (remainSec != finalLastRemainSec) {
+                                        timeLabel.setText(timeStr);
+                                    }
+                                });
+                                lastSizeStr = sizeStr;
+                                lastSpeedStr = speedStr;
+                                lastRemainSec = remainSec;
+                                lastTime = now;
+                                lastDownloaded = downloaded;
+                                if (totalSize > 0) {
+                                    int percent = (int) ((downloaded * 100L) / totalSize);
+                                    if (percent != lastPercent) {
+                                        publish(percent);
+                                        lastPercent = percent;
+                                    }
+                                }
+                            }
+                        } catch (IOException ex) {
+                            error = getFriendlyError(ex);
+                        } finally {
+                            if (in != null) try {
+                                in.close();
+                            } catch (IOException ignore) {
+                            }
+                            if (out != null) try {
+                                out.close();
+                            } catch (IOException ignore) {
+                            }
+                        }
+                        if (!cancelFlag[0]) {
+                            downloadedFile = tempFile;
+                        }
+                    } catch (Exception ex) {
+                        error = getFriendlyError(ex);
+                    }
+                } catch (Exception ex) {
+                    error = getFriendlyError(ex);
+                }
+                return null;
+            }
+
+            @Override
+            protected void process(java.util.List<Integer> chunks) {
+                if (!chunks.isEmpty()) {
+                    int percent = chunks.get(chunks.size() - 1);
+                    SwingUtilities.invokeLater(() -> progressBar.setValue(percent));
+                }
+            }
+
+            @Override
+            protected void done() {
+                downloadingDialog.dispose();
+                if (cancelFlag[0]) {
+                    JOptionPane.showMessageDialog(null, "下载已取消。", "自动下载并安装", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+                if (error != null) {
+                    errorFlag[0] = true;
+                    retryButton.setVisible(true);
+                    JOptionPane.showMessageDialog(null, error, "自动下载并安装", JOptionPane.ERROR_MESSAGE);
+                    return;
+                } else if (downloadedFile != null) {
+                    String tip = "安装包已下载，是否立即打开安装？\n请确保已关闭所有 EasyPostman 程序，否则安装可能失败。\n点击“是”将自动关闭本程序并打开安装包。";
+                    int open = JOptionPane.showConfirmDialog(null, tip, "自动下载并安装", JOptionPane.YES_NO_OPTION);
+                    if (open == JOptionPane.YES_OPTION) {
+                        try {
+                            Desktop.getDesktop().open(downloadedFile);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null, "打开安装包失败：" + ex.getMessage(), "自动下载并安装", JOptionPane.ERROR_MESSAGE);
+                        }
+                        System.exit(0);
+                    }
+                }
+            }
+        };
+        downloadWorker.execute();
+        SwingUtilities.invokeLater(() -> downloadingDialog.setVisible(true));
+    }
+
+    // 错误友好提示
+    private String getFriendlyError(Exception ex) {
+        if (ex instanceof java.net.SocketTimeoutException) {
+            return "网络连接超时，请检查网络后重试。";
+        } else if (ex instanceof java.net.UnknownHostException) {
+            return "无法连接服务器，请检查网络。";
+        } else if (ex instanceof java.io.FileNotFoundException) {
+            return "下载链接无效或文件不存在。";
+        } else if (ex instanceof java.io.IOException) {
+            if (ex.getMessage() != null && ex.getMessage().contains("No space left on device")) {
+                return "磁盘空间不足，请清理后重试。";
+            } else if (ex.getMessage() != null && ex.getMessage().contains("Permission denied")) {
+                return "没有写入权限，请检查文件夹权限。";
+            }
+            return "下载文件时发生IO异常: " + ex.getMessage();
+        }
+        return "自动下载失败：" + ex.getMessage();
     }
 
     /**

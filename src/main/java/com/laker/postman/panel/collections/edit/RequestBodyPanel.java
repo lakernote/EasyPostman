@@ -42,15 +42,15 @@ public class RequestBodyPanel extends JPanel {
     private String currentRawType = RAW_TYPE_JSON;
     @Getter
     private JButton wsSendButton;
-    private final JLabel bodyTypeLable;
-    private JButton formatButton;
+    private final JLabel bodyTypeLabel;
+    private final JButton formatButton;
 
     public RequestBodyPanel() {
         setLayout(new BorderLayout());
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bodyTypeLable = new JLabel("Type:");
-        leftPanel.add(bodyTypeLable);
+        bodyTypeLabel = new JLabel("Type:");
+        leftPanel.add(bodyTypeLabel);
         String[] bodyTypes = {BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
@@ -219,15 +219,12 @@ public class RequestBodyPanel extends JPanel {
             formatLabel.setVisible(false);
             rawTypeComboBox.setVisible(false);
             bodyTypeComboBox.setVisible(false);
-            bodyTypeLable.setVisible(false);
+            bodyTypeLabel.setVisible(false);
             formatButton.setVisible(false);
         } else {
             wsSendButton.setVisible(false);
-//            formatLabel.setVisible(true);
-//            rawTypeComboBox.setVisible(true);
             bodyTypeComboBox.setVisible(true);
-            bodyTypeLable.setVisible(true);
-//            formatButton.setVisible(true);
+            bodyTypeLabel.setVisible(true);
         }
     }
 }

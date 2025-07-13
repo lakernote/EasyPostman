@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.edit;
 
-import com.laker.postman.common.SingletonFactory;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -39,22 +39,7 @@ public class NetworkLogPanel extends JPanel {
                     content = msg.substring(stageEnd + 1).trim();
                 }
                 // 2. 选择 emoji
-                String emoji = "🔹";
-                if (stage != null) {
-                    if (stage.contains("Failed") || stage.contains("failed") || stage.contains("canceled")) {
-                        emoji = "❌";
-                    } else if (stage.contains("callEnd") || stage.contains("cacheHit")) {
-                        emoji = "✅";
-                    } else if (stage.contains("secureConnect")) {
-                        emoji = "🔒";
-                    } else if (stage.contains("connect")) {
-                        emoji = "🌐";
-                    } else if (stage.contains("request")) {
-                        emoji = "➡️";
-                    } else if (stage.contains("response")) {
-                        emoji = "⬅️";
-                    }
-                }
+                String emoji = getEmoji(stage);
                 // 3. 阶段名样式
                 Style stageStyle = logArea.addStyle("stageStyle", null);
                 StyleConstants.setForeground(stageStyle, color);
@@ -87,6 +72,27 @@ public class NetworkLogPanel extends JPanel {
                 // ignore
             }
         });
+    }
+
+    @NotNull
+    private static String getEmoji(String stage) {
+        String emoji = "🔹";
+        if (stage != null) {
+            if (stage.contains("Failed") || stage.contains("failed") || stage.contains("canceled")) {
+                emoji = "❌";
+            } else if (stage.contains("callEnd") || stage.contains("cacheHit")) {
+                emoji = "✅";
+            } else if (stage.contains("secureConnect")) {
+                emoji = "🔒";
+            } else if (stage.contains("connect")) {
+                emoji = "🌐";
+            } else if (stage.contains("request")) {
+                emoji = "➡️";
+            } else if (stage.contains("response")) {
+                emoji = "⬅️";
+            }
+        }
+        return emoji;
     }
 
     public void clearLog() {

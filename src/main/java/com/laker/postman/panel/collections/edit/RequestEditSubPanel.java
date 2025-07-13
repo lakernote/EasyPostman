@@ -67,8 +67,7 @@ public class RequestEditSubPanel extends JPanel {
     // WebSocket连接对象
     private volatile okhttp3.WebSocket currentWebSocket;
     JSplitPane splitPane;
-    private JEditorPane testsPane;
-    private JScrollPane testsScrollPane;
+    private final JEditorPane testsPane;
 
     private final JButton[] tabButtons;
 
@@ -162,7 +161,7 @@ public class RequestEditSubPanel extends JPanel {
         testsPane = new JEditorPane();
         testsPane.setContentType("text/html");
         testsPane.setEditable(false);
-        testsScrollPane = new JScrollPane(testsPane);
+        JScrollPane testsScrollPane = new JScrollPane(testsPane);
         testsPanel.add(testsScrollPane, BorderLayout.CENTER);
         networkLogPanel = new NetworkLogPanel();
         cardPanel.add(responseBodyPanel, "Body");
@@ -396,9 +395,7 @@ public class RequestEditSubPanel extends JPanel {
                     SseUiCallback callback = new SseUiCallback() {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
-                            SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r);
-                            });
+                            SwingUtilities.invokeLater(() -> updateUIForResponse(String.valueOf(r.code), r));
                         }
 
                         @Override
@@ -456,8 +453,8 @@ public class RequestEditSubPanel extends JPanel {
     private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
         currentWorker = new SwingWorker<>() {
             okhttp3.WebSocket webSocket;
-            HttpResponse resp = new HttpResponse();
-            StringBuilder wsBodyBuilder = new StringBuilder();
+            final HttpResponse resp = new HttpResponse();
+            final StringBuilder wsBodyBuilder = new StringBuilder();
             long startTime;
             volatile boolean closed = false;
 

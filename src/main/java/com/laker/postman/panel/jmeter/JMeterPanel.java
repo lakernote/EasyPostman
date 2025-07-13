@@ -509,6 +509,7 @@ public class JMeterPanel extends BasePanel {
         apiSuccessMap.clear();
         apiFailMap.clear();
         allRequestStartTimes.clear();
+        allRequestResults.clear();
         // 清理趋势图历史数据
         if (userCountSeries != null) userCountSeries.clear();
         if (responseTimeSeries != null) responseTimeSeries.clear();

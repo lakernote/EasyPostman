@@ -116,6 +116,9 @@ public class JMeterPanel extends BasePanel {
     // 定时采样线程
     private Timer trendTimer;
 
+    // 高效模式
+    private boolean efficientMode = false;
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -427,6 +430,24 @@ public class JMeterPanel extends BasePanel {
         btnPanel.add(stopBtn);
         btnPanel.add(saveCaseBtn);
         btnPanel.add(loadCaseBtn);
+        // 高效模式checkbox和问号提示
+        JCheckBox efficientCheckBox = new JCheckBox("高效模式");
+        efficientCheckBox.setSelected(false);
+        efficientCheckBox.setToolTipText("开启后只记录错误结果，减少内存占用");
+        efficientCheckBox.addActionListener(e -> efficientMode = efficientCheckBox.isSelected());
+        btnPanel.add(efficientCheckBox);
+        JLabel efficientHelp = new JLabel(new FlatSVGIcon("icons/help.svg", 16, 16));
+        efficientHelp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        efficientHelp.setToolTipText("高效模式说明");
+        efficientHelp.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                JOptionPane.showMessageDialog(JMeterPanel.this,
+                        "高效模式：\n只记录断言失败或请求异常的结果，极大减少内存占用。适合高并发/大循环压测。\n可扩展更多性能相关配置。",
+                        "高效模式说明", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        btnPanel.add(efficientHelp);
         topPanel.add(btnPanel, BorderLayout.WEST);
         // ========== 执行进度指示器 ==========
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
@@ -442,6 +463,31 @@ public class JMeterPanel extends BasePanel {
         elapsedLabel.setIcon(new FlatSVGIcon("icons/time.svg", 20, 20));
         elapsedLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
         progressPanel.add(elapsedLabel);
+        // ========== 内存占用显示 ==========
+        JLabel memoryLabel = new JLabel();
+        memoryLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
+        memoryLabel.setIcon(new FlatSVGIcon("icons/computer.svg", 20, 20));
+        memoryLabel.setToolTipText("当前JVM内存占用，双击手动GC");
+        updateMemoryLabel(memoryLabel);
+        // 定时刷新内存占用
+        Timer memTimer = new Timer();
+        memTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                SwingUtilities.invokeLater(() -> updateMemoryLabel(memoryLabel));
+            }
+        }, 0, 2000);
+        memoryLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    System.gc();
+                    updateMemoryLabel(memoryLabel);
+                    JOptionPane.showMessageDialog(JMeterPanel.this, "已手动触发GC！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
+        progressPanel.add(memoryLabel);
 
         topPanel.add(progressPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
@@ -509,6 +555,7 @@ public class JMeterPanel extends BasePanel {
         apiSuccessMap.clear();
         apiFailMap.clear();
         allRequestStartTimes.clear();
+        allRequestResults.clear();
         // 清理趋势图历史数据
         if (userCountSeries != null) userCountSeries.clear();
         if (responseTimeSeries != null) responseTimeSeries.clear();
@@ -597,24 +644,6 @@ public class JMeterPanel extends BasePanel {
         responseTimeSeries.addOrUpdate(second, avgRespTime);
         qpsSeries.addOrUpdate(second, qps);
         errorPercentSeries.addOrUpdate(second, errorPercent);
-    }
-
-    // 统计单个线程组的总请求数
-    private int countThreadGroupRequests(DefaultMutableTreeNode tgNode) {
-        Object userObj = tgNode.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.THREAD_GROUP) return 0;
-        ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
-        int numThreads = tg.numThreads;
-        int loops = tg.loops;
-        int reqCount = 0;
-        for (int i = 0; i < tgNode.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) tgNode.getChildAt(i);
-            Object childObj = child.getUserObject();
-            if (childObj instanceof JMeterTreeNode childJtNode && childJtNode.type == NodeType.REQUEST) {
-                reqCount++;
-            }
-        }
-        return numThreads * loops * reqCount;
     }
 
     // 带进度的执行
@@ -790,29 +819,30 @@ public class JMeterPanel extends BasePanel {
                         allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
                         // 统计接口耗时（统一用resp.costMs）
                         apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-
                     }
-
                     if (success) {
                         apiSuccessMap.merge(apiName, 1, Integer::sum);
                     } else {
                         apiFailMap.merge(apiName, 1, Integer::sum);
                     }
-                    DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));
-                    SwingUtilities.invokeLater(() -> {
-                        resultRootNode.add(reqNode);
-                        resultTreeModel.reload(resultRootNode);
-                        // ====== 刷新耗时UI ======
-                        if (!allRequestStartTimes.isEmpty()) {
-                            List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
-                            long minStart = Collections.min(snapshot);
-                            long now = System.currentTimeMillis();
-                            long elapsed = now - minStart;
-                            elapsedLabel.setText(elapsed + " ms");
-                        } else {
-                            elapsedLabel.setText("0 ms");
-                        }
-                    });
+                    // 高效模式下只保存失败或异常结果
+                    if (!efficientMode || !success) {
+                        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));
+                        SwingUtilities.invokeLater(() -> {
+                            resultRootNode.add(reqNode);
+                            resultTreeModel.reload(resultRootNode);
+                            // ====== 刷新耗时UI ======
+                            if (!allRequestStartTimes.isEmpty()) {
+                                List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
+                                long minStart = Collections.min(snapshot);
+                                long now = System.currentTimeMillis();
+                                long elapsed = now - minStart;
+                                elapsedLabel.setText(elapsed + " ms");
+                            } else {
+                                elapsedLabel.setText("0 ms");
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -1284,5 +1314,17 @@ public class JMeterPanel extends BasePanel {
 
     private static long getJmeterKeepAliveSeconds() {
         return SettingManager.getJmeterKeepAliveSeconds();
+    }
+
+    /**
+     * 刷新内存占用标签
+     */
+    private void updateMemoryLabel(JLabel memoryLabel) {
+        Runtime rt = Runtime.getRuntime();
+        long used = rt.totalMemory() - rt.freeMemory();
+        long max = rt.maxMemory();
+        String usedStr = String.format("%.1fMB", used / 1024.0 / 1024);
+        String maxStr = String.format("%.1fMB", max / 1024.0 / 1024);
+        memoryLabel.setText("内存: " + usedStr + " / " + maxStr);
     }
 }

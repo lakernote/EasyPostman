@@ -44,8 +44,7 @@ public class TableRowTransferHandler extends TransferHandler {
         if (rows == null) return false;
         if (model instanceof RunnerTableModel runnerModel) {
             // 只支持单行拖拽（可扩展为多行）
-            for (int i = 0; i < rows.length; i++) {
-                int from = rows[i];
+            for (int from : rows) {
                 int to = index;
                 runnerModel.moveRow(from, to);
                 if (to > from) index--; // 移动后下标变化
@@ -64,8 +63,8 @@ public class TableRowTransferHandler extends TransferHandler {
         // 插入到目标位置
         addIndex = index;
         addCount = rowData.length;
-        for (int i = 0; i < rowData.length; i++) {
-            defModel.insertRow(index++, rowData[i]);
+        for (Object[] rowDatum : rowData) {
+            defModel.insertRow(index++, rowDatum);
         }
         // 选中新插入的行
         table.getSelectionModel().setSelectionInterval(addIndex, addIndex + addCount - 1);

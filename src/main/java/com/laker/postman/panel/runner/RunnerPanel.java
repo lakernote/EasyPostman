@@ -273,9 +273,7 @@ public class RunnerPanel extends BasePanel {
             if (row.selected) {
                 BatchResult result = executeSingleRequest(row);
                 int rowIdx = i;
-                SwingUtilities.invokeLater(() -> {
-                    tableModel.setResponse(rowIdx, result.resp, result.cost, result.status, result.assertion);
-                });
+                SwingUtilities.invokeLater(() -> tableModel.setResponse(rowIdx, result.resp, result.cost, result.status, result.assertion));
                 finished++;
                 int finalFinished = finished;
                 SwingUtilities.invokeLater(() -> {

@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -38,13 +39,16 @@ public class TopMenuBarPanel extends BasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
+        setBorder(createPanelBorder());
+        setOpaque(true);
+        initComponents();
+    }
+
+    private Border createPanelBorder() {
+        return BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 1, 0, Color.lightGray),
                 BorderFactory.createEmptyBorder(1, 4, 1, 4)
-        ));
-        initComponents();
-        setBackground(new Color(245, 247, 250));
-        setOpaque(true);
+        );
     }
 
     @Override
@@ -56,28 +60,40 @@ public class TopMenuBarPanel extends BasePanel {
     private void initComponents() {
         menuBar = new JMenuBar();
         menuBar.setBorder(BorderFactory.createEmptyBorder());
-        // ---------文件菜单
+        addFileMenu();
+        addThemeMenu();
+        addSettingMenu();
+        addHelpMenu();
+        addAboutMenu();
+        add(menuBar, BorderLayout.WEST);
+        addEnvironmentComboBox();
+    }
+
+    private void addFileMenu() {
         JMenu fileMenu = new JMenu("File");
+        JMenuItem logMenuItem = new JMenuItem("Log");
+        logMenuItem.addActionListener(e -> openLogDirectory());
         JMenuItem exitMenuItem = new JMenuItem("Exit");
         exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         exitMenuItem.setMnemonic('X');
         exitMenuItem.addActionListener(e -> ExitDialog.show());
-        JMenuItem logMenuItem = new JMenuItem("Log");
-        logMenuItem.addActionListener(e -> {
-            try {
-                Desktop.getDesktop().open(new File(SystemUtil.LOG_DIR));
-            } catch (IOException ex) {
-                log.error("Failed to open log directory", ex);
-                JOptionPane.showMessageDialog(null,
-                        "Failed to open log directory. Please check the log.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);
+    }
 
-        // ---------主题菜单
+    private void openLogDirectory() {
+        try {
+            Desktop.getDesktop().open(new File(SystemUtil.LOG_DIR));
+        } catch (IOException ex) {
+            log.error("Failed to open log directory", ex);
+            JOptionPane.showMessageDialog(null,
+                    "Failed to open log directory. Please check the log.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void addThemeMenu() {
         JMenu themeMenu = new JMenu("Theme");
         ButtonGroup themeGroup = new ButtonGroup();
         JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem("Light (Flat Light)");
@@ -89,53 +105,60 @@ public class TopMenuBarPanel extends BasePanel {
         themeMenu.add(lightTheme);
         themeMenu.add(intellijTheme);
         themeMenu.add(macLightTheme);
-        // 根据当前主题设置默认选中项
+        setThemeSelection(lightTheme, intellijTheme, macLightTheme);
+        lightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatLightLaf"));
+        intellijTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatIntelliJLaf"));
+        macLightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.themes.FlatMacLightLaf"));
+        menuBar.add(themeMenu);
+    }
+
+    private void setThemeSelection(JRadioButtonMenuItem lightTheme, JRadioButtonMenuItem intellijTheme, JRadioButtonMenuItem macLightTheme) {
         String lafClass = UIManager.getLookAndFeel().getClass().getName();
         switch (lafClass) {
             case "com.formdev.flatlaf.FlatLightLaf" -> lightTheme.setSelected(true);
             case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> macLightTheme.setSelected(true);
             default -> intellijTheme.setSelected(true);
         }
-        // 切换主题事件
-        lightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatLightLaf"));
-        intellijTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatIntelliJLaf"));
-        macLightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.themes.FlatMacLightLaf"));
-        menuBar.add(themeMenu);
+    }
 
-        // ---------设置菜单
+    private void addSettingMenu() {
         JMenu settingMenu = new JMenu("Settings");
         JMenuItem settingMenuItem = new JMenuItem("Global Settings");
-        settingMenuItem.addActionListener(e -> {
-            Window window = SwingUtilities.getWindowAncestor(this);
-            SettingDialog dialog = new SettingDialog(window);
-            dialog.setVisible(true);
-        });
+        settingMenuItem.addActionListener(e -> showSettingDialog());
         settingMenu.add(settingMenuItem);
         menuBar.add(settingMenu);
+    }
 
-        // ---------帮助菜单
+    private void showSettingDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        SettingDialog dialog = new SettingDialog(window);
+        dialog.setVisible(true);
+    }
+
+    private void addHelpMenu() {
         JMenu helpMenu = new JMenu("Help");
-        // 新增“检查更新”菜单项
         JMenuItem updateMenuItem = new JMenuItem("Check for Updates");
         updateMenuItem.addActionListener(e -> checkUpdate());
-        helpMenu.add(updateMenuItem);
-        // 新增“反馈建议”菜单项
         JMenuItem feedbackMenuItem = new JMenuItem("Feedback");
-        feedbackMenuItem.addActionListener(e -> JOptionPane.showMessageDialog(null, "Please submit issues via Gitee or GitHub.", "Feedback", JOptionPane.INFORMATION_MESSAGE));
+        feedbackMenuItem.addActionListener(e -> showFeedbackDialog());
+        helpMenu.add(updateMenuItem);
         helpMenu.add(feedbackMenuItem);
         menuBar.add(helpMenu);
+    }
 
-        // ---------关于菜单
+    private void showFeedbackDialog() {
+        JOptionPane.showMessageDialog(null, "Please submit issues via Gitee or GitHub.", "Feedback", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void addAboutMenu() {
         JMenu aboutMenu = new JMenu("About");
         JMenuItem aboutMenuItem = new JMenuItem("About EasyPostman");
         aboutMenuItem.addActionListener(e -> aboutActionPerformed());
         aboutMenu.add(aboutMenuItem);
         menuBar.add(aboutMenu);
+    }
 
-        // 菜单栏放左侧
-        add(menuBar, BorderLayout.WEST);
-
-        // ---------环境选择器下拉框（右侧）
+    private void addEnvironmentComboBox() {
         if (environmentComboBox == null) {
             environmentComboBox = new EnvironmentComboBox();
         } else {
@@ -173,6 +196,11 @@ public class TopMenuBarPanel extends BasePanel {
                 + "</div>"
                 + "</body>"
                 + "</html>";
+        JEditorPane editorPane = getJEditorPane(html);
+        JOptionPane.showMessageDialog(null, editorPane, "About EasyPostman", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    private static JEditorPane getJEditorPane(String html) {
         JEditorPane editorPane = new JEditorPane("text/html", html);
         editorPane.setEditable(false);
         editorPane.setOpaque(false);
@@ -188,7 +216,7 @@ public class TopMenuBarPanel extends BasePanel {
         });
         // 直接用JEditorPane，不用滚动条，且自适应高度
         editorPane.setPreferredSize(new Dimension(340, 360));
-        JOptionPane.showMessageDialog(null, editorPane, "About EasyPostman", JOptionPane.PLAIN_MESSAGE);
+        return editorPane;
     }
 
     /**
@@ -206,7 +234,7 @@ public class TopMenuBarPanel extends BasePanel {
         loadingDialog.setLocationRelativeTo(null);
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             String latestVersion = null;
-            String releaseUrl = "https://gitee.com/lakernote/easy-postman/releases";
+            final String releaseUrl = "https://gitee.com/lakernote/easy-postman/releases";
             String errorMsg = null;
             JSONObject latestReleaseJson = null;
 
@@ -347,27 +375,11 @@ public class TopMenuBarPanel extends BasePanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         gbc.insets = new Insets(0, 0, 0, 0);
-        Dimension infoLabelSize = new Dimension(220, 24);
-        JLabel sizeLabel = new JLabel("下载进度：-- / -- MB", SwingConstants.LEFT);
-        sizeLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
-        sizeLabel.setForeground(new Color(80, 80, 80));
-        sizeLabel.setPreferredSize(infoLabelSize);
-        sizeLabel.setMinimumSize(infoLabelSize);
-        sizeLabel.setMaximumSize(infoLabelSize);
+        JLabel sizeLabel = createInfoLabel("下载进度：-- / -- MB");
         infoPanel.add(sizeLabel, gbc);
-        JLabel speedLabel = new JLabel("下载速度：-- KB/s", SwingConstants.LEFT);
-        speedLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
-        speedLabel.setForeground(new Color(80, 80, 80));
-        speedLabel.setPreferredSize(infoLabelSize);
-        speedLabel.setMinimumSize(infoLabelSize);
-        speedLabel.setMaximumSize(infoLabelSize);
+        JLabel speedLabel = createInfoLabel("下载速度：-- KB/s");
         infoPanel.add(speedLabel, gbc);
-        JLabel timeLabel = new JLabel("预估时间：-- s", SwingConstants.LEFT);
-        timeLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
-        timeLabel.setForeground(new Color(80, 80, 80));
-        timeLabel.setPreferredSize(infoLabelSize);
-        timeLabel.setMinimumSize(infoLabelSize);
-        timeLabel.setMaximumSize(infoLabelSize);
+        JLabel timeLabel = createInfoLabel("预估时间：-- s");
         infoPanel.add(timeLabel, gbc);
         panel.add(Box.createVerticalStrut(8));
         panel.add(infoPanel);
@@ -377,15 +389,11 @@ public class TopMenuBarPanel extends BasePanel {
         btnPanel.setOpaque(false);
         JButton cancelButton = new JButton("取消下载");
         cancelButton.setFont(FontUtil.getDefaultFont(Font.PLAIN, 14));
-        cancelButton.setBackground(new Color(220, 230, 245));
-        cancelButton.setForeground(new Color(33, 37, 41));
         cancelButton.setFocusPainted(false);
         cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         JButton retryButton = new JButton("重试");
         retryButton.setFont(FontUtil.getDefaultFont(Font.PLAIN, 14));
-        retryButton.setBackground(new Color(220, 230, 245));
-        retryButton.setForeground(new Color(33, 37, 41));
         retryButton.setFocusPainted(false);
         retryButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
         retryButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -399,7 +407,6 @@ public class TopMenuBarPanel extends BasePanel {
         downloadingDialog.setSize(420, 320);
         downloadingDialog.setLocationRelativeTo(null);
         final boolean[] cancelFlag = {false};
-        final boolean[] errorFlag = {false};
         cancelButton.addActionListener(e -> {
             cancelFlag[0] = true;
             downloadingDialog.dispose();
@@ -546,10 +553,8 @@ public class TopMenuBarPanel extends BasePanel {
                     return;
                 }
                 if (error != null) {
-                    errorFlag[0] = true;
                     retryButton.setVisible(true);
                     JOptionPane.showMessageDialog(null, error, "自动下载并安装", JOptionPane.ERROR_MESSAGE);
-                    return;
                 } else if (downloadedFile != null) {
                     String tip = "安装包已下载，是否立即打开安装？\n请确保已关闭所有 EasyPostman 程序，否则安装可能失败。\n点击“是”将自动关闭本程序并打开安装包。";
                     int open = JOptionPane.showConfirmDialog(null, tip, "自动下载并安装", JOptionPane.YES_NO_OPTION);
@@ -640,5 +645,16 @@ public class TopMenuBarPanel extends BasePanel {
         } catch (Exception e) {
             log.error("Failed to switch LookAndFeel", e);
         }
+    }
+
+    private JLabel createInfoLabel(String text) {
+        JLabel label = new JLabel(text, SwingConstants.LEFT);
+        label.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
+        label.setForeground(new Color(80, 80, 80));
+        Dimension infoLabelSize = new Dimension(220, 24);
+        label.setPreferredSize(infoLabelSize);
+        label.setMinimumSize(infoLabelSize);
+        label.setMaximumSize(infoLabelSize);
+        return label;
     }
 }

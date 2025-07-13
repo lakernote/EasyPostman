@@ -134,7 +134,7 @@ public class SidebarTabPanel extends BasePanel {
             int pos = text.indexOf(keyword, start);
             if (pos == -1 && start > 0) {
                 // 循环查找
-                pos = text.indexOf(keyword, 0);
+                pos = text.indexOf(keyword);
             }
             if (pos != -1) {
                 highlightSearchResult(pos, keyword.length());

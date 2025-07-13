@@ -112,21 +112,7 @@ public class SplashWindow extends JWindow {
                     setStatus("Done, showing main window...");
                     MainFrame mainFrame = get();
                     // 渐隐动画关闭 SplashWindow
-                    Timer timer = new Timer(15, null);
-                    timer.addActionListener(e -> {
-                        float opacity = getOpacity();
-                        if (opacity > 0.05f) {
-                            setOpacity(Math.max(0f, opacity - 0.08f));
-                        } else {
-                            timer.stop(); // 停止计时器
-                            setVisible(false); // 隐藏 SplashWindow
-                            dispose(); // 释放资源
-                            // 显示主界面
-                            SwingUtilities.invokeLater(() -> {
-                                mainFrame.setVisible(true);
-                            });
-                        }
-                    });
+                    Timer timer = getTimer(mainFrame);
                     timer.start();
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(null, "Failed to load main window, please restart the application.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -135,5 +121,22 @@ public class SplashWindow extends JWindow {
             }
         };
         worker.execute();
+    }
+
+    private Timer getTimer(MainFrame mainFrame) {
+        Timer timer = new Timer(15, null);
+        timer.addActionListener(e -> {
+            float opacity = getOpacity();
+            if (opacity > 0.05f) {
+                setOpacity(Math.max(0f, opacity - 0.08f));
+            } else {
+                timer.stop(); // 停止计时器
+                setVisible(false); // 隐藏 SplashWindow
+                dispose(); // 释放资源
+                // 显示主界面
+                SwingUtilities.invokeLater(() -> mainFrame.setVisible(true));
+            }
+        });
+        return timer;
     }
 }

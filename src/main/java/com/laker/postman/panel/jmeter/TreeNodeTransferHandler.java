@@ -1,5 +1,7 @@
 package com.laker.postman.panel.jmeter;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -9,6 +11,7 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 
+@Slf4j
 public class TreeNodeTransferHandler extends TransferHandler {
     private final DataFlavor nodeFlavor;
     private final DataFlavor[] flavors;
@@ -100,10 +103,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (isNodeDescendant(nodeToRemove, targetNode)) {
             return false;
         }
-        if (dragJtNode.type == NodeType.ROOT) {
-            return false;
-        }
-        return true;
+        return dragJtNode.type != NodeType.ROOT;
     }
 
     @Override
@@ -113,9 +113,6 @@ public class TreeNodeTransferHandler extends TransferHandler {
         }
         try {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) support.getTransferable().getTransferData(nodeFlavor);
-            if (node == null) {
-                return false;
-            }
             JTree.DropLocation dl = (JTree.DropLocation) support.getDropLocation();
             int childIndex = dl.getChildIndex();
             TreePath dest = dl.getPath();
@@ -137,7 +134,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
             jmeterTree.updateUI(); // 强制刷新
             return true;
         } catch (UnsupportedFlavorException | IOException ex) {
-            ex.printStackTrace();
+            log.error(ex.getMessage(), ex);
         }
         return false;
     }

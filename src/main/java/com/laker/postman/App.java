@@ -25,23 +25,14 @@ public class App {
             Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
             // 设置全局字体（包括菜单、弹窗等）
             FontUtil.setupGlobalFont(font);
-
             // 2. 设置主题
-            try {
-                FlatIntelliJLaf.setup();
-            } catch (Exception e) {
-                log.error("主题设置失败", e);
-            }
-
+            FlatIntelliJLaf.setup();
             // 3. FlatLaf 统一商务风格属性（圆角、阴影等）
             BusinessStyleUtils.applyBusinessStyle();
-
             // 4. 注册图标字体，使用 FontAwesome 图标库
             IconFontSwing.register(FontAwesome.getIconFont());
-
             // 5. 显示 SplashWindow
             SplashWindow splash = new SplashWindow();
-
             // 6. 异步加载主窗口
             splash.initMainFrame();
         });
@@ -50,8 +41,8 @@ public class App {
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             JOptionPane.showMessageDialog(null,
-                    "发生意外错误，请查看日志文件获取详情。",
-                    "错误提示", JOptionPane.ERROR_MESSAGE);
+                    "An unexpected error occurred. Please check the log file for details.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         });
     }
 }

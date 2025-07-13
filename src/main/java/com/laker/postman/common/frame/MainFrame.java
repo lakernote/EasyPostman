@@ -1,5 +1,6 @@
 package com.laker.postman.common.frame;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.panel.EasyPostmanMainPanel;
@@ -16,6 +17,7 @@ import java.awt.event.WindowEvent;
 @Slf4j
 public class MainFrame extends JFrame {
 
+    // 单例模式，确保只有一个实例
     private MainFrame() {
         super(); // 调用父类构造函数
         setName("EasyPostman"); // 设置窗口名称
@@ -24,7 +26,7 @@ public class MainFrame extends JFrame {
     }
 
     public void initComponents() {
-        setContentPane(EasyPostmanMainPanel.getInstance()); // 设置主面板为内容面板
+        setContentPane(SingletonFactory.getInstance(EasyPostmanMainPanel.class)); // 设置主面板为内容面板
         initWindowSize(); // 初始化窗口大小
         initWindowCloseListener(); // 初始化窗口关闭监听器
         pack(); // 调整窗口大小以适应内容

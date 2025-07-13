@@ -21,7 +21,7 @@ public class SplashWindow extends JWindow {
         JPanel content = getJPanel();
 
         // Logo
-        JLabel logoLabel = new JLabel(new ImageIcon(Icons.LOGO.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH)));
+        JLabel logoLabel = new JLabel(new ImageIcon(Icons.LOGO.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH)));
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         content.add(logoLabel, BorderLayout.CENTER);
 
@@ -30,7 +30,7 @@ public class SplashWindow extends JWindow {
         infoPanel.setOpaque(false);
         // 应用名称
         JLabel appNameLabel = new JLabel("EasyPostman", SwingConstants.CENTER);
-        appNameLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 22));
+        appNameLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 20));
         appNameLabel.setForeground(new Color(60, 90, 180));
         infoPanel.add(appNameLabel);
         // 版本号
@@ -50,7 +50,7 @@ public class SplashWindow extends JWindow {
         content.add(bottomPanel, BorderLayout.SOUTH);
 
         setContentPane(content);
-        setSize(450, 280); // 设置窗口大小
+        setSize(350, 240); // 设置窗口大小
         setLocationRelativeTo(null);  // 居中显示
         setBackground(new Color(0, 0, 0, 0)); // 透明背景
         setAlwaysOnTop(true); // 窗口总在最上层
@@ -118,9 +118,9 @@ public class SplashWindow extends JWindow {
                         if (opacity > 0.05f) {
                             setOpacity(Math.max(0f, opacity - 0.08f));
                         } else {
-                            timer.stop();
-                            setVisible(false);
-                            dispose();
+                            timer.stop(); // 停止计时器
+                            setVisible(false); // 隐藏 SplashWindow
+                            dispose(); // 释放资源
                             // 显示主界面
                             SwingUtilities.invokeLater(() -> {
                                 mainFrame.setVisible(true);

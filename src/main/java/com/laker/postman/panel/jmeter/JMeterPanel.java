@@ -101,11 +101,6 @@ public class JMeterPanel extends BasePanel {
     private TimeSeries responseTimeSeries;
     private TimeSeries qpsSeries;
     private TimeSeries errorPercentSeries;
-
-
-    private static final int JMETER_MAX_IDLE_CONNECTIONS = 200;
-    private static final long JMETER_KEEP_ALIVE_DURATION = 60L;
-
     // 搜索框相关
     private JTextField searchField;
     private JLabel elapsedLabel; // 显示已用时
@@ -549,8 +544,11 @@ public class JMeterPanel extends BasePanel {
         running = true;
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
-        resultTabbedPane.setSelectedIndex(0);
-        resultRootNode.removeAllChildren();
+        resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
+        resultRootNode.removeAllChildren(); // 清空结果树
+        reportTableModel.setRowCount(0); // 清空报表数据
+        resultTreeModel.reload(); // 刷新结果树
+        resultTree.clearSelection(); // 清除选中状态
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
@@ -1217,7 +1215,7 @@ public class JMeterPanel extends BasePanel {
 
     private void updateReportPanel() {
         // 表格统计
-        reportTableModel.setRowCount(0);
+        reportTableModel.setRowCount(0); // 清空表格
         int totalApi = 0, totalSuccess = 0, totalFail = 0;
         long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
         double totalRate = 0;

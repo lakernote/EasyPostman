@@ -112,7 +112,7 @@ public class JMeterPanel extends BasePanel {
     private Timer trendTimer;
 
     // 高效模式
-    private boolean efficientMode = false;
+    private boolean efficientMode = true;
 
     @Override
     protected void initUI() {
@@ -313,7 +313,7 @@ public class JMeterPanel extends BasePanel {
         Color qps = new Color(222, 156, 1);
         Color responseTime = new Color(7, 123, 237);
         Color errorPercent = new Color(236, 38, 26);
-        Color userCount = new Color(230, 230, 230);
+        Color userCount = new Color(25, 23, 23);
         org.jfree.chart.renderer.xy.XYLineAndShapeRenderer renderer = (org.jfree.chart.renderer.xy.XYLineAndShapeRenderer) plot.getRenderer();
         renderer.setSeriesPaint(0, userCount); // 用户数-亮蓝色
         renderer.setSeriesPaint(1, responseTime); // 响应时间-琥珀黄
@@ -427,7 +427,7 @@ public class JMeterPanel extends BasePanel {
         btnPanel.add(loadCaseBtn);
         // 高效模式checkbox和问号提示
         JCheckBox efficientCheckBox = new JCheckBox("高效模式");
-        efficientCheckBox.setSelected(false);
+        efficientCheckBox.setSelected(true); // 默认开启高效模式
         efficientCheckBox.setToolTipText("开启后只记录错误结果，减少内存占用");
         efficientCheckBox.addActionListener(e -> efficientMode = efficientCheckBox.isSelected());
         btnPanel.add(efficientCheckBox);

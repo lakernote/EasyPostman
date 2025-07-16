@@ -149,6 +149,24 @@ public class HttpUtil {
         bindings.put("env", activeEnv);
         bindings.put("postman", postman);
         bindings.put("pm", postman);
+
+        // 为前置脚本提供一个空的响应对象，防止pm.response为undefined
+        try {
+            // 创建一个空的HttpResponse对象并设置到pm中
+            HttpResponse emptyResponse = new HttpResponse();
+            emptyResponse.code = 0;
+            emptyResponse.headers = new HashMap<>();
+            emptyResponse.body = "{}";
+            postman.setResponse(emptyResponse);
+            // 添加到bindings中
+            bindings.put("response", emptyResponse);
+            bindings.put("responseBody", "{}");
+            bindings.put("responseHeaders", emptyResponse.headers);
+            bindings.put("statusCode", 0);
+        } catch (Exception e) {
+            log.warn("为前置脚本初始化空响应对象失败", e);
+        }
+
         return bindings;
     }
 

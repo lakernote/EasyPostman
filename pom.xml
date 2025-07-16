@@ -23,6 +23,7 @@
         <logback-classic.version>1.5.13</logback-classic.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <polyglot.version>24.2.1</polyglot.version>
     </properties>
     <dependencies>
 
@@ -87,12 +88,12 @@
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>
-            <version>24.2.1</version>
+            <version>${polyglot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>js</artifactId>
-            <version>24.2.1</version>
+            <version>${polyglot.version}</version>
             <type>pom</type>
         </dependency>
 

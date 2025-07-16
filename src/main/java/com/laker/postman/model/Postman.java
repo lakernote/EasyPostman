@@ -2,11 +2,7 @@ package com.laker.postman.model;
 
 import org.graalvm.polyglot.Value;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 // 模拟 Postman 对象
 public class Postman {
@@ -14,7 +10,8 @@ public class Postman {
     public Environment environment;
     public Environment env;
     public ResponseAssertion response;
-    private Map<String, Object> variables = new HashMap<>();
+    public Map<String, Object> variables = new HashMap<>();
+    public PreparedRequest request;
 
     public Postman(Environment environment) {
         this.environment = environment;

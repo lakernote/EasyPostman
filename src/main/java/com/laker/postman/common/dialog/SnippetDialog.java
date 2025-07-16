@@ -41,7 +41,40 @@ public class SnippetDialog extends JDialog {
 
             new Snippet("循环遍历数组", "var arr = pm.response.json().list;\narr.forEach(function(item) {\n    // 处理每个item\n});", "遍历JSON数组字段list"),
             new Snippet("条件判断", "if (pm.response.code === 200) {\n    // 成功逻辑\n} else {\n    // 失败逻辑\n}", "根据响应状态码进行条件判断"),
-            new Snippet("打印日志", "console.log('日志内容');", "打印日志到控制台")
+            new Snippet("打印日志", "console.log('日志内容');", "打印日志到控制台"),
+
+            // 基本加密解密功能 (JsPolyfillInjector提供的方法)
+            new Snippet("Base64编码", "var encoded = btoa('Hello World');\nconsole.log(encoded); // SGVsbG8gV29ybGQ=", "使用btoa进行Base64编码"),
+            new Snippet("Base64解码", "var decoded = atob('SGVsbG8gV29ybGQ=');\nconsole.log(decoded); // Hello World", "使用atob进行Base64解码"),
+            new Snippet("URL编码", "var encoded = encodeURIComponent('Hello World!');\nconsole.log(encoded); // Hello%20World%21", "使用encodeURIComponent进行URL编码"),
+            new Snippet("URL解码", "var decoded = decodeURIComponent('Hello%20World%21');\nconsole.log(decoded); // Hello World!", "使用decodeURIComponent进行URL解码"),
+
+            // 常用字符串操作
+            new Snippet("字符串截取", "var str = 'Hello World';\nvar sub = str.substring(0, 5);\nconsole.log(sub); // Hello", "截取字符串的一部分"),
+            new Snippet("字符串替换", "var str = 'Hello World';\nvar newStr = str.replace('World', 'JavaScript');\nconsole.log(newStr); // Hello JavaScript", "替换字符串中的内容"),
+            new Snippet("字符串分割", "var str = 'a,b,c,d';\nvar arr = str.split(',');\nconsole.log(arr); // ['a', 'b', 'c', 'd']", "将字符串分割为数组"),
+
+            // 日期时间处理
+            new Snippet("获取当前时间戳", "var timestamp = Date.now();\nconsole.log(timestamp); // 毫秒时间戳", "获取当前的毫秒时间戳"),
+            new Snippet("格式化日期", "var date = new Date();\nvar formatted = date.toISOString();\nconsole.log(formatted); // 如: 2023-01-01T12:00:00.000Z", "格式化日期为ISO字符串"),
+
+            // JSON处理
+            new Snippet("JSON字符串转对象", "var jsonString = '{\"name\":\"test\",\"value\":123}';\nvar obj = JSON.parse(jsonString);\nconsole.log(obj.name); // test", "将JSON字符串转换为JavaScript对象"),
+            new Snippet("对象转JSON字符串", "var obj = {name: 'test', value: 123};\nvar jsonString = JSON.stringify(obj);\nconsole.log(jsonString); // {\"name\":\"test\",\"value\":123}", "将JavaScript对象转换为JSON字符串"),
+
+            // 数组操作
+            new Snippet("数组过滤", "var arr = [1, 2, 3, 4, 5];\nvar filtered = arr.filter(function(item) {\n    return item > 3;\n});\nconsole.log(filtered); // [4, 5]", "过滤数组中的元素"),
+            new Snippet("数组映射", "var arr = [1, 2, 3];\nvar mapped = arr.map(function(item) {\n    return item * 2;\n});\nconsole.log(mapped); // [2, 4, 6]", "映射数组中的每个元素"),
+
+            // 正则表达式
+            new Snippet("正则匹配提取", "var str = 'My email is test@example.com';\nvar regex = /[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,4}/;\nvar email = str.match(regex)[0];\nconsole.log(email); // test@example.com", "使用正则表达式提取匹配内容"),
+
+            // 异步处理
+            new Snippet("Promise链式调用", "new Promise(function(resolve) {\n    resolve('Step 1');\n}).then(function(result) {\n    console.log(result); // Step 1\n    return 'Step 2';\n}).then(function(result) {\n    console.log(result); // Step 2\n});", "使用Promise进行链式异步调用"),
+
+            // 计算与加密
+            new Snippet("MD5加密", "// 需要引入crypto-js库\nvar hash = CryptoJS.MD5('Message').toString();\nconsole.log(hash);", "使用CryptoJS库计算MD5哈希值"),
+            new Snippet("SHA256加密", "// 需要引入crypto-js库\nvar hash = CryptoJS.SHA256('Message').toString();\nconsole.log(hash);", "使用CryptoJS库计算SHA256哈希值")
     );
 
 

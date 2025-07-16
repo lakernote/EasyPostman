@@ -23,11 +23,11 @@ public class ExitDialog {
     }
 
     public static void show() {
-        // 检查是否有未保存的更改
+        // Check for unsaved changes
         RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
         boolean hasUnsaved = false;
-        // 收集所有未保存的tab索引
+        // Collect all unsaved tab indexes
         List<Integer> unsavedTabs = new ArrayList<>();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             if (tabbedPane.getComponentAt(i) instanceof RequestEditSubPanel subPanel) {
@@ -37,40 +37,40 @@ public class ExitDialog {
                 }
             }
         }
-        if (hasUnsaved) { // 如果有未保存的更改，提示用户是否保存
+        if (hasUnsaved) { // If there are unsaved changes, prompt user to save
             int result = JOptionPane.showConfirmDialog(tabbedPane,
-                    "有未保存的更改，是否全部保存？",
-                    "未保存的更改",
+                    "There are unsaved changes. Save all?",
+                    "Unsaved Changes",
                     JOptionPane.YES_NO_CANCEL_OPTION,
                     JOptionPane.WARNING_MESSAGE);
-            if (result == JOptionPane.CANCEL_OPTION) {  // 用户选择取消，退出对话框
+            if (result == JOptionPane.CANCEL_OPTION) {  // User chose cancel, exit dialog
                 return;
             }
-            if (result == JOptionPane.YES_OPTION) {  // 用户选择是，依次保存所有未保存的tab
-                // 依次保存所有未保存的tab
+            if (result == JOptionPane.YES_OPTION) {  // User chose yes, save all unsaved tabs
+                // Save all unsaved tabs
                 for (Integer i : unsavedTabs) {
                     tabbedPane.setSelectedIndex(i);
                     editPanel.saveCurrentRequest();
                 }
             }
-            // 这里用 invokeLater 保证弹窗顺序
+            // Use invokeLater to ensure dialog order
             SwingUtilities.invokeLater(() -> {
-                int exitResult = JOptionPane.showConfirmDialog(null, "确定要退出吗？", "退出", JOptionPane.YES_NO_OPTION);
+                int exitResult = JOptionPane.showConfirmDialog(null, "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
                 if (exitResult != JOptionPane.YES_OPTION) {
                     return;
                 }
-                log.info("用户选择退出应用程序");
+                log.info("User chose to exit application");
                 SingletonFactory.getInstance(MainFrame.class).dispose();
                 System.exit(0);
             });
             return;
         }
-        // 没有未保存内容，直接弹退出确认
-        int result = JOptionPane.showConfirmDialog(null, "确定要退出吗？", "退出", JOptionPane.YES_NO_OPTION);
+        // No unsaved content, show exit confirmation directly
+        int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
         if (result != JOptionPane.YES_OPTION) {
             return;
         }
-        log.info("用户选择退出应用程序");
+        log.info("User chose to exit application");
         SingletonFactory.getInstance(MainFrame.class).dispose();
         System.exit(0);
     }

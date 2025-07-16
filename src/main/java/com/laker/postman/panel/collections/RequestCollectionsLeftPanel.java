@@ -650,36 +650,39 @@ public class RequestCollectionsLeftPanel extends BasePanel {
 
     // 创建默认请求组和测试请求
     private void createDefaultRequestGroups() {
-        log.info("创建默认请求组和测试请求");
+        log.info("Create default request group and example requests");
         try {
             DefaultMutableTreeNode defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", "Default Group"});
             rootTreeNode.add(defaultGroupNode);
-            // 经典的测试请求示例
+            // Example: Environment variable + script
             HttpRequestItem example = HttpRequestFactory.createDefaultRequest();
-            example.setName("环境变量+脚本示例");
+            example.setName("Environment Variable + Script Example");
             example.setMethod("GET");
             example.setUrl("{{baseUrl}}?q=lakernote");
             example.getParams().put("q", "lakernote");
-            example.setPrescript("console.log('这是一个预请求脚本');");
-            example.setPostscript("console.log('这是一个后置脚本');");
+            example.setPrescript("console.log('This is a pre-request script');");
+            example.setPostscript("console.log('This is a post-request script');");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", example}));
 
-            // GET 示例
-            DefaultMutableTreeNode getNode = new DefaultMutableTreeNode(new Object[]{"request", HttpRequestFactory.createDefaultRequest()});
-            defaultGroupNode.add(getNode);
+            // GET Example
+            HttpRequestItem getExample = HttpRequestFactory.createDefaultRequest();
+            getExample.setName("GET Example");
+            getExample.setMethod("GET");
+            getExample.setUrl("https://httpbin.org/get");
+            defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", getExample}));
 
-            // POST JSON 示例
+            // POST JSON Example
             HttpRequestItem postJson = HttpRequestFactory.createDefaultRequest();
-            postJson.setName("POST-JSON 示例");
+            postJson.setName("POST-JSON Example");
             postJson.setMethod("POST");
             postJson.setUrl("https://httpbin.org/post");
             postJson.getHeaders().put("Content-Type", "application/json");
             postJson.setBody("{\"name\":\"EasyTools\",\"type\":\"json\"}");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postJson}));
 
-            // POST form-data 示例
+            // POST form-data Example
             HttpRequestItem postFormData = HttpRequestFactory.createDefaultRequest();
-            postFormData.setName("POST-form-data 示例");
+            postFormData.setName("POST-form-data Example");
             postFormData.setMethod("POST");
             postFormData.setUrl("https://httpbin.org/post");
             postFormData.getHeaders().put("Content-Type", "multipart/form-data");
@@ -687,9 +690,9 @@ public class RequestCollectionsLeftPanel extends BasePanel {
             postFormData.getFormData().put("key2", "value2");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postFormData}));
 
-            // POST x-www-form-urlencoded 示例
+            // POST x-www-form-urlencoded Example
             HttpRequestItem postUrl = HttpRequestFactory.createDefaultRequest();
-            postUrl.setName("POST-x-www-form-urlencoded 示例");
+            postUrl.setName("POST-x-www-form-urlencoded Example");
             postUrl.setMethod("POST");
             postUrl.setUrl("https://httpbin.org/post");
             postUrl.getHeaders().put("Content-Type", "application/x-www-form-urlencoded");
@@ -697,35 +700,37 @@ public class RequestCollectionsLeftPanel extends BasePanel {
             postUrl.getUrlencoded().put("key2", "value2");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postUrl}));
 
-            // PUT 示例
+            // PUT Example
             HttpRequestItem put = HttpRequestFactory.createDefaultRequest();
-            put.setName("PUT 示例");
+            put.setName("PUT Example");
             put.setMethod("PUT");
             put.setUrl("https://httpbin.org/put");
             put.getHeaders().put("Content-Type", "application/json");
             put.setBody("{\"update\":true}");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", put}));
 
-            // DELETE 示例
+            // DELETE Example
             HttpRequestItem delete = HttpRequestFactory.createDefaultRequest();
-            delete.setName("DELETE 示例");
+            delete.setName("DELETE Example");
             delete.setMethod("DELETE");
             delete.setUrl("https://httpbin.org/delete");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", delete}));
 
-            // WebSocket 示例
+            // WebSocket Example
             HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
+            websocket.setName("WebSocket Example");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", websocket}));
 
-            // 重定向 示例
+            // Redirect Example
             HttpRequestItem redirect = HttpRequestFactory.createDefaultRedirectRequest();
+            redirect.setName("Redirect Example");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", redirect}));
 
             treeModel.reload();
             persistence.saveRequestGroups();
             requestTree.expandPath(new TreePath(defaultGroupNode.getPath()));
         } catch (Exception ex) {
-            log.error("创建默认请求组失败", ex);
+            log.error("Failed to create default request groups", ex);
         }
     }
 

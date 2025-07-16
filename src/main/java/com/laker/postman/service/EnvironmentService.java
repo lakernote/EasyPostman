@@ -86,15 +86,15 @@ public class EnvironmentService {
     private static void createDefaultEnvironments() {
         environments.clear();
 
-        // 创建开发环境
-        Environment devEnv = new Environment("开发环境");
+        // Create Development Environment
+        Environment devEnv = new Environment("Development Environment");
         devEnv.setId("dev-" + System.currentTimeMillis());
         devEnv.setActive(true);
         devEnv.addVariable("baseUrl", "https://so.gitee.com");
         devEnv.addVariable("apiKey", "dev-api-key-123");
 
-        // 创建测试环境
-        Environment testEnv = new Environment("测试环境");
+        // Create Testing Environment
+        Environment testEnv = new Environment("Testing Environment");
         testEnv.setId("test-" + System.currentTimeMillis());
         testEnv.addVariable("baseUrl", "https://so.csdn.net/so/search");
         testEnv.addVariable("apiKey", "test-api-key-456");

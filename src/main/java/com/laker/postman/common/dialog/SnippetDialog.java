@@ -150,13 +150,33 @@ public class SnippetDialog extends JDialog {
                 if (value instanceof Snippet snippet) {
                     label.setText(snippet.title);
                     label.setBorder(new EmptyBorder(5, 10, 5, 10));
-                    // 设置图标
-                    if (snippet.title.startsWith("前置-")) {
+
+                    // 设置图标 - 根据不同类型使用不同图标
+                    String title = snippet.title;
+                    if (title.startsWith("前置-")) {
                         label.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
-                    } else if (snippet.title.startsWith("断言-")) {
-                        label.setIcon(new FlatSVGIcon("icons/.svg", 16, 16));
-                    } else if (snippet.title.startsWith("提取-")) {
+                    } else if (title.startsWith("断言-")) {
+                        label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
+                    } else if (title.startsWith("提取-")) {
                         label.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+                    } else if (title.contains("环境变量")) {
+                        label.setIcon(new FlatSVGIcon("icons/environments.svg", 16, 16));
+                    } else if (title.contains("编码") || title.contains("解码")) {
+                        label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
+                    } else if (title.contains("加密") || title.contains("MD5") || title.contains("SHA")) {
+                        label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16)); // 如果没有security.svg可能需要添加
+                    } else if (title.contains("字符串")) {
+                        label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
+                    } else if (title.contains("数组") || title.contains("遍历")) {
+                        label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
+                    } else if (title.contains("JSON")) {
+                        label.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
+                    } else if (title.contains("日期") || title.contains("时间")) {
+                        label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+                    } else if (title.contains("打印") || title.contains("日志")) {
+                        label.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
+                    } else if (title.contains("正则")) {
+                        label.setIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
                     } else {
                         label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
                     }
@@ -328,27 +348,44 @@ public class SnippetDialog extends JDialog {
     private void initCategories() {
         snippetCategories.put("全部分类", snippets);
 
-        // 按前缀分类
+        // 按前缀和内容分类，更细致的分类
         Map<String, List<Snippet>> categorized = snippets.stream()
                 .collect(Collectors.groupingBy(snippet -> {
                     String title = snippet.title;
+                    // 主要功能类别
                     if (title.startsWith("前置-")) return "前置脚本";
                     if (title.startsWith("断言-")) return "断言脚本";
                     if (title.startsWith("提取-")) return "提取脚本";
+
+                    // 工具类别
                     if (title.contains("环境变量")) return "环境变量";
-                    if (title.contains("编码") || title.contains("解码") || title.contains("加密")) return "编码与加密";
+                    if (title.contains("加密") || title.contains("MD5") || title.contains("SHA")) return "加密与安全";
+                    if (title.contains("编码") || title.contains("解码")) return "编码与解码";
+                    if (title.contains("Base64")) return "编码与解码";
+                    if (title.contains("URL编码") || title.contains("URL解码")) return "编码与解码";
+
+                    // 数据处理
                     if (title.contains("字符串")) return "字符串操作";
-                    if (title.contains("数组")) return "数组操作";
-                    if (title.contains("JSON")) return "JSON处理";
+                    if (title.contains("数组") || title.contains("遍历") || title.contains("过滤") || title.contains("映射")) return "数组操作";
+                    if (title.contains("JSON") || title.contains("对象")) return "JSON处理";
+
+                    // 特殊功能
                     if (title.contains("日期") || title.contains("时间")) return "日期时间";
+                    if (title.contains("正则")) return "正则表达式";
+                    if (title.contains("条件") || title.contains("判断")) return "流程控制";
+                    if (title.contains("打印") || title.contains("日志")) return "日志调试";
+                    if (title.contains("JWT")) return "令牌处理";
+
+                    // 默认类别
                     return "其他工具";
                 }));
 
-        // 按特定顺序添加分类
+        // 按特定顺序添加分类，调整了分类顺序并增加了新分类
         String[] orderedCategories = {
                 "前置脚本", "断言脚本", "提取脚本", "环境变量",
-                "编码与加密", "字符串操作", "数组操作", "JSON处理",
-                "日期时间", "其他工具"
+                "加密与安全", "编码与解码", "字符串操作", "数组操作",
+                "JSON处理", "日期时间", "正则表达式", "流程控制",
+                "日志调试", "令牌处理", "其他工具"
         };
 
         for (String category : orderedCategories) {
@@ -419,3 +456,4 @@ public class SnippetDialog extends JDialog {
         }
     }
 }
+

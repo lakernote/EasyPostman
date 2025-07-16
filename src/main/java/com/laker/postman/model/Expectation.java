@@ -50,6 +50,27 @@ public class Expectation {
         }
     }
 
+    // Handle JavaScript RegExp objects
+    public void match(Object jsRegExp) {
+        if (jsRegExp != null) {
+            try {
+                // Convert JavaScript RegExp to string and extract the pattern part
+                String regExpStr = jsRegExp.toString();
+                // JS RegExp toString format is typically /pattern/flags
+                if (regExpStr.startsWith("/") && regExpStr.lastIndexOf("/") > 0) {
+                    String patternStr = regExpStr.substring(1, regExpStr.lastIndexOf("/"));
+                    // Create a Java Pattern (ignoring flags for simplicity)
+                    Pattern pattern = Pattern.compile(patternStr);
+                    match(pattern);
+                    return;
+                }
+            } catch (Exception e) {
+                // Fall through to the error below
+            }
+        }
+        throw new AssertionError("Match assertion failed: invalid JavaScript RegExp object=" + jsRegExp + ", actual=" + actual);
+    }
+
     public void below(Number max) {
         if (!(actual instanceof Number) || ((Number) actual).doubleValue() >= max.doubleValue()) {
             throw new AssertionError("below断言失败: 期望小于=" + max + ", 实际=" + actual);

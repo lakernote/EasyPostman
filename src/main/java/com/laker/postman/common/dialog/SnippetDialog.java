@@ -186,7 +186,7 @@ public class SnippetDialog extends JDialog {
         });
 
         JScrollPane listScrollPane = new JScrollPane(snippetList);
-        listScrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+        listScrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 15, 0));
 
         // 创建南部面板：预览区域和按钮
         JPanel southPanel = new JPanel(new BorderLayout(5, 5));
@@ -230,7 +230,7 @@ public class SnippetDialog extends JDialog {
                 southPanel
         );
         splitPane.setResizeWeight(0.3); // 设置左右比例
-        splitPane.setDividerLocation(200);
+        splitPane.setDividerLocation(230); // 设置初始分割位置
 
         // 添加到对话框
         add(northPanel, BorderLayout.NORTH);
@@ -266,6 +266,21 @@ public class SnippetDialog extends JDialog {
                 // 如果有搜索关键词，则还需要过滤
                 if (!searchField.getText().trim().isEmpty()) {
                     filterSnippets();
+                } else {
+                    // 如果列表不为空，自动选择第一个并显示预览
+                    if (listModel.getSize() > 0) {
+                        snippetList.setSelectedIndex(0);
+                        selectedSnippet = snippetList.getSelectedValue();
+                        if (selectedSnippet != null) {
+                            previewArea.setText(selectedSnippet.code);
+                            previewArea.setCaretPosition(0);
+                            descriptionLabel.setText(selectedSnippet.desc);
+                        }
+                    } else {
+                        // 如果列表为空，清空预览区域
+                        previewArea.setText("");
+                        descriptionLabel.setText("");
+                    }
                 }
             }
         });

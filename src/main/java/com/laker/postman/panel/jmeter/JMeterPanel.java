@@ -121,7 +121,7 @@ public class JMeterPanel extends BasePanel {
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 
         // 1. 左侧树结构
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("测试计划", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Test Plan", NodeType.ROOT));
         createDefaultRequest(root);
         treeModel = new DefaultTreeModel(root);
         jmeterTree = new JTree(treeModel);
@@ -138,7 +138,7 @@ public class JMeterPanel extends BasePanel {
         // 2. 右侧属性区（CardLayout）
         propertyCardLayout = new CardLayout();
         propertyPanel = new JPanel(propertyCardLayout);
-        propertyPanel.add(new JLabel("请选择左侧节点进行编辑"), "empty");
+        propertyPanel.add(new JLabel("Please select a node on the left to edit"), "empty");
         threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, "threadGroup");
         requestEditSubPanel = new RequestEditSubPanel("");
@@ -157,7 +157,7 @@ public class JMeterPanel extends BasePanel {
         searchPanel.add(searchField, BorderLayout.CENTER);
         resultTreePanel.add(searchPanel, BorderLayout.NORTH);
         // 结果树
-        resultRootNode = new DefaultMutableTreeNode("结果树");
+        resultRootNode = new DefaultMutableTreeNode("Result Tree");
         resultTreeModel = new DefaultTreeModel(resultRootNode);
         resultTree = new JTree(resultTreeModel);
         resultTree.setRootVisible(true);
@@ -180,7 +180,7 @@ public class JMeterPanel extends BasePanel {
         // 报表面板
         // 报表面板相关
         JPanel reportPanel = new JPanel(new BorderLayout());
-        String[] columns = {"接口名称", "总数", "成功", "失败", "QPS", "平均(ms)", "最小(ms)", "最大(ms)", "P99(ms)", "总耗时(ms)", "成功率"};
+        String[] columns = {"API Name", "Total", "Success", "Fail", "QPS", "Avg(ms)", "Min(ms)", "Max(ms)", "P99(ms)", "Total Cost(ms)", "Success Rate"};
         reportTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -288,21 +288,21 @@ public class JMeterPanel extends BasePanel {
         reportPanel.add(tableScroll, BorderLayout.CENTER);
         // 趋势图面板
         trendDataset = new TimeSeriesCollection();
-        userCountSeries = new TimeSeries("用户数");
-        responseTimeSeries = new TimeSeries("响应时间(ms)");
+        userCountSeries = new TimeSeries("Threads");
+        responseTimeSeries = new TimeSeries("Response Time(ms)");
         qpsSeries = new TimeSeries("QPS");
-        errorPercentSeries = new TimeSeries("错误率(%)");
+        errorPercentSeries = new TimeSeries("Error Rate(%)");
         trendDataset.addSeries(userCountSeries);
         trendDataset.addSeries(responseTimeSeries);
         trendDataset.addSeries(qpsSeries);
         trendDataset.addSeries(errorPercentSeries);
         // 趋势类型下拉框
-        String[] trendOptions = {"全部", "用户数", "响应时间", "QPS", "错误率"};
+        String[] trendOptions = {"All", "Threads", "Response Time", "QPS", "Error Rate"};
         JComboBox<String> trendTypeCombo = new JComboBox<>(trendOptions);
         JFreeChart trendChart = ChartFactory.createTimeSeriesChart(
-                "接口性能趋势", // 图表标题
-                "时间", // X轴标签
-                "指标值", // Y轴标签，后续动态切换
+                "API Performance Trend", // 图表标题
+                "Time", // X轴标签
+                "Metric Value", // Y轴标签，后续动态切换
                 trendDataset,
                 true, // 图例
                 false,
@@ -339,7 +339,7 @@ public class JMeterPanel extends BasePanel {
             // 动态设置Y轴格式
             NumberFormat numberFormat = null;
             switch (selected) {
-                case "全部" -> {
+                case "All" -> {
                     trendDataset.addSeries(userCountSeries);
                     trendDataset.addSeries(responseTimeSeries);
                     trendDataset.addSeries(qpsSeries);
@@ -351,13 +351,13 @@ public class JMeterPanel extends BasePanel {
                     renderer.setSeriesPaint(2, qps); // QPS-草绿色
                     renderer.setSeriesPaint(3, errorPercent); // 错误率-柔和红
                 }
-                case "用户数" -> {
+                case "Threads" -> {
                     trendDataset.addSeries(userCountSeries);
                     plot.getRangeAxis().setLabel("用户数");
                     numberFormat = java.text.NumberFormat.getIntegerInstance();
                     renderer.setSeriesPaint(0, userCount); // 用户数-亮蓝色
                 }
-                case "响应时间" -> {
+                case "Response Time" -> {
                     trendDataset.addSeries(responseTimeSeries);
                     plot.getRangeAxis().setLabel("响应时间(ms)");
                     renderer.setSeriesPaint(0, responseTime);
@@ -367,7 +367,7 @@ public class JMeterPanel extends BasePanel {
                     plot.getRangeAxis().setLabel("QPS");
                     renderer.setSeriesPaint(0, qps); // QPS-草绿色
                 }
-                case "错误率" -> {
+                case "Error Rate" -> {
                     trendDataset.addSeries(errorPercentSeries);
                     plot.getRangeAxis().setLabel("错误率(%)");
                     numberFormat = java.text.NumberFormat.getNumberInstance();
@@ -387,14 +387,14 @@ public class JMeterPanel extends BasePanel {
         // 趋势图面板
         JPanel trendPanel = new JPanel(new BorderLayout());
         JPanel trendTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        trendTopPanel.add(new JLabel("趋势类型:"));
+        trendTopPanel.add(new JLabel("Trend Type:"));
         trendTopPanel.add(trendTypeCombo);
         trendPanel.add(trendTopPanel, BorderLayout.NORTH);
         trendPanel.add(chartPanel, BorderLayout.CENTER);
 
-        resultTabbedPane.addTab("趋势图", trendPanel);
-        resultTabbedPane.addTab("报表", reportPanel);
-        resultTabbedPane.addTab("结果树", resultSplit);
+        resultTabbedPane.addTab("Trend", trendPanel);
+        resultTabbedPane.addTab("Report", reportPanel);
+        resultTabbedPane.addTab("Result Tree", resultSplit);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -417,24 +417,24 @@ public class JMeterPanel extends BasePanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        runBtn = new JButton("启动");
-        stopBtn = new JButton("停止");
+        runBtn = new JButton("Run");
+        stopBtn = new JButton("Stop");
         stopBtn.setEnabled(false);
-        JButton saveCaseBtn = new JButton("保存计划");
-        JButton loadCaseBtn = new JButton("加载计划");
+        JButton saveCaseBtn = new JButton("Save Plan");
+        JButton loadCaseBtn = new JButton("Load Plan");
         btnPanel.add(runBtn);
         btnPanel.add(stopBtn);
         btnPanel.add(saveCaseBtn);
         btnPanel.add(loadCaseBtn);
         // 高效模式checkbox和问号提示
-        JCheckBox efficientCheckBox = new JCheckBox("高效模式");
+        JCheckBox efficientCheckBox = new JCheckBox("Efficient Mode");
         efficientCheckBox.setSelected(true); // 默认开启高效模式
-        efficientCheckBox.setToolTipText("开启后只记录错误结果，减少内存占用");
+        efficientCheckBox.setToolTipText("Only record error results to reduce memory usage");
         efficientCheckBox.addActionListener(e -> efficientMode = efficientCheckBox.isSelected());
         btnPanel.add(efficientCheckBox);
         JLabel efficientHelp = new JLabel(new FlatSVGIcon("icons/help.svg", 16, 16));
         efficientHelp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        efficientHelp.setToolTipText("高效模式说明");
+        efficientHelp.setToolTipText("Efficient Mode Help");
         efficientHelp.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -452,7 +452,7 @@ public class JMeterPanel extends BasePanel {
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
         progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)); // 使用FlatLaf SVG图标
         progressLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
-        progressPanel.setToolTipText("当前活跃用户数/总用户数");
+        progressPanel.setToolTipText("active threads / total threads");
         progressPanel.add(progressLabel);
         // ========== 实时耗时显示 ==========
         elapsedLabel = new JLabel("0 ms");
@@ -463,7 +463,7 @@ public class JMeterPanel extends BasePanel {
         JLabel memoryLabel = new JLabel();
         memoryLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
         memoryLabel.setIcon(new FlatSVGIcon("icons/computer.svg", 20, 20));
-        memoryLabel.setToolTipText("当前JVM内存占用，双击手动GC");
+        memoryLabel.setToolTipText("Current JVM memory usage, double-click to manually GC");
         updateMemoryLabel(memoryLabel);
         // 定时刷新内存占用
         Timer memTimer = new Timer();
@@ -479,7 +479,7 @@ public class JMeterPanel extends BasePanel {
                 if (e.getClickCount() == 2) {
                     System.gc();
                     updateMemoryLabel(memoryLabel);
-                    JOptionPane.showMessageDialog(JMeterPanel.this, "已手动触发GC！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(JMeterPanel.this, "Manual GC triggered!", "Info", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
@@ -501,19 +501,19 @@ public class JMeterPanel extends BasePanel {
 
     private static void createDefaultRequest(DefaultMutableTreeNode root) {
         // 默认添加一个用户组和一个请求（www.baidu.com）
-        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("用户组", NodeType.THREAD_GROUP));
+        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
         HttpRequestItem defaultReq = new HttpRequestItem();
-        defaultReq.setName("百度首页");
+        defaultReq.setName("Baidu Home Page");
         defaultReq.setMethod("GET");
         defaultReq.setUrl("https://www.baidu.com");
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
 
         // 添加默认断言
-        DefaultMutableTreeNode assertionNode = new DefaultMutableTreeNode(new JMeterTreeNode("断言", NodeType.ASSERTION));
+        DefaultMutableTreeNode assertionNode = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
         req.add(assertionNode);
 
         // 添加默认定时器
-        DefaultMutableTreeNode timerNode = new DefaultMutableTreeNode(new JMeterTreeNode("定时器", NodeType.TIMER));
+        DefaultMutableTreeNode timerNode = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
         req.add(timerNode);
 
         group.add(req);
@@ -866,16 +866,16 @@ public class JMeterPanel extends BasePanel {
                 Object treeData = buildTreeData((DefaultMutableTreeNode) treeModel.getRoot());
                 String json = JSONUtil.toJsonPrettyStr(treeData);
                 Files.writeString(fileToSave.toPath(), json, StandardCharsets.UTF_8);
-                JOptionPane.showMessageDialog(this, "保存成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Save successful!", "Info", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "保存失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Save failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void loadJMeterTreeFromFile() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("加载JMeter用例树");
+        fileChooser.setDialogTitle("Load JMeter Case Tree");
         int userSelection = fileChooser.showOpenDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
@@ -886,9 +886,9 @@ public class JMeterPanel extends BasePanel {
                 treeModel.setRoot(root);
                 jmeterTree.setModel(treeModel);
                 jmeterTree.updateUI();
-                JOptionPane.showMessageDialog(this, "加载成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Load successful!", "Info", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "加载失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Load failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -994,12 +994,12 @@ public class JMeterPanel extends BasePanel {
 
         // 右键菜单
         JPopupMenu treeMenu = new JPopupMenu();
-        JMenuItem addThreadGroup = new JMenuItem("添加用户组");
-        JMenuItem addRequest = new JMenuItem("添加请求");
-        JMenuItem addAssertion = new JMenuItem("添加断言");
-        JMenuItem addTimer = new JMenuItem("添加定时器");
-        JMenuItem renameNode = new JMenuItem("重命名");
-        JMenuItem deleteNode = new JMenuItem("删除");
+        JMenuItem addThreadGroup = new JMenuItem("Add Thread Group");
+        JMenuItem addRequest = new JMenuItem("Add Request");
+        JMenuItem addAssertion = new JMenuItem("Add Assertion");
+        JMenuItem addTimer = new JMenuItem("Add Timer");
+        JMenuItem renameNode = new JMenuItem("Rename");
+        JMenuItem deleteNode = new JMenuItem("Delete");
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
         treeMenu.add(addAssertion);
@@ -1011,7 +1011,7 @@ public class JMeterPanel extends BasePanel {
         // 添加用户组（仅根节点可添加）
         addThreadGroup.addActionListener(e -> {
             DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) treeModel.getRoot();
-            DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("用户组", NodeType.THREAD_GROUP));
+            DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
             treeModel.insertNodeInto(group, root1, root1.getChildCount());
             jmeterTree.expandPath(new TreePath(root1.getPath()));
         });
@@ -1021,7 +1021,7 @@ public class JMeterPanel extends BasePanel {
             if (node == null) return;
             Object userObj = node.getUserObject();
             if (!(userObj instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.THREAD_GROUP) {
-                JOptionPane.showMessageDialog(JMeterPanel.this, "请选择一个用户组节点进行添加", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(JMeterPanel.this, "Please select a thread group node to add", "Info", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             // 多选请求弹窗
@@ -1065,7 +1065,7 @@ public class JMeterPanel extends BasePanel {
             if (!(userObj instanceof JMeterTreeNode jtNode)) return;
             if (jtNode.type == NodeType.ROOT) return;
             String oldName = jtNode.name;
-            String newName = JOptionPane.showInputDialog(JMeterPanel.this, "重命名节点:", oldName);
+            String newName = JOptionPane.showInputDialog(JMeterPanel.this, "Rename node:", oldName);
             if (newName != null && !newName.trim().isEmpty()) {
                 jtNode.name = newName.trim();
                 // 同步更新 request 类型的 httpRequestItem name 字段
@@ -1324,6 +1324,6 @@ public class JMeterPanel extends BasePanel {
         long max = rt.maxMemory();
         String usedStr = String.format("%.1fMB", used / 1024.0 / 1024);
         String maxStr = String.format("%.1fMB", max / 1024.0 / 1024);
-        memoryLabel.setText("内存: " + usedStr + " / " + maxStr);
+        memoryLabel.setText("Memory: " + usedStr + " / " + maxStr);
     }
 }

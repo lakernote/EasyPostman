@@ -701,8 +701,7 @@ public class RequestCollectionsLeftPanel extends BasePanel {
                         "key1": "value1",
                         "key2": "value2",
                         "key3": "value3"
-                    }
-                    """);
+                    }""");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postJson}));
 
             // POST form-data Example

@@ -344,7 +344,7 @@ public class JMeterPanel extends BasePanel {
                     trendDataset.addSeries(responseTimeSeries);
                     trendDataset.addSeries(qpsSeries);
                     trendDataset.addSeries(errorPercentSeries);
-                    plot.getRangeAxis().setLabel("指标值");
+                    plot.getRangeAxis().setLabel("Metric Value");
                     // 恢复所有series颜色
                     renderer.setSeriesPaint(0, userCount); // 用户数-亮蓝色
                     renderer.setSeriesPaint(1, responseTime); // 响应时间-琥珀黄
@@ -353,13 +353,13 @@ public class JMeterPanel extends BasePanel {
                 }
                 case "Threads" -> {
                     trendDataset.addSeries(userCountSeries);
-                    plot.getRangeAxis().setLabel("用户数");
+                    plot.getRangeAxis().setLabel("Threads");
                     numberFormat = java.text.NumberFormat.getIntegerInstance();
                     renderer.setSeriesPaint(0, userCount); // 用户数-亮蓝色
                 }
                 case "Response Time" -> {
                     trendDataset.addSeries(responseTimeSeries);
-                    plot.getRangeAxis().setLabel("响应时间(ms)");
+                    plot.getRangeAxis().setLabel("Response Time (ms)");
                     renderer.setSeriesPaint(0, responseTime);
                 }
                 case "QPS" -> {
@@ -369,7 +369,7 @@ public class JMeterPanel extends BasePanel {
                 }
                 case "Error Rate" -> {
                     trendDataset.addSeries(errorPercentSeries);
-                    plot.getRangeAxis().setLabel("错误率(%)");
+                    plot.getRangeAxis().setLabel("Error Rate (%)");
                     numberFormat = java.text.NumberFormat.getNumberInstance();
                     numberFormat.setMaximumFractionDigits(2);
                     renderer.setSeriesPaint(0, errorPercent); // 错误率-柔和红
@@ -1143,15 +1143,15 @@ public class JMeterPanel extends BasePanel {
                 if (info.testResults != null && !info.testResults.isEmpty()) {
                     setTabHtml(2, buildTestsHtml(info.testResults));
                 } else {
-                    setTabHtml(2, "<html><body><i>无断言结果</i></body></html>");
+                    setTabHtml(2, "<html><body><i>No assertion results</i></body></html>");
                 }
                 // Timing
                 if (resp != null && resp.httpEventInfo != null) {
                     setTabHtml(3, buildTimingHtml(req, resp));
                     setTabHtml(4, buildEventInfoHtml(req, resp));
                 } else {
-                    setTabHtml(3, "<html><body><i>无Timing信息</i></body></html>");
-                    setTabHtml(4, "<html><body><i>无Event信息</i></body></html>");
+                    setTabHtml(3, "<html><body><i>No TimingInfo</i></body></html>");
+                    setTabHtml(4, "<html><body><i>No EventInfo</i></body></html>");
                 }
             } else {
                 for (int i = 0; i < resultDetailTabbedPane.getTabCount(); i++) {
@@ -1159,7 +1159,7 @@ public class JMeterPanel extends BasePanel {
                     JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
                     pane.setContentType("text/html");
                     pane.setEditable(false);
-                    pane.setText("<html><body><i>无数据</i></body></html>");
+                    pane.setText("<html><body><i>No Data</i></body></html>");
                     pane.setCaretPosition(0);
                 }
             }

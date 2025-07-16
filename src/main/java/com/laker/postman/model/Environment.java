@@ -40,6 +40,16 @@ public class Environment {
         }
     }
 
+    /**
+     * 重载set方法，支持任意Object类型参数，自动转换为String
+     * 解决JavaScript中传入数字等非String类型的问题
+     */
+    public void set(String key, Object value) {
+        if (key != null && !key.isEmpty() && value != null) {
+            variables.put(key, String.valueOf(value));
+        }
+    }
+
     public String get(String key) {
         return variables.get(key);
     }

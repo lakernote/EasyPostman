@@ -3,7 +3,10 @@ package com.laker.postman.model;
 import org.graalvm.polyglot.Value;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 // 模拟 Postman 对象
 public class Postman {
@@ -11,6 +14,7 @@ public class Postman {
     public Environment environment;
     public Environment env;
     public ResponseAssertion response;
+    private Map<String, Object> variables = new HashMap<>();
 
     public Postman(Environment environment) {
         this.environment = environment;
@@ -19,6 +23,16 @@ public class Postman {
 
     public void setEnvironmentVariable(String key, String value) {
         environment.addVariable(key, value);
+    }
+
+    /**
+     * 重载setEnvironmentVariable方法，支持Object类型参数
+     * 解决JavaScript中传入数字等非String类型的问题
+     */
+    public void setEnvironmentVariable(String key, Object value) {
+        if (value != null) {
+            environment.set(key, String.valueOf(value));
+        }
     }
 
     public void setResponse(HttpResponse response) {
@@ -47,5 +61,56 @@ public class Postman {
             return this.response.expect(actual);
         }
         return new Expectation(actual);
+    }
+
+    // 为前置脚本添加的方法
+
+    /**
+     * 设置一个请求变量，仅在当前请求有效
+     */
+    public void setVariable(String key, Object value) {
+        variables.put(key, value);
+    }
+
+    /**
+     * 获取请求变量
+     */
+    public Object getVariable(String key) {
+        return variables.get(key);
+    }
+
+    /**
+     * 检查请求变量是否存在
+     */
+    public boolean hasVariable(String key) {
+        return variables.containsKey(key);
+    }
+
+    /**
+     * 删除请求变量
+     */
+    public void unsetVariable(String key) {
+        variables.remove(key);
+    }
+
+    /**
+     * 清除所有请求变量
+     */
+    public void clearVariables() {
+        variables.clear();
+    }
+
+    /**
+     * 生成UUID
+     */
+    public String generateUUID() {
+        return UUID.randomUUID().toString();
+    }
+
+    /**
+     * 生成时间戳
+     */
+    public long getTimestamp() {
+        return System.currentTimeMillis();
     }
 }

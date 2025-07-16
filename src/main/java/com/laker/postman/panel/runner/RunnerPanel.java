@@ -12,6 +12,7 @@ import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.TimeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -28,7 +29,10 @@ public class RunnerPanel extends BasePanel {
     private JTable table;
     private RunnerTableModel tableModel;
     private JButton runBtn;
-    private JProgressBar progressBar;
+    private JLabel timeLabel;     // 执行时间标签
+    private JLabel progressLabel; // 进度标签
+    private long startTime;       // 记录开始时间
+    private Timer executionTimer; // 执行时间计时器
 
     @Override
     protected void initUI() {
@@ -41,15 +45,50 @@ public class RunnerPanel extends BasePanel {
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
         topPanel.add(createButtonPanel(), BorderLayout.WEST);
-        progressBar = new JProgressBar();
-        progressBar.setStringPainted(true);
-        progressBar.setPreferredSize(new Dimension(260, 24));
-        JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        progressPanel.setOpaque(false);
-        progressPanel.add(progressBar);
-        topPanel.add(progressPanel, BorderLayout.EAST);
+
+        // 创建右侧信息面板，包含执行时间和进度显示
+        JPanel rightPanel = new JPanel();
+        // 使用更紧凑的布局
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.X_AXIS));
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        rightPanel.setOpaque(false);
+
+        // 创建执行时间显示面板
+        JPanel timePanel = new JPanel();
+        timePanel.setLayout(new BoxLayout(timePanel, BoxLayout.X_AXIS));
+        timePanel.setOpaque(false);
+        JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20));
+        timeLabel = new JLabel("0 ms");
+        timeLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+        timePanel.add(timeIcon);
+        timePanel.add(Box.createHorizontalStrut(3));
+        timePanel.add(timeLabel);
+
+        // 创建任务进度显示面板
+        JPanel taskPanel = new JPanel();
+        taskPanel.setLayout(new BoxLayout(taskPanel, BoxLayout.X_AXIS));
+        taskPanel.setOpaque(false);
+        JLabel taskIcon = new JLabel(new FlatSVGIcon("icons/functional.svg", 20, 20));
+
+        // 创建进度文本标签
+        progressLabel = new JLabel("0/0");
+        progressLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+
+        taskPanel.add(taskIcon);
+        taskPanel.add(Box.createHorizontalStrut(3));
+        taskPanel.add(progressLabel);
+
+        // 添加到右侧面板，并设置间距
+        rightPanel.add(timePanel);
+        rightPanel.add(Box.createHorizontalStrut(10));
+        rightPanel.add(taskPanel);
+
+        topPanel.add(rightPanel, BorderLayout.EAST);
+
+        // 固定顶部面板高度，避免挤压表格区域
+        topPanel.setPreferredSize(new Dimension(700, 40));
         return topPanel;
     }
 
@@ -73,11 +112,22 @@ public class RunnerPanel extends BasePanel {
         clearBtn.addActionListener(e -> {
             tableModel.clear();
             runBtn.setEnabled(false);
-            progressBar.setValue(0);
-            progressBar.setString("0%");
+            resetProgress();
         });
         btnPanel.add(clearBtn);
         return btnPanel;
+    }
+
+    // 重置进度和时间显示
+    private void resetProgress() {
+        // 如果计时器在运行，停止它
+        if (executionTimer != null && executionTimer.isRunning()) {
+            executionTimer.stop();
+        }
+
+        // 重置标签文本
+        timeLabel.setText("0 ms");
+        progressLabel.setText("0/0");
     }
 
     private JScrollPane createTablePanel() {
@@ -243,10 +293,12 @@ public class RunnerPanel extends BasePanel {
         }
         clearRunResults(rowCount);
         runBtn.setEnabled(false);
-        progressBar.setMinimum(0);
-        progressBar.setMaximum(selectedCount);
-        progressBar.setValue(0);
-        progressBar.setString("0 / " + selectedCount);
+        // 使用progressLabel显示进度文本，而不是progressBar的string属性
+        progressLabel.setText("0/" + selectedCount);
+
+        startTime = System.currentTimeMillis(); // 记录开始时间
+        executionTimer = new Timer(100, e -> updateExecutionTime());
+        executionTimer.start(); // 启动计时器
         new Thread(() -> executeBatchRequests(rowCount, selectedCount)).start();
     }
 
@@ -277,14 +329,19 @@ public class RunnerPanel extends BasePanel {
                 finished++;
                 int finalFinished = finished;
                 SwingUtilities.invokeLater(() -> {
-                    progressBar.setValue(finalFinished);
-                    progressBar.setString(finalFinished + " / " + selectedCount);
+                    // 更新进度标签显示
+                    progressLabel.setText(finalFinished + "/" + selectedCount);
                 });
             }
         }
         SwingUtilities.invokeLater(() -> {
             runBtn.setEnabled(true);
-            progressBar.setString("Done");
+            // 设置完成状态
+            progressLabel.setText(selectedCount + "/" + selectedCount);
+            // 停止计时器
+            if (executionTimer != null && executionTimer.isRunning()) {
+                executionTimer.stop();
+            }
         });
     }
 
@@ -457,16 +514,21 @@ public class RunnerPanel extends BasePanel {
         dialog.setVisible(true);
     }
 
-    // 复用HistoryHtmlBuilder的Timing和Event Info渲染逻辑
     private String buildTimingHtml(PreparedRequest request, HttpResponse resp) {
-        // 构造一个临时RequestHistoryItem以复用HistoryHtmlBuilder
-        RequestHistoryItem item = new com.laker.postman.model.RequestHistoryItem(request, resp);
+        RequestHistoryItem item = new RequestHistoryItem(request, resp);
         return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_Timing(item);
     }
 
     private String buildEventInfoHtml(PreparedRequest request, HttpResponse resp) {
-        RequestHistoryItem item = new com.laker.postman.model.RequestHistoryItem(request, resp);
+        RequestHistoryItem item = new RequestHistoryItem(request, resp);
         item.response = resp;
         return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_EventInfo(item);
+    }
+
+    // 更新执行时间显示
+    private void updateExecutionTime() {
+        long currentTime = System.currentTimeMillis();
+        long elapsedTime = currentTime - startTime;
+        timeLabel.setText(TimeDisplayUtil.formatElapsedTime(elapsedTime));
     }
 }

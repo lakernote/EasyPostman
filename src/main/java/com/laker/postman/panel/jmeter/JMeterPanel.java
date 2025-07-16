@@ -21,6 +21,7 @@ import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JsonPathUtil;
+import com.laker.postman.util.TimeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -834,8 +835,8 @@ public class JMeterPanel extends BasePanel {
                                 List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
                                 long minStart = Collections.min(snapshot);
                                 long now = System.currentTimeMillis();
-                                long elapsed = now - minStart;
-                                elapsedLabel.setText(elapsed + " ms");
+                                long elapsedTime = now - minStart;
+                                elapsedLabel.setText(TimeDisplayUtil.formatElapsedTime(elapsedTime));
                             } else {
                                 elapsedLabel.setText("0 ms");
                             }

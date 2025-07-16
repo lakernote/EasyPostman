@@ -35,7 +35,6 @@ public class SnippetDialog extends JDialog {
     private static final List<Snippet> snippets = List.of(
             // 前置脚本类别 - 新增
             new Snippet("前置-设置请求变量", "pm.setVariable('requestId', pm.generateUUID());\nconsole.log('已生成请求ID: ' + pm.getVariable('requestId'));", "设置请求级别的变量，仅在当前请求中有效"),
-            new Snippet("前置-设置环境变量", "pm.environment.set('timestamp', Date.now());\nconsole.log('已设置时间戳环境变量: ' + pm.environment.get('timestamp'));", "设置环境变量，在所有请求中可用"),
             new Snippet("前置-随机UUID", "pm.environment.set('uuid', pm.generateUUID());\nconsole.log('已生成随机UUID: ' + pm.environment.get('uuid'));", "生成随机UUID并保存到环境变量"),
             new Snippet("前置-动态时间戳", "pm.environment.set('timestamp', pm.getTimestamp());\nconsole.log('已生成时间戳: ' + pm.environment.get('timestamp'));", "生成当前时间戳并保存到环境变量"),
             new Snippet("前置-签名计算", "// 假设需要生成签名\nvar timestamp = Date.now();\nvar appKey = pm.environment.get('appKey');\nvar appSecret = pm.environment.get('appSecret');\n\n// 构建待签名字符串\nvar stringToSign = 'appKey=' + appKey + '&timestamp=' + timestamp;\n\n// 计算签名 (使用SHA256)\nvar signature = SHA256(stringToSign + appSecret).toString();\n\n// 设置到环境变量\npm.environment.set('timestamp', timestamp);\npm.environment.set('signature', signature);\n\nconsole.log('已生成签名: ' + signature);", "计算API签名并保存到环境变量"),
@@ -165,8 +164,6 @@ public class SnippetDialog extends JDialog {
                         label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
                     } else if (title.contains("加密") || title.contains("MD5") || title.contains("SHA")) {
                         label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16)); // 如果没有security.svg可能需要添加
-                    } else if (title.contains("字符串")) {
-                        label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
                     } else if (title.contains("数组") || title.contains("遍历")) {
                         label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
                     } else if (title.contains("JSON")) {
@@ -178,7 +175,7 @@ public class SnippetDialog extends JDialog {
                     } else if (title.contains("正则")) {
                         label.setIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
                     } else {
-                        label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
+                        label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                     }
                 }
                 return label;
@@ -381,7 +378,8 @@ public class SnippetDialog extends JDialog {
 
                     // 数据处理
                     if (title.contains("字符串")) return "字符串操作";
-                    if (title.contains("数组") || title.contains("遍历") || title.contains("过滤") || title.contains("映射")) return "数组操作";
+                    if (title.contains("数组") || title.contains("遍历") || title.contains("过滤") || title.contains("映射"))
+                        return "数组操作";
                     if (title.contains("JSON") || title.contains("对象")) return "JSON处理";
 
                     // 特殊功能

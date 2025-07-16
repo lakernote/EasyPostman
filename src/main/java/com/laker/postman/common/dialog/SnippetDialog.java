@@ -69,12 +69,9 @@ public class SnippetDialog extends JDialog {
             // 正则表达式
             new Snippet("正则匹配提取", "var str = 'My email is test@example.com';\nvar regex = /[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,4}/;\nvar email = str.match(regex)[0];\nconsole.log(email); // test@example.com", "使用正则表达式提取匹配内容"),
 
-            // 异步处理
-            new Snippet("Promise链式调用", "new Promise(function(resolve) {\n    resolve('Step 1');\n}).then(function(result) {\n    console.log(result); // Step 1\n    return 'Step 2';\n}).then(function(result) {\n    console.log(result); // Step 2\n});", "使用Promise进行链式异步调用"),
-
             // 计算与加密
-            new Snippet("MD5加密", "// 需要引入crypto-js库\nvar hash = CryptoJS.MD5('Message').toString();\nconsole.log(hash);", "使用CryptoJS库计算MD5哈希值"),
-            new Snippet("SHA256加密", "// 需要引入crypto-js库\nvar hash = CryptoJS.SHA256('Message').toString();\nconsole.log(hash);", "使用CryptoJS库计算SHA256哈希值")
+            new Snippet("MD5加密", "var hash = MD5('Message').toString();\nconsole.log(hash);", "计算MD5哈希值"),
+            new Snippet("SHA256加密", "var hash = SHA256('Message').toString();\nconsole.log(hash);", "计算SHA256哈希值")
     );
 
 

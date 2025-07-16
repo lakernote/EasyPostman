@@ -27,6 +27,7 @@ public class SnippetDialog extends JDialog {
     private final JTextField searchField;
     private final JTextArea previewArea;
     private final JLabel descriptionLabel;
+    private final JComboBox<String> categoryCombo;
     private final Map<String, List<Snippet>> snippetCategories = new LinkedHashMap<>();
     @Getter
     private Snippet selectedSnippet;
@@ -127,7 +128,7 @@ public class SnippetDialog extends JDialog {
 
         // 下拉分类选择器
         String[] categories = snippetCategories.keySet().toArray(new String[0]);
-        JComboBox<String> categoryCombo = new JComboBox<>(categories);
+        categoryCombo = new JComboBox<>(categories);
         categoryCombo.setPreferredSize(new Dimension(150, 30));
 
         northPanel.add(searchPanel, BorderLayout.CENTER);
@@ -149,12 +150,11 @@ public class SnippetDialog extends JDialog {
                 if (value instanceof Snippet snippet) {
                     label.setText(snippet.title);
                     label.setBorder(new EmptyBorder(5, 10, 5, 10));
-
                     // 设置图标
                     if (snippet.title.startsWith("前置-")) {
                         label.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
                     } else if (snippet.title.startsWith("断言-")) {
-                        label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
+                        label.setIcon(new FlatSVGIcon("icons/.svg", 16, 16));
                     } else if (snippet.title.startsWith("提取-")) {
                         label.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
                     } else {
@@ -371,31 +371,24 @@ public class SnippetDialog extends JDialog {
     private void filterSnippets() {
         String query = searchField.getText().trim().toLowerCase();
 
-        // 获取当前选择的分类
-        String currentCategory = null;
-        for (Map.Entry<String, List<Snippet>> entry : snippetCategories.entrySet()) {
-            if (entry.getValue().equals(snippets)) {
-                currentCategory = entry.getKey();
-                break;
-            }
+        // 获取当前选择的分类下拉框中的选项
+        String currentCategory = (String) categoryCombo.getSelectedItem();
+
+        // 确定搜索范围
+        List<Snippet> searchSource;
+        if (currentCategory != null && !currentCategory.equals("全部分类")) {
+            searchSource = snippetCategories.get(currentCategory);
+        } else {
+            searchSource = snippets;
         }
 
         // 搜索框为空时，显示当前分类的所有片段
         if (query.isEmpty()) {
-            if (currentCategory != null && !currentCategory.equals("全部分类")) {
-                loadSnippets(snippetCategories.get(currentCategory));
-            } else {
-                loadSnippets(snippets);
-            }
+            loadSnippets(searchSource);
             return;
         }
 
-        // 在当前分类或全部分类中搜索
-        List<Snippet> searchSource = currentCategory != null && !currentCategory.equals("全部分类")
-                ? snippetCategories.get(currentCategory)
-                : snippets;
-
-        // 创建过滤后的列表
+        // 在当前选中分类中搜索
         DefaultListModel<Snippet> filteredModel = new DefaultListModel<>();
         for (Snippet s : searchSource) {
             if (s.title.toLowerCase().contains(query) ||

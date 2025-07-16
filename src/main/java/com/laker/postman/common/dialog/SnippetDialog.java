@@ -1,15 +1,22 @@
 package com.laker.postman.common.dialog;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.model.Snippet;
 import lombok.Getter;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 代码片段弹窗，基于 ListModel
@@ -18,8 +25,12 @@ public class SnippetDialog extends JDialog {
     private final JList<Snippet> snippetList;
     private final DefaultListModel<Snippet> listModel;
     private final JTextField searchField;
+    private final JTextArea previewArea;
+    private final JLabel descriptionLabel;
+    private final Map<String, List<Snippet>> snippetCategories = new LinkedHashMap<>();
     @Getter
     private Snippet selectedSnippet;
+
     private static final List<Snippet> snippets = List.of(
             // 前置脚本类别 - 新增
             new Snippet("前置-设置请求变量", "pm.setVariable('requestId', pm.generateUUID());\nconsole.log('已生成请求ID: ' + pm.getVariable('requestId'));", "设置请求级别的变量，仅在当前请求中有效"),
@@ -94,60 +105,164 @@ public class SnippetDialog extends JDialog {
     public SnippetDialog() {
         super(SingletonFactory.getInstance(MainFrame.class), "Snippets", true);
         Frame owner = SingletonFactory.getInstance(MainFrame.class);
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(10, 10));
+
+        // 初始化分类
+        initCategories();
+
+        // 创建北部面板：搜索框和分类选择器
+        JPanel northPanel = new JPanel(new BorderLayout(5, 0));
+        northPanel.setBorder(new EmptyBorder(10, 10, 5, 10));
+
+        // 搜索框带图标和提示
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchField = new JTextField();
+        searchField.setToolTipText("搜索片段...");
+
+        // 添加搜索图标
+        JLabel searchIcon = new JLabel(new FlatSVGIcon("icons/search.svg"));
+        searchIcon.setBorder(new EmptyBorder(0, 5, 0, 5));
+        searchPanel.add(searchIcon, BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+
+        // 下拉分类选择器
+        String[] categories = snippetCategories.keySet().toArray(new String[0]);
+        JComboBox<String> categoryCombo = new JComboBox<>(categories);
+        categoryCombo.setPreferredSize(new Dimension(150, 30));
+
+        northPanel.add(searchPanel, BorderLayout.CENTER);
+        northPanel.add(categoryCombo, BorderLayout.EAST);
+
+        // 创建中部面板：片段列表
         listModel = new DefaultListModel<>();
-        for (Snippet s : snippets) listModel.addElement(s);
+        loadSnippets(snippets);
+
         snippetList = new JList<>(listModel);
         snippetList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        snippetList.setVisibleRowCount(10);
+        snippetList.setVisibleRowCount(8);
+
+        // 自定义渲染器，让列表项更美观
         snippetList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Snippet) {
-                    label.setText(value.toString());
+                if (value instanceof Snippet snippet) {
+                    label.setText(snippet.title);
+                    label.setBorder(new EmptyBorder(5, 10, 5, 10));
+
+                    // 设置图标
+                    if (snippet.title.startsWith("前置-")) {
+                        label.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
+                    } else if (snippet.title.startsWith("断言-")) {
+                        label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
+                    } else if (snippet.title.startsWith("提取-")) {
+                        label.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+                    } else {
+                        label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
+                    }
                 }
                 return label;
             }
         });
-        JScrollPane scrollPane = new JScrollPane(snippetList);
-        searchField = new JTextField();
-        searchField.setToolTipText("搜索片段...");
+
+        JScrollPane listScrollPane = new JScrollPane(snippetList);
+        listScrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+
+        // 创建南部面板：预览区域和按钮
+        JPanel southPanel = new JPanel(new BorderLayout(5, 5));
+        southPanel.setBorder(new EmptyBorder(5, 10, 10, 10));
+
+        // 预览区域
+        JPanel previewPanel = new JPanel(new BorderLayout(5, 5));
+        previewPanel.setBorder(BorderFactory.createTitledBorder("代码预览"));
+
+        previewArea = new JTextArea(8, 40);
+        previewArea.setEditable(false);
+        previewArea.setLineWrap(true);
+        previewArea.setWrapStyleWord(true);
+        previewArea.setBackground(new Color(245, 245, 245));
+        JScrollPane previewScrollPane = new JScrollPane(previewArea);
+        previewPanel.add(previewScrollPane, BorderLayout.CENTER);
+
+        // 描述标签
+        descriptionLabel = new JLabel(" ");
+        descriptionLabel.setBorder(new EmptyBorder(5, 0, 0, 0));
+        previewPanel.add(descriptionLabel, BorderLayout.SOUTH);
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton insertBtn = new JButton("插入");
+        insertBtn.setPreferredSize(new Dimension(100, 30));
+
+        JButton closeBtn = new JButton("关闭");
+        closeBtn.setPreferredSize(new Dimension(100, 30));
+
+        buttonPanel.add(insertBtn);
+        buttonPanel.add(closeBtn);
+
+        southPanel.add(previewPanel, BorderLayout.CENTER);
+        southPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 将分割面板添加到主面板
+        JSplitPane splitPane = new JSplitPane(
+                JSplitPane.HORIZONTAL_SPLIT,
+                listScrollPane,
+                southPanel
+        );
+        splitPane.setResizeWeight(0.3); // 设置左右比例
+        splitPane.setDividerLocation(200);
+
+        // 添加到对话框
+        add(northPanel, BorderLayout.NORTH);
+        add(splitPane, BorderLayout.CENTER);
+
+        // 绑定事件监听器
+
+        // 搜索框事件
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
-                filter();
+                filterSnippets();
             }
 
             public void removeUpdate(DocumentEvent e) {
-                filter();
+                filterSnippets();
             }
 
             public void changedUpdate(DocumentEvent e) {
-                filter();
+                filterSnippets();
             }
+        });
 
-            private void filter() {
-                String q = searchField.getText().trim().toLowerCase();
-                listModel.clear();
-                for (Snippet s : snippets) {
-                    if (s.title.toLowerCase().contains(q) || (s.desc != null && s.desc.toLowerCase().contains(q))) {
-                        listModel.addElement(s);
-                    }
+        // 分类选择器事件
+        categoryCombo.addActionListener(e -> {
+            String category = (String) categoryCombo.getSelectedItem();
+            if (category != null) {
+                if (category.equals("全部分类")) {
+                    loadSnippets(snippets);
+                } else {
+                    loadSnippets(snippetCategories.get(category));
+                }
+
+                // 如果有搜索关键词，则还需要过滤
+                if (!searchField.getText().trim().isEmpty()) {
+                    filterSnippets();
                 }
             }
         });
-        JButton insertBtn = new JButton("Insert");
-        insertBtn.addActionListener(e -> {
-            selectedSnippet = snippetList.getSelectedValue();
-            if (selectedSnippet != null) {
-                dispose();
-            }
-        });
+
+        // 列表选择事件
         snippetList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 selectedSnippet = snippetList.getSelectedValue();
+                if (selectedSnippet != null) {
+                    previewArea.setText(selectedSnippet.code);
+                    previewArea.setCaretPosition(0);
+                    descriptionLabel.setText(selectedSnippet.desc);
+                }
             }
         });
+
+        // 列表双击事件
         snippetList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 if (evt.getClickCount() == 2) { // 双击事件
@@ -158,17 +273,156 @@ public class SnippetDialog extends JDialog {
                 }
             }
         });
-        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        southPanel.add(insertBtn);
-        JButton closeBtn = new JButton("Close");
+
+        // 键盘事件
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    // 按下方向键时，转移焦点到列表并选择第一项
+                    snippetList.requestFocusInWindow();
+                    if (listModel.getSize() > 0 && snippetList.getSelectedIndex() == -1) {
+                        snippetList.setSelectedIndex(0);
+                    }
+                }
+            }
+        });
+
+        snippetList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    // 按下回车键时，如果有选中项，则选择并关闭对话框
+                    selectedSnippet = snippetList.getSelectedValue();
+                    if (selectedSnippet != null) {
+                        dispose();
+                    }
+                }
+            }
+        });
+
+        // 按钮事件
+        insertBtn.addActionListener(e -> {
+            selectedSnippet = snippetList.getSelectedValue();
+            if (selectedSnippet != null) {
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "请先选择一个代码片段", "提示", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
         closeBtn.addActionListener(e -> dispose());
-        southPanel.add(closeBtn);
-        add(searchField, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-        add(southPanel, BorderLayout.SOUTH);
-        setSize(400, 500);
+
+        // 初始化状态
+        if (listModel.getSize() > 0) {
+            snippetList.setSelectedIndex(0);
+        }
+
+        // 设置对话框属性
+        setSize(800, 600);
         setLocationRelativeTo(owner);
-        setResizable(false); // 禁止窗口大小调整
+        setMinimumSize(new Dimension(600, 400));
     }
 
+    // 初始化代码片段分类
+    private void initCategories() {
+        snippetCategories.put("全部分类", snippets);
+
+        // 按前缀分类
+        Map<String, List<Snippet>> categorized = snippets.stream()
+                .collect(Collectors.groupingBy(snippet -> {
+                    String title = snippet.title;
+                    if (title.startsWith("前置-")) return "前置脚本";
+                    if (title.startsWith("断言-")) return "断言脚本";
+                    if (title.startsWith("提取-")) return "提取脚本";
+                    if (title.contains("环境变量")) return "环境变量";
+                    if (title.contains("编码") || title.contains("解码") || title.contains("加密")) return "编码与加密";
+                    if (title.contains("字符串")) return "字符串操作";
+                    if (title.contains("数组")) return "数组操作";
+                    if (title.contains("JSON")) return "JSON处理";
+                    if (title.contains("日期") || title.contains("时间")) return "日期时间";
+                    return "其他工具";
+                }));
+
+        // 按特定顺序添加分类
+        String[] orderedCategories = {
+                "前置脚本", "断言脚本", "提取脚本", "环境变量",
+                "编码与加密", "字符串操作", "数组操作", "JSON处理",
+                "日期时间", "其他工具"
+        };
+
+        for (String category : orderedCategories) {
+            List<Snippet> categorySnippets = categorized.get(category);
+            if (categorySnippets != null && !categorySnippets.isEmpty()) {
+                snippetCategories.put(category, categorySnippets);
+            }
+        }
+    }
+
+    // 加载片段到列表
+    private void loadSnippets(List<Snippet> snippetsToLoad) {
+        listModel.clear();
+        for (Snippet s : snippetsToLoad) {
+            listModel.addElement(s);
+        }
+    }
+
+    // 根据搜索词过滤片段
+    private void filterSnippets() {
+        String query = searchField.getText().trim().toLowerCase();
+
+        // 获取当前选择的分类
+        String currentCategory = null;
+        for (Map.Entry<String, List<Snippet>> entry : snippetCategories.entrySet()) {
+            if (entry.getValue().equals(snippets)) {
+                currentCategory = entry.getKey();
+                break;
+            }
+        }
+
+        // 搜索框为空时，显示当前分类的所有片段
+        if (query.isEmpty()) {
+            if (currentCategory != null && !currentCategory.equals("全部分类")) {
+                loadSnippets(snippetCategories.get(currentCategory));
+            } else {
+                loadSnippets(snippets);
+            }
+            return;
+        }
+
+        // 在当前分类或全部分类中搜索
+        List<Snippet> searchSource = currentCategory != null && !currentCategory.equals("全部分类")
+                ? snippetCategories.get(currentCategory)
+                : snippets;
+
+        // 创建过滤后的列表
+        DefaultListModel<Snippet> filteredModel = new DefaultListModel<>();
+        for (Snippet s : searchSource) {
+            if (s.title.toLowerCase().contains(query) ||
+                    (s.desc != null && s.desc.toLowerCase().contains(query)) ||
+                    (s.code != null && s.code.toLowerCase().contains(query))) {
+                filteredModel.addElement(s);
+            }
+        }
+
+        // 更新列表模型
+        listModel.clear();
+        for (int i = 0; i < filteredModel.getSize(); i++) {
+            listModel.addElement(filteredModel.getElementAt(i));
+        }
+
+        // 如果有结果，选择第一个
+        if (listModel.getSize() > 0) {
+            snippetList.setSelectedIndex(0);
+            // 显示预览
+            selectedSnippet = snippetList.getSelectedValue();
+            previewArea.setText(selectedSnippet.code);
+            previewArea.setCaretPosition(0);
+            descriptionLabel.setText(selectedSnippet.desc);
+        } else {
+            // 没有结果时清空预览
+            previewArea.setText("");
+            descriptionLabel.setText("未找到匹配的代码片段");
+        }
+    }
 }

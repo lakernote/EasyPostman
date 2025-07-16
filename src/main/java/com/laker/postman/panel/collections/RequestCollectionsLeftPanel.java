@@ -661,7 +661,15 @@ public class RequestCollectionsLeftPanel extends BasePanel {
             example.setUrl("{{baseUrl}}?q=lakernote");
             example.getParams().put("q", "lakernote");
             example.setPrescript("console.log('This is a pre-request script');");
-            example.setPostscript("console.log('This is a post-request script');");
+            example.setPostscript("""
+                    console.log('This is a post-request script');
+                    pm.test('Response status is 200', function () {
+                        pm.response.to.have.status(200);
+                    });
+                    pm.test('Response contains lakernote', function () {
+                        pm.expect(pm.response.text()).to.include('lakernote');
+                    });
+                    """);
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", example}));
 
             // GET Example
@@ -669,6 +677,17 @@ public class RequestCollectionsLeftPanel extends BasePanel {
             getExample.setName("GET Example");
             getExample.setMethod("GET");
             getExample.setUrl("https://httpbin.org/get");
+            getExample.getHeaders().put("Accept", "application/json");
+            getExample.getParams().put("q", "easytools");
+            getExample.getParams().put("lang", "en");
+            getExample.getParams().put("page", "1");
+            getExample.getParams().put("size", "10");
+            getExample.getParams().put("sort", "desc");
+            getExample.getParams().put("filter", "active");
+            getExample.setPostscript("""
+                    pm.test('Response status is 200', function () {
+                        pm.response.to.have.status(200);
+                    });""");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", getExample}));
 
             // POST JSON Example
@@ -677,7 +696,13 @@ public class RequestCollectionsLeftPanel extends BasePanel {
             postJson.setMethod("POST");
             postJson.setUrl("https://httpbin.org/post");
             postJson.getHeaders().put("Content-Type", "application/json");
-            postJson.setBody("{\"name\":\"EasyTools\",\"type\":\"json\"}");
+            postJson.setBody("""
+                    {
+                        "key1": "value1",
+                        "key2": "value2",
+                        "key3": "value3"
+                    }
+                    """);
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{"request", postJson}));
 
             // POST form-data Example

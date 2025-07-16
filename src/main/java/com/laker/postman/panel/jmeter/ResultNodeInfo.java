@@ -27,6 +27,6 @@ public class ResultNodeInfo {
 
     @Override
     public String toString() {
-        return name + " - " + (success ? "成功" : "失败") + (StrUtil.isBlank(errorMsg) ? "" : " - 错误: " + errorMsg);
+        return name + (StrUtil.isBlank(errorMsg) ? "" : " - 错误: " + errorMsg);
     }
 }

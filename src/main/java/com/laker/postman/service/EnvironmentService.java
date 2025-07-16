@@ -87,14 +87,14 @@ public class EnvironmentService {
         environments.clear();
 
         // Create Development Environment
-        Environment devEnv = new Environment("Development Environment");
+        Environment devEnv = new Environment("Dev Env");
         devEnv.setId("dev-" + System.currentTimeMillis());
         devEnv.setActive(true);
         devEnv.addVariable("baseUrl", "https://so.gitee.com");
         devEnv.addVariable("apiKey", "dev-api-key-123");
 
         // Create Testing Environment
-        Environment testEnv = new Environment("Testing Environment");
+        Environment testEnv = new Environment("Test Env");
         testEnv.setId("test-" + System.currentTimeMillis());
         testEnv.addVariable("baseUrl", "https://so.csdn.net/so/search");
         testEnv.addVariable("apiKey", "test-api-key-456");

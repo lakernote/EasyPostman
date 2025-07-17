@@ -4,6 +4,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
@@ -463,29 +464,7 @@ public class JMeterPanel extends BasePanel {
         progressPanel.setToolTipText("active threads / total threads");
         progressPanel.add(progressLabel);
         // ========== 内存占用显示 ==========
-        JLabel memoryLabel = new JLabel();
-        memoryLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
-        memoryLabel.setIcon(new FlatSVGIcon("icons/computer.svg", 20, 20));
-        memoryLabel.setToolTipText("Current JVM memory usage, double-click to manually GC");
-        updateMemoryLabel(memoryLabel);
-        // 定时刷新内存占用
-        Timer memTimer = new Timer();
-        memTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                SwingUtilities.invokeLater(() -> updateMemoryLabel(memoryLabel));
-            }
-        }, 0, 2000);
-        memoryLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    System.gc();
-                    updateMemoryLabel(memoryLabel);
-                    JOptionPane.showMessageDialog(JMeterPanel.this, "Manual GC triggered!", "Info", JOptionPane.INFORMATION_MESSAGE);
-                }
-            }
-        });
+        MemoryLabel memoryLabel = new MemoryLabel();
         progressPanel.add(memoryLabel);
 
         topPanel.add(progressPanel, BorderLayout.EAST);
@@ -1713,17 +1692,5 @@ public class JMeterPanel extends BasePanel {
 
     private static long getJmeterKeepAliveSeconds() {
         return SettingManager.getJmeterKeepAliveSeconds();
-    }
-
-    /**
-     * 刷新内存占用标签
-     */
-    private void updateMemoryLabel(JLabel memoryLabel) {
-        Runtime rt = Runtime.getRuntime();
-        long used = rt.totalMemory() - rt.freeMemory();
-        long max = rt.maxMemory();
-        String usedStr = String.format("%.1fMB", used / 1024.0 / 1024);
-        String maxStr = String.format("%.1fMB", max / 1024.0 / 1024);
-        memoryLabel.setText(usedStr + " / " + maxStr);
     }
 }

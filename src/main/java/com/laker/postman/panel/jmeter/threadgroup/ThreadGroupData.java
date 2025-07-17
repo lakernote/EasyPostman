@@ -1,4 +1,4 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.threadgroup;
 
 /**
  * 线程组数据模型，支持多种线程模式

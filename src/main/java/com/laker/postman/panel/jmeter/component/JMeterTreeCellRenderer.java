@@ -1,6 +1,8 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;

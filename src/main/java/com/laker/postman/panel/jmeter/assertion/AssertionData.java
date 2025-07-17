@@ -1,4 +1,4 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.assertion;
 
 public class AssertionData {
     public String type = "Response Code";

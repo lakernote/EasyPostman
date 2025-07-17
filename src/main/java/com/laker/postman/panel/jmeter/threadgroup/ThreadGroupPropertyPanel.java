@@ -1,4 +1,6 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.threadgroup;
+
+import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,7 +49,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     // 负载模式预览相关
     private final ThreadLoadPreviewPanel previewPanel;
 
-    ThreadGroupPropertyPanel() {
+    public ThreadGroupPropertyPanel() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 

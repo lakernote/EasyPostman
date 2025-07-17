@@ -1,4 +1,6 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.component;
+
+import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;

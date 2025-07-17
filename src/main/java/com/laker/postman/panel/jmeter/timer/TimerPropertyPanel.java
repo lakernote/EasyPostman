@@ -1,4 +1,6 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.timer;
+
+import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 
 import javax.swing.*;
 import java.awt.*;
@@ -7,7 +9,7 @@ public class TimerPropertyPanel extends JPanel {
     private final JSpinner delaySpinner;
     private JMeterTreeNode currentNode;
 
-    TimerPropertyPanel() {
+    public TimerPropertyPanel() {
         setLayout(new GridBagLayout());
         setMaximumSize(new Dimension(420, 120));
         setPreferredSize(new Dimension(380, 100));

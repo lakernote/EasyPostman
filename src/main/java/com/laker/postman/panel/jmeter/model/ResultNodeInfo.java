@@ -1,4 +1,4 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.model;
 
 import cn.hutool.core.util.StrUtil;
 import com.laker.postman.model.HttpResponse;
@@ -9,14 +9,14 @@ import java.util.List;
 
 // 结果树节点信息
 public class ResultNodeInfo {
-    String name;
-    boolean success;
-    String errorMsg;
-    PreparedRequest req;
-    HttpResponse resp;
-    List<TestResult> testResults;
+    public String name;
+    public boolean success;
+    public String errorMsg;
+    public PreparedRequest req;
+    public HttpResponse resp;
+    public List<TestResult> testResults;
 
-    ResultNodeInfo(String name, boolean success, String errorMsg, PreparedRequest req, HttpResponse resp, List<TestResult> testResults) {
+    public ResultNodeInfo(String name, boolean success, String errorMsg, PreparedRequest req, HttpResponse resp, List<TestResult> testResults) {
         this.name = name;
         this.success = success;
         this.errorMsg = errorMsg;

@@ -1,4 +1,6 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.assertion;
+
+import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,7 +19,7 @@ public class AssertionPropertyPanel extends JPanel {
     private final JPanel containsPanel;
     private final JPanel jsonPathPanel;
 
-    AssertionPropertyPanel() {
+    public AssertionPropertyPanel() {
         setLayout(new GridBagLayout());
         setMaximumSize(new Dimension(420, 120));
         setPreferredSize(new Dimension(380, 100));

@@ -1,21 +1,24 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.model;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.panel.jmeter.assertion.AssertionData;
+import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupData;
+import com.laker.postman.panel.jmeter.timer.TimerData;
 
 public class JMeterTreeNode {
-    String name;
-    NodeType type;
-    HttpRequestItem httpRequestItem; // 仅REQUEST节点用
-    ThreadGroupData threadGroupData; // 线程组数据
-    AssertionData assertionData;   // 断言数据
-    TimerData timerData;           // 定时器数据
+    public String name;
+    public NodeType type;
+    public HttpRequestItem httpRequestItem; // 仅REQUEST节点用
+    public ThreadGroupData threadGroupData; // 线程组数据
+    public AssertionData assertionData;   // 断言数据
+    public TimerData timerData;           // 定时器数据
 
-    JMeterTreeNode(String name, NodeType type) {
+    public JMeterTreeNode(String name, NodeType type) {
         this.name = name;
         this.type = type;
     }
 
-    JMeterTreeNode(String name, NodeType type, Object data) {
+    public JMeterTreeNode(String name, NodeType type, Object data) {
         this.name = name;
         this.type = type;
         switch (type) {

@@ -54,6 +54,7 @@ import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -571,6 +572,10 @@ public class JMeterPanel extends BasePanel {
                 SwingUtilities.invokeLater(() -> sampleTrendData());
             }
         }, 0, 1000);
+
+        // 重要：更新开始时间，确保递增线程等模式正常工作
+        startTime = System.currentTimeMillis();
+
         // 统计总用户数
         int totalThreads;
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
@@ -666,31 +671,14 @@ public class JMeterPanel extends BasePanel {
                 }
             } else if (Objects.requireNonNull(jtNode.type) == NodeType.THREAD_GROUP) {
                 ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
-                int numThreads = tg.numThreads;
-                int loops = tg.loops;
-                ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-                for (int i = 0; i < numThreads; i++) {
-                    if (!running) {
-                        executor.shutdownNow();
-                        return;
-                    }
-                    executor.submit(() -> {
-                        activeThreads.incrementAndGet();
-                        SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-                        try {
-                            runTask(rootNode, loops);
-                        } finally {
-                            activeThreads.decrementAndGet();
-                            SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-                        }
-                    });
-                }
-                executor.shutdown();
-                try {
-                    executor.awaitTermination(1, TimeUnit.HOURS);
-                } catch (InterruptedException exception) {
-                    JOptionPane.showMessageDialog(this, "执行被中断: " + exception.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                    log.error(exception.getMessage(), exception);
+
+                // 根据线程模式选择对应的执行策略
+                switch (tg.threadMode) {
+                    case FIXED -> runFixedThreads(rootNode, tg, progressLabel, totalThreads);
+                    case RAMP_UP -> runRampUpThreads(rootNode, tg, progressLabel, totalThreads);
+                    case SPIKE -> runSpikeThreads(rootNode, tg, progressLabel, totalThreads);
+                    case PEAK -> runPeakThreads(rootNode, tg, progressLabel, totalThreads);
+                    case STAIRS -> runStairsThreads(rootNode, tg, progressLabel, totalThreads);
                 }
             } else {
                 log.warn("不支持的节点类型: {}", jtNode.type);
@@ -698,151 +686,540 @@ public class JMeterPanel extends BasePanel {
         }
     }
 
+    // 固定线程模式执行
+    private void runFixedThreads(DefaultMutableTreeNode groupNode, ThreadGroupData tg, JLabel progressLabel, int totalThreads) {
+        int numThreads = tg.numThreads;
+        int loops = tg.loops;
+        boolean useTime = tg.useTime;
+        int durationSeconds = tg.duration;
+
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        long startTime = System.currentTimeMillis();
+        long endTime = useTime ? (startTime + (durationSeconds * 1000L)) : Long.MAX_VALUE;
+
+        for (int i = 0; i < numThreads; i++) {
+            if (!running) {
+                executor.shutdownNow();
+                return;
+            }
+            executor.submit(() -> {
+                activeThreads.incrementAndGet();
+                SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                try {
+                    // 按时间执行或按循环次数执行
+                    if (useTime) {
+                        // 按时间执行
+                        while (System.currentTimeMillis() < endTime && running) {
+                            runTaskIteration(groupNode);
+                        }
+                    } else {
+                        // 按循环次数执行
+                        runTask(groupNode, loops);
+                    }
+                } finally {
+                    activeThreads.decrementAndGet();
+                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                }
+            });
+        }
+        executor.shutdown();
+        try {
+            // 等待所有线程完成，或者超时
+            if (useTime) {
+                executor.awaitTermination(durationSeconds + 10, TimeUnit.SECONDS);
+            } else {
+                executor.awaitTermination(1, TimeUnit.HOURS);
+            }
+        } catch (InterruptedException exception) {
+            JOptionPane.showMessageDialog(this, "执行被中断: " + exception.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            log.error(exception.getMessage(), exception);
+        }
+    }
+
+    // 递增线程模式执行
+    private void runRampUpThreads(DefaultMutableTreeNode groupNode, ThreadGroupData tg, JLabel progressLabel, int totalThreads) {
+        int startThreads = tg.rampUpStartThreads;
+        int endThreads = tg.rampUpEndThreads;
+        int rampUpTime = tg.rampUpTime;
+
+        // 计算每秒增加的线程数
+        double threadsPerSecond = (double) (endThreads - startThreads) / rampUpTime;
+
+        // 创建调度线程池
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        // 已启动的线程数
+        AtomicInteger startedThreads = new AtomicInteger(0);
+
+        // 每秒检查并启动新线程
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!running) {
+                scheduler.shutdownNow();
+                executor.shutdownNow();
+                return;
+            }
+
+            int currentSecond = (int) (System.currentTimeMillis() - startTime) / 1000;
+            if (currentSecond > rampUpTime) {
+                scheduler.shutdown(); // 达到总时间，停止调度
+                return;
+            }
+
+            // 计算当前应有的线程数
+            int targetThreads = startThreads + (int) (threadsPerSecond * currentSecond);
+            targetThreads = Math.min(targetThreads, endThreads); // 不超过最大线程数
+
+            // 启动新线程
+            while (startedThreads.get() < targetThreads && running) {
+                executor.submit(() -> {
+                    startedThreads.incrementAndGet();
+                    activeThreads.incrementAndGet();
+                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                    try {
+                        // 循环执行直到结束
+                        while (running && System.currentTimeMillis() - startTime < rampUpTime * 1000L) {
+                            runTaskIteration(groupNode);
+                        }
+                    } finally {
+                        activeThreads.decrementAndGet();
+                        SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                    }
+                });
+            }
+        }, 0, 1, TimeUnit.SECONDS);
+
+        try {
+            // 等待执行完成
+            scheduler.awaitTermination(rampUpTime + 10, TimeUnit.SECONDS);
+            executor.shutdown();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("递增线程执行中断", e);
+        }
+    }
+
+    // 全局启动时间（移除final修饰符，使其可以修改）
+    private long startTime = System.currentTimeMillis();
+
+    // 尖刺模式执行
+    private void runSpikeThreads(DefaultMutableTreeNode groupNode, ThreadGroupData tg, JLabel progressLabel, int totalThreads) {
+        int minThreads = tg.spikeMinThreads;
+        int maxThreads = tg.spikeMaxThreads;
+        int rampUpTime = tg.spikeRampUpTime;
+        int holdTime = tg.spikeHoldTime;
+        int rampDownTime = tg.spikeRampDownTime;
+        int totalTime = rampUpTime + holdTime + rampDownTime;
+
+        // 创建线程池
+        ExecutorService executor = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        AtomicInteger startedThreads = new AtomicInteger(minThreads);
+
+        // 初始阶段: 启动最小线程数
+        for (int i = 0; i < minThreads; i++) {
+            if (!running) {
+                executor.shutdownNow();
+                return;
+            }
+            executor.submit(() -> {
+                activeThreads.incrementAndGet();
+                SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                try {
+                    // 持续运行直到测试结束
+                    while (running && System.currentTimeMillis() - startTime < totalTime * 1000L) {
+                        runTaskIteration(groupNode);
+                    }
+                } finally {
+                    activeThreads.decrementAndGet();
+                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                }
+            });
+        }
+
+        // 阶段性调度：上升、保持、下降
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!running) {
+                scheduler.shutdownNow();
+                executor.shutdownNow();
+                return;
+            }
+
+            long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+
+            // 上升阶段
+            if (elapsedSeconds < rampUpTime) {
+                double progress = (double) elapsedSeconds / rampUpTime;
+                int targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
+                adjustThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads);
+            }
+            // 保持阶段
+            else if (elapsedSeconds < rampUpTime + holdTime) {
+                adjustThreadCount(executor, groupNode, startedThreads, maxThreads, totalTime, progressLabel, totalThreads);
+            }
+            // 下降阶段
+            else if (elapsedSeconds < totalTime) {
+                double progress = (double) (elapsedSeconds - rampUpTime - holdTime) / rampDownTime;
+                int targetThreads = maxThreads - (int) (progress * (maxThreads - minThreads));
+                adjustThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads);
+            }
+            // 结束
+            else {
+                scheduler.shutdown();
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+
+        try {
+            // 等待执行完成
+            scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
+            executor.shutdown();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("尖刺模式执行中断", e);
+        }
+    }
+
+    // 峰值模式执行
+    private void runPeakThreads(DefaultMutableTreeNode groupNode, ThreadGroupData tg, JLabel progressLabel, int totalThreads) {
+        int minThreads = tg.peakMinThreads;
+        int maxThreads = tg.peakMaxThreads;
+        int iterations = tg.peakIterations;
+        int holdTime = tg.peakHoldTime;
+
+        // 每次循环的持续时间(秒)：上升+保持+下降
+        int cycleTime = holdTime * 3;
+        int totalTime = cycleTime * iterations;
+
+        // 创建线程池
+        ExecutorService executor = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        AtomicInteger startedThreads = new AtomicInteger(minThreads);
+
+        // 初始阶段: 启动最小线程数
+        for (int i = 0; i < minThreads; i++) {
+            if (!running) {
+                executor.shutdownNow();
+                return;
+            }
+            executor.submit(() -> {
+                activeThreads.incrementAndGet();
+                SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                try {
+                    // 持续运行直到测试结束
+                    while (running && System.currentTimeMillis() - startTime < totalTime * 1000L) {
+                        runTaskIteration(groupNode);
+                    }
+                } finally {
+                    activeThreads.decrementAndGet();
+                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                }
+            });
+        }
+
+        // 周期性调度
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!running) {
+                scheduler.shutdownNow();
+                executor.shutdownNow();
+                return;
+            }
+
+            long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+            if (elapsedSeconds >= totalTime) {
+                scheduler.shutdown();
+                return;
+            }
+
+            // 确定当前处于哪个周期
+            int currentCycle = (int) (elapsedSeconds / cycleTime);
+            int timeInCycle = (int) (elapsedSeconds % cycleTime);
+
+            // 确定周期内的阶段：上升、保持高峰、下降
+            int targetThreads;
+            if (timeInCycle < holdTime) {
+                // 上升阶段
+                double progress = (double) timeInCycle / holdTime;
+                targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
+            } else if (timeInCycle < holdTime * 2) {
+                // 保持高峰
+                targetThreads = maxThreads;
+            } else {
+                // 下降阶段
+                double progress = (double) (timeInCycle - holdTime * 2) / holdTime;
+                targetThreads = maxThreads - (int) (progress * (maxThreads - minThreads));
+            }
+
+            adjustThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads);
+        }, 1, 1, TimeUnit.SECONDS);
+
+        try {
+            // 等待执行完成
+            scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
+            executor.shutdown();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("峰值模式执行中断", e);
+        }
+    }
+
+    // 阶梯模式执行
+    private void runStairsThreads(DefaultMutableTreeNode groupNode, ThreadGroupData tg, JLabel progressLabel, int totalThreads) {
+        int startThreads = tg.stairsStartThreads;
+        int endThreads = tg.stairsEndThreads;
+        int step = tg.stairsStep;
+        int holdTime = tg.stairsHoldTime;
+
+        // 计算阶梯数
+        int steps = Math.max(1, (endThreads - startThreads) / step);
+        int totalTime = steps * holdTime;
+
+        // 创建线程池
+        ExecutorService executor = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        AtomicInteger startedThreads = new AtomicInteger(startThreads);
+
+        // 初始阶段: 启动起始线程数
+        for (int i = 0; i < startThreads; i++) {
+            if (!running) {
+                executor.shutdownNow();
+                return;
+            }
+            executor.submit(() -> {
+                activeThreads.incrementAndGet();
+                SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                try {
+                    // 持续运行直到测试结束
+                    while (running && System.currentTimeMillis() - startTime < totalTime * 1000L) {
+                        runTaskIteration(groupNode);
+                    }
+                } finally {
+                    activeThreads.decrementAndGet();
+                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                }
+            });
+        }
+
+        // 阶梯调度
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!running) {
+                scheduler.shutdownNow();
+                executor.shutdownNow();
+                return;
+            }
+
+            long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+            if (elapsedSeconds >= totalTime) {
+                scheduler.shutdown();
+                return;
+            }
+
+            // 确定当前阶梯
+            int currentStep = (int) (elapsedSeconds / holdTime);
+            int targetThreads = Math.min(startThreads + currentStep * step, endThreads);
+
+            adjustThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads);
+        }, 1, 1, TimeUnit.SECONDS);
+
+        try {
+            // 等待执行完成
+            scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
+            executor.shutdown();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("阶梯模式执行中断", e);
+        }
+    }
+
+    // 辅助方法：动态调整线程数量
+    private void adjustThreadCount(ExecutorService executor, DefaultMutableTreeNode groupNode,
+                                  AtomicInteger startedThreads, int targetThreads,
+                                  int totalTime, JLabel progressLabel, int totalThreads) {
+        int current = startedThreads.get();
+
+        // 需要增加线程
+        if (current < targetThreads) {
+            int threadsToAdd = targetThreads - current;
+            for (int i = 0; i < threadsToAdd; i++) {
+                if (!running) return;
+
+                executor.submit(() -> {
+                    startedThreads.incrementAndGet();
+                    activeThreads.incrementAndGet();
+                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                    try {
+                        // 持续运行直到测试结束
+                        while (running && System.currentTimeMillis() - startTime < totalTime * 1000L) {
+                            runTaskIteration(groupNode);
+                        }
+                    } finally {
+                        activeThreads.decrementAndGet();
+                        SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                    }
+                });
+            }
+        }
+
+        // 无法通过代码减少线程，因为Java没有强制停止线程的安全方法
+        // 我们只能等待已有线程自然结束
+        // 所以这里不处理 current > targetThreads 的情况
+    }
+
+    // 执行单次请求
+    private void runTaskIteration(DefaultMutableTreeNode groupNode) {
+        for (int i = 0; i < groupNode.getChildCount() && running; i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
+            Object userObj = child.getUserObject();
+            executeRequestNode(userObj, child);
+        }
+    }
+
+    // 执行指定次数的请求
     private void runTask(DefaultMutableTreeNode groupNode, int loops) {
         for (int l = 0; l < loops && running; l++) {
-            for (int i = 0; i < groupNode.getChildCount() && running; i++) {
-                DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
-                Object userObj = child.getUserObject();
-                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
-                    String apiName = jtNode.httpRequestItem.getName();
-                    boolean success = true;
-                    PreparedRequest req;
-                    HttpResponse resp = null;
-                    String errorMsg = "";
-                    List<TestResult> testResults = new ArrayList<>();
-                    // ====== 前置脚本 ======
-                    req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
-                    Map<String, Object> bindings = HttpUtil.prepareBindings(req);
-                    Postman pm = (Postman) bindings.get("pm");
-                    boolean preOk = true;
-                    String prescript = jtNode.httpRequestItem.getPrescript();
-                    if (prescript != null && !prescript.isBlank()) {
-                        try {
-                            JsScriptExecutor.executeScript(
-                                    prescript,
-                                    bindings,
-                                    output -> {
-                                        if (!output.isBlank()) {
-                                            SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
-                                        }
-                                    }
-                            );
-                        } catch (Exception ex) {
-                            log.error("前置脚本: {}", ex.getMessage(), ex);
-                            errorMsg = "前置脚本执行失败: " + ex.getMessage();
-                            preOk = false;
-                            success = false;
-                        }
-                    }
-                    if (preOk) {
-                        long startTime = System.currentTimeMillis();
-                        allRequestStartTimes.add(startTime); // 记录开始时间
-                        long costMs = 0;
-                        try {
-                            req.logEvent = true; // 记录事件日志
-                            resp = HttpSingleRequestExecutor.execute(req);
-                        } catch (Exception ex) {
-                            log.error("请求执行失败: {}", ex.getMessage(), ex);
-                            errorMsg = "请求执行失败: " + ex.getMessage();
-                            success = false;
-                        } finally {
-                            costMs = System.currentTimeMillis() - startTime;
-                        }
-                        // 断言处理（JMeter树断言）
-                        for (int j = 0; j < child.getChildCount() && resp != null; j++) {
-                            DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
-                            Object subObj = sub.getUserObject();
-                            if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
-                                AssertionData assertion = subNode.assertionData;
-                                String type = assertion.type;
-                                boolean pass = false;
-                                if ("Response Code".equals(type)) {
-                                    String op = assertion.operator;
-                                    String valStr = assertion.value;
-                                    try {
-                                        int expect = Integer.parseInt(valStr);
-                                        if ("=".equals(op)) pass = (resp.code == expect);
-                                        else if (">".equals(op)) pass = (resp.code > expect);
-                                        else if ("<".equals(op)) pass = (resp.code < expect);
-                                    } catch (Exception ignored) {
-                                    }
-                                } else if ("Contains".equals(type)) {
-                                    pass = resp.body.contains(assertion.content);
-                                } else if ("JSONPath".equals(type)) {
-                                    String jsonPath = assertion.value;
-                                    String expect = assertion.content;
-                                    String actual = JsonPathUtil.extractJsonPath(resp.body, jsonPath);
-                                    pass = Objects.equals(actual, expect);
-                                }
-                                if (!pass) {
-                                    success = false;
-                                    errorMsg = "断言失败: " + type + " - " + assertion.content;
-                                }
-                                testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
-                            }
-                            if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
-                                try {
-                                    TimeUnit.MILLISECONDS.sleep(subNode2.timerData.delayMs);
-                                } catch (InterruptedException ignored) {
-                                    return;
+            runTaskIteration(groupNode);
+        }
+    }
+
+    // 执行单个请求节点
+    private void executeRequestNode(Object userObj, DefaultMutableTreeNode child) {
+        if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
+            String apiName = jtNode.httpRequestItem.getName();
+            boolean success = true;
+            PreparedRequest req;
+            HttpResponse resp = null;
+            String errorMsg = "";
+            List<TestResult> testResults = new ArrayList<>();
+            // ====== 前置脚本 ======
+            req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
+            Map<String, Object> bindings = HttpUtil.prepareBindings(req);
+            Postman pm = (Postman) bindings.get("pm");
+            boolean preOk = true;
+            String prescript = jtNode.httpRequestItem.getPrescript();
+            if (prescript != null && !prescript.isBlank()) {
+                try {
+                    JsScriptExecutor.executeScript(
+                            prescript,
+                            bindings,
+                            output -> {
+                                if (!output.isBlank()) {
+                                    SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
                                 }
                             }
-                        }
-                        // ====== 后置脚本 ======
-                        String postscript = jtNode.httpRequestItem.getPostscript();
-                        if (resp != null && postscript != null && !postscript.isBlank()) {
-                            HttpUtil.postBindings(bindings, resp);
+                    );
+                } catch (Exception ex) {
+                    log.error("前置脚本: {}", ex.getMessage(), ex);
+                    errorMsg = "前置脚本执行失败: " + ex.getMessage();
+                    preOk = false;
+                    success = false;
+                }
+            }
+            if (preOk) {
+                long startTime = System.currentTimeMillis();
+                allRequestStartTimes.add(startTime); // 记录开始时间
+                long costMs = 0;
+                try {
+                    req.logEvent = true; // 记录事件日志
+                    resp = HttpSingleRequestExecutor.execute(req);
+                } catch (Exception ex) {
+                    log.error("请求执行失败: {}", ex.getMessage(), ex);
+                    errorMsg = "请求执行失败: " + ex.getMessage();
+                    success = false;
+                } finally {
+                    costMs = System.currentTimeMillis() - startTime;
+                }
+                // 断言处理（JMeter树断言）
+                for (int j = 0; j < child.getChildCount() && resp != null; j++) {
+                    DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
+                    Object subObj = sub.getUserObject();
+                    if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
+                        AssertionData assertion = subNode.assertionData;
+                        String type = assertion.type;
+                        boolean pass = false;
+                        if ("Response Code".equals(type)) {
+                            String op = assertion.operator;
+                            String valStr = assertion.value;
                             try {
-                                JsScriptExecutor.executeScript(
-                                        postscript,
-                                        bindings,
-                                        output -> {
-                                            if (!output.isBlank()) {
-                                                SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
-                                            }
-                                        }
-                                );
-                                if (pm.testResults != null) {
-                                    testResults.addAll(pm.testResults);
-                                }
-                            } catch (Exception assertionEx) {
-                                log.error("后置脚本执行失败: {}", assertionEx.getMessage(), assertionEx);
-                                if (pm.testResults != null) {
-                                    testResults.addAll(pm.testResults);
-                                }
-                                errorMsg = assertionEx.getMessage();
-                                success = false;
+                                int expect = Integer.parseInt(valStr);
+                                if ("=".equals(op)) pass = (resp.code == expect);
+                                else if (">".equals(op)) pass = (resp.code > expect);
+                                else if ("<".equals(op)) pass = (resp.code < expect);
+                            } catch (Exception ignored) {
                             }
+                        } else if ("Contains".equals(type)) {
+                            pass = resp.body.contains(assertion.content);
+                        } else if ("JSONPath".equals(type)) {
+                            String jsonPath = assertion.value;
+                            String expect = assertion.content;
+                            String actual = JsonPathUtil.extractJsonPath(resp.body, jsonPath);
+                            pass = Objects.equals(actual, expect);
                         }
-                        long cost = resp == null ? costMs : resp.costMs;
-                        allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
-                        // 统计接口耗时（统一用resp.costMs）
-                        apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                        if (!pass) {
+                            success = false;
+                            errorMsg = "断言失败: " + type + " - " + assertion.content;
+                        }
+                        testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
                     }
-                    if (success) {
-                        apiSuccessMap.merge(apiName, 1, Integer::sum);
-                    } else {
-                        apiFailMap.merge(apiName, 1, Integer::sum);
-                    }
-                    // 高效模式下只保存失败或异常结果
-                    if (!efficientMode || !success) {
-                        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));
-                        SwingUtilities.invokeLater(() -> {
-                            resultRootNode.add(reqNode);
-                            resultTreeModel.reload(resultRootNode);
-                            // ====== 刷新耗时UI ======
-                            if (!allRequestStartTimes.isEmpty()) {
-                                List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
-                                long minStart = Collections.min(snapshot);
-                                long now = System.currentTimeMillis();
-                                long elapsedTime = now - minStart;
-                                elapsedLabel.setText(TimeDisplayUtil.formatElapsedTime(elapsedTime));
-                            } else {
-                                elapsedLabel.setText("0 ms");
-                            }
-                        });
+                    if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(subNode2.timerData.delayMs);
+                        } catch (InterruptedException ignored) {
+                            return;
+                        }
                     }
                 }
+                // ====== 后置脚本 ======
+                String postscript = jtNode.httpRequestItem.getPostscript();
+                if (resp != null && postscript != null && !postscript.isBlank()) {
+                    HttpUtil.postBindings(bindings, resp);
+                    try {
+                        JsScriptExecutor.executeScript(
+                                postscript,
+                                bindings,
+                                output -> {
+                                    if (!output.isBlank()) {
+                                        SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
+                                    }
+                                }
+                        );
+                        if (pm.testResults != null) {
+                            testResults.addAll(pm.testResults);
+                        }
+                    } catch (Exception assertionEx) {
+                        log.error("后置脚本执行失败: {}", assertionEx.getMessage(), assertionEx);
+                        if (pm.testResults != null) {
+                            testResults.addAll(pm.testResults);
+                        }
+                        errorMsg = assertionEx.getMessage();
+                        success = false;
+                    }
+                }
+                long cost = resp == null ? costMs : resp.costMs;
+                allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
+                // 统计接口耗时（统一用resp.costMs）
+                apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+            }
+            if (success) {
+                apiSuccessMap.merge(apiName, 1, Integer::sum);
+            } else {
+                apiFailMap.merge(apiName, 1, Integer::sum);
+            }
+            // 高效模式下只保存失败或异常结果
+            if (!efficientMode || !success) {
+                DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));
+                SwingUtilities.invokeLater(() -> {
+                    resultRootNode.add(reqNode);
+                    resultTreeModel.reload(resultRootNode);
+                    // ====== 刷新耗时UI ======
+                    if (!allRequestStartTimes.isEmpty()) {
+                        List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
+                        long minStart = Collections.min(snapshot);
+                        long now = System.currentTimeMillis();
+                        long elapsedTime = now - minStart;
+                        elapsedLabel.setText(TimeDisplayUtil.formatElapsedTime(elapsedTime));
+                    } else {
+                        elapsedLabel.setText("0 ms");
+                    }
+                });
             }
         }
     }

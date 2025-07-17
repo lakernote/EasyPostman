@@ -27,6 +27,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JSpinner rampUpStartThreadsSpinner;
     private final JSpinner rampUpEndThreadsSpinner;
     private final JSpinner rampUpTimeSpinner;
+    private final JSpinner rampUpDurationSpinner;
 
     // 尖刺模式面板组件
     private final JPanel spikePanel;
@@ -35,6 +36,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JSpinner spikeRampUpTimeSpinner;
     private final JSpinner spikeHoldTimeSpinner;
     private final JSpinner spikeRampDownTimeSpinner;
+    private final JSpinner spikeDurationSpinner;
 
     // 峰值模式面板组件
     private final JPanel peakPanel;
@@ -42,6 +44,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JSpinner peakMaxThreadsSpinner;
     private final JSpinner peakIterationsSpinner;
     private final JSpinner peakHoldTimeSpinner;
+    private final JSpinner peakDurationSpinner;
 
     // 阶梯模式面板组件
     private final JPanel stairsPanel;
@@ -49,228 +52,104 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JSpinner stairsEndThreadsSpinner;
     private final JSpinner stairsStepSpinner;
     private final JSpinner stairsHoldTimeSpinner;
+    private final JSpinner stairsDurationSpinner;
 
     // 负载模式预览相关
     private final ThreadLoadPreviewPanel previewPanel;
 
     ThreadGroupPropertyPanel() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 顶部模式选择区域
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         topPanel.add(new JLabel("线程模式:"));
         modeComboBox = new JComboBox<>(ThreadGroupData.ThreadMode.values());
-        modeComboBox.setPreferredSize(new Dimension(150, 30));
+        modeComboBox.setPreferredSize(new Dimension(150, 28));
         topPanel.add(modeComboBox);
+
+        // 中间部分：左侧配置面板，右侧预览图
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 0));
 
         // 中间卡片布局，用于切换不同模式的配置面板
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
+        cardPanel.setPreferredSize(new Dimension(350, 150));
 
+        // 初始化所有控件和面板
         // 1. 固定模式面板
         fixedPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        fixedPanel.add(new JLabel("用户数:"), gbc);
-
-        gbc.gridx = 1;
+        fixedPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         fixedNumThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
-        fixedPanel.add(fixedNumThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        fixedPanel.add(new JLabel("执行方式:"), gbc);
-
-        gbc.gridx = 1;
-        JPanel executionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        useTimeCheckBox = new JCheckBox("按时间");
-        executionPanel.add(useTimeCheckBox);
-        fixedPanel.add(executionPanel, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        fixedPanel.add(new JLabel("循环次数:"), gbc);
-
-        gbc.gridx = 1;
+        fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         fixedLoopsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
-        fixedPanel.add(fixedLoopsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        fixedPanel.add(new JLabel("持续时间(秒):"), gbc);
-
-        gbc.gridx = 1;
+        fixedLoopsSpinner.setPreferredSize(new Dimension(80, 28));
+        useTimeCheckBox = new JCheckBox("按时间");
         durationSpinner = new JSpinner(new SpinnerNumberModel(60, 1, 86400, 10));
-        fixedPanel.add(durationSpinner, gbc);
-
-        // 按时间执行时禁用循环次数，按循环次数执行时禁用持续时间
-        useTimeCheckBox.addActionListener(e -> {
-            boolean useTime = useTimeCheckBox.isSelected();
-            fixedLoopsSpinner.setEnabled(!useTime);
-            durationSpinner.setEnabled(useTime);
-        });
+        durationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 2. 递增模式面板
         rampUpPanel = new JPanel(new GridBagLayout());
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        rampUpPanel.add(new JLabel("起始用户数:"), gbc);
-
-        gbc.gridx = 1;
+        rampUpPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         rampUpStartThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
-        rampUpPanel.add(rampUpStartThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        rampUpPanel.add(new JLabel("最终用户数:"), gbc);
-
-        gbc.gridx = 1;
+        rampUpStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         rampUpEndThreadsSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 1000, 1));
-        rampUpPanel.add(rampUpEndThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        rampUpPanel.add(new JLabel("递增时间(秒):"), gbc);
-
-        gbc.gridx = 1;
+        rampUpEndThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         rampUpTimeSpinner = new JSpinner(new SpinnerNumberModel(30, 1, 3600, 5));
-        rampUpPanel.add(rampUpTimeSpinner, gbc);
+        rampUpTimeSpinner.setPreferredSize(new Dimension(80, 28));
+        rampUpDurationSpinner = new JSpinner(new SpinnerNumberModel(120, 1, 86400, 10));
+        rampUpDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 3. 尖刺模式面板
         spikePanel = new JPanel(new GridBagLayout());
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        spikePanel.add(new JLabel("最小用户数:"), gbc);
-
-        gbc.gridx = 1;
+        spikePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         spikeMinThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
-        spikePanel.add(spikeMinThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        spikePanel.add(new JLabel("最大用户数:"), gbc);
-
-        gbc.gridx = 1;
+        spikeMinThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         spikeMaxThreadsSpinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
-        spikePanel.add(spikeMaxThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        spikePanel.add(new JLabel("上升时间(秒):"), gbc);
-
-        gbc.gridx = 1;
+        spikeMaxThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         spikeRampUpTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
-        spikePanel.add(spikeRampUpTimeSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        spikePanel.add(new JLabel("保持时间(秒):"), gbc);
-
-        gbc.gridx = 1;
+        spikeRampUpTimeSpinner.setPreferredSize(new Dimension(80, 28));
         spikeHoldTimeSpinner = new JSpinner(new SpinnerNumberModel(5, 0, 3600, 1));
-        spikePanel.add(spikeHoldTimeSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        spikePanel.add(new JLabel("下降时间(秒):"), gbc);
-
-        gbc.gridx = 1;
+        spikeHoldTimeSpinner.setPreferredSize(new Dimension(80, 28));
         spikeRampDownTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
-        spikePanel.add(spikeRampDownTimeSpinner, gbc);
+        spikeRampDownTimeSpinner.setPreferredSize(new Dimension(80, 28));
+        spikeDurationSpinner = new JSpinner(new SpinnerNumberModel(120, 1, 86400, 10));
+        spikeDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 4. 峰值模式面板
         peakPanel = new JPanel(new GridBagLayout());
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        peakPanel.add(new JLabel("最小用户数:"), gbc);
-
-        gbc.gridx = 1;
+        peakPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         peakMinThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
-        peakPanel.add(peakMinThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        peakPanel.add(new JLabel("最大用户数:"), gbc);
-
-        gbc.gridx = 1;
+        peakMinThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         peakMaxThreadsSpinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
-        peakPanel.add(peakMaxThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        peakPanel.add(new JLabel("峰值次数:"), gbc);
-
-        gbc.gridx = 1;
+        peakMaxThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         peakIterationsSpinner = new JSpinner(new SpinnerNumberModel(3, 1, 100, 1));
-        peakPanel.add(peakIterationsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        peakPanel.add(new JLabel("保持时间(秒):"), gbc);
-
-        gbc.gridx = 1;
+        peakIterationsSpinner.setPreferredSize(new Dimension(80, 28));
         peakHoldTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
-        peakPanel.add(peakHoldTimeSpinner, gbc);
+        peakHoldTimeSpinner.setPreferredSize(new Dimension(80, 28));
+        peakDurationSpinner = new JSpinner(new SpinnerNumberModel(180, 1, 86400, 10));
+        peakDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 5. 阶梯模式面板
         stairsPanel = new JPanel(new GridBagLayout());
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        stairsPanel.add(new JLabel("起始用户数:"), gbc);
-
-        gbc.gridx = 1;
+        stairsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         stairsStartThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
-        stairsPanel.add(stairsStartThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        stairsPanel.add(new JLabel("最终用户数:"), gbc);
-
-        gbc.gridx = 1;
+        stairsStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         stairsEndThreadsSpinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
-        stairsPanel.add(stairsEndThreadsSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        stairsPanel.add(new JLabel("阶梯步长:"), gbc);
-
-        gbc.gridx = 1;
+        stairsEndThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         stairsStepSpinner = new JSpinner(new SpinnerNumberModel(5, 1, 100, 1));
-        stairsPanel.add(stairsStepSpinner, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        stairsPanel.add(new JLabel("阶梯保持(秒):"), gbc);
-
-        gbc.gridx = 1;
+        stairsStepSpinner.setPreferredSize(new Dimension(80, 28));
         stairsHoldTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
-        stairsPanel.add(stairsHoldTimeSpinner, gbc);
+        stairsHoldTimeSpinner.setPreferredSize(new Dimension(80, 28));
+        stairsDurationSpinner = new JSpinner(new SpinnerNumberModel(240, 1, 86400, 10));
+        stairsDurationSpinner.setPreferredSize(new Dimension(80, 28));
+
+        // 设置各个面板的布局
+        setupFixedPanel();
+        setupRampUpPanel();
+        setupSpikePanel();
+        setupPeakPanel();
+        setupStairsPanel();
 
         // 添加所有面板到卡片布局
         cardPanel.add(fixedPanel, ThreadGroupData.ThreadMode.FIXED.name());
@@ -287,24 +166,252 @@ public class ThreadGroupPropertyPanel extends JPanel {
             ThreadGroupData.ThreadMode selectedMode = (ThreadGroupData.ThreadMode) modeComboBox.getSelectedItem();
             if (selectedMode != null) {
                 cardLayout.show(cardPanel, selectedMode.name());
+                updatePreview();
             }
         });
 
         // 初始设置
         durationSpinner.setEnabled(false); // 默认按循环次数执行
 
-        // 底部添加图表预览区域
+        // 按时间执行时禁用循环次数，按循环次数执行时禁用持续时间
+        useTimeCheckBox.addActionListener(e -> {
+            boolean useTime = useTimeCheckBox.isSelected();
+            fixedLoopsSpinner.setEnabled(!useTime);
+            durationSpinner.setEnabled(useTime);
+        });
+
+        // 预览图表区域
         previewPanel = new ThreadLoadPreviewPanel();
-        previewPanel.setPreferredSize(new Dimension(380, 120));
+        previewPanel.setPreferredSize(new Dimension(500, 180));
         previewPanel.setBorder(BorderFactory.createTitledBorder("负载模式预览"));
 
-        // 布局主面板
+        // 左侧配置区包装在一个面板中，以便控制布局
+        JPanel configPanel = new JPanel(new BorderLayout());
+        configPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
+        configPanel.add(cardPanel, BorderLayout.NORTH);
+        configPanel.setPreferredSize(new Dimension(400, 180));
+
+        // 添加到主面板
+        mainPanel.add(configPanel, BorderLayout.WEST);
+        mainPanel.add(previewPanel, BorderLayout.CENTER);
+
+        // 整体布局
         add(topPanel, BorderLayout.NORTH);
-        add(cardPanel, BorderLayout.CENTER);
-        add(previewPanel, BorderLayout.SOUTH);
+        add(mainPanel, BorderLayout.CENTER);
 
         // 为所有输入组件添加变化监听，刷新预览图
         addPreviewUpdateListeners();
+    }
+
+    // 设置固定模式面板
+    private void setupFixedPanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(3, 5, 3, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // 第一行
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        fixedPanel.add(new JLabel("用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        fixedPanel.add(fixedNumThreadsSpinner, gbc);
+
+        gbc.gridx = 2;
+        fixedPanel.add(new JLabel("执行方式:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        fixedPanel.add(useTimeCheckBox, gbc);
+
+        // 第二行
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        fixedPanel.add(new JLabel("循环次数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        fixedPanel.add(fixedLoopsSpinner, gbc);
+
+        gbc.gridx = 2;
+        fixedPanel.add(new JLabel("持续时间(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        fixedPanel.add(durationSpinner, gbc);
+    }
+
+    // 设置递增模式面板
+    private void setupRampUpPanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(3, 5, 3, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // 第一行
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        rampUpPanel.add(new JLabel("起始用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        rampUpPanel.add(rampUpStartThreadsSpinner, gbc);
+
+        gbc.gridx = 2;
+        rampUpPanel.add(new JLabel("最终用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        rampUpPanel.add(rampUpEndThreadsSpinner, gbc);
+
+        // 第二行
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        rampUpPanel.add(new JLabel("递增时间(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        rampUpPanel.add(rampUpTimeSpinner, gbc);
+
+        gbc.gridx = 2;
+        rampUpPanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        rampUpPanel.add(rampUpDurationSpinner, gbc);
+    }
+
+    // 设置尖刺模式面板
+    private void setupSpikePanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(3, 5, 3, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // 第一行
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        spikePanel.add(new JLabel("最小用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        spikePanel.add(spikeMinThreadsSpinner, gbc);
+
+        gbc.gridx = 2;
+        spikePanel.add(new JLabel("最大用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        spikePanel.add(spikeMaxThreadsSpinner, gbc);
+
+        // 第二行
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        spikePanel.add(new JLabel("上升时间(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        spikePanel.add(spikeRampUpTimeSpinner, gbc);
+
+        gbc.gridx = 2;
+        spikePanel.add(new JLabel("保持时间(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        spikePanel.add(spikeHoldTimeSpinner, gbc);
+
+        // 第三行
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        spikePanel.add(new JLabel("下降时间(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        spikePanel.add(spikeRampDownTimeSpinner, gbc);
+
+        gbc.gridx = 2;
+        spikePanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        spikePanel.add(spikeDurationSpinner, gbc);
+    }
+
+    // 设置峰值模式面板
+    private void setupPeakPanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(3, 5, 3, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // 第一行
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        peakPanel.add(new JLabel("最小用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        peakPanel.add(peakMinThreadsSpinner, gbc);
+
+        gbc.gridx = 2;
+        peakPanel.add(new JLabel("最大用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        peakPanel.add(peakMaxThreadsSpinner, gbc);
+
+        // 第二行
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        peakPanel.add(new JLabel("峰值次数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        peakPanel.add(peakIterationsSpinner, gbc);
+
+        gbc.gridx = 2;
+        peakPanel.add(new JLabel("保持时间(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        peakPanel.add(peakHoldTimeSpinner, gbc);
+
+        // 第三行
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        peakPanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        peakPanel.add(peakDurationSpinner, gbc);
+    }
+
+    // 设置阶梯模式面板
+    private void setupStairsPanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(3, 5, 3, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // 第一行
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        stairsPanel.add(new JLabel("起始用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        stairsPanel.add(stairsStartThreadsSpinner, gbc);
+
+        gbc.gridx = 2;
+        stairsPanel.add(new JLabel("最终用户数:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        stairsPanel.add(stairsEndThreadsSpinner, gbc);
+
+        // 第二行
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        stairsPanel.add(new JLabel("阶梯步长:", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        stairsPanel.add(stairsStepSpinner, gbc);
+
+        gbc.gridx = 2;
+        stairsPanel.add(new JLabel("阶梯保持(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 3;
+        stairsPanel.add(stairsHoldTimeSpinner, gbc);
+
+        // 第三行
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        stairsPanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+
+        gbc.gridx = 1;
+        stairsPanel.add(stairsDurationSpinner, gbc);
     }
 
     private void addPreviewUpdateListeners() {
@@ -321,6 +428,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         rampUpStartThreadsSpinner.addChangeListener(e -> updatePreview());
         rampUpEndThreadsSpinner.addChangeListener(e -> updatePreview());
         rampUpTimeSpinner.addChangeListener(e -> updatePreview());
+        rampUpDurationSpinner.addChangeListener(e -> updatePreview());
 
         // 尖刺模式参数变化监听
         spikeMinThreadsSpinner.addChangeListener(e -> updatePreview());
@@ -328,18 +436,21 @@ public class ThreadGroupPropertyPanel extends JPanel {
         spikeRampUpTimeSpinner.addChangeListener(e -> updatePreview());
         spikeHoldTimeSpinner.addChangeListener(e -> updatePreview());
         spikeRampDownTimeSpinner.addChangeListener(e -> updatePreview());
+        spikeDurationSpinner.addChangeListener(e -> updatePreview());
 
         // 峰值模式参数变化监听
         peakMinThreadsSpinner.addChangeListener(e -> updatePreview());
         peakMaxThreadsSpinner.addChangeListener(e -> updatePreview());
         peakIterationsSpinner.addChangeListener(e -> updatePreview());
         peakHoldTimeSpinner.addChangeListener(e -> updatePreview());
+        peakDurationSpinner.addChangeListener(e -> updatePreview());
 
         // 阶梯模式参数变化监听
         stairsStartThreadsSpinner.addChangeListener(e -> updatePreview());
         stairsEndThreadsSpinner.addChangeListener(e -> updatePreview());
         stairsStepSpinner.addChangeListener(e -> updatePreview());
         stairsHoldTimeSpinner.addChangeListener(e -> updatePreview());
+        stairsDurationSpinner.addChangeListener(e -> updatePreview());
     }
 
     private void updatePreview() {
@@ -361,6 +472,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 previewData.rampUpStartThreads = (Integer) rampUpStartThreadsSpinner.getValue();
                 previewData.rampUpEndThreads = (Integer) rampUpEndThreadsSpinner.getValue();
                 previewData.rampUpTime = (Integer) rampUpTimeSpinner.getValue();
+                previewData.rampUpDuration = (Integer) rampUpDurationSpinner.getValue();
                 break;
 
             case SPIKE:
@@ -369,6 +481,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 previewData.spikeRampUpTime = (Integer) spikeRampUpTimeSpinner.getValue();
                 previewData.spikeHoldTime = (Integer) spikeHoldTimeSpinner.getValue();
                 previewData.spikeRampDownTime = (Integer) spikeRampDownTimeSpinner.getValue();
+                previewData.spikeDuration = (Integer) spikeDurationSpinner.getValue();
                 break;
 
             case PEAK:
@@ -376,6 +489,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 previewData.peakMaxThreads = (Integer) peakMaxThreadsSpinner.getValue();
                 previewData.peakIterations = (Integer) peakIterationsSpinner.getValue();
                 previewData.peakHoldTime = (Integer) peakHoldTimeSpinner.getValue();
+                previewData.peakDuration = (Integer) peakDurationSpinner.getValue();
                 break;
 
             case STAIRS:
@@ -383,6 +497,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 previewData.stairsEndThreads = (Integer) stairsEndThreadsSpinner.getValue();
                 previewData.stairsStep = (Integer) stairsStepSpinner.getValue();
                 previewData.stairsHoldTime = (Integer) stairsHoldTimeSpinner.getValue();
+                previewData.stairsDuration = (Integer) stairsDurationSpinner.getValue();
                 break;
         }
 
@@ -417,6 +532,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         rampUpStartThreadsSpinner.setValue(data.rampUpStartThreads);
         rampUpEndThreadsSpinner.setValue(data.rampUpEndThreads);
         rampUpTimeSpinner.setValue(data.rampUpTime);
+        rampUpDurationSpinner.setValue(data.rampUpDuration);
 
         // 设置尖刺模式参数
         spikeMinThreadsSpinner.setValue(data.spikeMinThreads);
@@ -424,18 +540,21 @@ public class ThreadGroupPropertyPanel extends JPanel {
         spikeRampUpTimeSpinner.setValue(data.spikeRampUpTime);
         spikeHoldTimeSpinner.setValue(data.spikeHoldTime);
         spikeRampDownTimeSpinner.setValue(data.spikeRampDownTime);
+        spikeDurationSpinner.setValue(data.spikeDuration);
 
         // 设置峰值模式参数
         peakMinThreadsSpinner.setValue(data.peakMinThreads);
         peakMaxThreadsSpinner.setValue(data.peakMaxThreads);
         peakIterationsSpinner.setValue(data.peakIterations);
         peakHoldTimeSpinner.setValue(data.peakHoldTime);
+        peakDurationSpinner.setValue(data.peakDuration);
 
         // 设置阶梯模式参数
         stairsStartThreadsSpinner.setValue(data.stairsStartThreads);
         stairsEndThreadsSpinner.setValue(data.stairsEndThreads);
         stairsStepSpinner.setValue(data.stairsStep);
         stairsHoldTimeSpinner.setValue(data.stairsHoldTime);
+        stairsDurationSpinner.setValue(data.stairsDuration);
 
         // 更新预览图
         updatePreview();
@@ -462,6 +581,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.rampUpStartThreads = (Integer) rampUpStartThreadsSpinner.getValue();
         data.rampUpEndThreads = (Integer) rampUpEndThreadsSpinner.getValue();
         data.rampUpTime = (Integer) rampUpTimeSpinner.getValue();
+        data.rampUpDuration = (Integer) rampUpDurationSpinner.getValue();
 
         // 保存尖刺模式参数
         data.spikeMinThreads = (Integer) spikeMinThreadsSpinner.getValue();
@@ -469,18 +589,21 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.spikeRampUpTime = (Integer) spikeRampUpTimeSpinner.getValue();
         data.spikeHoldTime = (Integer) spikeHoldTimeSpinner.getValue();
         data.spikeRampDownTime = (Integer) spikeRampDownTimeSpinner.getValue();
+        data.spikeDuration = (Integer) spikeDurationSpinner.getValue();
 
         // 保存峰值模式参数
         data.peakMinThreads = (Integer) peakMinThreadsSpinner.getValue();
         data.peakMaxThreads = (Integer) peakMaxThreadsSpinner.getValue();
         data.peakIterations = (Integer) peakIterationsSpinner.getValue();
         data.peakHoldTime = (Integer) peakHoldTimeSpinner.getValue();
+        data.peakDuration = (Integer) peakDurationSpinner.getValue();
 
         // 保存阶梯模式参数
         data.stairsStartThreads = (Integer) stairsStartThreadsSpinner.getValue();
         data.stairsEndThreads = (Integer) stairsEndThreadsSpinner.getValue();
         data.stairsStep = (Integer) stairsStepSpinner.getValue();
         data.stairsHoldTime = (Integer) stairsHoldTimeSpinner.getValue();
+        data.stairsDuration = (Integer) stairsDurationSpinner.getValue();
     }
 
     // 预览数据模型
@@ -495,22 +618,26 @@ public class ThreadGroupPropertyPanel extends JPanel {
         int rampUpStartThreads;
         int rampUpEndThreads;
         int rampUpTime;
+        int rampUpDuration;
         // 尖刺模式
         int spikeMinThreads;
         int spikeMaxThreads;
         int spikeRampUpTime;
         int spikeHoldTime;
         int spikeRampDownTime;
+        int spikeDuration;
         // 峰值模式
         int peakMinThreads;
         int peakMaxThreads;
         int peakIterations;
         int peakHoldTime;
+        int peakDuration;
         // 阶梯模式
         int stairsStartThreads;
         int stairsEndThreads;
         int stairsStep;
         int stairsHoldTime;
+        int stairsDuration;
     }
 
     // 预览面板实现
@@ -520,7 +647,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         private static final Color CURVE_COLOR = new Color(41, 121, 255);
         private static final Color AXIS_COLOR = new Color(100, 100, 100);
         private static final Color TEXT_COLOR = new Color(80, 80, 80);
-        private static final int PADDING = 20;
+        private static final int PADDING = 40;
 
         public ThreadLoadPreviewPanel() {
             setBackground(Color.WHITE);
@@ -541,7 +668,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int width = getWidth() - 2 * PADDING;
             int height = getHeight() - 2 * PADDING;
 
-            // 绘制网格
+            // 绘制网格和坐标轴
             drawGrid(g2d, width, height);
 
             // 根据不同模式绘制曲线
@@ -554,21 +681,40 @@ public class ThreadGroupPropertyPanel extends JPanel {
             g2d.setColor(GRID_COLOR);
             g2d.setStroke(new BasicStroke(0.5f));
 
-            // 水平网格线
-            for (int i = 0; i <= 4; i++) {
-                int y = PADDING + i * height / 4;
+            // 水平网格线 - 5条线，均匀分布
+            int maxThreads = getMaxThreads();
+            for (int i = 0; i <= 5; i++) {
+                int y = PADDING + i * height / 5;
                 g2d.draw(new Line2D.Double(PADDING, y, PADDING + width, y));
+
+                // 添加Y轴刻度
+                if (i > 0) {
+                    int threadValue = maxThreads - (maxThreads * i / 5);
+                    g2d.setColor(TEXT_COLOR);
+                    g2d.drawString(String.valueOf(threadValue), PADDING - 30, y + 5);
+                    g2d.setColor(GRID_COLOR);
+                }
             }
 
-            // 垂直网格线
-            for (int i = 0; i <= 4; i++) {
-                int x = PADDING + i * width / 4;
+            // 垂直网格线 - 根据测试持续时间计算
+            int duration = getDuration();
+            int numVerticalLines = Math.min(10, duration); // 最多10条垂直线
+            for (int i = 0; i <= numVerticalLines; i++) {
+                int x = PADDING + i * width / numVerticalLines;
                 g2d.draw(new Line2D.Double(x, PADDING, x, PADDING + height));
+
+                // 添加X轴刻度
+                if (i > 0) {
+                    int timeValue = duration * i / numVerticalLines;
+                    g2d.setColor(TEXT_COLOR);
+                    g2d.drawString(timeValue + "s", x - 10, PADDING + height + 15);
+                    g2d.setColor(GRID_COLOR);
+                }
             }
 
             // 坐标轴
             g2d.setColor(AXIS_COLOR);
-            g2d.setStroke(new BasicStroke(1.0f));
+            g2d.setStroke(new BasicStroke(1.5f));
 
             // X轴
             g2d.draw(new Line2D.Double(PADDING, PADDING + height, PADDING + width, PADDING + height));
@@ -577,12 +723,51 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
             // 坐标轴标签
             g2d.setColor(TEXT_COLOR);
-            g2d.drawString("时间", PADDING + width / 2, PADDING + height + 15);
+            g2d.drawString("时间 (秒)", PADDING + width / 2 - 20, PADDING + height + 30);
 
-            // 旋转90度绘制Y轴标签
-            g2d.rotate(-Math.PI / 2);
-            g2d.drawString("线程数", -PADDING - height / 2 - 20, PADDING - 5);
-            g2d.rotate(Math.PI / 2); // 恢复旋转
+//            // 旋转90度绘制Y轴标签 - 简化为只显示"线程"二字
+//            g2d.rotate(-Math.PI / 2);
+//            g2d.drawString("线程", -PADDING - height / 2 - 20, PADDING - 15);
+//            g2d.rotate(Math.PI / 2); // 恢复旋转
+
+            // 在左上角添加模式信息
+            g2d.drawString("模式: " + previewData.mode.getDisplayName(), PADDING, PADDING - 10);
+        }
+
+        private int getMaxThreads() {
+            // 根据当前模式返回最大线程数（用于Y轴刻度）
+            switch (previewData.mode) {
+                case FIXED:
+                    return Math.max(100, previewData.fixedThreads);
+                case RAMP_UP:
+                    return Math.max(100, Math.max(previewData.rampUpStartThreads, previewData.rampUpEndThreads));
+                case SPIKE:
+                    return Math.max(100, previewData.spikeMaxThreads);
+                case PEAK:
+                    return Math.max(100, previewData.peakMaxThreads);
+                case STAIRS:
+                    return Math.max(100, previewData.stairsEndThreads);
+                default:
+                    return 100;
+            }
+        }
+
+        private int getDuration() {
+            // 根据当前模式返回持续时间（用于X轴刻度）
+            switch (previewData.mode) {
+                case FIXED:
+                    return previewData.useTime ? previewData.duration : 60;
+                case RAMP_UP:
+                    return previewData.rampUpDuration;
+                case SPIKE:
+                    return previewData.spikeDuration;
+                case PEAK:
+                    return previewData.peakDuration;
+                case STAIRS:
+                    return previewData.stairsDuration;
+                default:
+                    return 60;
+            }
         }
 
         private void drawCurve(Graphics2D g2d, int width, int height) {
@@ -630,6 +815,8 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private void drawFixedCurve(List<Point> points, int width, int height) {
+            int maxThreads = getMaxThreads();
+
             int x1 = PADDING;
             int y1 = PADDING + height;
 
@@ -638,7 +825,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
             // 快速上升到固定线程数
             x1 += 10;
-            int y2 = PADDING + height - height * previewData.fixedThreads / 100;
+            int y2 = PADDING + height - height * previewData.fixedThreads / maxThreads;
             if (y2 < PADDING) y2 = PADDING + 5;
             points.add(new Point(x1, y2));
 
@@ -648,6 +835,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private void drawRampUpCurve(List<Point> points, int width, int height) {
+            int maxThreads = getMaxThreads();
+            int duration = getDuration();
+
             int x1 = PADDING;
             int y1 = PADDING + height;
 
@@ -656,25 +846,28 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
             // 递增起点
             x1 += 10;
-            int y2 = PADDING + height - height * previewData.rampUpStartThreads / 100;
+            int y2 = PADDING + height - height * previewData.rampUpStartThreads / maxThreads;
             if (y2 < PADDING) y2 = PADDING + 5;
             points.add(new Point(x1, y2));
 
             // 递增终点
-            int x3 = PADDING + width - 10;
-            int y3 = PADDING + height - height * previewData.rampUpEndThreads / 100;
+            int rampUpEndX = PADDING + (width * previewData.rampUpTime / duration);
+            int y3 = PADDING + height - height * previewData.rampUpEndThreads / maxThreads;
             if (y3 < PADDING) y3 = PADDING + 5;
-            points.add(new Point(x3, y3));
+            points.add(new Point(rampUpEndX, y3));
 
             // 结束点
             points.add(new Point(PADDING + width, y3));
         }
 
         private void drawSpikeCurve(List<Point> points, int width, int height) {
+            int maxThreads = getMaxThreads();
+            int duration = getDuration();
+
             int x = PADDING;
-            int yMin = PADDING + height - height * previewData.spikeMinThreads / 100;
+            int yMin = PADDING + height - height * previewData.spikeMinThreads / maxThreads;
             if (yMin < PADDING) yMin = PADDING + 5;
-            int yMax = PADDING + height - height * previewData.spikeMaxThreads / 100;
+            int yMax = PADDING + height - height * previewData.spikeMaxThreads / maxThreads;
             if (yMax < PADDING) yMax = PADDING + 5;
 
             // 起点
@@ -685,19 +878,19 @@ public class ThreadGroupPropertyPanel extends JPanel {
             points.add(new Point(x, yMin));
 
             // 计算时间比例
-            int totalTime = previewData.spikeRampUpTime + previewData.spikeHoldTime + previewData.spikeRampDownTime;
+            int totalPhaseTime = previewData.spikeRampUpTime + previewData.spikeHoldTime + previewData.spikeRampDownTime;
             int availWidth = width - 20;
 
             // 上升
-            x += availWidth * previewData.spikeRampUpTime / totalTime;
+            x += availWidth * previewData.spikeRampUpTime / duration;
             points.add(new Point(x, yMax));
 
             // 保持
-            x += availWidth * previewData.spikeHoldTime / totalTime;
+            x += availWidth * previewData.spikeHoldTime / duration;
             points.add(new Point(x, yMax));
 
             // 下降
-            x += availWidth * previewData.spikeRampDownTime / totalTime;
+            x += availWidth * previewData.spikeRampDownTime / duration;
             points.add(new Point(x, yMin));
 
             // 结束
@@ -705,10 +898,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private void drawPeakCurve(List<Point> points, int width, int height) {
+            int maxThreads = getMaxThreads();
+            int duration = getDuration();
+
             int x = PADDING;
-            int yMin = PADDING + height - height * previewData.peakMinThreads / 100;
+            int yMin = PADDING + height - height * previewData.peakMinThreads / maxThreads;
             if (yMin < PADDING) yMin = PADDING + 5;
-            int yMax = PADDING + height - height * previewData.peakMaxThreads / 100;
+            int yMax = PADDING + height - height * previewData.peakMaxThreads / maxThreads;
             if (yMax < PADDING) yMax = PADDING + 5;
 
             // 起点
@@ -719,17 +915,31 @@ public class ThreadGroupPropertyPanel extends JPanel {
             points.add(new Point(x, yMin));
 
             // 循环峰值
-            int iterations = Math.min(previewData.peakIterations, 5); // 最多显示5次循环
-            int segmentWidth = (width - 20) / iterations / 2;
+            int iterations = previewData.peakIterations;
+            int cycleTime = previewData.peakHoldTime * 3;  // 每个循环: 上升+保持+下降
+            int cycleWidth = (width - 20) / duration * cycleTime;
 
             for (int i = 0; i < iterations; i++) {
+                // 计算每个周期的起始位置
+                int cycleStartX = x + (i * cycleWidth);
+
+                // 保证不超出图表宽度
+                if (cycleStartX > PADDING + width) break;
+
                 // 上升到峰值
-                x += segmentWidth;
-                points.add(new Point(x, yMax));
+                int peakX = cycleStartX + cycleWidth / 3;
+                peakX = Math.min(peakX, PADDING + width);
+                points.add(new Point(peakX, yMax));
+
+                // 保持峰值
+                int holdEndX = peakX + cycleWidth / 3;
+                holdEndX = Math.min(holdEndX, PADDING + width);
+                points.add(new Point(holdEndX, yMax));
 
                 // 下降到谷值
-                x += segmentWidth;
-                points.add(new Point(x, yMin));
+                int valleyX = holdEndX + cycleWidth / 3;
+                valleyX = Math.min(valleyX, PADDING + width);
+                points.add(new Point(valleyX, yMin));
             }
 
             // 结束
@@ -737,6 +947,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private void drawStairsCurve(List<Point> points, int width, int height) {
+            int maxThreads = getMaxThreads();
+            int duration = getDuration();
+
             int x = PADDING;
             int startThreads = previewData.stairsStartThreads;
             int endThreads = previewData.stairsEndThreads;
@@ -747,7 +960,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
             // 起始点
             x += 10;
-            int y = PADDING + height - height * startThreads / 100;
+            int y = PADDING + height - height * startThreads / maxThreads;
             if (y < PADDING) y = PADDING + 5;
             points.add(new Point(x, y));
 
@@ -755,25 +968,23 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int steps = (endThreads - startThreads) / step;
             if (steps <= 0) steps = 1;
 
-            int segmentWidth = (width - 20) / steps / 2;
+            int holdTime = previewData.stairsHoldTime;
+            int stepWidth = (width - 20) / duration * holdTime;
             int currentThreads = startThreads;
 
             for (int i = 0; i < steps && currentThreads < endThreads; i++) {
                 // 当前阶梯水平线
-                x += segmentWidth;
+                x += stepWidth;
+                if (x > PADDING + width) break;
                 points.add(new Point(x, y));
 
                 // 上升到下一阶梯
                 currentThreads += step;
                 if (currentThreads > endThreads) currentThreads = endThreads;
 
-                y = PADDING + height - height * currentThreads / 100;
+                y = PADDING + height - height * currentThreads / maxThreads;
                 if (y < PADDING) y = PADDING + 5;
 
-                points.add(new Point(x, y));
-
-                // 下一阶梯水平线
-                x += segmentWidth;
                 points.add(new Point(x, y));
             }
 

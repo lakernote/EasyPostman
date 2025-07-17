@@ -144,8 +144,7 @@ public class HttpUtil {
     public static Map<String, Object> prepareBindings(PreparedRequest req) {
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
         Postman postman = new Postman(activeEnv);
-        // 设置请求对象，使前置脚本可以修改请求
-        postman.request = req;
+        postman.setRequest(req);
         Map<String, Object> bindings = new HashMap<>();
         bindings.put("request", req);
         bindings.put("env", activeEnv);

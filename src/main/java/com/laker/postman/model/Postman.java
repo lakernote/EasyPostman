@@ -11,7 +11,7 @@ public class Postman {
     public Environment env;
     public ResponseAssertion response;
     public Map<String, Object> variables = new HashMap<>();
-    public PreparedRequest request;
+    public JsRequestWrapper request;
 
     public Postman(Environment environment) {
         this.environment = environment;
@@ -34,6 +34,10 @@ public class Postman {
 
     public void setResponse(HttpResponse response) {
         this.response = new ResponseAssertion(response);
+    }
+
+    public void setRequest(PreparedRequest request) {
+        this.request = new JsRequestWrapper(request);
     }
 
     // Postman 脚本中的 pm.test(name, fn)

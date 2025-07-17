@@ -21,7 +21,6 @@ import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JsonPathUtil;
-import com.laker.postman.util.TimeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -103,8 +102,6 @@ public class JMeterPanel extends BasePanel {
     private TimeSeries errorPercentSeries;
     // 搜索框相关
     private JTextField searchField;
-    private JLabel elapsedLabel; // 显示已用时
-
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
@@ -453,11 +450,6 @@ public class JMeterPanel extends BasePanel {
         progressLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
         progressPanel.setToolTipText("active threads / total threads");
         progressPanel.add(progressLabel);
-        // ========== 实时耗时显示 ==========
-        elapsedLabel = new JLabel("0 ms");
-        elapsedLabel.setIcon(new FlatSVGIcon("icons/time.svg", 20, 20));
-        elapsedLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
-        progressPanel.add(elapsedLabel);
         // ========== 内存占用显示 ==========
         JLabel memoryLabel = new JLabel();
         memoryLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
@@ -580,7 +572,6 @@ public class JMeterPanel extends BasePanel {
         totalThreads = IntStream.range(0, rootNode.getChildCount()).mapToObj(i -> (DefaultMutableTreeNode) rootNode.getChildAt(i)).map(DefaultMutableTreeNode::getUserObject).filter(userObj -> userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP).map(userObj -> (JMeterTreeNode) userObj).map(jtNode -> jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData()).mapToInt(tg -> tg.numThreads).sum();
         // 当前已启动线程数 = 0，启动后动态刷新
         progressLabel.setText(0 + "/" + totalThreads);
-        elapsedLabel.setText("0 ms");
         runThread = new Thread(() -> {
             try {
                 runJMeterTreeWithProgress(rootNode, progressLabel, totalThreads);
@@ -1239,16 +1230,6 @@ public class JMeterPanel extends BasePanel {
                 SwingUtilities.invokeLater(() -> {
                     resultRootNode.add(reqNode);
                     resultTreeModel.reload(resultRootNode);
-                    // ====== 刷新耗时UI ======
-                    if (!allRequestStartTimes.isEmpty()) {
-                        List<Long> snapshot = new ArrayList<>(allRequestStartTimes);
-                        long minStart = Collections.min(snapshot);
-                        long now = System.currentTimeMillis();
-                        long elapsedTime = now - minStart;
-                        elapsedLabel.setText(TimeDisplayUtil.formatElapsedTime(elapsedTime));
-                    } else {
-                        elapsedLabel.setText("0 ms");
-                    }
                 });
             }
         }
@@ -1731,6 +1712,6 @@ public class JMeterPanel extends BasePanel {
         long max = rt.maxMemory();
         String usedStr = String.format("%.1fMB", used / 1024.0 / 1024);
         String maxStr = String.format("%.1fMB", max / 1024.0 / 1024);
-        memoryLabel.setText("Memory: " + usedStr + " / " + maxStr);
+        memoryLabel.setText(usedStr + " / " + maxStr);
     }
 }

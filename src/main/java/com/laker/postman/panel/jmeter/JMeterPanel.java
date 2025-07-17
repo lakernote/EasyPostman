@@ -479,6 +479,30 @@ public class JMeterPanel extends BasePanel {
         for (int i = 0; i < jmeterTree.getRowCount(); i++) {
             jmeterTree.expandRow(i);
         }
+
+        // 初始化定位到第一个Thread Group节点
+        selectFirstThreadGroup();
+    }
+
+    /**
+     * 选择并定位到第一个Thread Group节点，并触发对应的点击事件
+     */
+    private void selectFirstThreadGroup() {
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        if (root.getChildCount() > 0) {
+            DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) root.getChildAt(0);
+            TreePath path = new TreePath(firstGroup.getPath());
+            jmeterTree.setSelectionPath(path);
+            jmeterTree.scrollPathToVisible(path);
+
+            // 触发节点点击事件，确保属性面板显示正确
+            Object userObj = firstGroup.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
+                // 显示线程组属性面板
+                propertyCardLayout.show(propertyPanel, "threadGroup");
+                threadGroupPanel.setThreadGroupData(jtNode);
+            }
+        }
     }
 
     private static void createDefaultRequest(DefaultMutableTreeNode root) {

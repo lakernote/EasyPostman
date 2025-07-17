@@ -2,8 +2,6 @@ package com.laker.postman.panel.jmeter;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
@@ -735,21 +733,30 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private int getMaxThreads() {
-            // 根据当前模式返回最大线程数（用于Y轴刻度）
+
+            // 根据当前模式计算实际使用的最大线程数
+            int actualMax;
             switch (previewData.mode) {
                 case FIXED:
-                    return Math.max(100, previewData.fixedThreads);
+                    actualMax = previewData.fixedThreads;
+                    break;
                 case RAMP_UP:
-                    return Math.max(100, Math.max(previewData.rampUpStartThreads, previewData.rampUpEndThreads));
+                    actualMax = Math.max(previewData.rampUpStartThreads, previewData.rampUpEndThreads);
+                    break;
                 case SPIKE:
-                    return Math.max(100, previewData.spikeMaxThreads);
+                    actualMax = previewData.spikeMaxThreads;
+                    break;
                 case PEAK:
-                    return Math.max(100, previewData.peakMaxThreads);
+                    actualMax = previewData.peakMaxThreads;
+                    break;
                 case STAIRS:
-                    return Math.max(100, previewData.stairsEndThreads);
+                    actualMax = previewData.stairsEndThreads;
+                    break;
                 default:
-                    return 100;
+                    actualMax = 20; // 默认值
             }
+            // 增加30% 的安全余量
+            return (int) (actualMax * 1.3);
         }
 
         private int getDuration() {
@@ -993,3 +1000,4 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
     }
 }
+

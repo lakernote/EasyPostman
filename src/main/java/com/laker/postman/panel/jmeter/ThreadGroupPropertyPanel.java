@@ -36,14 +36,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JSpinner spikeRampDownTimeSpinner;
     private final JSpinner spikeDurationSpinner;
 
-    // 峰值模式面板组件
-    private final JPanel peakPanel;
-    private final JSpinner peakMinThreadsSpinner;
-    private final JSpinner peakMaxThreadsSpinner;
-    private final JSpinner peakIterationsSpinner;
-    private final JSpinner peakHoldTimeSpinner;
-    private final JSpinner peakDurationSpinner;
-
     // 阶梯模式面板组件
     private final JPanel stairsPanel;
     private final JSpinner stairsStartThreadsSpinner;
@@ -114,21 +106,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         spikeDurationSpinner = new JSpinner(new SpinnerNumberModel(120, 1, 86400, 10));
         spikeDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
-        // 4. 峰值模式面板
-        peakPanel = new JPanel(new GridBagLayout());
-        peakPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        peakMinThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
-        peakMinThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        peakMaxThreadsSpinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
-        peakMaxThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        peakIterationsSpinner = new JSpinner(new SpinnerNumberModel(3, 1, 100, 1));
-        peakIterationsSpinner.setPreferredSize(new Dimension(80, 28));
-        peakHoldTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
-        peakHoldTimeSpinner.setPreferredSize(new Dimension(80, 28));
-        peakDurationSpinner = new JSpinner(new SpinnerNumberModel(180, 1, 86400, 10));
-        peakDurationSpinner.setPreferredSize(new Dimension(80, 28));
-
-        // 5. 阶梯模式面板
+        // 4. 阶梯模式面板
         stairsPanel = new JPanel(new GridBagLayout());
         stairsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         stairsStartThreadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
@@ -146,14 +124,12 @@ public class ThreadGroupPropertyPanel extends JPanel {
         setupFixedPanel();
         setupRampUpPanel();
         setupSpikePanel();
-        setupPeakPanel();
         setupStairsPanel();
 
         // 添加所有面板到卡片布局
         cardPanel.add(fixedPanel, ThreadGroupData.ThreadMode.FIXED.name());
         cardPanel.add(rampUpPanel, ThreadGroupData.ThreadMode.RAMP_UP.name());
         cardPanel.add(spikePanel, ThreadGroupData.ThreadMode.SPIKE.name());
-        cardPanel.add(peakPanel, ThreadGroupData.ThreadMode.PEAK.name());
         cardPanel.add(stairsPanel, ThreadGroupData.ThreadMode.STAIRS.name());
 
         // 默认显示固定模式面板
@@ -324,50 +300,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
         spikePanel.add(spikeDurationSpinner, gbc);
     }
 
-    // 设置峰值模式面板
-    private void setupPeakPanel() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        // 第一行
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        peakPanel.add(new JLabel("最小用户数:", SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 1;
-        peakPanel.add(peakMinThreadsSpinner, gbc);
-
-        gbc.gridx = 2;
-        peakPanel.add(new JLabel("最大用户数:", SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 3;
-        peakPanel.add(peakMaxThreadsSpinner, gbc);
-
-        // 第二行
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        peakPanel.add(new JLabel("峰值次数:", SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 1;
-        peakPanel.add(peakIterationsSpinner, gbc);
-
-        gbc.gridx = 2;
-        peakPanel.add(new JLabel("保持时间(秒):", SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 3;
-        peakPanel.add(peakHoldTimeSpinner, gbc);
-
-        // 第三行
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        peakPanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 1;
-        peakPanel.add(peakDurationSpinner, gbc);
-    }
-
     // 设置阶梯模式面板
     private void setupStairsPanel() {
         GridBagConstraints gbc = new GridBagConstraints();
@@ -436,13 +368,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
         spikeRampDownTimeSpinner.addChangeListener(e -> updatePreview());
         spikeDurationSpinner.addChangeListener(e -> updatePreview());
 
-        // 峰值模式参数变化监听
-        peakMinThreadsSpinner.addChangeListener(e -> updatePreview());
-        peakMaxThreadsSpinner.addChangeListener(e -> updatePreview());
-        peakIterationsSpinner.addChangeListener(e -> updatePreview());
-        peakHoldTimeSpinner.addChangeListener(e -> updatePreview());
-        peakDurationSpinner.addChangeListener(e -> updatePreview());
-
         // 阶梯模式参数变化监听
         stairsStartThreadsSpinner.addChangeListener(e -> updatePreview());
         stairsEndThreadsSpinner.addChangeListener(e -> updatePreview());
@@ -480,14 +405,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 previewData.spikeHoldTime = (Integer) spikeHoldTimeSpinner.getValue();
                 previewData.spikeRampDownTime = (Integer) spikeRampDownTimeSpinner.getValue();
                 previewData.spikeDuration = (Integer) spikeDurationSpinner.getValue();
-                break;
-
-            case PEAK:
-                previewData.peakMinThreads = (Integer) peakMinThreadsSpinner.getValue();
-                previewData.peakMaxThreads = (Integer) peakMaxThreadsSpinner.getValue();
-                previewData.peakIterations = (Integer) peakIterationsSpinner.getValue();
-                previewData.peakHoldTime = (Integer) peakHoldTimeSpinner.getValue();
-                previewData.peakDuration = (Integer) peakDurationSpinner.getValue();
                 break;
 
             case STAIRS:
@@ -540,13 +457,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
         spikeRampDownTimeSpinner.setValue(data.spikeRampDownTime);
         spikeDurationSpinner.setValue(data.spikeDuration);
 
-        // 设置峰值模式参数
-        peakMinThreadsSpinner.setValue(data.peakMinThreads);
-        peakMaxThreadsSpinner.setValue(data.peakMaxThreads);
-        peakIterationsSpinner.setValue(data.peakIterations);
-        peakHoldTimeSpinner.setValue(data.peakHoldTime);
-        peakDurationSpinner.setValue(data.peakDuration);
-
         // 设置阶梯模式参数
         stairsStartThreadsSpinner.setValue(data.stairsStartThreads);
         stairsEndThreadsSpinner.setValue(data.stairsEndThreads);
@@ -589,13 +499,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.spikeRampDownTime = (Integer) spikeRampDownTimeSpinner.getValue();
         data.spikeDuration = (Integer) spikeDurationSpinner.getValue();
 
-        // 保存峰值模式参数
-        data.peakMinThreads = (Integer) peakMinThreadsSpinner.getValue();
-        data.peakMaxThreads = (Integer) peakMaxThreadsSpinner.getValue();
-        data.peakIterations = (Integer) peakIterationsSpinner.getValue();
-        data.peakHoldTime = (Integer) peakHoldTimeSpinner.getValue();
-        data.peakDuration = (Integer) peakDurationSpinner.getValue();
-
         // 保存阶梯模式参数
         data.stairsStartThreads = (Integer) stairsStartThreadsSpinner.getValue();
         data.stairsEndThreads = (Integer) stairsEndThreadsSpinner.getValue();
@@ -624,12 +527,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
         int spikeHoldTime;
         int spikeRampDownTime;
         int spikeDuration;
-        // 峰值模式
-        int peakMinThreads;
-        int peakMaxThreads;
-        int peakIterations;
-        int peakHoldTime;
-        int peakDuration;
         // 阶梯模式
         int stairsStartThreads;
         int stairsEndThreads;
@@ -746,9 +643,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 case SPIKE:
                     actualMax = previewData.spikeMaxThreads;
                     break;
-                case PEAK:
-                    actualMax = previewData.peakMaxThreads;
-                    break;
                 case STAIRS:
                     actualMax = previewData.stairsEndThreads;
                     break;
@@ -768,8 +662,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
                     return previewData.rampUpDuration;
                 case SPIKE:
                     return previewData.spikeDuration;
-                case PEAK:
-                    return previewData.peakDuration;
                 case STAIRS:
                     return previewData.stairsDuration;
                 default:
@@ -792,9 +684,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
                     break;
                 case SPIKE:
                     drawSpikeCurve(points, width, height);
-                    break;
-                case PEAK:
-                    drawPeakCurve(points, width, height);
                     break;
                 case STAIRS:
                     drawStairsCurve(points, width, height);
@@ -899,55 +788,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
             // 下降
             x += availWidth * previewData.spikeRampDownTime / duration;
             points.add(new Point(x, yMin));
-
-            // 结束
-            points.add(new Point(PADDING + width, yMin));
-        }
-
-        private void drawPeakCurve(List<Point> points, int width, int height) {
-            int maxThreads = getMaxThreads();
-            int duration = getDuration();
-
-            int x = PADDING;
-            int yMin = PADDING + height - height * previewData.peakMinThreads / maxThreads;
-            if (yMin < PADDING) yMin = PADDING + 5;
-            int yMax = PADDING + height - height * previewData.peakMaxThreads / maxThreads;
-            if (yMax < PADDING) yMax = PADDING + 5;
-
-            // 起点
-            points.add(new Point(x, PADDING + height));
-
-            // 最小线程
-            x += 10;
-            points.add(new Point(x, yMin));
-
-            // 循环峰值
-            int iterations = previewData.peakIterations;
-            int cycleTime = previewData.peakHoldTime * 3;  // 每个循环: 上升+保持+下降
-            int cycleWidth = (width - 20) / duration * cycleTime;
-
-            for (int i = 0; i < iterations; i++) {
-                // 计算每个周期的起始位置
-                int cycleStartX = x + (i * cycleWidth);
-
-                // 保证不超出图表宽度
-                if (cycleStartX > PADDING + width) break;
-
-                // 上升到峰值
-                int peakX = cycleStartX + cycleWidth / 3;
-                peakX = Math.min(peakX, PADDING + width);
-                points.add(new Point(peakX, yMax));
-
-                // 保持峰值
-                int holdEndX = peakX + cycleWidth / 3;
-                holdEndX = Math.min(holdEndX, PADDING + width);
-                points.add(new Point(holdEndX, yMax));
-
-                // 下降到谷值
-                int valleyX = holdEndX + cycleWidth / 3;
-                valleyX = Math.min(valleyX, PADDING + width);
-                points.add(new Point(valleyX, yMin));
-            }
 
             // 结束
             points.add(new Point(PADDING + width, yMin));

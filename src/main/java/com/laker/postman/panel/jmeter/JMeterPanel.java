@@ -51,11 +51,7 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -679,7 +675,6 @@ public class JMeterPanel extends BasePanel {
                     case FIXED -> runFixedThreads(rootNode, tg, progressLabel, totalThreads);
                     case RAMP_UP -> runRampUpThreads(rootNode, tg, progressLabel, totalThreads);
                     case SPIKE -> runSpikeThreads(rootNode, tg, progressLabel, totalThreads);
-                    case PEAK -> runPeakThreads(rootNode, tg, progressLabel, totalThreads);
                     case STAIRS -> runStairsThreads(rootNode, tg, progressLabel, totalThreads);
                 }
             } else {
@@ -842,7 +837,7 @@ public class JMeterPanel extends BasePanel {
                     // 持续运行直到测试结束或线程被标记为应该结束
                     Thread currentThread = Thread.currentThread();
                     while (running && System.currentTimeMillis() - startTime < totalTime * 1000L
-                           && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
+                            && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
                         runTaskIteration(groupNode);
                     }
                 } finally {
@@ -898,9 +893,9 @@ public class JMeterPanel extends BasePanel {
                 if (threadsToRemove > 0) {
                     // 找出可以终止的线程
                     threadEndTimes.keySet().stream()
-                        .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
-                        .limit(threadsToRemove)
-                        .forEach(t -> threadEndTimes.put(t, now + 500)); // 设置一个短暂的结束时间
+                            .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
+                            .limit(threadsToRemove)
+                            .forEach(t -> threadEndTimes.put(t, now + 500)); // 设置一个短暂的结束时间
                 }
 
                 // 仍然需要增加线程的情况
@@ -924,9 +919,9 @@ public class JMeterPanel extends BasePanel {
 
     // 专用于尖刺模式的线程数调整方法
     private void adjustSpikeThreadCount(ExecutorService executor, DefaultMutableTreeNode groupNode,
-                              AtomicInteger startedThreads, int targetThreads,
-                              int totalTime, JLabel progressLabel, int totalThreads,
-                              ConcurrentHashMap<Thread, Long> threadEndTimes) {
+                                        AtomicInteger startedThreads, int targetThreads,
+                                        int totalTime, JLabel progressLabel, int totalThreads,
+                                        ConcurrentHashMap<Thread, Long> threadEndTimes) {
         int current = startedThreads.get();
 
         // 需要增加线程
@@ -943,165 +938,7 @@ public class JMeterPanel extends BasePanel {
                         // 持续运行直到测试结束或线程被标记为应该结束
                         Thread currentThread = Thread.currentThread();
                         while (running && System.currentTimeMillis() - startTime < totalTime * 1000L
-                               && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
-                            runTaskIteration(groupNode);
-                        }
-                    } finally {
-                        activeThreads.decrementAndGet();
-                        SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-                        // 从跟踪Map中移除此线程
-                        threadEndTimes.remove(Thread.currentThread());
-                    }
-                });
-                // 将线程添加到跟踪Map
-                threadEndTimes.put(thread, Long.MAX_VALUE); // 初始无限期运行
-                thread.start();
-            }
-        }
-    }
-
-    // 峰值模式执行
-    private void runPeakThreads(DefaultMutableTreeNode groupNode, ThreadGroupData tg, JLabel progressLabel, int totalThreads) {
-        int minThreads = tg.peakMinThreads;
-        int maxThreads = tg.peakMaxThreads;
-        int iterations = tg.peakIterations;
-        int holdTime = tg.peakHoldTime;
-        int totalTime = tg.peakDuration;  // 使用ThreadGroupData中定义的总持续时间
-
-        // 创建线程池
-        ExecutorService executor = Executors.newCachedThreadPool();
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        AtomicInteger startedThreads = new AtomicInteger(minThreads);
-
-        // 使用ConcurrentHashMap跟踪线程及其预期结束时间
-        ConcurrentHashMap<Thread, Long> threadEndTimes = new ConcurrentHashMap<>();
-
-        // 计算每个周期的持续时间，确保总时间内完成所有周期
-        int cycleTime = totalTime / iterations;
-        // 每个阶段时间，保持阶段使用设置的holdTime，上升下降平分剩余时间
-        int remainingTimePerCycle = cycleTime - holdTime;
-        int rampTime = Math.max(1, remainingTimePerCycle / 2); // 确保至少1秒
-
-        // 初始阶段: 启动最小线程数
-        for (int i = 0; i < minThreads; i++) {
-            if (!running) {
-                executor.shutdownNow();
-                return;
-            }
-            Thread thread = new Thread(() -> {
-                activeThreads.incrementAndGet();
-                SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-                try {
-                    // 持续运行直到测试结束或线程被标记为应该结束
-                    Thread currentThread = Thread.currentThread();
-                    while (running && System.currentTimeMillis() - startTime < totalTime * 1000L
-                           && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
-                        runTaskIteration(groupNode);
-                    }
-                } finally {
-                    activeThreads.decrementAndGet();
-                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-                    // 从跟踪Map中移除此线程
-                    threadEndTimes.remove(Thread.currentThread());
-                }
-            });
-            // 将线程添加到跟踪Map
-            threadEndTimes.put(thread, Long.MAX_VALUE); // 初始无限期运行
-            thread.start();
-        }
-
-        // 周期性调度
-        scheduler.scheduleAtFixedRate(() -> {
-            if (!running) {
-                scheduler.shutdownNow();
-                executor.shutdownNow();
-                return;
-            }
-
-            long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-            if (elapsedSeconds >= totalTime) {
-                scheduler.shutdown();
-                return;
-            }
-
-            // 确定当前处于哪个周期
-            int currentCycle = (int) (elapsedSeconds / cycleTime);
-            int timeInCycle = (int) (elapsedSeconds % cycleTime);
-
-            // 确定周期内的阶段：上升、保持高峰、下降
-            int targetThreads;
-            long now = System.currentTimeMillis();
-
-            if (timeInCycle < rampTime) {
-                // 上升阶段
-                double progress = (double) timeInCycle / rampTime;
-                targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
-
-                // 增加线程
-                adjustPeakThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
-            } else if (timeInCycle < rampTime + holdTime) {
-                // 保持高峰
-                targetThreads = maxThreads;
-
-                // 保持线程数
-                adjustPeakThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
-            } else {
-                // 下降阶段
-                double progress = (double) (timeInCycle - rampTime - holdTime) / rampTime;
-                targetThreads = maxThreads - (int) (progress * (maxThreads - minThreads));
-                targetThreads = Math.max(targetThreads, minThreads); // 确保不低于最小线程数
-
-                // 在下降阶段，通过设置线程结束时间来减少活跃线程数
-                int threadsToRemove = startedThreads.get() - targetThreads;
-                if (threadsToRemove > 0) {
-                    // 找出可以终止的线程
-                    threadEndTimes.keySet().stream()
-                        .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
-                        .limit(threadsToRemove)
-                        .forEach(t -> threadEndTimes.put(t, now + 500)); // 设置一个短暂的结束时间
-                }
-
-                // 仍然需要增加线程的情况
-                adjustPeakThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
-            }
-
-            // 更新UI显示实际活跃线程数而不是理论目标数
-            SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-
-        }, 1, 1, TimeUnit.SECONDS);
-
-        try {
-            // 等待执行完成
-            scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            log.error("峰值模式执行中断", e);
-        }
-    }
-
-    // 专用于峰值模式的线程数调整方法
-    private void adjustPeakThreadCount(ExecutorService executor, DefaultMutableTreeNode groupNode,
-                              AtomicInteger startedThreads, int targetThreads,
-                              int totalTime, JLabel progressLabel, int totalThreads,
-                              ConcurrentHashMap<Thread, Long> threadEndTimes) {
-        int current = startedThreads.get();
-
-        // 需要增加线程
-        if (current < targetThreads) {
-            int threadsToAdd = targetThreads - current;
-            for (int i = 0; i < threadsToAdd; i++) {
-                if (!running) return;
-
-                Thread thread = new Thread(() -> {
-                    startedThreads.incrementAndGet();
-                    activeThreads.incrementAndGet();
-                    SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
-                    try {
-                        // 持续运行直到测试结束或线程被标记为应该结束
-                        Thread currentThread = Thread.currentThread();
-                        while (running && System.currentTimeMillis() - startTime < totalTime * 1000L
-                               && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
+                                && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
                             runTaskIteration(groupNode);
                         }
                     } finally {
@@ -1151,7 +988,7 @@ public class JMeterPanel extends BasePanel {
                     // 持续运行直到测试结束或线程被标记为应该结束
                     Thread currentThread = Thread.currentThread();
                     while (running && System.currentTimeMillis() - startTime < totalTime * 1000L
-                           && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
+                            && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
                         runTaskIteration(groupNode);
                     }
                 } finally {
@@ -1210,9 +1047,9 @@ public class JMeterPanel extends BasePanel {
 
     // 专用于阶梯模式的线程数调整方法
     private void adjustStairsThreadCount(ExecutorService executor, DefaultMutableTreeNode groupNode,
-                                       AtomicInteger startedThreads, int targetThreads,
-                                       int totalTime, JLabel progressLabel, int totalThreads,
-                                       ConcurrentHashMap<Thread, Long> threadEndTimes) {
+                                         AtomicInteger startedThreads, int targetThreads,
+                                         int totalTime, JLabel progressLabel, int totalThreads,
+                                         ConcurrentHashMap<Thread, Long> threadEndTimes) {
         int current = startedThreads.get();
 
         // 需要增加线程
@@ -1229,7 +1066,7 @@ public class JMeterPanel extends BasePanel {
                         // 持续运行直到测试结束或线程被标记为应该结束
                         Thread currentThread = Thread.currentThread();
                         while (running && System.currentTimeMillis() - startTime < totalTime * 1000L
-                               && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
+                                && (System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE))) {
                             runTaskIteration(groupNode);
                         }
                     } finally {
@@ -1251,9 +1088,9 @@ public class JMeterPanel extends BasePanel {
 
             // 找出可以终止的线程
             threadEndTimes.keySet().stream()
-                .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
-                .limit(threadsToRemove)
-                .forEach(t -> threadEndTimes.put(t, now + 500)); // 设置一个短暂的结束时间
+                    .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
+                    .limit(threadsToRemove)
+                    .forEach(t -> threadEndTimes.put(t, now + 500)); // 设置一个短暂的结束时间
         }
     }
 

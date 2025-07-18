@@ -33,23 +33,26 @@ EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验
 - 📂 支持文件上传下载
 - 📑 支持请求脚本（Pre-request Script、Tests）
 - 🔗 支持请求链路（Chaining）
+- 🧪 支持网络请求详细事件监控与分析
 
 ---
 
 ## 🖼️ 截图预览
 
-|                    预览                    |                        预览                        |
-|:----------------------------------------:|:------------------------------------------------:|
-|          ![icon](docs/icon.png)          |           ![welcome](docs/welcome.png)           |
-| ![collections-1](docs/collections-1.png) |     ![collections-2](docs/collections-2.png)     |
-| ![collections-3](docs/collections-3.png) |     ![collections-4](docs/collections-4.png)     |
-| ![collections-5](docs/collections-5.png) |     ![collections-6](docs/collections-6.png)     |
-| ![collections-7](docs/collections-7.png) |     ![collections-8](docs/collections-8.png)     |
-|   ![collections](docs/collections.png)   |      ![environments](docs/environments.png)      |
-|     ![history-1](docs/history-1.png)     |         ![history-2](docs/history-2.png)         |
-|       ![history](docs/history.png)       |          ![jmeter-2](docs/jmeter-2.png)          |
-| ![jmeter-report](docs/jmeter-report.png) | ![jmeter-resulttree](docs/jmeter-resulttree.png) |
-|  ![jmeter-trend](docs/jmeter-trend.png)  |            ![jmeter](docs/jmeter.png)            |
+|                                预览                                |                                  预览                                   |
+|:----------------------------------------------------------------:|:---------------------------------------------------------------------:|
+|                     ![icon](docs/icon.png)                      |                     ![welcome](docs/welcome.png)                     |
+|              ![collections](docs/collections.png)              |             ![collections-import](docs/collections-import.png)             |
+|            ![environments](docs/environments.png)            |                  ![functional](docs/functional.png)                  |
+|              ![functional_1](docs/functional_1.png)              |                ![functional_2](docs/functional_2.png)                |
+|                 ![history](docs/history.png)                 |              ![history-timeline](docs/history-timeline.png)              |
+|            ![history-events](docs/history-events.png)            |                  ![networklog](docs/networklog.png)                  |
+|              ![performance](docs/performance.png)              |            ![performance-report](docs/performance-report.png)            |
+|    ![performance-resultTree](docs/performance-resultTree.png)    |              ![performance-trend](docs/performance-trend.png)              |
+| ![performance-threadgroup-fixed](docs/performance-threadgroup-fixed.png) | ![performance-threadgroup-rampup](docs/performance-threadgroup-rampup.png) |
+| ![performance-threadgroup-spike](docs/performance-threadgroup-spike.png) | ![performance-threadgroup-stairs](docs/performance-threadgroup-stairs.png) |
+|              ![script-pre](docs/script-pre.png)              |                ![script-post](docs/script-post.png)                |
+|            ![script-snippets](docs/script-snippets.png)            |                                                                       |
 
 ---
 
@@ -74,6 +77,37 @@ EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验
 1. ⬇️ 克隆仓库：`git clone https://gitee.com/lakernote/easy-postman.git`
 2. 🛠️ 使用 JDK 17+ 编译运行：`mvn clean package`
 3. ▶️ 运行主程序：`App.java` 或 `java -jar target/easy-postman.jar`
+
+---
+
+## 📋 功能模块详解
+
+### 接口调试（Collections）
+- 支持多级目录管理接口集合
+- 提供丰富的请求方式：GET、POST、PUT、DELETE等
+- 支持表单、JSON、XML、文件等多种请求体格式
+- 自动保存请求历史，便于追溯和复用
+
+### 环境变量（Environments）
+- 支持多环境配置和切换
+- 全局变量与环境变量分离管理
+- 变量引用支持`{{变量名}}`语法
+
+### 性能测试（Performance）
+- 多线程组类型：固定线程数、递增式、阶梯式、尖刺式
+- 可视化测试报告
+- 结果树展示每个请求的详细信息
+- 趋势图分析请求性能指标
+
+### 历史记录（History）
+- 按时间轴展示历史请求记录
+- 请求事件详细分析，展示完整请求链路
+- 网络日志记录和分析
+
+### 请求脚本（Scripts）
+- 前置脚本（Pre-request Script）支持
+- 后置测试脚本（Tests）支持
+- 内置代码片段库，快速插入常用脚本
 
 ---
 

@@ -829,7 +829,6 @@ public class JMeterPanel extends BasePanel {
         int totalTime = tg.spikeDuration;  // 使用ThreadGroupData中定义的总持续时间
 
         // 创建线程池
-        ExecutorService executor = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         AtomicInteger startedThreads = new AtomicInteger(minThreads);
 
@@ -845,7 +844,6 @@ public class JMeterPanel extends BasePanel {
         // 初始阶段: 启动最小线程数
         for (int i = 0; i < minThreads; i++) {
             if (!running) {
-                executor.shutdownNow();
                 return;
             }
             Thread thread = new Thread(() -> {
@@ -874,7 +872,6 @@ public class JMeterPanel extends BasePanel {
         scheduler.scheduleAtFixedRate(() -> {
             if (!running) {
                 scheduler.shutdownNow();
-                executor.shutdownNow();
                 return;
             }
 
@@ -892,13 +889,13 @@ public class JMeterPanel extends BasePanel {
                 double progress = (double) elapsedSeconds / adjustedRampUpTime;
                 targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
                 // 增加线程
-                adjustSpikeThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
             }
             // 保持阶段
             else if (elapsedSeconds < adjustedRampUpTime + adjustedHoldTime) {
                 targetThreads = maxThreads;
                 // 保持线程数
-                adjustSpikeThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
             }
             // 下降阶段
             else {
@@ -917,7 +914,7 @@ public class JMeterPanel extends BasePanel {
                 }
 
                 // 仍然需要增加线程的情况
-                adjustSpikeThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
             }
 
             // 更新UI显示实际活跃线程数而不是理论目标数
@@ -928,8 +925,16 @@ public class JMeterPanel extends BasePanel {
         try {
             // 等待执行完成
             scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+            // 确保等待所有threadEndTimes中的线程完成
+            for (Thread t : threadEndTimes.keySet()) {
+                try {
+                    if (t.isAlive()) {
+                        t.join(10000); // 设置超时时间避免永久阻塞
+                    }
+                } catch (InterruptedException ie) {
+                    log.error("等待线程完成时中断", ie);
+                }
+            }
         } catch (InterruptedException e) {
             log.error("尖刺模式执行中断", e);
         }
@@ -944,7 +949,6 @@ public class JMeterPanel extends BasePanel {
         int totalTime = tg.stairsDuration;
 
         // 创建线程池
-        ExecutorService executor = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         AtomicInteger startedThreads = new AtomicInteger(startThreads);
 
@@ -961,7 +965,6 @@ public class JMeterPanel extends BasePanel {
         // 初始阶段: 启动起始线程数
         for (int i = 0; i < startThreads; i++) {
             if (!running) {
-                executor.shutdownNow();
                 return;
             }
             Thread thread = new Thread(() -> {
@@ -990,7 +993,6 @@ public class JMeterPanel extends BasePanel {
         scheduler.scheduleAtFixedRate(() -> {
             if (!running) {
                 scheduler.shutdownNow();
-                executor.shutdownNow();
                 return;
             }
 
@@ -1031,15 +1033,24 @@ public class JMeterPanel extends BasePanel {
         try {
             // 等待执行完成
             scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+
+            // 确保等待所有threadEndTimes中的线程完成
+            for (Thread t : threadEndTimes.keySet()) {
+                try {
+                    if (t.isAlive()) {
+                        t.join(10000); // 设置超时时间避免永久阻塞
+                    }
+                } catch (InterruptedException ie) {
+                    log.error("等待线程完成时中断", ie);
+                }
+            }
         } catch (InterruptedException e) {
             log.error("阶梯模式执行中断", e);
         }
     }
 
     // 专用于尖刺模式的线程数调整方法
-    private void adjustSpikeThreadCount(ExecutorService executor, DefaultMutableTreeNode groupNode,
+    private void adjustSpikeThreadCount(DefaultMutableTreeNode groupNode,
                                         AtomicInteger startedThreads, int targetThreads,
                                         int totalTime, JLabel progressLabel, int totalThreads,
                                         ConcurrentHashMap<Thread, Long> threadEndTimes) {

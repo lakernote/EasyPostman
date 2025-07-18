@@ -92,6 +92,9 @@ public class JMeterPanel extends BasePanel {
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
 
+    // 图表坐标轴和网格颜色
+    private static final Color AXIS_COLOR = new Color(194, 211, 236);
+
     // 用于统计每个请求的结束时间和成功状态
     private static class RequestResult {
         long endTime;
@@ -337,6 +340,11 @@ public class JMeterPanel extends BasePanel {
         renderer.setSeriesPaint(1, responseTime); // 响应时间-琥珀黄
         renderer.setSeriesPaint(2, qps); // QPS-草绿色
         renderer.setSeriesPaint(3, errorPercent); // 错误率-柔和红
+
+        // 设置坐标轴网格颜色
+        plot.setDomainGridlinePaint(AXIS_COLOR);
+        plot.setRangeGridlinePaint(AXIS_COLOR);
+
         // 设置字体，防止中文乱码
         Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
         trendChart.getTitle().setFont(font.deriveFont(13f));

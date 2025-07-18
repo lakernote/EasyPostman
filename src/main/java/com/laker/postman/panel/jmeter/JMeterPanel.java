@@ -1000,7 +1000,7 @@ public class JMeterPanel extends BasePanel {
             }
 
             // 调整线程数
-            adjustStairsThreadCount(executor, groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+            adjustStairsThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
 
             // 更新UI显示实际活跃线程数
             SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
@@ -1104,13 +1104,13 @@ public class JMeterPanel extends BasePanel {
     }
 
     // 专用于阶梯模式的线程数调整方法
-    private void adjustStairsThreadCount(ExecutorService executor, DefaultMutableTreeNode groupNode,
+    private void adjustStairsThreadCount(DefaultMutableTreeNode groupNode,
                                          AtomicInteger startedThreads, int targetThreads,
                                          int totalTime, JLabel progressLabel, int totalThreads,
                                          ConcurrentHashMap<Thread, Long> threadEndTimes) {
         int current = startedThreads.get();
 
-        // 需要增加线程
+        // 需要增加线程 阶梯模式下，不需要减少线程，只增加
         if (current < targetThreads) {
             int threadsToAdd = targetThreads - current;
             for (int i = 0; i < threadsToAdd; i++) {
@@ -1137,49 +1137,6 @@ public class JMeterPanel extends BasePanel {
                 // 将线程添加到跟踪Map
                 threadEndTimes.put(thread, Long.MAX_VALUE); // 初始无限期运行
                 thread.start();
-            }
-        }
-        // 需要减少线程 - 缓慢减少，而不是一次性全部标记为结束
-        else if (current > targetThreads) {
-            int threadsToRemove = current - targetThreads;
-            long now = System.currentTimeMillis();
-
-            // 找出所有可以终止的线程
-            List<Thread> availableThreads = threadEndTimes.keySet().stream()
-                    .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
-                    .limit(threadsToRemove)
-                    .toList();
-
-            // 如果有可终止的线程，则设置它们分散结束
-            if (!availableThreads.isEmpty()) {
-                // 获取当前所处阶段信息
-                ThreadGroupData tg = null;
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-                if (node != null) {
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof JMeterTreeNode jtNode && jtNode.threadGroupData != null) {
-                        tg = jtNode.threadGroupData;
-                    }
-                }
-
-                // 计算阶梯阶段的总时间和每个阶梯的时间
-                int holdTime = (tg != null) ? tg.stairsHoldTime : 10; // 默认10秒
-                int totalStairsTime = (tg != null) ? tg.stairsDuration : 60; // 默认60秒
-
-                // 计算每个阶梯的时间
-                int startThreads = (tg != null) ? tg.stairsStartThreads : 1;
-                int endThreads = (tg != null) ? tg.stairsEndThreads : 10;
-                int step = (tg != null) ? tg.stairsStep : 1;
-                int totalSteps = Math.max(1, (endThreads - startThreads) / step);
-                int timePerStep = totalStairsTime / (totalSteps + 1);
-
-                // 为每个线程设置不同的结束时间，均匀分布在阶梯保持时间内
-                for (int i = 0; i < availableThreads.size(); i++) {
-                    Thread t = availableThreads.get(i);
-                    // 阶梯模式下，我们在当前阶梯的保持时间内分散结束时间
-                    long delayMs = now + (i + 1) * holdTime * 1000 / (availableThreads.size() + 1);
-                    threadEndTimes.put(t, delayMs);
-                }
             }
         }
     }

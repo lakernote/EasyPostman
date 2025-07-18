@@ -599,10 +599,9 @@ public class JMeterPanel extends BasePanel {
                     running = false;
                     runBtn.setEnabled(true);
                     stopBtn.setEnabled(false);
-                    updateReportPanel();
-                    OkHttpClientManager.setDefaultConnectionPoolConfig();
-                    // 正常执行完成时也停止定时采样
                     stopTrendTimer();
+                    OkHttpClientManager.setDefaultConnectionPoolConfig();
+                    updateReportPanel();
                 });
             }
         });

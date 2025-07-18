@@ -1233,10 +1233,12 @@ public class JMeterPanel extends BasePanel {
                     success = false;
                 }
             }
+
+            long startTime = System.currentTimeMillis();
+            allRequestStartTimes.add(startTime); // 记录开始时间
+            long costMs = 0;
+
             if (preOk) {
-                long startTime = System.currentTimeMillis();
-                allRequestStartTimes.add(startTime); // 记录开始时间
-                long costMs = 0;
                 try {
                     req.logEvent = true; // 记录事件日志
                     resp = HttpSingleRequestExecutor.execute(req);
@@ -1313,16 +1315,22 @@ public class JMeterPanel extends BasePanel {
                         success = false;
                     }
                 }
-                long cost = resp == null ? costMs : resp.costMs;
-                allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
-                // 统计接口耗时（统一用resp.costMs）
-                apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+            } else {
+                // 前置脚本失败的情况，也需要记录costMs
+                costMs = System.currentTimeMillis() - startTime;
             }
+
+            long cost = resp == null ? costMs : resp.costMs;
+            allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
+            // 统计接口耗时（统一用resp.costMs）
+            apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+
             if (success) {
                 apiSuccessMap.merge(apiName, 1, Integer::sum);
             } else {
                 apiFailMap.merge(apiName, 1, Integer::sum);
             }
+
             // 高效模式下只保存失败或异常结果
             if (!efficientMode || !success) {
                 DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));

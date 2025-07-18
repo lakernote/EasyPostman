@@ -716,11 +716,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int maxThreads = getMaxThreads();
 
             int x1 = PADDING;
-            int y1 = PADDING + height;
-
-            // 起点 (0,0)
-            points.add(new Point(x1, y1));
-
             // 快速上升到固定线程数
             x1 += 10;
             int y2 = PADDING + height - height * previewData.fixedThreads / maxThreads;
@@ -737,11 +732,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int duration = getDuration();
 
             int x1 = PADDING;
-            int y1 = PADDING + height;
-
-            // 起点 (0,0)
-            points.add(new Point(x1, y1));
-
             // 递增起点
             x1 += 10;
             int y2 = PADDING + height - height * previewData.rampUpStartThreads / maxThreads;
@@ -768,8 +758,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int yMax = PADDING + height - height * previewData.spikeMaxThreads / maxThreads;
             if (yMax < PADDING) yMax = PADDING + 5;
 
-            // 起点
-            points.add(new Point(x, PADDING + height));
 
             // 最小线程
             x += 10;
@@ -803,9 +791,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int startThreads = previewData.stairsStartThreads;
             int endThreads = previewData.stairsEndThreads;
             int step = previewData.stairsStep;
-
-            // 起点
-            points.add(new Point(x, PADDING + height));
 
             // 起始点
             x += 10;

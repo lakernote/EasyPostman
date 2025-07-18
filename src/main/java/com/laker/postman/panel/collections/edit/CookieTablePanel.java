@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.edit;
 
+import com.laker.postman.model.CookieInfo;
 import com.laker.postman.service.http.CookieService;
 
 import javax.swing.*;
@@ -48,9 +49,9 @@ public class CookieTablePanel extends JPanel {
 
     private void loadCookies() {
         model.setRowCount(0);
-        List<CookieService.CookieInfo> cookies = CookieService.getAllCookieInfos();
+        List<CookieInfo> cookies = CookieService.getAllCookieInfos();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        for (CookieService.CookieInfo c : cookies) {
+        for (CookieInfo c : cookies) {
             String expires = c.expires > 0 ? sdf.format(c.expires) : "Session";
             model.addRow(new Object[]{
                     c.name, c.value, c.domain, c.path, expires, c.secure, c.httpOnly

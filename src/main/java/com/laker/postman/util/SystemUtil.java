@@ -1,11 +1,18 @@
 package com.laker.postman.util;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 
+@Slf4j
 public class SystemUtil {
     public static final String LOG_DIR = getUserHomeEasyPostmanPath() + "logs" + File.separator;
     public static final String COLLECTION_PATH = getUserHomeEasyPostmanPath() + "collections.json";
@@ -46,5 +53,25 @@ public class SystemUtil {
         } catch (Exception ignored) {
         }
         return "开发环境";
+    }
+
+
+    /**
+     * 检查剪贴板是否有cURL命令，有则返回文本，否则返回null
+     */
+    public static String getClipboardCurlText() {
+        try {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            Transferable t = clipboard.getContents(null);
+            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                String text = (String) t.getTransferData(DataFlavor.stringFlavor);
+                if (text.trim().toLowerCase().startsWith("curl")) {
+                    return text.trim();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("获取剪贴板cURL文本失败", e);
+        }
+        return null;
     }
 }

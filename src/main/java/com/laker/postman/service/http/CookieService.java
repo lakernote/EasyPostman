@@ -1,5 +1,6 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.model.CookieInfo;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 
 import java.net.CookieManager;
@@ -94,16 +95,7 @@ public class CookieService {
             cookie.setHttpOnly(httpOnly);
             GLOBAL_COOKIE_MANAGER.getCookieStore().add(null, cookie);
             notifyCookieChanged();
-        } catch (Exception ignore) {}
-    }
-
-    public static class CookieInfo {
-        public String name;
-        public String value;
-        public String domain;
-        public String path;
-        public long expires;
-        public boolean secure;
-        public boolean httpOnly;
+        } catch (Exception ignore) {
+        }
     }
 }

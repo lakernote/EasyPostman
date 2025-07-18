@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 /**
@@ -944,7 +945,10 @@ public class JMeterPanel extends BasePanel {
 
         // 计算阶梯数量
         int totalSteps = Math.max(1, (endThreads - startThreads) / step);
-        int timePerStep = totalTime / (totalSteps + 1); // +1 是为了给最后阶段也分配时间
+
+        // 记录当前阶梯和上次阶梯变化的时间
+        AtomicInteger currentStair = new AtomicInteger(0);
+        AtomicLong lastStairChangeTime = new AtomicLong(System.currentTimeMillis());
 
         // 初始阶段: 启动起始线程数
         for (int i = 0; i < startThreads; i++) {
@@ -988,13 +992,23 @@ public class JMeterPanel extends BasePanel {
                 return;
             }
 
+            long now = System.currentTimeMillis();
+
             // 计算当前应该处于哪个阶梯
-            int currentStair = (int) (elapsedSeconds / timePerStep);
+            // 检查是否需要进入下一个阶梯（考虑保持时间）
+            long timeSinceLastChange = now - lastStairChangeTime.get();
+            int stair = currentStair.get();
+
+            // 如果已经过了当前阶梯的保持时间，并且还没有达到最大阶梯数，则进入下一个阶梯
+            if (timeSinceLastChange >= holdTime * 1000L && stair < totalSteps) {
+                stair = currentStair.incrementAndGet();
+                lastStairChangeTime.set(now);
+            }
 
             // 计算当前阶梯应有的线程数
             int targetThreads = startThreads;
-            if (currentStair > 0 && currentStair <= totalSteps) {
-                targetThreads = startThreads + currentStair * step;
+            if (stair > 0 && stair <= totalSteps) {
+                targetThreads = startThreads + stair * step;
                 targetThreads = Math.min(targetThreads, endThreads); // 不超过最大线程数
             }
 

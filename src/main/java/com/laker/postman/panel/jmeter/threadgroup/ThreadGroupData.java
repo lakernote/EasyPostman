@@ -50,9 +50,9 @@ public class ThreadGroupData {
 
 
     // 阶梯模式属性
-    public int stairsStartThreads = 1;                // 阶梯起始线程数
+    public int stairsStartThreads = 5;                // 阶梯起始线程数
     public int stairsEndThreads = 20;                 // 阶梯最终线程数
     public int stairsStep = 5;                        // 阶梯步长
-    public int stairsHoldTime = 10;                   // 每阶段保持时间(秒)
+    public int stairsHoldTime = 15;                   // 每阶段保持时间(秒)
     public int stairsDuration = 60;                  // 阶梯模式总测试持续时间(秒)
 }

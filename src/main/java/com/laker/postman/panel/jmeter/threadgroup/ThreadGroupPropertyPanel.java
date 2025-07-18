@@ -785,7 +785,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         private void drawStairsCurve(List<Point> points, int width, int height) {
             int maxThreads = getMaxThreads();
-            int duration = getDuration();
+            int duration = previewData.stairsDuration; // 使用阶梯模式的总持续时间
 
             int x = PADDING;
             int startThreads = previewData.stairsStartThreads;
@@ -799,11 +799,18 @@ public class ThreadGroupPropertyPanel extends JPanel {
             points.add(new Point(x, y));
 
             // 计算阶梯数
-            int steps = (endThreads - startThreads) / step;
+            int steps = (int)Math.ceil((double)(endThreads - startThreads) / step);
             if (steps <= 0) steps = 1;
 
             int holdTime = previewData.stairsHoldTime;
-            int stepWidth = (width - 20) / duration * holdTime;
+            // 计算每个阶梯的宽度，基于总持续时间和阶梯数
+            int totalStepsTime = holdTime * steps; // 所有阶梯占用的总时间
+            if (totalStepsTime > duration) {
+                // 如果计算出的总时间超过了设定的持续时间，调整holdTime
+                holdTime = duration / steps;
+            }
+
+            int stepWidth = (width - 20) * holdTime / duration;
             int currentThreads = startThreads;
 
             for (int i = 0; i < steps && currentThreads < endThreads; i++) {
@@ -822,9 +829,10 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 points.add(new Point(x, y));
             }
 
-            // 结束点
-            points.add(new Point(PADDING + width, y));
+            // 如果最后一个阶梯后还有剩余时间，添加一条水平线到结束
+            if (x < PADDING + width) {
+                points.add(new Point(PADDING + width, y));
+            }
         }
     }
 }
-

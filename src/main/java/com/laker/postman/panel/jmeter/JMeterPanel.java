@@ -67,7 +67,6 @@ import java.util.Timer;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
 
 /**
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
@@ -595,9 +594,8 @@ public class JMeterPanel extends BasePanel {
         startTime = System.currentTimeMillis();
 
         // 统计总用户数
-        int totalThreads;
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
-        totalThreads = IntStream.range(0, rootNode.getChildCount()).mapToObj(i -> (DefaultMutableTreeNode) rootNode.getChildAt(i)).map(DefaultMutableTreeNode::getUserObject).filter(userObj -> userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP).map(userObj -> (JMeterTreeNode) userObj).map(jtNode -> jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData()).mapToInt(tg -> tg.numThreads).sum();
+        int totalThreads = getTotalThreads(rootNode);
         // 当前已启动线程数 = 0，启动后动态刷新
         progressLabel.setText(0 + "/" + totalThreads);
         runThread = new Thread(() -> {
@@ -615,6 +613,27 @@ public class JMeterPanel extends BasePanel {
             }
         });
         runThread.start();
+    }
+
+    /**
+     * 遍历所有线程组，按各自模式计算总线程数
+     */
+    private int getTotalThreads(DefaultMutableTreeNode rootNode) {
+        int total = 0;
+        for (int i = 0; i < rootNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
+                ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
+                switch (tg.threadMode) {
+                    case FIXED -> total += tg.numThreads;
+                    case RAMP_UP -> total += tg.rampUpEndThreads;
+                    case SPIKE -> total += tg.spikeMaxThreads;
+                    case STAIRS -> total += tg.stairsEndThreads;
+                }
+            }
+        }
+        return total;
     }
 
     // 停止定时采样方法

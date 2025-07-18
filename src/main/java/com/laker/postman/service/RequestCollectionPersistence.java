@@ -4,6 +4,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.service.collections.RequestCollectionsFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -38,14 +39,15 @@ public class RequestCollectionPersistence {
         }
     }
 
-    public void initRequestGroupsFromFile(Runnable createDefaultRequestGroups) {
+    public void initRequestGroupsFromFile() {
         File file = new File(filePath);
-        if (!file.exists()) {
-            createDefaultRequestGroups.run();
+        if (!file.exists()) { // 如果文件不存在，则创建默认请求组
+            RequestCollectionsFactory.createDefaultRequestGroups(rootTreeNode, treeModel); // 创建默认请求组
+            saveRequestGroups(); // 保存默认请求组到文件
+            log.info("未找到请求组文件，已创建默认请求组");
             return;
         }
         try {
-
             SwingWorker<List<DefaultMutableTreeNode>, Void> worker = new SwingWorker<>() {
                 @Override
                 protected List<DefaultMutableTreeNode> doInBackground() {

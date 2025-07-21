@@ -22,6 +22,8 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
 
@@ -30,7 +32,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
  */
 @Slf4j
 public class RequestEditPanel extends BasePanel {
-    public static final String REQUEST_STRING = "Request ";
+    public static final String REQUEST_STRING = "New Request";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
@@ -380,43 +382,46 @@ public class RequestEditPanel extends BasePanel {
         setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 去掉默认边框
         tabbedPane = new JTabbedPane();
         add(tabbedPane, BorderLayout.CENTER);
-        addNewTab(REQUEST_STRING + "1"); // 默认添加第一个请求Tab
+        addNewTab(REQUEST_STRING); // 默认添加第一个请求Tab
         setupSaveShortcut();
-        // 监听tab切换，选中“+”Tab时自动新增
-        tabbedPane.addChangeListener(e -> {
-            int idx = tabbedPane.getSelectedIndex();
-            if (idx == tabbedPane.getTabCount() - 1 && isPlusTab(idx)) {
-                // 检测剪贴板cURL
-                String curlText = getClipboardCurlText();
-                if (curlText != null) {
-                    int result = JOptionPane.showConfirmDialog(this, "检测到剪贴板有 cURL 命令，是否导入到新请求？", "导入cURL", JOptionPane.YES_NO_OPTION);
-                    if (result == JOptionPane.YES_OPTION) {
-                        try {
-                            CurlRequest curlRequest = CurlParser.parse(curlText);
-                            if (curlRequest.url != null) {
-                                HttpRequestItem item = new HttpRequestItem();
-                                item.setName(null);
-                                item.setUrl(curlRequest.url);
-                                item.setMethod(curlRequest.method);
-                                item.setHeaders(curlRequest.headers);
-                                item.setBody(curlRequest.body);
-                                item.setParams(curlRequest.params);
-                                item.setFormData(curlRequest.formData);
-                                item.setFormFiles(curlRequest.formFiles);
-                                // 新建Tab并填充内容
-                                RequestEditSubPanel tab = addNewTab(null);
-                                item.setId(tab.getId());
-                                tab.updateRequestForm(item);
-                                // 清空剪贴板内容
-                                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
-                                return;
+        // 添加鼠标监听，只在左键点击“+”Tab时新增
+        tabbedPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                int idx = tabbedPane.getSelectedIndex();
+                if (idx == tabbedPane.getTabCount() - 1 && isPlusTab(idx)) {
+                    // 检测剪贴板cURL
+                    String curlText = getClipboardCurlText();
+                    if (curlText != null) {
+                        int result = JOptionPane.showConfirmDialog(null, "检测到剪贴板有 cURL 命令，是否导入到新请求？", "导入cURL", JOptionPane.YES_NO_OPTION);
+                        if (result == JOptionPane.YES_OPTION) {
+                            try {
+                                CurlRequest curlRequest = CurlParser.parse(curlText);
+                                if (curlRequest.url != null) {
+                                    HttpRequestItem item = new HttpRequestItem();
+                                    item.setName(null);
+                                    item.setUrl(curlRequest.url);
+                                    item.setMethod(curlRequest.method);
+                                    item.setHeaders(curlRequest.headers);
+                                    item.setBody(curlRequest.body);
+                                    item.setParams(curlRequest.params);
+                                    item.setFormData(curlRequest.formData);
+                                    item.setFormFiles(curlRequest.formFiles);
+                                    // 新建Tab并填充内容
+                                    RequestEditSubPanel tab = addNewTab(null);
+                                    item.setId(tab.getId());
+                                    tab.updateRequestForm(item);
+                                    // 清空剪贴板内容
+                                    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+                                    return;
+                                }
+                            } catch (Exception ex) {
+                                JOptionPane.showMessageDialog(null, "解析cURL出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                             }
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(this, "解析cURL出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                         }
                     }
+                    addNewTab("New Request");
                 }
-                addNewTab(null);
             }
         });
     }

@@ -106,6 +106,14 @@ public class ClosableTabComponent extends JPanel {
                     }
                 }
                 tabbedPane.remove(idx);
+                // 如果还有请求Tab，且没有选中Tab，则选中最后一个请求Tab
+                int count = tabbedPane.getTabCount();
+                if (count > 1) { // 还有请求Tab和+Tab
+                    int selected = tabbedPane.getSelectedIndex();
+                    if (selected == -1 || selected == count - 1) { // 没有选中或选中的是+Tab
+                        tabbedPane.setSelectedIndex(count - 2); // 选中最后一个请求Tab
+                    }
+                }
             }
         });
         closeOthers.addActionListener(e -> {

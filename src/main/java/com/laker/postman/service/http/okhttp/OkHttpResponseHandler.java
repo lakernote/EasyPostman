@@ -6,6 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,20 +119,160 @@ public class OkHttpResponseHandler {
 
     /**
      * 保存输入流到临时文件，返回文件对象和写入的字节数
+     * 优先从响应头获取 Content-Length
      */
-    private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix) throws IOException {
+    private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix, long contentLengthHeader) throws IOException {
         File tempFile = File.createTempFile(prefix, suffix);
-        int totalBytes = 0;
-        // 使用 BufferedOutputStream 并将缓冲区增大到 64KB
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
-            byte[] buf = new byte[64 * 1024];
-            int len;
-            while ((len = is.read(buf)) != -1) {
-                bos.write(buf, 0, len);
-                totalBytes += len;
+        final int[] totalBytes = {0};
+        byte[] buf = new byte[64 * 1024];
+        int len;
+        long start = System.currentTimeMillis();
+        long lastUpdate = start;
+        final long[] contentLength = {contentLengthHeader};
+
+        // 如果响应头没有，再从流获取
+        if (contentLength[0] < 0 && is instanceof FileInputStream) {
+            try {
+                contentLength[0] = ((FileInputStream) is).getChannel().size();
+            } catch (IOException ignored) {
             }
         }
-        return new FileAndSize(tempFile, totalBytes);
+        if (contentLength[0] < 0) {
+            try {
+                contentLength[0] = is.available();
+            } catch (IOException ignored) {
+            }
+        }
+
+        // 创建取消状态标志
+        final boolean[] cancelled = new boolean[1];
+
+        // 创建更美观的进度对话框
+        JDialog progressDialog = new JDialog((JFrame) null, "下载进度", true);
+        progressDialog.setModal(false);
+        progressDialog.setSize(450, 200);
+        progressDialog.setLocationRelativeTo(null);
+        progressDialog.setResizable(false);
+
+        // 使用BorderLayout布局
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // 添加标题标签
+        JLabel titleLabel = new JLabel("正在下载文件...");
+        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
+
+        // 创建详细信息标签
+        JLabel detailsLabel = new JLabel("已下载: 0 KB");
+        JLabel speedLabel = new JLabel("速度: 0 KB/s");
+        JLabel timeLabel = new JLabel("剩余时间: 计算中...");
+
+        // 放置标签的面板
+        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 5, 0));
+        infoPanel.add(detailsLabel);
+        infoPanel.add(speedLabel);
+        infoPanel.add(timeLabel);
+
+        // 取消按钮
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> {
+            cancelled[0] = true;
+            progressDialog.dispose();
+        });
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(cancelButton);
+
+        // 放置标签和按钮的面板（垂直排列）
+        JPanel southPanel = new JPanel();
+        southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.Y_AXIS));
+        southPanel.add(infoPanel);
+        southPanel.add(Box.createVerticalStrut(10));
+        southPanel.add(buttonPanel);
+
+        // 组装界面
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        mainPanel.add(southPanel, BorderLayout.SOUTH);
+        // 不再使用 BorderLayout.EAST
+
+        progressDialog.setContentPane(mainPanel);
+        progressDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        progressDialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                cancelled[0] = true;
+            }
+        });
+
+
+        // 只有大于5MB才显示进度对话框，否则后台下载不弹窗
+        if (contentLength[0] > 5 * 1024 * 1024 || contentLength[0] <= 0) {
+            progressDialog.setVisible(true);
+        }
+
+
+        // 创建更新UI的Runnable对象
+        Runnable updateUI = () -> {
+            if (!progressDialog.isDisplayable()) return;
+            if (progressDialog.isVisible()) {
+                long now = System.currentTimeMillis();
+                long elapsed = now - start;
+                double speed = elapsed > 0 ? (totalBytes[0] * 1000.0 / elapsed) : 0;
+                String speedStr = speed > 1024 * 1024 ? String.format("%.2f MB/s", speed / (1024 * 1024)) : String.format("%.2f KB/s", speed / 1024);
+                String sizeStr;
+                if (totalBytes[0] > 1024 * 1024) {
+                    if (contentLength[0] > 0) {
+                        sizeStr = String.format("已下载: %.2f MB / %.2f MB", totalBytes[0] / (1024.0 * 1024), contentLength[0] / (1024.0 * 1024));
+                    } else {
+                        sizeStr = String.format("已下载: %.2f MB", totalBytes[0] / (1024.0 * 1024));
+                    }
+                } else {
+                    if (contentLength[0] > 0) {
+                        sizeStr = String.format("已下载: %.2f KB / %.2f KB", totalBytes[0] / 1024.0, contentLength[0] / 1024.0);
+                    } else {
+                        sizeStr = String.format("已下载: %.2f KB", totalBytes[0] / 1024.0);
+                    }
+                }
+                String remainStr;
+                if (contentLength[0] > 0 && speed > 0) {
+                    long remainSeconds = (long) ((contentLength[0] - totalBytes[0]) / speed);
+                    if (remainSeconds > 60) {
+                        remainStr = String.format("剩余时间: %d分%d秒", remainSeconds / 60, remainSeconds % 60);
+                    } else {
+                        remainStr = String.format("剩余时间: %d秒", remainSeconds);
+                    }
+                } else {
+                    remainStr = "剩余时间: 计算中...";
+                }
+
+                detailsLabel.setText(sizeStr);
+                speedLabel.setText("速度: " + speedStr);
+                timeLabel.setText(remainStr);
+            }
+        };
+
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
+            // 获取内容长度
+            while ((len = is.read(buf)) != -1) {
+                if (cancelled[0]) {
+                    if (tempFile.exists()) tempFile.delete();
+                    throw new IOException("下载已取消");
+                }
+                bos.write(buf, 0, len);
+                totalBytes[0] += len;
+                long now = System.currentTimeMillis();
+                if (now - lastUpdate > 200) { // 每200毫秒更新一次UI
+                    SwingUtilities.invokeLater(updateUI);
+                    lastUpdate = now;
+                }
+            }
+            SwingUtilities.invokeLater(updateUI);
+        } catch (IOException e) {
+            if (tempFile.exists()) tempFile.delete();
+            throw e;
+        } finally {
+            SwingUtilities.invokeLater(progressDialog::dispose);
+        }
+        return new FileAndSize(tempFile, totalBytes[0]);
     }
 
     private static void handleBinaryResponse(Response okResponse, HttpResponse response) throws IOException {
@@ -181,7 +324,7 @@ public class OkHttpResponseHandler {
             return;
         }
         if (is != null) {
-            FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null);
+            FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null, contentLengthHeader);
             response.filePath = fs.file.getAbsolutePath();
             response.body = "[二进制内容，已保存为临时文件]";
             response.bodySize = fs.size;
@@ -236,7 +379,7 @@ public class OkHttpResponseHandler {
             String bodyStr = okResponse.body().string();
             if (bodyStr.getBytes().length > getMaxBodySize()) { // 如果响应体内容超过设置值，保存为临时文件
                 // 这里也用流写入
-                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bodyStr.getBytes()), "easyPostman_text_download_", ext != null ? ext : ".txt");
+                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bodyStr.getBytes()), "easyPostman_text_download_", ext != null ? ext : ".txt", contentLengthHeader);
                 response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
                 int maxBodySizeKB = getMaxBodySize() / 1024;
@@ -313,3 +456,4 @@ public class OkHttpResponseHandler {
         }
     }
 }
+

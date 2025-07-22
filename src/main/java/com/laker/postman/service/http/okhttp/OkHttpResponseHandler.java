@@ -223,12 +223,8 @@ public class OkHttpResponseHandler {
                 double speed = elapsed > 0 ? (totalBytes[0] * 1000.0 / elapsed) : 0;
                 String speedStr = speed > 1024 * 1024 ? String.format("%.2f MB/s", speed / (1024 * 1024)) : String.format("%.2f KB/s", speed / 1024);
                 String sizeStr;
-                if (totalBytes[0] > 1024 * 1024) {
-                    if (contentLength[0] > 0) {
-                        sizeStr = String.format("Downloaded: %.2f MB / %.2f MB", totalBytes[0] / (1024.0 * 1024), contentLength[0] / (1024.0 * 1024));
-                    } else {
-                        sizeStr = String.format("Downloaded: %.2f MB", totalBytes[0] / (1024.0 * 1024));
-                    }
+                if (contentLength[0] > 1024 * 1024) {
+                    sizeStr = String.format("Downloaded: %.2f MB / %.2f MB", totalBytes[0] / (1024.0 * 1024), contentLength[0] / (1024.0 * 1024));
                 } else {
                     if (contentLength[0] > 0) {
                         sizeStr = String.format("Downloaded: %.2f KB / %.2f KB", totalBytes[0] / 1024.0, contentLength[0] / 1024.0);

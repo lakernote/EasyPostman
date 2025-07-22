@@ -1,8 +1,5 @@
 package com.laker.postman.panel.jmeter;
 
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.SearchTextField;
@@ -24,7 +21,6 @@ import com.laker.postman.panel.jmeter.model.NodeType;
 import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupPropertyPanel;
-import com.laker.postman.panel.jmeter.timer.TimerData;
 import com.laker.postman.panel.jmeter.timer.TimerPropertyPanel;
 import com.laker.postman.panel.runner.RunnerHtmlUtil;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
@@ -57,9 +53,6 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
@@ -441,12 +434,8 @@ public class JMeterPanel extends BasePanel {
         runBtn = new JButton("Run");
         stopBtn = new JButton("Stop");
         stopBtn.setEnabled(false);
-        JButton saveCaseBtn = new JButton("Save Plan");
-        JButton loadCaseBtn = new JButton("Load Plan");
         btnPanel.add(runBtn);
         btnPanel.add(stopBtn);
-        btnPanel.add(saveCaseBtn);
-        btnPanel.add(loadCaseBtn);
         // 高效模式checkbox和问号提示
         JCheckBox efficientCheckBox = new JCheckBox("Efficient Mode");
         efficientCheckBox.setSelected(true); // 默认开启高效模式
@@ -484,8 +473,6 @@ public class JMeterPanel extends BasePanel {
 
         runBtn.addActionListener(e -> startRun(progressLabel));
         stopBtn.addActionListener(e -> stopRun());
-        saveCaseBtn.addActionListener(e -> saveJMeterTreeToFile());
-        loadCaseBtn.addActionListener(e -> loadJMeterTreeFromFile());
 
         // 展开所有节点
         for (int i = 0; i < jmeterTree.getRowCount(); i++) {
@@ -1356,83 +1343,6 @@ public class JMeterPanel extends BasePanel {
     private DefaultMutableTreeNode resultRootNode;
     // 替换为tabbedPane
     private JTabbedPane resultDetailTabbedPane;
-
-    private void saveJMeterTreeToFile() {
-        saveAllPropertyPanelData(); // 确保保存所有属性区数据
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("保存JMeter用例树");
-        fileChooser.setSelectedFile(new File("EasyPostman-Jmeter.json"));
-        int userSelection = fileChooser.showSaveDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File fileToSave = fileChooser.getSelectedFile();
-            try {
-                Object treeData = buildTreeData((DefaultMutableTreeNode) treeModel.getRoot());
-                String json = JSONUtil.toJsonPrettyStr(treeData);
-                Files.writeString(fileToSave.toPath(), json, StandardCharsets.UTF_8);
-                JOptionPane.showMessageDialog(this, "Save successful!", "Info", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Save failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private void loadJMeterTreeFromFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Load JMeter Case Tree");
-        int userSelection = fileChooser.showOpenDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File fileToOpen = fileChooser.getSelectedFile();
-            try {
-                String json = Files.readString(fileToOpen.toPath(), StandardCharsets.UTF_8);
-                JSONObject treeData = JSONUtil.parseObj(json);
-                DefaultMutableTreeNode root = parseTreeData(treeData);
-                treeModel.setRoot(root);
-                jmeterTree.setModel(treeModel);
-                jmeterTree.updateUI();
-                JOptionPane.showMessageDialog(this, "Load successful!", "Info", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Load failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    // 递归导出树结构为Map
-    private Object buildTreeData(DefaultMutableTreeNode node) {
-        JMeterTreeNode jtNode = (JMeterTreeNode) node.getUserObject();
-        Map<String, Object> map = new HashMap<>();
-        map.put("name", jtNode.name);
-        map.put("type", jtNode.type.name());
-        map.put("httpRequestItem", jtNode.httpRequestItem);
-        map.put("threadGroupData", jtNode.threadGroupData);
-        map.put("assertionData", jtNode.assertionData);
-        map.put("timerData", jtNode.timerData);
-        List<Object> children = new ArrayList<>();
-        for (int i = 0; i < node.getChildCount(); i++) {
-            children.add(buildTreeData((DefaultMutableTreeNode) node.getChildAt(i)));
-        }
-        map.put("children", children);
-        return map;
-    }
-
-    // 递归还原树结构
-    private DefaultMutableTreeNode parseTreeData(Object data) {
-        JSONObject map = (data instanceof JSONObject) ? (JSONObject) data : new JSONObject(data);
-        String name = map.getStr("name");
-        NodeType type = NodeType.valueOf(map.getStr("type"));
-        JMeterTreeNode jtNode = new JMeterTreeNode(name, type);
-        jtNode.httpRequestItem = map.get("httpRequestItem", HttpRequestItem.class);
-        jtNode.threadGroupData = map.get("threadGroupData", ThreadGroupData.class);
-        jtNode.assertionData = map.get("assertionData", AssertionData.class);
-        jtNode.timerData = map.get("timerData", TimerData.class);
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtNode);
-        JSONArray children = map.getJSONArray("children");
-        if (children != null) {
-            for (Object child : children) {
-                node.add(parseTreeData(child));
-            }
-        }
-        return node;
-    }
 
     @Override
     protected void registerListeners() {

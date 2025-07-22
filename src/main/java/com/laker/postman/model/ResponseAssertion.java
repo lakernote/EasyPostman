@@ -14,8 +14,7 @@ public class ResponseAssertion {
     public ResponseAssertion to = this;
     public ResponseAssertion have = this;
     public ResponseAssertion be = this;
-
-    public long responseTime; // 新增字段
+    public long responseTime;
 
     public ResponseAssertion(HttpResponse response) {
         this.response = response;

@@ -3,6 +3,8 @@ package com.laker.postman.panel.jmeter;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.StartButton;
+import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.setting.SettingManager;
@@ -77,8 +79,8 @@ public class JMeterPanel extends BasePanel {
     private RequestEditSubPanel requestEditSubPanel;
     private boolean running = false;
     private Thread runThread;
-    private JButton runBtn;
-    private JButton stopBtn;
+    private StartButton runBtn;
+    private StopButton stopBtn;
     // 测试执行开始时间
     private long startTime;
     // 记录所有请求的开始和结束时间
@@ -431,8 +433,8 @@ public class JMeterPanel extends BasePanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        runBtn = new JButton("Run");
-        stopBtn = new JButton("Stop");
+        runBtn = new StartButton();
+        stopBtn = new StopButton();
         stopBtn.setEnabled(false);
         btnPanel.add(runBtn);
         btnPanel.add(stopBtn);

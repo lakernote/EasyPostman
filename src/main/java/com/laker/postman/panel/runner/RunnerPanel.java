@@ -2,6 +2,8 @@ package com.laker.postman.panel.runner;
 
 import cn.hutool.core.util.StrUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.StartButton;
+import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
@@ -28,11 +30,13 @@ import java.util.stream.IntStream;
 public class RunnerPanel extends BasePanel {
     private JTable table;
     private RunnerTableModel tableModel;
-    private JButton runBtn;
+    private StartButton runBtn;
+    private StopButton stopBtn;    // 停止按钮
     private JLabel timeLabel;     // 执行时间标签
     private JLabel progressLabel; // 进度标签
     private long startTime;       // 记录开始时间
     private Timer executionTimer; // 执行时间计时器
+    private volatile boolean isStopped = false; // 停止标志
 
     @Override
     protected void initUI() {
@@ -45,7 +49,7 @@ public class RunnerPanel extends BasePanel {
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 12));
         topPanel.add(createButtonPanel(), BorderLayout.WEST);
 
         // 创建右侧信息面板，包含执行时间和进度显示
@@ -100,18 +104,29 @@ public class RunnerPanel extends BasePanel {
         loadBtn.setPreferredSize(new Dimension(90, 28));
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
         btnPanel.add(loadBtn);
-        runBtn = new JButton("Run");
-        runBtn.setIcon(new FlatSVGIcon("icons/run.svg"));
-        runBtn.setPreferredSize(new Dimension(90, 28));
-        runBtn.addActionListener(e -> runSelectedRequests());
-        runBtn.setEnabled(false);
+        runBtn = new StartButton();
+        runBtn.addActionListener(e -> {
+            runSelectedRequests();
+            stopBtn.setEnabled(true); // 启动时可用
+        });
         btnPanel.add(runBtn);
+        stopBtn = new StopButton();
+        stopBtn.addActionListener(e -> {
+            isStopped = true;
+            if (executionTimer != null && executionTimer.isRunning()) {
+                executionTimer.stop();
+            }
+            stopBtn.setEnabled(false); // 停止后不可用
+            runBtn.setEnabled(true);  // 可再次运行
+        });
+        btnPanel.add(stopBtn);
         JButton clearBtn = new JButton("Clear");
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setPreferredSize(new Dimension(90, 28));
         clearBtn.addActionListener(e -> {
             tableModel.clear();
             runBtn.setEnabled(false);
+            stopBtn.setEnabled(false);
             resetProgress();
         });
         btnPanel.add(clearBtn);
@@ -153,7 +168,7 @@ public class RunnerPanel extends BasePanel {
         table.setDropMode(DropMode.INSERT_ROWS);
         table.setTransferHandler(new TableRowTransferHandler(table));
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         return scrollPane;
     }
 
@@ -285,6 +300,7 @@ public class RunnerPanel extends BasePanel {
 
     // 批量运行
     private void runSelectedRequests() {
+        isStopped = false; // 开始运行时重置停止标志
         int rowCount = tableModel.getRowCount();
         int selectedCount = (int) IntStream.range(0, rowCount).mapToObj(i -> tableModel.getRow(i)).filter(row -> row != null && row.selected).count();
         if (selectedCount == 0) {
@@ -317,6 +333,7 @@ public class RunnerPanel extends BasePanel {
     private void executeBatchRequests(int rowCount, int selectedCount) {
         int finished = 0;
         for (int i = 0; i < rowCount; i++) {
+            if (isStopped) break; // 检查停止标志
             RunnerRowData row = tableModel.getRow(i);
             if (row == null || row.requestItem == null || row.preparedRequest == null) {
                 log.warn("Row {} is invalid, skipping execution", i);
@@ -336,8 +353,6 @@ public class RunnerPanel extends BasePanel {
         }
         SwingUtilities.invokeLater(() -> {
             runBtn.setEnabled(true);
-            // 设置完成状态
-            progressLabel.setText(selectedCount + "/" + selectedCount);
             // 停止计时器
             if (executionTimer != null && executionTimer.isRunning()) {
                 executionTimer.stop();
@@ -353,6 +368,7 @@ public class RunnerPanel extends BasePanel {
     }
 
     private BatchResult executeSingleRequest(RunnerRowData row) {
+        if (isStopped) return new BatchResult(); // 检查停止标志，直接返回空结果
         BatchResult result = new BatchResult();
         long start = System.currentTimeMillis();
         HttpRequestItem item = row.requestItem;
@@ -532,3 +548,4 @@ public class RunnerPanel extends BasePanel {
         timeLabel.setText(TimeDisplayUtil.formatElapsedTime(elapsedTime));
     }
 }
+

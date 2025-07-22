@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -148,24 +149,28 @@ public class OkHttpResponseHandler {
         final boolean[] cancelled = new boolean[1];
 
         // 创建更美观的进度对话框
-        JDialog progressDialog = new JDialog((JFrame) null, "下载进度", true);
+        JDialog progressDialog = new JDialog((JFrame) null, "Download Progress", true);
         progressDialog.setModal(false);
-        progressDialog.setSize(450, 200);
+        progressDialog.setSize(350, 180);
         progressDialog.setLocationRelativeTo(null);
         progressDialog.setResizable(false);
 
         // 使用BorderLayout布局
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
+        // 添加 FlatSVGIcon 图标到标题左侧
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/download.svg", 24, 24));
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        titlePanel.add(iconLabel);
         // 添加标题标签
-        JLabel titleLabel = new JLabel("正在下载文件...");
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
+        JLabel titleLabel = new JLabel("Downloading file...");
+        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 13));
+        titlePanel.add(titleLabel);
 
         // 创建详细信息标签
-        JLabel detailsLabel = new JLabel("已下载: 0 KB");
-        JLabel speedLabel = new JLabel("速度: 0 KB/s");
-        JLabel timeLabel = new JLabel("剩余时间: 计算中...");
+        JLabel detailsLabel = new JLabel("Downloaded: 0 KB");
+        JLabel speedLabel = new JLabel("Speed: 0 KB/s");
+        JLabel timeLabel = new JLabel("Time left: Calculating...");
 
         // 放置标签的面板
         JPanel infoPanel = new JPanel(new GridLayout(3, 1, 5, 0));
@@ -174,7 +179,7 @@ public class OkHttpResponseHandler {
         infoPanel.add(timeLabel);
 
         // 取消按钮
-        JButton cancelButton = new JButton("取消");
+        JButton cancelButton = new JButton("Cancel", new FlatSVGIcon("icons/cancel.svg", 16, 16));
         cancelButton.addActionListener(e -> {
             cancelled[0] = true;
             progressDialog.dispose();
@@ -190,7 +195,7 @@ public class OkHttpResponseHandler {
         southPanel.add(buttonPanel);
 
         // 组装界面
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
         mainPanel.add(southPanel, BorderLayout.SOUTH);
         // 不再使用 BorderLayout.EAST
 
@@ -202,7 +207,6 @@ public class OkHttpResponseHandler {
                 cancelled[0] = true;
             }
         });
-
 
         // 只有大于5MB才显示进度对话框，否则后台下载不弹窗
         if (contentLength[0] > 5 * 1024 * 1024 || contentLength[0] <= 0) {
@@ -221,31 +225,31 @@ public class OkHttpResponseHandler {
                 String sizeStr;
                 if (totalBytes[0] > 1024 * 1024) {
                     if (contentLength[0] > 0) {
-                        sizeStr = String.format("已下载: %.2f MB / %.2f MB", totalBytes[0] / (1024.0 * 1024), contentLength[0] / (1024.0 * 1024));
+                        sizeStr = String.format("Downloaded: %.2f MB / %.2f MB", totalBytes[0] / (1024.0 * 1024), contentLength[0] / (1024.0 * 1024));
                     } else {
-                        sizeStr = String.format("已下载: %.2f MB", totalBytes[0] / (1024.0 * 1024));
+                        sizeStr = String.format("Downloaded: %.2f MB", totalBytes[0] / (1024.0 * 1024));
                     }
                 } else {
                     if (contentLength[0] > 0) {
-                        sizeStr = String.format("已下载: %.2f KB / %.2f KB", totalBytes[0] / 1024.0, contentLength[0] / 1024.0);
+                        sizeStr = String.format("Downloaded: %.2f KB / %.2f KB", totalBytes[0] / 1024.0, contentLength[0] / 1024.0);
                     } else {
-                        sizeStr = String.format("已下载: %.2f KB", totalBytes[0] / 1024.0);
+                        sizeStr = String.format("Downloaded: %.2f KB", totalBytes[0] / 1024.0);
                     }
                 }
                 String remainStr;
                 if (contentLength[0] > 0 && speed > 0) {
                     long remainSeconds = (long) ((contentLength[0] - totalBytes[0]) / speed);
                     if (remainSeconds > 60) {
-                        remainStr = String.format("剩余时间: %d分%d秒", remainSeconds / 60, remainSeconds % 60);
+                        remainStr = String.format("Time left: %d min %d sec", remainSeconds / 60, remainSeconds % 60);
                     } else {
-                        remainStr = String.format("剩余时间: %d秒", remainSeconds);
+                        remainStr = String.format("Time left: %d sec", remainSeconds);
                     }
                 } else {
-                    remainStr = "剩余时间: 计算中...";
+                    remainStr = "Time left: Calculating...";
                 }
 
                 detailsLabel.setText(sizeStr);
-                speedLabel.setText("速度: " + speedStr);
+                speedLabel.setText("Speed: " + speedStr);
                 timeLabel.setText(remainStr);
             }
         };
@@ -456,4 +460,3 @@ public class OkHttpResponseHandler {
         }
     }
 }
-

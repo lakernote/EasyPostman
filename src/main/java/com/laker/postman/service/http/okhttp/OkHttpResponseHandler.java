@@ -130,17 +130,10 @@ public class OkHttpResponseHandler {
         int totalBytes = 0;
         byte[] buf = new byte[64 * 1024];
         int len;
-        long start = System.currentTimeMillis();
         int contentLength = getContentLength(is, contentLengthHeader);
 
         DownloadProgressDialog progressDialog = new DownloadProgressDialog("Download Progress");
-        // 使用新的API启动下载进度对话框
-        boolean showDialog = progressDialog.startDownload(contentLength, cancelled -> {
-            // 处理下载取消或完成
-            if (cancelled && tempFile.exists()) {
-                tempFile.delete();
-            }
-        });
+        progressDialog.startDownload(contentLength);
 
         // 只需调用此方法即可自动节流和切换线程
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
@@ -151,20 +144,14 @@ public class OkHttpResponseHandler {
                 }
                 bos.write(buf, 0, len);
                 totalBytes += len;
-
-                // 使用新的API更新进度
-                if (showDialog) {
-                    progressDialog.updateProgress(len);
-                }
+                progressDialog.updateProgress(len);
             }
         } catch (IOException e) {
             if (tempFile.exists()) tempFile.delete();
             throw e;
         } finally {
             // 结束下载
-            if (showDialog) {
-                progressDialog.finishDownload(true);
-            }
+            progressDialog.finishDownload();
         }
         return new FileAndSize(tempFile, totalBytes);
     }

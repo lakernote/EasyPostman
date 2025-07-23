@@ -19,7 +19,6 @@ import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.function.Consumer;
 
 /**
  * 通用下载进度对话框组件
@@ -43,13 +42,6 @@ public class DownloadProgressDialog extends JDialog {
 
     // 是否自动关闭对话框
     private boolean autoClose = false;
-
-    // 下载是否已完成
-    private boolean downloadCompleted = false;
-
-    // 下载完成或取消时调用的回调函数
-    private Consumer<Boolean> onFinishCallback;
-
     // 当前下载信息
     private int currentContentLength;
     private int currentTotalBytes;
@@ -115,9 +107,6 @@ public class DownloadProgressDialog extends JDialog {
         cancelButton = new JButton("Cancel", new FlatSVGIcon("icons/cancel.svg", 16, 16));
         cancelButton.addActionListener(e -> {
             cancelled = true;
-            if (onFinishCallback != null) {
-                onFinishCallback.accept(true); // 传递取消状态
-            }
             dispose();
         });
 
@@ -162,16 +151,12 @@ public class DownloadProgressDialog extends JDialog {
     /**
      * 开始下载并显示进度
      *
-     * @param contentLength    内容总长度
-     * @param onFinishCallback 完成回调
+     * @param contentLength 内容总长度
      * @return 是否显示了对话框
      */
-    public boolean startDownload(int contentLength, Consumer<Boolean> onFinishCallback) {
+    public boolean startDownload(int contentLength) {
         this.currentContentLength = contentLength;
         this.currentTotalBytes = 0;
-        this.onFinishCallback = onFinishCallback;
-        this.downloadCompleted = false;
-
         // 重置UI状态
         closeButton.setVisible(false);
         cancelButton.setVisible(true);
@@ -192,15 +177,13 @@ public class DownloadProgressDialog extends JDialog {
      */
     public void updateProgress(int bytesRead) {
         if (!isVisible()) return;
-
         currentTotalBytes += bytesRead;
         long now = System.currentTimeMillis();
-
         // 更新实时速度（只在定时器中展示，这里只收集数据）
         if (now > lastUpdateTime) {
-            double instantSpeed = (bytesRead * 1000.0) / (now - lastUpdateTime);
+            double instantSpeed = (bytesRead * 1000.0) / (now - lastUpdateTime); // 计算当前速度（字节/秒）
             recentSpeedQueue.add(instantSpeed);
-            while (recentSpeedQueue.size() > MAX_SPEED_SAMPLES) {
+            while (recentSpeedQueue.size() > MAX_SPEED_SAMPLES) { // 保持队列大小
                 recentSpeedQueue.poll();
             }
             lastUpdateTime = now;
@@ -209,25 +192,16 @@ public class DownloadProgressDialog extends JDialog {
 
     /**
      * 完成下载
-     *
-     * @param success 是否成功完成
      */
-    public void finishDownload(boolean success) {
+    public void finishDownload() {
         if (isVisible()) {
             updateTimer.stop();
-            downloadCompleted = true;
-
             // 更新界面状态
             cancelButton.setVisible(false);
             closeButton.setVisible(true);
 
             // 添加完成标记到详情信息
             detailsLabel.setText(detailsLabel.getText() + " (完成)");
-
-            // 调用回调
-            if (onFinishCallback != null) {
-                onFinishCallback.accept(cancelled || !success);
-            }
 
             // 如果设置为自动关闭，则关闭对话框
             if (autoClose) {

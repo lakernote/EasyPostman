@@ -32,9 +32,9 @@ public class DownloadProgressDialog extends JDialog {
     private final TimeSeries speedSeries;
     private final ChartPanel chartPanel;
     private final Queue<Double> recentSpeedQueue = new LinkedList<>();
-    private final int MAX_SPEED_SAMPLES = 5; // 用于计算平均速度的样本数
+    private final int MAX_SPEED_SAMPLES = 3; // 用于计算平均速度的样本数
     private final Timer updateTimer;
-    private final long startTime;
+    private long startTime;
     private long lastUpdateTime;
 
     @Getter
@@ -52,8 +52,6 @@ public class DownloadProgressDialog extends JDialog {
         setSize(450, 350); // 加大窗口尺寸以容纳图表
         setLocationRelativeTo(null);
         setResizable(true);
-        startTime = System.currentTimeMillis();
-        lastUpdateTime = startTime;
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -90,14 +88,19 @@ public class DownloadProgressDialog extends JDialog {
         DateAxis dateAxis = (DateAxis) plot.getDomainAxis();
         dateAxis.setDateFormatOverride(new SimpleDateFormat("mm:ss"));
         dateAxis.setAutoRange(true);
-        dateAxis.setFixedAutoRange(30000); // 显示30秒的数据
+//        dateAxis.setFixedAutoRange(20000); // 显示20秒的数据，减少初始空白区域
 
         NumberAxis valueAxis = (NumberAxis) plot.getRangeAxis();
         valueAxis.setAutoRangeIncludesZero(true);
 
-        // 设置图表背景透明
+        // 设置图表背景透明，线条颜色更明显
         chart.setBackgroundPaint(null);
         plot.setBackgroundPaint(null);
+        plot.setOutlinePaint(Color.DARK_GRAY);
+
+        // 设置线条颜色和粗细
+        plot.getRenderer().setSeriesPaint(0, new Color(0, 120, 220)); // 蓝色线条
+        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f)); // 加粗线条
 
         chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new Dimension(400, 150));
@@ -132,7 +135,7 @@ public class DownloadProgressDialog extends JDialog {
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
         // 创建定时器，定期更新UI（无论是否有新数据）
-        updateTimer = new Timer(200, e -> updateUIWithLatestData());
+        updateTimer = new Timer(100, e -> updateUIWithLatestData());
     }
 
     public DownloadProgressDialog() {
@@ -157,6 +160,12 @@ public class DownloadProgressDialog extends JDialog {
     public boolean startDownload(int contentLength) {
         this.currentContentLength = contentLength;
         this.currentTotalBytes = 0;
+        // 清空速度队列
+        this.recentSpeedQueue.clear();
+        // 重置时间
+        this.startTime = System.currentTimeMillis();
+        this.lastUpdateTime = startTime;
+
         // 重置UI状态
         closeButton.setVisible(false);
         cancelButton.setVisible(true);
@@ -195,14 +204,11 @@ public class DownloadProgressDialog extends JDialog {
      */
     public void finishDownload() {
         if (isVisible()) {
-            updateTimer.stop();
             // 更新界面状态
             cancelButton.setVisible(false);
             closeButton.setVisible(true);
-
-            // 添加完成标记到详情信息
-            detailsLabel.setText(detailsLabel.getText() + " (完成)");
-
+            updateTimer.stop();
+            updateUIWithLatestData();
             // 如果设置为自动关闭，则关闭对话框
             if (autoClose) {
                 dispose();
@@ -215,10 +221,6 @@ public class DownloadProgressDialog extends JDialog {
      */
     private void updateUIWithLatestData() {
         if (!isVisible()) return;
-
-        long now = System.currentTimeMillis();
-        long elapsed = now - startTime;
-
         // 计算平均下载速度（使用最近几个样本的平均值）
         double avgSpeed = calculateAverageSpeed();
 

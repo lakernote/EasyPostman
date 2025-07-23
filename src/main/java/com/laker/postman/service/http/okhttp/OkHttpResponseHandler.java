@@ -1,7 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.component.DownloadProgressDialog;
-import com.laker.postman.common.component.ProgressInfo;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -132,6 +131,45 @@ public class OkHttpResponseHandler {
         byte[] buf = new byte[64 * 1024];
         int len;
         long start = System.currentTimeMillis();
+        int contentLength = getContentLength(is, contentLengthHeader);
+
+        DownloadProgressDialog progressDialog = new DownloadProgressDialog("Download Progress");
+        // 使用新的API启动下载进度对话框
+        boolean showDialog = progressDialog.startDownload(contentLength, cancelled -> {
+            // 处理下载取消或完成
+            if (cancelled && tempFile.exists()) {
+                tempFile.delete();
+            }
+        });
+
+        // 只需调用此方法即可自动节流和切换线程
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
+            while ((len = is.read(buf)) != -1) {
+                if (progressDialog.isCancelled()) {
+                    if (tempFile.exists()) tempFile.delete();
+                    throw new IOException("下载已取消");
+                }
+                bos.write(buf, 0, len);
+                totalBytes += len;
+
+                // 使用新的API更新进度
+                if (showDialog) {
+                    progressDialog.updateProgress(len);
+                }
+            }
+        } catch (IOException e) {
+            if (tempFile.exists()) tempFile.delete();
+            throw e;
+        } finally {
+            // 结束下载
+            if (showDialog) {
+                progressDialog.finishDownload(true);
+            }
+        }
+        return new FileAndSize(tempFile, totalBytes);
+    }
+
+    private static int getContentLength(InputStream is, int contentLengthHeader) {
         int contentLength = contentLengthHeader;
 
         // 如果响应头没有，再从流获取
@@ -147,33 +185,7 @@ public class OkHttpResponseHandler {
             } catch (IOException ignored) {
             }
         }
-
-        DownloadProgressDialog progressDialog = new DownloadProgressDialog("Download Progress");
-        boolean showDialog = progressDialog.shouldShow(contentLength);
-        if (showDialog) {
-            progressDialog.setVisible(true);
-        }
-        // 只需调用此方法即可自动节流和切换线程
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
-            while ((len = is.read(buf)) != -1) {
-                if (progressDialog.isCancelled()) {
-                    if (tempFile.exists()) tempFile.delete();
-                    throw new IOException("下载已取消");
-                }
-                bos.write(buf, 0, len);
-                totalBytes += len;
-                progressDialog.updateProgressThreadSafe(
-                        new ProgressInfo(totalBytes, contentLength, System.currentTimeMillis() - start),
-                        start
-                );
-            }
-        } catch (IOException e) {
-            if (tempFile.exists()) tempFile.delete();
-            throw e;
-        } finally {
-            SwingUtilities.invokeLater(progressDialog::closeDialog);
-        }
-        return new FileAndSize(tempFile, totalBytes);
+        return contentLength;
     }
 
 

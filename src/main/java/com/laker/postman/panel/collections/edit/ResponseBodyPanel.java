@@ -267,6 +267,7 @@ public class ResponseBodyPanel extends JPanel {
             if (contentType.contains("text")) return SyntaxConstants.SYNTAX_STYLE_NONE;
         }
         // 内容自动识别
+        if (text == null || text.isEmpty()) return SyntaxConstants.SYNTAX_STYLE_NONE;
         String t = text.trim();
         if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
             return SyntaxConstants.SYNTAX_STYLE_JSON;

@@ -17,8 +17,6 @@ import org.jfree.data.time.TimeSeriesCollection;
 import javax.swing.*;
 import java.awt.*;
 import java.text.SimpleDateFormat;
-import java.util.LinkedList;
-import java.util.Queue;
 
 /**
  * 通用下载进度对话框组件
@@ -31,11 +29,7 @@ public class DownloadProgressDialog extends JDialog {
     private final JButton closeButton;
     private final TimeSeries speedSeries;
     private final ChartPanel chartPanel;
-    private final Queue<Double> recentSpeedQueue = new LinkedList<>();
-    private final int MAX_SPEED_SAMPLES = 3; // 用于计算平均速度的样本数
     private final Timer updateTimer;
-    private long startTime;
-    private long lastUpdateTime;
 
     @Getter
     private boolean cancelled = false;
@@ -45,6 +39,10 @@ public class DownloadProgressDialog extends JDialog {
     // 当前下载信息
     private int currentContentLength;
     private int currentTotalBytes;
+
+    // 记录用于速度计算的最后字节数和时间
+    private long lastBytesForSpeed = 0;
+    private long lastTimeForSpeed = 0;
 
     public DownloadProgressDialog(String title) {
         super((JFrame) null, title, false);
@@ -135,7 +133,7 @@ public class DownloadProgressDialog extends JDialog {
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
         // 创建定时器，定期更新UI（无论是否有新数据）
-        updateTimer = new Timer(100, e -> updateUIWithLatestData());
+        updateTimer = new Timer(200, e -> updateUIWithLatestData());
     }
 
     public DownloadProgressDialog() {
@@ -160,17 +158,10 @@ public class DownloadProgressDialog extends JDialog {
     public boolean startDownload(int contentLength) {
         this.currentContentLength = contentLength;
         this.currentTotalBytes = 0;
-        // 清空速度队列
-        this.recentSpeedQueue.clear();
-        // 重置时间
-        this.startTime = System.currentTimeMillis();
-        this.lastUpdateTime = startTime;
-
-        // 重置UI状态
+        this.lastBytesForSpeed = 0;
+        this.lastTimeForSpeed = System.nanoTime();
         closeButton.setVisible(false);
         cancelButton.setVisible(true);
-
-        // 根据设置决定是否显示
         boolean shouldDisplay = shouldShow(contentLength);
         if (shouldDisplay) {
             setVisible(true);
@@ -187,16 +178,6 @@ public class DownloadProgressDialog extends JDialog {
     public void updateProgress(int bytesRead) {
         if (!isVisible()) return;
         currentTotalBytes += bytesRead;
-        long now = System.currentTimeMillis();
-        // 更新实时速度（只在定时器中展示，这里只收集数据）
-        if (now > lastUpdateTime) {
-            double instantSpeed = (bytesRead * 1000.0) / (now - lastUpdateTime); // 计算当前速度（字节/秒）
-            recentSpeedQueue.add(instantSpeed);
-            while (recentSpeedQueue.size() > MAX_SPEED_SAMPLES) { // 保持队列大小
-                recentSpeedQueue.poll();
-            }
-            lastUpdateTime = now;
-        }
     }
 
     /**
@@ -221,24 +202,26 @@ public class DownloadProgressDialog extends JDialog {
      */
     private void updateUIWithLatestData() {
         if (!isVisible()) return;
-        // 计算平均下载速度（使用最近几个样本的平均值）
-        double avgSpeed = calculateAverageSpeed();
-
-        // 更新图表
-        speedSeries.addOrUpdate(new Millisecond(), avgSpeed / 1024.0);
-
-        // 更新文本信息
+        long now = System.nanoTime();
+        long bytesDelta = currentTotalBytes - lastBytesForSpeed;
+        long timeDelta = now - lastTimeForSpeed;
+        double speed = 0;
+        if (timeDelta > 0) {
+            speed = (bytesDelta * 1_000_000_000.0) / timeDelta;
+        }
+        lastBytesForSpeed = currentTotalBytes;
+        lastTimeForSpeed = now;
+        speedSeries.addOrUpdate(new Millisecond(), speed / 1024.0);
         String sizeStr = FileSizeDisplayUtil.formatDownloadSize(currentTotalBytes, currentContentLength);
         String speedStr;
-        if (avgSpeed > 1024 * 1024) {
-            speedStr = String.format("Speed: %.2f MB/s", avgSpeed / (1024 * 1024));
+        if (speed > 1024 * 1024) {
+            speedStr = String.format("Speed: %.2f MB/s", speed / (1024 * 1024));
         } else {
-            speedStr = String.format("Speed: %.2f KB/s", avgSpeed / 1024);
+            speedStr = String.format("Speed: %.2f KB/s", speed / 1024);
         }
-
         String remainStr;
-        if (currentContentLength > 0 && avgSpeed > 0) {
-            long remainSeconds = (long) ((currentContentLength - currentTotalBytes) / avgSpeed);
+        if (currentContentLength > 0 && speed > 0) {
+            long remainSeconds = (long) ((currentContentLength - currentTotalBytes) / speed);
             if (remainSeconds > 60) {
                 remainStr = String.format("Time left: %d min %d sec", remainSeconds / 60, remainSeconds % 60);
             } else {
@@ -247,25 +230,7 @@ public class DownloadProgressDialog extends JDialog {
         } else {
             remainStr = "Time left: Calculating...";
         }
-
         updateProgress(sizeStr, speedStr, remainStr);
-    }
-
-    /**
-     * 计算平均下载速度
-     *
-     * @return 字节/秒
-     */
-    private double calculateAverageSpeed() {
-        if (recentSpeedQueue.isEmpty()) {
-            return 0;
-        }
-
-        double total = 0;
-        for (Double speed : recentSpeedQueue) {
-            total += speed;
-        }
-        return total / recentSpeedQueue.size();
     }
 
     /**

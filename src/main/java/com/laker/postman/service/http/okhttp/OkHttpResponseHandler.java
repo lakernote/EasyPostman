@@ -3,6 +3,7 @@ package com.laker.postman.service.http.okhttp;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.util.FileSizeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 
@@ -45,7 +46,7 @@ public class OkHttpResponseHandler {
         response.threadName = Thread.currentThread().getName();
         response.protocol = okResponse.protocol().toString();
         String contentType = okResponse.header("Content-Type", "");
-        long contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
+        int contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
 
         if (isBinaryContent(contentType)) {
             handleBinaryResponse(okResponse, response);
@@ -53,17 +54,19 @@ public class OkHttpResponseHandler {
             response.body = "[SSE流响应，无法直接处理]";
             response.bodySize = 0;
             response.isSse = true;
-            okResponse.body().close();
+            if (okResponse.body() != null) {
+                okResponse.body().close();
+            }
             okResponse.close();
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
     }
 
-    private static long parseContentLength(String contentLengthStr) {
+    private static int parseContentLength(String contentLengthStr) {
         if (contentLengthStr != null) {
             try {
-                return Long.parseLong(contentLengthStr);
+                return Integer.parseInt(contentLengthStr);
             } catch (NumberFormatException ignore) {
             }
         }
@@ -122,19 +125,19 @@ public class OkHttpResponseHandler {
      * 保存输入流到临时文件，返回文件对象和写入的字节数
      * 优先从响应头获取 Content-Length
      */
-    private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix, long contentLengthHeader) throws IOException {
+    private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix, int contentLengthHeader) throws IOException {
         File tempFile = File.createTempFile(prefix, suffix);
         final int[] totalBytes = {0};
         byte[] buf = new byte[64 * 1024];
         int len;
         long start = System.currentTimeMillis();
         long lastUpdate = start;
-        final long[] contentLength = {contentLengthHeader};
+        final int[] contentLength = {contentLengthHeader};
 
         // 如果响应头没有，再从流获取
         if (contentLength[0] < 0 && is instanceof FileInputStream) {
             try {
-                contentLength[0] = ((FileInputStream) is).getChannel().size();
+                contentLength[0] = Math.toIntExact(((FileInputStream) is).getChannel().size());
             } catch (IOException ignored) {
             }
         }
@@ -222,16 +225,7 @@ public class OkHttpResponseHandler {
                 long elapsed = now - start;
                 double speed = elapsed > 0 ? (totalBytes[0] * 1000.0 / elapsed) : 0;
                 String speedStr = speed > 1024 * 1024 ? String.format("%.2f MB/s", speed / (1024 * 1024)) : String.format("%.2f KB/s", speed / 1024);
-                String sizeStr;
-                if (contentLength[0] > 1024 * 1024) {
-                    sizeStr = String.format("Downloaded: %.2f MB / %.2f MB", totalBytes[0] / (1024.0 * 1024), contentLength[0] / (1024.0 * 1024));
-                } else {
-                    if (contentLength[0] > 0) {
-                        sizeStr = String.format("Downloaded: %.2f KB / %.2f KB", totalBytes[0] / 1024.0, contentLength[0] / 1024.0);
-                    } else {
-                        sizeStr = String.format("Downloaded: %.2f KB", totalBytes[0] / 1024.0);
-                    }
-                }
+                String sizeStr = FileSizeDisplayUtil.formatDownloadSize(totalBytes[0], contentLength[0]);
                 String remainStr;
                 if (contentLength[0] > 0 && speed > 0) {
                     long remainSeconds = (long) ((contentLength[0] - totalBytes[0]) / speed);
@@ -275,6 +269,7 @@ public class OkHttpResponseHandler {
         return new FileAndSize(tempFile, totalBytes[0]);
     }
 
+
     private static void handleBinaryResponse(Response okResponse, HttpResponse response) throws IOException {
         InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
         String fileName = null;
@@ -310,7 +305,7 @@ public class OkHttpResponseHandler {
         if (fileName == null) fileName = "downloaded_file";
         response.fileName = fileName;
         int maxDownloadSize = getMaxDownloadSize();
-        long contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
+        int contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
         if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
             if (is != null) is.close();
             SwingUtilities.invokeLater(() -> {
@@ -360,7 +355,7 @@ public class OkHttpResponseHandler {
         return null;
     }
 
-    private static void handleTextResponse(Response okResponse, HttpResponse response, long contentLengthHeader) throws IOException {
+    private static void handleTextResponse(Response okResponse, HttpResponse response, int contentLengthHeader) throws IOException {
         String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
         int maxDownloadSize = getMaxDownloadSize();
         if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {

@@ -12,7 +12,7 @@ public class SettingDialog extends JDialog {
         setLayout(new BorderLayout());
         SettingPanel panel = SingletonFactory.getInstance(SettingPanel.class);
         add(panel, BorderLayout.CENTER);
-        setSize(500, 300);
+        setSize(500, 600);
         setLocationRelativeTo(owner);
         setResizable(false); // 设置窗口不可调整大小
     }

@@ -1,16 +1,12 @@
 package com.laker.postman.service.http.okhttp;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.DownloadProgressDialog;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.util.FileSizeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.*;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,19 +44,23 @@ public class OkHttpResponseHandler {
         String contentType = okResponse.header("Content-Type", "");
         int contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
 
-        if (isBinaryContent(contentType)) {
+        if (isSSEContent(contentType)) {
+            handleSseResponse(okResponse, response);
+        } else if (isBinaryContent(contentType)) {
             handleBinaryResponse(okResponse, response);
-        } else if (isSSEContent(contentType)) {
-            response.body = "[SSE流响应，无法直接处理]";
-            response.bodySize = 0;
-            response.isSse = true;
-            if (okResponse.body() != null) {
-                okResponse.body().close();
-            }
-            okResponse.close();
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
+    }
+
+    private static void handleSseResponse(Response okResponse, HttpResponse response) throws IOException {
+        response.body = "[SSE流响应，无法直接处理]";
+        response.bodySize = 0;
+        response.isSse = true;
+        if (okResponse.body() != null) {
+            okResponse.body().close();
+        }
+        okResponse.close();
     }
 
     private static int parseContentLength(String contentLengthStr) {
@@ -127,146 +127,52 @@ public class OkHttpResponseHandler {
      */
     private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix, int contentLengthHeader) throws IOException {
         File tempFile = File.createTempFile(prefix, suffix);
-        final int[] totalBytes = {0};
+        int totalBytes = 0;
         byte[] buf = new byte[64 * 1024];
         int len;
         long start = System.currentTimeMillis();
-        long lastUpdate = start;
-        final int[] contentLength = {contentLengthHeader};
+        int contentLength = contentLengthHeader;
 
         // 如果响应头没有，再从流获取
-        if (contentLength[0] < 0 && is instanceof FileInputStream) {
+        if (contentLength < 0 && is instanceof FileInputStream) {
             try {
-                contentLength[0] = Math.toIntExact(((FileInputStream) is).getChannel().size());
+                contentLength = Math.toIntExact(((FileInputStream) is).getChannel().size());
             } catch (IOException ignored) {
             }
         }
-        if (contentLength[0] < 0) {
+        if (contentLength < 0) {
             try {
-                contentLength[0] = is.available();
+                contentLength = is.available();
             } catch (IOException ignored) {
             }
         }
 
-        // 创建取消状态标志
-        final boolean[] cancelled = new boolean[1];
-
-        // 创建更美观的进度对话框
-        JDialog progressDialog = new JDialog((JFrame) null, "Download Progress", true);
-        progressDialog.setModal(false);
-        progressDialog.setSize(350, 180);
-        progressDialog.setLocationRelativeTo(null);
-        progressDialog.setResizable(false);
-
-        // 使用BorderLayout布局
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        // 添加 FlatSVGIcon 图标到标题左侧
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/download.svg", 24, 24));
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        titlePanel.add(iconLabel);
-        // 添加标题标签
-        JLabel titleLabel = new JLabel("Downloading file...");
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 13));
-        titlePanel.add(titleLabel);
-
-        // 创建详细信息标签
-        JLabel detailsLabel = new JLabel("Downloaded: 0 KB");
-        JLabel speedLabel = new JLabel("Speed: 0 KB/s");
-        JLabel timeLabel = new JLabel("Time left: Calculating...");
-
-        // 放置标签的面板
-        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 5, 0));
-        infoPanel.add(detailsLabel);
-        infoPanel.add(speedLabel);
-        infoPanel.add(timeLabel);
-
-        // 取消按钮
-        JButton cancelButton = new JButton("Cancel", new FlatSVGIcon("icons/cancel.svg", 16, 16));
-        cancelButton.addActionListener(e -> {
-            cancelled[0] = true;
-            progressDialog.dispose();
-        });
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(cancelButton);
-
-        // 放置标签和按钮的面板（垂直排列）
-        JPanel southPanel = new JPanel();
-        southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.Y_AXIS));
-        southPanel.add(infoPanel);
-        southPanel.add(Box.createVerticalStrut(10));
-        southPanel.add(buttonPanel);
-
-        // 组装界面
-        mainPanel.add(titlePanel, BorderLayout.NORTH);
-        mainPanel.add(southPanel, BorderLayout.SOUTH);
-        // 不再使用 BorderLayout.EAST
-
-        progressDialog.setContentPane(mainPanel);
-        progressDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        progressDialog.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                cancelled[0] = true;
-            }
-        });
-
-        // 只有大于5MB才显示进度对话框，否则后台下载不弹窗
-        if (contentLength[0] > 5 * 1024 * 1024 || contentLength[0] <= 0) {
+        DownloadProgressDialog progressDialog = new DownloadProgressDialog("Download Progress");
+        boolean showDialog = progressDialog.shouldShow(contentLength);
+        if (showDialog) {
             progressDialog.setVisible(true);
         }
-
-
-        // 创建更新UI的Runnable对象
-        Runnable updateUI = () -> {
-            if (!progressDialog.isDisplayable()) return;
-            if (progressDialog.isVisible()) {
-                long now = System.currentTimeMillis();
-                long elapsed = now - start;
-                double speed = elapsed > 0 ? (totalBytes[0] * 1000.0 / elapsed) : 0;
-                String speedStr = speed > 1024 * 1024 ? String.format("%.2f MB/s", speed / (1024 * 1024)) : String.format("%.2f KB/s", speed / 1024);
-                String sizeStr = FileSizeDisplayUtil.formatDownloadSize(totalBytes[0], contentLength[0]);
-                String remainStr;
-                if (contentLength[0] > 0 && speed > 0) {
-                    long remainSeconds = (long) ((contentLength[0] - totalBytes[0]) / speed);
-                    if (remainSeconds > 60) {
-                        remainStr = String.format("Time left: %d min %d sec", remainSeconds / 60, remainSeconds % 60);
-                    } else {
-                        remainStr = String.format("Time left: %d sec", remainSeconds);
-                    }
-                } else {
-                    remainStr = "Time left: Calculating...";
-                }
-
-                detailsLabel.setText(sizeStr);
-                speedLabel.setText("Speed: " + speedStr);
-                timeLabel.setText(remainStr);
-            }
-        };
-
+        // 只需调用此方法即可自动节流和切换线程
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
-            // 获取内容长度
             while ((len = is.read(buf)) != -1) {
-                if (cancelled[0]) {
+                if (progressDialog.isCancelled()) {
                     if (tempFile.exists()) tempFile.delete();
                     throw new IOException("下载已取消");
                 }
                 bos.write(buf, 0, len);
-                totalBytes[0] += len;
-                long now = System.currentTimeMillis();
-                if (now - lastUpdate > 200) { // 每200毫秒更新一次UI
-                    SwingUtilities.invokeLater(updateUI);
-                    lastUpdate = now;
-                }
+                totalBytes += len;
+                progressDialog.updateProgressThreadSafe(
+                        new DownloadProgressDialog.ProgressInfo(totalBytes, contentLength, System.currentTimeMillis() - start),
+                        start
+                );
             }
-            SwingUtilities.invokeLater(updateUI);
         } catch (IOException e) {
             if (tempFile.exists()) tempFile.delete();
             throw e;
         } finally {
-            SwingUtilities.invokeLater(progressDialog::dispose);
+            SwingUtilities.invokeLater(progressDialog::closeDialog);
         }
-        return new FileAndSize(tempFile, totalBytes[0]);
+        return new FileAndSize(tempFile, totalBytes);
     }
 
 

@@ -54,10 +54,13 @@ public class RequestEditPanel extends BasePanel {
         return subPanel;
     }
 
-    // 添加“+”Tab
+    // 添加"+"Tab
     private void addPlusTab() {
-        JPanel plusPanel = new JPanel();
+        JPanel plusPanel = new JPanel(new BorderLayout());
         plusPanel.setOpaque(false);
+        JLabel createRequestLabel = new JLabel("Create a new request", JLabel.CENTER);
+        createRequestLabel.setForeground(new Color(100, 100, 100));
+        plusPanel.add(createRequestLabel, BorderLayout.CENTER);
         tabbedPane.addTab("+", plusPanel);
         // 使用新版 PlusTabComponent，无需点击回调
         PlusTabComponent plusTabComponent = new PlusTabComponent();

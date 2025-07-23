@@ -117,4 +117,34 @@ public class SettingManager {
         props.setProperty("jmeter_keep_alive_seconds", String.valueOf(seconds));
         save();
     }
+
+    public static boolean isShowDownloadProgressDialog() {
+        String val = props.getProperty("show_download_progress_dialog");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return true; // 默认开启
+    }
+
+    public static void setShowDownloadProgressDialog(boolean show) {
+        props.setProperty("show_download_progress_dialog", String.valueOf(show));
+        save();
+    }
+
+    public static int getDownloadProgressDialogThreshold() {
+        String val = props.getProperty("download_progress_dialog_threshold");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 5 * 1024 * 1024;
+            }
+        }
+        return 5 * 1024 * 1024; // 默认5MB
+    }
+
+    public static void setDownloadProgressDialogThreshold(int threshold) {
+        props.setProperty("download_progress_dialog_threshold", String.valueOf(threshold));
+        save();
+    }
 }

@@ -1,6 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.util.FileSizeDisplayUtil;
 import lombok.Getter;
 
@@ -79,18 +80,6 @@ public class DownloadProgressDialog extends JDialog {
         timeLabel.setText(time);
     }
 
-    // 进度信息结构体
-    public static class ProgressInfo {
-        public final int totalBytes;
-        public final int contentLength;
-        public final long elapsedMillis;
-
-        public ProgressInfo(int totalBytes, int contentLength, long elapsedMillis) {
-            this.totalBytes = totalBytes;
-            this.contentLength = contentLength;
-            this.elapsedMillis = elapsedMillis;
-        }
-    }
 
     /**
      * 进度驱动方法，自动计算速度、剩余时间、已下载等，并更新UI
@@ -117,7 +106,11 @@ public class DownloadProgressDialog extends JDialog {
      * 判断是否需要显示弹窗
      */
     public boolean shouldShow(int contentLength) {
-        return contentLength > 5 * 1024 * 1024 || contentLength <= 0;
+        if (!SettingManager.isShowDownloadProgressDialog()) {
+            return false;
+        }
+        int threshold = SettingManager.getDownloadProgressDialogThreshold();
+        return contentLength > threshold || contentLength <= 0;
     }
 
     /**

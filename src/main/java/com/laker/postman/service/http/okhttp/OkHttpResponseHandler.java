@@ -1,6 +1,7 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.component.DownloadProgressDialog;
+import com.laker.postman.common.component.ProgressInfo;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -162,7 +163,7 @@ public class OkHttpResponseHandler {
                 bos.write(buf, 0, len);
                 totalBytes += len;
                 progressDialog.updateProgressThreadSafe(
-                        new DownloadProgressDialog.ProgressInfo(totalBytes, contentLength, System.currentTimeMillis() - start),
+                        new ProgressInfo(totalBytes, contentLength, System.currentTimeMillis() - start),
                         start
                 );
             }

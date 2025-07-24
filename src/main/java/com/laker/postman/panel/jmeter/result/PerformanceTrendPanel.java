@@ -1,5 +1,6 @@
 package com.laker.postman.panel.jmeter.result;
 
+import lombok.Getter;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -14,6 +15,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 
+@Getter
 public class PerformanceTrendPanel extends JPanel {
     private final TimeSeriesCollection trendDataset;
     private final TimeSeries userCountSeries;
@@ -21,16 +23,12 @@ public class PerformanceTrendPanel extends JPanel {
     private final TimeSeries qpsSeries;
     private final TimeSeries errorPercentSeries;
 
-    public PerformanceTrendPanel(TimeSeriesCollection trendDataset,
-                                 TimeSeries userCountSeries,
-                                 TimeSeries responseTimeSeries,
-                                 TimeSeries qpsSeries,
-                                 TimeSeries errorPercentSeries) {
-        this.trendDataset = trendDataset;
-        this.userCountSeries = userCountSeries;
-        this.responseTimeSeries = responseTimeSeries;
-        this.qpsSeries = qpsSeries;
-        this.errorPercentSeries = errorPercentSeries;
+    public PerformanceTrendPanel() {
+        trendDataset = new TimeSeriesCollection();
+        userCountSeries = new TimeSeries("Threads");
+        responseTimeSeries = new TimeSeries("Response Time(ms)");
+        qpsSeries = new TimeSeries("QPS");
+        errorPercentSeries = new TimeSeries("Error Rate(%)");
         initUI();
     }
 

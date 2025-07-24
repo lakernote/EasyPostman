@@ -176,17 +176,18 @@ public class PerformancePanel extends BasePanel {
 
 
         // 趋势图面板
-        trendDataset = new TimeSeriesCollection();
-        userCountSeries = new TimeSeries("Threads");
-        responseTimeSeries = new TimeSeries("Response Time(ms)");
-        qpsSeries = new TimeSeries("QPS");
-        errorPercentSeries = new TimeSeries("Error Rate(%)");
+        PerformanceTrendPanel performanceTrendPanel = new PerformanceTrendPanel();
+        trendDataset = performanceTrendPanel.getTrendDataset();
+        userCountSeries = performanceTrendPanel.getUserCountSeries();
+        responseTimeSeries = performanceTrendPanel.getResponseTimeSeries();
+        qpsSeries = performanceTrendPanel.getQpsSeries();
+        errorPercentSeries = performanceTrendPanel.getErrorPercentSeries();
         // 报告面板
         PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
         reportTableModel = performanceReportPanel.getReportTableModel();
 
 
-        resultTabbedPane.addTab("Trend", new PerformanceTrendPanel(trendDataset, userCountSeries, responseTimeSeries, qpsSeries, errorPercentSeries));
+        resultTabbedPane.addTab("Trend", performanceTrendPanel);
         resultTabbedPane.addTab("Report", performanceReportPanel);
         resultTabbedPane.addTab("Result Tree", resultSplit);
 

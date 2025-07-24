@@ -4,7 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.table.FileCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
@@ -15,6 +14,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static com.laker.postman.common.table.TableUIConstants.SELECT_FILE_TEXT;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
@@ -193,7 +194,7 @@ public class RequestBodyPanel extends JPanel {
                 String key = row.get("Key") == null ? null : row.get("Key").toString();
                 String type = row.get("Type") == null ? null : row.get("Type").toString();
                 String value = row.get("Value") == null ? null : row.get("Value").toString();
-                if (key != null && !key.trim().isEmpty() && "File".equals(type) && value != null && !value.equals(FileCellEditor.COLUMN_TEXT)) {
+                if (key != null && !key.trim().isEmpty() && "File".equals(type) && value != null && !value.equals(SELECT_FILE_TEXT)) {
                     formFiles.put(key.trim(), value);
                 }
             }

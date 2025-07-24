@@ -34,14 +34,19 @@ public class CookieTablePanel extends JPanel {
         JButton btnDelete = new JButton("Delete");
         JButton btnClear = new JButton("Clear All");
         JButton btnAdd = new JButton("Add");
+        JButton btnRefresh = new JButton("Refresh");
         btnPanel.add(btnAdd);
         btnPanel.add(btnDelete);
         btnPanel.add(btnClear);
+        btnPanel.add(btnRefresh);
         add(btnPanel, BorderLayout.SOUTH);
 
         btnAdd.addActionListener(e -> addCookieDialog());
         btnDelete.addActionListener(e -> deleteSelectedCookie());
         btnClear.addActionListener(e -> clearAllCookies());
+        btnRefresh.addActionListener(e -> {
+            CookieService.refreshCookies();
+        });
 
         CookieService.registerCookieChangeListener(cookieListener);
         loadCookies();
@@ -66,7 +71,6 @@ public class CookieTablePanel extends JPanel {
             String domain = (String) model.getValueAt(row, 2);
             String path = (String) model.getValueAt(row, 3);
             CookieService.removeCookie(name, domain, path);
-            loadCookies();
         }
     }
 
@@ -74,7 +78,6 @@ public class CookieTablePanel extends JPanel {
         int confirm = JOptionPane.showConfirmDialog(this, "确定要清空所有Cookie吗？", "确认", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             CookieService.clearAllCookies();
-            loadCookies();
         }
     }
 
@@ -106,7 +109,6 @@ public class CookieTablePanel extends JPanel {
             boolean httpOnly = httpOnlyBox.isSelected();
             if (!name.isEmpty() && !domain.isEmpty()) {
                 CookieService.addCookie(name, value, domain, path, secure, httpOnly);
-                loadCookies();
             } else {
                 JOptionPane.showMessageDialog(this, "Name和Domain不能为空", "错误", JOptionPane.ERROR_MESSAGE);
             }

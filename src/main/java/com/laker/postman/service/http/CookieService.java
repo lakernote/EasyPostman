@@ -59,22 +59,12 @@ public class CookieService {
         for (HttpCookie cookie : toRemove) {
             store.remove(null, cookie);
         }
-        for (Runnable r : listeners) {
-            try {
-                r.run();
-            } catch (Exception ignore) {
-            }
-        }
+        notifyCookieChanged();
     }
 
     public static void clearAllCookies() {
         GLOBAL_COOKIE_MANAGER.getCookieStore().removeAll();
-        for (Runnable r : listeners) {
-            try {
-                r.run();
-            } catch (Exception ignore) {
-            }
-        }
+        notifyCookieChanged();
     }
 
     public static void notifyCookieChanged() {
@@ -97,5 +87,9 @@ public class CookieService {
             notifyCookieChanged();
         } catch (Exception ignore) {
         }
+    }
+
+    public static void refreshCookies() {
+        notifyCookieChanged();
     }
 }

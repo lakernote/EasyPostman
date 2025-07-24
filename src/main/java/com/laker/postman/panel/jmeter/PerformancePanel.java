@@ -2,7 +2,6 @@ package com.laker.postman.panel.jmeter;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
-import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.BasePanel;
@@ -11,21 +10,19 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
-import com.laker.postman.panel.history.HistoryHtmlBuilder;
 import com.laker.postman.panel.jmeter.assertion.AssertionData;
 import com.laker.postman.panel.jmeter.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.jmeter.component.JMeterTreeCellRenderer;
-import com.laker.postman.panel.jmeter.component.ResultTreeCellRenderer;
 import com.laker.postman.panel.jmeter.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 import com.laker.postman.panel.jmeter.model.NodeType;
 import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
 import com.laker.postman.panel.jmeter.result.PerformanceReportPanel;
 import com.laker.postman.panel.jmeter.result.PerformanceTrendPanel;
+import com.laker.postman.panel.jmeter.result.ResultTreePanel;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.jmeter.timer.TimerPropertyPanel;
-import com.laker.postman.panel.runner.RunnerHtmlUtil;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -99,8 +96,6 @@ public class PerformancePanel extends BasePanel {
     private TimeSeries responseTimeSeries;
     private TimeSeries qpsSeries;
     private TimeSeries errorPercentSeries;
-    // 搜索框相关
-    private JTextField searchField;
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
@@ -109,6 +104,8 @@ public class PerformancePanel extends BasePanel {
 
     // 高效模式
     private boolean efficientMode = true;
+
+    private ResultTreePanel resultTreePanel;
 
     @Override
     protected void initUI() {
@@ -145,33 +142,7 @@ public class PerformancePanel extends BasePanel {
         propertyCardLayout.show(propertyPanel, "empty");
 
         // 3. 结果树面板
-        // ========== 结果树搜索框 ==========
-        JPanel resultTreePanel = new JPanel(new BorderLayout());
-        JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
-        searchField = new SearchTextField();
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        resultTreePanel.add(searchPanel, BorderLayout.NORTH);
-        // 结果树
-        resultRootNode = new DefaultMutableTreeNode("Result Tree");
-        resultTreeModel = new DefaultTreeModel(resultRootNode);
-        resultTree = new JTree(resultTreeModel);
-        resultTree.setRootVisible(true);
-        resultTree.setShowsRootHandles(true);
-        resultTree.setCellRenderer(new ResultTreeCellRenderer());
-        JScrollPane resultTreeScroll = new JScrollPane(resultTree);
-        resultTreeScroll.setPreferredSize(new Dimension(320, 400));
-        resultTreePanel.add(resultTreeScroll, BorderLayout.CENTER);
-        // 详情tab
-        resultDetailTabbedPane = new JTabbedPane();
-        resultDetailTabbedPane.addTab("Request", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Response", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Tests", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Timing", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Event Info", new JScrollPane(new JEditorPane()));
-        JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultTreePanel, resultDetailTabbedPane);
-        resultSplit.setDividerLocation(260);
-        resultTabbedPane = new JTabbedPane();
-
+        resultTreePanel = new ResultTreePanel();
 
         // 趋势图面板
         PerformanceTrendPanel performanceTrendPanel = new PerformanceTrendPanel();
@@ -183,10 +154,10 @@ public class PerformancePanel extends BasePanel {
         PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
         reportTableModel = performanceReportPanel.getReportTableModel();
 
-
+        resultTabbedPane = new JTabbedPane();
         resultTabbedPane.addTab("Trend", performanceTrendPanel);
         resultTabbedPane.addTab("Report", performanceReportPanel);
-        resultTabbedPane.addTab("Result Tree", resultSplit);
+        resultTabbedPane.addTab("Result Tree", resultTreePanel);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -329,10 +300,8 @@ public class PerformancePanel extends BasePanel {
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
         resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
-        resultRootNode.removeAllChildren(); // 清空结果树
+        resultTreePanel.clearResults(); // 清空结果树
         reportTableModel.setRowCount(0); // 清空报表数据
-        resultTreeModel.reload(); // 刷新结果树
-        resultTree.clearSelection(); // 清除选中状态
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
@@ -1105,22 +1074,9 @@ public class PerformancePanel extends BasePanel {
             }
 
             // 高效模式下只保存失败或异常结果
-            if (!efficientMode || !success) {
-                DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults));
-                SwingUtilities.invokeLater(() -> {
-                    resultRootNode.add(reqNode);
-                    resultTreeModel.reload(resultRootNode);
-                });
-            }
+            resultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
         }
     }
-
-    // 结果树相关
-    private JTree resultTree;
-    private DefaultTreeModel resultTreeModel;
-    private DefaultMutableTreeNode resultRootNode;
-    // 替换为tabbedPane
-    private JTabbedPane resultDetailTabbedPane;
 
     @Override
     protected void registerListeners() {
@@ -1310,87 +1266,6 @@ public class PerformancePanel extends BasePanel {
             }
         });
 
-        // 结果树节点点击，展示请求响应详情
-        resultTree.addTreeSelectionListener(e -> {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) resultTree.getLastSelectedPathComponent();
-            if (node == null) {
-                for (int i = 0; i < resultDetailTabbedPane.getTabCount(); i++) {
-                    JScrollPane scroll = (JScrollPane) resultDetailTabbedPane.getComponentAt(i);
-                    JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
-                    pane.setText("");
-                }
-                return;
-            }
-            Object userObj = node.getUserObject();
-            if (userObj instanceof ResultNodeInfo info) {
-                // 构建HTML内容
-                PreparedRequest req = info.req;
-                HttpResponse resp = info.resp;
-                // Request
-                setTabHtml(0, buildRequestHtml(req));
-                // Response
-                setTabHtml(1, buildResponseHtml(resp));
-                // Tests
-                if (info.testResults != null && !info.testResults.isEmpty()) {
-                    setTabHtml(2, buildTestsHtml(info.testResults));
-                } else {
-                    setTabHtml(2, "<html><body><i>No assertion results</i></body></html>");
-                }
-                // Timing
-                if (resp != null && resp.httpEventInfo != null) {
-                    setTabHtml(3, buildTimingHtml(req, resp));
-                    setTabHtml(4, buildEventInfoHtml(req, resp));
-                } else {
-                    setTabHtml(3, "<html><body><i>No TimingInfo</i></body></html>");
-                    setTabHtml(4, "<html><body><i>No EventInfo</i></body></html>");
-                }
-            } else {
-                for (int i = 0; i < resultDetailTabbedPane.getTabCount(); i++) {
-                    JScrollPane scroll = (JScrollPane) resultDetailTabbedPane.getComponentAt(i);
-                    JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
-                    pane.setContentType("text/html");
-                    pane.setEditable(false);
-                    pane.setText("<html><body><i>No Data</i></body></html>");
-                    pane.setCaretPosition(0);
-                }
-            }
-        });
-
-        searchField.addActionListener(e -> searchResultTree(searchField.getText()));
-    }
-
-    // 设置tab页内容
-    private void setTabHtml(int tabIdx, String html) {
-        JScrollPane scroll = (JScrollPane) resultDetailTabbedPane.getComponentAt(tabIdx);
-        JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
-        pane.setContentType("text/html");
-        pane.setEditable(false);
-        pane.setText(html);
-        pane.setCaretPosition(0);
-    }
-
-    // 复用RunnerPanel的HTML构建方法
-    private String buildRequestHtml(PreparedRequest req) {
-        return RunnerHtmlUtil.buildRequestHtml(req);
-    }
-
-    private String buildResponseHtml(HttpResponse resp) {
-        return RunnerHtmlUtil.buildResponseHtml(resp);
-    }
-
-    private String buildTestsHtml(List<TestResult> testResults) {
-        return RunnerHtmlUtil.buildTestsHtml(testResults);
-    }
-
-    private String buildTimingHtml(PreparedRequest req, HttpResponse resp) {
-        RequestHistoryItem item = new RequestHistoryItem(req, resp);
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_Timing(item);
-    }
-
-    private String buildEventInfoHtml(PreparedRequest req, HttpResponse resp) {
-        RequestHistoryItem item = new RequestHistoryItem(req, resp);
-        item.response = resp;
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_EventInfo(item);
     }
 
     private void stopRun() {
@@ -1465,39 +1340,6 @@ public class PerformancePanel extends BasePanel {
         int idx = (int) Math.ceil(sorted.size() * 0.99) - 1;
         return sorted.get(Math.max(idx, 0));
     }
-
-    // ========== 结果树搜索方法 ==========
-    private void searchResultTree(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            // 关键字为空，显示全部
-            resultTreeModel.setRoot(resultRootNode);
-            resultTree.updateUI();
-            return;
-        }
-        // 过滤结果树，仅显示匹配的节点及其父节点
-        DefaultMutableTreeNode filteredRoot = filterResultTree(resultRootNode, keyword);
-        resultTreeModel.setRoot(filteredRoot);
-        resultTree.updateUI();
-        // 展开所有节点
-        for (int i = 0; i < resultTree.getRowCount(); i++) {
-            resultTree.expandRow(i);
-        }
-    }
-
-    private DefaultMutableTreeNode filterResultTree(DefaultMutableTreeNode node, String keyword) {
-        boolean matched = node.toString().contains(keyword);
-        DefaultMutableTreeNode filteredNode = new DefaultMutableTreeNode(node.getUserObject());
-        for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            DefaultMutableTreeNode filteredChild = filterResultTree(child, keyword);
-            if (filteredChild != null) {
-                filteredNode.add(filteredChild);
-                matched = true;
-            }
-        }
-        return matched ? filteredNode : null;
-    }
-
 
     private static int getJmeterMaxIdleConnections() {
         return SettingManager.getJmeterMaxIdleConnections();

@@ -20,6 +20,7 @@ import com.laker.postman.panel.jmeter.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 import com.laker.postman.panel.jmeter.model.NodeType;
 import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
+import com.laker.postman.panel.jmeter.result.PerformanceReportPanel;
 import com.laker.postman.panel.jmeter.result.PerformanceTrendPanel;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupPropertyPanel;
@@ -39,7 +40,6 @@ import org.jfree.data.time.TimeSeriesCollection;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -77,9 +77,6 @@ public class PerformancePanel extends BasePanel {
     private long startTime;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
-
-    // 图表坐标轴和网格颜色
-    private static final Color AXIS_COLOR = new Color(194, 211, 236);
 
     // 用于统计每个请求的结束时间和成功状态
     private static class RequestResult {
@@ -177,125 +174,20 @@ public class PerformancePanel extends BasePanel {
         resultSplit.setDividerLocation(260);
         resultTabbedPane = new JTabbedPane();
 
-        // 报表面板
-        // 报表面板相关
-        JPanel reportPanel = new JPanel(new BorderLayout());
-        String[] columns = {"API Name", "Total", "Success", "Fail", "QPS", "Avg(ms)", "Min(ms)", "Max(ms)", "P99(ms)", "Total Cost(ms)", "Success Rate"};
-        reportTableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        JTable reportTable = new JTable(reportTableModel);
-        reportTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        // 设置数据列居中
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        // 失败列红色渲染器（0为黑色，大于0为红色，Total行为蓝色加粗）
-        DefaultTableCellRenderer failRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
-                if (isTotal) {
-                    c.setFont(c.getFont().deriveFont(Font.BOLD));
-                    c.setForeground(new Color(0, 102, 204));
-                    c.setBackground(new Color(230, 240, 255));
-                } else {
-                    try {
-                        int failCount = Integer.parseInt(value == null ? "0" : value.toString());
-                        c.setForeground(failCount > 0 ? Color.RED : Color.BLACK);
-                        c.setBackground(Color.WHITE);
-                    } catch (Exception e) {
-                        c.setForeground(Color.BLACK);
-                        c.setBackground(Color.WHITE);
-                    }
-                }
-                setHorizontalAlignment(SwingConstants.CENTER);
-                return c;
-            }
-        };
-        // 成功率列绿色渲染器（Total行为蓝色加粗）
-        DefaultTableCellRenderer rateRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
-                if (isTotal) {
-                    c.setFont(c.getFont().deriveFont(Font.BOLD));
-                    c.setForeground(new Color(0, 102, 204));
-                    c.setBackground(new Color(230, 240, 255));
-                } else {
-                    String rateStr = value != null ? value.toString() : "";
-                    if (rateStr.endsWith("%")) {
-                        try {
-                            double rate = Double.parseDouble(rateStr.replace("%", ""));
-                            if (rate >= 99) {
-                                c.setForeground(new Color(0, 153, 0)); // 深绿色
-                            } else if (rate >= 90) {
-                                c.setForeground(new Color(51, 153, 255)); // 蓝色
-                            } else {
-                                c.setForeground(Color.RED);
-                            }
-                        } catch (Exception e) {
-                            c.setForeground(Color.BLACK);
-                        }
-                    } else {
-                        c.setForeground(Color.BLACK);
-                    }
-                    c.setBackground(Color.WHITE);
-                }
-                setHorizontalAlignment(SwingConstants.CENTER);
-                return c;
-            }
-        };
-        // 通用居中渲染器（Total行美化）
-        DefaultTableCellRenderer generalRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
-                if (isTotal) {
-                    c.setFont(c.getFont().deriveFont(Font.BOLD));
-                    c.setForeground(new Color(0, 102, 204));
-                    c.setBackground(new Color(230, 240, 255));
-                } else {
-                    c.setForeground(Color.BLACK);
-                    c.setBackground(Color.WHITE);
-                }
-                setHorizontalAlignment(SwingConstants.CENTER);
-                return c;
-            }
-        };
-        // 需要居中的列索引
-        int[] centerColumns = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        for (int col : centerColumns) {
-            if (col == 3) { // 失败列
-                reportTable.getColumnModel().getColumn(col).setCellRenderer(failRenderer);
-            } else if (col == 10) { // 成功率列
-                reportTable.getColumnModel().getColumn(col).setCellRenderer(rateRenderer);
-            } else {
-                reportTable.getColumnModel().getColumn(col).setCellRenderer(generalRenderer);
-            }
-        }
-        // 设置表头加粗
-        reportTable.getTableHeader().setFont(reportTable.getTableHeader().getFont().deriveFont(Font.BOLD));
-        JScrollPane tableScroll = new JScrollPane(reportTable);
-        reportPanel.add(tableScroll, BorderLayout.CENTER);
+
         // 趋势图面板
         trendDataset = new TimeSeriesCollection();
         userCountSeries = new TimeSeries("Threads");
         responseTimeSeries = new TimeSeries("Response Time(ms)");
         qpsSeries = new TimeSeries("QPS");
         errorPercentSeries = new TimeSeries("Error Rate(%)");
+        // 报告面板
+        PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
+        reportTableModel = performanceReportPanel.getReportTableModel();
 
 
         resultTabbedPane.addTab("Trend", new PerformanceTrendPanel(trendDataset, userCountSeries, responseTimeSeries, qpsSeries, errorPercentSeries));
-        resultTabbedPane.addTab("Report", reportPanel);
+        resultTabbedPane.addTab("Report", performanceReportPanel);
         resultTabbedPane.addTab("Result Tree", resultSplit);
 
         // 主分割（左树-右属性）

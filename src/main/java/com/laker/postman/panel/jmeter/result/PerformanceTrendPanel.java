@@ -1,5 +1,6 @@
 package com.laker.postman.panel.jmeter.result;
 
+import com.laker.postman.common.panel.SingletonBasePanel;
 import lombok.Getter;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -15,27 +16,20 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 
-public class PerformanceTrendPanel extends JPanel {
-    private final TimeSeriesCollection trendDataset;
+public class PerformanceTrendPanel extends SingletonBasePanel {
+    private final TimeSeriesCollection trendDataset = new TimeSeriesCollection();
+    ;
     @Getter
-    private final TimeSeries userCountSeries;
+    private final TimeSeries userCountSeries = new TimeSeries("Threads");
     @Getter
-    private final TimeSeries responseTimeSeries;
+    private final TimeSeries responseTimeSeries = new TimeSeries("Response Time(ms)");
     @Getter
-    private final TimeSeries qpsSeries;
+    private final TimeSeries qpsSeries = new TimeSeries("QPS");
     @Getter
-    private final TimeSeries errorPercentSeries;
+    private final TimeSeries errorPercentSeries = new TimeSeries("Error Rate(%)");
 
-    public PerformanceTrendPanel() {
-        trendDataset = new TimeSeriesCollection();
-        userCountSeries = new TimeSeries("Threads");
-        responseTimeSeries = new TimeSeries("Response Time(ms)");
-        qpsSeries = new TimeSeries("QPS");
-        errorPercentSeries = new TimeSeries("Error Rate(%)");
-        initUI();
-    }
-
-    private void initUI() {
+    @Override
+    protected void initUI() {
         setLayout(new BorderLayout());
         JPanel checkBoxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         JCheckBox threadsCheckBox = new JCheckBox("Threads", true);
@@ -116,6 +110,11 @@ public class PerformanceTrendPanel extends JPanel {
         trendTopPanel.add(checkBoxPanel);
         add(trendTopPanel, BorderLayout.NORTH);
         add(chartPanel, BorderLayout.CENTER);
+    }
+
+    @Override
+    protected void registerListeners() {
+
     }
 
     private void updateYAxisLabel(XYPlot plot, boolean threadsSelected, boolean responseTimeSelected,

@@ -2,7 +2,7 @@ package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.Colors;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
@@ -17,7 +17,7 @@ import java.awt.event.MouseEvent;
 /**
  * 历史记录面板
  */
-public class HistoryPanel extends BasePanel {
+public class HistoryPanel extends SingletonBasePanel {
     public static final String EMPTY_BODY_HTML = "<html><body>Please select a record.</body></html>";
     private JList<RequestHistoryItem> historyList;
     private JPanel historyDetailPanel;

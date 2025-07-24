@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.RequestCollectionsLeftPanel;
@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 @Slf4j
-public class RunnerPanel extends BasePanel {
+public class RunnerPanel extends SingletonBasePanel {
     private JTable table;
     private RunnerTableModel tableModel;
     private StartButton runBtn;

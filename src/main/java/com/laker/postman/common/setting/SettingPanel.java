@@ -1,6 +1,6 @@
 package com.laker.postman.common.setting;
 
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
-public class SettingPanel extends BasePanel {
+public class SettingPanel extends SingletonBasePanel {
     private JTextField maxBodySizeField;
     private JTextField requestTimeoutField;
     private JTextField maxDownloadSizeField;

@@ -1,7 +1,7 @@
 package com.laker.postman.panel;
 
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,7 +12,7 @@ import java.awt.*;
  * 左侧标签页面板包含了集合、环境变量、压测三个标签页，
  */
 @Slf4j
-public class EasyPostmanMainPanel extends BasePanel {
+public class EasyPostmanMainPanel extends SingletonBasePanel {
 
     // 单例模式，确保只有一个实例
     private EasyPostmanMainPanel() {

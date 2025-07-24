@@ -1,10 +1,11 @@
 package com.laker.postman.panel.jmeter;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
@@ -55,7 +56,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
  */
 @Slf4j
-public class PerformancePanel extends BasePanel {
+public class PerformancePanel extends SingletonBasePanel {
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
@@ -135,7 +136,7 @@ public class PerformancePanel extends BasePanel {
         performanceResultTreePanel = new PerformanceResultTreePanel();
 
         // 趋势图面板
-        PerformanceTrendPanel performanceTrendPanel = new PerformanceTrendPanel();
+        PerformanceTrendPanel performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         userCountSeries = performanceTrendPanel.getUserCountSeries();
         responseTimeSeries = performanceTrendPanel.getResponseTimeSeries();
         qpsSeries = performanceTrendPanel.getQpsSeries();

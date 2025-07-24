@@ -1,6 +1,6 @@
 package com.laker.postman.common;
 
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -16,14 +16,14 @@ public class SingletonFactory {
     /**
      * 获取无参构造的单例实例
      * 线程安全，支持并发访问。
-     * “占位符”机制：
+     * "占位符"机制：
      * 在创建实例前，先往 INSTANCE_MAP 放入一个占位对象，防止递归依赖时重复创建或抛出递归异常。
      * 这样如果发生循环依赖，后续递归 getInstance 会直接返回占位符，避免死循环或 IllegalStateException。
      * 这个机制的作用是：
      * 防止 A 依赖 B，B 又依赖 A 时递归死锁；
-     * 类似 Spring 的三级缓存，允许“半成品”对象先注册，打破依赖环；
+     * 类似 Spring 的三级缓存，允许"半成品"对象先注册，打破依赖环；
      * 提高健壮性，便于排查和修复循环依赖问题。
-     * “半成品”B 只是临时占位，最终会被完整实例替换。只要不在初始化阶段就用它的功能，后续是安全的。如果必须在构造阶段用到对方，建议优化设计，避免循环依赖
+     * "半成品"B 只是临时占位，最终会被完整实例替换。只要不在初始化阶段就用它的功能，后续是安全的。如果必须在构造阶段用到对方，建议优化设计，避免循环依赖
      */
     @SuppressWarnings("unchecked")
     public static <T> T getInstance(Class<T> clazz) {
@@ -45,12 +45,25 @@ public class SingletonFactory {
         }
         try {
             log.debug("开始创建单例实例: {}", clazz.getName());
+
+            // 对于SingletonBasePanel类型，设置创建标志
+            boolean isSingletonBasePanel = SingletonBasePanel.class.isAssignableFrom(clazz);
+            if (isSingletonBasePanel) {
+                SingletonBasePanel.setCreatingAllowed(true);
+            }
+
             // 4. 反射创建实例
             var constructor = clazz.getDeclaredConstructor();
             constructor.setAccessible(true);
             T instance = constructor.newInstance();
+
+            // 重置创建标志
+            if (isSingletonBasePanel) {
+                SingletonBasePanel.setCreatingAllowed(false);
+            }
+
             log.debug("单例实例创建成功: {}", clazz.getName());
-            if (instance instanceof BasePanel panel) {
+            if (instance instanceof SingletonBasePanel panel) {
                 log.debug("初始化面板: {}", clazz.getName());
                 panel.safeInit();
             }
@@ -60,6 +73,12 @@ public class SingletonFactory {
         } catch (Exception e) {
             log.error("创建单例失败: {}", clazz.getName(), e);
             INSTANCE_MAP.remove(clazz, placeholder); // 出错时移除占位符
+
+            // 确保在异常情况下也重置创建标志
+            if (SingletonBasePanel.class.isAssignableFrom(clazz)) {
+                SingletonBasePanel.setCreatingAllowed(false);
+            }
+
             throw new RuntimeException("创建单例失败: " + clazz.getName(), e);
         }
     }

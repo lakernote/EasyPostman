@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.edit;
 
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tab.PlusTabComponent;
 import com.laker.postman.model.CurlRequest;
@@ -31,7 +31,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
  * 请求编辑面板，支持多标签页，每个标签页为独立的请求编辑子面板
  */
 @Slf4j
-public class RequestEditPanel extends BasePanel {
+public class RequestEditPanel extends SingletonBasePanel {
     public static final String REQUEST_STRING = "New Request";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板

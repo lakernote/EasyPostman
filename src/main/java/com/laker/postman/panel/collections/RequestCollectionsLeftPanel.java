@@ -10,7 +10,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.dialog.LargeInputDialog;
 import com.laker.postman.common.frame.MainFrame;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.tree.TreeTransferHandler;
@@ -54,7 +54,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
  * 支持请求的增删改查、分组管理、拖拽排序等功能
  */
 @Slf4j
-public class RequestCollectionsLeftPanel extends BasePanel {
+public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     // 请求集合的根节点
     private DefaultMutableTreeNode rootTreeNode;
     // 请求树组件

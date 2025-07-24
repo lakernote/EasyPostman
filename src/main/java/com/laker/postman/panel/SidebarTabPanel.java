@@ -4,7 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.Colors;
-import com.laker.postman.common.panel.BasePanel;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * 左侧标签页面板
  */
 @Slf4j
-public class SidebarTabPanel extends BasePanel {
+public class SidebarTabPanel extends SingletonBasePanel {
 
     private JTabbedPane tabbedPane;
     private List<TabInfo> tabInfos;

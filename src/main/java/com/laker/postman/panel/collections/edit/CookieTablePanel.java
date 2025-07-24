@@ -41,6 +41,11 @@ public class CookieTablePanel extends JPanel {
         btnPanel.add(btnRefresh);
         add(btnPanel, BorderLayout.SOUTH);
 
+        btnAdd.setToolTipText("Add a new cookie");
+        btnDelete.setToolTipText("Delete the selected cookie");
+        btnClear.setToolTipText("Clear all cookies");
+        btnRefresh.setToolTipText("Refresh the cookie list");
+
         btnAdd.addActionListener(e -> addCookieDialog());
         btnDelete.addActionListener(e -> deleteSelectedCookie());
         btnClear.addActionListener(e -> clearAllCookies());
@@ -75,7 +80,7 @@ public class CookieTablePanel extends JPanel {
     }
 
     private void clearAllCookies() {
-        int confirm = JOptionPane.showConfirmDialog(this, "确定要清空所有Cookie吗？", "确认", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to clear all cookies?", "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             CookieService.clearAllCookies();
         }
@@ -99,7 +104,7 @@ public class CookieTablePanel extends JPanel {
         panel.add(pathField);
         panel.add(secureBox);
         panel.add(httpOnlyBox);
-        int result = JOptionPane.showConfirmDialog(this, panel, "新增 Cookie", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(this, panel, "Add Cookie", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String name = nameField.getText().trim();
             String value = valueField.getText().trim();
@@ -110,7 +115,7 @@ public class CookieTablePanel extends JPanel {
             if (!name.isEmpty() && !domain.isEmpty()) {
                 CookieService.addCookie(name, value, domain, path, secure, httpOnly);
             } else {
-                JOptionPane.showMessageDialog(this, "Name和Domain不能为空", "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Name and Domain cannot be empty", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

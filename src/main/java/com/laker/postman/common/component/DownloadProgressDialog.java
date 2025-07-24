@@ -84,7 +84,7 @@ public class DownloadProgressDialog extends JDialog {
         // 设置图表样式
         XYPlot plot = (XYPlot) chart.getPlot();
         DateAxis dateAxis = (DateAxis) plot.getDomainAxis();
-        dateAxis.setDateFormatOverride(new SimpleDateFormat("mm:ss"));
+        dateAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
         dateAxis.setAutoRange(true);
 //        dateAxis.setFixedAutoRange(20000); // 显示20秒的数据，减少初始空白区域
 

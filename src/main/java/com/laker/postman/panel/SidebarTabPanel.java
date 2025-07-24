@@ -8,7 +8,7 @@ import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.history.HistoryPanel;
-import com.laker.postman.panel.jmeter.JMeterPanel;
+import com.laker.postman.panel.jmeter.PerformancePanel;
 import com.laker.postman.panel.runner.RunnerPanel;
 import com.laker.postman.util.FontUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -58,7 +58,7 @@ public class SidebarTabPanel extends BasePanel {
         tabInfos.add(new TabInfo("Functional", new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RunnerPanel.class)));
         tabInfos.add(new TabInfo("Performance", new FlatSVGIcon("icons/performance.svg", 20, 20),
-                () -> SingletonFactory.getInstance(JMeterPanel.class)));
+                () -> SingletonFactory.getInstance(PerformancePanel.class)));
         tabInfos.add(new TabInfo("History", new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {

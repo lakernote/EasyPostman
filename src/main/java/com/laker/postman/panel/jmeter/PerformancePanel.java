@@ -20,6 +20,7 @@ import com.laker.postman.panel.jmeter.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 import com.laker.postman.panel.jmeter.model.NodeType;
 import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
+import com.laker.postman.panel.jmeter.result.PerformanceTrendPanel;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.jmeter.timer.TimerPropertyPanel;
@@ -58,7 +59,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
  */
 @Slf4j
-public class JMeterPanel extends BasePanel {
+public class PerformancePanel extends BasePanel {
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
@@ -293,7 +294,7 @@ public class JMeterPanel extends BasePanel {
         errorPercentSeries = new TimeSeries("Error Rate(%)");
 
 
-        resultTabbedPane.addTab("Trend", new JMeterTrendPanel(trendDataset, userCountSeries, responseTimeSeries, qpsSeries, errorPercentSeries));
+        resultTabbedPane.addTab("Trend", new PerformanceTrendPanel(trendDataset, userCountSeries, responseTimeSeries, qpsSeries, errorPercentSeries));
         resultTabbedPane.addTab("Report", reportPanel);
         resultTabbedPane.addTab("Result Tree", resultSplit);
 
@@ -335,7 +336,7 @@ public class JMeterPanel extends BasePanel {
         efficientHelp.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                JOptionPane.showMessageDialog(JMeterPanel.this,
+                JOptionPane.showMessageDialog(PerformancePanel.this,
                         "高效模式：\n只记录断言失败或请求异常的结果，极大减少内存占用。适合高并发/大循环压测。\n可扩展更多性能相关配置。",
                         "高效模式说明", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -1321,7 +1322,7 @@ public class JMeterPanel extends BasePanel {
             if (node == null) return;
             Object userObj = node.getUserObject();
             if (!(userObj instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.THREAD_GROUP) {
-                JOptionPane.showMessageDialog(JMeterPanel.this, "Please select a thread group node to add", "Info", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(PerformancePanel.this, "Please select a thread group node to add", "Info", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             // 多选请求弹窗
@@ -1365,7 +1366,7 @@ public class JMeterPanel extends BasePanel {
             if (!(userObj instanceof JMeterTreeNode jtNode)) return;
             if (jtNode.type == NodeType.ROOT) return;
             String oldName = jtNode.name;
-            String newName = JOptionPane.showInputDialog(JMeterPanel.this, "Rename node:", oldName);
+            String newName = JOptionPane.showInputDialog(PerformancePanel.this, "Rename node:", oldName);
             if (newName != null && !newName.trim().isEmpty()) {
                 jtNode.name = newName.trim();
                 // 同步更新 request 类型的 httpRequestItem name 字段

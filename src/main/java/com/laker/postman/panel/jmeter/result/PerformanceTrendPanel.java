@@ -1,4 +1,4 @@
-package com.laker.postman.panel.jmeter;
+package com.laker.postman.panel.jmeter.result;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -14,18 +14,18 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 
-public class JMeterTrendPanel extends JPanel {
+public class PerformanceTrendPanel extends JPanel {
     private final TimeSeriesCollection trendDataset;
     private final TimeSeries userCountSeries;
     private final TimeSeries responseTimeSeries;
     private final TimeSeries qpsSeries;
     private final TimeSeries errorPercentSeries;
 
-    public JMeterTrendPanel(TimeSeriesCollection trendDataset,
-                            TimeSeries userCountSeries,
-                            TimeSeries responseTimeSeries,
-                            TimeSeries qpsSeries,
-                            TimeSeries errorPercentSeries) {
+    public PerformanceTrendPanel(TimeSeriesCollection trendDataset,
+                                 TimeSeries userCountSeries,
+                                 TimeSeries responseTimeSeries,
+                                 TimeSeries qpsSeries,
+                                 TimeSeries errorPercentSeries) {
         this.trendDataset = trendDataset;
         this.userCountSeries = userCountSeries;
         this.responseTimeSeries = responseTimeSeries;

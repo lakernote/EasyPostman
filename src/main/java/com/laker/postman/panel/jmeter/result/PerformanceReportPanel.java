@@ -1,13 +1,10 @@
 package com.laker.postman.panel.jmeter.result;
 
-import lombok.Getter;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
-@Getter
 public class PerformanceReportPanel extends JPanel {
     private final DefaultTableModel reportTableModel;
 
@@ -124,4 +121,16 @@ public class PerformanceReportPanel extends JPanel {
         add(tableScroll, BorderLayout.CENTER);
     }
 
+
+    public void clearReport() {
+        reportTableModel.setRowCount(0);
+    }
+
+    public void addReportRow(Object[] rowData) {
+        if (rowData != null && rowData.length == reportTableModel.getColumnCount()) {
+            reportTableModel.addRow(rowData);
+        } else {
+            throw new IllegalArgumentException("Row data must match the number of columns in the report table.");
+        }
+    }
 }

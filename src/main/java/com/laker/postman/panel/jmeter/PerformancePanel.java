@@ -18,8 +18,8 @@ import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 import com.laker.postman.panel.jmeter.model.NodeType;
 import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
 import com.laker.postman.panel.jmeter.result.PerformanceReportPanel;
+import com.laker.postman.panel.jmeter.result.PerformanceResultTreePanel;
 import com.laker.postman.panel.jmeter.result.PerformanceTrendPanel;
-import com.laker.postman.panel.jmeter.result.ResultTreePanel;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.jmeter.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.jmeter.timer.TimerPropertyPanel;
@@ -36,7 +36,6 @@ import org.jfree.data.time.TimeSeries;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -86,7 +85,6 @@ public class PerformancePanel extends BasePanel {
     }
 
     private final List<RequestResult> allRequestResults = Collections.synchronizedList(new ArrayList<>());
-    private DefaultTableModel reportTableModel;
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
@@ -105,7 +103,8 @@ public class PerformancePanel extends BasePanel {
     // 高效模式
     private boolean efficientMode = true;
 
-    private ResultTreePanel resultTreePanel;
+    private PerformanceReportPanel performanceReportPanel;
+    private PerformanceResultTreePanel performanceResultTreePanel;
 
     @Override
     protected void initUI() {
@@ -142,7 +141,7 @@ public class PerformancePanel extends BasePanel {
         propertyCardLayout.show(propertyPanel, "empty");
 
         // 3. 结果树面板
-        resultTreePanel = new ResultTreePanel();
+        performanceResultTreePanel = new PerformanceResultTreePanel();
 
         // 趋势图面板
         PerformanceTrendPanel performanceTrendPanel = new PerformanceTrendPanel();
@@ -151,13 +150,11 @@ public class PerformancePanel extends BasePanel {
         qpsSeries = performanceTrendPanel.getQpsSeries();
         errorPercentSeries = performanceTrendPanel.getErrorPercentSeries();
         // 报告面板
-        PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
-        reportTableModel = performanceReportPanel.getReportTableModel();
-
+        performanceReportPanel = new PerformanceReportPanel();
         resultTabbedPane = new JTabbedPane();
         resultTabbedPane.addTab("Trend", performanceTrendPanel);
         resultTabbedPane.addTab("Report", performanceReportPanel);
-        resultTabbedPane.addTab("Result Tree", resultTreePanel);
+        resultTabbedPane.addTab("Result Tree", performanceResultTreePanel);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -300,8 +297,8 @@ public class PerformancePanel extends BasePanel {
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
         resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
-        resultTreePanel.clearResults(); // 清空结果树
-        reportTableModel.setRowCount(0); // 清空报表数据
+        performanceResultTreePanel.clearResults(); // 清空结果树
+        performanceReportPanel.clearReport(); // 清空报表数据
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
@@ -1074,7 +1071,7 @@ public class PerformancePanel extends BasePanel {
             }
 
             // 高效模式下只保存失败或异常结果
-            resultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
+            performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
         }
     }
 
@@ -1282,7 +1279,7 @@ public class PerformancePanel extends BasePanel {
 
     private void updateReportPanel() {
         // 表格统计
-        reportTableModel.setRowCount(0); // 清空表格
+        performanceReportPanel.clearReport();
         int totalApi = 0, totalSuccess = 0, totalFail = 0;
         long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
         double totalRate = 0;
@@ -1305,7 +1302,7 @@ public class PerformancePanel extends BasePanel {
                 apiQps = apiTotal * 1000.0 / spanMs;
             }
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
-            reportTableModel.addRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
+            performanceReportPanel.addReportRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
             // 累加total
             totalApi += apiTotal;
             totalSuccess += apiSuccess;
@@ -1329,7 +1326,7 @@ public class PerformancePanel extends BasePanel {
                 totalQps = totalApi * 1000.0 / spanMs;
             }
             long avg = totalApi > 0 ? totalCost / totalApi : 0;
-            reportTableModel.addRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
+            performanceReportPanel.addReportRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
         }
     }
 

@@ -22,7 +22,7 @@ import java.util.List;
  * 包含搜索框、结果树和详情区域
  */
 @Slf4j
-public class ResultTreePanel extends JPanel {
+public class PerformanceResultTreePanel extends JPanel {
 
     private JTree resultTree;
 
@@ -34,7 +34,7 @@ public class ResultTreePanel extends JPanel {
 
     private JTextField searchField;
 
-    public ResultTreePanel() {
+    public PerformanceResultTreePanel() {
         initUI();
         registerListeners();
     }

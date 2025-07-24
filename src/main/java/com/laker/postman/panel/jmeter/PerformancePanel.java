@@ -35,7 +35,6 @@ import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
@@ -96,7 +95,6 @@ public class PerformancePanel extends BasePanel {
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
     // 趋势图相关
-    private TimeSeriesCollection trendDataset;
     private TimeSeries userCountSeries;
     private TimeSeries responseTimeSeries;
     private TimeSeries qpsSeries;
@@ -177,7 +175,6 @@ public class PerformancePanel extends BasePanel {
 
         // 趋势图面板
         PerformanceTrendPanel performanceTrendPanel = new PerformanceTrendPanel();
-        trendDataset = performanceTrendPanel.getTrendDataset();
         userCountSeries = performanceTrendPanel.getUserCountSeries();
         responseTimeSeries = performanceTrendPanel.getResponseTimeSeries();
         qpsSeries = performanceTrendPanel.getQpsSeries();

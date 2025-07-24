@@ -15,12 +15,15 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 
-@Getter
 public class PerformanceTrendPanel extends JPanel {
     private final TimeSeriesCollection trendDataset;
+    @Getter
     private final TimeSeries userCountSeries;
+    @Getter
     private final TimeSeries responseTimeSeries;
+    @Getter
     private final TimeSeries qpsSeries;
+    @Getter
     private final TimeSeries errorPercentSeries;
 
     public PerformanceTrendPanel() {

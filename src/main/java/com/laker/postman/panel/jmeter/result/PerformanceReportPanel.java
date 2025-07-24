@@ -1,9 +1,15 @@
 package com.laker.postman.panel.jmeter.result;
 
+import com.laker.postman.panel.jmeter.model.RequestResult;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
     private final DefaultTableModel reportTableModel;
@@ -126,11 +132,73 @@ public class PerformanceReportPanel extends JPanel {
         reportTableModel.setRowCount(0);
     }
 
-    public void addReportRow(Object[] rowData) {
+    private void addReportRow(Object[] rowData) {
         if (rowData != null && rowData.length == reportTableModel.getColumnCount()) {
             reportTableModel.addRow(rowData);
         } else {
             throw new IllegalArgumentException("Row data must match the number of columns in the report table.");
         }
+    }
+
+    public void updateReport(Map<String, List<Long>> apiCostMap,
+                             Map<String, Integer> apiSuccessMap,
+                             Map<String, Integer> apiFailMap,
+                             List<Long> allRequestStartTimes,
+                             List<RequestResult> allRequestResults) {
+        clearReport();
+        int totalApi = 0, totalSuccess = 0, totalFail = 0;
+        long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
+        double totalRate = 0;
+        int apiCount = 0;
+        for (String api : apiCostMap.keySet()) {
+            List<Long> costs = apiCostMap.get(api);
+            int apiTotal = costs.size();
+            int apiSuccess = apiSuccessMap.getOrDefault(api, 0);
+            int apiFail = apiFailMap.getOrDefault(api, 0);
+            long apiAvg = apiTotal > 0 ? costs.stream().mapToLong(Long::longValue).sum() / apiTotal : 0;
+            long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
+            long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
+            long apiP99 = getP99(costs);
+            long apiTotalCost = costs.stream().mapToLong(Long::longValue).sum();
+            double apiQps = 0;
+            if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
+                long minStart = Collections.min(allRequestStartTimes);
+                long maxEnd = Collections.max(allRequestResults.stream().map(result -> result.endTime).toList());
+                long spanMs = Math.max(1, maxEnd - minStart);
+                apiQps = apiTotal * 1000.0 / spanMs;
+            }
+            double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
+            addReportRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
+            totalApi += apiTotal;
+            totalSuccess += apiSuccess;
+            totalFail += apiFail;
+            totalCost += apiTotalCost;
+            totalMin = Math.min(totalMin, apiMin);
+            totalMax = Math.max(totalMax, apiMax);
+            totalP99 += apiP99;
+            totalRate += apiRate;
+            apiCount++;
+        }
+        if (apiCount > 0) {
+            long avgP99 = totalP99 / apiCount;
+            double avgRate = totalRate / apiCount;
+            double totalQps = 0;
+            if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
+                long minStart = Collections.min(allRequestStartTimes);
+                long maxEnd = Collections.max(allRequestResults.stream().map(result -> result.endTime).toList());
+                long spanMs = Math.max(1, maxEnd - minStart);
+                totalQps = totalApi * 1000.0 / spanMs;
+            }
+            long avg = totalApi > 0 ? totalCost / totalApi : 0;
+            addReportRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
+        }
+    }
+
+    private long getP99(List<Long> costs) {
+        if (costs == null || costs.isEmpty()) return 0;
+        List<Long> sorted = new ArrayList<>(costs);
+        Collections.sort(sorted);
+        int idx = (int) Math.ceil(sorted.size() * 0.99) - 1;
+        return sorted.get(Math.max(idx, 0));
     }
 }

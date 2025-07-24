@@ -16,6 +16,7 @@ import com.laker.postman.panel.jmeter.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.jmeter.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.jmeter.model.JMeterTreeNode;
 import com.laker.postman.panel.jmeter.model.NodeType;
+import com.laker.postman.panel.jmeter.model.RequestResult;
 import com.laker.postman.panel.jmeter.model.ResultNodeInfo;
 import com.laker.postman.panel.jmeter.result.PerformanceReportPanel;
 import com.laker.postman.panel.jmeter.result.PerformanceResultTreePanel;
@@ -73,16 +74,6 @@ public class PerformancePanel extends BasePanel {
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
 
-    // 用于统计每个请求的结束时间和成功状态
-    private static class RequestResult {
-        long endTime;
-        boolean success;
-
-        public RequestResult(long endTime, boolean success) {
-            this.endTime = endTime;
-            this.success = success;
-        }
-    }
 
     private final List<RequestResult> allRequestResults = Collections.synchronizedList(new ArrayList<>());
     // 按接口统计
@@ -339,7 +330,7 @@ public class PerformancePanel extends BasePanel {
                     stopBtn.setEnabled(false);
                     stopTrendTimer();
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
-                    updateReportPanel();
+                    performanceReportPanel.updateReport(apiCostMap, apiSuccessMap, apiFailMap, allRequestStartTimes, allRequestResults);
                 });
             }
         });
@@ -1275,67 +1266,6 @@ public class PerformancePanel extends BasePanel {
         OkHttpClientManager.setDefaultConnectionPoolConfig();
         // 停止趋势图定时采样
         stopTrendTimer();
-    }
-
-    private void updateReportPanel() {
-        // 表格统计
-        performanceReportPanel.clearReport();
-        int totalApi = 0, totalSuccess = 0, totalFail = 0;
-        long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
-        double totalRate = 0;
-        int apiCount = 0;
-        for (String api : apiCostMap.keySet()) {
-            List<Long> costs = apiCostMap.get(api);
-            int apiTotal = costs.size();
-            int apiSuccess = apiSuccessMap.getOrDefault(api, 0);
-            int apiFail = apiFailMap.getOrDefault(api, 0);
-            long apiAvg = apiTotal > 0 ? costs.stream().mapToLong(Long::longValue).sum() / apiTotal : 0;
-            long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
-            long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
-            long apiP99 = getP99(costs);
-            long apiTotalCost = costs.stream().mapToLong(Long::longValue).sum();
-            double apiQps = 0;
-            if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
-                long minStart = Collections.min(allRequestStartTimes);
-                long maxEnd = Collections.max(allRequestResults.stream().map(result -> result.endTime).toList());
-                long spanMs = Math.max(1, maxEnd - minStart);
-                apiQps = apiTotal * 1000.0 / spanMs;
-            }
-            double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
-            performanceReportPanel.addReportRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
-            // 累加total
-            totalApi += apiTotal;
-            totalSuccess += apiSuccess;
-            totalFail += apiFail;
-            totalCost += apiTotalCost;
-            totalMin = Math.min(totalMin, apiMin);
-            totalMax = Math.max(totalMax, apiMax);
-            totalP99 += apiP99;
-            totalRate += apiRate;
-            apiCount++;
-        }
-        // 添加total行
-        if (apiCount > 0) {
-            long avgP99 = totalP99 / apiCount;
-            double avgRate = totalRate / apiCount;
-            double totalQps = 0;
-            if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
-                long minStart = Collections.min(allRequestStartTimes);
-                long maxEnd = Collections.max(allRequestResults.stream().map(result -> result.endTime).toList());
-                long spanMs = Math.max(1, maxEnd - minStart); // 防止除0
-                totalQps = totalApi * 1000.0 / spanMs;
-            }
-            long avg = totalApi > 0 ? totalCost / totalApi : 0;
-            performanceReportPanel.addReportRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
-        }
-    }
-
-    private long getP99(List<Long> costs) {
-        if (costs == null || costs.isEmpty()) return 0;
-        List<Long> sorted = new ArrayList<>(costs);
-        Collections.sort(sorted);
-        int idx = (int) Math.ceil(sorted.size() * 0.99) - 1;
-        return sorted.get(Math.max(idx, 0));
     }
 
     private static int getJmeterMaxIdleConnections() {

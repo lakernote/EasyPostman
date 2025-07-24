@@ -5,7 +5,6 @@ import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.BasePanel;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.*;
@@ -30,14 +29,8 @@ import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.JsScriptExecutor;
-import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -52,10 +45,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
@@ -301,114 +292,8 @@ public class JMeterPanel extends BasePanel {
         qpsSeries = new TimeSeries("QPS");
         errorPercentSeries = new TimeSeries("Error Rate(%)");
 
-        // 创建多选面板替代下拉框
-        JPanel checkBoxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        JCheckBox threadsCheckBox = new JCheckBox("Threads", true);
-        JCheckBox responseTimeCheckBox = new JCheckBox("Response Time", true);
-        JCheckBox qpsCheckBox = new JCheckBox("QPS", true);
-        JCheckBox errorRateCheckBox = new JCheckBox("Error Rate", true);
 
-        checkBoxPanel.add(threadsCheckBox);
-        checkBoxPanel.add(responseTimeCheckBox);
-        checkBoxPanel.add(qpsCheckBox);
-        checkBoxPanel.add(errorRateCheckBox);
-
-        JFreeChart trendChart = ChartFactory.createTimeSeriesChart(
-                "API Performance Trend", // 图表标题
-                "Time", // X轴标签
-                "Metric Value", // Y轴标签，后续动态切换
-                trendDataset,
-                true, // 图例
-                false,
-                false
-        );
-        // 设置趋势图样式
-        XYPlot plot = trendChart.getXYPlot();
-        // 设置series颜色
-        Color qps = new Color(222, 156, 1);
-        Color responseTime = new Color(7, 123, 237);
-        Color errorPercent = new Color(236, 38, 26);
-        Color userCount = new Color(25, 23, 23);
-        org.jfree.chart.renderer.xy.XYLineAndShapeRenderer renderer = (org.jfree.chart.renderer.xy.XYLineAndShapeRenderer) plot.getRenderer();
-        renderer.setSeriesPaint(0, userCount); // 用户数-亮蓝色
-        renderer.setSeriesPaint(1, responseTime); // 响应时间-琥珀黄
-        renderer.setSeriesPaint(2, qps); // QPS-草绿色
-        renderer.setSeriesPaint(3, errorPercent); // 错误率-柔和红
-
-        // 设置坐标轴网格颜色
-        plot.setDomainGridlinePaint(AXIS_COLOR);
-        plot.setRangeGridlinePaint(AXIS_COLOR);
-
-        // 设置字体，防止中文乱码
-        Font font = FontUtil.getDefaultFont(Font.PLAIN, 12);
-        trendChart.getTitle().setFont(font.deriveFont(13f));
-        if (trendChart.getLegend() != null) trendChart.getLegend().setItemFont(font);
-        plot.getDomainAxis().setTickLabelFont(font);
-        plot.getDomainAxis().setLabelFont(font);
-        plot.getRangeAxis().setTickLabelFont(font);
-        plot.getRangeAxis().setLabelFont(font);
-        plot.setBackgroundPaint(Color.WHITE);
-        trendChart.setBackgroundPaint(Color.WHITE);
-        // Y轴自动调整
-        plot.getRangeAxis().setAutoRange(true);
-
-        // 复选框变更监听器 - 更新图表显示
-        ActionListener checkBoxListener = e -> {
-            trendDataset.removeAllSeries();
-            int seriesIndex = 0;
-
-            // 根据选中状态添加系列
-            if (threadsCheckBox.isSelected()) {
-                trendDataset.addSeries(userCountSeries);
-                renderer.setSeriesPaint(seriesIndex++, userCount);
-            }
-
-            if (responseTimeCheckBox.isSelected()) {
-                trendDataset.addSeries(responseTimeSeries);
-                renderer.setSeriesPaint(seriesIndex++, responseTime);
-            }
-
-            if (qpsCheckBox.isSelected()) {
-                trendDataset.addSeries(qpsSeries);
-                renderer.setSeriesPaint(seriesIndex++, qps);
-            }
-
-            if (errorRateCheckBox.isSelected()) {
-                trendDataset.addSeries(errorPercentSeries);
-                renderer.setSeriesPaint(seriesIndex, errorPercent);
-            }
-
-            // 更新Y轴标签
-            updateYAxisLabel(plot, threadsCheckBox.isSelected(), responseTimeCheckBox.isSelected(),
-                    qpsCheckBox.isSelected(), errorRateCheckBox.isSelected());
-        };
-
-        // 添加监听器到所有复选框
-        threadsCheckBox.addActionListener(checkBoxListener);
-        responseTimeCheckBox.addActionListener(checkBoxListener);
-        qpsCheckBox.addActionListener(checkBoxListener);
-        errorRateCheckBox.addActionListener(checkBoxListener);
-
-        // 初始化添加所有系列到图表
-        trendDataset.addSeries(userCountSeries);
-        trendDataset.addSeries(responseTimeSeries);
-        trendDataset.addSeries(qpsSeries);
-        trendDataset.addSeries(errorPercentSeries);
-
-        ChartPanel chartPanel = new ChartPanel(trendChart);
-        chartPanel.setMouseWheelEnabled(true); // 支持鼠标滚轮缩放
-        chartPanel.setBackground(Colors.PANEL_BACKGROUND);
-        chartPanel.setDisplayToolTips(true); // 显示工具提示
-        chartPanel.setPreferredSize(new Dimension(300, 300));
-        // 趋势图面板
-        JPanel trendPanel = new JPanel(new BorderLayout());
-        JPanel trendTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        trendTopPanel.add(new JLabel("显示指标:"));
-        trendTopPanel.add(checkBoxPanel);
-        trendPanel.add(trendTopPanel, BorderLayout.NORTH);
-        trendPanel.add(chartPanel, BorderLayout.CENTER);
-
-        resultTabbedPane.addTab("Trend", trendPanel);
+        resultTabbedPane.addTab("Trend", new JMeterTrendPanel(trendDataset, userCountSeries, responseTimeSeries, qpsSeries, errorPercentSeries));
         resultTabbedPane.addTab("Report", reportPanel);
         resultTabbedPane.addTab("Result Tree", resultSplit);
 
@@ -1722,60 +1607,6 @@ public class JMeterPanel extends BasePanel {
         return matched ? filteredNode : null;
     }
 
-    /**
-     * 根据当前选中的指标更新Y轴标签
-     *
-     * @param plot                 图表绘图区
-     * @param threadsSelected      是否选中了线程数
-     * @param responseTimeSelected 是否选中了响应时间
-     * @param qpsSelected          是否选中了QPS
-     * @param errorRateSelected    是否选中了错误率
-     */
-    private void updateYAxisLabel(XYPlot plot, boolean threadsSelected, boolean responseTimeSelected,
-                                  boolean qpsSelected, boolean errorRateSelected) {
-        // 计算选中的指标数量
-        int selectedCount = 0;
-        if (threadsSelected) selectedCount++;
-        if (responseTimeSelected) selectedCount++;
-        if (qpsSelected) selectedCount++;
-        if (errorRateSelected) selectedCount++;
-
-        // 根据选中情况设置Y轴标签
-        if (selectedCount == 0) {
-            plot.getRangeAxis().setLabel("No Metric Selected");
-        } else if (selectedCount == 1) {
-            // 只选中一个指标时，使用指标的单位
-            if (threadsSelected) {
-                plot.getRangeAxis().setLabel("Threads");
-                if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
-                    numberAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());
-                }
-            } else if (responseTimeSelected) {
-                plot.getRangeAxis().setLabel("Response Time (ms)");
-                if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
-                    numberAxis.setNumberFormatOverride(null);
-                }
-            } else if (qpsSelected) {
-                plot.getRangeAxis().setLabel("QPS");
-                if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
-                    numberAxis.setNumberFormatOverride(null);
-                }
-            } else {
-                plot.getRangeAxis().setLabel("Error Rate (%)");
-                NumberFormat percentFormat = NumberFormat.getNumberInstance();
-                percentFormat.setMaximumFractionDigits(2);
-                if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
-                    numberAxis.setNumberFormatOverride(percentFormat);
-                }
-            }
-        } else {
-            // 选中多个指标时，使用通用标签
-            plot.getRangeAxis().setLabel("Metric Value");
-            if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
-                numberAxis.setNumberFormatOverride(null);
-            }
-        }
-    }
 
     private static int getJmeterMaxIdleConnections() {
         return SettingManager.getJmeterMaxIdleConnections();

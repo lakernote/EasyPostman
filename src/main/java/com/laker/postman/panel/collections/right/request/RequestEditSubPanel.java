@@ -18,10 +18,14 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
+import com.laker.postman.util.TimeDisplayUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Response;
 import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 import okhttp3.sse.EventSource;
+import okio.ByteString;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -456,9 +460,8 @@ public class RequestEditSubPanel extends JPanel {
     // WebSocket请求处理
     private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
         currentWorker = new SwingWorker<>() {
-            okhttp3.WebSocket webSocket;
+            WebSocket webSocket;
             final HttpResponse resp = new HttpResponse();
-            final StringBuilder wsBodyBuilder = new StringBuilder();
             long startTime;
             volatile boolean closed = false;
 
@@ -466,9 +469,9 @@ public class RequestEditSubPanel extends JPanel {
             protected Void doInBackground() {
                 try {
                     startTime = System.currentTimeMillis();
-                    webSocket = HttpSingleRequestExecutor.executeWebSocket(req, new okhttp3.WebSocketListener() {
+                    webSocket = HttpSingleRequestExecutor.executeWebSocket(req, new WebSocketListener() {
                         @Override
-                        public void onOpen(okhttp3.WebSocket webSocket, okhttp3.Response response) {
+                        public void onOpen(WebSocket webSocket, Response response) {
                             resp.headers = new LinkedHashMap<>();
                             for (String name : response.headers().names()) {
                                 resp.headers.put(name, response.headers(name));
@@ -488,43 +491,36 @@ public class RequestEditSubPanel extends JPanel {
                                         "WebSocket连接成功",
                                         JOptionPane.INFORMATION_MESSAGE);
                             });
+                            log.info("WebSocket连接已建立: {}", response.message());
+                            appendWebSocketMessage("WebSocket连接已建立: " + response.message());
                         }
 
                         @Override
                         public void onMessage(okhttp3.WebSocket webSocket, String text) {
-                            appendWebSocketMessage(text);
+                            appendWebSocketMessage("收到消息: " + text);
                         }
 
                         @Override
-                        public void onMessage(okhttp3.WebSocket webSocket, okio.ByteString bytes) {
-                            appendWebSocketMessage(bytes.utf8());
+                        public void onMessage(okhttp3.WebSocket webSocket, ByteString bytes) {
+                            appendWebSocketMessage("收到二进制消息: " + bytes.hex());
                         }
 
-                        private void appendWebSocketMessage(String text) {
-                            wsBodyBuilder.append(text).append("\n");
-                            resp.body = wsBodyBuilder.toString();
-                            resp.bodySize = resp.body.getBytes().length;
-                            SwingUtilities.invokeLater(() -> {
-                                setResponseBody(resp);
-                                responseSizeLabel.setText("ResponseSize: " + getSizeText(resp.bodySize));
-                            });
-                        }
 
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
-                            handleWebSocketClose("WebSocket已关闭: " + reason);
+                            log.info("closing WebSocket: code={}, reason={}", code, reason);
+                            handleWebSocketClose("WebSocket正在关闭: " + reason);
                         }
 
                         @Override
-                        public void onClosed(okhttp3.WebSocket webSocket, int code, String reason) {
+                        public void onClosed(WebSocket webSocket, int code, String reason) {
+                            log.info("closed WebSocket: code={}, reason={}", code, reason);
                             handleWebSocketClose("WebSocket已关闭: " + reason);
                         }
 
                         private void handleWebSocketClose(String message) {
                             closed = true;
                             long cost = System.currentTimeMillis() - startTime;
-                            resp.body = wsBodyBuilder.toString();
-                            resp.bodySize = resp.body.getBytes().length;
                             resp.costMs = cost;
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
@@ -536,11 +532,10 @@ public class RequestEditSubPanel extends JPanel {
                         }
 
                         @Override
-                        public void onFailure(okhttp3.WebSocket webSocket, Throwable t, okhttp3.Response response) {
+                        public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                            log.error("WebSocket连接失败: {},响应状态: {},响应头: {}", t.getMessage(), response.code(), response.headers(), t);
                             closed = true;
                             long cost = System.currentTimeMillis() - startTime;
-                            resp.body = wsBodyBuilder.toString();
-                            resp.bodySize = resp.body.getBytes().length;
                             resp.costMs = cost;
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
@@ -551,7 +546,7 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     });
                 } catch (Exception ex) {
-                    log.error(ex.getMessage(), ex);
+                    log.error("WebSocket连接异常: {}", ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
                         statusCodeLabel.setText("WebSocket发生错误: " + ex.getMessage());
                         statusCodeLabel.setForeground(Color.RED);
@@ -576,15 +571,15 @@ public class RequestEditSubPanel extends JPanel {
     private void sendWebSocketMessage() {
         String msg = requestBodyPanel.getRawBody();
         if (currentWebSocket != null && msg != null && !msg.isBlank()) {
-            currentWebSocket.send(msg);
-            // 在响应区追加发送内容
-            responseBodyPanel.getResponseBodyPane().setText(
-                    responseBodyPanel.getResponseBodyPane().getText() + "[发送]: " + msg + "\n"
-            );
-            requestBodyPanel.getBodyArea().setText("");
+            currentWebSocket.send(msg); // 发送消息
+            appendWebSocketMessage("发送消息: " + msg);
+            requestBodyPanel.getBodyArea().setText(""); // 清空输入框
         }
     }
 
+    private void appendWebSocketMessage(String text) {
+        SwingUtilities.invokeLater(() -> responseBodyPanel.appendBodyText(text));
+    }
 
     /**
      * 更新表单内容（用于切换请求或保存后刷新）
@@ -788,7 +783,7 @@ public class RequestEditSubPanel extends JPanel {
         Color statusColor = getStatusColor(resp.code);
         statusCodeLabel.setText("Status: " + statusText);
         statusCodeLabel.setForeground(statusColor);
-        responseTimeLabel.setText(String.format("Duration: %d ms", resp.costMs));
+        responseTimeLabel.setText(String.format("Duration: %s", TimeDisplayUtil.formatElapsedTime(resp.costMs)));
         int bytes = resp.bodySize;
         responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
         // 恢复tab按钮

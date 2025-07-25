@@ -9,7 +9,7 @@ public class TimeDisplayUtil {
     /**
      * 将毫秒时间转换为更友好的显示格式
      * - 小于1秒显示为 "xx ms"
-     * - 小于1分钟显示为 "x.x s"
+     * - 小于1分钟显示为 "x.xx s"
      * - 大于等于1分钟显示为 "xm xs"
      *
      * @param elapsedTimeMillis 毫秒时间
@@ -19,7 +19,7 @@ public class TimeDisplayUtil {
         if (elapsedTimeMillis < 1000) {
             return elapsedTimeMillis + " ms";
         } else if (elapsedTimeMillis < 60000) {
-            return String.format("%.1f s", elapsedTimeMillis / 1000.0);
+            return String.format("%.2f s", elapsedTimeMillis / 1000.0);
         } else {
             int minutes = (int) (elapsedTimeMillis / 60000);
             int seconds = (int) ((elapsedTimeMillis % 60000) / 1000);

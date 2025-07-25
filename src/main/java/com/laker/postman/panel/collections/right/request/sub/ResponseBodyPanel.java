@@ -197,6 +197,25 @@ public class ResponseBodyPanel extends JPanel {
         return "";
     }
 
+    /**
+     * 追加响应体内容，用于WebSocket、SSE等持续接收消息的场景
+     *
+     * @param message 要追加的消息
+     */
+    public void appendBodyText(String message) {
+        // 获取当前文本内容
+        String currentText = responseBodyPane.getText();
+        // 追加新消息
+        String newText = currentText + (currentText.isEmpty() ? "" : "\n") + message;
+        // 更新响应体内容
+        responseBodyPane.setText(newText);
+        // 滚动到最新内容
+        responseBodyPane.setCaretPosition(responseBodyPane.getDocument().getLength());
+        // 保持当前语法高亮
+        String currentSyntax = responseBodyPane.getSyntaxEditingStyle();
+        responseBodyPane.setSyntaxEditingStyle(currentSyntax);
+    }
+
     public void setBodyText(HttpResponse resp) {
         if (resp == null) {
             responseBodyPane.setText("");
@@ -292,3 +311,4 @@ public class ResponseBodyPanel extends JPanel {
         if (nextButton != null) nextButton.setEnabled(enabled);
     }
 }
+

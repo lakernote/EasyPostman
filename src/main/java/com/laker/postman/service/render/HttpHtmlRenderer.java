@@ -38,7 +38,7 @@ public class HttpHtmlRenderer {
     private static final String HTML_TEMPLATE = "<html><body style='%s'>%s</body></html>";
     private static final String DIVIDER = "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>";
     private static final String TABLE_STYLE = "border='1' cellspacing='0' cellpadding='3'";
-    private static final String PRE_STYLE = "background:" + COLOR_BACKGROUND + ";border:1px solid #eee;padding:8px;";
+    private static final String PRE_STYLE = "";
 
     // 时间格式化器
     private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");
@@ -94,7 +94,7 @@ public class HttpHtmlRenderer {
         }
 
         String content = createLabelValue("URL", req.url) +
-                createLabelValue("方法", req.method) +
+                createLabelValue("Method", req.method) +
                 buildRequestHeadersTable(req) +
                 buildRequestBodyContent(req);
 
@@ -109,7 +109,7 @@ public class HttpHtmlRenderer {
             return createHtmlDocument(NORMAL_FONT_SIZE, "<span style='color:" + COLOR_GRAY + ";'>无响应信息</span>");
         }
 
-        String content = createLabelValue("状态码", String.valueOf(resp.code)) +
+        String content = createLabelValue("Status", String.valueOf(resp.code)) +
                 createLabelValue("Protocol", safeString(resp.protocol)) +
                 createLabelValue("Thread", safeString(resp.threadName)) +
                 buildConnectionInfo(resp) +
@@ -261,7 +261,7 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildBodySection(String content) {
-        return "<b>" + "请求体" + "</b><br><pre style='margin:0;" + PRE_STYLE + "'>" +
+        return "<br><pre style='margin:0;" + PRE_STYLE + "'>" +
                 escapeHtml(content) + "</pre>";
     }
 
@@ -335,7 +335,7 @@ public class HttpHtmlRenderer {
         StringBuilder sb = new StringBuilder();
 
         if (isNotEmpty(req.okHttpRequestBody)) {
-            sb.append("<b>请求体:</b><br/><pre style='").append(PRE_STYLE).append("'>")
+            sb.append("<br/><pre style='").append(PRE_STYLE).append("'>")
                     .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
         }
 

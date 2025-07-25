@@ -128,14 +128,15 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel.add(timerPanel, "timer");
         propertyCardLayout.show(propertyPanel, "empty");
 
-        // 3. 结果树面板
+        // 3. 结果区
+        resultTabbedPane = new JTabbedPane();
+        // 结果树面板
         performanceResultTreePanel = new PerformanceResultTreePanel();
-
         // 趋势图面板
         performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         // 报告面板
         performanceReportPanel = new PerformanceReportPanel();
-        resultTabbedPane = new JTabbedPane();
+
         resultTabbedPane.addTab("Trend", performanceTrendPanel);
         resultTabbedPane.addTab("Report", performanceReportPanel);
         resultTabbedPane.addTab("Result Tree", performanceResultTreePanel);

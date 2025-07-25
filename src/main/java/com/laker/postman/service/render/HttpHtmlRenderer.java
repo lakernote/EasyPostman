@@ -1,45 +1,190 @@
-package com.laker.postman.panel.history;
+package com.laker.postman.service.render;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.model.*;
 import com.laker.postman.service.http.HttpUtil;
 
+import java.util.List;
 import java.util.Map;
 
-public class HistoryHtmlBuilder {
-    public static String formatHistoryDetailPrettyHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:9px;'>");
-        sb.append(buildBasicInfoHtml(item));
-        sb.append(buildRequestHeadersHtml(item));
-        sb.append(buildRequestBodyHtml(item));
-        sb.append("<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>");
-        sb.append(buildResponseHeadersHtml(item));
-        sb.append(buildResponseBodyHtml(item));
-        if (item.response != null && item.response.httpEventInfo != null) {
-            sb.append(buildTimingHtml(item));
+/**
+ * 统一的HTTP请求/响应HTML渲染工具类
+ * 用于生成所有HTTP相关的HTML展示内容
+ */
+public class HttpHtmlRenderer {
+
+
+    /**
+     * 渲染完整的历史记录详情HTML
+     */
+    public static String renderHistoryDetail(RequestHistoryItem item) {
+        return "<html><body style='font-family:monospace;font-size:9px;'>" + // 使用9px字体更适合历史记录详情
+                buildBasicInfoHtml(item) + // 基本信息
+                buildRequestHeadersHtml(item) + // 请求头
+                buildRequestBodyHtml(item) + // 请求体
+                "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
+                buildResponseHeadersHtml(item) + // 响应头
+                buildResponseBodyHtml(item) + // 响应体
+                renderTimingInfo(item.response) + // Timing信息
+                renderEventInfo(item.response) + // Event信息
+                "</body></html>";
+    }
+
+    /**
+     * 单独渲染Timing信息
+     */
+    public static String renderTimingInfo(HttpResponse response) {
+        if (response != null && response.httpEventInfo != null) {
+            return buildTimingHtml(response);
         }
-        if (item.response != null && item.response.httpEventInfo != null) {
-            sb.append(buildEventInfoHtml(item));
+        return "<div style='color:#888;'>No Timing Info</div>";
+    }
+
+    /**
+     * 单独渲染Event信息
+     */
+    public static String renderEventInfo(HttpResponse response) {
+        if (response != null && response.httpEventInfo != null) {
+            return buildEventInfoHtml(response.httpEventInfo);
+        }
+        return "<div style='color:#888;'>No Event Info</div>";
+    }
+
+
+    /**
+     * 渲染请求信息HTML
+     */
+    public static String renderRequest(PreparedRequest req) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
+        sb.append("<b>URL:</b> ").append(escapeHtml(req.url)).append("<br/>");
+        sb.append("<b>方法:</b> ").append(escapeHtml(req.method)).append("<br/>");
+
+        // 优先展示 okHttpHeaders，兼容多值和顺序
+        if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
+            sb.append("<b>请求头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (int i = 0; i < req.okHttpHeaders.size(); i++) {
+                String name = req.okHttpHeaders.name(i);
+                String value = req.okHttpHeaders.value(i);
+                sb.append("<tr><td>").append(escapeHtml(name)).append(":</td><td>")
+                        .append(escapeHtml(value)).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+
+        // 优先展示真实OkHttp请求体内容
+        if (req.okHttpRequestBody != null && !req.okHttpRequestBody.isEmpty()) {
+            sb.append("<b>请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
+        }
+
+        if (req.formData != null && !req.formData.isEmpty()) {
+            sb.append("<b>Form Data:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.formData.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+
+        if (req.formFiles != null && !req.formFiles.isEmpty()) {
+            sb.append("<b>Form Files:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+
+        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            sb.append("<b>x-www-form-urlencoded:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+            for (Map.Entry<String, String> entry : req.urlencoded.entrySet()) {
+                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
+                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+
+        sb.append("</body></html>");
+        return sb.toString();
+    }
+
+    /**
+     * 渲染响应信息HTML
+     */
+    public static String renderResponse(HttpResponse resp) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
+        if (resp == null) {
+            sb.append("<span style='color:gray;'>无响应信息</span>");
+        } else {
+            sb.append("<b>状态码:</b> ").append(resp.code).append("<br/>");
+            String protocol = resp.protocol != null ? escapeHtml(resp.protocol) : "-";
+            String thread = resp.threadName != null ? escapeHtml(resp.threadName) : "-";
+            String local = resp.httpEventInfo != null && resp.httpEventInfo.getLocalAddress() != null
+                    ? escapeHtml(resp.httpEventInfo.getLocalAddress()) : "-";
+            String remote = resp.httpEventInfo != null && resp.httpEventInfo.getRemoteAddress() != null
+                    ? escapeHtml(resp.httpEventInfo.getRemoteAddress()) : "-";
+
+            sb.append("<b>Protocol:</b> ").append(protocol).append("<br/>");
+            sb.append("<b>Thread:</b> ").append(thread).append("<br/>");
+            sb.append("<b>Connection:</b> ").append(local).append(" <span style='color:#888;'>→</span> ").append(remote).append("<br/>");
+
+            if (resp.headers != null && !resp.headers.isEmpty()) {
+                sb.append("<b>响应头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
+                for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
+                    sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>");
+                    List<String> values = entry.getValue();
+                    if (values != null && !values.isEmpty()) {
+                        for (int i = 0; i < values.size(); i++) {
+                            sb.append(escapeHtml(values.get(i)));
+                            if (i < values.size() - 1) sb.append(", ");
+                        }
+                    }
+                    sb.append("</td></tr>");
+                }
+                sb.append("</table>");
+            }
+
+            sb.append("<b>响应体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
+                    .append(resp.body != null ? escapeHtml(resp.body) : "<无响应体>")
+                    .append("</pre>");
         }
         sb.append("</body></html>");
         return sb.toString();
     }
 
-    // 提供单独渲染Timing和Event Info的静态方法，供RunnerPanel复用
-    public static String formatHistoryDetailPrettyHtml_Timing(RequestHistoryItem item) {
-        if (item.response != null && item.response.httpEventInfo != null) {
-            return buildTimingHtml(item);
+    /**
+     * 渲染测试结果HTML
+     */
+    public static String renderTestResults(List<TestResult> testResults) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
+        if (testResults == null || testResults.isEmpty()) {
+            sb.append("<div style='color:gray;padding:16px;'>无测试结果</div>");
+        } else {
+            sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
+            sb.append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
+            for (TestResult testResult : testResults) {
+                try {
+                    String name = testResult.name;
+                    boolean passed = testResult.passed;
+                    String message = testResult.message;
+                    sb.append("<tr>");
+                    sb.append("<td>").append(escapeHtml(name)).append("</td>");
+                    sb.append("<td style='color:")
+                            .append(passed ? "#28a745'>&#10004; Pass" : "#dc3545'>&#10008; Fail")
+                            .append("</td>");
+                    sb.append("<td>").append(message == null ? "" : escapeHtml(message)).append("</td>");
+                    sb.append("</tr>");
+                } catch (Exception ignore) {
+                }
+            }
+            sb.append("</table>");
         }
-        return "<div style='color:#888;'>No Timing Info</div>";
+        sb.append("</body></html>");
+        return sb.toString();
     }
 
-    public static String formatHistoryDetailPrettyHtml_EventInfo(RequestHistoryItem item) {
-        if (item.response != null && item.response.httpEventInfo != null) {
-            return buildEventInfoHtml(item);
-        }
-        return "<div style='color:#888;'>No Event Info</div>";
-    }
 
     private static String buildBasicInfoHtml(RequestHistoryItem item) {
         StringBuilder sb = new StringBuilder();
@@ -177,11 +322,11 @@ public class HistoryHtmlBuilder {
         return sb.toString();
     }
 
-    private static String buildTimingHtml(RequestHistoryItem item) {
+    private static String buildTimingHtml(HttpResponse response) {
         StringBuilder sb = new StringBuilder();
         sb.append("<hr style='border:0;border-top:2px solid #1976d2;margin:16px 0 8px 0;'>");
         sb.append("<div style='font-size:9px;'><b style='color:#1976d2;'>[Timing]</b></div>");
-        HttpEventInfo info = item.response.httpEventInfo;
+        HttpEventInfo info = response.httpEventInfo;
         long dns = info.getDnsEnd() > 0 && info.getDnsStart() > 0 ? info.getDnsEnd() - info.getDnsStart() : -1;
         long connect = info.getConnectEnd() > 0 && info.getConnectStart() > 0 ? info.getConnectEnd() - info.getConnectStart() : -1;
         long tls = info.getSecureConnectEnd() > 0 && info.getSecureConnectStart() > 0 ? info.getSecureConnectEnd() - info.getSecureConnectStart() : -1;
@@ -239,10 +384,10 @@ public class HistoryHtmlBuilder {
                 .append(reused)
                 .append("</td><td style='color:#888;font-size:9px;'>本次请求是否复用连接</td></tr>");
         sb.append("<tr><td style='padding:2px 8px 2px 0'>OkHttp Idle Connections</td><td>")
-                .append(item.response.idleConnectionCount)
+                .append(response.idleConnectionCount)
                 .append("</td><td style='color:#888;font-size:9px;'>OkHttp空闲连接数（快照）</td></tr>");
         sb.append("<tr><td style='padding:2px 8px 2px 0'>OkHttp Total Connections</td><td>")
-                .append(item.response.connectionCount)
+                .append(response.connectionCount)
                 .append("</td><td style='color:#888;font-size:9px;'>OkHttp总连接数（快照）</td></tr>");
         sb.append("</table>");
         sb.append("<div style='font-size:9px;color:#888;margin-top:2px;'>");
@@ -255,43 +400,40 @@ public class HistoryHtmlBuilder {
         return sb.toString();
     }
 
-    private static String buildEventInfoHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0'>");
-        sb.append("<div style='font-size:9px;'><b style='color:#1976d2;'>[Event Info]</b></div>");
-        HttpEventInfo info = item.response.httpEventInfo;
-        sb.append("<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Remote</td><td>" + escapeHtml(info.getRemoteAddress()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Protocol</td><td>" + (info.getProtocol() != null ? info.getProtocol().toString() : "-") + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>TLS</td><td>" + (info.getTlsVersion() != null ? info.getTlsVersion() : "-") + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Thread</td><td>" + (info.getThreadName() != null ? info.getThreadName() : "-") + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#888;'>Error</td><td>" + (info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") + "</td></tr>");
-        sb.append("<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallStart</td><td>" + formatMillis(info.getCallStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsStart</td><td>" + formatMillis(info.getDnsStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsEnd</td><td>" + formatMillis(info.getDnsEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectEnd</td><td>" + formatMillis(info.getSecureConnectEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectionAcquired</td><td>" + formatMillis(info.getConnectionAcquired()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestHeadersStart</td><td>" + formatMillis(info.getRequestHeadersStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestHeadersEnd</td><td>" + formatMillis(info.getRequestHeadersEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestBodyStart</td><td>" + formatMillis(info.getRequestBodyStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>RequestBodyEnd</td><td>" + formatMillis(info.getRequestBodyEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersStart</td><td>" + formatMillis(info.getResponseHeadersStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersEnd</td><td>" + formatMillis(info.getResponseHeadersEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseBodyStart</td><td>" + formatMillis(info.getResponseBodyStart()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>ResponseBodyEnd</td><td>" + formatMillis(info.getResponseBodyEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>ConnectionReleased</td><td>" + formatMillis(info.getConnectionReleased()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallEnd</td><td>" + formatMillis(info.getCallEnd()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>CallFailed</td><td>" + formatMillis(info.getCallFailed()) + "</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>Canceled</td><td>" + formatMillis(info.getCanceled()) + "</td></tr>");
-        sb.append("</table>");
-        return sb.toString();
+    private static String buildEventInfoHtml(HttpEventInfo info) {
+        return "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0'>" +
+                "<div style='font-size:9px;'><b style='color:#1976d2;'>[Event Info]</b></div>" +
+                "<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Remote</td><td>" + escapeHtml(info.getRemoteAddress()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Protocol</td><td>" + (info.getProtocol() != null ? info.getProtocol().toString() : "-") + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>TLS</td><td>" + (info.getTlsVersion() != null ? info.getTlsVersion() : "-") + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Thread</td><td>" + (info.getThreadName() != null ? info.getThreadName() : "-") + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Error</td><td>" + (info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") + "</td></tr>" +
+                "<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallStart</td><td>" + formatMillis(info.getCallStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsStart</td><td>" + formatMillis(info.getDnsStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsEnd</td><td>" + formatMillis(info.getDnsEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectEnd</td><td>" + formatMillis(info.getSecureConnectEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectionAcquired</td><td>" + formatMillis(info.getConnectionAcquired()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>RequestHeadersStart</td><td>" + formatMillis(info.getRequestHeadersStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>RequestHeadersEnd</td><td>" + formatMillis(info.getRequestHeadersEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>RequestBodyStart</td><td>" + formatMillis(info.getRequestBodyStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>RequestBodyEnd</td><td>" + formatMillis(info.getRequestBodyEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersStart</td><td>" + formatMillis(info.getResponseHeadersStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersEnd</td><td>" + formatMillis(info.getResponseHeadersEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>ResponseBodyStart</td><td>" + formatMillis(info.getResponseBodyStart()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>ResponseBodyEnd</td><td>" + formatMillis(info.getResponseBodyEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0'>ConnectionReleased</td><td>" + formatMillis(info.getConnectionReleased()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallEnd</td><td>" + formatMillis(info.getCallEnd()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>CallFailed</td><td>" + formatMillis(info.getCallFailed()) + "</td></tr>" +
+                "<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>Canceled</td><td>" + formatMillis(info.getCanceled()) + "</td></tr>" +
+                "</table>";
     }
 
     private static String formatMillis(long millis) {
@@ -301,8 +443,12 @@ public class HistoryHtmlBuilder {
         return sdf.format(date);
     }
 
-    private static String escapeHtml(String s) {
+    public static String escapeHtml(String s) {
         if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }

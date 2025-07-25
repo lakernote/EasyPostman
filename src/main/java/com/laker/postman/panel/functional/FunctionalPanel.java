@@ -8,15 +8,14 @@ import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.SidebarTabPanel;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
-import com.laker.postman.panel.functional.table.RunnerHtmlUtil;
 import com.laker.postman.panel.functional.table.RunnerRowData;
 import com.laker.postman.panel.functional.table.RunnerTableModel;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
-import com.laker.postman.panel.history.HistoryHtmlBuilder;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.JsScriptExecutor;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.TimeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -462,15 +461,15 @@ public class FunctionalPanel extends SingletonBasePanel {
     }
 
     private String buildRequestHtml(PreparedRequest req) {
-        return RunnerHtmlUtil.buildRequestHtml(req);
+        return HttpHtmlRenderer.renderRequest(req);
     }
 
     private String buildResponseHtml(HttpResponse resp) {
-        return RunnerHtmlUtil.buildResponseHtml(resp);
+        return HttpHtmlRenderer.renderResponse(resp);
     }
 
     private String buildTestsHtml(List<TestResult> testResults) {
-        return RunnerHtmlUtil.buildTestsHtml(testResults);
+        return HttpHtmlRenderer.renderTestResults(testResults);
     }
 
     // 显示详情对话框
@@ -512,14 +511,14 @@ public class FunctionalPanel extends SingletonBasePanel {
             JEditorPane timingPane = new JEditorPane();
             timingPane.setContentType("text/html");
             timingPane.setEditable(false);
-            timingPane.setText(buildTimingHtml(req, resp));
+            timingPane.setText(HttpHtmlRenderer.renderTimingInfo(resp));
             timingPane.setCaretPosition(0);
             tabbedPane.addTab("Timing", new JScrollPane(timingPane));
 
             JEditorPane eventInfoPane = new JEditorPane();
             eventInfoPane.setContentType("text/html");
             eventInfoPane.setEditable(false);
-            eventInfoPane.setText(buildEventInfoHtml(req, resp));
+            eventInfoPane.setText(HttpHtmlRenderer.renderEventInfo(resp));
             eventInfoPane.setCaretPosition(0);
             tabbedPane.addTab("Event Info", new JScrollPane(eventInfoPane));
         }
@@ -532,17 +531,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         dialog.setVisible(true);
-    }
-
-    private String buildTimingHtml(PreparedRequest request, HttpResponse resp) {
-        RequestHistoryItem item = new RequestHistoryItem(request, resp);
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_Timing(item);
-    }
-
-    private String buildEventInfoHtml(PreparedRequest request, HttpResponse resp) {
-        RequestHistoryItem item = new RequestHistoryItem(request, resp);
-        item.response = resp;
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_EventInfo(item);
     }
 
     // 更新执行时间显示

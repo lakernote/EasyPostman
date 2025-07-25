@@ -3,19 +3,15 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestHistoryItem;
-import com.laker.postman.model.TestResult;
-import com.laker.postman.panel.history.HistoryHtmlBuilder;
 import com.laker.postman.panel.performance.component.ResultTreeCellRenderer;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
-import com.laker.postman.panel.functional.table.RunnerHtmlUtil;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
-import java.util.List;
 
 /**
  * 结果树面板
@@ -91,19 +87,19 @@ public class PerformanceResultTreePanel extends JPanel {
                 PreparedRequest req = info.req;
                 HttpResponse resp = info.resp;
                 // Request
-                setTabHtml(0, buildRequestHtml(req));
+                setTabHtml(0, HttpHtmlRenderer.renderRequest(req));
                 // Response
-                setTabHtml(1, buildResponseHtml(resp));
+                setTabHtml(1, HttpHtmlRenderer.renderResponse(resp));
                 // Tests
                 if (info.testResults != null && !info.testResults.isEmpty()) {
-                    setTabHtml(2, buildTestsHtml(info.testResults));
+                    setTabHtml(2, HttpHtmlRenderer.renderTestResults(info.testResults));
                 } else {
                     setTabHtml(2, "<html><body><i>No assertion results</i></body></html>");
                 }
                 // Timing
                 if (resp != null && resp.httpEventInfo != null) {
-                    setTabHtml(3, buildTimingHtml(req, resp));
-                    setTabHtml(4, buildEventInfoHtml(req, resp));
+                    setTabHtml(3, HttpHtmlRenderer.renderTimingInfo(resp));
+                    setTabHtml(4, HttpHtmlRenderer.renderEventInfo(resp));
                 } else {
                     setTabHtml(3, "<html><body><i>No TimingInfo</i></body></html>");
                     setTabHtml(4, "<html><body><i>No EventInfo</i></body></html>");
@@ -132,30 +128,6 @@ public class PerformanceResultTreePanel extends JPanel {
         pane.setEditable(false);
         pane.setText(html);
         pane.setCaretPosition(0);
-    }
-
-    // 复用RunnerPanel的HTML构建方法
-    private String buildRequestHtml(PreparedRequest req) {
-        return RunnerHtmlUtil.buildRequestHtml(req);
-    }
-
-    private String buildResponseHtml(HttpResponse resp) {
-        return RunnerHtmlUtil.buildResponseHtml(resp);
-    }
-
-    private String buildTestsHtml(List<TestResult> testResults) {
-        return RunnerHtmlUtil.buildTestsHtml(testResults);
-    }
-
-    private String buildTimingHtml(PreparedRequest req, HttpResponse resp) {
-        RequestHistoryItem item = new RequestHistoryItem(req, resp);
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_Timing(item);
-    }
-
-    private String buildEventInfoHtml(PreparedRequest req, HttpResponse resp) {
-        RequestHistoryItem item = new RequestHistoryItem(req, resp);
-        item.response = resp;
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml_EventInfo(item);
     }
 
     // ========== 结果树搜索方法 ==========

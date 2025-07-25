@@ -6,6 +6,7 @@ import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JComponentUtils;
 
@@ -97,7 +98,12 @@ public class HistoryPanel extends SingletonBasePanel {
         split.setDividerSize(1);
         add(split, BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
+        SwingUtilities.invokeLater(() -> historyList.repaint());
+    }
 
+    @Override
+    protected void registerListeners() {
+        // 监听列表选择变化
         historyList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int idx = historyList.getSelectedIndex();
@@ -105,11 +111,12 @@ public class HistoryPanel extends SingletonBasePanel {
                     historyDetailPane.setText(EMPTY_BODY_HTML);
                 } else {
                     RequestHistoryItem item = historyListModel.get(idx);
-                    historyDetailPane.setText(formatHistoryDetailPrettyHtml(item));
+                    historyDetailPane.setText(HttpHtmlRenderer.renderHistoryDetail(item));
                     historyDetailPane.setCaretPosition(0);
                 }
             }
         });
+        // 双击选中列表项
         historyList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -121,12 +128,6 @@ public class HistoryPanel extends SingletonBasePanel {
                 }
             }
         });
-        SwingUtilities.invokeLater(() -> historyList.repaint());
-    }
-
-    @Override
-    protected void registerListeners() {
-
     }
 
     public void addRequestHistory(PreparedRequest req, HttpResponse resp) {
@@ -134,10 +135,6 @@ public class HistoryPanel extends SingletonBasePanel {
         if (historyListModel != null) {
             historyListModel.add(0, item);
         }
-    }
-
-    private String formatHistoryDetailPrettyHtml(RequestHistoryItem item) {
-        return HistoryHtmlBuilder.formatHistoryDetailPrettyHtml(item);
     }
 
     private void clearRequestHistory() {

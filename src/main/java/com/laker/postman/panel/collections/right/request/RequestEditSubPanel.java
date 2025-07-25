@@ -10,7 +10,6 @@ import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
-import com.laker.postman.panel.functional.table.RunnerHtmlUtil;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -18,6 +17,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.TimeDisplayUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -845,7 +845,7 @@ public class RequestEditSubPanel extends JPanel {
      * 设置测试结果到Tests Tab
      */
     private void setTestResults(java.util.List<TestResult> testResults) {
-        String html = RunnerHtmlUtil.buildTestsHtml(testResults);
+        String html = HttpHtmlRenderer.renderTestResults(testResults);
         testsPane.setText(html);
         testsPane.setCaretPosition(0);
         // 动态设置Tests按钮文本和颜色
@@ -893,4 +893,3 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 }
-

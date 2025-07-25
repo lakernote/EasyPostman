@@ -124,21 +124,22 @@ public class HttpHtmlRenderer {
      */
     public static String renderTestResults(List<TestResult> testResults) {
         if (testResults == null || testResults.isEmpty()) {
-            return createHtmlDocument(NORMAL_FONT_SIZE, "<div style='color:" + COLOR_GRAY + ";padding:16px;'>无测试结果</div>");
+            return createHtmlDocument("font-size:9px;", "<div style='color:#888;padding:16px;'>No test results</div>");
         }
-
         StringBuilder table = new StringBuilder()
-                .append("<table ").append(TABLE_STYLE).append(">")
-                .append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
-
+                .append("<table style='border-collapse:collapse;width:100%;background:#fff;'>")
+                .append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;'>")
+                .append("<th style='padding:8px 12px;'>Name</th>")
+                .append("<th style='padding:8px 12px;'>Result</th>")
+                .append("<th style='padding:8px 12px;'>Error Message</th>")
+                .append("</tr>");
         for (TestResult testResult : testResults) {
             if (testResult != null) {
                 table.append(buildTestResultRow(testResult));
             }
         }
         table.append("</table>");
-
-        return createHtmlDocument(NORMAL_FONT_SIZE, table.toString());
+        return createHtmlDocument("font-size:9px;", table.toString());
     }
 
     // ==================== 私有辅助方法 ====================
@@ -400,15 +401,17 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildTestResultRow(TestResult testResult) {
-        String resultStyle = testResult.passed ?
-                "color:" + COLOR_SUCCESS + "'>&#10004; Pass" :
-                "color:" + COLOR_ERROR + "'>&#10008; Fail";
-        String message = testResult.message != null ? escapeHtml(testResult.message) : "";
+        String rowBg = "background:#fff;";
+        String icon = testResult.passed ? "<span style='color:#4CAF50;font-size:12px;'>&#10003;</span>" : "<span style='color:#F44336;font-size:12px;'>&#10007;</span>";
+        String resultText = testResult.passed ? "<span style='color:#222;font-size:9px;'>Passed</span>" : "<span style='color:#F44336;font-size:9px;'>Failed</span>";
+        String message = testResult.message != null && !testResult.message.isEmpty() ?
+                "<div style='color:#F44336;font-size:9px;white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(testResult.message) + "</div>"
+                : "";
 
-        return "<tr>" +
-                "<td>" + escapeHtml(testResult.name) + "</td>" +
-                "<td style='" + resultStyle + "</td>" +
-                "<td>" + message + "</td>" +
+        return "<tr style='" + rowBg + "'>" +
+                "<td style='padding:8px 12px;color:#222;font-size:9px;'>" + escapeHtml(testResult.name) + "</td>" +
+                "<td style='padding:8px 12px;text-align:center;'>" + icon + "<br>" + resultText + "</td>" +
+                "<td style='padding:8px 12px;'>" + message + "</td>" +
                 "</tr>";
     }
 
@@ -610,4 +613,3 @@ public class HttpHtmlRenderer {
         }
     }
 }
-

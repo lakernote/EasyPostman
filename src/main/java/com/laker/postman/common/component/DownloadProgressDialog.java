@@ -16,7 +16,6 @@ import org.jfree.data.time.TimeSeriesCollection;
 
 import javax.swing.*;
 import java.awt.*;
-import java.text.SimpleDateFormat;
 
 /**
  * 通用下载进度对话框组件
@@ -83,6 +82,8 @@ public class DownloadProgressDialog extends JDialog {
 
         // 设置图表样式
         XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setDomainGridlinePaint(new Color(194, 211, 236));
+        plot.setRangeGridlinePaint(new Color(194, 211, 236));
         DateAxis dateAxis = (DateAxis) plot.getDomainAxis();
 //        dateAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
         dateAxis.setAutoRange(true);
@@ -92,8 +93,8 @@ public class DownloadProgressDialog extends JDialog {
         valueAxis.setAutoRangeIncludesZero(true);
 
         // 设置图表背景透明，线条颜色更明显
-        chart.setBackgroundPaint(null);
-        plot.setBackgroundPaint(null);
+        chart.setBackgroundPaint(null); // 设置图表背景透明
+        plot.setBackgroundPaint(null); // 设置绘图区背景透明
         plot.setOutlinePaint(Color.DARK_GRAY);
 
         // 设置线条颜色和粗细

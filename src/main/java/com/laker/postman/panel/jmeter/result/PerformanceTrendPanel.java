@@ -1,6 +1,7 @@
 package com.laker.postman.panel.jmeter.result;
 
 import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.util.FontUtil;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -54,14 +55,14 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         renderer.setSeriesPaint(1, responseTime);
         renderer.setSeriesPaint(2, qps);
         renderer.setSeriesPaint(3, errorPercent);
-        plot.setDomainGridlinePaint(new Color(194, 211, 236));
-        plot.setRangeGridlinePaint(new Color(194, 211, 236));
-        trendChart.getTitle().setFont(new Font("Dialog", Font.PLAIN, 13));
-        if (trendChart.getLegend() != null) trendChart.getLegend().setItemFont(new Font("Dialog", Font.PLAIN, 12));
-        plot.getDomainAxis().setTickLabelFont(new Font("Dialog", Font.PLAIN, 12));
-        plot.getDomainAxis().setLabelFont(new Font("Dialog", Font.PLAIN, 12));
-        plot.getRangeAxis().setTickLabelFont(new Font("Dialog", Font.PLAIN, 12));
-        plot.getRangeAxis().setLabelFont(new Font("Dialog", Font.PLAIN, 12));
+        plot.setDomainGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
+        plot.setRangeGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
+        trendChart.getTitle().setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
+        if (trendChart.getLegend() != null) trendChart.getLegend().setItemFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getDomainAxis().setTickLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getDomainAxis().setLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getRangeAxis().setTickLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getRangeAxis().setLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         plot.setBackgroundPaint(Color.WHITE);
         trendChart.setBackgroundPaint(Color.WHITE);
         plot.getRangeAxis().setAutoRange(true);
@@ -101,7 +102,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         chartPanel.setDisplayToolTips(true);
         chartPanel.setPreferredSize(new Dimension(300, 300));
         JPanel trendTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        trendTopPanel.add(new JLabel("显示指标:"));
+        trendTopPanel.add(new JLabel("Metrics:"));
         trendTopPanel.add(checkBoxPanel);
         add(trendTopPanel, BorderLayout.NORTH);
         add(chartPanel, BorderLayout.CENTER);
@@ -158,7 +159,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         responseTimeSeries.clear();
         qpsSeries.clear();
         errorPercentSeries.clear();
-        trendDataset.removeAllSeries();
     }
 
     public void addOrUpdate(RegularTimePeriod period, double users,

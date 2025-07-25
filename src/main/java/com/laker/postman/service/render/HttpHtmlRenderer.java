@@ -3,6 +3,8 @@ package com.laker.postman.service.render;
 import com.laker.postman.model.*;
 import com.laker.postman.service.http.HttpUtil;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -12,220 +14,200 @@ import java.util.Map;
  */
 public class HttpHtmlRenderer {
 
+    // CSS样式常量
+    private static final String BASE_STYLE = "font-family:monospace;";
+    private static final String DETAIL_FONT_SIZE = "font-size:9px;";
+    private static final String NORMAL_FONT_SIZE = "font-size:10px;";
+
+    // 颜色常量
+    private static final String COLOR_PRIMARY = "#1976d2";
+    private static final String COLOR_SUCCESS = "#388e3c";
+    private static final String COLOR_ERROR = "#d32f2f";
+    private static final String COLOR_WARNING = "#ffa000";
+    private static final String COLOR_GRAY = "#888";
+    private static final String COLOR_BACKGROUND = "#f8f8f8";
+
+    // 状态码颜色映射
+    private static String getStatusColor(int code) {
+        if (code >= 500) return COLOR_ERROR;
+        if (code >= 400) return COLOR_WARNING;
+        return "#43a047";
+    }
+
+    // HTML模板常量
+    private static final String HTML_TEMPLATE = "<html><body style='%s'>%s</body></html>";
+    private static final String DIVIDER = "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>";
+    private static final String TABLE_STYLE = "border='1' cellspacing='0' cellpadding='3'";
+    private static final String PRE_STYLE = "background:" + COLOR_BACKGROUND + ";border:1px solid #eee;padding:8px;";
+
+    // 时间格式化器
+    private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /**
      * 渲染完整的历史记录详情HTML
      */
     public static String renderHistoryDetail(RequestHistoryItem item) {
-        return "<html><body style='font-family:monospace;font-size:9px;'>" + // 使用9px字体更适合历史记录详情
-                buildBasicInfoHtml(item) + // 基本信息
-                buildRequestHeadersHtml(item) + // 请求头
-                buildRequestBodyHtml(item) + // 请求体
-                "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
-                buildResponseHeadersHtml(item) + // 响应头
-                buildResponseBodyHtml(item) + // 响应体
-                "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
-                renderTimingInfo(item.response) + // Timing信息
-                "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
-                renderEventInfo(item.response) + // Event信息
-                "</body></html>";
+        if (item == null) {
+            return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:" + COLOR_GRAY + ";'>无历史记录详情</div>");
+        }
+
+        String content = buildBasicInfoHtml(item) +
+                buildRequestHeadersHtml(item) +
+                buildRequestBodyHtml(item) +
+                DIVIDER +
+                buildResponseHeadersHtml(item) +
+                buildResponseBodyHtml(item) +
+                DIVIDER +
+                renderTimingInfo(item.response) +
+                DIVIDER +
+                renderEventInfo(item.response);
+
+        return createHtmlDocument(DETAIL_FONT_SIZE, content);
     }
 
     /**
      * 单独渲染Timing信息
      */
     public static String renderTimingInfo(HttpResponse response) {
-        if (response != null && response.httpEventInfo != null) {
-            return buildTimingHtml(response);
+        if (response == null || response.httpEventInfo == null) {
+            return createNoDataDiv("No Timing Info");
         }
-        return "<div style='color:#888;'>No Timing Info</div>";
+        return buildTimingHtml(response);
     }
 
     /**
      * 单独渲染Event信息
      */
     public static String renderEventInfo(HttpResponse response) {
-        if (response != null && response.httpEventInfo != null) {
-            return buildEventInfoHtml(response.httpEventInfo);
+        if (response == null || response.httpEventInfo == null) {
+            return createNoDataDiv("No Event Info");
         }
-        return "<div style='color:#888;'>No Event Info</div>";
+        return buildEventInfoHtml(response.httpEventInfo);
     }
-
 
     /**
      * 渲染请求信息HTML
      */
     public static String renderRequest(PreparedRequest req) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
-        sb.append("<b>URL:</b> ").append(escapeHtml(req.url)).append("<br/>");
-        sb.append("<b>方法:</b> ").append(escapeHtml(req.method)).append("<br/>");
-
-        // 优先展示 okHttpHeaders，兼容多值和顺序
-        if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
-            sb.append("<b>请求头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (int i = 0; i < req.okHttpHeaders.size(); i++) {
-                String name = req.okHttpHeaders.name(i);
-                String value = req.okHttpHeaders.value(i);
-                sb.append("<tr><td>").append(escapeHtml(name)).append(":</td><td>")
-                        .append(escapeHtml(value)).append("</td></tr>");
-            }
-            sb.append("</table>");
+        if (req == null) {
+            return createHtmlDocument(NORMAL_FONT_SIZE, createNoDataDiv("无请求信息"));
         }
 
-        // 优先展示真实OkHttp请求体内容
-        if (req.okHttpRequestBody != null && !req.okHttpRequestBody.isEmpty()) {
-            sb.append("<b>请求体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
-        }
+        String content = createLabelValue("URL", req.url) +
+                createLabelValue("方法", req.method) +
+                buildRequestHeadersTable(req) +
+                buildRequestBodyContent(req);
 
-        if (req.formData != null && !req.formData.isEmpty()) {
-            sb.append("<b>Form Data:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.formData.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-
-        if (req.formFiles != null && !req.formFiles.isEmpty()) {
-            sb.append("<b>Form Files:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.formFiles.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-
-        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
-            sb.append("<b>x-www-form-urlencoded:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-            for (Map.Entry<String, String> entry : req.urlencoded.entrySet()) {
-                sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>")
-                        .append(escapeHtml(entry.getValue())).append("</td></tr>");
-            }
-            sb.append("</table>");
-        }
-
-        sb.append("</body></html>");
-        return sb.toString();
+        return createHtmlDocument(NORMAL_FONT_SIZE, content);
     }
 
     /**
      * 渲染响应信息HTML
      */
     public static String renderResponse(HttpResponse resp) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
         if (resp == null) {
-            sb.append("<span style='color:gray;'>无响应信息</span>");
-        } else {
-            sb.append("<b>状态码:</b> ").append(resp.code).append("<br/>");
-            String protocol = resp.protocol != null ? escapeHtml(resp.protocol) : "-";
-            String thread = resp.threadName != null ? escapeHtml(resp.threadName) : "-";
-            String local = resp.httpEventInfo != null && resp.httpEventInfo.getLocalAddress() != null
-                    ? escapeHtml(resp.httpEventInfo.getLocalAddress()) : "-";
-            String remote = resp.httpEventInfo != null && resp.httpEventInfo.getRemoteAddress() != null
-                    ? escapeHtml(resp.httpEventInfo.getRemoteAddress()) : "-";
-
-            sb.append("<b>Protocol:</b> ").append(protocol).append("<br/>");
-            sb.append("<b>Thread:</b> ").append(thread).append("<br/>");
-            sb.append("<b>Connection:</b> ").append(local).append(" <span style='color:#888;'>→</span> ").append(remote).append("<br/>");
-
-            if (resp.headers != null && !resp.headers.isEmpty()) {
-                sb.append("<b>响应头:</b><br/><table border='1' cellspacing='0' cellpadding='3'>");
-                for (Map.Entry<String, List<String>> entry : resp.headers.entrySet()) {
-                    sb.append("<tr><td>").append(escapeHtml(entry.getKey())).append(":</td><td>");
-                    List<String> values = entry.getValue();
-                    if (values != null && !values.isEmpty()) {
-                        for (int i = 0; i < values.size(); i++) {
-                            sb.append(escapeHtml(values.get(i)));
-                            if (i < values.size() - 1) sb.append(", ");
-                        }
-                    }
-                    sb.append("</td></tr>");
-                }
-                sb.append("</table>");
-            }
-
-            sb.append("<b>响应体:</b><br/><pre style='background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                    .append(resp.body != null ? escapeHtml(resp.body) : "<无响应体>")
-                    .append("</pre>");
+            return createHtmlDocument(NORMAL_FONT_SIZE, "<span style='color:" + COLOR_GRAY + ";'>无响应信息</span>");
         }
-        sb.append("</body></html>");
-        return sb.toString();
+
+        String content = createLabelValue("状态码", String.valueOf(resp.code)) +
+                createLabelValue("Protocol", safeString(resp.protocol)) +
+                createLabelValue("Thread", safeString(resp.threadName)) +
+                buildConnectionInfo(resp) +
+                buildResponseHeadersTable(resp) +
+                buildResponseBodyContent(resp);
+
+        return createHtmlDocument(NORMAL_FONT_SIZE, content);
     }
 
     /**
      * 渲染测试结果HTML
      */
     public static String renderTestResults(List<TestResult> testResults) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:monospace;font-size:10px;'>");
         if (testResults == null || testResults.isEmpty()) {
-            sb.append("<div style='color:gray;padding:16px;'>无测试结果</div>");
-        } else {
-            sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
-            sb.append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
-            for (TestResult testResult : testResults) {
-                try {
-                    String name = testResult.name;
-                    boolean passed = testResult.passed;
-                    String message = testResult.message;
-                    sb.append("<tr>");
-                    sb.append("<td>").append(escapeHtml(name)).append("</td>");
-                    sb.append("<td style='color:")
-                            .append(passed ? "#28a745'>&#10004; Pass" : "#dc3545'>&#10008; Fail")
-                            .append("</td>");
-                    sb.append("<td>").append(message == null ? "" : escapeHtml(message)).append("</td>");
-                    sb.append("</tr>");
-                } catch (Exception ignore) {
-                }
-            }
-            sb.append("</table>");
+            return createHtmlDocument(NORMAL_FONT_SIZE, "<div style='color:" + COLOR_GRAY + ";padding:16px;'>无测试结果</div>");
         }
-        sb.append("</body></html>");
-        return sb.toString();
+
+        StringBuilder table = new StringBuilder()
+                .append("<table ").append(TABLE_STYLE).append(">")
+                .append("<tr><th>名称</th><th>结果</th><th>异常信息</th></tr>");
+
+        for (TestResult testResult : testResults) {
+            if (testResult != null) {
+                table.append(buildTestResultRow(testResult));
+            }
+        }
+        table.append("</table>");
+
+        return createHtmlDocument(NORMAL_FONT_SIZE, table.toString());
     }
 
+    // ==================== 私有辅助方法 ====================
+
+    private static String createHtmlDocument(String fontSize, String content) {
+        return String.format(HTML_TEMPLATE, BASE_STYLE + fontSize, content);
+    }
+
+    private static String createNoDataDiv(String message) {
+        return "<div style='color:" + COLOR_GRAY + ";'>" + message + "</div>";
+    }
+
+    private static String createLabelValue(String label, String value) {
+        return "<b>" + label + ":</b> " + escapeHtml(safeString(value)) + "<br/>";
+    }
+
+    private static String safeString(String str) {
+        return str != null ? str : "-";
+    }
 
     private static String buildBasicInfoHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<div style='margin-bottom:12px;padding:6px 0 6px 0;border-bottom:1px solid #e0e0e0;'>");
-        sb.append("<span style='font-weight:bold;color:#1976d2;font-size:10px;'>")
-                .append(item.method).append("</span> ");
-        sb.append("<span style='color:#388e3c;font-size:10px;word-break:break-all;'>")
-                .append(escapeHtml(item.url)).append("</span><br>");
-        String codeColor = "#43a047";
-        if (item.responseCode >= 500) codeColor = "#d32f2f";
-        else if (item.responseCode >= 400) codeColor = "#ffa000";
-        sb.append("<span style='color:#888;'>Status</span>: <span style='font-weight:bold;color:")
-                .append(codeColor).append(";'>")
+        StringBuilder sb = new StringBuilder()
+                .append("<div style='margin-bottom:12px;padding:6px 0;border-bottom:1px solid #e0e0e0;'>")
+                .append("<span style='font-weight:bold;color:").append(COLOR_PRIMARY).append(";font-size:10px;'>")
+                .append(item.method).append("</span> ")
+                .append("<span style='color:").append(COLOR_SUCCESS).append(";font-size:10px;word-break:break-all;'>")
+                .append(escapeHtml(item.url)).append("</span><br>")
+                .append("<span style='color:").append(COLOR_GRAY).append(";'>Status</span>: ")
+                .append("<span style='font-weight:bold;color:").append(getStatusColor(item.responseCode)).append(";'>")
                 .append(item.responseCode).append("</span>  ");
-        sb.append("<span style='color:#888;'>Protocol</span>: <span style='color:#1976d2;'>")
-                .append(item.response != null && item.response.protocol != null ? item.response.protocol : "-")
-                .append("</span>");
+
         if (item.response != null) {
-            sb.append("<br><span style='color:#888;'>Thread</span>: <span style='color:#1976d2;'>")
-                    .append(item.response.threadName != null ? escapeHtml(item.response.threadName) : "-")
-                    .append("</span>");
-            if (item.response.httpEventInfo != null) {
-                String local = item.response.httpEventInfo.getLocalAddress();
-                String remote = item.response.httpEventInfo.getRemoteAddress();
-                sb.append("<br><span style='color:#888;'>Connection</span>: <span style='color:#1976d2;'>")
-                        .append(local != null ? escapeHtml(local) : "-")
-                        .append("</span> <span style='color:#888;'>→</span> <span style='color:#1976d2;'>")
-                        .append(remote != null ? escapeHtml(remote) : "-")
-                        .append("</span>");
-            }
+            sb.append(buildProtocolInfo(item.response))
+                    .append(buildThreadInfo(item.response))
+                    .append(buildConnectionDetails(item.response));
         }
-        sb.append("</div>");
-        return sb.toString();
+
+        return sb.append("</div>").toString();
+    }
+
+    private static String buildProtocolInfo(HttpResponse response) {
+        String protocol = response.protocol != null ? response.protocol : "-";
+        return "<span style='color:" + COLOR_GRAY + ";'>Protocol</span>: " +
+                "<span style='color:" + COLOR_PRIMARY + ";'>" + protocol + "</span>";
+    }
+
+    private static String buildThreadInfo(HttpResponse response) {
+        String thread = response.threadName != null ? escapeHtml(response.threadName) : "-";
+        return "<br><span style='color:" + COLOR_GRAY + ";'>Thread</span>: " +
+                "<span style='color:" + COLOR_PRIMARY + ";'>" + thread + "</span>";
+    }
+
+    private static String buildConnectionDetails(HttpResponse response) {
+        if (response.httpEventInfo != null) {
+            String local = safeString(response.httpEventInfo.getLocalAddress());
+            String remote = safeString(response.httpEventInfo.getRemoteAddress());
+            return "<br><span style='color:" + COLOR_GRAY + ";'>Connection</span>: " +
+                    "<span style='color:" + COLOR_PRIMARY + ";'>" + escapeHtml(local) + "</span> " +
+                    "<span style='color:" + COLOR_GRAY + ";'>→</span> " +
+                    "<span style='color:" + COLOR_PRIMARY + ";'>" + escapeHtml(remote) + "</span>";
+        }
+        return "";
     }
 
     private static String buildRequestHeadersHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>[Request Headers]</b></div>");
-        sb.append("<pre style='margin:0;'>");
+        StringBuilder sb = new StringBuilder()
+                .append("<div style='margin-bottom:8px;'><b style='color:").append(COLOR_PRIMARY).append(";'>[Request Headers]</b></div>")
+                .append("<pre style='margin:0;'>");
+
         if (item.request != null && item.request.okHttpHeaders != null && item.request.okHttpHeaders.size() > 0) {
             for (int i = 0; i < item.request.okHttpHeaders.size(); i++) {
                 String name = item.request.okHttpHeaders.name(i);
@@ -235,212 +217,321 @@ public class HttpHtmlRenderer {
         } else {
             sb.append("(None)");
         }
-        sb.append("</pre>");
-        return sb.toString();
+
+        return sb.append("</pre>").toString();
     }
 
     private static String buildRequestBodyHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<div style='margin:8px 0 4px 0;'><b style='color:#1976d2;'>[Request Body]</b></div>");
-        boolean hasForm = false;
-        if (item.request != null) {
-            // 优先展示真实OkHttp请求体内容（如有）
-            if (item.request.okHttpRequestBody != null && !item.request.okHttpRequestBody.isEmpty()) {
-                sb.append("<b>请求体</b><br><pre style='margin:0;background:#f8f8f8;border:1px solid #eee;padding:8px;'>")
-                        .append(escapeHtml(item.request.okHttpRequestBody)).append("</pre>");
-            }
+        StringBuilder sb = new StringBuilder()
+                .append("<div style='margin:8px 0 4px 0;'><b style='color:").append(COLOR_PRIMARY).append(";'>[Request Body]</b></div>");
 
-            if (item.request.formData != null && !item.request.formData.isEmpty()) {
-                hasForm = true;
-                sb.append("<b>form-data</b><br><pre style='margin:0;'>");
-                for (var entry : item.request.formData.entrySet()) {
-                    sb.append(escapeHtml(entry.getKey())).append(" = ").append(escapeHtml(entry.getValue())).append("\n");
-                }
-                sb.append("</pre>");
-            }
-            if (item.request.formFiles != null && !item.request.formFiles.isEmpty()) {
-                hasForm = true;
-                sb.append("<b>form-files</b><br><pre style='margin:0;'>");
-                for (var entry : item.request.formFiles.entrySet()) {
-                    sb.append(escapeHtml(entry.getKey())).append(" = ").append(escapeHtml(entry.getValue())).append("\n");
-                }
-                sb.append("</pre>");
-            }
+        if (item.request == null) {
+            return sb.append("<pre style='margin:0;'>(None)</pre>").toString();
+        }
 
-            if (item.request.urlencoded != null && !item.request.urlencoded.isEmpty()) {
-                sb.append("<b>x-www-form-urlencoded</b><br><pre style='margin:0;'>");
-                for (Map.Entry<String, String> entry : item.request.urlencoded.entrySet()) {
-                    sb.append(escapeHtml(entry.getKey())).append(" = ").append(escapeHtml(entry.getValue())).append("\n");
-                }
-                sb.append("</pre>");
-            }
+        boolean hasContent = false;
 
-            if (!hasForm && (item.request.body == null || item.request.body.isEmpty()) && (item.request.okHttpRequestBody == null || item.request.okHttpRequestBody.isEmpty())) {
-                sb.append("<pre style='margin:0;'>(None)</pre>");
-            }
-        } else {
+        // OkHttp请求体
+        if (isNotEmpty(item.request.okHttpRequestBody)) {
+            sb.append(buildBodySection(item.request.okHttpRequestBody));
+            hasContent = true;
+        }
+
+        // Form数据
+        hasContent |= appendFormData(sb, "form-data", item.request.formData);
+        hasContent |= appendFormData(sb, "form-files", item.request.formFiles);
+        hasContent |= appendFormData(sb, "x-www-form-urlencoded", item.request.urlencoded);
+
+        if (!hasContent && isEmpty(item.request.body)) {
             sb.append("<pre style='margin:0;'>(None)</pre>");
         }
+
         return sb.toString();
     }
 
+    private static boolean appendFormData(StringBuilder sb, String title, Map<String, String> data) {
+        if (data != null && !data.isEmpty()) {
+            sb.append("<b>").append(title).append("</b><br><pre style='margin:0;'>");
+            data.forEach((key, value) ->
+                    sb.append(escapeHtml(key)).append(" = ").append(escapeHtml(value)).append("\n"));
+            sb.append("</pre>");
+            return true;
+        }
+        return false;
+    }
+
+    private static String buildBodySection(String content) {
+        return "<b>" + "请求体" + "</b><br><pre style='margin:0;" + PRE_STYLE + "'>" +
+                escapeHtml(content) + "</pre>";
+    }
+
     private static String buildResponseHeadersHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>[Response Headers]</b></div>");
-        sb.append("<pre style='margin:0;'>");
+        StringBuilder sb = new StringBuilder()
+                .append("<div style='margin-bottom:8px;'><b style='color:").append(COLOR_SUCCESS).append(";'>[Response Headers]</b></div>")
+                .append("<pre style='margin:0;'>");
+
         if (item.response != null && item.response.headers != null && !item.response.headers.isEmpty()) {
-            for (var entry : item.response.headers.entrySet()) {
-                sb.append(escapeHtml(entry.getKey())).append(": ");
-                if (entry.getValue() != null) {
-                    sb.append(escapeHtml(String.join(", ", entry.getValue())));
+            item.response.headers.forEach((key, values) -> {
+                sb.append(escapeHtml(key)).append(": ");
+                if (values != null && !values.isEmpty()) {
+                    sb.append(escapeHtml(String.join(", ", values)));
                 }
                 sb.append("\n");
-            }
+            });
         } else {
             sb.append("(None)");
         }
+
         sb.append("</pre>");
+
         if (item.response != null) {
-            sb.append("<div style='color:#888;font-size:10px;margin-bottom:4px;'>Headers Size: ")
+            sb.append("<div style='color:").append(COLOR_GRAY).append(";font-size:10px;margin-bottom:4px;'>Headers Size: ")
                     .append(HttpUtil.getSizeText(item.response.headersSize)).append("</div>");
         }
+
         return sb.toString();
     }
 
     private static String buildResponseBodyHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<div style='margin:8px 0 4px 0;'><b style='color:#388e3c;'>[Response Body]</b></div>");
-        sb.append("<pre style='margin:0;'>");
+        StringBuilder sb = new StringBuilder()
+                .append("<div style='margin:8px 0 4px 0;'><b style='color:").append(COLOR_SUCCESS).append(";'>[Response Body]</b></div>")
+                .append("<pre style='margin:0;'>");
+
         if (item.response != null && item.response.body != null && !item.response.body.isEmpty()) {
             sb.append(escapeHtml(item.response.body));
         } else {
             sb.append("(None)");
         }
+
         sb.append("</pre>");
+
         if (item.response != null) {
-            sb.append("<div style='color:#888;font-size:10px;margin-bottom:4px;'>Body Size: ")
+            sb.append("<div style='color:").append(COLOR_GRAY).append(";font-size:10px;margin-bottom:4px;'>Body Size: ")
                     .append(HttpUtil.getSizeText(item.response.bodySize)).append("</div>");
         }
+
         return sb.toString();
+    }
+
+    private static String buildRequestHeadersTable(PreparedRequest req) {
+        if (req.okHttpHeaders == null || req.okHttpHeaders.size() == 0) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder()
+                .append("<b>请求头:</b><br/><table ").append(TABLE_STYLE).append(">");
+
+        for (int i = 0; i < req.okHttpHeaders.size(); i++) {
+            String name = req.okHttpHeaders.name(i);
+            String value = req.okHttpHeaders.value(i);
+            sb.append("<tr><td>").append(escapeHtml(name)).append(":</td><td>")
+                    .append(escapeHtml(value)).append("</td></tr>");
+        }
+
+        return sb.append("</table>").toString();
+    }
+
+    private static String buildRequestBodyContent(PreparedRequest req) {
+        StringBuilder sb = new StringBuilder();
+
+        if (isNotEmpty(req.okHttpRequestBody)) {
+            sb.append("<b>请求体:</b><br/><pre style='").append(PRE_STYLE).append("'>")
+                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
+        }
+
+        sb.append(buildFormDataTable("Form Data", req.formData))
+                .append(buildFormDataTable("Form Files", req.formFiles))
+                .append(buildFormDataTable("x-www-form-urlencoded", req.urlencoded));
+
+        return sb.toString();
+    }
+
+    private static String buildFormDataTable(String title, Map<String, String> data) {
+        if (data == null || data.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder()
+                .append("<b>").append(title).append(":</b><br/><table ").append(TABLE_STYLE).append(">");
+
+        data.forEach((key, value) ->
+                sb.append("<tr><td>").append(escapeHtml(key)).append(":</td><td>")
+                        .append(escapeHtml(value)).append("</td></tr>"));
+
+        return sb.append("</table>").toString();
+    }
+
+    private static String buildConnectionInfo(HttpResponse resp) {
+        if (resp.httpEventInfo == null) {
+            return "";
+        }
+
+        String local = safeString(resp.httpEventInfo.getLocalAddress());
+        String remote = safeString(resp.httpEventInfo.getRemoteAddress());
+
+        return "<b>Connection:</b> " + escapeHtml(local) +
+                " <span style='color:" + COLOR_GRAY + ";'>→</span> " +
+                escapeHtml(remote) + "<br/>";
+    }
+
+    private static String buildResponseHeadersTable(HttpResponse resp) {
+        if (resp.headers == null || resp.headers.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder()
+                .append("<b>响应头:</b><br/><table ").append(TABLE_STYLE).append(">");
+
+        resp.headers.forEach((key, values) -> {
+            sb.append("<tr><td>").append(escapeHtml(key)).append(":</td><td>");
+            if (values != null && !values.isEmpty()) {
+                sb.append(escapeHtml(String.join(", ", values)));
+            }
+            sb.append("</td></tr>");
+        });
+
+        return sb.append("</table>").toString();
+    }
+
+    private static String buildResponseBodyContent(HttpResponse resp) {
+        String body = resp.body != null ? resp.body : "<无响应体>";
+        return "<b>响应体:</b><br/><pre style='" + PRE_STYLE + "'>" +
+                escapeHtml(body) + "</pre>";
+    }
+
+    private static String buildTestResultRow(TestResult testResult) {
+        String resultStyle = testResult.passed ?
+                "color:" + COLOR_SUCCESS + "'>&#10004; Pass" :
+                "color:" + COLOR_ERROR + "'>&#10008; Fail";
+        String message = testResult.message != null ? escapeHtml(testResult.message) : "";
+
+        return "<tr>" +
+                "<td>" + escapeHtml(testResult.name) + "</td>" +
+                "<td style='" + resultStyle + "</td>" +
+                "<td>" + message + "</td>" +
+                "</tr>";
     }
 
     private static String buildTimingHtml(HttpResponse response) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<div style='font-size:9px;'><b style='color:#1976d2;'>[Timing]</b></div>");
         HttpEventInfo info = response.httpEventInfo;
-        long dns = info.getDnsEnd() > 0 && info.getDnsStart() > 0 ? info.getDnsEnd() - info.getDnsStart() : -1;
-        long connect = info.getConnectEnd() > 0 && info.getConnectStart() > 0 ? info.getConnectEnd() - info.getConnectStart() : -1;
-        long tls = info.getSecureConnectEnd() > 0 && info.getSecureConnectStart() > 0 ? info.getSecureConnectEnd() - info.getSecureConnectStart() : -1;
-        long reqHeaders = info.getRequestHeadersEnd() > 0 && info.getRequestHeadersStart() > 0 ? info.getRequestHeadersEnd() - info.getRequestHeadersStart() : -1;
-        long reqBody = info.getRequestBodyEnd() > 0 && info.getRequestBodyStart() > 0 ? info.getRequestBodyEnd() - info.getRequestBodyStart() : -1;
-        long respBody = info.getResponseBodyEnd() > 0 && info.getResponseBodyStart() > 0 ? info.getResponseBodyEnd() - info.getResponseBodyStart() : -1;
-        long total = info.getCallEnd() > 0 && info.getCallStart() > 0 ? info.getCallEnd() - info.getCallStart() : -1;
-        long serverCost = -1;
-        if (info.getResponseHeadersStart() > 0) {
-            if (info.getRequestBodyEnd() > 0) {
-                serverCost = info.getResponseHeadersStart() - info.getRequestBodyEnd();
-            } else if (info.getRequestHeadersEnd() > 0) {
-                serverCost = info.getResponseHeadersStart() - info.getRequestHeadersEnd();
-            }
+        TimingCalculator calc = new TimingCalculator(info);
+
+        // 添加时序表格行
+
+        return "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timing]</b></div>" +
+                "<div style='margin:8px 0;'>" +
+                "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timing Timeline]</b></div>" +
+                "<table style='border-collapse:collapse;margin:8px 0;'>" +
+
+                // 添加时序表格行
+                createTimingRow("Total", calc.getTotal(), COLOR_ERROR, true, "总耗时（CallStart→CallEnd，整个请求生命周期）") +
+                createTimingRow("Queueing", calc.getQueueing(), null, false, "QueueStart→CallStart，排队等待调度") +
+                createTimingRow("Stalled", calc.getStalled(), null, false, "CallStart→ConnectStart，阻塞（包含DNS解析）") +
+                createTimingRow("DNS Lookup", calc.getDns(), null, false, "DnsStart→DnsEnd，域名解析（Stalled子阶段）") +
+                createTimingRow("Initial Connection (TCP)", calc.getConnect(), null, false, "ConnectStart→ConnectEnd，TCP连接建立（包含SSL/TLS）") +
+                createTimingRow("SSL/TLS", calc.getTls(), null, false, "SecureConnectStart→SecureConnectEnd，SSL/TLS握手（TCP连接子阶段）") +
+                createTimingRow("Request Sent", calc.getRequestSent(), null, false, "RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送") +
+                createTimingRow("Waiting (TTFB)", calc.getServerCost(), COLOR_SUCCESS, true, "RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理") +
+                createTimingRow("Content Download", calc.getResponseBody(), null, false, "ResponseBodyStart→ResponseBodyEnd，响应体下载") +
+                createTimingRowString("Connection Reused", calc.getConnectionReused(), null, false, "本次请求是否复用连接") +
+                createTimingRowString("OkHttp Idle Connections", String.valueOf(response.idleConnectionCount), null, false, "OkHttp空闲连接数（快照）") +
+                createTimingRowString("OkHttp Total Connections", String.valueOf(response.connectionCount), null, false, "OkHttp总连接数（快照）") +
+                "</table>" +
+                buildTimingDescription() +
+                "</div>";
+    }
+
+    private static String createTimingRow(String name, long value, String color, boolean bold, String description) {
+        return createTimingRowString(name, value >= 0 ? value + " " + "ms" : "-", color, bold, description);
+    }
+
+    private static String createTimingRowString(String name, String value, String color, boolean bold, String description) {
+        String nameStyle = bold ? "font-weight:bold;" : "";
+        String valueStyle = "";
+
+        if (color != null) {
+            nameStyle += "color:" + color + ";";
+            valueStyle = "color:" + color + ";" + (bold ? "font-weight:bold;" : "");
         }
-        String reused = "-";
-        if (info.getConnectionAcquired() > 0) {
-            if (info.getConnectStart() == 0 || (info.getConnectionAcquired() < info.getConnectStart())) {
-                reused = "Yes";
-            } else {
-                reused = "No";
-            }
-        }
-        sb.append("<div style='margin:8px 0 8px 0;'>");
-        sb.append("<div style='font-size:9px;'><b style='color:#1976d2;'>[Timing Timeline]</b></div>");
-        sb.append("<table style='border-collapse:collapse;margin:8px 0 8px 0;'>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#333;'><b>Total</b></td><td style='color:#d32f2f;font-weight:bold;'>")
-                .append(total >= 0 ? total + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>总耗时（CallStart→CallEnd，整个请求生命周期）</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>Queueing</td><td>")
-                .append(info.getQueueingCost() > 0 ? info.getQueueingCost() + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>QueueStart→CallStart，排队等待调度</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>Stalled</td><td>")
-                .append(info.getStalledCost() > 0 ? info.getStalledCost() + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>CallStart→ConnectStart，阻塞（包含DNS解析）</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>DNS Lookup</td><td>")
-                .append(dns >= 0 ? dns + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>DnsStart→DnsEnd，域名解析（Stalled子阶段）</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>Initial Connection (TCP)</td><td>")
-                .append(connect >= 0 ? connect + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>ConnectStart→ConnectEnd，TCP连接建立（包含SSL/TLS）</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>SSL/TLS</td><td>")
-                .append(tls >= 0 ? tls + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:10px;'>SecureConnectStart→SecureConnectEnd，SSL/TLS握手（TCP连接子阶段）</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>Request Sent</td><td>")
-                .append((reqHeaders >= 0 || reqBody >= 0) ? ((reqHeaders >= 0 ? reqHeaders : 0) + (reqBody >= 0 ? reqBody : 0)) + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'><b>Waiting (TTFB)</b></td><td style='color:#388e3c;font-weight:bold;'>")
-                .append(serverCost >= 0 ? serverCost + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>Content Download</td><td>")
-                .append(respBody >= 0 ? respBody + " ms" : "-")
-                .append("</td><td style='color:#888;font-size:9px;'>ResponseBodyStart→ResponseBodyEnd，响应体下载</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>Connection Reused</td><td>")
-                .append(reused)
-                .append("</td><td style='color:#888;font-size:9px;'>本次请求是否复用连接</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>OkHttp Idle Connections</td><td>")
-                .append(response.idleConnectionCount)
-                .append("</td><td style='color:#888;font-size:9px;'>OkHttp空闲连接数（快照）</td></tr>");
-        sb.append("<tr><td style='padding:2px 8px 2px 0'>OkHttp Total Connections</td><td>")
-                .append(response.connectionCount)
-                .append("</td><td style='color:#888;font-size:9px;'>OkHttp总连接数（快照）</td></tr>");
-        sb.append("</table>");
-        sb.append("<div style='font-size:9px;color:#888;margin-top:2px;'>");
-        sb.append("各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>");
-        sb.append("Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>");
-        sb.append("Connection Reused=Yes 表示本次请求未新建TCP连接。<br>");
-        sb.append("OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。");
-        sb.append("</div>");
-        sb.append("</div>");
-        return sb.toString();
+
+        return "<tr>" +
+                "<td style='padding:2px 8px 2px 0;" + nameStyle + "'>" + (bold ? "<b>" + name + "</b>" : name) + "</td>" +
+                "<td style='" + valueStyle + "'>" + value + "</td>" +
+                "<td style='color:" + COLOR_GRAY + ";font-size:9px;'>" + description + "</td>" +
+                "</tr>";
+    }
+
+    private static String buildTimingDescription() {
+        return "<div style='font-size:9px;color:" + COLOR_GRAY + ";margin-top:2px;'>" +
+                "各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、" +
+                "DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>" +
+                "Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>" +
+                "Connection Reused=Yes 表示本次请求未新建TCP连接。<br>" +
+                "OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。" +
+                "</div>";
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {
-        return "<div style='font-size:9px;'><b style='color:#1976d2;'>[Event Info]</b></div>" +
-                "<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Remote</td><td>" + escapeHtml(info.getRemoteAddress()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Protocol</td><td>" + (info.getProtocol() != null ? info.getProtocol().toString() : "-") + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>TLS</td><td>" + (info.getTlsVersion() != null ? info.getTlsVersion() : "-") + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Thread</td><td>" + (info.getThreadName() != null ? info.getThreadName() : "-") + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Error</td><td>" + (info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") + "</td></tr>" +
+        return "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Event Info]</b></div>" +
+                "<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0;'>" +
+                createEventRow("QueueStart", formatMillis(info.getQueueStart())) +
+                createEventRow("Local", escapeHtml(info.getLocalAddress())) +
+                createEventRow("Remote", escapeHtml(info.getRemoteAddress())) +
+                createEventRow("Protocol", info.getProtocol() != null ? info.getProtocol().toString() : "-") +
+                createEventRow("TLS", safeString(info.getTlsVersion())) +
+                createEventRow("Thread", safeString(info.getThreadName())) +
+                createEventRow("Error", info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") +
                 "<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallStart</td><td>" + formatMillis(info.getCallStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsStart</td><td>" + formatMillis(info.getDnsStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>DnsEnd</td><td>" + formatMillis(info.getDnsEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectStart</td><td>" + formatMillis(info.getConnectStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectStart</td><td>" + formatMillis(info.getSecureConnectStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>SecureConnectEnd</td><td>" + formatMillis(info.getSecureConnectEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectEnd</td><td>" + formatMillis(info.getConnectEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>ConnectionAcquired</td><td>" + formatMillis(info.getConnectionAcquired()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>RequestHeadersStart</td><td>" + formatMillis(info.getRequestHeadersStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>RequestHeadersEnd</td><td>" + formatMillis(info.getRequestHeadersEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>RequestBodyStart</td><td>" + formatMillis(info.getRequestBodyStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>RequestBodyEnd</td><td>" + formatMillis(info.getRequestBodyEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersStart</td><td>" + formatMillis(info.getResponseHeadersStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>ResponseHeadersEnd</td><td>" + formatMillis(info.getResponseHeadersEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>ResponseBodyStart</td><td>" + formatMillis(info.getResponseBodyStart()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>ResponseBodyEnd</td><td>" + formatMillis(info.getResponseBodyEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0'>ConnectionReleased</td><td>" + formatMillis(info.getConnectionReleased()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#1976d2;'>CallEnd</td><td>" + formatMillis(info.getCallEnd()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>CallFailed</td><td>" + formatMillis(info.getCallFailed()) + "</td></tr>" +
-                "<tr><td style='padding:2px 8px 2px 0;color:#d32f2f;'>Canceled</td><td>" + formatMillis(info.getCanceled()) + "</td></tr>" +
+                createEventTimingRows(info) +
                 "</table>";
     }
 
+    private static String createEventRow(String label, String value) {
+        return "<tr><td style='padding:2px 8px 2px 0;color:" + COLOR_GRAY + ";'>" + label + "</td><td>" + value + "</td></tr>";
+    }
+
+    private static String createEventTimingRows(HttpEventInfo info) {
+
+        // 重要的时间点用特殊颜色标记
+
+        return createEventTimingRow("QueueStart", info.getQueueStart(), COLOR_PRIMARY) +
+                createEventTimingRow("CallStart", info.getCallStart(), COLOR_PRIMARY) +
+                createEventTimingRow("DnsStart", info.getDnsStart(), COLOR_PRIMARY) +
+                createEventTimingRow("DnsEnd", info.getDnsEnd(), COLOR_PRIMARY) +
+                createEventTimingRow("ConnectStart", info.getConnectStart(), COLOR_PRIMARY) +
+                createEventTimingRow("SecureConnectStart", info.getSecureConnectStart(), COLOR_PRIMARY) +
+                createEventTimingRow("SecureConnectEnd", info.getSecureConnectEnd(), COLOR_PRIMARY) +
+                createEventTimingRow("ConnectEnd", info.getConnectEnd(), COLOR_PRIMARY) +
+                createEventTimingRow("ConnectionAcquired", info.getConnectionAcquired(), COLOR_PRIMARY) +
+                createEventTimingRow("RequestHeadersStart", info.getRequestHeadersStart(), null) +
+                createEventTimingRow("RequestHeadersEnd", info.getRequestHeadersEnd(), null) +
+                createEventTimingRow("RequestBodyStart", info.getRequestBodyStart(), null) +
+                createEventTimingRow("RequestBodyEnd", info.getRequestBodyEnd(), null) +
+                createEventTimingRow("ResponseHeadersStart", info.getResponseHeadersStart(), null) +
+                createEventTimingRow("ResponseHeadersEnd", info.getResponseHeadersEnd(), null) +
+                createEventTimingRow("ResponseBodyStart", info.getResponseBodyStart(), null) +
+                createEventTimingRow("ResponseBodyEnd", info.getResponseBodyEnd(), null) +
+                createEventTimingRow("ConnectionReleased", info.getConnectionReleased(), null) +
+                createEventTimingRow("CallEnd", info.getCallEnd(), COLOR_PRIMARY) +
+                createEventTimingRow("CallFailed", info.getCallFailed(), COLOR_ERROR) +
+                createEventTimingRow("Canceled", info.getCanceled(), COLOR_ERROR);
+    }
+
+    private static String createEventTimingRow(String label, long millis, String color) {
+        String style = color != null ? "color:" + color + ";" : "";
+        return "<tr><td style='padding:2px 8px 2px 0;" + style + "'>" + label + "</td><td>" + formatMillis(millis) + "</td></tr>";
+    }
+
     private static String formatMillis(long millis) {
-        if (millis <= 0) return "-";
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss.SSS");
-        java.util.Date date = new java.util.Date(millis);
-        return sdf.format(date);
+        return millis <= 0 ? "-" : TIME_FORMATTER.format(new Date(millis));
+    }
+
+    private static boolean isNotEmpty(String str) {
+        return str != null && !str.isEmpty();
+    }
+
+    private static boolean isEmpty(String str) {
+        return str == null || str.isEmpty();
     }
 
     public static String escapeHtml(String s) {
@@ -450,5 +541,69 @@ public class HttpHtmlRenderer {
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
+    }
+
+    // 时序计算辅助类
+    private static class TimingCalculator {
+        private final HttpEventInfo info;
+
+        public TimingCalculator(HttpEventInfo info) {
+            this.info = info;
+        }
+
+        public long getTotal() {
+            return calculateDuration(info.getCallStart(), info.getCallEnd());
+        }
+
+        public long getQueueing() {
+            return info.getQueueingCost() > 0 ? info.getQueueingCost() : -1;
+        }
+
+        public long getStalled() {
+            return info.getStalledCost() > 0 ? info.getStalledCost() : -1;
+        }
+
+        public long getDns() {
+            return calculateDuration(info.getDnsStart(), info.getDnsEnd());
+        }
+
+        public long getConnect() {
+            return calculateDuration(info.getConnectStart(), info.getConnectEnd());
+        }
+
+        public long getTls() {
+            return calculateDuration(info.getSecureConnectStart(), info.getSecureConnectEnd());
+        }
+
+        public long getRequestSent() {
+            long reqHeaders = calculateDuration(info.getRequestHeadersStart(), info.getRequestHeadersEnd());
+            long reqBody = calculateDuration(info.getRequestBodyStart(), info.getRequestBodyEnd());
+            return (reqHeaders >= 0 || reqBody >= 0) ?
+                    (Math.max(reqHeaders, 0) + Math.max(reqBody, 0)) : -1;
+        }
+
+        public long getResponseBody() {
+            return calculateDuration(info.getResponseBodyStart(), info.getResponseBodyEnd());
+        }
+
+        public long getServerCost() {
+            if (info.getResponseHeadersStart() <= 0) return -1;
+
+            long endTime = info.getRequestBodyEnd() > 0 ?
+                    info.getRequestBodyEnd() : info.getRequestHeadersEnd();
+
+            return endTime > 0 ? info.getResponseHeadersStart() - endTime : -1;
+        }
+
+        public String getConnectionReused() {
+            if (info.getConnectionAcquired() <= 0) return "-";
+
+            return (info.getConnectStart() == 0 || info.getConnectionAcquired() < info.getConnectStart()) ?
+                    "Yes" : "No";
+        }
+
+        private long calculateDuration(long start, long end) {
+            return (start > 0 && end > 0) ? end - start : -1;
+        }
     }
 }

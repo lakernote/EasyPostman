@@ -472,8 +472,10 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {
+        // 背景色为 rgb(245,247,250)，并加大列间距
         return "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Event Info]</b></div>" +
-                "<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0;'>" +
+                // 设置背景色和列间距
+                "<table style='border-collapse:collapse;background:rgb(245,247,250);border-radius:4px;padding:6px 8px;color:#444;margin:8px 0;'>" +
                 createEventRow("QueueStart", formatMillis(info.getQueueStart())) +
                 createEventRow("Local", escapeHtml(info.getLocalAddress())) +
                 createEventRow("Remote", escapeHtml(info.getRemoteAddress())) +
@@ -487,7 +489,8 @@ public class HttpHtmlRenderer {
     }
 
     private static String createEventRow(String label, String value) {
-        return "<tr><td style='padding:2px 8px 2px 0;color:" + COLOR_GRAY + ";'>" + label + "</td><td>" + value + "</td></tr>";
+        // 增加 label 和 value 间距 120px
+        return "<tr><td style='min-width:80px;padding:2px 120px 2px 0;color:" + COLOR_GRAY + ";'>" + label + "</td><td>" + value + "</td></tr>";
     }
 
     private static String createEventTimingRows(HttpEventInfo info) {
@@ -607,3 +610,4 @@ public class HttpHtmlRenderer {
         }
     }
 }
+

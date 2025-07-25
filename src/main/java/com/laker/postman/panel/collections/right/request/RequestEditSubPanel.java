@@ -16,10 +16,12 @@ import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
+import com.laker.postman.service.http.sse.SseEventListener;
+import com.laker.postman.service.http.sse.SseUiCallback;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
-import okhttp3.sse.EventSourceListener;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -67,7 +69,7 @@ public class RequestEditSubPanel extends JPanel {
     // 当前 SSE 事件源, 用于取消 SSE 请求
     private EventSource currentEventSource;
     // WebSocket连接对象
-    private volatile okhttp3.WebSocket currentWebSocket;
+    private volatile WebSocket currentWebSocket;
     JSplitPane splitPane;
     private final JEditorPane testsPane;
 
@@ -230,16 +232,16 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void addDocumentListener(Document document) {
-        document.addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+        document.addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
                 updateTabDirty();
             }
 
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 updateTabDirty();
             }
 
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 updateTabDirty();
             }
         });
@@ -842,83 +844,6 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-    // SSE UI回调接口
-    private interface SseUiCallback {
-        void onOpen(HttpResponse resp, String headersText);
-
-        void onEvent(HttpResponse resp);
-
-        void onClosed(HttpResponse resp);
-
-        void onFailure(String errorMsg, HttpResponse resp);
-    }
-
-    // SSE事件监听器
-    private static class SseEventListener extends EventSourceListener {
-        private final SseUiCallback callback;
-        private final HttpResponse resp;
-        private final StringBuilder sseBodyBuilder;
-        private final long startTime;
-
-        public SseEventListener(SseUiCallback callback, HttpResponse resp, StringBuilder sseBodyBuilder, long startTime) {
-            this.callback = callback;
-            this.resp = resp;
-            this.sseBodyBuilder = sseBodyBuilder;
-            this.startTime = startTime;
-        }
-
-        @Override
-        public void onOpen(EventSource eventSource, okhttp3.Response response) {
-            resp.headers = new LinkedHashMap<>();
-            for (String name : response.headers().names()) {
-                resp.headers.put(name, response.headers(name));
-            }
-            resp.code = response.code();
-            resp.protocol = response.protocol().toString();
-            callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
-        }
-
-        @Override
-        public void onClosed(EventSource eventSource) {
-            long cost = System.currentTimeMillis() - startTime;
-            resp.body = sseBodyBuilder.toString();
-            resp.bodySize = resp.body.getBytes().length;
-            resp.costMs = cost;
-            callback.onClosed(resp);
-        }
-
-        @Override
-        public void onFailure(EventSource eventSource, Throwable throwable, okhttp3.Response response) {
-            log.error("sse onFailure,response status: {},response headers: {}", response.code(), response.headers(), throwable);
-            String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
-            long cost = System.currentTimeMillis() - startTime;
-            resp.body = sseBodyBuilder.toString();
-            resp.bodySize = resp.body.getBytes().length;
-            resp.costMs = cost;
-            callback.onFailure(errorMsg, resp);
-        }
-
-        @Override
-        public void onEvent(EventSource eventSource, String id, String type, String data) {
-            if (data != null && !data.isBlank()) {
-                sseBodyBuilder.append(data).append("\n");
-                resp.body = sseBodyBuilder.toString();
-                resp.bodySize = resp.body.getBytes().length;
-                callback.onEvent(resp);
-            }
-        }
-
-        // 静态方法，避免内部类访问外部实例
-        private static String buildResponseHeadersTextStatic(HttpResponse resp) {
-            StringBuilder headersBuilder = new StringBuilder();
-            resp.headers.forEach((key, value) -> {
-                if (key != null) {
-                    headersBuilder.append(key).append(": ").append(String.join(", ", value)).append("\n");
-                }
-            });
-            return headersBuilder.toString();
-        }
-    }
 
     private int selectedTabIndex = 0;
 

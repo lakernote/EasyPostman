@@ -1,13 +1,13 @@
 package com.laker.postman.panel.jmeter.result;
 
 import com.laker.postman.common.panel.SingletonBasePanel;
-import lombok.Getter;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
@@ -18,14 +18,9 @@ import java.text.NumberFormat;
 
 public class PerformanceTrendPanel extends SingletonBasePanel {
     private final TimeSeriesCollection trendDataset = new TimeSeriesCollection();
-    ;
-    @Getter
     private final TimeSeries userCountSeries = new TimeSeries("Threads");
-    @Getter
     private final TimeSeries responseTimeSeries = new TimeSeries("Response Time(ms)");
-    @Getter
     private final TimeSeries qpsSeries = new TimeSeries("QPS");
-    @Getter
     private final TimeSeries errorPercentSeries = new TimeSeries("Error Rate(%)");
 
     @Override
@@ -156,5 +151,22 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 numberAxis.setNumberFormatOverride(null);
             }
         }
+    }
+
+    public void clearTrendDataset() {
+        userCountSeries.clear();
+        responseTimeSeries.clear();
+        qpsSeries.clear();
+        errorPercentSeries.clear();
+        trendDataset.removeAllSeries();
+    }
+
+    public void addOrUpdate(RegularTimePeriod period, double users,
+                            double responseTime, double qps, double errorPercent) {
+        if (period == null) return;
+        userCountSeries.addOrUpdate(period, users);
+        responseTimeSeries.addOrUpdate(period, responseTime);
+        qpsSeries.addOrUpdate(period, qps);
+        errorPercentSeries.addOrUpdate(period, errorPercent);
     }
 }

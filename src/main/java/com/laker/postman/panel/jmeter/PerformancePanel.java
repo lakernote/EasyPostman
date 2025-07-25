@@ -33,7 +33,6 @@ import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
-import org.jfree.data.time.TimeSeries;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
@@ -45,6 +44,7 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
@@ -81,11 +81,6 @@ public class PerformancePanel extends SingletonBasePanel {
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiFailMap = new ConcurrentHashMap<>();
-    // 趋势图相关
-    private TimeSeries userCountSeries;
-    private TimeSeries responseTimeSeries;
-    private TimeSeries qpsSeries;
-    private TimeSeries errorPercentSeries;
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
@@ -97,6 +92,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
     private PerformanceReportPanel performanceReportPanel;
     private PerformanceResultTreePanel performanceResultTreePanel;
+    private PerformanceTrendPanel performanceTrendPanel;
 
     @Override
     protected void initUI() {
@@ -136,11 +132,7 @@ public class PerformancePanel extends SingletonBasePanel {
         performanceResultTreePanel = new PerformanceResultTreePanel();
 
         // 趋势图面板
-        PerformanceTrendPanel performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
-        userCountSeries = performanceTrendPanel.getUserCountSeries();
-        responseTimeSeries = performanceTrendPanel.getResponseTimeSeries();
-        qpsSeries = performanceTrendPanel.getQpsSeries();
-        errorPercentSeries = performanceTrendPanel.getErrorPercentSeries();
+        performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         // 报告面板
         performanceReportPanel = new PerformanceReportPanel();
         resultTabbedPane = new JTabbedPane();
@@ -291,16 +283,14 @@ public class PerformancePanel extends SingletonBasePanel {
         resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
         performanceResultTreePanel.clearResults(); // 清空结果树
         performanceReportPanel.clearReport(); // 清空报表数据
+        performanceTrendPanel.clearTrendDataset(); // 清理趋势图历史数据
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
         allRequestStartTimes.clear();
         allRequestResults.clear();
-        // 清理趋势图历史数据
-        if (userCountSeries != null) userCountSeries.clear();
-        if (responseTimeSeries != null) responseTimeSeries.clear();
-        if (qpsSeries != null) qpsSeries.clear();
-        if (errorPercentSeries != null) errorPercentSeries.clear();
+
+
         // 启动趋势图定时采样
         if (trendTimer != null) {
             trendTimer.cancel();
@@ -397,15 +387,16 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
             }
         }
-        double avgRespTime = totalReq > 0 ? (double) totalRespTime / totalReq : 0;
+        double avgRespTime = totalReq > 0 ?
+                new BigDecimal((double) totalRespTime / totalReq)
+                        .setScale(2, java.math.RoundingMode.HALF_UP)
+                        .doubleValue()
+                : 0;
         double qps = totalReq;
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
         // 更新趋势图数据
         log.info("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);
-        userCountSeries.addOrUpdate(second, users);
-        responseTimeSeries.addOrUpdate(second, avgRespTime);
-        qpsSeries.addOrUpdate(second, qps);
-        errorPercentSeries.addOrUpdate(second, errorPercent);
+        performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
     }
 
     // 带进度的执行

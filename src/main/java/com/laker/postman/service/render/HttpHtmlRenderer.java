@@ -24,7 +24,9 @@ public class HttpHtmlRenderer {
                 "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
                 buildResponseHeadersHtml(item) + // 响应头
                 buildResponseBodyHtml(item) + // 响应体
+                "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
                 renderTimingInfo(item.response) + // Timing信息
+                "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>" + // 分隔线
                 renderEventInfo(item.response) + // Event信息
                 "</body></html>";
     }
@@ -324,7 +326,6 @@ public class HttpHtmlRenderer {
 
     private static String buildTimingHtml(HttpResponse response) {
         StringBuilder sb = new StringBuilder();
-        sb.append("<hr style='border:0;border-top:2px solid #1976d2;margin:16px 0 8px 0;'>");
         sb.append("<div style='font-size:9px;'><b style='color:#1976d2;'>[Timing]</b></div>");
         HttpEventInfo info = response.httpEventInfo;
         long dns = info.getDnsEnd() > 0 && info.getDnsStart() > 0 ? info.getDnsEnd() - info.getDnsStart() : -1;
@@ -401,8 +402,7 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {
-        return "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0'>" +
-                "<div style='font-size:9px;'><b style='color:#1976d2;'>[Event Info]</b></div>" +
+        return "<div style='font-size:9px;'><b style='color:#1976d2;'>[Event Info]</b></div>" +
                 "<table style='border-collapse:collapse;background:#f7f7f7;border-radius:4px;padding:6px 8px;color:#444;margin:8px 0 8px 0;'>" +
                 "<tr><td style='padding:2px 8px 2px 0;color:#888;'>QueueStart</td><td>" + formatMillis(info.getQueueStart()) + "</td></tr>" +
                 "<tr><td style='padding:2px 8px 2px 0;color:#888;'>Local</td><td>" + escapeHtml(info.getLocalAddress()) + "</td></tr>" +

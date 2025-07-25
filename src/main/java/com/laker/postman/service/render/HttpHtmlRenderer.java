@@ -401,8 +401,8 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildTestResultRow(TestResult testResult) {
-        String rowBg = "background:#fff;";
-        String icon = testResult.passed ? "<span style='color:#4CAF50;font-size:12px;'>&#10003;</span>" : "<span style='color:#F44336;font-size:12px;'>&#10007;</span>";
+        String rowBg = "background:rgb(245,247,250);";
+        String icon = testResult.passed ? "<span style='color:#4CAF50;font-size:9px;'>&#10003;</span>" : "<span style='color:#F44336;font-size:9px;'>&#10007;</span>";
         String resultText = testResult.passed ? "<span style='color:#222;font-size:9px;'>Passed</span>" : "<span style='color:#F44336;font-size:9px;'>Failed</span>";
         String message = testResult.message != null && !testResult.message.isEmpty() ?
                 "<div style='color:#F44336;font-size:9px;white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(testResult.message) + "</div>"

@@ -1,6 +1,7 @@
 package com.laker.postman.common.tab;
 
-import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
+
+import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 
 import javax.swing.*;
 import java.awt.*;

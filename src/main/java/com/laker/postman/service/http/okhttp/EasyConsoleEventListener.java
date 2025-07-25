@@ -3,9 +3,9 @@ package com.laker.postman.service.http.okhttp;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.collections.edit.NetworkLogPanel;
-import com.laker.postman.panel.collections.edit.RequestEditPanel;
-import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
+import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.right.request.sub.NetworkLogPanel;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 

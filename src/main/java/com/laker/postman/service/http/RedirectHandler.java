@@ -4,7 +4,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
-import com.laker.postman.panel.collections.edit.RequestEditPanel;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 
 import java.net.URL;
 import java.util.LinkedHashMap;

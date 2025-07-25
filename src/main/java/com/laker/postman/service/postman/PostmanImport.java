@@ -10,7 +10,7 @@ import com.laker.postman.model.HttpRequestItem;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.*;
 
-import static com.laker.postman.panel.collections.edit.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
 
 /**
  * Postman导入工具类

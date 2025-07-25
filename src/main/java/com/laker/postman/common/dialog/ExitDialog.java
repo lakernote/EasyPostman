@@ -2,8 +2,8 @@ package com.laker.postman.common.dialog;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
-import com.laker.postman.panel.collections.edit.RequestEditPanel;
-import com.laker.postman.panel.collections.edit.RequestEditSubPanel;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;

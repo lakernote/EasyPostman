@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.laker.postman.panel.collections.edit.AuthTabPanel.AUTH_TYPE_NONE;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_NONE;
 
 /**
  * HttpRequestItem 类表示一个HTTP请求的配置项

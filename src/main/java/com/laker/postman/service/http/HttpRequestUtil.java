@@ -8,8 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.laker.postman.panel.collections.edit.AuthTabPanel.AUTH_TYPE_BASIC;
-import static com.laker.postman.panel.collections.edit.AuthTabPanel.AUTH_TYPE_BEARER;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 
 public class HttpRequestUtil {
     public static String buildUrlWithParams(String url, Map<String, String> params) {

@@ -509,19 +509,20 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
                             log.info("closing WebSocket: code={}, reason={}", code, reason);
-                            handleWebSocketClose("WebSocket正在关闭: " + reason);
+                            appendWebSocketMessage("WebSocket正在关闭: " + code + ", " + reason);
+                            handleWebSocketClose();
                         }
 
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
                             log.info("closed WebSocket: code={}, reason={}", code, reason);
-                            handleWebSocketClose("WebSocket已关闭: " + reason);
+                            appendWebSocketMessage("WebSocket已关闭: " + code + ", " + reason);
+                            handleWebSocketClose();
                         }
 
-                        private void handleWebSocketClose(String message) {
+                        private void handleWebSocketClose() {
                             closed = true;
-                            long cost = System.currentTimeMillis() - startTime;
-                            resp.costMs = cost;
+                            resp.costMs = System.currentTimeMillis() - startTime;
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse("closed", resp);
@@ -533,10 +534,10 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                            appendWebSocketMessage("WebSocket连接失败: " + t.getMessage());
                             log.error("WebSocket连接失败: {},响应状态: {},响应头: {}", t.getMessage(), response.code(), response.headers(), t);
                             closed = true;
-                            long cost = System.currentTimeMillis() - startTime;
-                            resp.costMs = cost;
+                            resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
                                 statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
                                 statusCodeLabel.setForeground(Color.RED);
@@ -578,7 +579,34 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void appendWebSocketMessage(String text) {
-        SwingUtilities.invokeLater(() -> responseBodyPanel.appendBodyText(text));
+        String formattedText = formatWebSocketMessage(text);
+        SwingUtilities.invokeLater(() -> responseBodyPanel.appendBodyText(formattedText));
+    }
+
+    /**
+     * 格式化WebSocket消息，添加图标前缀
+     *
+     * @param message 原始消息
+     * @return 格式化后的消息
+     */
+    private String formatWebSocketMessage(String message) {
+        if (message == null) return "";
+
+        if (message.startsWith("WebSocket连接已建立: ")) {
+            return "🟢 " + message; // 连接图标
+        } else if (message.startsWith("收到消息: ")) {
+            return "📥 " + message; // 接收图标
+        } else if (message.startsWith("收到二进制消息: ")) {
+            return "📦 " + message; // 包图标
+        } else if (message.startsWith("发送消息: ")) {
+            return "🚀 " + message; // 发送图标，使用火箭图标代替发件箱图标
+        } else if (message.startsWith("WebSocket正在关闭: ") || message.startsWith("WebSocket已关闭: ")) {
+            return "🔴 " + message; // 关闭图标
+        } else if (message.contains("失败") || message.contains("错误")) {
+            return "⚠️ " + message; // 警告图标
+        } else {
+            return "ℹ️ " + message; // 信息图标（默认）
+        }
     }
 
     /**
@@ -865,3 +893,4 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 }
+

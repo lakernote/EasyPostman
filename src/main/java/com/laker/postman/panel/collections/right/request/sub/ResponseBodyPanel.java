@@ -211,9 +211,7 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setText(newText);
         // 滚动到最新内容
         responseBodyPane.setCaretPosition(responseBodyPane.getDocument().getLength());
-        // 保持当前语法高亮
-        String currentSyntax = responseBodyPane.getSyntaxEditingStyle();
-        responseBodyPane.setSyntaxEditingStyle(currentSyntax);
+        responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
     }
 
     public void setBodyText(HttpResponse resp) {

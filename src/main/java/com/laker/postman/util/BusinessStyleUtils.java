@@ -56,6 +56,8 @@ public class BusinessStyleUtils {
         UIManager.put("TextPane.background", Colors.PANEL_BACKGROUND); // 文本面板背景色
         // ===== List 颜色 =====
         UIManager.put("List.background", Colors.PANEL_BACKGROUND); // 列表背景色
+        // ===== EditorPane 颜色 =====
+        UIManager.put("EditorPane.background", Colors.PANEL_BACKGROUND); // 编辑器面板背景色
 
         // ===== 2. 圆角相关 =====
         UIManager.put("Component.arc", 12); // 统一圆角大小（全局组件）

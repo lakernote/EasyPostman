@@ -17,7 +17,6 @@ import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanImport;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -83,29 +82,17 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
-        JPanel importExportPanel = getImportExportPanel();
+        JPanel importExportPanel = getButtonsPanel();
         rightPanel.add(importExportPanel, BorderLayout.NORTH);
 
         // 变量表格
         variablesTablePanel = new EasyNameValueTablePanel();
-        JScrollPane tableScrollPane = new JScrollPane(variablesTablePanel);
-        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 5));
-        rightPanel.add(tableScrollPane, BorderLayout.CENTER);
-
-        // 变量操作按钮
-        JPanel varButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
-        varButtonPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 5, 5));
-        JButton saveVarButton = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
-        saveVarButton.setText("Save");
-        saveVarButton.addActionListener(e -> saveVariables());
-        varButtonPanel.add(saveVarButton);
-        rightPanel.add(varButtonPanel, BorderLayout.SOUTH);
+        rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
 
         add(rightPanel, BorderLayout.CENTER);
     }
 
-    @NotNull
-    private JPanel getImportExportPanel() {
+    private JPanel getButtonsPanel() {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         importExportPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         JButton importBtn = new JButton(new FlatSVGIcon("icons/upload.svg", 20, 20));
@@ -131,6 +118,15 @@ public class EnvironmentPanel extends SingletonBasePanel {
         exportBtn.setIconTextGap(6);
         exportBtn.addActionListener(e -> exportEnvironments());
         importExportPanel.add(exportBtn);
+
+
+        JButton saveVarButton = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
+        saveVarButton.setText("Save");
+        saveVarButton.addActionListener(e -> saveVariables());
+        saveVarButton.setFocusable(false); // 设置按钮不可获取焦点
+        exportBtn.setBackground(Color.WHITE); // 设置背景颜色
+        exportBtn.setIconTextGap(6); // 设置图标和文字间距
+        importExportPanel.add(saveVarButton);
         return importExportPanel;
     }
 
@@ -553,7 +549,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         return rows;
     }
 
-    // 新增：导出选中环境为Postman格式
+    // 导出选中环境为Postman格式
     private void exportSelectedEnvironmentAsPostman() {
         EnvironmentItem item = environmentList.getSelectedValue();
         if (item == null) return;

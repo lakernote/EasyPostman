@@ -5,6 +5,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
@@ -231,8 +232,6 @@ public class RequestEditSubPanel extends JPanel {
         requestBodyPanel.getFormUrlencodedTablePanel().addTableModelListener(e -> updateTabDirty());
         // 监听脚本面板
         scriptPanel.addDirtyListeners(this::updateTabDirty);
-
-        requestLinePanel.getFollowRedirectsCheckBox().addActionListener(e -> updateTabDirty());
     }
 
     private void addDocumentListener(Document document) {
@@ -303,6 +302,8 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
         HttpRequestItem item = getCurrentRequest();
+        // 强制使用全局 followRedirects 设置
+        item.setFollowRedirects(SettingManager.isFollowRedirects());
         PreparedRequest req = PreparedRequestBuilder.build(item);
         Map<String, Object> bindings = prepareBindings(req);
         if (!executePrescript(item, bindings)) return;
@@ -687,8 +688,6 @@ public class RequestEditSubPanel extends JPanel {
         // 前置/后置脚本
         scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
         scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
-        // 自动重定向复选框
-        requestLinePanel.getFollowRedirectsCheckBox().setSelected(item.isFollowRedirects());
         // 设置原始数据用于脏检测
         setOriginalRequestItem(item);
     }
@@ -721,7 +720,6 @@ public class RequestEditSubPanel extends JPanel {
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
         }
-
         // 认证Tab收集
         item.setAuthType(authTabPanel.getAuthType());
         item.setAuthUsername(authTabPanel.getUsername());
@@ -730,8 +728,7 @@ public class RequestEditSubPanel extends JPanel {
         // 脚本内容
         item.setPrescript(scriptPanel.getPrescript());
         item.setPostscript(scriptPanel.getPostscript());
-        // 自动重定向
-        item.setFollowRedirects(requestLinePanel.getFollowRedirectsCheckBox().isSelected());
+        item.setFollowRedirects(SettingManager.isFollowRedirects());
         return item;
     }
 

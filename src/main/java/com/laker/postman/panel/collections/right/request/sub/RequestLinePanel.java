@@ -14,7 +14,6 @@ public class RequestLinePanel extends JPanel {
     private final JComboBox<String> methodBox;
     private final JTextField urlField;
     private final JButton sendButton;
-    private final JCheckBox followRedirectsCheckBox;
     private final Color defaultButtonColor;
     private final Color textColor;
 
@@ -33,8 +32,6 @@ public class RequestLinePanel extends JPanel {
         sendButton.addActionListener(sendAction);
         add(sendButton);
         add(Box.createHorizontalStrut(10));
-        followRedirectsCheckBox = new JCheckBox("Follow Redirects", true);
-        add(followRedirectsCheckBox);
         add(Box.createHorizontalGlue());
     }
 

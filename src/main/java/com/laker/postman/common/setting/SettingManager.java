@@ -147,4 +147,17 @@ public class SettingManager {
         props.setProperty("download_progress_dialog_threshold", String.valueOf(threshold));
         save();
     }
+
+    public static boolean isFollowRedirects() {
+        String val = props.getProperty("follow_redirects");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return true; // 默认自动重定向
+    }
+
+    public static void setFollowRedirects(boolean follow) {
+        props.setProperty("follow_redirects", String.valueOf(follow));
+        save();
+    }
 }

@@ -23,6 +23,7 @@ public class SettingPanel extends SingletonBasePanel {
     JButton cancelBtn;
     private JCheckBox showDownloadProgressCheckBox;
     private JTextField downloadProgressDialogThresholdField;
+    private JCheckBox followRedirectsCheckBox;
 
     // 用于输入验证的映射
     private final Map<JTextField, Predicate<String>> validators = new HashMap<>();
@@ -82,6 +83,17 @@ public class SettingPanel extends SingletonBasePanel {
         int maxDownloadSizeMB = SettingManager.getMaxDownloadSize() / (1024 * 1024);
         maxDownloadSizeField.setText(String.valueOf(maxDownloadSizeMB));
         requestPanel.add(maxDownloadSizeField, gbc);
+
+        // 自动重定向设置
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        JLabel followRedirectsLabel = new JLabel("自动重定向 (Follow Redirects):");
+        followRedirectsLabel.setToolTipText("请求遇到重定向时是否自动跟随跳转");
+        requestPanel.add(followRedirectsLabel, gbc);
+
+        gbc.gridx = 1;
+        followRedirectsCheckBox = new JCheckBox("自动重定向", SettingManager.isFollowRedirects());
+        requestPanel.add(followRedirectsCheckBox, gbc);
 
         // ===== JMeter设置面板 =====
         JPanel jmeterPanel = createSectionPanel("压测连接设置");
@@ -292,6 +304,7 @@ public class SettingPanel extends SingletonBasePanel {
         jmeterKeepAliveField.addKeyListener(keyAdapter);
         downloadProgressDialogThresholdField.addKeyListener(keyAdapter);
         showDownloadProgressCheckBox.addKeyListener(keyAdapter);
+        followRedirectsCheckBox.addKeyListener(keyAdapter);
     }
 
     @Override
@@ -353,6 +366,7 @@ public class SettingPanel extends SingletonBasePanel {
             SettingManager.setJmeterKeepAliveSeconds(jmeterKeepAlive);
             SettingManager.setShowDownloadProgressDialog(showDownloadProgressCheckBox.isSelected());
             SettingManager.setDownloadProgressDialogThreshold(thresholdMB * 1024 * 1024);
+            SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
 
             JOptionPane.showMessageDialog(this, "设置已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
             Window window = SwingUtilities.getWindowAncestor(this);

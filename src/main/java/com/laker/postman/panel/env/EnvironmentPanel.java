@@ -95,7 +95,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private JPanel getButtonsPanel() {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         importExportPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
-        JButton importBtn = new JButton(new FlatSVGIcon("icons/upload.svg", 20, 20));
+        JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
         importBtn.setText("Import");
         importBtn.setToolTipText("导入环境变量");
         importBtn.setFocusPainted(false);
@@ -111,7 +111,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         importBtn.addActionListener(e -> importMenu.show(importBtn, 0, importBtn.getHeight()));
         importExportPanel.add(importBtn);
 
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
+        JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
         exportBtn.setText("Export");
         exportBtn.setFocusPainted(false);
         exportBtn.setBackground(Color.WHITE);

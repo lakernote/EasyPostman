@@ -122,9 +122,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置上下左右边距
 
         JButton importBtn = getImportBtn();
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
+        JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
         exportBtn.setFocusPainted(false);
         exportBtn.setBackground(Color.WHITE);
+        exportBtn.setToolTipText("导出请求集合");
         exportBtn.addActionListener(e -> exportRequestCollection());
 
         getSearchField();
@@ -141,8 +142,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private JButton getImportBtn() {
         // 使用SVG图标美化
-        JButton importBtn = new JButton(new FlatSVGIcon("icons/upload.svg", 20, 20));
-        importBtn.setToolTipText("导入请求集合或请求项");
+        JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
+        importBtn.setToolTipText("导入请求集合");
         importBtn.setFocusPainted(false);
         importBtn.setBackground(Color.WHITE);
         // 合并导入菜单

@@ -192,8 +192,8 @@ public class RequestEditPanel extends SingletonBasePanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
         JPanel namePanel = new JPanel(new BorderLayout(8, 0));
-        JLabel nameLabel = new JLabel("请求名称:");
-        nameLabel.setPreferredSize(new Dimension(70, 28));
+        JLabel nameLabel = new JLabel("Request Name:");
+        nameLabel.setPreferredSize(new Dimension(100, 28));
         JTextField nameField = new JTextField(20);
         nameField.setPreferredSize(new Dimension(180, 28));
         if (defaultName != null) nameField.setText(defaultName);
@@ -204,18 +204,18 @@ public class RequestEditPanel extends SingletonBasePanel {
         panel.add(namePanel);
         panel.add(Box.createVerticalStrut(12));
         JPanel groupPanel = new JPanel(new BorderLayout(8, 0));
-        JLabel groupLabel = new JLabel("选择分组:");
-        groupLabel.setPreferredSize(new Dimension(70, 28));
+        JLabel groupLabel = new JLabel("Select Group:");
+        groupLabel.setPreferredSize(new Dimension(100, 28));
         groupPanel.add(groupLabel, BorderLayout.WEST);
         JTree groupTree = getGroupTree(groupTreeModel);
         JScrollPane treeScroll = new JScrollPane(groupTree);
-        treeScroll.setPreferredSize(new Dimension(220, 160));
+        treeScroll.setPreferredSize(new Dimension(220, 180));
         treeScroll.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         groupPanel.add(treeScroll, BorderLayout.CENTER);
         groupPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
         groupPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(groupPanel);
-        int result = JOptionPane.showConfirmDialog(null, panel, "保存请求", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(null, panel, "Save Request", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {

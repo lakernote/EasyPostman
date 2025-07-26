@@ -89,15 +89,78 @@ public class HttpHtmlRenderer {
      */
     public static String renderRequest(PreparedRequest req) {
         if (req == null) {
-            return createHtmlDocument(NORMAL_FONT_SIZE, createNoDataDiv("无请求信息"));
+            return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:#888;padding:16px;'>无请求信息</div>");
         }
-
-        String content = createLabelValue("URL", req.url) +
-                createLabelValue("Method", req.method) +
-                buildRequestHeadersTable(req) +
-                buildRequestBodyContent(req);
-
-        return createHtmlDocument(NORMAL_FONT_SIZE, content);
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;'>");
+        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>URL</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.url))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Method</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.method))).append("</span></div>");
+        if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Headers</b></div>");
+            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
+            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Name</th>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
+            sb.append("</tr>");
+            for (int i = 0; i < req.okHttpHeaders.size(); i++) {
+                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(req.okHttpHeaders.name(i))).append("</td>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(req.okHttpHeaders.value(i))).append("</td>");
+                sb.append("</tr>");
+            }
+            sb.append("</table>");
+        }
+        if (req.formData != null && !req.formData.isEmpty()) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Data</b></div>");
+            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
+            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
+            sb.append("</tr>");
+            req.formData.forEach((key, value) -> {
+                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(value)).append("</td>");
+                sb.append("</tr>");
+            });
+            sb.append("</table>");
+        }
+        if (req.formFiles != null && !req.formFiles.isEmpty()) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Files</b></div>");
+            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
+            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>File Name</th>");
+            sb.append("</tr>");
+            req.formFiles.forEach((key, value) -> {
+                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(value)).append("</td>");
+                sb.append("</tr>");
+            });
+            sb.append("</table>");
+        }
+        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>x-www-form-urlencoded</b></div>");
+            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
+            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
+            sb.append("</tr>");
+            req.urlencoded.forEach((key, value) -> {
+                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(value)).append("</td>");
+                sb.append("</tr>");
+            });
+            sb.append("</table>");
+        }
+        if (isNotEmpty(req.okHttpRequestBody)) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Body</b></div>");
+            sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
+        }
+        sb.append("</div>");
+        return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
     }
 
     /**
@@ -105,17 +168,35 @@ public class HttpHtmlRenderer {
      */
     public static String renderResponse(HttpResponse resp) {
         if (resp == null) {
-            return createHtmlDocument(NORMAL_FONT_SIZE, "<span style='color:" + COLOR_GRAY + ";'>无响应信息</span>");
+            return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:#888;padding:16px;'>无响应信息</div>");
         }
-
-        String content = createLabelValue("Status", String.valueOf(resp.code)) +
-                createLabelValue("Protocol", safeString(resp.protocol)) +
-                createLabelValue("Thread", safeString(resp.threadName)) +
-                buildConnectionInfo(resp) +
-                buildResponseHeadersTable(resp) +
-                buildResponseBodyContent(resp);
-
-        return createHtmlDocument(NORMAL_FONT_SIZE, content);
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;'>");
+        sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Status</b>: <span style='color:").append(getStatusColor(resp.code)).append(";font-weight:bold;'>").append(escapeHtml(String.valueOf(resp.code))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Protocol</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.protocol))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Thread</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.threadName))).append("</span></div>");
+        if (resp.httpEventInfo != null) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Connection</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.httpEventInfo.getLocalAddress()))).append(" → ").append(escapeHtml(safeString(resp.httpEventInfo.getRemoteAddress()))).append("</span></div>");
+        }
+        if (resp.headers != null && !resp.headers.isEmpty()) {
+            sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Headers</b></div>");
+            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
+            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Name</th>");
+            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
+            sb.append("</tr>");
+            resp.headers.forEach((key, values) -> {
+                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
+                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(values != null ? String.join(", ", values) : "")).append("</td>");
+                sb.append("</tr>");
+            });
+            sb.append("</table>");
+        }
+        sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Body</b></div>");
+        sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(resp.body != null ? resp.body : "<无响应体>")).append("</pre>");
+        sb.append("</div>");
+        return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
     }
 
     /**

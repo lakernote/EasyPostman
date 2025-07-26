@@ -7,7 +7,7 @@ public class HttpRequestFactory {
         // Create a default test request
         HttpRequestItem testItem = new HttpRequestItem();
         testItem.setId(cn.hutool.core.util.IdUtil.simpleUUID());
-        testItem.setName("Test Request");
+        testItem.setName("Default Request");
         testItem.setUrl("https://httpbin.org/get");
         testItem.setMethod("GET");
         // Add some default headers

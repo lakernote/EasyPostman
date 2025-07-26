@@ -242,14 +242,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 if (selectedNode == null || selectedNode == rootTreeNode) {
                     JMenuItem addGroupItem = new JMenuItem("Add Group");
                     addGroupItem.addActionListener(e -> {
-                        String groupName = JOptionPane.showInputDialog(requestTree, "请输入文件夹名称：");
-                        if (groupName != null && !groupName.trim().isEmpty()) {
-                            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", groupName});
-                            rootTreeNode.add(groupNode);
-                            treeModel.reload(rootTreeNode);
-                            requestTree.expandPath(new TreePath(rootTreeNode.getPath()));
-                            persistence.saveRequestGroups();
-                        }
+                        showAddGroupDialog(rootTreeNode);
                     });
                     menu.add(addGroupItem);
                     menu.show(requestTree, x, y);
@@ -444,6 +437,17 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     }
 
+    private void showAddGroupDialog(DefaultMutableTreeNode rootTreeNode) {
+        String groupName = JOptionPane.showInputDialog(this, "Please enter collection name:");
+        if (groupName != null && !groupName.trim().isEmpty()) {
+            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", groupName});
+            rootTreeNode.add(groupNode);
+            treeModel.reload(rootTreeNode);
+            requestTree.expandPath(new TreePath(rootTreeNode.getPath()));
+            persistence.saveRequestGroups();
+        }
+    }
+
     // 导出请求集合到JSON文件
     private void exportRequestCollection() {
         JFileChooser fileChooser = new JFileChooser();
@@ -562,14 +566,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private void addGroupUnderSelected() {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
-        String groupName = JOptionPane.showInputDialog(this, "请输入文件夹名称：");
-        if (groupName != null && !groupName.trim().isEmpty()) {
-            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", groupName});
-            selectedNode.add(groupNode);
-            treeModel.reload(selectedNode);
-            requestTree.expandPath(new TreePath(selectedNode.getPath()));
-            persistence.saveRequestGroups();
-        }
+        showAddGroupDialog(selectedNode);
     }
 
     private void addRequestUnderSelected() {

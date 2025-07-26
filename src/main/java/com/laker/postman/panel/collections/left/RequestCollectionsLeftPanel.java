@@ -77,48 +77,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         JScrollPane treeScrollPane = getTreeScrollPane();
         add(treeScrollPane, BorderLayout.CENTER);
-
-        JPanel btnPanel = getBtnPanel();
-        add(btnPanel, BorderLayout.SOUTH);
-    }
-
-    private JPanel getBtnPanel() {
-        // 按钮面板
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4)); // 增加间距
-        JButton addGroupBtn = getAddGroupBtn();
-
-        JButton saveBtn = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
-        saveBtn.setText("Save");
-        saveBtn.addActionListener(e -> {
-            SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
-        });
-
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
-        exportBtn.setText("Export");
-        exportBtn.setFocusPainted(false);
-        exportBtn.setBackground(Color.WHITE);
-        exportBtn.setIconTextGap(6);
-        exportBtn.addActionListener(e -> exportRequestCollection());
-
-        btnPanel.add(addGroupBtn);
-        btnPanel.add(saveBtn);
-        btnPanel.add(exportBtn);
-        return btnPanel;
-    }
-
-    private JButton getAddGroupBtn() {
-        JButton addGroupBtn = new JButton(new FlatSVGIcon("icons/plus.svg", 20, 20));
-        addGroupBtn.setText("Group");
-        addGroupBtn.addActionListener(e -> {
-            String groupName = JOptionPane.showInputDialog(this, "请输入组名：");
-            if (groupName != null && !groupName.trim().isEmpty()) {
-                DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", groupName});
-                rootTreeNode.add(groupNode);
-                treeModel.reload();
-                saveRequestGroups();
-            }
-        });
-        return addGroupBtn;
     }
 
     private JScrollPane getTreeScrollPane() {
@@ -165,10 +123,18 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5)); // 居中布局
         // 导入按钮
         JButton importBtn = getImportBtn();
+        // 导出按钮放到顶部，与导入并列
+        JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
+        exportBtn.setText("Export");
+        exportBtn.setFocusPainted(false);
+        exportBtn.setBackground(Color.WHITE);
+        exportBtn.setIconTextGap(6);
+        exportBtn.addActionListener(e -> exportRequestCollection());
         // 搜索过滤输入框
         getSearchField();
 
         importExportPanel.add(importBtn);
+        importExportPanel.add(exportBtn);
         importExportPanel.add(searchField);
 
         topPanel.add(importExportPanel);
@@ -265,12 +231,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     int x = e.getX();
                     int y = e.getY();
-                    // 获取鼠标点击位置的行号
                     int row = requestTree.getClosestRowForLocation(x, y);
                     if (row != -1) {
                         requestTree.setSelectionRow(row);
-                        showPopupMenu(x, y);
+                    } else {
+                        requestTree.clearSelection(); // 没有节点时取消选中
                     }
+                    showPopupMenu(x, y); // 无论是否有节点都弹出菜单
                 }
             }
 
@@ -278,8 +245,21 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 JPopupMenu menu = new JPopupMenu();
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
                 Object userObj = selectedNode != null ? selectedNode.getUserObject() : null;
-                // 根节点不显示任何操作
-                if (selectedNode == rootTreeNode) {
+                // 如果树为空或未选中任何节点，允许新增分组
+                if (selectedNode == null || selectedNode == rootTreeNode) {
+                    JMenuItem addGroupItem = new JMenuItem("Add Group");
+                    addGroupItem.addActionListener(e -> {
+                        String groupName = JOptionPane.showInputDialog(requestTree, "请输入文件夹名称：");
+                        if (groupName != null && !groupName.trim().isEmpty()) {
+                            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", groupName});
+                            rootTreeNode.add(groupNode);
+                            treeModel.reload(rootTreeNode);
+                            requestTree.expandPath(new TreePath(rootTreeNode.getPath()));
+                            persistence.saveRequestGroups();
+                        }
+                    });
+                    menu.add(addGroupItem);
+                    menu.show(requestTree, x, y);
                     return;
                 }
                 // 仅分组节点可新增文件/请求

@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -31,6 +33,13 @@ public class RequestLinePanel extends JPanel {
         textColor = sendButton.getForeground();
         sendButton.addActionListener(sendAction);
         add(sendButton);
+        JButton saveButton = new JButton("Save");
+        saveButton.setToolTipText("保存当前请求");
+        saveButton.addActionListener(e -> {
+            SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
+        });
+        add(Box.createHorizontalStrut(6));
+        add(saveButton);
         add(Box.createHorizontalStrut(10));
         add(Box.createHorizontalGlue());
     }

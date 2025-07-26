@@ -855,7 +855,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
                 // 计算从现在到下降结束还剩多少时间
                 long elapsedSeconds = (now - startTime) / 1000;
-                long rampDownStartTime = (rampUpTime + holdTime) * totalSpikeTime / phaseSum;
+                long rampDownStartTime = (long) (rampUpTime + holdTime) * totalSpikeTime / phaseSum;
                 long timeLeftInRampDown = Math.max(1, adjustedRampDownTime - (elapsedSeconds - rampDownStartTime));
 
                 // 计算每个线程应该在多久后结束，使其分散在剩余的下降时间内
@@ -1004,13 +1004,6 @@ public class PerformancePanel extends SingletonBasePanel {
                         }
                         testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
                     }
-                    if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
-                        try {
-                            TimeUnit.MILLISECONDS.sleep(subNode2.timerData.delayMs);
-                        } catch (InterruptedException ignored) {
-                            return;
-                        }
-                    }
                 }
                 // ====== 后置脚本 ======
                 String postscript = jtNode.httpRequestItem.getPostscript();
@@ -1043,19 +1036,29 @@ public class PerformancePanel extends SingletonBasePanel {
                 costMs = System.currentTimeMillis() - startTime;
             }
 
+            // ====== 统计请求结果（断言和后置脚本后，sleep前） ======
             long cost = resp == null ? costMs : resp.costMs;
             allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
-            // 统计接口耗时（统一用resp.costMs）
             apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-
             if (success) {
                 apiSuccessMap.merge(apiName, 1, Integer::sum);
             } else {
                 apiFailMap.merge(apiName, 1, Integer::sum);
             }
-
-            // 高效模式下只保存失败或异常结果
             performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
+
+            // ====== 定时器延迟（sleep） ======
+            for (int j = 0; j < child.getChildCount(); j++) {
+                DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
+                Object subObj = sub.getUserObject();
+                if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(subNode2.timerData.delayMs);
+                    } catch (InterruptedException ignored) {
+                        return;
+                    }
+                }
+            }
         }
     }
 

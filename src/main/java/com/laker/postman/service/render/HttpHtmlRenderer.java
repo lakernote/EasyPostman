@@ -25,7 +25,6 @@ public class HttpHtmlRenderer {
     private static final String COLOR_ERROR = "#d32f2f";
     private static final String COLOR_WARNING = "#ffa000";
     private static final String COLOR_GRAY = "#888";
-    private static final String COLOR_BACKGROUND = "#f8f8f8";
 
     // 状态码颜色映射
     private static String getStatusColor(int code) {
@@ -127,11 +126,11 @@ public class HttpHtmlRenderer {
             return createHtmlDocument("font-size:9px;", "<div style='color:#888;padding:16px;'>No test results</div>");
         }
         StringBuilder table = new StringBuilder()
-                .append("<table style='border-collapse:collapse;width:100%;background:#fff;'>")
-                .append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;'>")
-                .append("<th style='padding:8px 12px;'>Name</th>")
-                .append("<th style='padding:8px 12px;'>Result</th>")
-                .append("<th style='padding:8px 12px;'>Error Message</th>")
+                .append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;'>")
+                .append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>")
+                .append("<th style='padding:8px 12px;text-align:left;'>Name</th>")
+                .append("<th style='padding:8px 12px;text-align:center;'>Result</th>") // 修改为居中对齐
+                .append("<th style='padding:8px 12px;text-align:left;'>Error Message</th>")
                 .append("</tr>");
         for (TestResult testResult : testResults) {
             if (testResult != null) {
@@ -403,14 +402,13 @@ public class HttpHtmlRenderer {
     private static String buildTestResultRow(TestResult testResult) {
         String rowBg = "background:rgb(245,247,250);";
         String icon = testResult.passed ? "<span style='color:#4CAF50;font-size:9px;'>&#10003;</span>" : "<span style='color:#F44336;font-size:9px;'>&#10007;</span>";
-        String resultText = testResult.passed ? "<span style='color:#222;font-size:9px;'>Passed</span>" : "<span style='color:#F44336;font-size:9px;'>Failed</span>";
         String message = testResult.message != null && !testResult.message.isEmpty() ?
                 "<div style='color:#F44336;font-size:9px;white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(testResult.message) + "</div>"
                 : "";
 
-        return "<tr style='" + rowBg + "'>" +
+        return "<tr style='" + rowBg + "border-bottom:1px solid #e0e0e0;'>" +
                 "<td style='padding:8px 12px;color:#222;font-size:9px;'>" + escapeHtml(testResult.name) + "</td>" +
-                "<td style='padding:8px 12px;text-align:center;'>" + icon + "<br>" + resultText + "</td>" +
+                "<td style='padding:8px 12px;text-align:center;vertical-align:middle;'>" + icon + "</td>" + // 增加 vertical-align:middle
                 "<td style='padding:8px 12px;'>" + message + "</td>" +
                 "</tr>";
     }

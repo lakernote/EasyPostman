@@ -69,9 +69,28 @@ public class MemoryLabel extends JLabel {
         Runtime rt = Runtime.getRuntime();
         long used = rt.totalMemory() - rt.freeMemory();
         long max = rt.maxMemory();
-        String usedStr = String.format("%.1fMB", used / 1024.0 / 1024);
-        String maxStr = String.format("%.1fMB", max / 1024.0 / 1024);
-        setText(usedStr + " / " + maxStr);
+        setText(formatSize(used) + " / " + formatSize(max));
+    }
+
+    /**
+     * 格式化内存大小，自动显示为 MB 或 GB
+     */
+    private String formatSize(long bytes) {
+        double mb = bytes / 1024.0 / 1024;
+        if (mb < 1024) {
+            if (mb == (long) mb) {
+                return String.format("%dMB", (long) mb);
+            } else {
+                return String.format("%.2fMB", mb).replaceAll("\\.0+$", "").replaceAll("(\\.\\d*[1-9])0+$", "$1");
+            }
+        } else {
+            double gb = mb / 1024.0;
+            if (gb == (long) gb) {
+                return String.format("%dGB", (long) gb);
+            } else {
+                return String.format("%.2fGB", gb).replaceAll("\\.0+$", "").replaceAll("(\\.\\d*[1-9])0+$", "$1");
+            }
+        }
     }
 
     /**

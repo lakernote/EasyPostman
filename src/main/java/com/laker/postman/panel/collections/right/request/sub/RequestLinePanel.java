@@ -38,10 +38,8 @@ public class RequestLinePanel extends JPanel {
         add(sendButton);
         JButton saveButton = new JButton("Save");
         saveButton.setIcon(new FlatSVGIcon("icons/save.svg", 20, 20));
-//        saveButton.setBackground(new Color(0xF5F5F5)); // Postman浅灰色
         saveButton.setToolTipText("保存当前请求");
         saveButton.setIconTextGap(6); // 图标和文字之间的间距
-//        saveButton.setBorderPainted(false); // 不显示边框
         saveButton.addActionListener(e -> {
             SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
         });
@@ -59,6 +57,7 @@ public class RequestLinePanel extends JPanel {
             sendButton.removeActionListener(al);
         }
         sendButton.setText("Send");
+        sendButton.setIcon(new FlatSVGIcon("icons/send.svg", 20, 20));
         sendButton.setBackground(defaultButtonColor); // Postman浅蓝色
         sendButton.setForeground(textColor);
         sendButton.setEnabled(true);
@@ -73,6 +72,7 @@ public class RequestLinePanel extends JPanel {
             sendButton.removeActionListener(al);
         }
         sendButton.setText("Cancel");
+        sendButton.setIcon(new FlatSVGIcon("icons/cancel.svg", 20, 20));
         sendButton.setBackground(new java.awt.Color(0xD9D9D9)); // Postman浅灰色
         sendButton.setForeground(new java.awt.Color(0x333333)); // 深灰文字
         sendButton.setEnabled(true);
@@ -84,6 +84,7 @@ public class RequestLinePanel extends JPanel {
             sendButton.removeActionListener(al);
         }
         sendButton.setText("Close");
+        sendButton.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
         sendButton.setBackground(new java.awt.Color(0xD9D9D9)); // Postman浅灰色
         sendButton.setForeground(new java.awt.Color(0x333333)); // 深灰文字
         sendButton.setEnabled(true);

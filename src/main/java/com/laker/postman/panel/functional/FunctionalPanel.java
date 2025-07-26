@@ -125,7 +125,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         btnPanel.add(stopBtn);
         JButton clearBtn = new JButton("Clear");
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
-        clearBtn.setPreferredSize(new Dimension(90, 28));
+        clearBtn.setPreferredSize(new Dimension(95, 28));
         clearBtn.addActionListener(e -> {
             tableModel.clear();
             runBtn.setEnabled(false);

@@ -23,6 +23,7 @@ import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.postman.PostmanImport;
+import com.laker.postman.util.LastOpenRequestUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -191,17 +192,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
 
-        // 点击事件：加载请求（切换节点时）
-        requestTree.addTreeSelectionListener(e -> {
-            DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-            if (selectedNode != null && selectedNode.getUserObject() instanceof Object[] obj) {
-                if ("request".equals(obj[0])) {
-                    HttpRequestItem item = (HttpRequestItem) obj[1];
-                    SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item); // 修改为智能Tab切换/新建
-                }
-            }
-        });
-
         // 鼠标点击事件：无论是否切换都触发（解决重复点击同一节点无响应问题）
         requestTree.addMouseListener(new MouseAdapter() {
             @Override
@@ -213,6 +203,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     if (node.getUserObject() instanceof Object[] obj) {
                         if ("request".equals(obj[0])) {
                             HttpRequestItem item = (HttpRequestItem) obj[1];
+                            // 记录最后打开的请求ID
+                            LastOpenRequestUtil.saveLastOpenRequestId(item.getId());
                             SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
                         }
                     }
@@ -433,6 +425,23 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         SwingUtilities.invokeLater(() -> {  // 异步加载请求组
             persistence.initRequestGroupsFromFile();
+            // 加载完成后，自动打开最后一次请求
+            SwingUtilities.invokeLater(() -> {
+                String lastId = LastOpenRequestUtil.readLastOpenRequestId();
+                if (lastId != null && !lastId.isEmpty()) {
+                    DefaultMutableTreeNode node = findRequestNodeById(rootTreeNode, lastId);
+                    if (node != null) {
+                        TreePath path = new TreePath(node.getPath());
+                        requestTree.setSelectionPath(path);
+                        requestTree.scrollPathToVisible(path);
+                        Object[] obj = (Object[]) node.getUserObject();
+                        if ("request".equals(obj[0])) {
+                            HttpRequestItem item = (HttpRequestItem) obj[1];
+                            SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+                        }
+                    }
+                }
+            });
         });
 
     }

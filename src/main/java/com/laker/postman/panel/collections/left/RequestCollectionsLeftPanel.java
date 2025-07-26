@@ -1042,4 +1042,3 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         dialog.setVisible(true);
     }
 }
-

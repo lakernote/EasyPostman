@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.Getter;
@@ -29,12 +30,18 @@ public class RequestLinePanel extends JPanel {
         add(urlField);
         add(Box.createHorizontalStrut(10));
         sendButton = new JButton("Send");
+        sendButton.setIcon(new FlatSVGIcon("icons/send.svg", 20, 20));
+        sendButton.setIconTextGap(6); // 图标和文字之间的间距
         defaultButtonColor = sendButton.getBackground();
         textColor = sendButton.getForeground();
         sendButton.addActionListener(sendAction);
         add(sendButton);
         JButton saveButton = new JButton("Save");
+        saveButton.setIcon(new FlatSVGIcon("icons/save.svg", 20, 20));
+//        saveButton.setBackground(new Color(0xF5F5F5)); // Postman浅灰色
         saveButton.setToolTipText("保存当前请求");
+        saveButton.setIconTextGap(6); // 图标和文字之间的间距
+//        saveButton.setBorderPainted(false); // 不显示边框
         saveButton.addActionListener(e -> {
             SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
         });

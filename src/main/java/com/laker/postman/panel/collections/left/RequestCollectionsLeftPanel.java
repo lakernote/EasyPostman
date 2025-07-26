@@ -104,9 +104,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 设置树的字体和行高
         requestTree.setCellRenderer(new RequestTreeCellRenderer());
         requestTree.setRowHeight(28);
-        requestTree.setBackground(new Color(245, 247, 250));
         JScrollPane treeScrollPane = new JScrollPane(requestTree);
-        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16); // 设置滚动条增量
         treeScrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
         // 启用拖拽排序
         requestTree.setDragEnabled(true); // 启用拖拽
@@ -119,25 +118,20 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private JPanel getTopPanel() {
         JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS)); // 水平布局
-        JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5)); // 居中布局
-        // 导入按钮
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置上下左右边距
+
         JButton importBtn = getImportBtn();
-        // 导出按钮放到顶部，与导入并列
         JButton exportBtn = new JButton(new FlatSVGIcon("icons/download.svg", 20, 20));
-        exportBtn.setText("Export");
         exportBtn.setFocusPainted(false);
         exportBtn.setBackground(Color.WHITE);
-        exportBtn.setIconTextGap(6);
         exportBtn.addActionListener(e -> exportRequestCollection());
-        // 搜索过滤输入框
+
         getSearchField();
 
-        importExportPanel.add(importBtn);
-        importExportPanel.add(exportBtn);
-        importExportPanel.add(searchField);
-
-        topPanel.add(importExportPanel);
+        topPanel.add(importBtn);
+        topPanel.add(exportBtn);
+        topPanel.add(searchField);
         return topPanel;
     }
 
@@ -148,11 +142,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private JButton getImportBtn() {
         // 使用SVG图标美化
         JButton importBtn = new JButton(new FlatSVGIcon("icons/upload.svg", 20, 20));
-        importBtn.setText("Import");
         importBtn.setToolTipText("导入请求集合或请求项");
         importBtn.setFocusPainted(false);
         importBtn.setBackground(Color.WHITE);
-        importBtn.setIconTextGap(6);
         // 合并导入菜单
         JPopupMenu importMenu = getImportMenu();
         importBtn.addActionListener(e -> {
@@ -1043,3 +1035,4 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         dialog.setVisible(true);
     }
 }
+

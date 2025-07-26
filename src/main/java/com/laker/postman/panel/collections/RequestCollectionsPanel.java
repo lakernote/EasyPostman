@@ -2,8 +2,8 @@ package com.laker.postman.panel.collections;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -26,7 +26,7 @@ public class RequestCollectionsPanel extends SingletonBasePanel {
         // 创建水平分割面板，将左侧的集合面板和右侧的请求编辑面板放入其中
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditPanel);
         mainSplit.setContinuousLayout(true); // 分割条拖动时实时更新布局
-        mainSplit.setDividerLocation(300); // 设置初始分割位置
+        mainSplit.setDividerLocation(250); // 设置初始分割位置
         mainSplit.setDividerSize(1);
 
         // 将分割面板添加到主面板

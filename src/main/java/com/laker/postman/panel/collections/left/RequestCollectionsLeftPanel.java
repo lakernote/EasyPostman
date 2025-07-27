@@ -198,6 +198,15 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             public void mouseClicked(MouseEvent e) {
                 int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
                 TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
+                // 如果点击位置没有直接命中节点，则获取最近的行
+                if (selRow == -1 || selPath == null) {
+                    // 获取最接近点击位置的行
+                    selRow = requestTree.getClosestRowForLocation(e.getX(), e.getY());
+                    if (selRow != -1) {
+                        selPath = requestTree.getPathForRow(selRow);
+                    }
+                }
+
                 if (selRow != -1 && selPath != null) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
                     if (node.getUserObject() instanceof Object[] obj) {

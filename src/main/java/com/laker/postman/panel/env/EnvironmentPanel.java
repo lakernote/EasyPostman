@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -61,7 +63,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
         searchField = new SearchTextField();
 
         addEnvButton = new JButton(new FlatSVGIcon("icons/plus.svg", 20, 20));
-        addEnvButton.setToolTipText("新增环境");
         addEnvButton.setFocusable(false);
 
         searchPanel.add(searchField, BorderLayout.CENTER);
@@ -209,6 +210,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
+        JMenuItem addItem = new JMenuItem("Add Environment");
+        addItem.addActionListener(e -> addEnvironment());
+        envListMenu.add(addItem);
+        envListMenu.addSeparator();
         JMenuItem renameItem = new JMenuItem("Rename");
         JMenuItem copyItem = new JMenuItem("Duplicate"); // 复制菜单项
         JMenuItem deleteItem = new JMenuItem("Delete");
@@ -228,8 +233,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
                     int idx = environmentList.locationToIndex(e.getPoint());
                     if (idx >= 0) {
                         environmentList.setSelectedIndex(idx);
-                        envListMenu.show(environmentList, e.getX(), e.getY());
                     }
+                    envListMenu.show(environmentList, e.getX(), e.getY());
                 }
                 // 双击激活环境并联动下拉框
                 if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2) {
@@ -256,6 +261,43 @@ public class EnvironmentPanel extends SingletonBasePanel {
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (e.isPopupTrigger()) mousePressed(e);
+            }
+        });
+        // 拖拽排序支持
+        environmentList.setDragEnabled(true);
+        environmentList.setDropMode(DropMode.INSERT);
+        environmentList.setTransferHandler(new TransferHandler() {
+            private int fromIndex = -1;
+            @Override
+            protected Transferable createTransferable(JComponent c) {
+                fromIndex = environmentList.getSelectedIndex();
+                EnvironmentItem selected = environmentList.getSelectedValue();
+                return new StringSelection(selected != null ? selected.toString() : "");
+            }
+            @Override
+            public int getSourceActions(JComponent c) {
+                return MOVE;
+            }
+            @Override
+            public boolean canImport(TransferSupport support) {
+                return support.isDrop();
+            }
+            @Override
+            public boolean importData(TransferSupport support) {
+                if (!canImport(support)) return false;
+                JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
+                int toIndex = dl.getIndex();
+                if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return false;
+                EnvironmentItem moved = environmentListModel.getElementAt(fromIndex);
+                environmentListModel.remove(fromIndex);
+                if (toIndex > fromIndex) toIndex--;
+                environmentListModel.add(toIndex, moved);
+                environmentList.setSelectedIndex(toIndex);
+                // 1. 同步顺序到 EnvironmentService
+                persistEnvironmentOrder();
+                // 2. 同步到顶部下拉框
+                syncComboBoxOrder();
+                return true;
             }
         });
     }
@@ -569,6 +611,31 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 log.error("导出Postman环境失败", ex);
                 JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    /**
+     * 拖拽后持久化顺序
+     */
+    private void persistEnvironmentOrder() {
+        List<String> idOrder = new ArrayList<>();
+        for (int i = 0; i < environmentListModel.size(); i++) {
+            idOrder.add(environmentListModel.get(i).getEnvironment().getId());
+        }
+        EnvironmentService.saveEnvironmentOrder(idOrder);
+    }
+
+    /**
+     * 拖拽后同步顶部下拉框顺序
+     */
+    private void syncComboBoxOrder() {
+        EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+        if (comboBox != null) {
+            List<EnvironmentItem> items = new ArrayList<>();
+            for (int i = 0; i < environmentListModel.size(); i++) {
+                items.add(environmentListModel.get(i));
+            }
+            comboBox.setModel(new DefaultComboBoxModel<>(items.toArray(new EnvironmentItem[0])));
         }
     }
 }

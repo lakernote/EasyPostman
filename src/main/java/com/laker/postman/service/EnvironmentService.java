@@ -212,4 +212,28 @@ public class EnvironmentService {
         matcher.appendTail(result);
         return result.toString();
     }
+
+    /**
+     * 根据指定的id顺序重排environments并持久化
+     */
+    public static void saveEnvironmentOrder(List<String> idOrder) {
+        synchronized (environments) {
+            LinkedHashMap<String, Environment> newOrder = new LinkedHashMap<>();
+            for (String id : idOrder) {
+                Environment env = environments.get(id);
+                if (env != null) {
+                    newOrder.put(id, env);
+                }
+            }
+            // 补充未在idOrder中的环境（防止遗漏）
+            for (Map.Entry<String, Environment> entry : environments.entrySet()) {
+                if (!newOrder.containsKey(entry.getKey())) {
+                    newOrder.put(entry.getKey(), entry.getValue());
+                }
+            }
+            environments.clear();
+            environments.putAll(newOrder);
+            saveEnvironments();
+        }
+    }
 }

@@ -536,11 +536,16 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                             appendWebSocketMessage("WebSocket连接失败: " + t.getMessage());
-                            log.error("WebSocket连接失败: {},响应状态: {},响应头: {}", t.getMessage(), response.code(), response.headers(), t);
+                            if (response != null) {
+                                log.error("WebSocket连接失败: {},响应状态: {},响应头: {}", t.getMessage(), response.code(), response.headers(), t);
+                            } else {
+                                log.error("WebSocket连接失败: {},响应状态: null,响应头: null", t.getMessage(), t);
+                            }
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
-                                statusCodeLabel.setText("WebSocket连接失败: " + t.getMessage());
+                                String statusMsg = response != null ? "WebSocket连接失败: " + t.getMessage() + " (状态: " + response.code() + ")" : "WebSocket连接失败: " + t.getMessage();
+                                statusCodeLabel.setText(statusMsg);
                                 statusCodeLabel.setForeground(Color.RED);
                                 updateUIForResponse("WebSocket连接失败", resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);

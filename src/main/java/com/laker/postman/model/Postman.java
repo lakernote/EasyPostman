@@ -1,17 +1,20 @@
 package com.laker.postman.model;
 
+import com.laker.postman.service.EnvironmentService;
 import org.graalvm.polyglot.Value;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
-// 模拟 Postman 对象
 public class Postman {
     public List<TestResult> testResults = new ArrayList<>();
     public Environment environment;
     public Environment env;
     public ResponseAssertion response;
-    public Map<String, Object> variables = new HashMap<>();
+    public PostmanVariables variables = new PostmanVariables();
     public JsRequestWrapper request;
+
 
     public Postman(Environment environment) {
         this.environment = environment;
@@ -64,13 +67,12 @@ public class Postman {
         return new Expectation(actual);
     }
 
-    // 为前置脚本添加的方法
 
     /**
      * 设置一个请求变量，仅在当前请求有效
      */
     public void setVariable(String key, Object value) {
-        variables.put(key, value);
+        variables.set(key, value != null ? value.toString() : null);
     }
 
     /**
@@ -84,14 +86,14 @@ public class Postman {
      * 检查请求变量是否存在
      */
     public boolean hasVariable(String key) {
-        return variables.containsKey(key);
+        return variables.has(key);
     }
 
     /**
      * 删除请求变量
      */
     public void unsetVariable(String key) {
-        variables.remove(key);
+        variables.unset(key);
     }
 
     /**
@@ -99,6 +101,44 @@ public class Postman {
      */
     public void clearVariables() {
         variables.clear();
+    }
+
+    // 内部类，用于支持 pm.variables.set() 语法
+    public static class PostmanVariables {
+        /**
+         * 设置临时变量 - 对应 pm.variables.set()
+         */
+        public void set(String key, String value) {
+            EnvironmentService.setTemporaryVariable(key, value);
+        }
+
+        /**
+         * 获取临时变量 - 对应 pm.variables.get()
+         */
+        public String get(String key) {
+            return EnvironmentService.getTemporaryVariable(key);
+        }
+
+        /**
+         * 检查临时变量是否存在 - 对应 pm.variables.has()
+         */
+        public boolean has(String key) {
+            return EnvironmentService.getTemporaryVariable(key) != null;
+        }
+
+        /**
+         * 删除临时变量 - 对应 pm.variables.unset()
+         */
+        public void unset(String key) {
+            EnvironmentService.setTemporaryVariable(key, null);
+        }
+
+        /**
+         * 清除所有临时变量 - 对应 pm.variables.clear()
+         */
+        public void clear() {
+            EnvironmentService.clearTemporaryVariables();
+        }
     }
 
     /**

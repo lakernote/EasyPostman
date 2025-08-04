@@ -1,14 +1,12 @@
 package com.laker.postman.panel.functional.table;
 
-import com.laker.postman.model.HttpResponse;
-
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RunnerTableModel extends AbstractTableModel {
 
-    private final String[] columns = {"Select", "Name", "URL", "Method", "Time(ms)", "Status", "Assertion", "Detail"};
+    private final String[] columns = {"Select", "Name", "URL", "Method"};
     private final List<RunnerRowData> rows = new ArrayList<>();
 
     @Override
@@ -29,13 +27,12 @@ public class RunnerTableModel extends AbstractTableModel {
     @Override
     public Class<?> getColumnClass(int columnIndex) {
         if (columnIndex == 0) return Boolean.class;
-        if (columnIndex == 4) return Long.class;
         return String.class;
     }
 
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        return columnIndex == 0 || columnIndex == 7;
+        return columnIndex == 0;
     }
 
     @Override
@@ -46,10 +43,6 @@ public class RunnerTableModel extends AbstractTableModel {
             case 1 -> row.name;
             case 2 -> row.url;
             case 3 -> row.method;
-            case 4 -> row.cost;
-            case 5 -> row.status;
-            case 6 -> row.assertion;
-            case 7 -> "View";
             default -> null;
         };
     }
@@ -57,13 +50,10 @@ public class RunnerTableModel extends AbstractTableModel {
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         RunnerRowData row = rows.get(rowIndex);
-        switch (columnIndex) {
-            case 0 -> row.selected = (Boolean) aValue;
-            case 4 -> row.cost = (Long) aValue;
-            case 5 -> row.status = (String) aValue;
-            case 6 -> row.assertion = (String) aValue;
+        if (columnIndex == 0) {
+            row.selected = (Boolean) aValue;
+            fireTableCellUpdated(rowIndex, columnIndex);
         }
-        fireTableCellUpdated(rowIndex, columnIndex);
     }
 
     public void addRow(RunnerRowData row) {
@@ -81,15 +71,6 @@ public class RunnerTableModel extends AbstractTableModel {
 
     public RunnerRowData getRow(int rowIndex) {
         return rows.get(rowIndex);
-    }
-
-    public void setResponse(int rowIndex, HttpResponse resp, long cost, String status, String assertion) {
-        RunnerRowData row = rows.get(rowIndex);
-        row.response = resp;
-        row.cost = cost;
-        row.status = status;
-        row.assertion = assertion;
-        fireTableRowsUpdated(rowIndex, rowIndex);
     }
 
     public void moveRow(int fromIndex, int toIndex) {

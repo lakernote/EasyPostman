@@ -29,8 +29,23 @@ public class EnvironmentService {
     private static Environment activeEnvironment = null;
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{(.+?)}}");
 
+    // 临时变量，仅本次请求有效，优先级高于环境变量
+    private static final Map<String, String> temporaryVariables = new HashMap<>();
+
     static {
         loadEnvironments();
+    }
+
+    public static void setTemporaryVariable(String key, String value) {
+        temporaryVariables.put(key, value);
+    }
+
+    public static String getTemporaryVariable(String key) {
+        return temporaryVariables.get(key);
+    }
+
+    public static void clearTemporaryVariables() {
+        temporaryVariables.clear();
     }
 
     /**
@@ -187,9 +202,10 @@ public class EnvironmentService {
     /**
      * 替换文本中的环境变量占位符
      * 例如: {{baseUrl}}/api/users -> https://api.example.com/api/users
+     * 优先级: 临时变量 > 环境变量
      */
     public static String replaceVariables(String text) {
-        if (text == null || text.isEmpty() || activeEnvironment == null) {
+        if (text == null || text.isEmpty()) {
             return text;
         }
 
@@ -198,13 +214,14 @@ public class EnvironmentService {
 
         while (matcher.find()) {
             String varName = matcher.group(1);
-            String value = activeEnvironment.getVariable(varName);
-
+            String value = temporaryVariables.get(varName); // 优先查临时变量
+            if (value == null && activeEnvironment != null) {
+                value = activeEnvironment.getVariable(varName);
+            }
             // 如果变量不存在，保留原样
             if (value == null) {
                 matcher.appendReplacement(result, matcher.group(0));
             } else {
-                // 替换变量为对应的值
                 matcher.appendReplacement(result, value.replace("$", "\\$"));
             }
         }

@@ -12,6 +12,7 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
+import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -301,12 +302,20 @@ public class RequestEditSubPanel extends JPanel {
             cancelCurrentRequest();
             return;
         }
+
+        // 清理上次请求的临时变量
+        EnvironmentService.clearTemporaryVariables();
+
         HttpRequestItem item = getCurrentRequest();
         // 强制使用全局 followRedirects 设置
         item.setFollowRedirects(SettingManager.isFollowRedirects());
         PreparedRequest req = PreparedRequestBuilder.build(item);
         Map<String, Object> bindings = prepareBindings(req);
         if (!executePrescript(item, bindings)) return;
+
+        // 前置脚本执行完成后，再进行变量替换
+        PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
+
         if (!validateRequest(req, item)) return;
         updateUIForRequesting();
         // 协议分发
@@ -895,3 +904,4 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 }
+

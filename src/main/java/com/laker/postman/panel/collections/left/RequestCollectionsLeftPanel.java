@@ -16,6 +16,7 @@ import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.tree.TreeTransferHandler;
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.RequestCollectionPersistence;
@@ -788,7 +789,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         if (userObj instanceof Object[] obj && "request".equals(obj[0])) {
             HttpRequestItem item = (HttpRequestItem) obj[1];
             try {
-                String curl = CurlParser.toCurl(PreparedRequestBuilder.build(item));
+                PreparedRequest req = PreparedRequestBuilder.build(item);
+                // 对于 cURL 导出，直接进行变量替换（不需要前置脚本）
+                PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
+                String curl = CurlParser.toCurl(req);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(curl), null); // 将cUrl命令复制到剪贴板
                 JOptionPane.showMessageDialog(this, "cUrl命令已复制到剪贴板！", "提示", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
@@ -1051,3 +1055,4 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         dialog.setVisible(true);
     }
 }
+

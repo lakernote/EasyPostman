@@ -25,6 +25,7 @@ import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
+import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -932,6 +933,10 @@ public class PerformancePanel extends SingletonBasePanel {
             HttpResponse resp = null;
             String errorMsg = "";
             List<TestResult> testResults = new ArrayList<>();
+
+            // 清理上次的临时变量
+            EnvironmentService.clearTemporaryVariables();
+
             // ====== 前置脚本 ======
             req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
             Map<String, Object> bindings = HttpUtil.prepareBindings(req);
@@ -955,6 +960,11 @@ public class PerformancePanel extends SingletonBasePanel {
                     preOk = false;
                     success = false;
                 }
+            }
+
+            // 前置脚本执行完成后，进行变量替换
+            if (preOk) {
+                PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
             }
 
             long startTime = System.currentTimeMillis();
@@ -1272,3 +1282,4 @@ public class PerformancePanel extends SingletonBasePanel {
         return SettingManager.getJmeterKeepAliveSeconds();
     }
 }
+

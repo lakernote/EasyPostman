@@ -655,8 +655,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             }
 
             // 创建当前迭代的结果记录
-            BatchExecutionHistory.IterationResult iterationResult =
-                    new BatchExecutionHistory.IterationResult(iteration, currentCsvRow);
+            IterationResult iterationResult =
+                    new IterationResult(iteration, currentCsvRow);
 
             for (int i = 0; i < rowCount; i++) {
                 if (isStopped) break; // 检查停止标志
@@ -671,7 +671,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                     BatchResult result = executeSingleRequestWithCsv(row, currentCsvRow);
 
                     // 记录请求结果到执行历史
-                    BatchExecutionHistory.RequestResult requestResult = new BatchExecutionHistory.RequestResult(
+                    RequestResult requestResult = new RequestResult(
                             row.requestItem.getName(),
                             row.requestItem.getMethod(),
                             row.preparedRequest.url,

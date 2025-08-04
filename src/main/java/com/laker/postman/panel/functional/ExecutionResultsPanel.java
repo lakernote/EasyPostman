@@ -2,6 +2,8 @@ package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.BatchExecutionHistory;
+import com.laker.postman.model.IterationResult;
+import com.laker.postman.model.RequestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -150,12 +152,12 @@ public class ExecutionResultsPanel extends JPanel {
                 totalIterations, TimeDisplayUtil.formatElapsedTime(totalTime)));
 
         // 添加迭代节点
-        for (BatchExecutionHistory.IterationResult iteration : executionHistory.getIterations()) {
+        for (IterationResult iteration : executionHistory.getIterations()) {
             DefaultMutableTreeNode iterationNode = new DefaultMutableTreeNode(
                     new IterationNodeData(iteration));
 
             // 添加请求节点
-            for (BatchExecutionHistory.RequestResult request : iteration.getRequestResults()) {
+            for (RequestResult request : iteration.getRequestResults()) {
                 DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
                         new RequestNodeData(request));
                 iterationNode.add(requestNode);
@@ -208,7 +210,7 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private void showIterationDetail(IterationNodeData iterationData) {
-        BatchExecutionHistory.IterationResult iteration = iterationData.iteration;
+        IterationResult iteration = iterationData.iteration;
 
         // 迭代概览
         JPanel iterationPanel = new JPanel(new BorderLayout());
@@ -242,7 +244,7 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private void showRequestDetail(RequestNodeData requestData) {
-        BatchExecutionHistory.RequestResult request = requestData.request;
+        RequestResult request = requestData.request;
 
 
         // 清空现有的选项卡
@@ -308,9 +310,9 @@ public class ExecutionResultsPanel extends JPanel {
 
     // 树节点数据类
     private static class IterationNodeData {
-        final BatchExecutionHistory.IterationResult iteration;
+        final IterationResult iteration;
 
-        IterationNodeData(BatchExecutionHistory.IterationResult iteration) {
+        IterationNodeData(IterationResult iteration) {
             this.iteration = iteration;
         }
 
@@ -328,9 +330,9 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private static class RequestNodeData {
-        final BatchExecutionHistory.RequestResult request;
+        final RequestResult request;
 
-        RequestNodeData(BatchExecutionHistory.RequestResult request) {
+        RequestNodeData(RequestResult request) {
             this.request = request;
         }
 
@@ -433,8 +435,8 @@ public class ExecutionResultsPanel extends JPanel {
         String[] columnNames = {"迭代", "请求名称", "方法", "状态", "耗时", "断言", "时间戳"};
 
         java.util.List<Object[]> tableData = new java.util.ArrayList<>();
-        for (BatchExecutionHistory.IterationResult iteration : executionHistory.getIterations()) {
-            for (BatchExecutionHistory.RequestResult request : iteration.getRequestResults()) {
+        for (IterationResult iteration : executionHistory.getIterations()) {
+            for (RequestResult request : iteration.getRequestResults()) {
                 Object[] row = {
                         "第" + (iteration.getIterationIndex() + 1) + "轮",
                         request.getRequestName(),

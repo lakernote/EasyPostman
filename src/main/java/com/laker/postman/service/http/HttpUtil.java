@@ -301,7 +301,7 @@ public class HttpUtil {
         int idx = url.indexOf('?');
         if (idx < 0 || idx == url.length() - 1) return null;
         String paramStr = url.substring(idx + 1);
-        if (!paramStr.contains("=")) return null;
+
         Map<String, String> urlParams = new LinkedHashMap<>();
         int last = 0;
         while (last < paramStr.length()) {
@@ -313,16 +313,20 @@ public class HttpUtil {
                 k = pair.substring(0, eqIdx);
                 v = pair.substring(eqIdx + 1);
             } else {
-                // 没有=号的pair不处理
-                last = (amp == -1) ? paramStr.length() : amp + 1;
-                continue;
+                // 处理没有=号的参数，如 &key
+                k = pair;
+                v = "";
             }
-            if (StrUtil.isNotBlank(k) && StrUtil.isNotBlank(v)) {
-                urlParams.put(k, v);
+
+            // 只要key不为空，就添加参数（value可以为空）
+            if (StrUtil.isNotBlank(k)) {
+                urlParams.put(k.trim(), v == null ? "" : v);
             }
+
             if (amp == -1) break;
             last = amp + 1;
         }
+
         if (urlParams.isEmpty()) {
             return null;
         }
@@ -338,5 +342,68 @@ public class HttpUtil {
             headers.put("Content-Type", contentType);
             headersPanel.addRow("Content-Type", contentType);
         }
+    }
+
+    /**
+     * 获取不带参数的基础URL
+     * 例如：https://api.example.com/users?name=john&age=25 -> https://api.example.com/users
+     */
+    public static String getBaseUrlWithoutParams(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return null;
+        }
+
+        int queryIndex = url.indexOf('?');
+        if (queryIndex != -1) {
+            return url.substring(0, queryIndex);
+        }
+        return url;
+    }
+
+    /**
+     * 从参数Map构建完整的URL
+     *
+     * @param baseUrl 基础URL（不带参数）
+     * @param params  参数Map
+     * @return 完整的URL
+     */
+    public static String buildUrlFromParamsMap(String baseUrl, Map<String, String> params) {
+        if (baseUrl == null || baseUrl.trim().isEmpty()) {
+            return baseUrl;
+        }
+
+        if (params == null || params.isEmpty()) {
+            return baseUrl;
+        }
+
+        StringBuilder urlBuilder = new StringBuilder(baseUrl);
+        boolean isFirst = true;
+
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            // 只添加非空的key
+            if (StrUtil.isNotBlank(key)) {
+                if (isFirst) {
+                    urlBuilder.append("?");
+                    isFirst = false;
+                } else {
+                    urlBuilder.append("&");
+                }
+
+                // 对参数名进行URL编码
+                urlBuilder.append(encodeURIComponent(key));
+
+                // 如果value不为空，才添加=和value
+                if (StrUtil.isNotBlank(value)) {
+                    urlBuilder.append("=");
+                    urlBuilder.append(encodeURIComponent(value));
+                }
+                // 如果value为空，只添加key，不添加=
+            }
+        }
+
+        return urlBuilder.toString();
     }
 }

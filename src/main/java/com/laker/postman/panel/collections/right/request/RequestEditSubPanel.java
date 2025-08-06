@@ -81,6 +81,10 @@ public class RequestEditSubPanel extends JPanel {
 
     private final JButton[] tabButtons;
 
+    // 双向联动控制标志，防止循环更新
+    private boolean isUpdatingFromUrl = false;
+    private boolean isUpdatingFromParams = false;
+
     public RequestEditSubPanel(String id) {
         this.id = id;
         setLayout(new BorderLayout());
@@ -114,6 +118,12 @@ public class RequestEditSubPanel extends JPanel {
         paramsPanel = new EasyNameValueTablePanel("Key", "Value");
         reqTabs.addTab("Params", paramsPanel); // 2.1 添加参数选项卡
 
+        // 添加Params面板的监听器，实现从Params到URL的联动
+        paramsPanel.addTableModelListener(e -> {
+            if (!isUpdatingFromUrl) {
+                parseParamsPanelToUrl();
+            }
+        });
 
         // 2.2 Auth 面板
         authTabPanel = new AuthTabPanel();
@@ -750,15 +760,69 @@ public class RequestEditSubPanel extends JPanel {
      * 解析url中的参数到paramsPanel，并与现有params合并去重
      */
     private void parseUrlParamsToParamsPanel() {
-        String url = urlField.getText();
-        Map<String, String> urlParams = getParamsMapFromUrl(url);
-        if (urlParams == null) return;
-        Map<String, String> merged = new LinkedHashMap<>(paramsPanel.getMap());
-        merged.putAll(urlParams);
-        // 清空并填充paramsPanel
-        paramsPanel.clear();
-        for (java.util.Map.Entry<String, String> entry : merged.entrySet()) {
-            paramsPanel.addRow(entry.getKey(), entry.getValue());
+        if (isUpdatingFromParams) {
+            return; // 如果正在从Params更新URL，避免循环更新
+        }
+
+        isUpdatingFromUrl = true;
+        try {
+            String url = urlField.getText();
+            Map<String, String> urlParams = getParamsMapFromUrl(url);
+
+            // 获取当前Params面板的参数
+            Map<String, String> currentParams = paramsPanel.getMap();
+
+            // 如果URL中没有参数，清空Params面板
+            if (urlParams == null || urlParams.isEmpty()) {
+                if (!currentParams.isEmpty()) {
+                    paramsPanel.clear();
+                }
+                return;
+            }
+
+            // 检查URL参数和当前Params参数是否完全一致
+            if (!urlParams.equals(currentParams)) {
+                // 完全用URL中的参数替换Params面板
+                paramsPanel.clear();
+                for (Map.Entry<String, String> entry : urlParams.entrySet()) {
+                    paramsPanel.addRow(entry.getKey(), entry.getValue());
+                }
+            }
+        } finally {
+            isUpdatingFromUrl = false;
+        }
+    }
+
+    /**
+     * 从Params面板同步更新到URL栏（类似Postman的双向联动）
+     */
+    private void parseParamsPanelToUrl() {
+        if (isUpdatingFromUrl) {
+            return; // 如果正在从URL更新Params，避免循环更新
+        }
+
+        isUpdatingFromParams = true;
+        try {
+            String currentUrl = urlField.getText().trim();
+            String baseUrl = HttpUtil.getBaseUrlWithoutParams(currentUrl);
+
+            if (baseUrl == null || baseUrl.isEmpty()) {
+                return; // 没有基础URL，无法构建完整URL
+            }
+
+            // 获取Params面板的所有参数
+            Map<String, String> params = paramsPanel.getMap();
+
+            // 使用HttpUtil中的方法构建完整URL
+            String newUrl = HttpUtil.buildUrlFromParamsMap(baseUrl, params);
+
+            // 只有在URL真正发生变化时才更新
+            if (!newUrl.equals(currentUrl)) {
+                urlField.setText(newUrl);
+                urlField.setCaretPosition(0); // 设置光标到开头
+            }
+        } finally {
+            isUpdatingFromParams = false;
         }
     }
 

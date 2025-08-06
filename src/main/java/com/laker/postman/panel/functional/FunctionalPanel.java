@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
@@ -271,7 +272,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
 
         JDialog manageDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "CSV 数据管理", true);
-        manageDialog.setSize(1000, 700);
+        manageDialog.setSize(600, 400);
         manageDialog.setLocationRelativeTo(this);
         manageDialog.setLayout(new BorderLayout());
 
@@ -316,8 +317,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                     (csvData.isEmpty() ? new java.util.ArrayList<>() : new java.util.ArrayList<>(csvData.get(0).keySet()));
         }
 
-        // 创建表格数据
-        Object[][] tableData = new Object[Math.max(csvData.size(), 5)][headers.size()];
+        Object[][] tableData = new Object[csvData.size()][headers.size()];
         for (int i = 0; i < csvData.size(); i++) {
             Map<String, String> row = csvData.get(i);
             for (int j = 0; j < headers.size(); j++) {
@@ -326,7 +326,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
 
         // 创建可编辑的表格模型
-        javax.swing.table.DefaultTableModel editTableModel = new javax.swing.table.DefaultTableModel(tableData, headers.toArray()) {
+        DefaultTableModel editTableModel = new DefaultTableModel(tableData, headers.toArray()) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return true; // 所有单元格都可编辑
@@ -334,22 +334,66 @@ public class FunctionalPanel extends SingletonBasePanel {
         };
 
         JTable csvTable = new JTable(editTableModel);
+
+        csvTable.setFillsViewportHeight(true);
+        csvTable.setRowHeight(30); // 与 EasyTablePanel 一致的行高
         csvTable.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         csvTable.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
-        csvTable.setRowHeight(28);
-        csvTable.setGridColor(new Color(220, 220, 220));
+        csvTable.getTableHeader().setBackground(new Color(240, 242, 245));
+        csvTable.getTableHeader().setForeground(new Color(33, 33, 33));
+        csvTable.setGridColor(new Color(237, 237, 237)); // 使用更柔和的表格线颜色
+        csvTable.setShowHorizontalLines(true);
+        csvTable.setShowVerticalLines(true);
+        csvTable.setIntercellSpacing(new Dimension(2, 2)); // 设置单元格间距
+        csvTable.setRowMargin(2);
         csvTable.setSelectionBackground(new Color(220, 235, 252));
+        csvTable.setSelectionForeground(Color.BLACK);
         csvTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        csvTable.setOpaque(false); // 设置表格透明
 
-        // 设置列宽
-        for (int i = 0; i < csvTable.getColumnCount(); i++) {
+        // 设置空值渲染器，
+        DefaultTableCellRenderer emptyCellRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value == null || (value instanceof String && ((String) value).trim().isEmpty())) {
+                    if (isSelected) {
+                        c.setBackground(table.getSelectionBackground());
+                    } else {
+                        c.setBackground(Color.WHITE);
+                    }
+                } else {
+                    if (isSelected) {
+                        c.setBackground(table.getSelectionBackground());
+                    } else {
+                        c.setBackground(table.getBackground());
+                    }
+                }
+                return c;
+            }
+        };
+
+        // 为所有列设置渲染器
+        for (int i = 0; i < headers.size(); i++) {
+            csvTable.getColumnModel().getColumn(i).setCellRenderer(emptyCellRenderer);
             csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
         }
 
+        // 创建带样式的滚动面板
         JScrollPane scrollPane = new JScrollPane(csvTable);
+        scrollPane.getViewport().setBackground(new Color(248, 250, 252)); // 与 EasyTablePanel 一致的背景色
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 15, 10, 15));
-        manageDialog.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(237, 237, 237)),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8))); // 参考 EasyTablePanel 的边框样式
+
+        // 创建表格容器面板，应用背景色
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(new Color(248, 250, 252));
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 10, 15));
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+
+        manageDialog.add(tablePanel, BorderLayout.CENTER);
 
         // 底部面板
         JPanel bottomPanel = new JPanel(new BorderLayout());

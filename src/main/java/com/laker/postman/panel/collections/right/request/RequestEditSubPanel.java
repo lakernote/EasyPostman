@@ -210,7 +210,7 @@ public class RequestEditSubPanel extends JPanel {
         }
 
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
-        splitPane.setDividerSize(1);
+        splitPane.setDividerSize(2); // 设置分割条的宽度
         splitPane.setResizeWeight(0.5); // 设置分割线位置，表示请求部分占50%
         add(splitPane, BorderLayout.CENTER);
 

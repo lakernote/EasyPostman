@@ -27,7 +27,7 @@ public class RequestCollectionsPanel extends SingletonBasePanel {
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditPanel);
         mainSplit.setContinuousLayout(true); // 分割条拖动时实时更新布局
         mainSplit.setDividerLocation(250); // 设置初始分割位置
-        mainSplit.setDividerSize(1);
+        mainSplit.setDividerSize(2); // 设置分割条的宽度
 
         // 将分割面板添加到主面板
         add(mainSplit, BorderLayout.CENTER); // 将分割面板添加到主面板的中心位置

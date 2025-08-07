@@ -380,6 +380,46 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
+    /**
+     * 设置标签页切换监听器，实现反向定位到左侧树节点
+     */
+    private void setupTabSelectionListener() {
+        tabbedPane.addChangeListener(e -> {
+            // 获取当前选中的标签页
+            int selectedIndex = tabbedPane.getSelectedIndex();
+            if (selectedIndex < 0 || isPlusTab(selectedIndex)) {
+                return; // 如果是+Tab或无效索引，不处理
+            }
+
+            Component selectedComponent = tabbedPane.getComponentAt(selectedIndex);
+            if (selectedComponent instanceof RequestEditSubPanel subPanel) {
+                HttpRequestItem currentRequest = subPanel.getCurrentRequest();
+                if (currentRequest != null && currentRequest.getId() != null) {
+                    // 在左侧树中定位到对应的请求节点
+                    locateRequestInLeftTree(currentRequest.getId());
+                }
+            }
+        });
+    }
+
+    /**
+     * 在左侧集合树中定位指定ID的请求
+     */
+    private void locateRequestInLeftTree(String requestId) {
+        if (requestId == null || requestId.isEmpty()) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            try {
+                RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                collectionPanel.locateAndSelectRequest(requestId);
+            } catch (Exception ex) {
+                log.debug("定位请求节点时出错: {}", ex.getMessage());
+            }
+        });
+    }
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -388,6 +428,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         add(tabbedPane, BorderLayout.CENTER);
         addNewTab(REQUEST_STRING); // 默认添加第一个请求Tab
         setupSaveShortcut();
+        setupTabSelectionListener(); // 添加标签页切换监听器
         // 添加鼠标监听，只在左键点击“+”Tab时新增
         tabbedPane.addMouseListener(new MouseAdapter() {
             @Override

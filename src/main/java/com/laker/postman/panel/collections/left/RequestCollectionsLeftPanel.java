@@ -1054,5 +1054,35 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         dialog.add(btns, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }
-}
 
+    /**
+     * 根据请求ID定位并选中树中的对应节点
+     *
+     * @param requestId 请求ID
+     */
+    public void locateAndSelectRequest(String requestId) {
+        if (requestId == null || requestId.isEmpty()) {
+            return;
+        }
+
+        DefaultMutableTreeNode targetNode = findRequestNodeById(rootTreeNode, requestId);
+        if (targetNode == null) { // 如果没有找到对应的请求节点
+            return;
+        }
+
+        // 构建完整路径
+        TreePath treePath = new TreePath(targetNode.getPath());
+
+        // 展开父节点路径，确保目标节点可见
+        requestTree.expandPath(treePath.getParentPath());
+
+        // 选中目标节点
+        requestTree.setSelectionPath(treePath);
+
+        // 滚动到可见区域
+        requestTree.scrollPathToVisible(treePath);
+
+        // 确保焦点在树上（可选，用于突出显示）
+        requestTree.requestFocusInWindow();
+    }
+}

@@ -160,4 +160,21 @@ public class SettingManager {
         props.setProperty("follow_redirects", String.valueOf(follow));
         save();
     }
+
+    public static int getMaxHistoryCount() {
+        String val = props.getProperty("max_history_count");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 100;
+            }
+        }
+        return 100; // 默认保存100条历史记录
+    }
+
+    public static void setMaxHistoryCount(int count) {
+        props.setProperty("max_history_count", String.valueOf(count));
+        save();
+    }
 }

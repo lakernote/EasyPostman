@@ -6,6 +6,7 @@ import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontUtil;
 import com.laker.postman.util.JComponentUtils;
@@ -14,6 +15,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
 /**
  * 历史记录面板
@@ -78,7 +80,6 @@ public class HistoryPanel extends SingletonBasePanel {
         listScroll.setMinimumSize(new Dimension(220, 240));
         listScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
 
-
         // 详情区
         historyDetailPanel = new JPanel(new BorderLayout());
         historyDetailPane = new JTextPane();
@@ -98,6 +99,10 @@ public class HistoryPanel extends SingletonBasePanel {
         split.setDividerSize(1);
         add(split, BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
+
+        // 加载持久化的历史记录
+        loadPersistedHistory();
+
         SwingUtilities.invokeLater(() -> historyList.repaint());
     }
 
@@ -116,6 +121,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 }
             }
         });
+
         // 双击选中列表项
         historyList.addMouseListener(new MouseAdapter() {
             @Override
@@ -131,15 +137,56 @@ public class HistoryPanel extends SingletonBasePanel {
     }
 
     public void addRequestHistory(PreparedRequest req, HttpResponse resp) {
+        // 添加到持久化管理器
+        HistoryPersistenceManager.getInstance().addHistory(req, resp);
+
+        // 添加到UI列表
         RequestHistoryItem item = new RequestHistoryItem(req, resp);
         if (historyListModel != null) {
             historyListModel.add(0, item);
+
+            // 限制UI显示的历史记录数量
+            int maxCount = com.laker.postman.common.setting.SettingManager.getMaxHistoryCount();
+            while (historyListModel.size() > maxCount) {
+                historyListModel.remove(historyListModel.size() - 1);
+            }
         }
     }
 
     private void clearRequestHistory() {
+        // 清空持久化的历史记录
+        HistoryPersistenceManager.getInstance().clearHistory();
+
+        // 清空UI列表
         historyListModel.clear();
         historyDetailPane.setText(EMPTY_BODY_HTML);
         historyDetailPanel.setVisible(true);
+    }
+
+    /**
+     * 加载持久化的历史记录
+     */
+    private void loadPersistedHistory() {
+        if (historyListModel == null) {
+            return;
+        }
+
+        // 从持久化管理器加载历史记录
+        List<RequestHistoryItem> persistedHistory = HistoryPersistenceManager.getInstance().getHistory();
+
+        // 清空当前列表
+        historyListModel.clear();
+
+        // 添加到UI列表
+        for (RequestHistoryItem item : persistedHistory) {
+            historyListModel.addElement(item);
+        }
+    }
+
+    /**
+     * 刷新历史记录显示（当设置变更时调用）
+     */
+    public void refreshHistory() {
+        loadPersistedHistory();
     }
 }

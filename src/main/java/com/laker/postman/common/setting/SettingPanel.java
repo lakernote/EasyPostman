@@ -24,6 +24,7 @@ public class SettingPanel extends SingletonBasePanel {
     private JCheckBox showDownloadProgressCheckBox;
     private JTextField downloadProgressDialogThresholdField;
     private JCheckBox followRedirectsCheckBox;
+    private JTextField maxHistoryCountField;
 
     // 用于输入验证的映射
     private final Map<JTextField, Predicate<String>> validators = new HashMap<>();
@@ -161,10 +162,30 @@ public class SettingPanel extends SingletonBasePanel {
         downloadProgressDialogThresholdField.setEnabled(showDownloadProgressCheckBox.isSelected());
         downloadProgressDialogThresholdLabel.setEnabled(showDownloadProgressCheckBox.isSelected());
         showDownloadProgressCheckBox.addItemListener(e -> {
-            boolean selected = e.getStateChange() == 1;
+            boolean selected = e.getStateChange() == java.awt.event.ItemEvent.SELECTED;
             downloadProgressDialogThresholdField.setEnabled(selected);
             downloadProgressDialogThresholdLabel.setEnabled(selected);
         });
+
+        // ===== 通用设置面板 =====
+        JPanel generalPanel = createSectionPanel("通用设置");
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        // 历史记录数量
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        JLabel maxHistoryCountLabel = new JLabel("最大历史记录数量:");
+        maxHistoryCountLabel.setToolTipText("保存的最大历史记录条数");
+        generalPanel.add(maxHistoryCountLabel, gbc);
+
+        gbc.gridx = 1;
+        maxHistoryCountField = new JTextField(10);
+        maxHistoryCountField.setText(String.valueOf(SettingManager.getMaxHistoryCount()));
+        generalPanel.add(maxHistoryCountField, gbc);
 
         // 添加所有面板到主面板
         mainPanel.add(requestPanel);
@@ -172,6 +193,8 @@ public class SettingPanel extends SingletonBasePanel {
         mainPanel.add(jmeterPanel);
         mainPanel.add(Box.createVerticalStrut(10));
         mainPanel.add(downloadPanel);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(generalPanel);
         mainPanel.add(Box.createVerticalGlue()); // 添加弹性空间使面板保持在顶部
 
         // 创建滚动面板
@@ -226,6 +249,7 @@ public class SettingPanel extends SingletonBasePanel {
         validators.put(jmeterMaxIdleField, s -> isInteger(s) && Integer.parseInt(s) > 0);
         validators.put(jmeterKeepAliveField, s -> isInteger(s) && Integer.parseInt(s) > 0);
         validators.put(downloadProgressDialogThresholdField, s -> isInteger(s) && Integer.parseInt(s) >= 0);
+        validators.put(maxHistoryCountField, s -> isInteger(s) && Integer.parseInt(s) > 0);
 
         // 设置错误消息
         errorMessages.put(maxBodySizeField, "响应体大小不能小于0");
@@ -234,6 +258,7 @@ public class SettingPanel extends SingletonBasePanel {
         errorMessages.put(jmeterMaxIdleField, "最大连接数必须大于0");
         errorMessages.put(jmeterKeepAliveField, "连接保活时间必须大于0");
         errorMessages.put(downloadProgressDialogThresholdField, "进度弹窗阈值不能小于0");
+        errorMessages.put(maxHistoryCountField, "历史记录数量必须大于0");
 
         // 添加实时验证
         DocumentListener validationListener = new DocumentListener() {
@@ -305,6 +330,7 @@ public class SettingPanel extends SingletonBasePanel {
         downloadProgressDialogThresholdField.addKeyListener(keyAdapter);
         showDownloadProgressCheckBox.addKeyListener(keyAdapter);
         followRedirectsCheckBox.addKeyListener(keyAdapter);
+        maxHistoryCountField.addKeyListener(keyAdapter);
     }
 
     @Override
@@ -358,6 +384,7 @@ public class SettingPanel extends SingletonBasePanel {
             int jmeterMaxIdle = Integer.parseInt(jmeterMaxIdleField.getText().trim());
             long jmeterKeepAlive = Long.parseLong(jmeterKeepAliveField.getText().trim());
             int thresholdMB = Integer.parseInt(downloadProgressDialogThresholdField.getText().trim());
+            int maxHistoryCount = Integer.parseInt(maxHistoryCountField.getText().trim());
 
             SettingManager.setMaxBodySize(sizeKB * 1024);
             SettingManager.setRequestTimeout(timeout);
@@ -367,6 +394,7 @@ public class SettingPanel extends SingletonBasePanel {
             SettingManager.setShowDownloadProgressDialog(showDownloadProgressCheckBox.isSelected());
             SettingManager.setDownloadProgressDialogThreshold(thresholdMB * 1024 * 1024);
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
+            SettingManager.setMaxHistoryCount(maxHistoryCount);
 
             JOptionPane.showMessageDialog(this, "设置已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
             Window window = SwingUtilities.getWindowAncestor(this);
@@ -378,3 +406,4 @@ public class SettingPanel extends SingletonBasePanel {
         }
     }
 }
+

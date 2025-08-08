@@ -205,9 +205,7 @@ public class RequestEditSubPanel extends JPanel {
         // 默认显示Body
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, "Body");
         // 默认禁用响应区tab按钮
-        for (JButton btn : tabButtons) {
-            btn.setEnabled(false);
-        }
+        setResponseTabButtonsEnable(tabButtons, false);
 
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(2); // 设置分割条的宽度
@@ -349,6 +347,7 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
+                    setResponseTabButtonsEnable(tabButtons, true);
                     resp = RedirectHandler.executeWithRedirects(req, 10);
                     if (resp != null) {
                         statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
@@ -457,6 +456,7 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     };
                     currentEventSource = HttpSingleRequestExecutor.executeSSE(req, new SseEventListener(callback, resp, sseBodyBuilder, startTime));
+                    setResponseTabButtonsEnable(tabButtons, true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
@@ -571,6 +571,7 @@ public class RequestEditSubPanel extends JPanel {
                             });
                         }
                     });
+                    setResponseTabButtonsEnable(tabButtons, true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
                     log.error("WebSocket连接异常: {}", ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
@@ -854,9 +855,7 @@ public class RequestEditSubPanel extends JPanel {
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
         networkLogPanel.clearLog();
         // 禁用响应区tab按钮
-        for (JButton btn : tabButtons) {
-            btn.setEnabled(false);
-        }
+        setResponseTabButtonsEnable(tabButtons, false);
         // 只禁用 responseBodyPanel
         responseBodyPanel.setEnabled(false);
         // 清空响应内容
@@ -873,10 +872,6 @@ public class RequestEditSubPanel extends JPanel {
         if (resp == null) {
             statusCodeLabel.setText("Status:" + statusText);
             statusCodeLabel.setForeground(Color.RED);
-            // 恢复tab按钮
-            for (JButton btn : tabButtons) {
-                btn.setEnabled(true);
-            }
             // 恢复 responseBodyPanel
             responseBodyPanel.setEnabled(true);
             return;
@@ -889,12 +884,15 @@ public class RequestEditSubPanel extends JPanel {
         responseTimeLabel.setText(String.format("Duration: %s", TimeDisplayUtil.formatElapsedTime(resp.costMs)));
         int bytes = resp.bodySize;
         responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
-        // 恢复tab按钮
-        for (JButton btn : tabButtons) {
-            btn.setEnabled(true);
-        }
         // 恢复 responseBodyPanel
         responseBodyPanel.setEnabled(true);
+    }
+
+    private void setResponseTabButtonsEnable(JButton[] tabButtons, boolean enable) {
+        if (tabButtons == null) return;
+        for (JButton btn : tabButtons) {
+            btn.setEnabled(enable);
+        }
     }
 
     // 处理响应、后置脚本、变量提取、历史

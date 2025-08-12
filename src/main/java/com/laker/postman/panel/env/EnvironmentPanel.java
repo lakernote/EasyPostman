@@ -1,8 +1,8 @@
 package com.laker.postman.panel.env;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
@@ -228,6 +228,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         envListMenu.addSeparator();
         envListMenu.add(exportPostmanItem);
         environmentList.addMouseListener(new MouseAdapter() {
+            @Override
             public void mousePressed(MouseEvent e) {
                 if (e.isPopupTrigger() || e.getButton() == MouseEvent.BUTTON3) { // 右键菜单
                     int idx = environmentList.locationToIndex(e.getPoint());
@@ -243,16 +244,16 @@ public class EnvironmentPanel extends SingletonBasePanel {
                         environmentList.setSelectedIndex(idx);
                         EnvironmentItem item = environmentList.getModel().getElementAt(idx);
                         if (item != null) {
-                            Environment env = item.getEnvironment();
-                            // 激活环境
-                            EnvironmentService.setActiveEnvironment(env.getId());
-                            // 联动顶部下拉框
-                            EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
-                            if (comboBox != null) {
-                                comboBox.setSelectedEnvironment(env);
-                            }
-                            // 刷新面板
-                            refreshUI();
+                          Environment env = item.getEnvironment();
+                          // 激活环境
+                          EnvironmentService.setActiveEnvironment(env.getId());
+                          // 联动顶部下拉框
+                          EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+                          if (comboBox != null) {
+                              comboBox.setSelectedEnvironment(env);
+                          }
+                          // 刷新面板
+                          refreshUI();
                         }
                     }
                 }
@@ -268,20 +269,24 @@ public class EnvironmentPanel extends SingletonBasePanel {
         environmentList.setDropMode(DropMode.INSERT);
         environmentList.setTransferHandler(new TransferHandler() {
             private int fromIndex = -1;
+
             @Override
             protected Transferable createTransferable(JComponent c) {
                 fromIndex = environmentList.getSelectedIndex();
                 EnvironmentItem selected = environmentList.getSelectedValue();
                 return new StringSelection(selected != null ? selected.toString() : "");
             }
+
             @Override
             public int getSourceActions(JComponent c) {
                 return MOVE;
             }
+
             @Override
             public boolean canImport(TransferSupport support) {
                 return support.isDrop();
             }
+
             @Override
             public boolean importData(TransferSupport support) {
                 if (!canImport(support)) return false;
@@ -320,6 +325,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (env != null) {
             java.util.List<Map<String, Object>> rows = new ArrayList<>();
             for (String key : env.getVariables().keySet()) {
+                if (CharSequenceUtil.isBlank(key)) {
+                    continue;
+                }
                 String value = env.getVariable(key);
                 java.util.Map<String, Object> row = new LinkedHashMap<>();
                 row.put("Name", key);
@@ -341,17 +349,26 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (currentEnvironment == null) return;
         variablesTablePanel.stopCellEditing();
         currentEnvironment.getVariables().clear();
-        java.util.List<Map<String, Object>> rows = variablesTablePanel.getRows();
+        List<Map<String, Object>> rows = variablesTablePanel.getRows();
+        List<Map<String, Object>> newRows = new ArrayList<>();
         for (Map<String, Object> row : rows) {
             String key = row.get("Name") == null ? null : row.get("Name").toString();
-            String value = row.get("Value") == null ? "" : row.get("Value").toString();
-            if (key != null && !key.trim().isEmpty()) {
-                currentEnvironment.addVariable(key.trim(), value);
+            if (CharSequenceUtil.isBlank(key)) {
+                continue; // 跳过空key
             }
+            String value = row.get("Value") == null ? "" : row.get("Value").toString();
+            currentEnvironment.addVariable(key, value);
+            newRows.add(row);
         }
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
-        originalVariablesSnapshot = JSONUtil.toJsonStr(rows);
+        originalVariablesSnapshot = JSONUtil.toJsonStr(newRows);
+
+        // 显示保存成功提示
+        JOptionPane.showMessageDialog(this,
+            "环境变量保存成功！",
+            "保存成功",
+            JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -561,7 +578,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private boolean isVariablesChanged() {
         List<Map<String, Object>> rows = getRows();
         String curJson = JSONUtil.toJsonStr(rows);
-        boolean isVariablesChanged = !StrUtil.equals(curJson, originalVariablesSnapshot);
+        boolean isVariablesChanged = !CharSequenceUtil.equals(curJson, originalVariablesSnapshot);
         if (isVariablesChanged) {
             log.info("env name: {}", currentEnvironment != null ? currentEnvironment.getName() : "null");
             log.info("current  variables: {}", curJson);

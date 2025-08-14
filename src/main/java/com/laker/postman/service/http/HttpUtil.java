@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.SidebarTabPanel;
+import com.laker.postman.panel.ConsolePanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.js.JsScriptExecutor;
@@ -192,13 +192,13 @@ public class HttpUtil {
                         bindings,
                         output -> {
                             if (!output.isBlank()) {
-                                SidebarTabPanel.appendConsoleLog("[PreScript Console]\n" + output);
+                                ConsolePanel.appendLog("[PreScript Console]\n" + output);
                             }
                         }
                 );
             } catch (Exception ex) {
                 log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                SidebarTabPanel.appendConsoleLog("[PreScript Error] " + ex.getMessage());
+                ConsolePanel.appendLog("[PreScript Error] " + ex.getMessage());
                 JOptionPane.showMessageDialog(null, "前置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
                 return false;
             }
@@ -217,7 +217,7 @@ public class HttpUtil {
                         bindings,
                         output -> {
                             if (!output.isBlank()) {
-                                SidebarTabPanel.appendConsoleLog("[PostScript Console]\n" + output);
+                                ConsolePanel.appendLog("[PostScript Console]\n" + output);
                             }
                         }
                 );
@@ -228,7 +228,7 @@ public class HttpUtil {
                 }
             } catch (Exception ex) {
                 log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                SidebarTabPanel.appendConsoleLog("[PostScript Error] " + ex.getMessage());
+                ConsolePanel.appendLog("[PostScript Error] " + ex.getMessage());
             }
         }
     }

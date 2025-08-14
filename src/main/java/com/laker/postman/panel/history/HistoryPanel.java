@@ -64,7 +64,6 @@ public class HistoryPanel extends SingletonBasePanel {
                     String text = String.format("[%s] %s", item.method, item.url);
                     text = JComponentUtils.ellipsisText(text, list, 0, 50); // 超出宽度显示省略号
                     label.setText(text);
-                    label.setToolTipText(String.format("[%s] %s", item.method, item.url));
                 }
                 if (isSelected) {
                     label.setFont(label.getFont().deriveFont(Font.BOLD));
@@ -78,7 +77,7 @@ public class HistoryPanel extends SingletonBasePanel {
         JScrollPane listScroll = new JScrollPane(historyList);
         listScroll.setPreferredSize(new Dimension(220, 240));
         listScroll.setMinimumSize(new Dimension(220, 240));
-        listScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
+        listScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
 
         // 详情区
         historyDetailPanel = new JPanel(new BorderLayout());

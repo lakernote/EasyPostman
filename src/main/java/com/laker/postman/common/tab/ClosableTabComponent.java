@@ -12,6 +12,8 @@ import java.util.List;
  * 通用可关闭Tab组件，支持右上角红点脏标记
  */
 public class ClosableTabComponent extends JPanel {
+    int MAX_TAB_WIDTH = 80;
+    int TAB_HEIGHT = 28;
     private final JLabel label;
     private final String rawTitle;
     private boolean dirty = false;
@@ -29,9 +31,7 @@ public class ClosableTabComponent extends JPanel {
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
         int textWidth = fm.stringWidth(title) + 32;
-        int MAX_TAB_WIDTH = 80;
         int tabWidth = Math.min(textWidth, MAX_TAB_WIDTH);
-        int TAB_HEIGHT = 28;
         setPreferredSize(new Dimension(tabWidth, TAB_HEIGHT));
         // 截断文本并设置tooltip
         String displayTitle = title;
@@ -89,9 +89,9 @@ public class ClosableTabComponent extends JPanel {
 
     private JPopupMenu getPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem closeCurrent = new JMenuItem("关闭当前");
-        JMenuItem closeOthers = new JMenuItem("关闭其他");
-        JMenuItem closeAll = new JMenuItem("关闭所有");
+        JMenuItem closeCurrent = new JMenuItem("Close Current");
+        JMenuItem closeOthers = new JMenuItem("Close Others");
+        JMenuItem closeAll = new JMenuItem("Close All");
         closeCurrent.addActionListener(e -> {
             int idx = tabbedPane.indexOfComponent(panel);
             if (idx >= 0) {

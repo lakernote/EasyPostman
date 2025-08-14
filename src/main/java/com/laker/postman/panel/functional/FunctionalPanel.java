@@ -57,15 +57,13 @@ public class FunctionalPanel extends SingletonBasePanel {
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
 
-        // 执行面板（原有功能）
         JPanel executionPanel = new JPanel(new BorderLayout());
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
-        mainTabbedPane.addTab("请求配置", new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
+        mainTabbedPane.addTab("Request Configuration", new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
 
-        // 结果面板（新增）
         resultsPanel = new ExecutionResultsPanel();
-        mainTabbedPane.addTab("执行结果", new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
+        mainTabbedPane.addTab("Execution Results", new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
 
         add(mainTabbedPane, BorderLayout.CENTER);
     }

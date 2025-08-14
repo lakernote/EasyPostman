@@ -5,8 +5,6 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.Colors;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -46,8 +44,8 @@ public class ConsolePanel extends SingletonBasePanel {
         logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         logScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         closeBtn = new JButton();
-        closeBtn.setIcon(IconFontSwing.buildIcon(FontAwesome.TIMES, 16, new Color(80, 80, 80)));
-        closeBtn.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        closeBtn.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
+        closeBtn.setBorder(BorderFactory.createEmptyBorder());
         closeBtn.setBackground(Colors.PANEL_BACKGROUND);
         // 关闭按钮事件由外部注册
 
@@ -111,7 +109,7 @@ public class ConsolePanel extends SingletonBasePanel {
         });
 
         JPanel topPanel = new JPanel(new BorderLayout());
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         btnPanel.setOpaque(false);
         btnPanel.add(clearBtn);
         btnPanel.add(closeBtn);

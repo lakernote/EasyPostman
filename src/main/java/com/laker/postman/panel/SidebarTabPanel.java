@@ -31,6 +31,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JLabel consoleLabel;
     private ConsolePanel consolePanel;
     private JSplitPane splitPane;
+    private boolean sidebarExpanded = true; // 侧边栏展开状态
 
     @Override
     protected void initUI() {
@@ -53,6 +54,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
             tabbedPane.addTab(info.title, new JPanel());
             tabbedPane.setTabComponentAt(i, createPostmanTabHeader(info.title, info.icon));
         }
+        // 在tabbedPane最后面增加展开、收起菜单标签
+        tabbedPane.addTab("Toggle", new JPanel()); // 添加一个空的tab作为占位符
+        int toggleTabIndex = tabbedPane.getTabCount() - 1;
+        tabbedPane.setTabComponentAt(toggleTabIndex, createToggleTabHeader());
+
+        // 默认设置选中第一个标签
         tabbedPane.setSelectedIndex(0);
 
         // 2. 控制台日志区
@@ -111,7 +118,25 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-        tabbedPane.addChangeListener(e -> handleTabChange());
+        tabbedPane.addChangeListener(e -> {
+            int selectedIndex = tabbedPane.getSelectedIndex();
+            // 如果点击的是最后一个标签（切换按钮），则执行切换操作
+            if (selectedIndex == tabbedPane.getTabCount() - 1) {
+                // 切换侧边栏状态
+                toggleSidebar();
+                // 重新选择之前的标签，避免选中切换按钮标签
+                SwingUtilities.invokeLater(() -> {
+                    if (tabbedPane.getTabCount() > 1) {
+                        int previousIndex = Math.min(selectedIndex - 1, tabInfos.size() - 1);
+                        if (previousIndex >= 0) {
+                            tabbedPane.setSelectedIndex(previousIndex);
+                        }
+                    }
+                });
+            } else {
+                handleTabChange();
+            }
+        });
         // 懒加载第一个tab
         SwingUtilities.invokeLater(() -> ensureTabComponentLoaded(0));
     }
@@ -136,21 +161,156 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建模仿Postman风格的Tab头部（图标在上，文本在下）
      */
     private Component createPostmanTabHeader(String title, Icon icon) {
+        return createTabHeader(title, icon, sidebarExpanded);
+    }
+
+    /**
+     * 创建标签头部，支持展开和收起状态
+     */
+    private Component createTabHeader(String title, Icon icon, boolean expanded) {
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));  //
-        panel.setPreferredSize(new Dimension(81, 60)); // 设置合适的宽高
-        panel.setOpaque(false); // 设置透明背景
-        JLabel iconLabel = new JLabel(icon); // 使用传入的图标
-        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 图标居中对齐
-        iconLabel.setPreferredSize(new Dimension(32, 32));
-        JLabel titleLabel = new JLabel(title); // 使用传入的标题
-        titleLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 文本居中对齐
-        panel.add(iconLabel);
-        panel.add(Box.createVerticalStrut(2)); // 图标和文本之间的间距
-        panel.add(titleLabel);
-        panel.setBorder(BorderFactory.createEmptyBorder(6, 2, 6, 2));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+
+        // 创建鼠标监听器，用于处理tab切换
+        MouseAdapter tabClickListener = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // 查找这个标签在tabInfos中的索引
+                for (int i = 0; i < tabInfos.size(); i++) {
+                    TabInfo info = tabInfos.get(i);
+                    if (info.title.equals(title)) {
+                        tabbedPane.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+        };
+
+        if (expanded) {
+            // 展开状态：显示图标和文字，保持固定高度
+            panel.setPreferredSize(new Dimension(81, 60));
+            JLabel iconLabel = new JLabel(icon);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setPreferredSize(new Dimension(32, 32));
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panel.add(iconLabel);
+            panel.add(Box.createVerticalStrut(2));
+            panel.add(titleLabel);
+
+            // 为图标和标题都添加点击事件
+            iconLabel.addMouseListener(tabClickListener);
+            titleLabel.addMouseListener(tabClickListener);
+        } else {
+            // 收起状态：只显示图标，但保持与展开状态相同的高度
+            panel.setPreferredSize(new Dimension(30, 60)); // 保持高度60不变
+            JLabel iconLabel = new JLabel(icon);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
+            iconLabel.setToolTipText(title); // 悬停显示标题
+            panel.add(Box.createVerticalGlue());
+            panel.add(iconLabel);
+            panel.add(Box.createVerticalGlue());
+
+            // 为收起状态下的图标添加点击事件，确保点击图标能触发tab切换
+            iconLabel.addMouseListener(tabClickListener);
+        }
+
+        // 为常规标签也添加鼠标监听器，确保点击响应
+        panel.addMouseListener(tabClickListener);
+
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 2, 6, 2)); // 恢复原来的边距
         return panel;
+    }
+
+    /**
+     * 创建展开/收起侧边栏的标签头部
+     */
+    private JPanel createToggleTabHeader() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+
+        // 根据当前状态显示不同的图标和大小
+        Icon toggleIcon = sidebarExpanded ?
+                new FlatSVGIcon("icons/collapse.svg", 20, 20) :
+                new FlatSVGIcon("icons/expand.svg", 20, 20); // 收起状态下也保持20x20
+
+        // 创建鼠标监听器，用于处理切换操作
+        MouseAdapter toggleClickListener = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                toggleSidebar();
+            }
+        };
+
+        if (sidebarExpanded) {
+            panel.setPreferredSize(new Dimension(81, 60));
+            JLabel iconLabel = new JLabel(toggleIcon);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setPreferredSize(new Dimension(32, 32));
+            iconLabel.setToolTipText("收起侧边栏");
+            panel.add(Box.createVerticalGlue());
+            panel.add(iconLabel);
+            panel.add(Box.createVerticalGlue());
+
+
+            // 为图标添加点击事件
+            iconLabel.addMouseListener(toggleClickListener);
+        } else {
+            panel.setPreferredSize(new Dimension(30, 60)); // 保持高度60不变
+            JLabel iconLabel = new JLabel(toggleIcon);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
+            iconLabel.setToolTipText("展开侧边栏");
+            panel.add(Box.createVerticalGlue());
+            panel.add(iconLabel);
+            panel.add(Box.createVerticalGlue());
+
+            // 为收起状态下的图标添加点击事件
+            iconLabel.addMouseListener(toggleClickListener);
+        }
+
+        // 添加鼠标监听器来处理切换操作
+        panel.addMouseListener(toggleClickListener);
+
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 2, 6, 2)); // 恢复原来的边距
+        return panel;
+    }
+
+    /**
+     * 切换侧边栏的展开和收起状态
+     */
+    private void toggleSidebar() {
+        sidebarExpanded = !sidebarExpanded;
+        updateTabHeaders();
+    }
+
+    /**
+     * 更新所有标签头部的显示状态
+     */
+    private void updateTabHeaders() {
+        // 更新所有常规标签的头部
+        for (int i = 0; i < tabInfos.size(); i++) {
+            TabInfo info = tabInfos.get(i);
+            tabbedPane.setTabComponentAt(i, createTabHeader(info.title, info.icon, sidebarExpanded));
+        }
+
+        // 更新切换按钮的头部
+        int toggleTabIndex = tabbedPane.getTabCount() - 1;
+        tabbedPane.setTabComponentAt(toggleTabIndex, createToggleTabHeader());
+
+        // 更新tabbedPane的首选宽度
+        if (sidebarExpanded) {
+            tabbedPane.setPreferredSize(new Dimension(81, tabbedPane.getHeight()));
+        } else {
+            tabbedPane.setPreferredSize(new Dimension(30, tabbedPane.getHeight()));
+        }
+
+        revalidate();
+        repaint();
     }
 
     // Tab元数据结构，便于维护和扩展

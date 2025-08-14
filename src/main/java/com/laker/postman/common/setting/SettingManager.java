@@ -1,5 +1,7 @@
 package com.laker.postman.common.setting;
 
+import com.laker.postman.util.SystemUtil;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -7,7 +9,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class SettingManager {
-    private static final String CONFIG_FILE = System.getProperty("user.home") + File.separator + "easy_postman_settings.properties";
+    private static final String CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "easy_postman_settings.properties";
     private static final Properties props = new Properties();
 
     static {
@@ -39,10 +41,10 @@ public class SettingManager {
             try {
                 return Integer.parseInt(val);
             } catch (NumberFormatException e) {
-                return 20 * 1024;
+                return 100 * 1024;
             }
         }
-        return 20 * 1024;
+        return 100 * 1024;
     }
 
     public static void setMaxBodySize(int size) {

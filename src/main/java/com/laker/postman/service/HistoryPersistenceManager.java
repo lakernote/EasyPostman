@@ -49,15 +49,15 @@ public class HistoryPersistenceManager {
                 Files.createDirectories(historyDir);
             }
         } catch (IOException e) {
-            System.err.println("Failed to create history directory: " + e.getMessage());
+            log.error("Failed to create history directory: {}", e.getMessage());
         }
     }
 
     /**
      * 添加历史记录
      */
-    public void addHistory(PreparedRequest request, HttpResponse response) {
-        RequestHistoryItem item = new RequestHistoryItem(request, response);
+    public void addHistory(PreparedRequest request, HttpResponse response, long requestTime) {
+        RequestHistoryItem item = new RequestHistoryItem(request, response, requestTime);
         historyItems.add(0, item); // 添加到开头
 
         // 限制历史记录数量
@@ -105,7 +105,7 @@ public class HistoryPersistenceManager {
             String jsonString = JSONUtil.toJsonPrettyStr(jsonArray);
             Files.writeString(Paths.get(HISTORY_FILE), jsonString, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            System.err.println("Failed to save history: " + e.getMessage());
+            log.error("Failed to save history: {}", e.getMessage());
         }
     }
 
@@ -143,22 +143,22 @@ public class HistoryPersistenceManager {
                     historyItems.add(item);
                 } catch (Exception e) {
                     // 忽略无法恢复的历史记录项
-                    System.err.println("Failed to restore history item: " + e.getMessage());
+                    log.error("Failed to restore history item: {}", e.getMessage());
                 }
             }
         } catch (IOException e) {
-            System.err.println("Failed to load history: " + e.getMessage());
+            log.error("Failed to load history: {}", e.getMessage());
             // 如果加载失败，删除损坏的文件
             boolean deleted = file.delete();
             if (!deleted) {
-                System.err.println("Failed to delete corrupted history file: " + file.getPath());
+                log.error("Failed to delete corrupted history file: {}", file.getPath());
             }
         } catch (Exception e) {
-            System.err.println("Failed to parse history JSON: " + e.getMessage());
+            log.error("Failed to parse history JSON: {}", e.getMessage());
             // JSON 解析失败，删除损坏的文件
             boolean deleted = file.delete();
             if (!deleted) {
-                System.err.println("Failed to delete corrupted history file: " + file.getPath());
+                log.error("Failed to delete corrupted history file: {}", file.getPath());
             }
         }
     }
@@ -173,7 +173,7 @@ public class HistoryPersistenceManager {
         jsonItem.set("method", item.method);
         jsonItem.set("url", item.url);
         jsonItem.set("responseCode", item.responseCode);
-        jsonItem.set("timestamp", System.currentTimeMillis());
+        jsonItem.set("requestTime", item.requestTime); // 新增请求时间
 
         // 请求信息
         JSONObject requestJson = new JSONObject();
@@ -445,6 +445,9 @@ public class HistoryPersistenceManager {
             response.httpEventInfo.setThreadName(eventInfoJson.getStr("threadName"));
         }
 
-        return new RequestHistoryItem(request, response);
+        // 读取请求时间
+        long requestTime = jsonItem.getLong("requestTime", System.currentTimeMillis());
+
+        return new RequestHistoryItem(request, response, requestTime);
     }
 }

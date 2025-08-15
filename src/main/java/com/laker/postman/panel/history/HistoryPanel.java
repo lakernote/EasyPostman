@@ -136,11 +136,12 @@ public class HistoryPanel extends SingletonBasePanel {
     }
 
     public void addRequestHistory(PreparedRequest req, HttpResponse resp) {
+        long requestTime = System.currentTimeMillis();
         // 添加到持久化管理器
-        HistoryPersistenceManager.getInstance().addHistory(req, resp);
+        HistoryPersistenceManager.getInstance().addHistory(req, resp, requestTime);
 
         // 添加到UI列表
-        RequestHistoryItem item = new RequestHistoryItem(req, resp);
+        RequestHistoryItem item = new RequestHistoryItem(req, resp, requestTime);
         if (historyListModel != null) {
             historyListModel.add(0, item);
 

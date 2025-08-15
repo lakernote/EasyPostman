@@ -24,7 +24,7 @@ import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.postman.PostmanImport;
-import com.laker.postman.util.LastOpenRequestUtil;
+import com.laker.postman.util.UserSettingsUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -214,7 +214,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         if ("request".equals(obj[0])) {
                             HttpRequestItem item = (HttpRequestItem) obj[1];
                             // 记录最后打开的请求ID
-                            LastOpenRequestUtil.saveLastOpenRequestId(item.getId());
+                            UserSettingsUtil.saveLastOpenRequestId(item.getId());
                             SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
                         }
                     }
@@ -437,7 +437,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             persistence.initRequestGroupsFromFile();
             // 加载完成后，自动打开最后一次请求
             SwingUtilities.invokeLater(() -> {
-                String lastId = LastOpenRequestUtil.readLastOpenRequestId();
+                String lastId = UserSettingsUtil.getLastOpenRequestId();
                 if (lastId != null && !lastId.isEmpty()) {
                     DefaultMutableTreeNode node = findRequestNodeById(rootTreeNode, lastId);
                     if (node != null) {

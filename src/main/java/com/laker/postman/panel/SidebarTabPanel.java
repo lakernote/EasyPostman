@@ -9,6 +9,7 @@ import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.UserSettingsUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -32,11 +33,13 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JLabel consoleLabel;
     private ConsolePanel consolePanel;
     private JSplitPane splitPane;
-    private boolean sidebarExpanded = true; // 侧边栏展开状态
+    private boolean sidebarExpanded = false; // 侧边栏展开状态
     private int lastSelectedTabIndex = 0; // 记录上一个被选中的标签索引
 
     @Override
     protected void initUI() {
+        // 先读取侧边栏展开状态
+        sidebarExpanded = UserSettingsUtil.isSidebarExpanded();
         setLayout(new BorderLayout());
         // 1. 创建标签页
         tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
@@ -283,6 +286,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void toggleSidebar() {
         sidebarExpanded = !sidebarExpanded;
+        UserSettingsUtil.saveSidebarExpanded(sidebarExpanded); // 保存状态
         updateTabHeaders();
     }
 
@@ -326,4 +330,3 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
     }
 }
-

@@ -9,12 +9,13 @@ import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontUtil;
-import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
 
 /**
@@ -22,10 +23,10 @@ import java.util.List;
  */
 public class HistoryPanel extends SingletonBasePanel {
     public static final String EMPTY_BODY_HTML = "<html><body>Please select a record.</body></html>";
-    private JList<RequestHistoryItem> historyList;
+    private JList<Object> historyList;
     private JPanel historyDetailPanel;
     private JTextPane historyDetailPane;
-    private DefaultListModel<RequestHistoryItem> historyListModel;
+    private DefaultListModel<Object> historyListModel;
 
     @Override
     protected void initUI() {
@@ -60,16 +61,19 @@ public class HistoryPanel extends SingletonBasePanel {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof RequestHistoryItem item) {
-                    String text = String.format("[%s] %s", item.method, item.url);
-                    text = JComponentUtils.ellipsisText(text, list, 0, 50); // 超出宽度显示省略号
-                    label.setText(text);
+                if (value instanceof String) {
+                    label.setText((String) value);
+                    label.setFont(label.getFont().deriveFont(Font.BOLD));
+//                    label.setBackground(new Color(240, 240, 240));
+                } else if (value instanceof RequestHistoryItem item) {
+                    String timeStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(item.requestTime));
+                    label.setText(String.format("    [%s] %s", item.method, item.url));
+                    label.setToolTipText("请求时间: " + timeStr);
+                    label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }
-                if (isSelected) {
+                if (isSelected && value instanceof RequestHistoryItem) {
                     label.setFont(label.getFont().deriveFont(Font.BOLD));
                     label.setBackground(new Color(180, 215, 255));
-                } else {
-                    label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }
                 return label;
             }
@@ -114,9 +118,13 @@ public class HistoryPanel extends SingletonBasePanel {
                 if (idx == -1) {
                     historyDetailPane.setText(EMPTY_BODY_HTML);
                 } else {
-                    RequestHistoryItem item = historyListModel.get(idx);
-                    historyDetailPane.setText(HttpHtmlRenderer.renderHistoryDetail(item));
-                    historyDetailPane.setCaretPosition(0);
+                    Object value = historyListModel.get(idx);
+                    if (value instanceof RequestHistoryItem item) {
+                        historyDetailPane.setText(HttpHtmlRenderer.renderHistoryDetail(item));
+                        historyDetailPane.setCaretPosition(0);
+                    } else {
+                        historyDetailPane.setText(EMPTY_BODY_HTML);
+                    }
                 }
             }
         });
@@ -151,6 +159,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 historyListModel.remove(historyListModel.size() - 1);
             }
         }
+        loadPersistedHistory(); // 重新分组刷新
     }
 
     private void clearRequestHistory() {
@@ -170,16 +179,35 @@ public class HistoryPanel extends SingletonBasePanel {
         if (historyListModel == null) {
             return;
         }
-
-        // 从持久化管理器加载历史记录
         List<RequestHistoryItem> persistedHistory = HistoryPersistenceManager.getInstance().getHistory();
-
-        // 清空当前列表
         historyListModel.clear();
-
-        // 添加到UI列表
+        // 按天分组，支持 Today/Yesterday/日期
+        Map<String, List<RequestHistoryItem>> dayMap = new LinkedHashMap<>();
+        SimpleDateFormat showFmt = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        long todayStart = today.getTimeInMillis();
+        long yesterdayStart = todayStart - 24 * 60 * 60 * 1000L;
         for (RequestHistoryItem item : persistedHistory) {
-            historyListModel.addElement(item);
+            long t = item.requestTime;
+            String groupLabel;
+            if (t >= todayStart) {
+                groupLabel = "Today";
+            } else if (t >= yesterdayStart) {
+                groupLabel = "Yesterday";
+            } else {
+                groupLabel = showFmt.format(new java.util.Date(t));
+            }
+            dayMap.computeIfAbsent(groupLabel, k -> new ArrayList<>()).add(item);
+        }
+        for (Map.Entry<String, List<RequestHistoryItem>> entry : dayMap.entrySet()) {
+            historyListModel.addElement(entry.getKey()); // 日期分组标题
+            for (RequestHistoryItem item : entry.getValue()) {
+                historyListModel.addElement(item);
+            }
         }
     }
 

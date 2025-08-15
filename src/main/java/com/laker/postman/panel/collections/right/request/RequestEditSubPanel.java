@@ -88,7 +88,7 @@ public class RequestEditSubPanel extends JPanel {
     public RequestEditSubPanel(String id) {
         this.id = id;
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0)); // 设置边距为0
+        setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0)); // 设置边距为0
         // 1. 顶部请求行面板
         requestLinePanel = new RequestLinePanel(this::sendRequest);
         methodBox = requestLinePanel.getMethodBox();

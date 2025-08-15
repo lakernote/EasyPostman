@@ -208,7 +208,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(30, 60)); // 保持高度60不变
             JLabel iconLabel = new JLabel(icon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
+            iconLabel.setPreferredSize(new Dimension(20, 20));
             iconLabel.setToolTipText(title); // 悬停显示标题
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
@@ -247,24 +247,21 @@ public class SidebarTabPanel extends SingletonBasePanel {
         };
 
         if (sidebarExpanded) {
-            panel.setPreferredSize(new Dimension(81, 60));
+            panel.setPreferredSize(new Dimension(81, 30));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             iconLabel.setPreferredSize(new Dimension(32, 32));
-            iconLabel.setToolTipText("收起侧边栏");
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
             panel.add(Box.createVerticalGlue());
 
-
             // 为图标添加点击事件
             iconLabel.addMouseListener(toggleClickListener);
         } else {
-            panel.setPreferredSize(new Dimension(30, 60)); // 保持高度60不变
+            panel.setPreferredSize(new Dimension(30, 30));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
-            iconLabel.setToolTipText("展开侧边栏");
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
             panel.add(Box.createVerticalGlue());
@@ -302,15 +299,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
         int toggleTabIndex = tabbedPane.getTabCount() - 1;
         tabbedPane.setTabComponentAt(toggleTabIndex, createToggleTabHeader());
 
-        // 更新tabbedPane的首选宽度
-        if (sidebarExpanded) {
-            tabbedPane.setPreferredSize(new Dimension(81, tabbedPane.getHeight()));
-        } else {
-            tabbedPane.setPreferredSize(new Dimension(30, tabbedPane.getHeight()));
-        }
-
-        revalidate();
-        repaint();
+        revalidate(); // 重新布局
+        repaint(); // 重绘组件
     }
 
     // Tab元数据结构，便于维护和扩展

@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 @Slf4j
 public class SidebarTabPanel extends SingletonBasePanel {
 
+    private static final String TAB_TOGGLE = "Toggle";
     private JTabbedPane tabbedPane;
     private List<TabInfo> tabInfos;
     private JPanel consoleContainer;
@@ -32,6 +33,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private ConsolePanel consolePanel;
     private JSplitPane splitPane;
     private boolean sidebarExpanded = true; // 侧边栏展开状态
+    private int lastSelectedTabIndex = 0; // 记录上一个被选中的标签索引
 
     @Override
     protected void initUI() {
@@ -55,7 +57,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             tabbedPane.setTabComponentAt(i, createPostmanTabHeader(info.title, info.icon));
         }
         // 在tabbedPane最后面增加展开、收起菜单标签
-        tabbedPane.addTab("Toggle", new JPanel()); // 添加一个空的tab作为占位符
+        tabbedPane.addTab(TAB_TOGGLE, new JPanel()); // 添加一个空的tab作为占位符
         int toggleTabIndex = tabbedPane.getTabCount() - 1;
         tabbedPane.setTabComponentAt(toggleTabIndex, createToggleTabHeader());
 
@@ -120,20 +122,19 @@ public class SidebarTabPanel extends SingletonBasePanel {
     protected void registerListeners() {
         tabbedPane.addChangeListener(e -> {
             int selectedIndex = tabbedPane.getSelectedIndex();
-            // 如果点击的是最后一个标签（切换按钮），则执行切换操作
-            if (selectedIndex == tabbedPane.getTabCount() - 1) {
+            int toggleTabIndex = tabbedPane.getTabCount() - 1;
+            if (selectedIndex == toggleTabIndex) {
                 // 切换侧边栏状态
                 toggleSidebar();
                 // 重新选择之前的标签，避免选中切换按钮标签
                 SwingUtilities.invokeLater(() -> {
-                    if (tabbedPane.getTabCount() > 1) {
-                        int previousIndex = Math.min(selectedIndex - 1, tabInfos.size() - 1);
-                        if (previousIndex >= 0) {
-                            tabbedPane.setSelectedIndex(previousIndex);
-                        }
+                    if (tabbedPane.getTabCount() > 1 && lastSelectedTabIndex >= 0 && lastSelectedTabIndex < toggleTabIndex) {
+                        tabbedPane.setSelectedIndex(lastSelectedTabIndex);
                     }
                 });
             } else {
+                // 记录上一个被选中的标签索引（不包括toggle标签）
+                lastSelectedTabIndex = selectedIndex;
                 handleTabChange();
             }
         });
@@ -325,3 +326,4 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
     }
 }
+

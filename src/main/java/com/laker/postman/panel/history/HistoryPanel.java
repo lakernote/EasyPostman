@@ -67,7 +67,7 @@ public class HistoryPanel extends SingletonBasePanel {
                     label.setFont(label.getFont().deriveFont(Font.BOLD));
                 } else if (value instanceof RequestHistoryItem item) {
                     String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(item.requestTime));
-                    label.setText(JComponentUtils.ellipsisText(String.format("  [%s] %s", item.method, item.url), list, 0, 50));
+                    label.setText(JComponentUtils.ellipsisText(String.format(" [%s] %s", item.method, item.url), list, 0, 45));
                     label.setToolTipText("请求时间: " + timeStr);
                     label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }

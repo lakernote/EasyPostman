@@ -9,6 +9,7 @@ import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -61,13 +62,12 @@ public class HistoryPanel extends SingletonBasePanel {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof String) {
-                    label.setText((String) value);
+                if (value instanceof String dateStr) {
+                    label.setText(dateStr);
                     label.setFont(label.getFont().deriveFont(Font.BOLD));
-//                    label.setBackground(new Color(240, 240, 240));
                 } else if (value instanceof RequestHistoryItem item) {
-                    String timeStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(item.requestTime));
-                    label.setText(String.format("    [%s] %s", item.method, item.url));
+                    String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(item.requestTime));
+                    label.setText(JComponentUtils.ellipsisText(String.format("  [%s] %s", item.method, item.url), list, 0, 50));
                     label.setToolTipText("请求时间: " + timeStr);
                     label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }

@@ -12,8 +12,8 @@ import java.util.List;
  * 通用可关闭Tab组件，支持右上角红点脏标记
  */
 public class ClosableTabComponent extends JPanel {
-    int MAX_TAB_WIDTH = 80;
-    int TAB_HEIGHT = 28;
+    int MAX_TAB_WIDTH = 100;
+    int TAB_HEIGHT = 20;
     private final JLabel label;
     private final String rawTitle;
     private boolean dirty = false;

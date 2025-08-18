@@ -14,6 +14,12 @@ import java.util.Map;
 public class UserSettingsUtil {
     private static final String KEY_LAST_OPEN_REQUEST_ID = "lastOpenRequestId";
     private static final String KEY_SIDEBAR_EXPANDED = "sidebarExpanded";
+    // 新增窗口状态相关常量
+    private static final String KEY_WINDOW_X = "windowX";
+    private static final String KEY_WINDOW_Y = "windowY";
+    private static final String KEY_WINDOW_WIDTH = "windowWidth";
+    private static final String KEY_WINDOW_HEIGHT = "windowHeight";
+    private static final String KEY_WINDOW_MAXIMIZED = "windowMaximized";
     private static final String SETTINGS_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "user_settings.json";
     private static final Object lock = new Object();
     private static Map<String, Object> settingsCache = null;
@@ -120,5 +126,43 @@ public class UserSettingsUtil {
     public static boolean isSidebarExpanded() {
         Boolean v = getBoolean(KEY_SIDEBAR_EXPANDED);
         return v != null ? v : true; // 默认展开
+    }
+
+    // 窗口状态专用方法
+    public static void saveWindowState(int x, int y, int width, int height, boolean maximized) {
+        synchronized (lock) {
+            readSettings();
+            settingsCache.put(KEY_WINDOW_X, x);
+            settingsCache.put(KEY_WINDOW_Y, y);
+            settingsCache.put(KEY_WINDOW_WIDTH, width);
+            settingsCache.put(KEY_WINDOW_HEIGHT, height);
+            settingsCache.put(KEY_WINDOW_MAXIMIZED, maximized);
+            saveSettings();
+        }
+    }
+
+    public static Integer getWindowX() {
+        return getInt(KEY_WINDOW_X);
+    }
+
+    public static Integer getWindowY() {
+        return getInt(KEY_WINDOW_Y);
+    }
+
+    public static Integer getWindowWidth() {
+        return getInt(KEY_WINDOW_WIDTH);
+    }
+
+    public static Integer getWindowHeight() {
+        return getInt(KEY_WINDOW_HEIGHT);
+    }
+
+    public static boolean isWindowMaximized() {
+        Boolean v = getBoolean(KEY_WINDOW_MAXIMIZED);
+        return v != null && v;
+    }
+
+    public static boolean hasWindowState() {
+        return getWindowWidth() != null && getWindowHeight() != null;
     }
 }

@@ -1,27 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <!-- 定义日志文件存储路径变量，使用用户主目录下的 EasyPostman/logs 文件夹 -->
+    <property name="LOG_HOME" value="${user.home}/EasyPostman/logs"/>
+
+    <!-- 控制台输出配置 - 将日志信息输出到控制台 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 日志输出格式编码器 -->
         <encoder>
+            <!-- 输出格式：时间(HH:mm:ss.SSS) [线程名] 日志级别 类名:行号 - 消息内容 -->
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} :%line - %msg%n</pattern>
+        </encoder>
+        <!-- 控制台日志级别过滤器：只输出 INFO 及以上级别的日志 (INFO, WARN, ERROR) -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <!-- 文件输出配置 - 记录所有级别的日志到文件 -->
+    <appender name="allFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 当前活动的日志文件路径 -->
+        <file>${LOG_HOME}/all.log</file>
+        <!-- 日志文件滚动策略：基于文件大小和时间进行滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 归档文件命名模式：包含日期和序号 -->
+            <fileNamePattern>${LOG_HOME}/all.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 单个日志文件最大大小：10MB -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- 保留历史文件的最大天数：30天 -->
+            <maxHistory>30</maxHistory>
+            <!-- 所有归档文件的总大小上限：300MB -->
+            <totalSizeCap>300MB</totalSizeCap>
+        </rollingPolicy>
+        <!-- 日志输出格式编码器 -->
+        <encoder>
+            <!-- 输出格式：完整日期时间 [线程名] 日志级别 类名:行号 - 消息内容 -->
+            <pattern>%date{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} :%line - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="rollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${user.home}/EasyPostman/logs/easy.%d{yyyy-MM-dd}.log</fileNamePattern>
+    <!-- 错误日志文件输出配置 - 专门记录 ERROR 级别的日志 -->
+    <appender name="errorFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 错误日志文件路径 -->
+        <file>${LOG_HOME}/error.log</file>
+        <!-- 错误日志文件滚动策略：基于文件大小和时间进行滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 错误日志归档文件命名模式 -->
+            <fileNamePattern>${LOG_HOME}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 单个错误日志文件最大大小：10MB -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- 保留错误日志历史文件的最大天数：30天 -->
+            <maxHistory>30</maxHistory>
+            <!-- 所有错误日志归档文件的总大小上限：100MB -->
+            <totalSizeCap>100MB</totalSizeCap>
         </rollingPolicy>
+        <!-- 错误日志输出格式编码器 -->
         <encoder>
-            <pattern>%date{HH:mm:ss.SSS} [%thread] %-5level %logger{36} :%line - %msg%n</pattern>
+            <!-- 输出格式：完整日期时间 [线程名] 日志级别 类名:行号 - 消息内容 -->
+            <pattern>%date{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} :%line - %msg%n</pattern>
         </encoder>
+        <!-- 日志级别精确过滤器：只接受 ERROR 级别的日志，拒绝其他级别 -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <!-- 目标日志级别：ERROR -->
             <level>ERROR</level>
+            <!-- 匹配时的行为：接受 -->
             <onMatch>ACCEPT</onMatch>
+            <!-- 不匹配时的行为：拒绝 -->
             <onMismatch>DENY</onMismatch>
         </filter>
     </appender>
 
+    <!-- 异步日志 appender - 提升日志写入性能，避免阻塞主线程 -->
+    <appender name="asyncAllFile" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 引用上面定义的 allFile appender -->
+        <appender-ref ref="allFile"/>
+        <!-- 异步队列大小：256，用于缓存日志事件 -->
+        <queueSize>256</queueSize>
+        <!-- 丢弃阈值：当队列使用率达到 80% 时开始丢弃 TRACE、DEBUG、INFO 级别的日志 -->
+        <discardingThreshold>20</discardingThreshold>
+    </appender>
+
+    <!-- 根日志配置 - 应用于所有未明确配置的 logger -->
     <root level="INFO">
+        <!-- 绑定控制台输出 appender -->
         <appender-ref ref="console"/>
-        <appender-ref ref="rollingFile"/>
+        <!-- 绑定异步文件输出 appender（包含所有日志） -->
+        <appender-ref ref="asyncAllFile"/>
+        <!-- 绑定错误日志文件输出 appender -->
+        <appender-ref ref="errorFile"/>
     </root>
 </configuration>

@@ -35,7 +35,7 @@ public class SnippetDialog extends JDialog {
     private static final List<Snippet> snippets = List.of(
             // 前置脚本类别
             new Snippet("前置-设置请求变量", "pm.setVariable('requestId', pm.generateUUID());\nconsole.log('已生成请求ID: ' + pm.getVariable('requestId'));", "设置请求级别的变量，仅在当前请求中有效"),
-            new Snippet("前置-设置临时变量", "pm.variables.set('tempKey', 'tempValue');\nconsole.log('已设置临时变量: ' + pm.variables.get('tempKey'));", "设置仅在当前请求中有效的临时变量"),
+            new Snippet("前置-设置局部变量", "pm.variables.set('tempKey', 'tempValue');\nconsole.log('已设置局部变量: ' + pm.variables.get('tempKey'));", "设置仅在当前请求中有效的局部变量"),
             new Snippet("前置-随机UUID", "pm.environment.set('uuid', pm.generateUUID());\nconsole.log('已生成随机UUID: ' + pm.environment.get('uuid'));", "生成随机UUID并保存到环境变量"),
             new Snippet("前置-动态时间戳", "pm.environment.set('timestamp', pm.getTimestamp());\nconsole.log('已生成时间戳: ' + pm.environment.get('timestamp'));", "生成当前时间戳并保存到环境变量"),
             new Snippet("前置-签名计算", "// 假设需要生成签名\nvar timestamp = Date.now();\nvar appKey = pm.environment.get('appKey');\nvar appSecret = pm.environment.get('appSecret');\n\n// 构建待签名字符串\nvar stringToSign = 'appKey=' + appKey + '&timestamp=' + timestamp;\n\n// 计算签名 (使用SHA256)\nvar signature = SHA256(stringToSign + appSecret).toString();\n\n// 设置到环境变量\npm.environment.set('timestamp', timestamp);\npm.environment.set('signature', signature);\n\nconsole.log('已生成签名: ' + signature);", "计算API签名并保存到环境变量"),
@@ -62,6 +62,17 @@ public class SnippetDialog extends JDialog {
             new Snippet("提取-JSON字段到环境变量", "var jsonData = pm.response.json();\npm.environment.set('token', jsonData.token);", "提取token到环境变量"),
             new Snippet("提取-Header到环境变量", "var token = pm.response.headers.get('X-Token');\npm.environment.set('token', token);", "提取响应头X-Token到环境变量"),
             new Snippet("提取-正则匹配到环境变量", "var match = pm.response.text().match(/token=(\\w+)/);\nif (match) {\n    pm.environment.set('token', match[1]);\n}", "使用正则提取token到环境变量"),
+
+            // 局部变量管理
+            new Snippet("局部变量-设置变量", "pm.variables.set('key', 'value');\nconsole.log('已设置局部变量: ' + pm.variables.get('key'));", "设置局部变量，仅在当前请求中有效"),
+            new Snippet("局部变量-获取变量", "var value = pm.variables.get('key');\nconsole.log('局部变量值: ' + value);", "获取局部变量的值"),
+            new Snippet("局部变量-检查变量存在", "if (pm.variables.has('key')) {\n    console.log('局部变量存在');\n} else {\n    console.log('局部变量不存在');\n}", "检查局部变量是否存在"),
+            new Snippet("局部变量-删除变量", "pm.variables.unset('key');\nconsole.log('已删除局部变量: key');", "删除指定的局部变量"),
+            new Snippet("局部变量-清空所有变量", "pm.variables.clear();\nconsole.log('已清空所有局部变量');", "清空所有局部变量"),
+            new Snippet("局部变量-批量设置", "var data = {\n    'userId': '12345',\n    'sessionId': pm.generateUUID(),\n    'timestamp': Date.now()\n};\n\nObject.keys(data).forEach(function(key) {\n    pm.variables.set(key, data[key]);\n});\n\nconsole.log('已批量设置局部变量');", "批量设置多个局部变量"),
+            new Snippet("局部变量-遍历所有变量", "// 注意：pm.variables 本身不提供遍历方法\n// 这里演示通过已知的变量名列表进行遍历\nvar knownKeys = ['userId', 'sessionId', 'timestamp'];\n\nknownKeys.forEach(function(key) {\n    if (pm.variables.has(key)) {\n        console.log(key + ': ' + pm.variables.get(key));\n    }\n});", "遍历已知的局部变量"),
+            new Snippet("局部变量-条件设置", "// 根据条件设置局部变量\nvar userRole = pm.environment.get('userRole');\n\nif (userRole === 'admin') {\n    pm.variables.set('permissions', 'all');\n} else if (userRole === 'user') {\n    pm.variables.set('permissions', 'read');\n} else {\n    pm.variables.set('permissions', 'none');\n}\n\nconsole.log('已根据用户角色设置权限: ' + pm.variables.get('permissions'));", "根据条件动态设置局部变量"),
+            new Snippet("局部变量-默认值处理", "// 获取局部变量，如果不存在则使用默认值\nvar userId = pm.variables.get('userId') || 'defaultUser';\nvar timeout = pm.variables.get('timeout') || '5000';\n\nconsole.log('用户ID: ' + userId);\nconsole.log('超时时间: ' + timeout);", "获取局部变量并提供默认值"),
 
             // 环境变量管理
             new Snippet("设置环境变量", "pm.environment.set('key', 'value');", "设置环境变量"),
@@ -162,6 +173,8 @@ public class SnippetDialog extends JDialog {
                         label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
                     } else if (title.startsWith("提取-")) {
                         label.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+                    } else if (title.contains("局部变量")) {
+                        label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                     } else if (title.contains("环境变量")) {
                         label.setIcon(new FlatSVGIcon("icons/environments.svg", 16, 16));
                     } else if (title.contains("编码") || title.contains("解码")) {
@@ -369,7 +382,7 @@ public class SnippetDialog extends JDialog {
                 .collect(Collectors.groupingBy(snippet -> {
                     String title = snippet.title;
                     // 主要功能类别
-                    if (title.contains("临时变量")) return "临时变量";
+                    if (title.contains("局部变量")) return "局部变量";
                     if (title.startsWith("前置-")) return "前置脚本";
                     if (title.startsWith("断言-")) return "断言脚本";
                     if (title.startsWith("提取-")) return "提取脚本";
@@ -400,7 +413,7 @@ public class SnippetDialog extends JDialog {
 
         // 按特定顺序添加分类，调整了分类顺序并增加了新分类
         String[] orderedCategories = {
-                "前置脚本", "断言脚本", "提取脚本", "临时变量", "环境变量",
+                "前置脚本", "断言脚本", "提取脚本", "局部变量", "环境变量",
                 "加密与安全", "编码与解码", "字符串操作", "数组操作",
                 "JSON处理", "日期时间", "正则表达式", "流程控制",
                 "日志调试", "令牌处理", "其他工具"

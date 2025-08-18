@@ -254,6 +254,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(81, 30));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setToolTipText("Toggle Sidebar"); // 悬停提示
             iconLabel.setPreferredSize(new Dimension(32, 32));
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
@@ -265,6 +266,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(30, 30));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setToolTipText("Toggle Sidebar"); // 悬停提示
             iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);

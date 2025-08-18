@@ -9,10 +9,10 @@ import java.util.UUID;
 
 public class Postman {
     public List<TestResult> testResults = new ArrayList<>();
-    public Environment environment;
-    public Environment env;
-    public ResponseAssertion response;
-    public PostmanVariables variables = new PostmanVariables();
+    public Environment environment; // Postman 中 env 和 environment 是同一个对象，保持一致性
+    public Environment env; // Postman 中 env 和 environment 是同一个对象，保持一致性
+    public ResponseAssertion response; // Postman 中 pm.response 对应的对象
+    public PostmanVariables variables = new PostmanVariables(); // 局部变量 Postman 中 pm.variables 对应的对象
     public JsRequestWrapper request;
 
 
@@ -106,35 +106,35 @@ public class Postman {
     // 内部类，用于支持 pm.variables.set() 语法
     public static class PostmanVariables {
         /**
-         * 设置临时变量 - 对应 pm.variables.set()
+         * 设置局部变量 - 对应 pm.variables.set()
          */
         public void set(String key, String value) {
             EnvironmentService.setTemporaryVariable(key, value);
         }
 
         /**
-         * 获取临时变量 - 对应 pm.variables.get()
+         * 获取局部变量 - 对应 pm.variables.get()
          */
         public String get(String key) {
             return EnvironmentService.getTemporaryVariable(key);
         }
 
         /**
-         * 检查临时变量是否存在 - 对应 pm.variables.has()
+         * 检查局部变量是否存在 - 对应 pm.variables.has()
          */
         public boolean has(String key) {
             return EnvironmentService.getTemporaryVariable(key) != null;
         }
 
         /**
-         * 删除临时变量 - 对应 pm.variables.unset()
+         * 删除局部变量 - 对应 pm.variables.unset()
          */
         public void unset(String key) {
             EnvironmentService.setTemporaryVariable(key, null);
         }
 
         /**
-         * 清除所有临时变量 - 对应 pm.variables.clear()
+         * 清除所有局部变量 - 对应 pm.variables.clear()
          */
         public void clear() {
             EnvironmentService.clearTemporaryVariables();

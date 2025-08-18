@@ -1,18 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- 定义日志文件存储路径变量，使用用户主目录下的 EasyPostman/logs 文件夹 -->
-    <property name="LOG_HOME" value="${user.home}/EasyPostman/logs"/>
+    <!-- 应用程序标识和环境配置 -->
+    <property name="APP_NAME" value="EasyPostman"/>
+    <property name="LOG_HOME" value="${user.home}/${APP_NAME}/logs"/>
+    <!-- 支持通过系统属性覆盖日志级别，默认为 INFO -->
+    <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
 
     <!-- 控制台输出配置 - 将日志信息输出到控制台 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <!-- 日志输出格式编码器 -->
-        <encoder>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <!-- 输出格式：时间(HH:mm:ss.SSS) [线程名] 日志级别 类名:行号 - 消息内容 -->
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} :%line - %msg%n</pattern>
+            <!-- 使用 ANSI 颜色代码的日志格式 -->
+            <pattern>%cyan(%d{HH:mm:ss.SSS}) %white([%thread]) %highlight(%-5level) %magenta(%logger{36}) %white(:%line) %msg%n
+            </pattern>
+            <!-- 立即刷新输出，确保实时显示 -->
+            <immediateFlush>true</immediateFlush>
         </encoder>
         <!-- 控制台日志级别过滤器：只输出 INFO 及以上级别的日志 (INFO, WARN, ERROR) -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>${LOG_LEVEL}</level>
         </filter>
     </appender>
 
@@ -73,14 +81,47 @@
     <appender name="asyncAllFile" class="ch.qos.logback.classic.AsyncAppender">
         <!-- 引用上面定义的 allFile appender -->
         <appender-ref ref="allFile"/>
-        <!-- 异步队列大小：256，用于缓存日志事件 -->
-        <queueSize>256</queueSize>
-        <!-- 丢弃阈值：当队列使用率达到 80% 时开始丢弃 TRACE、DEBUG、INFO 级别的日志 -->
-        <discardingThreshold>20</discardingThreshold>
+        <!-- 增大队列以提高吞吐量 -->
+        <queueSize>512</queueSize>
+        <!-- 调整丢弃阈值，保留更多重要日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 应用程序关闭时等待日志写入完成的最大时间（毫秒） -->
+        <maxFlushTime>5000</maxFlushTime>
+        <!-- 阻塞时不丢失日志 -->
+        <neverBlock>false</neverBlock>
+        <!-- 包含调用者信息（性能影响，生产环境可关闭） -->
+        <includeCallerData>false</includeCallerData>
     </appender>
 
+    <!-- HTTP 请求日志 appender - 专门记录网络请求 -->
+    <appender name="httpFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/http.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/http.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>50MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 特定包的日志配置 - HTTP 客户端日志 -->
+    <logger name="okhttp3" level="DEBUG" additivity="false">
+        <appender-ref ref="httpFile"/>
+        <appender-ref ref="console"/>
+    </logger>
+
+    <!-- 应用程序特定日志配置 -->
+    <logger name="com.laker.postman" level="DEBUG" additivity="false">
+        <appender-ref ref="console"/>
+        <appender-ref ref="asyncAllFile"/>
+        <appender-ref ref="errorFile"/>
+    </logger>
+
     <!-- 根日志配置 - 应用于所有未明确配置的 logger -->
-    <root level="INFO">
+    <root level="${LOG_LEVEL}">
         <!-- 绑定控制台输出 appender -->
         <appender-ref ref="console"/>
         <!-- 绑定异步文件输出 appender（包含所有日志） -->

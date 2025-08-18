@@ -107,6 +107,18 @@ public class Postman {
     public static class PostmanVariables {
         /**
          * 设置局部变量 - 对应 pm.variables.set()
+         * 支持多种数据类型
+         */
+        public void set(String key, Object value) {
+            if (value != null) {
+                EnvironmentService.setTemporaryVariable(key, String.valueOf(value));
+            } else {
+                EnvironmentService.setTemporaryVariable(key, null);
+            }
+        }
+
+        /**
+         * 重载方法，保持与原有 String 参数的兼容性
          */
         public void set(String key, String value) {
             EnvironmentService.setTemporaryVariable(key, value);

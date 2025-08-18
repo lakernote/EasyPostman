@@ -34,12 +34,12 @@
             <fileNamePattern>${LOG_HOME}/all.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <!-- 单个日志文件最大大小：10MB -->
             <maxFileSize>10MB</maxFileSize>
-            <!-- 保留历史文件的最大天数：30天 -->
-            <maxHistory>30</maxHistory>
-            <!-- 所有归档文件的总大小上限：300MB -->
-            <totalSizeCap>300MB</totalSizeCap>
+            <!-- 保留历史文件的最大天数：15天 -->
+            <maxHistory>15</maxHistory>
+            <!-- 所有归档文件的总大小上限：200MB -->
+            <totalSizeCap>200MB</totalSizeCap>
             <!-- 应用启动时清理超出保留策略的历史文件 -->
-            <!-- 作用：删除超过 maxHistory(30天) 或 totalSizeCap(300MB) 限制的文件 -->
+            <!-- 作用：删除超过 maxHistory(15天) 或 totalSizeCap(200MB) 限制的文件 -->
             <!-- 好处：防止磁盘空间被旧日志文件耗尽，保持日志目录整洁 -->
             <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>

@@ -38,11 +38,17 @@
             <maxHistory>30</maxHistory>
             <!-- 所有归档文件的总大小上限：300MB -->
             <totalSizeCap>300MB</totalSizeCap>
+            <!-- 应用启动时清理超出保留策略的历史文件 -->
+            <!-- 作用：删除超过 maxHistory(30天) 或 totalSizeCap(300MB) 限制的文件 -->
+            <!-- 好处：防止磁盘空间被旧日志文件耗尽，保持日志目录整洁 -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <!-- 日志输出格式编码器 -->
         <encoder>
             <!-- 输出格式：完整日期时间 [线程名] 日志级别 类名:行号 - 消息内容 -->
             <pattern>%date{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} :%line - %msg%n</pattern>
+            <!-- 设置字符编码 -->
+            <charset>UTF-8</charset>
         </encoder>
     </appender>
 
@@ -108,25 +114,58 @@
     </appender>
 
     <!-- 特定包的日志配置 - HTTP 客户端日志 -->
+    <!-- 专门配置 okhttp3 网络库的日志记录行为 -->
     <logger name="okhttp3" level="DEBUG" additivity="false">
+        <!-- name: 指定 logger 名称，匹配 okhttp3.* 包下的所有类 -->
+        <!-- level: 设置为 DEBUG 级别，记录详细的HTTP请求/响应信息 -->
+        <!-- additivity: 设为 false，阻止日志向父 logger 传播，避免重复记录 -->
+
+        <!-- 输出到专门的 HTTP 日志文件 -->
         <appender-ref ref="httpFile"/>
+        <!-- 同时输出到控制台，便于开发时调试 -->
         <appender-ref ref="console"/>
+
+        <!-- 作用：将所有 HTTP 请求/响应日志隔离到独立文件，便于网络问题调试 -->
+        <!-- 好处：避免 HTTP 日志污染主日志文件，提供专门的网络调试视图 -->
     </logger>
 
     <!-- 应用程序特定日志配置 -->
+    <!-- 配置项目自身代码的日志记录策略 -->
     <logger name="com.laker.postman" level="DEBUG" additivity="false">
+        <!-- name: 匹配项目包名 com.laker.postman.* 下的所有类 -->
+        <!-- level: DEBUG 级别，开发阶段记录详细信息，生产环境可调整为 INFO -->
+        <!-- additivity: false 阻止向根 logger 传播，避免在根 logger 中重复记录 -->
+
+        <!-- 输出到控制台，开发时实时查看 -->
         <appender-ref ref="console"/>
+        <!-- 输出到异步全量日志文件，完整记录应用行为 -->
         <appender-ref ref="asyncAllFile"/>
+        <!-- 输出到错误日志文件，专门收集应用错误 -->
         <appender-ref ref="errorFile"/>
+
+        <!-- 作用：为应用核心代码提供完整的日志记录覆盖 -->
+        <!-- 好处：确保应用逻辑的所有日志都被正确分类和存储 -->
     </logger>
 
     <!-- 根日志配置 - 应用于所有未明确配置的 logger -->
+    <!-- 这是日志系统的默认配置，处理所有未被特定 logger 捕获的日志 -->
     <root level="${LOG_LEVEL}">
+        <!-- level: 使用环境变量 LOG_LEVEL，默认为 INFO，可动态调整 -->
+        <!-- 作用范围：所有第三方库、框架、未配置的包的日志 -->
+
         <!-- 绑定控制台输出 appender -->
+        <!-- 作用：所有日志都在控制台显示，便于开发调试 -->
         <appender-ref ref="console"/>
+
         <!-- 绑定异步文件输出 appender（包含所有日志） -->
+        <!-- 作用：完整记录系统运行状态，用于问题追溯和分析 -->
         <appender-ref ref="asyncAllFile"/>
+
         <!-- 绑定错误日志文件输出 appender -->
+        <!-- 作用：集中收集系统中所有ERROR级别日志，便于快速定位问题 -->
         <appender-ref ref="errorFile"/>
+
+        <!-- 整体作用：为整个应用提供兜底的日志记录机制 -->
+        <!-- 覆盖范围：Spring框架、数据库连接池、JSON解析库等第三方组件 -->
     </root>
 </configuration>

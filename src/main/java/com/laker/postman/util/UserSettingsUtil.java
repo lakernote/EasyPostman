@@ -14,7 +14,6 @@ import java.util.Map;
 public class UserSettingsUtil {
     private static final String KEY_LAST_OPEN_REQUEST_ID = "lastOpenRequestId";
     private static final String KEY_SIDEBAR_EXPANDED = "sidebarExpanded";
-    // 新增窗口状态相关常量
     private static final String KEY_WINDOW_X = "windowX";
     private static final String KEY_WINDOW_Y = "windowY";
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
@@ -81,17 +80,18 @@ public class UserSettingsUtil {
 
     public static Boolean getBoolean(String key) {
         Object v = get(key);
-        if (v instanceof Boolean) return (Boolean) v;
-        if (v instanceof String) return Boolean.parseBoolean((String) v);
+        if (v instanceof Boolean b) return b;
+        if (v instanceof String s) return Boolean.parseBoolean(s);
         return null;
     }
 
     public static Integer getInt(String key) {
         Object v = get(key);
-        if (v instanceof Integer) return (Integer) v;
-        if (v instanceof String) try {
-            return Integer.parseInt((String) v);
+        if (v instanceof Integer i) return i;
+        if (v instanceof String s) try {
+            return Integer.parseInt(s);
         } catch (Exception ignore) {
+            // 忽略转换异常
         }
         return null;
     }

@@ -88,7 +88,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     private RequestEditSubPanel getCurrentSubPanel() {
         Component comp = tabbedPane.getSelectedComponent();
-        if (comp instanceof RequestEditSubPanel) return (RequestEditSubPanel) comp;
+        if (comp instanceof RequestEditSubPanel requestEditSubPanel) return requestEditSubPanel;
         return null;
     }
 

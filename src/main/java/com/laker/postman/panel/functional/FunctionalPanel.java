@@ -361,6 +361,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                 assertion = runPostScriptAndAssertWithCsv(item, bindings, resp, row, pm);
             } catch (Exception ex) {
                 log.error("请求执行失败", ex);
+                ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
                 status = ex.getMessage();
                 assertion = ex.getMessage();
             }
@@ -517,7 +518,6 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     // 加载选中的请求到表格
     public void loadRequests(List<HttpRequestItem> requests) {
-        tableModel.clear();
         for (HttpRequestItem item : requests) {
             // 不在这里进行变量替换，延迟到前置脚本执行后
             PreparedRequest req = PreparedRequestBuilder.build(item);

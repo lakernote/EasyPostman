@@ -162,6 +162,11 @@ public class ConsolePanel extends SingletonBasePanel {
                     StyleConstants.setForeground(style, new Color(23, 162, 184));
                     StyleConstants.setBold(style, false);
                     break;
+                case INFO:
+                    StyleConstants.setForeground(style, new Color(76, 130, 206));
+                    StyleConstants.setBold(style, false);
+                    break;
+                // 默认情况，使用普通文本样式
                 default:
                     StyleConstants.setForeground(style, new Color(33, 37, 41));
                     StyleConstants.setBold(style, false);

@@ -9,6 +9,7 @@ import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.ConsolePanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
@@ -357,6 +358,7 @@ public class RequestEditSubPanel extends JPanel {
                     statusText = ex.getMessage();
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
+                    ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
                     statusText = "发生错误: " + ex.getMessage();
                 }
                 return null;

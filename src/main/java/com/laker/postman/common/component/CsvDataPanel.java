@@ -157,7 +157,7 @@ public class CsvDataPanel extends JPanel {
      * 增强的 CSV 文件管理对话框
      */
     private void showEnhancedCsvManagementDialog() {
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), "CSV 数据管理", true);
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), "CSV数据管理", true);
         dialog.setSize(600, 430);
         dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
@@ -166,7 +166,7 @@ public class CsvDataPanel extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
-        JLabel titleLabel = new JLabel("CSV 数据驱动测试");
+        JLabel titleLabel = new JLabel("CSV数据驱动测试");
         titleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
@@ -281,21 +281,17 @@ public class CsvDataPanel extends JPanel {
             return;
         }
 
-        JDialog manageDialog = new JDialog((Frame) null, "CSV 数据管理", true);
-        manageDialog.setSize(600, 400);
+        JDialog manageDialog = new JDialog((Frame) null, "CSV数据管理", true);
+        manageDialog.setSize(700, 550);
         manageDialog.setLocationRelativeTo(null);
         manageDialog.setLayout(new BorderLayout());
 
         // 顶部信息面板
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-
-        JLabel titleLabel = new JLabel("CSV 数据管理");
-        titleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
-        topPanel.add(titleLabel, BorderLayout.WEST);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JLabel infoLabel = new JLabel(String.format(
-                "<html>数据来源: <b>%s</b> | 行数: <b>%d</b> | 支持直接编辑</html>",
+                "<html>数据来源: <b>%s</b> | 行数: <b>%d</b></html>",
                 csvFile != null ? csvFile.getName() : "手动创建",
                 csvData.size()));
         infoLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
@@ -347,7 +343,7 @@ public class CsvDataPanel extends JPanel {
         JTable csvTable = new JTable(editTableModel);
 
         csvTable.setFillsViewportHeight(true);
-        csvTable.setRowHeight(30); // 与 EasyTablePanel 一致的行高
+        csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
         csvTable.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
         csvTable.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
         csvTable.getTableHeader().setBackground(new Color(240, 242, 245));
@@ -401,24 +397,24 @@ public class CsvDataPanel extends JPanel {
         // 创建表格容器面板，应用背景色
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBackground(new Color(248, 250, 252));
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 10, 15));
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
         manageDialog.add(tablePanel, BorderLayout.CENTER);
 
         // 底部面板
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 5, 10));
 
         // 工具栏
-        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        JButton addRowBtn = new JButton("添加行");
+        JButton addRowBtn = new JButton("Add Row");
         addRowBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
         List<String> finalHeaders = headers;
         addRowBtn.addActionListener(e -> editTableModel.addRow(new Object[finalHeaders.size()]));
 
-        JButton deleteRowBtn = new JButton("删除行");
+        JButton deleteRowBtn = new JButton("Delete Row");
         deleteRowBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
         deleteRowBtn.addActionListener(e -> {
             int[] selectedRows = csvTable.getSelectedRows();
@@ -438,7 +434,7 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton addColumnBtn = new JButton("添加列");
+        JButton addColumnBtn = new JButton("Add Column");
         addColumnBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
         addColumnBtn.addActionListener(e -> {
             String columnName = JOptionPane.showInputDialog(manageDialog, "请输入新列名:", "添加列", JOptionPane.PLAIN_MESSAGE);
@@ -449,10 +445,71 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
+        JButton deleteColumnBtn = new JButton("Delete Column");
+        deleteColumnBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        deleteColumnBtn.addActionListener(e -> {
+            int[] selectedColumns = csvTable.getSelectedColumns();
+            if (selectedColumns.length == 0) {
+                JOptionPane.showMessageDialog(manageDialog, "请先选择要删除的列", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // 检查是否要删除所有列
+            if (selectedColumns.length >= editTableModel.getColumnCount()) {
+                JOptionPane.showMessageDialog(manageDialog, "不能删除所有列，至少需要保留一列", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // 显示要删除的列名
+            StringBuilder columnNames = new StringBuilder();
+            for (int i = 0; i < selectedColumns.length; i++) {
+                if (i > 0) columnNames.append(", ");
+                columnNames.append(editTableModel.getColumnName(selectedColumns[i]));
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(manageDialog,
+                    String.format("确定要删除选中的列吗？\n列名: %s", columnNames.toString()),
+                    "确认删除", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // 从后往前删除，避免索引变化问题
+                for (int i = selectedColumns.length - 1; i >= 0; i--) {
+                    int columnIndex = selectedColumns[i];
+
+                    // 删除列数据
+                    for (int row = 0; row < editTableModel.getRowCount(); row++) {
+                        // 移动后面的列数据
+                        for (int col = columnIndex; col < editTableModel.getColumnCount() - 1; col++) {
+                            editTableModel.setValueAt(editTableModel.getValueAt(row, col + 1), row, col);
+                        }
+                    }
+
+                    // 删除列
+                    editTableModel.setColumnCount(editTableModel.getColumnCount() - 1);
+
+                    // 更新列标识符
+                    java.util.Vector<String> columnIdentifiers = new java.util.Vector<>();
+                    for (int j = 0; j < editTableModel.getColumnCount(); j++) {
+                        if (j < columnIndex) {
+                            columnIdentifiers.add(editTableModel.getColumnName(j));
+                        } else {
+                            columnIdentifiers.add(editTableModel.getColumnName(j + 1));
+                        }
+                    }
+                    editTableModel.setColumnIdentifiers(columnIdentifiers);
+                }
+
+                // 重新设置列宽
+                for (int i = 0; i < csvTable.getColumnCount(); i++) {
+                    csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
+                }
+            }
+        });
+
         toolPanel.add(addRowBtn);
         toolPanel.add(deleteRowBtn);
         toolPanel.add(addColumnBtn);
-
+        toolPanel.add(deleteColumnBtn);
         bottomPanel.add(toolPanel, BorderLayout.NORTH);
 
         // 使用说明
@@ -610,3 +667,4 @@ public class CsvDataPanel extends JPanel {
         return null;
     }
 }
+

@@ -903,10 +903,9 @@ public class RequestEditSubPanel extends JPanel {
             log.error("响应为空，无法处理后续操作");
             return;
         }
-        String bodyText = resp.body;
         try {
             HttpUtil.postBindings(bindings, resp);
-            executePostscript(item, bindings, resp, bodyText);
+            executePostscript(item.getPostscript(), bindings);
             Postman pm = (Postman) bindings.get("pm");
             setTestResults(pm.testResults);
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);

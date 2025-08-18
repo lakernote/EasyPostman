@@ -1,5 +1,6 @@
 package com.laker.postman.service.http;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
@@ -197,8 +198,8 @@ public class HttpUtil {
                         }
                 );
             } catch (Exception ex) {
-                log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                ConsolePanel.appendLog("[PreScript Error] " + ex.getMessage());
+                log.error("PreScript Error", ex);
+                ConsolePanel.appendLog("[PreScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
                 JOptionPane.showMessageDialog(null, "前置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
                 return false;
             }
@@ -207,10 +208,9 @@ public class HttpUtil {
     }
 
 
-    public static void executePostscript(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, String bodyText) {
+    public static void executePostscript(String postscript, Map<String, Object> bindings) {
         // postscript 执行
-        String postscript = item.getPostscript();
-        if (postscript != null && !postscript.isBlank() && resp != null) {
+        if (CharSequenceUtil.isNotBlank(postscript)) {
             try {
                 JsScriptExecutor.executeScript(
                         postscript,
@@ -227,8 +227,8 @@ public class HttpUtil {
                     SingletonFactory.getInstance(EnvironmentPanel.class).refreshUI();
                 }
             } catch (Exception ex) {
-                log.error("后置脚本执行异常: {}", ex.getMessage(), ex);
-                ConsolePanel.appendLog("[PostScript Error] " + ex.getMessage());
+                log.error("PostScript Error", ex);
+                ConsolePanel.appendLog("[PostScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
             }
         }
     }
@@ -254,16 +254,6 @@ public class HttpUtil {
         }
         return true;
     }
-
-
-    public static String highlightJson(String json) {
-        String s = json.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-        s = s.replaceAll("(\"[^\"]+\")\\s*:", "<span style='color:#1565c0;'>$1</span>:"); // 保持兼容，Java正则里\\"
-        s = s.replaceAll(":\\s*(\".*?\")", ": <span style='color:#43a047;'>$1</span>");
-        s = s.replaceAll(":\\s*([\\d.eE+-]+)", ": <span style='color:#8e24aa;'>$1</span>");
-        return s;
-    }
-
 
     public static Map<String, String> getMergedParams(Map<String, String> params, String url) {
         Map<String, String> urlParams = new LinkedHashMap<>();

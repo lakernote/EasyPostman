@@ -4,13 +4,26 @@
 
 > 🚀 一款高仿 Postman + 简易版 JMeter 的开源接口调试与压测工具，专为开发者优化，界面简洁、功能强大。
 
-EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，并集成简易版 JMeter
-的批量请求与压力测试能力，支持多环境变量、批量请求、压力测试等高级功能，助力高效测试和管理 API。
+![GitHub license](https://img.shields.io/github/license/lakernote/easy-postman)
+![Java](https://img.shields.io/badge/Java-17+-orange)
+![Platform](https://img.shields.io/badge/Platform-Windows%20|%20macOS%20|%20Linux-blue)
+
+## 💡 项目介绍
+
+EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，并集成简易版 JMeter 的批量请求与压力测试能力。项目采用 Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护您的接口数据隐私。
+
+### 🔥 开发理念
+- **🎯 专注核心功能** - 简洁而不简单，功能丰富而不臃肿
+- **🔒 隐私优先** - 本地存储，数据不上云，保护开发者隐私
+- **🚀 性能至上** - 原生 Java 应用，启动快速，运行流畅
+
+---
+
+## 🔗 相关链接
 
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
-- 📦
-  安装包下载地址: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+- 📦 安装包下载地址: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
     - 🍏 Mac: EasyPostman-最新版本.dmg
     - 🪟 Windows: EasyPostman-最新版本.msi
 - 💬 微信：**lakernote**
@@ -56,78 +69,222 @@ EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验
 
 ---
 
-## 技术栈
+## 🏗️ 系统架构
 
-- Java 17
-- JavaSwing 桌面 GUI
-- jlink & jpackage desktop 打包
-- jIconFont-Swing 字体图标
-- FlatLaf：现代化 UI 主题，支持暗色模式和高分辨率显示。
-- RSyntaxTextArea：支持语法高亮的文本编辑器组件，适合代码编辑场景。
-- AutoComplete：为输入框添加自动补全功能。
-- SwingX：提供扩展的 Swing 组件，如 JXTable、JXTree、JXStatusBar 等。
-- JGoodies Forms：灵活的布局管理器，简化复杂界面布局。
-- MigLayout：强大的布局管理器，支持复杂界面设计。
-- 加载优化，加载中提示，异步加载，懒加载等。
+```
+EasyPostman
+├── 🎨 用户界面层 (UI Layer)
+│   ├── Collections 接口集合管理
+│   ├── Environments 环境变量配置
+│   ├── History 请求历史记录
+│   ├── Performance 性能测试模块
+│   └── NetworkLog 网络请求监控
+├── 🔧 业务逻辑层 (Business Layer)
+│   ├── HTTP 请求处理引擎
+│   ├── 环境变量解析器
+│   ├── 脚本执行引擎
+│   ├── 数据导入导出模块
+│   └── 性能测试执行器
+├── 💾 数据访问层 (Data Layer)
+│   ├── 本地文件存储
+│   ├── 配置管理
+│   └── 历史记录管理
+└── 🌐 网络通信层 (Network Layer)
+    ├── HTTP/HTTPS 客户端
+    ├── WebSocket 客户端
+    └── SSE 客户端
+```
+
+---
+
+## 🛠️ 技术选型说明
+
+### 核心技术栈
+- **Java 17**: 使用最新 LTS 版本，享受现代 Java 特性
+- **JavaSwing**: 原生桌面 GUI 框架，跨平台兼容性好
+- **jlink & jpackage**: 官方打包工具，生成原生安装包
+
+### UI 组件库
+- **FlatLaf**: 现代化 UI 主题，支持暗色模式和高分辨率显示
+- **RSyntaxTextArea**: 语法高亮文本编辑器，支持 JSON/XML/JavaScript 等
+- **jIconFont-Swing**: 矢量图标字体支持
+- **SwingX**: 扩展 Swing 组件库
+- **MigLayout**: 强大的布局管理器
+
+### 网络与工具库
+- **OkHttp**: 高性能 HTTP 客户端
+- **Nashorn/GraalVM**: JavaScript 脚本引擎支持
+- **SLF4J + Logback**: 日志框架
+
+---
+
+## 🎯 核心特性详解
+
+### 🔌 接口调试功能
+- ✅ 支持 HTTP/1.1 和 HTTP/2 协议
+- ✅ 完整的 REST API 方法支持（GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS）
+- ✅ 多种请求体格式：Form Data、x-www-form-urlencoded、JSON、XML、Binary
+- ✅ 文件上传下载支持（支持拖拽）
+- ✅ Cookie 自动管理和手动编辑
+- ✅ 请求头、查询参数可视化编辑
+- ✅ 响应数据格式化显示（JSON、XML、HTML）
+- ✅ 响应时间、状态码、大小统计
+
+### 🌍 环境管理
+- ✅ 多环境快速切换（开发/测试/生产）
+- ✅ 全局变量和环境变量支持
+- ✅ 变量嵌套引用：`{{baseUrl}}/api/{{version}}`
+- ✅ 动态变量：`{{$timestamp}}`、`{{$randomInt}}`
+- ✅ 环境变量导入导出
+
+### 📝 脚本支持
+- ✅ Pre-request Script：请求前执行脚本
+- ✅ Tests Script：响应后测试脚本
+- ✅ 内置代码片段库
+- ✅ JavaScript 运行时环境
+- ✅ 断言测试支持
+
+### ⚡ 性能测试
+- ✅ 多种线程组模式：
+  - 固定线程数：稳定负载测试
+  - 递增式：逐步增加负载
+  - 阶梯式：分阶段负载测试
+  - 尖刺式：突发流量测试
+- ✅ 实时性能监控
+- ✅ 详细测试报告（响应时间、TPS、错误率）
+- ✅ 结果树分析
+- ✅ 性能趋势图表
+
+### 📊 数据分析
+- ✅ 请求历史时间线
+- ✅ 网络事件详细日志
+- ✅ 响应数据统计分析
+- ✅ 错误请求自动分类
+
+### 🔄 数据迁移
+- ✅ Postman Collection v2.1 导入
+- ✅ cURL 命令导入
+- ✅ HAR 文件导入（开发中）
+- ✅ OpenAPI/Swagger 导入（开发中）
 
 ---
 
 ## 🚀 快速开始
 
-1. ⬇️ 克隆仓库：`git clone https://gitee.com/lakernote/easy-postman.git`
-2. 🛠️ 使用 JDK 17+ 编译运行：`mvn clean package`
-3. ▶️ 运行主程序：`App.java` 或 `java -jar target/easy-postman.jar`
+### 环境要求
+- Java 17 或更高版本
+- 内存：至少 512MB 可用内存
+- 磁盘：至少 100MB 可用空间
+
+### 从源码构建
+
+```bash
+# 克隆项目
+git clone https://gitee.com/lakernote/easy-postman.git
+cd easy-postman
+
+# 或者打包后运行
+mvn clean package
+java -jar target/easy-postman-*.jar
+```
+
+### 生成安装包
+
+```bash
+# macOS
+chmod +x build/mac.sh
+./build/mac.sh
+
+# Windows
+build/win.bat
+```
 
 ---
 
-## 📋 功能模块详解
+## 📖 使用指南
 
-### 接口调试（Collections）
-- 支持多级目录管理接口集合
-- 提供丰富的请求方式：GET、POST、PUT、DELETE等
-- 支持表单、JSON、XML、文件等多种请求体格式
-- 自动保存请求历史，便于追溯和复用
+### 1️⃣ 创建第一个请求
+1. 点击 **Collections** 选项卡
+2. 右键创建新的集合和请求
+3. 输入 URL 和选择 HTTP 方法
+4. 配置请求参数、头部信息
+5. 点击 **Send** 发送请求
 
-### 环境变量（Environments）
-- 支持多环境配置和切换
-- 全局变量与环境变量分离管理
-- 变量引用支持`{{变量名}}`语法
+### 2️⃣ 环境变量配置
+1. 点击 **Environments** 选项卡
+2. 创建新环境（如：dev、test、prod）
+3. 添加变量：如 `baseUrl = https://api.example.com`
+4. 在请求中使用：`{{baseUrl}}/users`
 
-### 性能测试（Performance）
-- 多线程组类型：固定线程数、递增式、阶梯式、尖刺式
-- 可视化测试报告
-- 结果树展示每个请求的详细信息
-- 趋势图分析请求性能指标
-
-### 历史记录（History）
-- 按时间轴展示历史请求记录
-- 请求事件详细分析，展示完整请求链路
-- 网络日志记录和分析
-
-### 请求脚本（Scripts）
-- 前置脚本（Pre-request Script）支持
-- 后置测试脚本（Tests）支持
-- 内置代码片段库，快速插入常用脚本
+### 3️⃣ 性能测试
+1. 点击 **Performance** 选项卡
+2. 配置线程组参数
+3. 添加要测试的接口
+4. 启动测试并查看实时报告
 
 ---
 
-## 打包说明
+## 🤝 贡献指南
 
-> 打包 EasyPostman 需要 JDK 17+ 环境，使用 Maven 进行打包。
+我们欢迎任何形式的贡献！
 
-- **Mac**：执行 `build/mac.sh`
-- **Windows**：安装 [wix3](https://github.com/wixtoolset/wix3) 后执行 `build/win.bat`
+### 贡献方式
+1. 🐛 **Bug 报告**: [提交 Issue](https://gitee.com/lakernote/easy-postman/issues)
+2. 💡 **功能建议**: [功能请求](https://gitee.com/lakernote/easy-postman/issues)
+3. 📝 **代码贡献**: Fork -> 修改 -> Pull Request
+4. 📚 **文档改进**: 完善 README、Wiki 等文档
+
+### 开发规范
+- 遵循 Java 编码规范
+- 提交前请运行测试：`mvn test`
+- 提交信息，格式：`feat: 添加新功能` 或 `fix: 修复bug`
 
 ---
 
-## 社区与贡献
 
-- 欢迎提交 Issue、PR 参与共建
-- QQ 群/微信群（可在 Issue 区留言获取）或添加微信 **lakernote** 交流
-- 关注 [GitHub](https://github.com/lakernote/easy-postman) 获取最新动态
+## ❓ 常见问题
+
+### Q: 为什么选择本地存储而不是云同步？
+A: 我们重视开发者的隐私安全，本地存储可以确保您的接口数据不会泄露给第三方。
+
+### Q: 如何导入 Postman 数据？
+A: 在 Collections 界面点击导入按钮，选择 Postman v2.1 格式的 JSON 文件即可。
+
+### Q: 性能测试结果准确吗？
+A: 基于 Java 多线程实现，测试结果具有一定参考价值，但建议与专业压测工具结果进行对比验证。
+
+### Q: 支持团队协作吗？
+A: 当前版本主要面向个人开发者，团队协作功能在后续版本中考虑添加。
 
 ---
 
-## 开源协议
 
-本项目基于 [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) 协议开源。
+
+
+
+## 🙏 致谢
+
+感谢以下开源项目的支持：
+- [FlatLaf](https://github.com/JFormDesigner/FlatLaf) - 现代化 Swing 主题
+- [RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea) - 语法高亮编辑器
+- [OkHttp](https://github.com/square/okhttp) - HTTP 客户端
+
+---
+
+## 💖 支持项目
+
+如果这个项目对您有帮助，欢迎：
+- ⭐ 给项目点个 Star
+- 🍴 Fork 项目参与贡献
+- 📢 向朋友推荐本项目
+- ☕ 请作者喝杯咖啡
+
+---
+
+<div align="center">
+
+**让 API 调试更简单，让性能测试更直观**
+
+Made with ❤️ by [laker](https://github.com/lakernote)
+
+</div>

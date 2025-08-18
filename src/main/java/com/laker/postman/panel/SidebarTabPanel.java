@@ -251,7 +251,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         };
 
         if (sidebarExpanded) {
-            panel.setPreferredSize(new Dimension(81, 30));
+            panel.setPreferredSize(new Dimension(81, 60));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             iconLabel.setToolTipText("Toggle Sidebar"); // 悬停提示
@@ -263,7 +263,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 为图标添加点击事件
             iconLabel.addMouseListener(toggleClickListener);
         } else {
-            panel.setPreferredSize(new Dimension(30, 30));
+            panel.setPreferredSize(new Dimension(30, 60));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             iconLabel.setToolTipText("Toggle Sidebar"); // 悬停提示

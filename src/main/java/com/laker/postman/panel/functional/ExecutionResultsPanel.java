@@ -16,6 +16,8 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * 执行结果展示面板 - 类似 Postman 的 Runner Results
@@ -27,9 +29,19 @@ public class ExecutionResultsPanel extends JPanel {
     private JTabbedPane detailTabs;
     private BatchExecutionHistory executionHistory;
 
+    // 日期格式化器
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     public ExecutionResultsPanel() {
         initUI();
         registerListeners();
+    }
+
+    /**
+     * 格式化时间戳为 yyyy-MM-dd HH:mm:ss 格式
+     */
+    private static String formatTimestamp(long timestamp) {
+        return DATE_FORMAT.format(new Date(timestamp));
     }
 
     private void initUI() {
@@ -224,7 +236,7 @@ public class ExecutionResultsPanel extends JPanel {
         infoPanel.add(new JLabel("第 " + (iteration.getIterationIndex() + 1) + " 轮"));
 
         infoPanel.add(new JLabel("开始时间:"));
-        infoPanel.add(new JLabel(new java.util.Date(iteration.getStartTime()).toString()));
+        infoPanel.add(new JLabel(formatTimestamp(iteration.getStartTime())));
 
         infoPanel.add(new JLabel("执行时长:"));
         infoPanel.add(new JLabel(TimeDisplayUtil.formatElapsedTime(iteration.getExecutionTime())));
@@ -423,8 +435,8 @@ public class ExecutionResultsPanel extends JPanel {
         statsPanel.add(new JLabel("总耗时: " + TimeDisplayUtil.formatElapsedTime(totalTime)));
         statsPanel.add(new JLabel(String.format("成功率: %.1f%%", successRate)));
 
-        statsPanel.add(new JLabel("开始时间: " + new java.util.Date(executionHistory.getStartTime())));
-        statsPanel.add(new JLabel("结束时间: " + new java.util.Date(executionHistory.getEndTime())));
+        statsPanel.add(new JLabel("开始时间: " + formatTimestamp(executionHistory.getStartTime())));
+        statsPanel.add(new JLabel("结束时间: " + formatTimestamp(executionHistory.getEndTime())));
         statsPanel.add(new JLabel("平均耗时: " + (totalRequests > 0 ? totalTime / totalRequests : 0) + "ms"));
         statsPanel.add(new JLabel("状态: 已完成"));
 
@@ -444,7 +456,7 @@ public class ExecutionResultsPanel extends JPanel {
                         request.getStatus(),
                         request.getCost() + "ms",
                         request.getAssertion(),
-                        new java.util.Date(request.getTimestamp())
+                        formatTimestamp(request.getTimestamp())
                 };
                 tableData.add(row);
             }

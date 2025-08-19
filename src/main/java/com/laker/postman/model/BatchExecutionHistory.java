@@ -2,7 +2,6 @@ package com.laker.postman.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 批量执行的历史记录

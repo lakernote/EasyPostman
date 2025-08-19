@@ -23,14 +23,12 @@ import java.util.Date;
  * 执行结果展示面板 - 类似 Postman 的 Runner Results
  */
 public class ExecutionResultsPanel extends JPanel {
+    public static final String TEXT_HTML = "text/html";
     private JTree resultsTree;
     private DefaultTreeModel treeModel;
     private JPanel detailPanel;
     private JTabbedPane detailTabs;
-    private BatchExecutionHistory executionHistory;
-
-    // 日期格式化器
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private transient BatchExecutionHistory executionHistory; // 当前执行历史记录
 
     public ExecutionResultsPanel() {
         initUI();
@@ -40,8 +38,10 @@ public class ExecutionResultsPanel extends JPanel {
     /**
      * 格式化时间戳为 yyyy-MM-dd HH:mm:ss 格式
      */
-    private static String formatTimestamp(long timestamp) {
-        return DATE_FORMAT.format(new Date(timestamp));
+    private String formatTimestamp(long timestamp) {
+        // 日期格式化器
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return dateFormat.format(new Date(timestamp));
     }
 
     private void initUI() {
@@ -187,10 +187,10 @@ public class ExecutionResultsPanel extends JPanel {
 
         detailTabs.removeAll();
 
-        if (userObject instanceof IterationNodeData) {
-            showIterationDetail((IterationNodeData) userObject);
-        } else if (userObject instanceof RequestNodeData) {
-            showRequestDetail((RequestNodeData) userObject);
+        if (userObject instanceof IterationNodeData iterationNodeData) {
+            showIterationDetail(iterationNodeData);
+        } else if (userObject instanceof RequestNodeData requestNodeData) {
+            showRequestDetail(requestNodeData);
         } else {
             showOverviewDetail();
         }
@@ -264,7 +264,7 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 请求信息（HTML） - 使用 getReq() 方法获取 PreparedRequest
         JEditorPane reqPane = new JEditorPane();
-        reqPane.setContentType("text/html");
+        reqPane.setContentType(TEXT_HTML);
         reqPane.setEditable(false);
         reqPane.setText(HttpHtmlRenderer.renderRequest(request.getReq()));
         reqPane.setCaretPosition(0);
@@ -273,7 +273,7 @@ public class ExecutionResultsPanel extends JPanel {
         // 响应信息（HTML） - 使用 HttpHtmlRenderer.renderResponse
         if (request.getResponse() != null) {
             JEditorPane respPane = new JEditorPane();
-            respPane.setContentType("text/html");
+            respPane.setContentType(TEXT_HTML);
             respPane.setEditable(false);
             respPane.setText(HttpHtmlRenderer.renderResponse(request.getResponse()));
             respPane.setCaretPosition(0);
@@ -283,7 +283,7 @@ public class ExecutionResultsPanel extends JPanel {
         // Tests 断言结果Tab - 使用 HttpHtmlRenderer.renderTestResults
         if (request.getTestResults() != null && !request.getTestResults().isEmpty()) {
             JEditorPane testsPane = new JEditorPane();
-            testsPane.setContentType("text/html");
+            testsPane.setContentType(TEXT_HTML);
             testsPane.setEditable(false);
             testsPane.setText(HttpHtmlRenderer.renderTestResults(request.getTestResults()));
             testsPane.setCaretPosition(0);
@@ -293,14 +293,14 @@ public class ExecutionResultsPanel extends JPanel {
         // Timing & Event Info Tab - 使用 HttpHtmlRenderer 的方法
         if (request.getResponse() != null && request.getResponse().httpEventInfo != null) {
             JEditorPane timingPane = new JEditorPane();
-            timingPane.setContentType("text/html");
+            timingPane.setContentType(TEXT_HTML);
             timingPane.setEditable(false);
             timingPane.setText(HttpHtmlRenderer.renderTimingInfo(request.getResponse()));
             timingPane.setCaretPosition(0);
             detailTabs.addTab("Timing", new FlatSVGIcon("icons/time.svg", 16, 16), new JScrollPane(timingPane));
 
             JEditorPane eventInfoPane = new JEditorPane();
-            eventInfoPane.setContentType("text/html");
+            eventInfoPane.setContentType(TEXT_HTML);
             eventInfoPane.setEditable(false);
             eventInfoPane.setText(HttpHtmlRenderer.renderEventInfo(request.getResponse()));
             eventInfoPane.setCaretPosition(0);
@@ -380,9 +380,7 @@ public class ExecutionResultsPanel extends JPanel {
                         setForeground(new Color(40, 167, 69)); // 绿色
                     }
                     setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
-                } else if (requestData.request.getAssertion() != null &&
-                        !requestData.request.getAssertion().isEmpty() &&
-                        !"Pass".equals(requestData.request.getAssertion())) {
+                } else if (requestData.request.getAssertion() != null && !requestData.request.getAssertion().isEmpty()) {
                     // 失败：红色文字和红色取消图标
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(220, 53, 69)); // 红色

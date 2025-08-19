@@ -97,7 +97,7 @@ jpackage \
     --vendor "Laker" \
     --copyright "© 2025 Laker" \
     --java-options "-Xms256m" \
-    --java-options "-Xmx2G" \
+    --java-options "-Xmx512m" \
     --java-options "-Dfile.encoding=UTF-8"
 
 # 完成提示

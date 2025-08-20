@@ -246,13 +246,13 @@ public class PerformancePanel extends SingletonBasePanel {
         defaultReq.setUrl("https://www.baidu.com");
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
 
-        // 添加默认断言
-        DefaultMutableTreeNode assertionNode = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
-        req.add(assertionNode);
-
-        // 添加默认定时器
-        DefaultMutableTreeNode timerNode = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
-        req.add(timerNode);
+//        // 添加默认断言
+//        DefaultMutableTreeNode assertionNode = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
+//        req.add(assertionNode);
+//
+//        // 添加默认定时器
+//        DefaultMutableTreeNode timerNode = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
+//        req.add(timerNode);
 
         group.add(req);
         root.add(group);
@@ -1040,7 +1040,10 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // ====== 统计请求结果（断言和后置脚本后，sleep前） ======
             long cost = resp == null ? costMs : resp.costMs;
-            long endTime = resp.endTime > 0 ? resp.endTime : startTime + cost; // 如果响应时间有记录，则使用，否则使用计算的cost
+            long endTime = startTime + cost; // 如果响应时间有记录，则使用，否则使用计算的cost
+            if (resp != null) {
+                endTime = resp.endTime > 0 ? resp.endTime : startTime + cost;
+            }
             allRequestResults.add(new RequestResult(endTime, success, cost)); // 记录结束时间和实际响应时间
             apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
             if (success) {

@@ -3,9 +3,9 @@ package com.laker.postman.service.http.okhttp;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.right.request.sub.NetworkLogPanel;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -340,11 +340,11 @@ public class EasyConsoleEventListener extends EventListener {
     @Override
     public void responseHeadersEnd(Call call, Response response) {
         info.setResponseHeadersEnd(System.currentTimeMillis());
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("\n");
         boolean isRedirect = response.isRedirect();
         sb.append("Redirect: ").append(isRedirect).append("\n");
-        sb.append("response code: ").append(response.code()).append(" ").append(response.message()).append("\n");
-        sb.append("protocol: ").append(response.protocol()).append("\n");
+        sb.append("Response Code: ").append(response.code()).append(" ").append(response.message()).append("\n");
+        sb.append("Protocol: ").append(response.protocol()).append("\n");
         sb.append("Content-Type: ").append(response.header("Content-Type", "")).append("\n");
         sb.append("Content-Length: ").append(response.header("Content-Length", "")).append("\n");
         if (isRedirect) {
@@ -363,6 +363,9 @@ public class EasyConsoleEventListener extends EventListener {
         if (response.priorResponse() != null) { // 如果有 priorResponse，说明是重定向或缓存的响应
             sb.append("PriorResponse: YES\n");
         }
+        sb.append("\n");
+        sb.append("Headers:\n");
+        // 处理响应头
         Headers headers = response.headers();
         for (int i = 0; i < headers.size(); i++) {
             String name = headers.name(i);

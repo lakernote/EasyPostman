@@ -100,7 +100,9 @@ public class SplashWindow extends JWindow {
                 if (cost < MIN_TIME) {
                     try {
                         Thread.sleep(MIN_TIME - cost);
-                    } catch (InterruptedException ignored) {
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt(); // 恢复中断状态
+                        log.warn("Thread interrupted while sleeping", interruptedException);
                     }
                 }
                 return mainFrame;
@@ -115,6 +117,9 @@ public class SplashWindow extends JWindow {
                     Timer timer = getTimer(mainFrame);
                     timer.start();
                 } catch (Exception e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
                     JOptionPane.showMessageDialog(null, "Failed to load main window, please restart the application.", "Error", JOptionPane.ERROR_MESSAGE);
                     System.exit(1);
                 }

@@ -33,8 +33,9 @@ public class MainFrame extends JFrame {
         initWindowSize(); // 初始化窗口大小
         initWindowCloseListener(); // 初始化窗口关闭监听器
         initWindowStateListener(); // 初始化窗口状态监听器
-        pack(); // 调整窗口大小以适应内容
         restoreWindowState(); // 恢复上次的窗口状态
+        pack(); // 调整窗口大小以适应内容
+        setLocationRelativeTo(null); // 设置窗口居中显示
     }
 
     private void initWindowSize() {
@@ -134,7 +135,7 @@ public class MainFrame extends JFrame {
                 if (isMaximized) {
                     setExtendedState(Frame.MAXIMIZED_BOTH);
                 } else {
-                    setSize(width, height);
+                    setPreferredSize(new Dimension(width, height));
                 }
 
                 log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
@@ -142,8 +143,6 @@ public class MainFrame extends JFrame {
             }
         } catch (Exception e) {
             log.warn("恢复窗口状态失败", e);
-        } finally {
-            setLocationRelativeTo(null); // 设置窗口居中显示
         }
     }
 

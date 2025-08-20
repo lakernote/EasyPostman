@@ -131,22 +131,19 @@ public class MainFrame extends JFrame {
                 Integer width = UserSettingsUtil.getWindowWidth();
                 Integer height = UserSettingsUtil.getWindowHeight();
                 boolean isMaximized = UserSettingsUtil.isWindowMaximized();
-
-                if (width != null && height != null) {
+                if (isMaximized) {
+                    setExtendedState(Frame.MAXIMIZED_BOTH);
+                } else {
                     setSize(width, height);
-                    setLocationRelativeTo(null); // 始终居中
-                    if (isMaximized) {
-                        setExtendedState(Frame.MAXIMIZED_BOTH);
-                    }
-                    log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
-                            width, height, isMaximized);
                 }
-            } else {
-                setLocationRelativeTo(null); // 窗口居中显示
+
+                log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
+                        width, height, isMaximized);
             }
         } catch (Exception e) {
             log.warn("恢复窗口状态失败", e);
-            setLocationRelativeTo(null); // 发生错误时居中显示
+        } finally {
+            setLocationRelativeTo(null); // 设置窗口居中显示
         }
     }
 

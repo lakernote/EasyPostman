@@ -45,13 +45,7 @@ public class MainFrame extends JFrame {
         }
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        if (screenSize.getWidth() > 1280) {
-            setPreferredSize(new Dimension(1280, 800));
-        } else if (screenSize.getWidth() > 1024) {
-            setPreferredSize(new Dimension(1200, 768));
-        } else {
-            setPreferredSize(new Dimension(960, 640));
-        }
+        setPreferredSize(getMinWindowSize()); // 设置最小窗口大小
         if (screenSize.getWidth() <= 1366) {
             setExtendedState(Frame.MAXIMIZED_BOTH);
         }
@@ -132,12 +126,10 @@ public class MainFrame extends JFrame {
                 Integer width = UserSettingsUtil.getWindowWidth();
                 Integer height = UserSettingsUtil.getWindowHeight();
                 boolean isMaximized = UserSettingsUtil.isWindowMaximized();
+                setPreferredSize(new Dimension(width, height));
                 if (isMaximized) {
                     setExtendedState(Frame.MAXIMIZED_BOTH);
-                } else {
-                    setPreferredSize(new Dimension(width, height));
                 }
-
                 log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
                         width, height, isMaximized);
             }

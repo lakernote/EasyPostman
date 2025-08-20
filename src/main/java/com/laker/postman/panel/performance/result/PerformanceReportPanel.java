@@ -16,7 +16,7 @@ public class PerformanceReportPanel extends JPanel {
 
     public PerformanceReportPanel() {
         super(new BorderLayout());
-        String[] columns = {"API Name", "Total", "Success", "Fail", "QPS", "Avg(ms)", "Min(ms)", "Max(ms)", "P99(ms)", "Total Cost(ms)", "Success Rate"};
+        String[] columns = {"API Name", "Total", "Success", "Fail", "Success Rate", "QPS", "Avg(ms)", "Min(ms)", "Max(ms)", "P90(ms)", "P95(ms)", "P99(ms)"};
 
         reportTableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -111,11 +111,11 @@ public class PerformanceReportPanel extends JPanel {
             }
         };
         // 需要居中的列索引
-        int[] centerColumns = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        int[] centerColumns = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
         for (int col : centerColumns) {
             if (col == 3) { // 失败列
                 reportTable.getColumnModel().getColumn(col).setCellRenderer(failRenderer);
-            } else if (col == 10) { // 成功率列
+            } else if (col == 4) { // 成功率列
                 reportTable.getColumnModel().getColumn(col).setCellRenderer(rateRenderer);
             } else {
                 reportTable.getColumnModel().getColumn(col).setCellRenderer(generalRenderer);
@@ -147,7 +147,7 @@ public class PerformanceReportPanel extends JPanel {
                              List<RequestResult> allRequestResults) {
         clearReport();
         int totalApi = 0, totalSuccess = 0, totalFail = 0;
-        long totalCost = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
+        long totalP95 = 0, totalP90 = 0, totalMin = Long.MAX_VALUE, totalMax = 0, totalP99 = 0;
         double totalRate = 0;
         int apiCount = 0;
         for (String api : apiCostMap.keySet()) {
@@ -159,7 +159,8 @@ public class PerformanceReportPanel extends JPanel {
             long apiMin = costs.stream().mapToLong(Long::longValue).min().orElse(0);
             long apiMax = costs.stream().mapToLong(Long::longValue).max().orElse(0);
             long apiP99 = getP99(costs);
-            long apiTotalCost = costs.stream().mapToLong(Long::longValue).sum();
+            long apiP95 = getP95(costs);
+            long apiP90 = getP90(costs);
             double apiQps = 0;
             if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
                 long minStart = Collections.min(allRequestStartTimes);
@@ -168,11 +169,12 @@ public class PerformanceReportPanel extends JPanel {
                 apiQps = apiTotal * 1000.0 / spanMs;
             }
             double apiRate = apiTotal > 0 ? (apiSuccess * 100.0 / apiTotal) : 0;
-            addReportRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiQps), apiAvg, apiMin, apiMax, apiP99, apiTotalCost, String.format("%.2f%%", apiRate)});
+            addReportRow(new Object[]{api, apiTotal, apiSuccess, apiFail, String.format("%.2f", apiRate) + "%", Math.round(apiQps), apiAvg, apiMin, apiMax, apiP90, apiP95, apiP99});
             totalApi += apiTotal;
             totalSuccess += apiSuccess;
             totalFail += apiFail;
-            totalCost += apiTotalCost;
+            totalP95 += apiP95;
+            totalP90 += apiP90;
             totalMin = Math.min(totalMin, apiMin);
             totalMax = Math.max(totalMax, apiMax);
             totalP99 += apiP99;
@@ -181,6 +183,8 @@ public class PerformanceReportPanel extends JPanel {
         }
         if (apiCount > 0) {
             long avgP99 = totalP99 / apiCount;
+            long avgP95 = totalP95 / apiCount;
+            long avgP90 = totalP90 / apiCount;
             double avgRate = totalRate / apiCount;
             double totalQps = 0;
             if (!allRequestStartTimes.isEmpty() && !allRequestResults.isEmpty()) {
@@ -189,9 +193,17 @@ public class PerformanceReportPanel extends JPanel {
                 long spanMs = Math.max(1, maxEnd - minStart);
                 totalQps = totalApi * 1000.0 / spanMs;
             }
-            long avg = totalApi > 0 ? totalCost / totalApi : 0;
-            addReportRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP99, totalCost, String.format("%.2f%%", avgRate)});
+            long avg = totalApi > 0 ? apiCostMap.values().stream().flatMap(List::stream).mapToLong(Long::longValue).sum() / totalApi : 0;
+            addReportRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", avgRate) + "%", Math.round(totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP90, avgP95, avgP99});
         }
+    }
+
+    private long getP95(List<Long> costs) {
+        if (costs == null || costs.isEmpty()) return 0;
+        List<Long> sorted = new ArrayList<>(costs);
+        Collections.sort(sorted);
+        int idx = (int) Math.ceil(sorted.size() * 0.95) - 1;
+        return sorted.get(Math.max(idx, 0));
     }
 
     private long getP99(List<Long> costs) {
@@ -199,6 +211,14 @@ public class PerformanceReportPanel extends JPanel {
         List<Long> sorted = new ArrayList<>(costs);
         Collections.sort(sorted);
         int idx = (int) Math.ceil(sorted.size() * 0.99) - 1;
+        return sorted.get(Math.max(idx, 0));
+    }
+
+    private long getP90(List<Long> costs) {
+        if (costs == null || costs.isEmpty()) return 0;
+        List<Long> sorted = new ArrayList<>(costs);
+        Collections.sort(sorted);
+        int idx = (int) Math.ceil(sorted.size() * 0.90) - 1;
         return sorted.get(Math.max(idx, 0));
     }
 }

@@ -326,7 +326,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         JPanel getPanel() { // 懒加载面板
             if (panel == null) {
                 panel = panelSupplier.get();
-                log.info("Loaded panel for tab: {}", title);
+                log.debug("Loaded panel for tab: {}", title);
             }
             return panel;
         }

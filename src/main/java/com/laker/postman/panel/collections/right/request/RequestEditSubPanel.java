@@ -283,9 +283,9 @@ public class RequestEditSubPanel extends JPanel {
         String curJson = JSONUtil.toJsonStr(current);
         boolean isModified = !oriJson.equals(curJson);
         if (isModified) {
-            log.info("Request form has been modified,Request Name: {}", current.getName());
-            log.info("oriJson: {}", oriJson);
-            log.info("curJson: {}", curJson);
+            log.debug("Request form has been modified,Request Name: {}", current.getName());
+            log.debug("oriJson: {}", oriJson);
+            log.debug("curJson: {}", curJson);
         }
         return isModified;
     }

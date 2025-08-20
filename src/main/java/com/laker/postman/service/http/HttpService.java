@@ -117,10 +117,11 @@ public class HttpService {
         } finally {
             fillHttpEventInfo(httpResponse, startTime);
         }
+        OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
+        httpResponse.endTime = System.currentTimeMillis();
+        httpResponse.costMs = httpResponse.endTime - startTime;
         // 响应后主动通知Cookie变化，刷新CookieTablePanel
         CookieService.notifyCookieChanged();
-        OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
-        httpResponse.costMs = System.currentTimeMillis() - startTime;
         return httpResponse;
     }
 

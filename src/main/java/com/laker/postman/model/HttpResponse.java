@@ -14,6 +14,7 @@ public class HttpResponse {
     public String filePath; // 临时文件下载路径字段
     public String fileName; // 如果是文件下载，从响应头中获取的文件名字段
     public long costMs; // 请求耗时，单位毫秒
+    public long endTime; // 响应结束时间，单位毫秒
     public String protocol; // 协议类型字段，例如 HTTP/1.1 或 HTTP/2
     public int idleConnectionCount; // 空闲连接数
     public int connectionCount; // 连接总数

@@ -46,6 +46,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
@@ -365,7 +366,8 @@ public class PerformancePanel extends SingletonBasePanel {
         long now = System.currentTimeMillis();
         Second second = new Second(new Date(now));
         // 统计本秒内的请求
-        int totalReq = 0, errorReq = 0;
+        int totalReq = 0;
+        int errorReq = 0;
         long totalRespTime = 0;
         synchronized (allRequestResults) {
             for (int i = allRequestResults.size() - 1; i >= 0; i--) {
@@ -373,25 +375,15 @@ public class PerformancePanel extends SingletonBasePanel {
                 if (result.endTime >= now - 1000 && result.endTime <= now) {
                     totalReq++;
                     if (!result.success) errorReq++;
+                    totalRespTime += result.responseTime; // 使用实际响应时间
                 } else if (result.endTime < now - 1000) {
                     break;
                 }
             }
         }
-        // 统计平均响应时间
-        synchronized (allRequestStartTimes) {
-            for (int i = allRequestStartTimes.size() - 1; i >= 0; i--) {
-                long start = allRequestStartTimes.get(i);
-                if (start >= now - 1000 && start <= now) {
-                    totalRespTime += (now - start);
-                } else if (start < now - 1000) {
-                    break;
-                }
-            }
-        }
         double avgRespTime = totalReq > 0 ?
-                new BigDecimal((double) totalRespTime / totalReq)
-                        .setScale(2, java.math.RoundingMode.HALF_UP)
+                BigDecimal.valueOf((double) totalRespTime / totalReq)
+                        .setScale(2, RoundingMode.HALF_UP)
                         .doubleValue()
                 : 0;
         double qps = totalReq;
@@ -1048,7 +1040,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // ====== 统计请求结果（断言和后置脚本后，sleep前） ======
             long cost = resp == null ? costMs : resp.costMs;
-            allRequestResults.add(new RequestResult(startTime + cost, success)); // 记录结束时间
+            allRequestResults.add(new RequestResult(startTime + cost, success, cost)); // 记录结束时间和实际响应时间
             apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
             if (success) {
                 apiSuccessMap.merge(apiName, 1, Integer::sum);

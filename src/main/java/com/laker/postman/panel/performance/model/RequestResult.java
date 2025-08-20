@@ -4,9 +4,11 @@ package com.laker.postman.panel.performance.model;
 public class RequestResult {
     public long endTime;
     public boolean success;
+    public long responseTime; // 添加实际响应时间字段
 
-    public RequestResult(long endTime, boolean success) {
+    public RequestResult(long endTime, boolean success, long responseTime) {
         this.endTime = endTime;
         this.success = success;
+        this.responseTime = responseTime;
     }
 }

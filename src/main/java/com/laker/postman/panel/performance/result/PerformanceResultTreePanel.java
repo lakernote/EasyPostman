@@ -37,6 +37,8 @@ public class PerformanceResultTreePanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
+        // 设置面板边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // ========== 结果树搜索框 ==========
         JPanel searchPanel = new JPanel(new BorderLayout(5, 5));

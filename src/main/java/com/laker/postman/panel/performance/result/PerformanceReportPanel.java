@@ -12,12 +12,15 @@ import java.util.List;
 import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
+    public static final String TOTAL = "Total";
     private final DefaultTableModel reportTableModel;
+    String[] columns = {"API Name", TOTAL, "Success", "Fail", "Success Rate", "QPS", "Avg(ms)", "Min(ms)", "Max(ms)", "P90(ms)", "P95(ms)", "P99(ms)"};
 
     public PerformanceReportPanel() {
-        super(new BorderLayout());
-        String[] columns = {"API Name", "Total", "Success", "Fail", "Success Rate", "QPS", "Avg(ms)", "Min(ms)", "Max(ms)", "P90(ms)", "P95(ms)", "P99(ms)"};
-
+        setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // 初始化表格模型
         reportTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -37,7 +40,7 @@ public class PerformanceReportPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
+                boolean isTotal = TOTAL.equals(reportTableModel.getValueAt(modelRow, 0));
                 if (isTotal) {
                     c.setFont(c.getFont().deriveFont(Font.BOLD));
                     c.setForeground(new Color(0, 102, 204));
@@ -62,7 +65,7 @@ public class PerformanceReportPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
+                boolean isTotal = TOTAL.equals(reportTableModel.getValueAt(modelRow, 0));
                 if (isTotal) {
                     c.setFont(c.getFont().deriveFont(Font.BOLD));
                     c.setForeground(new Color(0, 102, 204));
@@ -97,7 +100,7 @@ public class PerformanceReportPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 int modelRow = table.convertRowIndexToModel(row);
-                boolean isTotal = "Total".equals(reportTableModel.getValueAt(modelRow, 0));
+                boolean isTotal = TOTAL.equals(reportTableModel.getValueAt(modelRow, 0));
                 if (isTotal) {
                     c.setFont(c.getFont().deriveFont(Font.BOLD));
                     c.setForeground(new Color(0, 102, 204));
@@ -194,7 +197,7 @@ public class PerformanceReportPanel extends JPanel {
                 totalQps = totalApi * 1000.0 / spanMs;
             }
             long avg = totalApi > 0 ? apiCostMap.values().stream().flatMap(List::stream).mapToLong(Long::longValue).sum() / totalApi : 0;
-            addReportRow(new Object[]{"Total", totalApi, totalSuccess, totalFail, String.format("%.2f", avgRate) + "%", Math.round(totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP90, avgP95, avgP99});
+            addReportRow(new Object[]{TOTAL, totalApi, totalSuccess, totalFail, String.format("%.2f", avgRate) + "%", Math.round(totalQps), avg, totalMin == Long.MAX_VALUE ? 0 : totalMin, totalMax, avgP90, avgP95, avgP99});
         }
     }
 

@@ -73,6 +73,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         environmentListModel = new DefaultListModel<>();
         environmentList = new JList<>(environmentListModel);
         environmentList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        environmentList.setFixedCellHeight(28); // 设置每行高度
         environmentList.setCellRenderer(new EnvironmentListCellRenderer());
         environmentList.setFixedCellWidth(0); // 让JList自适应宽度
         environmentList.setVisibleRowCount(-1); // 让JList显示所有行
@@ -244,16 +245,16 @@ public class EnvironmentPanel extends SingletonBasePanel {
                         environmentList.setSelectedIndex(idx);
                         EnvironmentItem item = environmentList.getModel().getElementAt(idx);
                         if (item != null) {
-                          Environment env = item.getEnvironment();
-                          // 激活环境
-                          EnvironmentService.setActiveEnvironment(env.getId());
-                          // 联动顶部下拉框
-                          EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
-                          if (comboBox != null) {
-                              comboBox.setSelectedEnvironment(env);
-                          }
-                          // 刷新面板
-                          refreshUI();
+                            Environment env = item.getEnvironment();
+                            // 激活环境
+                            EnvironmentService.setActiveEnvironment(env.getId());
+                            // 联动顶部下拉框
+                            EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+                            if (comboBox != null) {
+                                comboBox.setSelectedEnvironment(env);
+                            }
+                            // 刷新面板
+                            refreshUI();
                         }
                     }
                 }
@@ -366,9 +367,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 显示保存成功提示
         JOptionPane.showMessageDialog(this,
-            "环境变量保存成功！",
-            "保存成功",
-            JOptionPane.INFORMATION_MESSAGE);
+                "环境变量保存成功！",
+                "保存成功",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

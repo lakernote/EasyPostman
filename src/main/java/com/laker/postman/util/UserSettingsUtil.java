@@ -14,8 +14,6 @@ import java.util.Map;
 public class UserSettingsUtil {
     private static final String KEY_LAST_OPEN_REQUEST_ID = "lastOpenRequestId";
     private static final String KEY_SIDEBAR_EXPANDED = "sidebarExpanded";
-    private static final String KEY_WINDOW_X = "windowX";
-    private static final String KEY_WINDOW_Y = "windowY";
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
     private static final String KEY_WINDOW_MAXIMIZED = "windowMaximized";
@@ -82,7 +80,7 @@ public class UserSettingsUtil {
         Object v = get(key);
         if (v instanceof Boolean b) return b;
         if (v instanceof String s) return Boolean.parseBoolean(s);
-        return null;
+        return Boolean.FALSE;
     }
 
     public static Integer getInt(String key) {
@@ -129,11 +127,9 @@ public class UserSettingsUtil {
     }
 
     // 窗口状态专用方法
-    public static void saveWindowState(int x, int y, int width, int height, boolean maximized) {
+    public static void saveWindowState(int width, int height, boolean maximized) {
         synchronized (lock) {
             readSettings();
-            settingsCache.put(KEY_WINDOW_X, x);
-            settingsCache.put(KEY_WINDOW_Y, y);
             settingsCache.put(KEY_WINDOW_WIDTH, width);
             settingsCache.put(KEY_WINDOW_HEIGHT, height);
             settingsCache.put(KEY_WINDOW_MAXIMIZED, maximized);
@@ -141,13 +137,6 @@ public class UserSettingsUtil {
         }
     }
 
-    public static Integer getWindowX() {
-        return getInt(KEY_WINDOW_X);
-    }
-
-    public static Integer getWindowY() {
-        return getInt(KEY_WINDOW_Y);
-    }
 
     public static Integer getWindowWidth() {
         return getInt(KEY_WINDOW_WIDTH);

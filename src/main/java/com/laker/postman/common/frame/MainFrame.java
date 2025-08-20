@@ -97,31 +97,25 @@ public class MainFrame extends JFrame {
 
     private void saveWindowState() {
         try {
-            // 获取当前窗口状态
             boolean isMaximized = (getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
-
+            Dimension minSize = getMinWindowSize();
             if (!isMaximized) {
-                // 只有在非最大化状态下才保存位置和大小
-                Rectangle bounds = getBounds();
+                Dimension size = getSize();
+                int width = Math.max(size.width, minSize.width);
+                int height = Math.max(size.height, minSize.height);
                 UserSettingsUtil.saveWindowState(
-                        bounds.x,
-                        bounds.y,
-                        bounds.width,
-                        bounds.height,
+                        width,
+                        height,
                         false
                 );
             } else {
-                // 最大化状态下保留之前的位置和大小，只更新最大化状态
                 Integer savedWidth = UserSettingsUtil.getWindowWidth();
                 Integer savedHeight = UserSettingsUtil.getWindowHeight();
-                Integer savedX = UserSettingsUtil.getWindowX();
-                Integer savedY = UserSettingsUtil.getWindowY();
-
+                int width = savedWidth != null ? Math.max(savedWidth, minSize.width) : minSize.width;
+                int height = savedHeight != null ? Math.max(savedHeight, minSize.height) : minSize.height;
                 UserSettingsUtil.saveWindowState(
-                        savedX != null ? savedX : 100,
-                        savedY != null ? savedY : 100,
-                        savedWidth != null ? savedWidth : 1280,
-                        savedHeight != null ? savedHeight : 800,
+                        width,
+                        height,
                         true
                 );
             }
@@ -134,29 +128,18 @@ public class MainFrame extends JFrame {
     private void restoreWindowState() {
         try {
             if (UserSettingsUtil.hasWindowState()) {
-                Integer x = UserSettingsUtil.getWindowX();
-                Integer y = UserSettingsUtil.getWindowY();
                 Integer width = UserSettingsUtil.getWindowWidth();
                 Integer height = UserSettingsUtil.getWindowHeight();
                 boolean isMaximized = UserSettingsUtil.isWindowMaximized();
 
-                if (x != null && y != null && width != null && height != null) {
-                    // 检查窗口位置是否在有效的屏幕范围内
-                    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                    if (x >= 0 && y >= 0 && x < screenSize.width && y < screenSize.height) {
-                        setBounds(x, y, width, height);
-                    } else {
-                        // 如果位置无效，则居中显示
-                        setSize(width, height);
-                        setLocationRelativeTo(null);
-                    }
-
+                if (width != null && height != null) {
+                    setSize(width, height);
+                    setLocationRelativeTo(null); // 始终居中
                     if (isMaximized) {
                         setExtendedState(Frame.MAXIMIZED_BOTH);
                     }
-
-                    log.debug("窗口状态已恢复: x={}, y={}, width={}, height={}, maximized={}",
-                            x, y, width, height, isMaximized);
+                    log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
+                            width, height, isMaximized);
                 }
             } else {
                 setLocationRelativeTo(null); // 窗口居中显示
@@ -164,6 +147,17 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             log.warn("恢复窗口状态失败", e);
             setLocationRelativeTo(null); // 发生错误时居中显示
+        }
+    }
+
+    private Dimension getMinWindowSize() {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        if (screenSize.getWidth() > 1280) {
+            return new Dimension(1280, 800);
+        } else if (screenSize.getWidth() > 1024) {
+            return new Dimension(1200, 768);
+        } else {
+            return new Dimension(960, 640);
         }
     }
 }

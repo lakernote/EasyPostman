@@ -33,7 +33,6 @@ public class MainFrame extends JFrame {
         initWindowSize(); // 初始化窗口大小
         initWindowCloseListener(); // 初始化窗口关闭监听器
         initWindowStateListener(); // 初始化窗口状态监听器
-        restoreWindowState(); // 恢复上次的窗口状态
         pack(); // 调整窗口大小以适应内容
         setLocationRelativeTo(null); // 设置窗口居中显示
     }
@@ -41,6 +40,7 @@ public class MainFrame extends JFrame {
     private void initWindowSize() {
         // 如果已有保存的窗口状态，则跳过默认大小设置
         if (UserSettingsUtil.hasWindowState()) {
+            restoreWindowState(); // 恢复上次的窗口状态
             return;
         }
 

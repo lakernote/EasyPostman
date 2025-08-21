@@ -17,6 +17,7 @@ public class UserSettingsUtil {
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
     private static final String KEY_WINDOW_MAXIMIZED = "windowMaximized";
+    private static final String KEY_LANGUAGE = "language";
     private static final String SETTINGS_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "user_settings.json";
     private static final Object lock = new Object();
     private static Map<String, Object> settingsCache = null;
@@ -153,5 +154,14 @@ public class UserSettingsUtil {
 
     public static boolean hasWindowState() {
         return getWindowWidth() != null && getWindowHeight() != null;
+    }
+
+    // 语言设置专用方法
+    public static void saveLanguage(String language) {
+        set(KEY_LANGUAGE, language);
+    }
+
+    public static String getLanguage() {
+        return getString(KEY_LANGUAGE);
     }
 }

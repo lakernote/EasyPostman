@@ -6,7 +6,7 @@
 
     <groupId>com.laker.tools</groupId>
     <artifactId>easy-tools</artifactId>
-    <version>1.0.6</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
+    <version>1.0.7</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
 
     <properties>
         <!-- 编译配置 -->
@@ -154,6 +154,17 @@
                             <Implementation-Version>${project.version}</Implementation-Version>
                         </manifestEntries>
                     </archive>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Resources Plugin - 支持UTF-8编码的properties文件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <propertiesEncoding>UTF-8</propertiesEncoding>
                 </configuration>
             </plugin>
 

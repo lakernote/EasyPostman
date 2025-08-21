@@ -1,6 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.util.I18nUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,9 +11,8 @@ import java.awt.*;
  */
 public class StopButton extends JButton {
     public StopButton() {
-        super("Stop");
+        super(I18nUtil.getMessage("button.stop"));
         setIcon(new FlatSVGIcon("icons/stop.svg"));
         setPreferredSize(new Dimension(90, 28));
     }
 }
-

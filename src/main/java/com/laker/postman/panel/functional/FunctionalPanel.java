@@ -16,7 +16,8 @@ import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.JsScriptExecutor;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.TimeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,15 +56,15 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
-        mainTabbedPane.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        mainTabbedPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
-        mainTabbedPane.addTab("Request Configuration", new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
+        mainTabbedPane.addTab(I18nUtil.getMessage("functional.tab.request_config"), new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
 
         resultsPanel = new ExecutionResultsPanel();
-        mainTabbedPane.addTab("Execution Results", new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
+        mainTabbedPane.addTab(I18nUtil.getMessage("functional.tab.execution_results"), new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
 
         add(mainTabbedPane, BorderLayout.CENTER);
     }
@@ -94,7 +95,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         timePanel.setOpaque(false);
         JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20));
         timeLabel = new JLabel("0 ms");
-        timeLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+        timeLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         timePanel.add(timeIcon);
         timePanel.add(Box.createHorizontalStrut(3));
         timePanel.add(timeLabel);
@@ -107,7 +108,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建进度文本标签
         progressLabel = new JLabel("0/0");
-        progressLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+        progressLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
 
         taskPanel.add(taskIcon);
         taskPanel.add(Box.createHorizontalStrut(3));
@@ -129,7 +130,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         btnPanel.setOpaque(false);
 
-        JButton loadBtn = new JButton("Load");
+        JButton loadBtn = new JButton(I18nUtil.getMessage("button.load"));
         loadBtn.setIcon(new FlatSVGIcon("icons/load.svg"));
         loadBtn.setPreferredSize(new Dimension(90, 28));
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
@@ -153,7 +154,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         });
         btnPanel.add(stopBtn);
 
-        JButton clearBtn = new JButton("Clear");
+        JButton clearBtn = new JButton(I18nUtil.getMessage("button.clear"));
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setPreferredSize(new Dimension(95, 28));
         clearBtn.addActionListener(e -> {
@@ -174,7 +175,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         int rowCount = tableModel.getRowCount();
         int selectedCount = (int) IntStream.range(0, rowCount).mapToObj(i -> tableModel.getRow(i)).filter(row -> row != null && row.selected).count();
         if (selectedCount == 0) {
-            JOptionPane.showMessageDialog(this, "没有可运行的请求", "提示", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("functional.msg.no_runnable_request"), I18nUtil.getMessage("general.tip"), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -183,8 +184,8 @@ public class FunctionalPanel extends SingletonBasePanel {
         if (csvDataPanel.hasData()) {
             iterations = csvDataPanel.getRowCount();
             int response = JOptionPane.showConfirmDialog(this,
-                    String.format("检测到 CSV 数据文件，包含 %d 行数据。\n是否使用 CSV 数据进行数据驱动测试？\n选择'是'将为每行数据执行一次所有选中的请求。", iterations),
-                    "CSV 数据驱动测试",
+                    I18nUtil.getMessage("functional.msg.csv_detected", iterations),
+                    I18nUtil.getMessage("functional.msg.csv_title"),
                     JOptionPane.YES_NO_OPTION);
             if (response != JOptionPane.YES_OPTION) {
                 iterations = 1; // 用户选择不使用 CSV 数据
@@ -346,13 +347,13 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         HttpResponse resp = null;
         String status;
-        String assertion = "not executed";
+        String assertion = I18nUtil.getMessage("functional.status.not_executed");
         if (!preOk) {
-            status = "前置脚本失败";
+            status = I18nUtil.getMessage("functional.status.pre_script_failed");
         } else if (HttpUtil.isSSERequest(req)) {
-            status = "SSE请求，无法批量执行";
+            status = I18nUtil.getMessage("functional.status.sse_batch_not_supported");
         } else if (HttpUtil.isWebSocketRequest(req)) {
-            status = "WebSocket请求，无法批量执行";
+            status = I18nUtil.getMessage("functional.status.ws_batch_not_supported");
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
@@ -454,8 +455,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             }
         };
         table.setRowHeight(28);
-        table.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        table.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 13));
+        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
         setTableColumnWidths();
         setTableRenderers();
         table.setGridColor(new Color(220, 220, 220));

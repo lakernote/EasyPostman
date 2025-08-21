@@ -4,6 +4,8 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.panel.EasyPostmanMainPanel;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.UserSettingsUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,8 +25,8 @@ public class MainFrame extends JFrame {
     // 单例模式，确保只有一个实例
     private MainFrame() {
         super(); // 调用父类构造函数
-        setName("EasyPostman"); // 设置窗口名称
-        setTitle("EasyPostman"); // 设置窗口标题
+        setName(I18nUtil.getMessage(MessageKeys.APP_NAME)); // 设置窗口名称
+        setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME)); // 设置窗口标题
         setIconImage(Icons.LOGO.getImage()); // 设置窗口图标
     }
 

@@ -5,7 +5,7 @@ import com.laker.postman.model.BatchExecutionHistory;
 import com.laker.postman.model.IterationResult;
 import com.laker.postman.model.RequestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
@@ -71,7 +71,7 @@ public class ExecutionResultsPanel extends JPanel {
         resultsTree.setRootVisible(true);
         resultsTree.setShowsRootHandles(true);
         resultsTree.setCellRenderer(new ExecutionResultTreeCellRenderer());
-        resultsTree.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        resultsTree.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         resultsTree.setRowHeight(24);
     }
 
@@ -87,11 +87,11 @@ public class ExecutionResultsPanel extends JPanel {
         toolBar.setOpaque(false);
 
         JButton expandAllBtn = new JButton("展开全部");
-        expandAllBtn.setFont(FontUtil.getDefaultFont(Font.PLAIN, 11));
+        expandAllBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         expandAllBtn.addActionListener(e -> expandAll());
 
         JButton collapseAllBtn = new JButton("收起全部");
-        collapseAllBtn.setFont(FontUtil.getDefaultFont(Font.PLAIN, 11));
+        collapseAllBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         collapseAllBtn.addActionListener(e -> collapseAll());
 
         toolBar.add(expandAllBtn);
@@ -107,7 +107,7 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 创建详情选项卡
         detailTabs = new JTabbedPane();
-        detailTabs.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        detailTabs.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
 
         // 默认显示欢迎页面
         JPanel welcomePanel = new JPanel(new BorderLayout());
@@ -462,8 +462,8 @@ public class ExecutionResultsPanel extends JPanel {
 
         Object[][] data = tableData.toArray(new Object[0][]);
         JTable table = new JTable(data, columnNames);
-        table.setFont(FontUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 11));
+        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         table.setRowHeight(22);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
@@ -482,8 +482,8 @@ public class ExecutionResultsPanel extends JPanel {
         }
 
         csvTable.setModel(new javax.swing.table.DefaultTableModel(data, headers));
-        csvTable.setFont(FontUtil.getDefaultFont(Font.PLAIN, 11));
-        csvTable.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 11));
+        csvTable.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        csvTable.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         csvTable.setRowHeight(20);
 
         JScrollPane csvScrollPane = new JScrollPane(csvTable);

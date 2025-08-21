@@ -5,10 +5,14 @@ import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.common.setting.SettingDialog;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.panel.SidebarTabPanel;
+import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +66,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         menuBar.setBorder(BorderFactory.createEmptyBorder());
         addFileMenu();
         addThemeMenu();
+        addLanguageMenu();
         addSettingMenu();
         addHelpMenu();
         addAboutMenu();
@@ -70,10 +75,10 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     }
 
     private void addFileMenu() {
-        JMenu fileMenu = new JMenu("File");
-        JMenuItem logMenuItem = new JMenuItem("Log");
+        JMenu fileMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_FILE));
+        JMenuItem logMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG));
         logMenuItem.addActionListener(e -> openLogDirectory());
-        JMenuItem exitMenuItem = new JMenuItem("Exit");
+        JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
         exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         exitMenuItem.setMnemonic('X');
         exitMenuItem.addActionListener(e -> ExitDialog.show());
@@ -88,17 +93,17 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         } catch (IOException ex) {
             log.error("Failed to open log directory", ex);
             JOptionPane.showMessageDialog(null,
-                    "Failed to open log directory. Please check the log.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LOG_MESSAGE),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void addThemeMenu() {
-        JMenu themeMenu = new JMenu("Theme");
+        JMenu themeMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_THEME));
         ButtonGroup themeGroup = new ButtonGroup();
-        JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem("Light (Flat Light)");
-        JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem("IntelliJ Style");
-        JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem("Mac Light Style");
+        JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_LIGHT));
+        JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_INTELLIJ));
+        JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_MAC));
         themeGroup.add(lightTheme);
         themeGroup.add(intellijTheme);
         themeGroup.add(macLightTheme);
@@ -121,9 +126,57 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         }
     }
 
+    private void addLanguageMenu() {
+        JMenu languageMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_LANGUAGE));
+        ButtonGroup languageGroup = new ButtonGroup();
+
+        JRadioButtonMenuItem englishItem = new JRadioButtonMenuItem("English");
+        JRadioButtonMenuItem chineseItem = new JRadioButtonMenuItem("中文");
+
+        languageGroup.add(englishItem);
+        languageGroup.add(chineseItem);
+
+        // 设置当前选中的语言
+        if (I18nUtil.isChinese()) {
+            chineseItem.setSelected(true);
+        } else {
+            englishItem.setSelected(true);
+        }
+
+        englishItem.addActionListener(e -> switchLanguage("en"));
+        chineseItem.addActionListener(e -> switchLanguage("zh"));
+
+        languageMenu.add(englishItem);
+        languageMenu.add(chineseItem);
+        menuBar.add(languageMenu);
+    }
+
+    private void switchLanguage(String languageCode) {
+        I18nUtil.setLocale(languageCode);
+        // 重新初始化菜单栏以应用新语言
+        menuBar.removeAll();
+        initComponents();
+        // 重新绘制所有窗口
+        for (Window window : Window.getWindows()) {
+            SwingUtilities.updateComponentTreeUI(window);
+        }
+        // 通知 SidebarTabPanel 刷新国际化
+        try {
+            SidebarTabPanel sidebar = SingletonFactory.getInstance(SidebarTabPanel.class);
+            sidebar.reloadI18n();
+        } catch (Exception e) {
+            log.warn("SidebarTabPanel reloadI18n failed", e);
+        }
+        // 可以添加一个提示消息
+        JOptionPane.showMessageDialog(null,
+                I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED),
+                I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
     private void addSettingMenu() {
-        JMenu settingMenu = new JMenu("Settings");
-        JMenuItem settingMenuItem = new JMenuItem("Global Settings");
+        JMenu settingMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS));
+        JMenuItem settingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS_GLOBAL));
         settingMenuItem.addActionListener(e -> showSettingDialog());
         settingMenu.add(settingMenuItem);
         menuBar.add(settingMenu);
@@ -136,10 +189,10 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     }
 
     private void addHelpMenu() {
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem updateMenuItem = new JMenuItem("Check for Updates");
+        JMenu helpMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_HELP));
+        JMenuItem updateMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE));
         updateMenuItem.addActionListener(e -> checkUpdate());
-        JMenuItem feedbackMenuItem = new JMenuItem("Feedback");
+        JMenuItem feedbackMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_FEEDBACK));
         feedbackMenuItem.addActionListener(e -> showFeedbackDialog());
         helpMenu.add(updateMenuItem);
         helpMenu.add(feedbackMenuItem);
@@ -147,12 +200,13 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     }
 
     private void showFeedbackDialog() {
-        JOptionPane.showMessageDialog(null, "Please submit issues via Gitee or GitHub.", "Feedback", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.FEEDBACK_MESSAGE),
+                I18nUtil.getMessage(MessageKeys.FEEDBACK_TITLE), JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void addAboutMenu() {
-        JMenu aboutMenu = new JMenu("About");
-        JMenuItem aboutMenuItem = new JMenuItem("About EasyPostman");
+        JMenu aboutMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_ABOUT));
+        JMenuItem aboutMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_ABOUT_EASYPOSTMAN));
         aboutMenuItem.addActionListener(e -> aboutActionPerformed());
         aboutMenu.add(aboutMenuItem);
         menuBar.add(aboutMenu);
@@ -179,25 +233,32 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                 + "<img src='" + iconUrl + "' width='56' height='56' style='margin-bottom:10px;'/>"
                 + "</div>"
                 + "<div style='font-size:16px; font-weight:bold; color:#212529; text-align:center; margin-bottom:6px;'>EasyPostman</div>"
-                + "<div style='font-size:12px; color:#666; text-align:center; margin-bottom:12px;'>版本：" + getCurrentVersion() + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>作者：lakernote</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>协议：Apache-2.0</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:8px;'>微信：lakernote</div>"
+                + "<div style='font-size:12px; color:#666; text-align:center; margin-bottom:12px;>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_VERSION, getCurrentVersion()) + "</div>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:2px;>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_AUTHOR) + "</div>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:2px;>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_LICENSE) + "</div>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:8px;>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_WECHAT) + "</div>"
                 + "<hr style='border:none; border-top:1px solid #eee; margin:10px 0;'>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
-                + "<a href='https://laker.blog.csdn.net' style='color:#1a0dab; text-decoration:none;'>Blog: https://laker.blog.csdn.net</a>"
+                + "<a href='https://laker.blog.csdn.net' style='color:#1a0dab; text-decoration:none;'>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_BLOG) + "</a>"
                 + "</div>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
-                + "<a href='https://github.com/lakernote' style='color:#1a0dab; text-decoration:none;'>GitHub: https://github.com/lakernote</a>"
+                + "<a href='https://github.com/lakernote' style='color:#1a0dab; text-decoration:none;'>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_GITHUB) + "</a>"
                 + "</div>"
                 + "<div style='font-size:9px;'>"
-                + "<a href='https://gitee.com/lakernote' style='color:#1a0dab; text-decoration:none;'>Gitee: https://gitee.com/lakernote</a>"
+                + "<a href='https://gitee.com/lakernote' style='color:#1a0dab; text-decoration:none;'>"
+                + I18nUtil.getMessage(MessageKeys.ABOUT_GITEE) + "</a>"
                 + "</div>"
                 + "</div>"
                 + "</body>"
                 + "</html>";
         JEditorPane editorPane = getJEditorPane(html);
-        JOptionPane.showMessageDialog(null, editorPane, "About EasyPostman", JOptionPane.PLAIN_MESSAGE);
+        JOptionPane.showMessageDialog(null, editorPane, I18nUtil.getMessage(MessageKeys.MENU_ABOUT_EASYPOSTMAN), JOptionPane.PLAIN_MESSAGE);
     }
 
     private static JEditorPane getJEditorPane(String html) {
@@ -210,12 +271,13 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                 try {
                     Desktop.getDesktop().browse(e.getURL().toURI());
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "Failed to open link: " + e.getURL(), "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, e.getURL()),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         // 直接用JEditorPane，不用滚动条，且自适应高度
-        editorPane.setPreferredSize(new Dimension(340, 360));
+        editorPane.setPreferredSize(new Dimension(310, 310));
         return editorPane;
     }
 
@@ -224,9 +286,9 @@ public class TopMenuBarPanel extends SingletonBasePanel {
      */
     private void checkUpdate() {
         // 显示正在检查更新的对话框
-        final JDialog loadingDialog = new JDialog((Frame) null, "检查更新", true);
+        final JDialog loadingDialog = new JDialog((Frame) null, I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE), true);
         loadingDialog.setResizable(false);
-        JLabel loadingLabel = new JLabel("正在检查更新...", SwingConstants.CENTER);
+        JLabel loadingLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_CHECKING), SwingConstants.CENTER);
         loadingLabel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
         loadingDialog.getContentPane().add(loadingLabel);
         loadingDialog.pack();
@@ -256,10 +318,10 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                             latestVersion = latestReleaseJson.getStr("tag_name");
                         }
                     } else {
-                        errorMsg = "网络错误，状态码：" + code;
+                        errorMsg = I18nUtil.getMessage(MessageKeys.ERROR_NETWORK, code);
                     }
                 } catch (Exception ex) {
-                    errorMsg = "检查更新失败：" + ex.getMessage();
+                    errorMsg = I18nUtil.getMessage(MessageKeys.ERROR_UPDATE_FAILED, ex.getMessage());
                 }
                 return null;
             }
@@ -269,22 +331,28 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                 loadingDialog.dispose();
                 String currentVersion = getCurrentVersion();
                 if (errorMsg != null) {
-                    JOptionPane.showMessageDialog(null, errorMsg, "检查更新", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, errorMsg, I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE), JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 if (latestVersion == null) {
-                    JOptionPane.showMessageDialog(null, "未获取到最新版本信息。", "检查更新", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.ERROR_NO_VERSION_INFO),
+                            I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE), JOptionPane.WARNING_MESSAGE);
                     return;
                 }
                 if (compareVersion(latestVersion, currentVersion) <= 0) {
-                    JOptionPane.showMessageDialog(null, "当前已是最新版本 (" + currentVersion + ")", "检查更新", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.UPDATE_LATEST_VERSION, currentVersion),
+                            I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE), JOptionPane.INFORMATION_MESSAGE);
                     return;
                 }
                 // 新版本弹窗
-                Object[] options = {"手动下载", "自动下载并安装", "取消"};
+                Object[] options = {
+                        I18nUtil.getMessage(MessageKeys.UPDATE_MANUAL_DOWNLOAD),
+                        I18nUtil.getMessage(MessageKeys.UPDATE_AUTO_DOWNLOAD),
+                        I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL)
+                };
                 int r = JOptionPane.showOptionDialog(null,
-                        "发现新版本：" + latestVersion + "\n请选择升级方式：",
-                        "检查更新",
+                        I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_FOUND, latestVersion),
+                        I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE),
                         JOptionPane.YES_NO_CANCEL_OPTION,
                         JOptionPane.INFORMATION_MESSAGE,
                         null,
@@ -294,7 +362,8 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                     try {
                         Desktop.getDesktop().browse(new URI(releaseUrl));
                     } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(null, "打开浏览器失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()),
+                                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                     }
                 } else if (r == 1) {
                     // 自动下载并安装
@@ -333,11 +402,12 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             }
         }
         if (installerUrl == null) {
-            JOptionPane.showMessageDialog(null, "未找到最新安装包（.msi/.dmg）下载链接。", "自动下载并安装", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, I18nUtil.getMessage("update.no_installer_found"),
+                    I18nUtil.getMessage("update.downloading"), JOptionPane.ERROR_MESSAGE);
             return;
         }
         // 优化下载弹窗UI，增加图标、剩余时间、重试按钮
-        JDialog downloadingDialog = new JDialog((Frame) null, "自动下载并安装", true);
+        JDialog downloadingDialog = new JDialog((Frame) null, I18nUtil.getMessage("update.downloading"), true);
         downloadingDialog.setResizable(false);
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -350,8 +420,8 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         panel.add(iconLabel);
         panel.add(Box.createVerticalStrut(8));
         // 状态提示
-        JLabel statusLabel = new JLabel("正在连接服务器...", SwingConstants.CENTER);
-        statusLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
+        JLabel statusLabel = new JLabel(I18nUtil.getMessage("update.connecting"), SwingConstants.CENTER);
+        statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
         statusLabel.setForeground(new Color(33, 37, 41));
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(statusLabel);
@@ -375,11 +445,11 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         gbc.insets = new Insets(0, 0, 0, 0);
-        JLabel sizeLabel = createInfoLabel("下载进度：-- / -- MB");
+        JLabel sizeLabel = createInfoLabel("-- / -- MB");
         infoPanel.add(sizeLabel, gbc);
-        JLabel speedLabel = createInfoLabel("下载速度：-- KB/s");
+        JLabel speedLabel = createInfoLabel("-- KB/s");
         infoPanel.add(speedLabel, gbc);
-        JLabel timeLabel = createInfoLabel("预估时间：-- s");
+        JLabel timeLabel = createInfoLabel("-- s");
         infoPanel.add(timeLabel, gbc);
         panel.add(Box.createVerticalStrut(8));
         panel.add(infoPanel);
@@ -387,13 +457,13 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JPanel btnPanel = new JPanel();
         btnPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 16, 0));
         btnPanel.setOpaque(false);
-        JButton cancelButton = new JButton("取消下载");
-        cancelButton.setFont(FontUtil.getDefaultFont(Font.PLAIN, 14));
+        JButton cancelButton = new JButton(I18nUtil.getMessage("update.cancel_download"));
+        cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
         cancelButton.setFocusPainted(false);
         cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        JButton retryButton = new JButton("重试");
-        retryButton.setFont(FontUtil.getDefaultFont(Font.PLAIN, 14));
+        JButton retryButton = new JButton(I18nUtil.getMessage("update.retry"));
+        retryButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
         retryButton.setFocusPainted(false);
         retryButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
         retryButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -427,7 +497,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    statusLabel.setText("正在连接服务器...");
+                    statusLabel.setText(I18nUtil.getMessage("update.connecting"));
                     URL downloadUrl = new URL(finalInstallerUrl);
                     String fileName = finalInstallerUrl.substring(finalInstallerUrl.lastIndexOf('/') + 1);
                     File tempFile = File.createTempFile("EasyPostman-", fileName);
@@ -456,7 +526,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                             lastTime = System.currentTimeMillis();
                             lastDownloaded = 0;
                             startTime = System.currentTimeMillis();
-                            statusLabel.setText("正在下载最新安装包...");
+                            statusLabel.setText(I18nUtil.getMessage("update.downloading"));
                             // 优化：只在内容变化时刷新，避免乱晃
                             String lastSizeStr = "";
                             String lastSpeedStr = "";
@@ -471,19 +541,21 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                                 // 定长字符串，始终补齐空格，防止乱晃
                                 String sizeStr;
                                 if (downloaded == 0 && totalSize == 0) {
-                                    sizeStr = "下载进度：-- / -- MB";
+                                    sizeStr = I18nUtil.getMessage("update.download_progress", "--", "-- MB");
                                 } else {
-                                    sizeStr = String.format("下载进度：%7.1f / %7.1f MB", downloaded / 1024.0 / 1024, totalSize / 1024.0 / 1024);
+                                    sizeStr = I18nUtil.getMessage("update.download_progress",
+                                            String.format("%.1f", downloaded / 1024.0 / 1024),
+                                            String.format("%.1f", totalSize / 1024.0 / 1024));
                                 }
-                                String speedStr = String.format("下载速度：%7.1f KB/s ", speed / 1024);
+                                String speedStr = I18nUtil.getMessage("update.download_speed", String.format("%.1f", speed / 1024));
                                 int remainSec;
                                 String timeStr;
                                 if (speed > 0 && totalSize > 0) {
                                     remainSec = (int) ((totalSize - downloaded) / speed);
-                                    timeStr = String.format("预估时间：%5d s ", remainSec);
+                                    timeStr = I18nUtil.getMessage("update.estimated_time", remainSec);
                                 } else {
                                     remainSec = -1;
-                                    timeStr = "预估时间：      s ";
+                                    timeStr = I18nUtil.getMessage("update.estimated_time", "--");
                                 }
                                 // 只有内容变化时才刷新，避免乱晃
                                 String finalLastSizeStr = lastSizeStr;
@@ -549,20 +621,22 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             protected void done() {
                 downloadingDialog.dispose();
                 if (cancelFlag[0]) {
-                    JOptionPane.showMessageDialog(null, "下载已取消。", "自动下载并安装", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(null, I18nUtil.getMessage("update.download_cancelled"),
+                            I18nUtil.getMessage("update.downloading"), JOptionPane.INFORMATION_MESSAGE);
                     return;
                 }
                 if (error != null) {
                     retryButton.setVisible(true);
-                    JOptionPane.showMessageDialog(null, error, "自动下载并安装", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, error, I18nUtil.getMessage("update.downloading"), JOptionPane.ERROR_MESSAGE);
                 } else if (downloadedFile != null) {
-                    String tip = "安装包已下载，是否立即打开安装？\n请确保已关闭所有 EasyPostman 程序，否则安装可能失败。\n点击“是”将自动关闭本程序并打开安装包。";
-                    int open = JOptionPane.showConfirmDialog(null, tip, "自动下载并安装", JOptionPane.YES_NO_OPTION);
+                    String tip = I18nUtil.getMessage("update.install_prompt");
+                    int open = JOptionPane.showConfirmDialog(null, tip, I18nUtil.getMessage("update.downloading"), JOptionPane.YES_NO_OPTION);
                     if (open == JOptionPane.YES_OPTION) {
                         try {
                             Desktop.getDesktop().open(downloadedFile);
                         } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(null, "打开安装包失败：" + ex.getMessage(), "自动下载并安装", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(null, I18nUtil.getMessage("update.open_installer_failed", ex.getMessage()),
+                                    I18nUtil.getMessage("update.downloading"), JOptionPane.ERROR_MESSAGE);
                         }
                         System.exit(0);
                     }
@@ -576,20 +650,20 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     // 错误友好提示
     private String getFriendlyError(Exception ex) {
         if (ex instanceof java.net.SocketTimeoutException) {
-            return "网络连接超时，请检查网络后重试。";
+            return I18nUtil.getMessage("error.network_timeout");
         } else if (ex instanceof java.net.UnknownHostException) {
-            return "无法连接服务器，请检查网络。";
+            return I18nUtil.getMessage("error.server_unreachable");
         } else if (ex instanceof java.io.FileNotFoundException) {
-            return "下载链接无效或文件不存在。";
+            return I18nUtil.getMessage("error.invalid_download_link");
         } else if (ex instanceof java.io.IOException) {
             if (ex.getMessage() != null && ex.getMessage().contains("No space left on device")) {
-                return "磁盘空间不足，请清理后重试。";
+                return I18nUtil.getMessage("error.disk_space_insufficient");
             } else if (ex.getMessage() != null && ex.getMessage().contains("Permission denied")) {
-                return "没有写入权限，请检查文件夹权限。";
+                return I18nUtil.getMessage("error.permission_denied");
             }
-            return "下载文件时发生IO异常: " + ex.getMessage();
+            return I18nUtil.getMessage("error.io_exception", ex.getMessage());
         }
-        return "自动下载失败：" + ex.getMessage();
+        return I18nUtil.getMessage("update.download_failed", ex.getMessage());
     }
 
     /**
@@ -649,7 +723,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
 
     private JLabel createInfoLabel(String text) {
         JLabel label = new JLabel(text, SwingConstants.LEFT);
-        label.setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
+        label.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
         label.setForeground(new Color(80, 80, 80));
         Dimension infoLabelSize = new Dimension(220, 24);
         label.setPreferredSize(infoLabelSize);
@@ -658,3 +732,4 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         return label;
     }
 }
+

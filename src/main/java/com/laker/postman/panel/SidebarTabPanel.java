@@ -8,7 +8,8 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.UserSettingsUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,6 +19,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.function.Supplier;
 
 /**
@@ -36,23 +39,36 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private boolean sidebarExpanded = false; // 侧边栏展开状态
     private int lastSelectedTabIndex = 0; // 记录上一个被选中的标签索引
 
+    // 支持的tab标题i18n key
+    private static final String[] TAB_TITLE_KEYS = {
+            "menu.collections",
+            "menu.environments",
+            "menu.functional",
+            "menu.performance",
+            "menu.history"
+    };
+    // 支持的语言
+    private static final Locale[] SUPPORTED_LOCALES = {Locale.CHINESE, Locale.ENGLISH};
+    // 记录最大tab标题宽度
+    private int maxTabTitleWidth = 90;
+
     @Override
     protected void initUI() {
         // 先读取侧边栏展开状态
         sidebarExpanded = UserSettingsUtil.isSidebarExpanded();
         setLayout(new BorderLayout());
         // 1. 创建标签页
-        tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
+        tabbedPane = new JTabbedPane(SwingConstants.LEFT);
         tabInfos = new ArrayList<>();
-        tabInfos.add(new TabInfo("Collections", new FlatSVGIcon("icons/collections.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.collections"), new FlatSVGIcon("icons/collections.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
-        tabInfos.add(new TabInfo("Environments", new FlatSVGIcon("icons/environments.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.environments"), new FlatSVGIcon("icons/environments.svg", 20, 20),
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
-        tabInfos.add(new TabInfo("Functional", new FlatSVGIcon("icons/functional.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.functional"), new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(FunctionalPanel.class)));
-        tabInfos.add(new TabInfo("Performance", new FlatSVGIcon("icons/performance.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.performance"), new FlatSVGIcon("icons/performance.svg", 20, 20),
                 () -> SingletonFactory.getInstance(PerformancePanel.class)));
-        tabInfos.add(new TabInfo("History", new FlatSVGIcon("icons/history.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.history"), new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
@@ -76,6 +92,42 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 注册关闭按钮事件
         consolePanel.setCloseAction(e -> setConsoleExpanded(false));
         setConsoleExpanded(false);
+
+        maxTabTitleWidth = getMaxTabTitleWidth();
+    }
+
+    /**
+     * 计算所有支持语言下tab标题的最大宽度
+     */
+    private int getMaxTabTitleWidth() {
+        int maxWidth = 0;
+        JLabel label = new JLabel();
+        Font font = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
+        label.setFont(font);
+        for (Locale locale : SUPPORTED_LOCALES) {
+            for (String key : TAB_TITLE_KEYS) {
+                String text = getI18nTextForLocale(key, locale);
+                FontMetrics fm = label.getFontMetrics(font);
+                int width = fm.stringWidth(text);
+                if (width > maxWidth) {
+                    maxWidth = width;
+                }
+            }
+        }
+        // 加padding
+        return maxWidth + 10; // 10px padding
+    }
+
+    /**
+     * 获取指定locale下的i18n文本
+     */
+    private String getI18nTextForLocale(String key, Locale locale) {
+        try {
+            ResourceBundle bundle = ResourceBundle.getBundle("messages", locale);
+            return bundle.getString(key);
+        } catch (Exception e) {
+            return key;
+        }
     }
 
     private void setConsoleExpanded(boolean expanded) {
@@ -106,9 +158,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     private void createConsoleLabel() {
-        consoleLabel = new JLabel("Console");
+        consoleLabel = new JLabel(I18nUtil.getMessage("console.title"));
         consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
-        consoleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+        consoleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
         consoleLabel.setFocusable(true); // 让label可聚焦
@@ -192,13 +244,13 @@ public class SidebarTabPanel extends SingletonBasePanel {
         };
 
         if (expanded) {
-            // 展开状态：显示图标和文字，保持固定高度
-            panel.setPreferredSize(new Dimension(81, 60));
+            // 展开状态：显示图标和文字，保持固定高度和最大宽度
+            panel.setPreferredSize(new Dimension(maxTabTitleWidth, 60));
             JLabel iconLabel = new JLabel(icon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             iconLabel.setPreferredSize(new Dimension(32, 32));
             JLabel titleLabel = new JLabel(title);
-            titleLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+            titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
             titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             panel.add(iconLabel);
             panel.add(Box.createVerticalStrut(2));
@@ -254,7 +306,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(81, 60));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText("Toggle Sidebar"); // 悬停提示
+            iconLabel.setToolTipText(I18nUtil.getMessage("sidebar.toggle")); // 悬停提示
             iconLabel.setPreferredSize(new Dimension(32, 32));
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
@@ -266,7 +318,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(30, 60));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText("Toggle Sidebar"); // 悬停提示
+            iconLabel.setToolTipText(I18nUtil.getMessage("sidebar.toggle")); // 悬停提示
             iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
@@ -308,6 +360,25 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         revalidate(); // 重新布局
         repaint(); // 重绘组件
+    }
+
+    /**
+     * 重新加载国际化文本，刷新tab标题和consoleLabel
+     */
+    public void reloadI18n() {
+        // 更新tabInfos的title
+        tabInfos.get(0).title = I18nUtil.getMessage("menu.collections");
+        tabInfos.get(1).title = I18nUtil.getMessage("menu.environments");
+        tabInfos.get(2).title = I18nUtil.getMessage("menu.functional");
+        tabInfos.get(3).title = I18nUtil.getMessage("menu.performance");
+        tabInfos.get(4).title = I18nUtil.getMessage("menu.history");
+        // 刷新tab头部
+        maxTabTitleWidth = getMaxTabTitleWidth();
+        updateTabHeaders();
+        // 刷新consoleLabel文本
+        if (consoleLabel != null) {
+            consoleLabel.setText(I18nUtil.getMessage("console.title"));
+        }
     }
 
     // Tab元数据结构，便于维护和扩展

@@ -4,7 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.util.CsvDataUtil;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -63,7 +63,7 @@ public class CsvDataPanel extends JPanel {
         // CSV 状态图标和文本
         JLabel csvIcon = new JLabel(new FlatSVGIcon("icons/csv.svg", 16, 16));
         csvStatusLabel = new JLabel("未加载 CSV 数据");
-        csvStatusLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 11));
+        csvStatusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         csvStatusLabel.setForeground(new Color(100, 100, 100));
 
         // CSV 清除按钮
@@ -167,7 +167,7 @@ public class CsvDataPanel extends JPanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
         JLabel titleLabel = new JLabel("CSV数据驱动测试");
-        titleLabel.setFont(FontUtil.getDefaultFont(Font.BOLD, 16));
+        titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
         JTextArea descArea = new JTextArea(
@@ -177,7 +177,7 @@ public class CsvDataPanel extends JPanel {
                         "  1. 在请求URL、Header、Body中直接使用 {{列名}} 占位符\n" +
                         "  2. 在脚本中使用 pm.variables.get('列名') 访问数据\n" +
                         "• 支持的编码：UTF-8");
-        descArea.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        descArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         descArea.setEditable(false);
         descArea.setOpaque(false);
         descArea.setLineWrap(true);
@@ -294,7 +294,7 @@ public class CsvDataPanel extends JPanel {
                 "<html>数据来源: <b>%s</b> | 行数: <b>%d</b></html>",
                 csvFile != null ? csvFile.getName() : "手动创建",
                 csvData.size()));
-        infoLabel.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        infoLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         topPanel.add(infoLabel, BorderLayout.CENTER);
 
         manageDialog.add(topPanel, BorderLayout.NORTH);
@@ -344,8 +344,8 @@ public class CsvDataPanel extends JPanel {
 
         csvTable.setFillsViewportHeight(true);
         csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
-        csvTable.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        csvTable.getTableHeader().setFont(FontUtil.getDefaultFont(Font.BOLD, 12));
+        csvTable.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        csvTable.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         csvTable.getTableHeader().setBackground(new Color(240, 242, 245));
         csvTable.getTableHeader().setForeground(new Color(33, 33, 33));
         csvTable.setGridColor(new Color(237, 237, 237)); // 使用更柔和的表格线颜色
@@ -520,7 +520,7 @@ public class CsvDataPanel extends JPanel {
                         • 双击单元格可直接编辑内容
                         • 支持两种使用方式：{{列名}} 占位符 或 pm.variables.get('列名')
                         • 例如：URL中使用 {{baseUrl}}/users 或脚本中使用 pm.variables.get('userId')""");
-        helpText.setFont(FontUtil.getDefaultFont(Font.PLAIN, 11));
+        helpText.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         helpText.setEditable(false);
         helpText.setOpaque(false);
         helpText.setLineWrap(true);

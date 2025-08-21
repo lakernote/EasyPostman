@@ -65,4 +65,11 @@ public class HttpRequestItem implements Serializable {
             this.jsonPath = jsonPath;
         }
     }
+
+    /**
+     * 判断该请求是否为新建（未命名）请求
+     */
+    public boolean isNewRequest() {
+        return name == null || name.trim().isEmpty();
+    }
 }

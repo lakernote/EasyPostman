@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.util.I18nUtil;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -19,27 +21,27 @@ public class AuthTabPanel extends JPanel {
     public AuthTabPanel() {
         setLayout(new BorderLayout());
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        top.add(new JLabel("Auth Type:"));
+        top.add(new JLabel(I18nUtil.getMessage("auth.type.label")));
         typeCombo = new JComboBox<>(new String[]{AUTH_TYPE_NONE, AUTH_TYPE_BASIC, AUTH_TYPE_BEARER});
         top.add(typeCombo);
         add(top, BorderLayout.NORTH);
         JPanel cardPanel = new JPanel(new CardLayout());
         // No Auth
         JPanel noAuthPanel = new JPanel();
-        noAuthPanel.add(new JLabel("This request does not use any authorization."));
+        noAuthPanel.add(new JLabel(I18nUtil.getMessage("auth.type.none.desc")));
         cardPanel.add(noAuthPanel, AUTH_TYPE_NONE);
         // Basic
         JPanel basicPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        basicPanel.add(new JLabel("Username:"));
+        basicPanel.add(new JLabel(I18nUtil.getMessage("auth.username")));
         usernameField = new JTextField(12);
         basicPanel.add(usernameField);
-        basicPanel.add(new JLabel("Password:"));
+        basicPanel.add(new JLabel(I18nUtil.getMessage("auth.password")));
         passwordField = new JTextField(12);
         basicPanel.add(passwordField);
         cardPanel.add(basicPanel, AUTH_TYPE_BASIC);
         // Bearer
         JPanel bearerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bearerPanel.add(new JLabel("Token:"));
+        bearerPanel.add(new JLabel(I18nUtil.getMessage("auth.token")));
         tokenField = new JTextField(24);
         bearerPanel.add(tokenField);
         cardPanel.add(bearerPanel, AUTH_TYPE_BEARER);

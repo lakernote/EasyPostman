@@ -1,7 +1,8 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -19,27 +20,27 @@ import java.text.NumberFormat;
 
 public class PerformanceTrendPanel extends SingletonBasePanel {
     private final TimeSeriesCollection trendDataset = new TimeSeriesCollection();
-    private final TimeSeries userCountSeries = new TimeSeries("Threads");
-    private final TimeSeries responseTimeSeries = new TimeSeries("Response Time(ms)");
-    private final TimeSeries qpsSeries = new TimeSeries("QPS");
-    private final TimeSeries errorPercentSeries = new TimeSeries("Error Rate(%)");
+    private final TimeSeries userCountSeries = new TimeSeries(I18nUtil.getMessage("performance.trend.threads"));
+    private final TimeSeries responseTimeSeries = new TimeSeries(I18nUtil.getMessage("performance.trend.response_time_ms"));
+    private final TimeSeries qpsSeries = new TimeSeries(I18nUtil.getMessage("performance.trend.qps"));
+    private final TimeSeries errorPercentSeries = new TimeSeries(I18nUtil.getMessage("performance.trend.error_rate_percent"));
 
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
         JPanel checkBoxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        JCheckBox threadsCheckBox = new JCheckBox("Threads", true);
-        JCheckBox responseTimeCheckBox = new JCheckBox("Response Time", true);
-        JCheckBox qpsCheckBox = new JCheckBox("QPS", true);
-        JCheckBox errorRateCheckBox = new JCheckBox("Error Rate", true);
+        JCheckBox threadsCheckBox = new JCheckBox(I18nUtil.getMessage("performance.trend.threads"), true);
+        JCheckBox responseTimeCheckBox = new JCheckBox(I18nUtil.getMessage("performance.trend.response_time"), true);
+        JCheckBox qpsCheckBox = new JCheckBox(I18nUtil.getMessage("performance.trend.qps"), true);
+        JCheckBox errorRateCheckBox = new JCheckBox(I18nUtil.getMessage("performance.trend.error_rate"), true);
         checkBoxPanel.add(threadsCheckBox);
         checkBoxPanel.add(responseTimeCheckBox);
         checkBoxPanel.add(qpsCheckBox);
         checkBoxPanel.add(errorRateCheckBox);
         JFreeChart trendChart = ChartFactory.createTimeSeriesChart(
-                "API Performance Trend",
-                "Time",
-                "Metric Value",
+                I18nUtil.getMessage("performance.trend.chart_title"),
+                I18nUtil.getMessage("performance.trend.time"),
+                I18nUtil.getMessage("performance.trend.metric_value"),
                 trendDataset,
                 true,
                 false,
@@ -57,12 +58,12 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         renderer.setSeriesPaint(3, errorPercent);
         plot.setDomainGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
         plot.setRangeGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
-        trendChart.getTitle().setFont(FontUtil.getDefaultFont(Font.PLAIN, 13));
-        if (trendChart.getLegend() != null) trendChart.getLegend().setItemFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getDomainAxis().setTickLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getDomainAxis().setLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getRangeAxis().setTickLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getRangeAxis().setLabelFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        trendChart.getTitle().setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        if (trendChart.getLegend() != null) trendChart.getLegend().setItemFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getDomainAxis().setTickLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getDomainAxis().setLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getRangeAxis().setTickLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getRangeAxis().setLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         plot.setBackgroundPaint(Color.WHITE);
         trendChart.setBackgroundPaint(Color.WHITE);
         plot.getRangeAxis().setAutoRange(true);
@@ -102,7 +103,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         chartPanel.setDisplayToolTips(true);
         chartPanel.setPreferredSize(new Dimension(300, 300));
         JPanel trendTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        trendTopPanel.add(new JLabel("Metrics:"));
+        trendTopPanel.add(new JLabel(I18nUtil.getMessage("performance.trend.metrics")));
         trendTopPanel.add(checkBoxPanel);
         add(trendTopPanel, BorderLayout.NORTH);
         add(chartPanel, BorderLayout.CENTER);
@@ -121,25 +122,25 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         if (qpsSelected) selectedCount++;
         if (errorRateSelected) selectedCount++;
         if (selectedCount == 0) {
-            plot.getRangeAxis().setLabel("No Metric Selected");
+            plot.getRangeAxis().setLabel(I18nUtil.getMessage("performance.trend.no_metric_selected"));
         } else if (selectedCount == 1) {
             if (threadsSelected) {
-                plot.getRangeAxis().setLabel("Threads");
+                plot.getRangeAxis().setLabel(I18nUtil.getMessage("performance.trend.threads"));
                 if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
                     numberAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());
                 }
             } else if (responseTimeSelected) {
-                plot.getRangeAxis().setLabel("Response Time (ms)");
+                plot.getRangeAxis().setLabel(I18nUtil.getMessage("performance.trend.response_time_ms"));
                 if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
                     numberAxis.setNumberFormatOverride(null);
                 }
             } else if (qpsSelected) {
-                plot.getRangeAxis().setLabel("QPS");
+                plot.getRangeAxis().setLabel(I18nUtil.getMessage("performance.trend.qps"));
                 if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
                     numberAxis.setNumberFormatOverride(null);
                 }
             } else {
-                plot.getRangeAxis().setLabel("Error Rate (%)");
+                plot.getRangeAxis().setLabel(I18nUtil.getMessage("performance.trend.error_rate_percent"));
                 NumberFormat percentFormat = NumberFormat.getNumberInstance();
                 percentFormat.setMaximumFractionDigits(2);
                 if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
@@ -147,7 +148,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 }
             }
         } else {
-            plot.getRangeAxis().setLabel("Metric Value");
+            plot.getRangeAxis().setLabel(I18nUtil.getMessage("performance.trend.metric_value"));
             if (plot.getRangeAxis() instanceof NumberAxis numberAxis) {
                 numberAxis.setNumberFormatOverride(null);
             }

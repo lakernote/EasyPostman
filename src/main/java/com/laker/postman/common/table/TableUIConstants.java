@@ -1,6 +1,6 @@
 package com.laker.postman.common.table;
 
-import com.laker.postman.common.constants.Colors;
+import com.laker.postman.common.constants.EasyPostManColors;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -72,9 +72,9 @@ public class TableUIConstants {
         } else if (isHovered) {
             return HOVER_COLOR;
         } else if (isEmpty) {
-            return Colors.EMPTY_CELL_YELLOW;
+            return EasyPostManColors.EMPTY_CELL_YELLOW;
         } else {
-            return Colors.EMPTY_CELL_YELLOW;
+            return EasyPostManColors.EMPTY_CELL_YELLOW;
         }
     }
 }

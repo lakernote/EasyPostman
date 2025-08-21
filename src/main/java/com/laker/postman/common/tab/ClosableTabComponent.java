@@ -17,6 +17,7 @@ public class ClosableTabComponent extends JPanel {
     private final JLabel label;
     private final String rawTitle;
     private boolean dirty = false;
+    private boolean newRequest = false;
     private final JTabbedPane tabbedPane;
     private final RequestEditSubPanel panel;
     private final Runnable saveCallback;
@@ -75,13 +76,22 @@ public class ClosableTabComponent extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (dirty) {
+        if (newRequest) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int r = 8;
             int x = getWidth() - r - 4;
             int y = 4;
-            g2.setColor(new Color(209, 47, 47, 131));
+            g2.setColor(new Color(255, 204, 0, 180)); // yellow
+            g2.fillOval(x, y, r, r);
+            g2.dispose();
+        } else if (dirty) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int r = 8;
+            int x = getWidth() - r - 4;
+            int y = 4;
+            g2.setColor(new Color(209, 47, 47, 131)); // red
             g2.fillOval(x, y, r, r);
             g2.dispose();
         }
@@ -193,6 +203,12 @@ public class ClosableTabComponent extends JPanel {
 
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
+        label.setText(rawTitle);
+        repaint();
+    }
+
+    public void setNewRequest(boolean newRequest) {
+        this.newRequest = newRequest;
         label.setText(rawTitle);
         repaint();
     }

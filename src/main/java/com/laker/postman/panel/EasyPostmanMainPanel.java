@@ -14,10 +14,6 @@ import java.awt.*;
 @Slf4j
 public class EasyPostmanMainPanel extends SingletonBasePanel {
 
-    // 单例模式，确保只有一个实例
-    private EasyPostmanMainPanel() {
-    }
-
     @Override
     protected void initUI() {
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
@@ -29,6 +25,6 @@ public class EasyPostmanMainPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-
+        // no-op
     }
 }

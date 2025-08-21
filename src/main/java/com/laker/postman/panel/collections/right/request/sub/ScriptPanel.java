@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
+import com.laker.postman.util.I18nUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.BasicCompletion;
@@ -39,20 +40,20 @@ public class ScriptPanel extends JPanel {
         loadEditorTheme(postscriptArea);
         addAutoCompletion(postscriptArea);
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("PreScript", new RTextScrollPane(prescriptArea)); // 用RTextScrollPane显示行号和代码折叠
-        tabbedPane.addTab("PostScript", new RTextScrollPane(postscriptArea));
+        tabbedPane.addTab(I18nUtil.getMessage("script.tab.prescript"), new RTextScrollPane(prescriptArea)); // 用RTextScrollPane显示行号和代码折叠
+        tabbedPane.addTab(I18nUtil.getMessage("script.tab.postscript"), new RTextScrollPane(postscriptArea));
 
         JTextArea helpArea = new JTextArea();
         helpArea.setEditable(false);
         helpArea.setLineWrap(true);
         helpArea.setWrapStyleWord(true);
-        helpArea.setText("PreScript/PostScript 可用变量：\nrequest, env, postman/pm, responseBody, responseHeaders, status, statusCode 等。\n可在脚本中通过 pm.environment.set('key', 'value') 设置环境变量。\n详细用法请参考文档或悬停提示。\n\n【Tab 补全说明】\n- 输入 pm. 后按 Tab 可快速补全 pm 相关方法，如 pm.environment.set。\n- 输入 console.log 后按 Tab 可快速插入日志代码片段。\n- 输入 JSON.parse(responseBody) 后按 Tab 可快速插入解析响应体的代码。\n- 还支持 if、for、function 等常用 JS 语句的补全。\n- 鼠标悬停在补全项上可查看详细说明。\n\n示例：\npm.environment.set('token', '123');\nconsole.log('调试信息');\nvar obj = JSON.parse(responseBody);\nif (statusCode === 200) {\n    // 处理成功\n}\n");
-        tabbedPane.addTab("Help", new JScrollPane(helpArea));
+        helpArea.setText(I18nUtil.getMessage("script.help.text"));
+        tabbedPane.addTab(I18nUtil.getMessage("script.tab.help"), new JScrollPane(helpArea));
 
         add(tabbedPane, BorderLayout.CENTER);
 
         // 右下角添加 Snippets 按钮
-        JButton snippetBtn = new JButton("Snippets");
+        JButton snippetBtn = new JButton(I18nUtil.getMessage("script.button.snippets"));
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         btnPanel.add(snippetBtn);
         add(btnPanel, BorderLayout.SOUTH);

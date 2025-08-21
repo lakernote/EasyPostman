@@ -16,6 +16,7 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanImport;
+import com.laker.postman.util.I18nUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -98,15 +99,15 @@ public class EnvironmentPanel extends SingletonBasePanel {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         importExportPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
-        importBtn.setText("Import");
-        importBtn.setToolTipText("导入环境变量");
+        importBtn.setText(I18nUtil.getMessage("env.button.import"));
+        importBtn.setToolTipText(I18nUtil.getMessage("env.button.import"));
         importBtn.setFocusPainted(false);
         importBtn.setBackground(Color.WHITE);
         importBtn.setIconTextGap(6);
         JPopupMenu importMenu = new JPopupMenu();
-        JMenuItem importEasyToolsItem = new JMenuItem("Import from EasyPostman", new FlatSVGIcon("icons/easy.svg", 20, 20));
+        JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage("env.menu.import_easy"), new FlatSVGIcon("icons/easy.svg", 20, 20));
         importEasyToolsItem.addActionListener(e -> importEnvironments());
-        JMenuItem importPostmanItem = new JMenuItem("Import from Postman", new FlatSVGIcon("icons/postman.svg", 20, 20));
+        JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage("env.menu.import_postman"), new FlatSVGIcon("icons/postman.svg", 20, 20));
         importPostmanItem.addActionListener(e -> importPostmanEnvironments());
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
@@ -114,7 +115,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         importExportPanel.add(importBtn);
 
         JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
-        exportBtn.setText("Export");
+        exportBtn.setText(I18nUtil.getMessage("env.button.export"));
         exportBtn.setFocusPainted(false);
         exportBtn.setBackground(Color.WHITE);
         exportBtn.setIconTextGap(6);
@@ -123,7 +124,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
 
         JButton saveVarButton = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
-        saveVarButton.setText("Save");
+        saveVarButton.setText(I18nUtil.getMessage("env.button.save"));
         saveVarButton.addActionListener(e -> saveVariables());
         saveVarButton.setFocusable(false); // 设置按钮不可获取焦点
         exportBtn.setBackground(Color.WHITE); // 设置背景颜色
@@ -170,7 +171,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
                     return; // 没有切换环境，不处理
                 }
                 if (isVariablesChanged()) {
-                    int option = JOptionPane.showConfirmDialog(this, "存在变量修改，是否保存？", "提示", JOptionPane.YES_NO_OPTION);
+                    int option = JOptionPane.showConfirmDialog(this, I18nUtil.getMessage("env.dialog.save_changes"), I18nUtil.getMessage("env.dialog.save_changes.title"), JOptionPane.YES_NO_OPTION);
                     if (option == JOptionPane.YES_OPTION) {
                         saveVariables();
                     } else {
@@ -211,14 +212,14 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
-        JMenuItem addItem = new JMenuItem("Add Environment");
+        JMenuItem addItem = new JMenuItem(I18nUtil.getMessage("env.button.add"));
         addItem.addActionListener(e -> addEnvironment());
         envListMenu.add(addItem);
         envListMenu.addSeparator();
-        JMenuItem renameItem = new JMenuItem("Rename");
-        JMenuItem copyItem = new JMenuItem("Duplicate"); // 复制菜单项
-        JMenuItem deleteItem = new JMenuItem("Delete");
-        JMenuItem exportPostmanItem = new JMenuItem("Export as Postman");
+        JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage("env.button.rename"));
+        JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage("env.button.duplicate")); // 复制菜单项
+        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage("env.button.delete"));
+        JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage("env.button.export_postman"));
         exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
         renameItem.addActionListener(e -> renameSelectedEnvironment());
         copyItem.addActionListener(e -> copySelectedEnvironment()); // 复制事件
@@ -367,8 +368,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 显示保存成功提示
         JOptionPane.showMessageDialog(this,
-                "环境变量保存成功！",
-                "保存成功",
+                I18nUtil.getMessage("env.dialog.save_success"),
+                I18nUtil.getMessage("env.dialog.save_success.title"),
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -377,7 +378,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
      */
     private void exportEnvironments() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("导出环境变量");
+        fileChooser.setDialogTitle(I18nUtil.getMessage("env.dialog.export.title"));
         fileChooser.setSelectedFile(new File("EasyPostman-Environments.json"));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
@@ -385,10 +386,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
                 java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
                 writer.write(JSONUtil.toJsonPrettyStr(envs));
-                JOptionPane.showMessageDialog(this, "导出成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.export.success"), I18nUtil.getMessage("env.dialog.export.title"), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 log.error("导出失败", ex);
-                JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.export.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -398,7 +399,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
      */
     private void importEnvironments() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Import EasyPostman Environments");
+        fileChooser.setDialogTitle(I18nUtil.getMessage("env.dialog.import_easy.title"));
         int userSelection = fileChooser.showOpenDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
@@ -408,7 +409,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 refreshListAndComboFromAdd(envs);
             } catch (Exception ex) {
                 log.error("Import Error", ex);
-                JOptionPane.showMessageDialog(this, "导入失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.import_easy.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -420,7 +421,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             environmentComboBox.addItem(new EnvironmentItem(env)); // 添加到下拉框
             environmentListModel.addElement(new EnvironmentItem(env)); // 添加到列表
         }
-        JOptionPane.showMessageDialog(this, "导入成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.import_easy.success"), I18nUtil.getMessage("env.dialog.import_easy.title"), JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -428,7 +429,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
      */
     private void importPostmanEnvironments() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Import Postman Environments");
+        fileChooser.setDialogTitle(I18nUtil.getMessage("env.dialog.import_postman.title"));
         int userSelection = fileChooser.showOpenDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             java.io.File fileToOpen = fileChooser.getSelectedFile();
@@ -439,18 +440,18 @@ public class EnvironmentPanel extends SingletonBasePanel {
                     // 导入新环境
                     refreshListAndComboFromAdd(envs);
                 } else {
-                    JOptionPane.showMessageDialog(this, "未解析到有效环境", "提示", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.import_postman.invalid"), I18nUtil.getMessage("env.dialog.import_postman.title"), JOptionPane.WARNING_MESSAGE);
                 }
             } catch (Exception ex) {
                 log.error("Postman环境导入失败", ex);
-                JOptionPane.showMessageDialog(this, "导入失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.import_postman.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     // 新增环境
     private void addEnvironment() {
-        String name = JOptionPane.showInputDialog(this, "请输入环境名称:", "新增环境", JOptionPane.PLAIN_MESSAGE);
+        String name = JOptionPane.showInputDialog(this, I18nUtil.getMessage("env.dialog.add.prompt"), I18nUtil.getMessage("env.dialog.add.title"), JOptionPane.PLAIN_MESSAGE);
         if (name != null && !name.trim().isEmpty()) {
             Environment env = new Environment(name.trim());
             env.setId("env-" + IdUtil.simpleUUID());
@@ -485,16 +486,16 @@ public class EnvironmentPanel extends SingletonBasePanel {
         EnvironmentItem item = environmentList.getSelectedValue();
         if (item == null) return;
         Environment env = item.getEnvironment();
-        Object result = JOptionPane.showInputDialog(this, "请输入新的环境名称:", "重命名环境", JOptionPane.PLAIN_MESSAGE, null, null, env.getName());
+        Object result = JOptionPane.showInputDialog(this, I18nUtil.getMessage("env.dialog.rename.prompt"), I18nUtil.getMessage("env.dialog.rename.title"), JOptionPane.PLAIN_MESSAGE, null, null, env.getName());
         if (result != null) {
             String newName = result.toString().trim();
             if (!newName.isEmpty() && !newName.equals(env.getName())) {
                 env.setName(newName);
                 EnvironmentService.saveEnvironment(env);
                 environmentListModel.setElementAt(new EnvironmentItem(env), environmentList.getSelectedIndex());
-                JOptionPane.showMessageDialog(this, "环境名称已更新", "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.rename.success"), I18nUtil.getMessage("env.dialog.save_changes.title"), JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "环境名称不能为空或未更改", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.rename.fail"), I18nUtil.getMessage("env.dialog.save_changes.title"), JOptionPane.WARNING_MESSAGE);
             }
         }
     }
@@ -504,8 +505,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (item == null) return;
         Environment env = item.getEnvironment();
         int confirm = JOptionPane.showConfirmDialog(this,
-                "确定要删除环境 \"" + env.getName() + "\" 吗?\n此操作不可恢复。",
-                "删除环境",
+                I18nUtil.getMessage("env.dialog.delete.prompt", env.getName()),
+                I18nUtil.getMessage("env.dialog.delete.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
         if (confirm == JOptionPane.YES_OPTION) {
@@ -521,7 +522,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (item == null) return;
         Environment env = item.getEnvironment();
         try {
-            Environment copy = new Environment(env.getName() + " Copy");
+            Environment copy = new Environment(env.getName() + I18nUtil.getMessage("env.name.copy_suffix"));
             copy.setId("env-" + IdUtil.simpleUUID());
             // 复制变量
             for (String key : env.getVariables().keySet()) {
@@ -537,7 +538,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             environmentList.setSelectedValue(copyItem, true);
         } catch (Exception ex) {
             log.error("复制环境失败", ex);
-            JOptionPane.showMessageDialog(this, "复制失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.copy.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -615,7 +616,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (item == null) return;
         Environment env = item.getEnvironment();
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("导出为Postman环境变量");
+        fileChooser.setDialogTitle(I18nUtil.getMessage("env.dialog.export_postman.title"));
         fileChooser.setSelectedFile(new File(env.getName() + "-postman-env.json"));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
@@ -624,10 +625,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 // 只导出当前环境为Postman格式
                 String postmanEnvJson = PostmanImport.toPostmanEnvironmentJson(env);
                 FileUtil.writeUtf8String(postmanEnvJson, fileToSave);
-                JOptionPane.showMessageDialog(this, "导出成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.export_postman.success"), I18nUtil.getMessage("env.dialog.export_postman.title"), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 log.error("导出Postman环境失败", ex);
-                JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.export_postman.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
             }
         }
     }

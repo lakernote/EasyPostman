@@ -1,14 +1,15 @@
 package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.constants.Colors;
+import com.laker.postman.common.constants.EasyPostManColors;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.FontUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JComponentUtils;
 
 import javax.swing.*;
@@ -23,7 +24,7 @@ import java.util.List;
  * 历史记录面板
  */
 public class HistoryPanel extends SingletonBasePanel {
-    public static final String EMPTY_BODY_HTML = "<html><body>Please select a record.</body></html>";
+    public static final String EMPTY_BODY_HTML = I18nUtil.getMessage("history.empty_body");
     private JList<Object> historyList;
     private JPanel historyDetailPanel;
     private JTextPane historyDetailPane;
@@ -39,11 +40,11 @@ public class HistoryPanel extends SingletonBasePanel {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY), // 外边框
                 BorderFactory.createEmptyBorder(4, 8, 4, 8) // 内边框
         ));
-        JLabel title = new JLabel("History");
-        title.setFont(FontUtil.getDefaultFont(Font.BOLD, 13));
+        JLabel title = new JLabel(I18nUtil.getMessage("menu.history"));
+        title.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
         JButton clearBtn = new JButton(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setMargin(new Insets(0, 4, 0, 4));
-        clearBtn.setBackground(Colors.PANEL_BACKGROUND);
+        clearBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
         clearBtn.setBorder(BorderFactory.createEmptyBorder());
         clearBtn.setFocusPainted(false);
         clearBtn.addActionListener(e -> clearRequestHistory());
@@ -68,7 +69,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 } else if (value instanceof RequestHistoryItem item) {
                     String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(item.requestTime));
                     label.setText(JComponentUtils.ellipsisText(String.format(" [%s] %s", item.method, item.url), list, 0, 45));
-                    label.setToolTipText("请求时间: " + timeStr);
+                    label.setToolTipText(I18nUtil.getMessage("history.request_time", timeStr));
                     label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }
                 if (isSelected && value instanceof RequestHistoryItem) {
@@ -88,7 +89,7 @@ public class HistoryPanel extends SingletonBasePanel {
         historyDetailPane = new JTextPane();
         historyDetailPane.setEditable(false);
         historyDetailPane.setContentType("text/html");
-        historyDetailPane.setFont(FontUtil.getDefaultFont(Font.PLAIN, 12));
+        historyDetailPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         JScrollPane detailScroll = new JScrollPane(historyDetailPane);
         detailScroll.setPreferredSize(new Dimension(340, 240));
         detailScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -195,9 +196,9 @@ public class HistoryPanel extends SingletonBasePanel {
             long t = item.requestTime;
             String groupLabel;
             if (t >= todayStart) {
-                groupLabel = "Today";
+                groupLabel = I18nUtil.getMessage("history.today");
             } else if (t >= yesterdayStart) {
-                groupLabel = "Yesterday";
+                groupLabel = I18nUtil.getMessage("history.yesterday");
             } else {
                 groupLabel = showFmt.format(new java.util.Date(t));
             }

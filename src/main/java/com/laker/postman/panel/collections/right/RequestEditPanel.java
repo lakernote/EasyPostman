@@ -10,6 +10,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.curl.CurlParser;
+import com.laker.postman.util.I18nUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
@@ -33,7 +34,8 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
  */
 @Slf4j
 public class RequestEditPanel extends SingletonBasePanel {
-    public static final String REQUEST_STRING = "New Request";
+    public static final String REQUEST_STRING = I18nUtil.getMessage("new.request");
+    public static final String PLUS_TAB = "+";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
@@ -52,6 +54,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
+        updateTabNew(subPanel, true); // 设置新建状态
         return subPanel;
     }
 
@@ -59,10 +62,10 @@ public class RequestEditPanel extends SingletonBasePanel {
     private void addPlusTab() {
         JPanel plusPanel = new JPanel(new BorderLayout());
         plusPanel.setOpaque(false);
-        JLabel createRequestLabel = new JLabel("Create a new request", JLabel.CENTER);
+        JLabel createRequestLabel = new JLabel(I18nUtil.getMessage("create.new.request"), SwingConstants.CENTER);
         createRequestLabel.setForeground(new Color(100, 100, 100));
         plusPanel.add(createRequestLabel, BorderLayout.CENTER);
-        tabbedPane.addTab("+", plusPanel);
+        tabbedPane.addTab(PLUS_TAB, plusPanel);
         // 使用新版 PlusTabComponent，无需点击回调
         PlusTabComponent plusTabComponent = new PlusTabComponent();
         tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, plusTabComponent);
@@ -71,7 +74,7 @@ public class RequestEditPanel extends SingletonBasePanel {
     // 判断是否为“+”Tab
     private boolean isPlusTab(int idx) {
         if (idx < 0 || idx >= tabbedPane.getTabCount()) return false;
-        return "+".equals(tabbedPane.getTitleAt(idx));
+        return PLUS_TAB.equals(tabbedPane.getTitleAt(idx));
     }
 
     // 获取当前激活的请求内容
@@ -153,8 +156,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             return;
         }
 
-        String name = currentItem.getName();
-        boolean isNewRequest = name == null;
+        boolean isNewRequest = currentItem.isNewRequest();
 
         // 查找请求集合面板
         RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
@@ -165,8 +167,8 @@ public class RequestEditPanel extends SingletonBasePanel {
         } else {
             // 已存在的请求：弹出确认对话框
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "是否更新当前请求?\n" + "名称: " + currentItem.getName(),
-                    "更新请求",
+                    I18nUtil.getMessage("update.current.request", currentItem.getName()),
+                    I18nUtil.getMessage("update.request"),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.QUESTION_MESSAGE);
 
@@ -185,14 +187,14 @@ public class RequestEditPanel extends SingletonBasePanel {
      */
     public static Object[] showGroupAndNameDialog(TreeModel groupTreeModel, String defaultName) {
         if (groupTreeModel == null || groupTreeModel.getRoot() == null) {
-            JOptionPane.showMessageDialog(null, "请先创建一个分组", "提示", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.select.group"), I18nUtil.getMessage("tip"), JOptionPane.INFORMATION_MESSAGE);
             return null;
         }
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
         JPanel namePanel = new JPanel(new BorderLayout(8, 0));
-        JLabel nameLabel = new JLabel("Request Name:");
+        JLabel nameLabel = new JLabel(I18nUtil.getMessage("request.name"));
         nameLabel.setPreferredSize(new Dimension(100, 28));
         JTextField nameField = new JTextField(20);
         nameField.setPreferredSize(new Dimension(180, 28));
@@ -204,7 +206,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         panel.add(namePanel);
         panel.add(Box.createVerticalStrut(12));
         JPanel groupPanel = new JPanel(new BorderLayout(8, 0));
-        JLabel groupLabel = new JLabel("Select Group:");
+        JLabel groupLabel = new JLabel(I18nUtil.getMessage("select.group"));
         groupLabel.setPreferredSize(new Dimension(100, 28));
         groupPanel.add(groupLabel, BorderLayout.WEST);
         JTree groupTree = getGroupTree(groupTreeModel);
@@ -215,16 +217,16 @@ public class RequestEditPanel extends SingletonBasePanel {
         groupPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
         groupPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(groupPanel);
-        int result = JOptionPane.showConfirmDialog(null, panel, "Save Request", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(null, panel, I18nUtil.getMessage("save.request"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(null, "请输入请求名称", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.enter.request.name"), I18nUtil.getMessage("tip"), JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             javax.swing.tree.TreePath selectedPath = groupTree.getSelectionPath();
             if (selectedPath == null) {
-                JOptionPane.showMessageDialog(null, "请选择分组", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.select.group"), I18nUtil.getMessage("tip"), JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             Object selectedGroupNode = selectedPath.getLastPathComponent();
@@ -236,7 +238,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                 }
             }
             if (groupObj == null) {
-                JOptionPane.showMessageDialog(null, "请选择有效的分组节点", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.select.valid.group"), I18nUtil.getMessage("tip"), JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             return new Object[]{groupObj, requestName};
@@ -357,7 +359,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                 subPanel.updateRequestForm(item);
             }
         }
-        JOptionPane.showMessageDialog(null, "请求已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, I18nUtil.getMessage("request.saved"), I18nUtil.getMessage("success"), JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -366,7 +368,7 @@ public class RequestEditPanel extends SingletonBasePanel {
     private void updateExistingRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
         if (!collectionPanel.updateExistingRequest(item)) {
             log.error("更新请求失败: {}", item.getId() + " - " + item.getName());
-            JOptionPane.showMessageDialog(this, "更新请求失败", "错误", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("update.request.failed"), I18nUtil.getMessage("error"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -377,6 +379,15 @@ public class RequestEditPanel extends SingletonBasePanel {
         Component tabComp = tabbedPane.getTabComponentAt(idx);
         if (tabComp instanceof ClosableTabComponent closable) {
             closable.setDirty(dirty);
+        }
+    }
+
+    public void updateTabNew(RequestEditSubPanel panel, boolean isNew) {
+        int idx = tabbedPane.indexOfComponent(panel);
+        if (idx < 0) return;
+        Component tabComp = tabbedPane.getTabComponentAt(idx);
+        if (tabComp instanceof ClosableTabComponent closable) {
+            closable.setNewRequest(isNew);
         }
     }
 
@@ -429,16 +440,24 @@ public class RequestEditPanel extends SingletonBasePanel {
         addNewTab(REQUEST_STRING); // 默认添加第一个请求Tab
         setupSaveShortcut();
         setupTabSelectionListener(); // 添加标签页切换监听器
-        // 添加鼠标监听，只在左键点击“+”Tab时新增
+        // 添加鼠标监听，只在左键点击"+"Tab时新增
         tabbedPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                int idx = tabbedPane.getSelectedIndex();
-                if (idx == tabbedPane.getTabCount() - 1 && isPlusTab(idx)) {
+                // 根据鼠标点击位置确定点击的标签页索引，而不是使用getSelectedIndex() 因为切换语言后可能不准了
+                int clickedTabIndex = tabbedPane.indexAtLocation(e.getX(), e.getY());
+
+                // 如果点击位置不在任何标签页上，直接返回
+                if (clickedTabIndex < 0) {
+                    return;
+                }
+
+                // 判断是否点击的是"+"Tab（最后一个标签页且是PlusTab）
+                if (clickedTabIndex == tabbedPane.getTabCount() - 1 && isPlusTab(clickedTabIndex)) {
                     // 检测剪贴板cURL
                     String curlText = getClipboardCurlText();
                     if (curlText != null) {
-                        int result = JOptionPane.showConfirmDialog(null, "检测到剪贴板有 cURL 命令，是否导入到新请求？", "导入cURL", JOptionPane.YES_NO_OPTION);
+                        int result = JOptionPane.showConfirmDialog(null, I18nUtil.getMessage("clipboard.curl.detected"), I18nUtil.getMessage("import.curl"), JOptionPane.YES_NO_OPTION);
                         if (result == JOptionPane.YES_OPTION) {
                             try {
                                 CurlRequest curlRequest = CurlParser.parse(curlText);
@@ -461,11 +480,11 @@ public class RequestEditPanel extends SingletonBasePanel {
                                     return;
                                 }
                             } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(null, "解析cURL出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("parse.curl.error", ex.getMessage()), I18nUtil.getMessage("error"), JOptionPane.ERROR_MESSAGE);
                             }
                         }
                     }
-                    addNewTab("New Request");
+                    addNewTab(I18nUtil.getMessage("new.request"));
                 }
             }
         });
@@ -507,7 +526,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         item.setName(requestName);
         item.setId(IdUtil.simpleUUID());
         collectionPanel.saveRequestToGroup(groupObj, item);
-        JOptionPane.showMessageDialog(null, "请求已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, I18nUtil.getMessage("request.saved"), I18nUtil.getMessage("success"), JOptionPane.INFORMATION_MESSAGE);
         return true;
     }
 }

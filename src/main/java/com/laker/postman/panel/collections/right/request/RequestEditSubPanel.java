@@ -21,6 +21,7 @@ import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.TimeDisplayUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,8 @@ import static com.laker.postman.service.http.HttpUtil.*;
  */
 @Slf4j
 public class RequestEditSubPanel extends JPanel {
+    public static final String TEXT_EVENT_STREAM = "text/event-stream";
+    public static final String ACCEPT = "Accept";
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyNameValueTablePanel paramsPanel;
@@ -117,7 +120,7 @@ public class RequestEditSubPanel extends JPanel {
 
         // 2.1 Params
         paramsPanel = new EasyNameValueTablePanel("Key", "Value");
-        reqTabs.addTab("Params", paramsPanel); // 2.1 添加参数选项卡
+        reqTabs.addTab(I18nUtil.getMessage("tab.params"), paramsPanel); // 2.1 添加参数选项卡
 
         // 添加Params面板的监听器，实现从Params到URL的联动
         paramsPanel.addTableModelListener(e -> {
@@ -128,24 +131,24 @@ public class RequestEditSubPanel extends JPanel {
 
         // 2.2 Auth 面板
         authTabPanel = new AuthTabPanel();
-        reqTabs.addTab("Authorization", authTabPanel);
+        reqTabs.addTab(I18nUtil.getMessage("tab.authorization"), authTabPanel);
 
         // 2.3 Headers
         headersPanel = new EasyNameValueTablePanel("Key", "Value");
-        reqTabs.addTab("Headers", headersPanel);
+        reqTabs.addTab(I18nUtil.getMessage("tab.request_headers"), headersPanel);
 
         // 2.4 Body 面板
         requestBodyPanel = new RequestBodyPanel();
-        reqTabs.addTab("Body", requestBodyPanel);
+        reqTabs.addTab(I18nUtil.getMessage("tab.request_body"), requestBodyPanel);
 
 
         // 2.5 脚本Tab
         scriptPanel = new ScriptPanel();
-        reqTabs.addTab("Scripts", scriptPanel);
+        reqTabs.addTab(I18nUtil.getMessage("tab.scripts"), scriptPanel);
 
         // 2.6 Cookie 面板
         CookieTablePanel cookiePanel = new CookieTablePanel();
-        reqTabs.addTab("Cookies", cookiePanel);
+        reqTabs.addTab(I18nUtil.getMessage("tab.cookies"), cookiePanel);
 
         // 3. 响应面板
         JPanel responsePanel = new JPanel(new BorderLayout());
@@ -153,7 +156,12 @@ public class RequestEditSubPanel extends JPanel {
         JPanel topResponseBar = new JPanel(new BorderLayout());
         // Tab栏（自定义按钮实现）
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        String[] tabNames = {"Body", "Headers", "Tests", "Network Log"};
+        String[] tabNames = {
+                I18nUtil.getMessage("tab.response_body"),
+                I18nUtil.getMessage("tab.response_headers"),
+                I18nUtil.getMessage("tab.tests"),
+                I18nUtil.getMessage("tab.network_log")
+        };
         JButton[] tabButtons = new JButton[tabNames.length];
         this.tabButtons = tabButtons;
         for (int i = 0; i < tabNames.length; i++) {
@@ -185,10 +193,10 @@ public class RequestEditSubPanel extends JPanel {
         JScrollPane testsScrollPane = new JScrollPane(testsPane);
         testsPanel.add(testsScrollPane, BorderLayout.CENTER);
         networkLogPanel = new NetworkLogPanel();
-        cardPanel.add(responseBodyPanel, "Body");
-        cardPanel.add(responseHeadersPanel, "Headers");
-        cardPanel.add(testsPanel, "Tests");
-        cardPanel.add(networkLogPanel, "Network Log");
+        cardPanel.add(responseBodyPanel, I18nUtil.getMessage("tab.response_body"));
+        cardPanel.add(responseHeadersPanel, I18nUtil.getMessage("tab.response_headers"));
+        cardPanel.add(testsPanel, I18nUtil.getMessage("tab.tests"));
+        cardPanel.add(networkLogPanel, I18nUtil.getMessage("tab.network_log"));
         responsePanel.add(cardPanel, BorderLayout.CENTER);
 
         // Tab按钮切换逻辑
@@ -204,7 +212,7 @@ public class RequestEditSubPanel extends JPanel {
             });
         }
         // 默认显示Body
-        ((CardLayout) cardPanel.getLayout()).show(cardPanel, "Body");
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, I18nUtil.getMessage("tab.response_body"));
         // 默认禁用响应区tab按钮
         setResponseTabButtonsEnable(tabButtons, false);
 
@@ -359,7 +367,7 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                    statusText = "发生错误: " + ex.getMessage();
+                    statusText = ex.getMessage();
                 }
                 return null;
             }
@@ -375,24 +383,24 @@ public class RequestEditSubPanel extends JPanel {
                     // 弹窗提示用户是否切换到SSE监听模式
                     SwingUtilities.invokeLater(() -> {
                         int result = JOptionPane.showConfirmDialog(RequestEditSubPanel.this,
-                                "检测到 SSE 响应，是否切换到 SSE 监听模式？\n同意后将自动在 Header 区域增加 Accept: text/event-stream。",
-                                "SSE切换提示",
+                                I18nUtil.getMessage("sse.switch.tip"),
+                                I18nUtil.getMessage("sse.switch.title"),
                                 JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE);
                         if (result == JOptionPane.YES_OPTION) {
                             // 检查 header 区域是否已存在 Accept: text/event-stream（忽略大小写）
                             boolean hasSseAccept = headersPanel.getMap().keySet().stream()
-                                    .anyMatch(k -> k != null && k.equalsIgnoreCase("Accept") &&
-                                            "text/event-stream".equalsIgnoreCase(headersPanel.getMap().get(k)));
+                                    .anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT) &&
+                                            TEXT_EVENT_STREAM.equalsIgnoreCase(headersPanel.getMap().get(k)));
                             if (!hasSseAccept) {
-                                headersPanel.addRow("Accept", "text/event-stream");
+                                headersPanel.addRow(ACCEPT, TEXT_EVENT_STREAM);
                             }
                             reqTabs.setSelectedComponent(headersPanel);
                             // 定位到headerpanel table的最后一行
                             headersPanel.scrollRectToVisible();
                             JOptionPane.showMessageDialog(RequestEditSubPanel.this,
-                                    "已自动添加 SSE 头部，即将重新发起请求。",
-                                    "操作提示",
+                                    I18nUtil.getMessage("sse.header.added"),
+                                    I18nUtil.getMessage("operation.tip"),
                                     JOptionPane.INFORMATION_MESSAGE);
                             sendRequest(null);
                         }
@@ -415,8 +423,8 @@ public class RequestEditSubPanel extends JPanel {
                 try {
                     if (!isSSERequest(req)) {
                         req.headers.remove("accept"); // 如果不是SSE请求，移除Accept头
-                        req.headers.remove("Accept");
-                        req.headers.put("Accept", "text/event-stream"); // 确保设置为SSE类型
+                        req.headers.remove(ACCEPT);
+                        req.headers.put(ACCEPT, TEXT_EVENT_STREAM); // 确保设置为SSE类型
                     }
                     startTime = System.currentTimeMillis();
                     resp = new HttpResponse();
@@ -448,9 +456,9 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                statusCodeLabel.setText("SSE连接失败: " + errorMsg);
+                                statusCodeLabel.setText(I18nUtil.getMessage("sse.failed", errorMsg));
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("SSE连接失败", r);
+                                updateUIForResponse(I18nUtil.getMessage("sse.failed", errorMsg), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -462,7 +470,7 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        statusCodeLabel.setText("SSE发生错误: " + ex.getMessage());
+                        statusCodeLabel.setText(I18nUtil.getMessage("sse.error", ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
                     });
                 }
@@ -509,36 +517,35 @@ public class RequestEditSubPanel extends JPanel {
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
                                 JOptionPane.showMessageDialog(null,
-                                        "WebSocket连接已建立，您可以开始发送消息。",
-                                        "WebSocket连接成功",
+                                        I18nUtil.getMessage("websocket.connected"),
+                                        I18nUtil.getMessage("websocket.success"),
                                         JOptionPane.INFORMATION_MESSAGE);
                             });
                             log.info("WebSocket连接已建立: {}", response.message());
-                            appendWebSocketMessage("WebSocket连接已建立: " + response.message());
+                            appendWebSocketMessage(WebSocketMsgType.CONNECTED, response.message());
                         }
 
                         @Override
                         public void onMessage(okhttp3.WebSocket webSocket, String text) {
-                            appendWebSocketMessage("收到消息: " + text);
+                            appendWebSocketMessage(WebSocketMsgType.RECEIVED, text);
                         }
 
                         @Override
                         public void onMessage(okhttp3.WebSocket webSocket, ByteString bytes) {
-                            appendWebSocketMessage("收到二进制消息: " + bytes.hex());
+                            appendWebSocketMessage(WebSocketMsgType.BINARY, bytes.hex());
                         }
-
 
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
                             log.info("closing WebSocket: code={}, reason={}", code, reason);
-                            appendWebSocketMessage("WebSocket正在关闭: " + code + ", " + reason);
+                            appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                             handleWebSocketClose();
                         }
 
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
                             log.info("closed WebSocket: code={}, reason={}", code, reason);
-                            appendWebSocketMessage("WebSocket已关闭: " + code + ", " + reason);
+                            appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                             handleWebSocketClose();
                         }
 
@@ -556,7 +563,7 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-                            appendWebSocketMessage("WebSocket连接失败: " + t.getMessage());
+                            appendWebSocketMessage(WebSocketMsgType.WARNING, t.getMessage());
                             if (response != null) {
                                 log.error("WebSocket连接失败: {},响应状态: {},响应头: {}", t.getMessage(), response.code(), response.headers(), t);
                             } else {
@@ -565,10 +572,10 @@ public class RequestEditSubPanel extends JPanel {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
-                                String statusMsg = response != null ? "WebSocket连接失败: " + t.getMessage() + " (状态: " + response.code() + ")" : "WebSocket连接失败: " + t.getMessage();
+                                String statusMsg = response != null ? I18nUtil.getMessage("websocket.failed", t.getMessage() + " (" + response.code() + ")") : I18nUtil.getMessage("websocket.failed", t.getMessage());
                                 statusCodeLabel.setText(statusMsg);
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse("WebSocket连接失败", resp);
+                                updateUIForResponse(I18nUtil.getMessage("websocket.failed", t.getMessage()), resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                         }
@@ -577,7 +584,7 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error("WebSocket连接异常: {}", ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        statusCodeLabel.setText("WebSocket发生错误: " + ex.getMessage());
+                        statusCodeLabel.setText(I18nUtil.getMessage("websocket.error", ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
                         requestBodyPanel.getWsSendButton().setEnabled(false);
                         requestBodyPanel.showWebSocketSendPanel(false);
@@ -601,40 +608,46 @@ public class RequestEditSubPanel extends JPanel {
         String msg = requestBodyPanel.getRawBody();
         if (currentWebSocket != null && msg != null && !msg.isBlank()) {
             currentWebSocket.send(msg); // 发送消息
-            appendWebSocketMessage("发送消息: " + msg);
+            appendWebSocketMessage(WebSocketMsgType.SENT, msg);
             requestBodyPanel.getBodyArea().setText(""); // 清空输入框
         }
     }
 
-    private void appendWebSocketMessage(String text) {
-        String formattedText = formatWebSocketMessage(text);
+    private void appendWebSocketMessage(WebSocketMsgType type, String text) {
+        String formattedText = formatWebSocketMessage(type, text);
         SwingUtilities.invokeLater(() -> responseBodyPanel.appendBodyText(formattedText));
     }
 
     /**
      * 格式化WebSocket消息，添加图标前缀
      *
+     * @param type    消息类型
      * @param message 原始消息
      * @return 格式化后的消息
      */
-    private String formatWebSocketMessage(String message) {
+    private String formatWebSocketMessage(WebSocketMsgType type, String message) {
         if (message == null) return "";
+        return I18nUtil.getMessage(type.iconKey) + message;
+    }
 
-        if (message.startsWith("WebSocket连接已建立: ")) {
-            return "🟢 " + message; // 连接图标
-        } else if (message.startsWith("收到消息: ")) {
-            return "📥 " + message; // 接收图标
-        } else if (message.startsWith("收到二进制消息: ")) {
-            return "📦 " + message; // 包图标
-        } else if (message.startsWith("发送消息: ")) {
-            return "🚀 " + message; // 发送图标，使用火箭图标代替发件箱图标
-        } else if (message.startsWith("WebSocket正在关闭: ") || message.startsWith("WebSocket已关闭: ")) {
-            return "🔴 " + message; // 关闭图标
-        } else if (message.contains("失败") || message.contains("错误")) {
-            return "⚠️ " + message; // 警告图标
-        } else {
-            return "ℹ️ " + message; // 信息图标（默认）
+    /**
+     * WebSocket消息类型及匹配逻辑
+     */
+    private enum WebSocketMsgType {
+        CONNECTED("ws.icon.connected"),
+        RECEIVED("ws.icon.received"),
+        BINARY("ws.icon.binary"),
+        SENT("ws.icon.sent"),
+        CLOSED("ws.icon.closed"),
+        WARNING("ws.icon.warning"),
+        INFO("ws.icon.info");
+
+        final String iconKey;
+
+        WebSocketMsgType(String iconKey) {
+            this.iconKey = iconKey;
         }
+
     }
 
     /**
@@ -662,10 +675,10 @@ public class RequestEditSubPanel extends JPanel {
             headersPanel.addRow("User-Agent", "EasyPostman HTTP Client");
         }
         // 判断是否已存在 Accept（忽略大小写）
-        boolean hasAccept = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase("Accept"));
+        boolean hasAccept = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT));
         if (!hasAccept) {
-            item.getHeaders().put("Accept", "*/*");
-            headersPanel.addRow("Accept", "*/*");
+            item.getHeaders().put(ACCEPT, "*/*");
+            headersPanel.addRow(ACCEPT, "*/*");
         }
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
@@ -842,7 +855,7 @@ public class RequestEditSubPanel extends JPanel {
         }
         currentWorker.cancel(true);
         requestLinePanel.setSendButtonToSend(this::sendRequest);
-        statusCodeLabel.setText("Status: Canceled");
+        statusCodeLabel.setText(I18nUtil.getMessage("status.canceled"));
         statusCodeLabel.setForeground(new Color(255, 140, 0));
         currentWorker = null;
     }
@@ -850,10 +863,10 @@ public class RequestEditSubPanel extends JPanel {
 
     // UI状态：请求中
     private void updateUIForRequesting() {
-        statusCodeLabel.setText("Status: Requesting...");
+        statusCodeLabel.setText(I18nUtil.getMessage("status.requesting"));
         statusCodeLabel.setForeground(new Color(255, 140, 0));
-        responseTimeLabel.setText("Duration: --");
-        responseSizeLabel.setText("ResponseSize: --");
+        responseTimeLabel.setText(String.format(I18nUtil.getMessage("status.duration"), "--"));
+        responseSizeLabel.setText(I18nUtil.getMessage("status.response_size"));
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
         networkLogPanel.clearLog();
         // 禁用响应区tab按钮
@@ -872,7 +885,7 @@ public class RequestEditSubPanel extends JPanel {
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
-            statusCodeLabel.setText("Status:" + statusText);
+            statusCodeLabel.setText(I18nUtil.getMessage("status.prefix", statusText));
             statusCodeLabel.setForeground(Color.RED);
             // 恢复 responseBodyPanel
             responseBodyPanel.setEnabled(true);
@@ -881,11 +894,11 @@ public class RequestEditSubPanel extends JPanel {
         responseHeadersPanel.setHeaders(resp.headers);
         setResponseBody(resp);
         Color statusColor = getStatusColor(resp.code);
-        statusCodeLabel.setText("Status: " + statusText);
+        statusCodeLabel.setText(I18nUtil.getMessage("status.prefix", statusText));
         statusCodeLabel.setForeground(statusColor);
-        responseTimeLabel.setText(String.format("Duration: %s", TimeDisplayUtil.formatElapsedTime(resp.costMs)));
+        responseTimeLabel.setText(String.format(I18nUtil.getMessage("status.duration"), TimeDisplayUtil.formatElapsedTime(resp.costMs)));
         int bytes = resp.bodySize;
-        responseSizeLabel.setText("ResponseSize: " + getSizeText(bytes));
+        responseSizeLabel.setText(I18nUtil.getMessage("status.response_size").replace("--", getSizeText(bytes)));
         // 恢复 responseBodyPanel
         responseBodyPanel.setEnabled(true);
     }
@@ -931,11 +944,11 @@ public class RequestEditSubPanel extends JPanel {
                 boolean allPassed = testResults.stream().allMatch(r -> r.passed);
                 String countText = "(" + testResults.size() + ")";
                 String color = allPassed ? "#009900" : "#d32f2f"; // 绿色/红色
-                String countHtml = "Tests<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
+                String countHtml = I18nUtil.getMessage("tab.tests") + "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
                 testsBtn.setText("<html>" + countHtml + "</html>");
                 testsBtn.setForeground(Color.BLACK); // 保持主色为黑色
             } else {
-                testsBtn.setText("Tests");
+                testsBtn.setText(I18nUtil.getMessage("tab.tests"));
                 testsBtn.setForeground(Color.BLACK); // 默认色
             }
         }

@@ -4,6 +4,8 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -39,8 +41,8 @@ public class ExitDialog {
         }
         if (hasUnsaved) { // If there are unsaved changes, prompt user to save
             int result = JOptionPane.showConfirmDialog(tabbedPane,
-                    "There are unsaved changes. Save all?",
-                    "Unsaved Changes",
+                    I18nUtil.getMessage(MessageKeys.EXIT_UNSAVED_CHANGES),
+                    I18nUtil.getMessage(MessageKeys.EXIT_UNSAVED_CHANGES_TITLE),
                     JOptionPane.YES_NO_CANCEL_OPTION,
                     JOptionPane.WARNING_MESSAGE);
             if (result == JOptionPane.CANCEL_OPTION) {  // User chose cancel, exit dialog
@@ -55,7 +57,10 @@ public class ExitDialog {
             }
             // Use invokeLater to ensure dialog order
             SwingUtilities.invokeLater(() -> {
-                int exitResult = JOptionPane.showConfirmDialog(null, "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
+                int exitResult = JOptionPane.showConfirmDialog(null,
+                        I18nUtil.getMessage(MessageKeys.EXIT_CONFIRM),
+                        I18nUtil.getMessage(MessageKeys.EXIT_TITLE),
+                        JOptionPane.YES_NO_OPTION);
                 if (exitResult != JOptionPane.YES_OPTION) {
                     return;
                 }
@@ -66,7 +71,10 @@ public class ExitDialog {
             return;
         }
         // No unsaved content, show exit confirmation directly
-        int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
+        int result = JOptionPane.showConfirmDialog(null,
+                I18nUtil.getMessage(MessageKeys.EXIT_CONFIRM),
+                I18nUtil.getMessage(MessageKeys.EXIT_TITLE),
+                JOptionPane.YES_NO_OPTION);
         if (result != JOptionPane.YES_OPTION) {
             return;
         }

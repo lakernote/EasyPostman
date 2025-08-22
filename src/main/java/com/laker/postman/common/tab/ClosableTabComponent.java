@@ -2,6 +2,8 @@ package com.laker.postman.common.tab;
 
 
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -99,16 +101,16 @@ public class ClosableTabComponent extends JPanel {
 
     private JPopupMenu getPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem closeCurrent = new JMenuItem("Close Current");
-        JMenuItem closeOthers = new JMenuItem("Close Others");
-        JMenuItem closeAll = new JMenuItem("Close All");
+        JMenuItem closeCurrent = new JMenuItem(I18nUtil.getMessage(MessageKeys.TAB_CLOSE_CURRENT));
+        JMenuItem closeOthers = new JMenuItem(I18nUtil.getMessage(MessageKeys.TAB_CLOSE_OTHERS));
+        JMenuItem closeAll = new JMenuItem(I18nUtil.getMessage(MessageKeys.TAB_CLOSE_ALL));
         closeCurrent.addActionListener(e -> {
             int idx = tabbedPane.indexOfComponent(panel);
             if (idx >= 0) {
                 if (panel.isModified()) {
                     int result = JOptionPane.showConfirmDialog(tabbedPane,
-                            "当前请求有未保存的更改，是否保存？",
-                            "未保存的更改",
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                             JOptionPane.YES_NO_CANCEL_OPTION,
                             JOptionPane.WARNING_MESSAGE);
                     if (result == JOptionPane.CANCEL_OPTION) return;
@@ -143,8 +145,8 @@ public class ClosableTabComponent extends JPanel {
                         int idx = tabbedPane.indexOfComponent(comp);
                         if (firstDirtyIdx == -1) firstDirtyIdx = idx;
                         int result = JOptionPane.showConfirmDialog(tabbedPane,
-                                "有未保存的更改，是否保存？\n将定位到该Tab。",
-                                "未保存的更改",
+                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_OTHERS),
+                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                                 JOptionPane.YES_NO_CANCEL_OPTION,
                                 JOptionPane.WARNING_MESSAGE);
                         if (result == JOptionPane.CANCEL_OPTION) {
@@ -178,8 +180,8 @@ public class ClosableTabComponent extends JPanel {
                         int idx = tabbedPane.indexOfComponent(comp);
                         if (firstDirtyIdx == -1) firstDirtyIdx = idx;
                         int result = JOptionPane.showConfirmDialog(tabbedPane,
-                                "有未保存的更改，是否保存？\n将定位到该Tab。",
-                                "未保存的更改",
+                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_ALL),
+                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                                 JOptionPane.YES_NO_CANCEL_OPTION,
                                 JOptionPane.WARNING_MESSAGE);
                         if (result == JOptionPane.CANCEL_OPTION) {

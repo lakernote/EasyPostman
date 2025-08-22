@@ -167,7 +167,6 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         } catch (Exception e) {
             log.warn("SidebarTabPanel reloadI18n failed", e);
         }
-        // 可以添加一个提示消息
         JOptionPane.showMessageDialog(null,
                 I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED),
                 I18nUtil.getMessage(MessageKeys.GENERAL_INFO),

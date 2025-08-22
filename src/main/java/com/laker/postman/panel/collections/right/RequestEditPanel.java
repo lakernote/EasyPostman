@@ -59,12 +59,100 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     // 添加"+"Tab
-    private void addPlusTab() {
+    public void addPlusTab() {
         JPanel plusPanel = new JPanel(new BorderLayout());
         plusPanel.setOpaque(false);
-        JLabel createRequestLabel = new JLabel(I18nUtil.getMessage("create.new.request"), SwingConstants.CENTER);
+        plusPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 设置手型光标
+
+        // 创建主要内容面板，使用垂直居中的布局
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+
+        // 添加垂直弹性空间，使内容在垂直方向居中
+        contentPanel.add(Box.createVerticalGlue());
+
+        // 添加加号图标
+        JLabel plusIcon = new JLabel();
+        try {
+            plusIcon.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS_CIRCLE, 32, new Color(100, 100, 100)));
+        } catch (Exception e) {
+            plusIcon.setText("+");
+            plusIcon.setFont(plusIcon.getFont().deriveFont(Font.BOLD, 24f));
+        }
+        plusIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+        plusIcon.setHorizontalAlignment(SwingConstants.CENTER);
+        plusIcon.setForeground(new Color(100, 100, 100));
+        contentPanel.add(plusIcon);
+
+        // 添加垂直间距
+        contentPanel.add(Box.createVerticalStrut(10));
+
+        // 添加主标题
+        JLabel createRequestLabel = new JLabel(I18nUtil.getMessage("create.new.request"));
+        createRequestLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        createRequestLabel.setHorizontalAlignment(SwingConstants.CENTER);
         createRequestLabel.setForeground(new Color(100, 100, 100));
-        plusPanel.add(createRequestLabel, BorderLayout.CENTER);
+        createRequestLabel.setFont(createRequestLabel.getFont().deriveFont(Font.BOLD, 14f));
+        contentPanel.add(createRequestLabel);
+
+        // 添加垂直间距
+        contentPanel.add(Box.createVerticalStrut(5));
+
+        // 添加提示文本
+        JLabel hintLabel = new JLabel("Click here to create a new request");
+        hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        hintLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        hintLabel.setForeground(new Color(150, 150, 150));
+        hintLabel.setFont(hintLabel.getFont().deriveFont(11f));
+        contentPanel.add(hintLabel);
+
+        // 添加垂直弹性空间，使内容在垂直方向居中
+        contentPanel.add(Box.createVerticalGlue());
+
+        // 将内容面板添加到中心位置
+        plusPanel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加鼠标悬停效果
+        plusPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                plusIcon.setForeground(new Color(65, 105, 225)); // 蓝色高亮
+                createRequestLabel.setForeground(new Color(65, 105, 225));
+                hintLabel.setForeground(new Color(100, 149, 237)); // 稍浅的蓝色
+                if (plusIcon.getIcon() != null) {
+                    try {
+                        plusIcon.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS_CIRCLE, 32, new Color(65, 105, 225)));
+                    } catch (Exception ex) {
+                        // 忽略图标设置错误
+                    }
+                }
+                plusPanel.repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                plusIcon.setForeground(new Color(100, 100, 100)); // 恢复原色
+                createRequestLabel.setForeground(new Color(100, 100, 100));
+                hintLabel.setForeground(new Color(150, 150, 150)); // 恢复原色
+                if (plusIcon.getIcon() != null) {
+                    try {
+                        plusIcon.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS_CIRCLE, 32, new Color(100, 100, 100)));
+                    } catch (Exception ex) {
+                        // 忽略图标设置错误
+                    }
+                }
+                plusPanel.repaint();
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    addNewTab(I18nUtil.getMessage("new.request"));
+                }
+            }
+        });
+
         tabbedPane.addTab(PLUS_TAB, plusPanel);
         // 使用新版 PlusTabComponent，无需点击回调
         PlusTabComponent plusTabComponent = new PlusTabComponent();
@@ -437,7 +525,6 @@ public class RequestEditPanel extends SingletonBasePanel {
         setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 去掉默认边框
         tabbedPane = new JTabbedPane();
         add(tabbedPane, BorderLayout.CENTER);
-        addNewTab(REQUEST_STRING); // 默认添加第一个请求Tab
         setupSaveShortcut();
         setupTabSelectionListener(); // 添加标签页切换监听器
         // 添加鼠标监听，只在左键点击"+"Tab时新增

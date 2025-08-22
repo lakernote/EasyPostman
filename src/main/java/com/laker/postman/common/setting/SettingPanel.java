@@ -1,6 +1,8 @@
 package com.laker.postman.common.setting;
 
 import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -40,7 +42,7 @@ public class SettingPanel extends SingletonBasePanel {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // ===== 请求设置面板 =====
-        JPanel requestPanel = createSectionPanel("请求设置");
+        JPanel requestPanel = createSectionPanel(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.anchor = GridBagConstraints.WEST;
@@ -50,8 +52,8 @@ public class SettingPanel extends SingletonBasePanel {
         // 响应体最大显示大小
         gbc.gridx = 0;
         gbc.gridy = 0;
-        JLabel maxBodySizeLabel = new JLabel("响应体最大显示大小 (KB):");
-        maxBodySizeLabel.setToolTipText("响应体内容最大显示多少 KB，超出将被截断");
+        JLabel maxBodySizeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_BODY_SIZE));
+        maxBodySizeLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_BODY_SIZE_TOOLTIP));
         requestPanel.add(maxBodySizeLabel, gbc);
 
         gbc.gridx = 1;
@@ -63,8 +65,8 @@ public class SettingPanel extends SingletonBasePanel {
         // 请求超时时间
         gbc.gridx = 0;
         gbc.gridy = 1;
-        JLabel requestTimeoutLabel = new JLabel("请求超时时间 (ms, 0=永不超时):");
-        requestTimeoutLabel.setToolTipText("接口请求超时时间，0 表示不限制");
+        JLabel requestTimeoutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TIMEOUT));
+        requestTimeoutLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TIMEOUT_TOOLTIP));
         requestPanel.add(requestTimeoutLabel, gbc);
 
         gbc.gridx = 1;
@@ -75,8 +77,8 @@ public class SettingPanel extends SingletonBasePanel {
         // 最大响应下载大小
         gbc.gridx = 0;
         gbc.gridy = 2;
-        JLabel maxDownloadSizeLabel = new JLabel("最大响应下载大小 (MB, 0=不限制):");
-        maxDownloadSizeLabel.setToolTipText("下载响应体最大允许大小，0 表示不限制");
+        JLabel maxDownloadSizeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE));
+        maxDownloadSizeLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE_TOOLTIP));
         requestPanel.add(maxDownloadSizeLabel, gbc);
 
         gbc.gridx = 1;
@@ -88,16 +90,16 @@ public class SettingPanel extends SingletonBasePanel {
         // 自动重定向设置
         gbc.gridx = 0;
         gbc.gridy = 3;
-        JLabel followRedirectsLabel = new JLabel("自动重定向 (Follow Redirects):");
-        followRedirectsLabel.setToolTipText("请求遇到重定向时是否自动跟随跳转");
+        JLabel followRedirectsLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_FOLLOW_REDIRECTS));
+        followRedirectsLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_FOLLOW_REDIRECTS_TOOLTIP));
         requestPanel.add(followRedirectsLabel, gbc);
 
         gbc.gridx = 1;
-        followRedirectsCheckBox = new JCheckBox("自动重定向", SettingManager.isFollowRedirects());
+        followRedirectsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_FOLLOW_REDIRECTS_CHECKBOX), SettingManager.isFollowRedirects());
         requestPanel.add(followRedirectsCheckBox, gbc);
 
         // ===== JMeter设置面板 =====
-        JPanel jmeterPanel = createSectionPanel("压测连接设置");
+        JPanel jmeterPanel = createSectionPanel(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE));
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.anchor = GridBagConstraints.WEST;
@@ -107,8 +109,8 @@ public class SettingPanel extends SingletonBasePanel {
         // 最大空闲连接数
         gbc.gridx = 0;
         gbc.gridy = 0;
-        JLabel jmeterMaxIdleLabel = new JLabel("最大空闲连接数:");
-        jmeterMaxIdleLabel.setToolTipText("线程池最大空闲连接数");
+        JLabel jmeterMaxIdleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_IDLE));
+        jmeterMaxIdleLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_IDLE_TOOLTIP));
         jmeterPanel.add(jmeterMaxIdleLabel, gbc);
 
         gbc.gridx = 1;
@@ -119,8 +121,8 @@ public class SettingPanel extends SingletonBasePanel {
         // 连接保活时间
         gbc.gridx = 0;
         gbc.gridy = 1;
-        JLabel jmeterKeepAliveLabel = new JLabel("连接保活时间 (秒):");
-        jmeterKeepAliveLabel.setToolTipText("连接最大保活时间，单位秒");
+        JLabel jmeterKeepAliveLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE));
+        jmeterKeepAliveLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP));
         jmeterPanel.add(jmeterKeepAliveLabel, gbc);
 
         gbc.gridx = 1;
@@ -129,7 +131,7 @@ public class SettingPanel extends SingletonBasePanel {
         jmeterPanel.add(jmeterKeepAliveField, gbc);
 
         // ===== 下载设置面板 =====
-        JPanel downloadPanel = createSectionPanel("下载设置");
+        JPanel downloadPanel = createSectionPanel(I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_TITLE));
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.anchor = GridBagConstraints.WEST;
@@ -140,16 +142,16 @@ public class SettingPanel extends SingletonBasePanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-        showDownloadProgressCheckBox = new JCheckBox("下载大文件时显示进度弹窗", SettingManager.isShowDownloadProgressDialog());
-        showDownloadProgressCheckBox.setToolTipText("下载大文件时弹出进度提示窗口");
+        showDownloadProgressCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_SHOW_PROGRESS), SettingManager.isShowDownloadProgressDialog());
+        showDownloadProgressCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_SHOW_PROGRESS_TOOLTIP));
         downloadPanel.add(showDownloadProgressCheckBox, gbc);
 
         // 进度弹窗阈值
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
-        JLabel downloadProgressDialogThresholdLabel = new JLabel("进度弹窗阈值 (MB):");
-        downloadProgressDialogThresholdLabel.setToolTipText("下载文件大于此阈值时弹窗");
+        JLabel downloadProgressDialogThresholdLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_THRESHOLD));
+        downloadProgressDialogThresholdLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_THRESHOLD_TOOLTIP));
         downloadPanel.add(downloadProgressDialogThresholdLabel, gbc);
 
         gbc.gridx = 1;
@@ -168,7 +170,7 @@ public class SettingPanel extends SingletonBasePanel {
         });
 
         // ===== 通用设置面板 =====
-        JPanel generalPanel = createSectionPanel("通用设置");
+        JPanel generalPanel = createSectionPanel(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_TITLE));
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.anchor = GridBagConstraints.WEST;
@@ -178,8 +180,8 @@ public class SettingPanel extends SingletonBasePanel {
         // 历史记录数量
         gbc.gridx = 0;
         gbc.gridy = 0;
-        JLabel maxHistoryCountLabel = new JLabel("最大历史记录数量:");
-        maxHistoryCountLabel.setToolTipText("保存的最大历史记录条数");
+        JLabel maxHistoryCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_MAX_HISTORY));
+        maxHistoryCountLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP));
         generalPanel.add(maxHistoryCountLabel, gbc);
 
         gbc.gridx = 1;
@@ -204,8 +206,8 @@ public class SettingPanel extends SingletonBasePanel {
 
         // 创建按钮面板
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        saveBtn = new JButton("保存");
-        cancelBtn = new JButton("取消");
+        saveBtn = new JButton(I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_SAVE));
+        cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_CANCEL));
 
         // 美化按钮
         saveBtn.setPreferredSize(new Dimension(100, 30));
@@ -252,13 +254,13 @@ public class SettingPanel extends SingletonBasePanel {
         validators.put(maxHistoryCountField, s -> isInteger(s) && Integer.parseInt(s) > 0);
 
         // 设置错误消息
-        errorMessages.put(maxBodySizeField, "响应体大小不能小于0");
-        errorMessages.put(requestTimeoutField, "超时时间不能小于0");
-        errorMessages.put(maxDownloadSizeField, "下载大小不能小于0");
-        errorMessages.put(jmeterMaxIdleField, "最大连接数必须大于0");
-        errorMessages.put(jmeterKeepAliveField, "连接保活时间必须大于0");
-        errorMessages.put(downloadProgressDialogThresholdField, "进度弹窗阈值不能小于0");
-        errorMessages.put(maxHistoryCountField, "历史记录数量必须大于0");
+        errorMessages.put(maxBodySizeField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_BODY_SIZE_ERROR));
+        errorMessages.put(requestTimeoutField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_TIMEOUT_ERROR));
+        errorMessages.put(maxDownloadSizeField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_DOWNLOAD_SIZE_ERROR));
+        errorMessages.put(jmeterMaxIdleField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR));
+        errorMessages.put(jmeterKeepAliveField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_KEEP_ALIVE_ERROR));
+        errorMessages.put(downloadProgressDialogThresholdField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_THRESHOLD_ERROR));
+        errorMessages.put(maxHistoryCountField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_HISTORY_ERROR));
 
         // 添加实时验证
         DocumentListener validationListener = new DocumentListener() {
@@ -371,7 +373,7 @@ public class SettingPanel extends SingletonBasePanel {
 
             if (text.isEmpty() || !entry.getValue().test(text)) {
                 highlightError(field);
-                JOptionPane.showMessageDialog(this, errorMessages.get(field), "验证错误", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, errorMessages.get(field), I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_TITLE), JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -396,14 +398,13 @@ public class SettingPanel extends SingletonBasePanel {
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
             SettingManager.setMaxHistoryCount(maxHistoryCount);
 
-            JOptionPane.showMessageDialog(this, "设置已保存", "成功", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS), I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JDialog dialog) {
                 dialog.dispose();
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "请输入有效的数字", "错误", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_INVALID_NUMBER), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 }
-

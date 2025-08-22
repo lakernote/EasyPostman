@@ -18,6 +18,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +45,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     private CsvDataPanel csvDataPanel;
 
     // 批量执行历史记录
-    private BatchExecutionHistory executionHistory;
+    private transient BatchExecutionHistory executionHistory;
     private JTabbedPane mainTabbedPane;
     private ExecutionResultsPanel resultsPanel;
 
@@ -61,10 +62,10 @@ public class FunctionalPanel extends SingletonBasePanel {
         JPanel executionPanel = new JPanel(new BorderLayout());
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
-        mainTabbedPane.addTab(I18nUtil.getMessage("functional.tab.request_config"), new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
+        mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_REQUEST_CONFIG), new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
 
         resultsPanel = new ExecutionResultsPanel();
-        mainTabbedPane.addTab(I18nUtil.getMessage("functional.tab.execution_results"), new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
+        mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_EXECUTION_RESULTS), new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
 
         add(mainTabbedPane, BorderLayout.CENTER);
     }
@@ -130,7 +131,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         btnPanel.setOpaque(false);
 
-        JButton loadBtn = new JButton(I18nUtil.getMessage("button.load"));
+        JButton loadBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_LOAD));
         loadBtn.setIcon(new FlatSVGIcon("icons/load.svg"));
         loadBtn.setPreferredSize(new Dimension(90, 28));
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
@@ -154,7 +155,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         });
         btnPanel.add(stopBtn);
 
-        JButton clearBtn = new JButton(I18nUtil.getMessage("button.clear"));
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setPreferredSize(new Dimension(95, 28));
         clearBtn.addActionListener(e -> {
@@ -175,7 +176,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         int rowCount = tableModel.getRowCount();
         int selectedCount = (int) IntStream.range(0, rowCount).mapToObj(i -> tableModel.getRow(i)).filter(row -> row != null && row.selected).count();
         if (selectedCount == 0) {
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("functional.msg.no_runnable_request"), I18nUtil.getMessage("general.tip"), JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -184,8 +185,8 @@ public class FunctionalPanel extends SingletonBasePanel {
         if (csvDataPanel.hasData()) {
             iterations = csvDataPanel.getRowCount();
             int response = JOptionPane.showConfirmDialog(this,
-                    I18nUtil.getMessage("functional.msg.csv_detected", iterations),
-                    I18nUtil.getMessage("functional.msg.csv_title"),
+                    I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_CSV_DETECTED, iterations),
+                    I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_CSV_TITLE),
                     JOptionPane.YES_NO_OPTION);
             if (response != JOptionPane.YES_OPTION) {
                 iterations = 1; // 用户选择不使用 CSV 数据
@@ -229,72 +230,95 @@ public class FunctionalPanel extends SingletonBasePanel {
     private void executeBatchRequestsWithCsv(int rowCount, int selectedCount, int iterations) {
         int totalFinished = 0;
 
-        for (int iteration = 0; iteration < iterations; iteration++) {
-            if (isStopped) break; // 检查停止标志
-
+        for (int iteration = 0; iteration < iterations && !isStopped; iteration++) {
             // 获取当前迭代的 CSV 数据
-            Map<String, String> currentCsvRow = null;
-            if (csvDataPanel.hasData() && iteration < csvDataPanel.getRowCount()) {
-                currentCsvRow = csvDataPanel.getRowData(iteration);
-            }
+            Map<String, String> currentCsvRow = getCsvDataForIteration(iteration);
 
             // 创建当前迭代的结果记录
             IterationResult iterationResult = new IterationResult(iteration, currentCsvRow);
 
-            for (int i = 0; i < rowCount; i++) {
-                if (isStopped) break; // 检查停止标志
+            totalFinished = processIterationRequests(rowCount, selectedCount, iterations, totalFinished, iterationResult, currentCsvRow);
 
-                RunnerRowData row = tableModel.getRow(i);
-                if (row == null || row.requestItem == null || row.preparedRequest == null) {
-                    log.warn("Row {} is invalid, skipping execution", i);
-                    continue; // 跳过无效行
-                }
-
-                if (row.selected) {
-                    BatchResult result = executeSingleRequestWithCsv(row, currentCsvRow);
-
-                    // 记录请求结果到执行历史
-                    RequestResult requestResult = new RequestResult(
-                            row.requestItem.getName(),
-                            row.requestItem.getMethod(),
-                            row.preparedRequest.url,
-                            result.req,
-                            result.resp,
-                            result.cost,
-                            result.status,
-                            result.assertion,
-                            row.testResults
-                    );
-                    iterationResult.addRequestResult(requestResult);
-
-                    totalFinished++;
-                    int finalTotalFinished = totalFinished;
-                    SwingUtilities.invokeLater(() -> {
-                        // 更新进度标签显示
-                        progressLabel.setText(finalTotalFinished + "/" + (selectedCount * iterations));
-                    });
-                }
-            }
+            if (isStopped) break;
 
             // 完成当前迭代并添加到历史记录
             iterationResult.complete();
             executionHistory.addIteration(iterationResult);
 
             // 实时更新结果面板
-            SwingUtilities.invokeLater(() -> {
-                resultsPanel.updateExecutionHistory(executionHistory);
-            });
+            SwingUtilities.invokeLater(() -> resultsPanel.updateExecutionHistory(executionHistory));
         }
 
         // 完成整个批量执行
         executionHistory.complete();
+        finalizeExecution();
+    }
 
+    private Map<String, String> getCsvDataForIteration(int iteration) {
+        if (csvDataPanel.hasData() && iteration < csvDataPanel.getRowCount()) {
+            return csvDataPanel.getRowData(iteration);
+        }
+        return java.util.Collections.emptyMap();
+    }
+
+    private int processIterationRequests(int rowCount, int selectedCount, int iterations,
+                                         int totalFinished, IterationResult iterationResult,
+                                         Map<String, String> currentCsvRow) {
+        int finished = totalFinished;
+
+        for (int i = 0; i < rowCount && !isStopped; i++) {
+            RunnerRowData row = tableModel.getRow(i);
+
+            if (!isValidRow(row)) {
+                continue;
+            }
+
+            if (row.selected) {
+                finished = executeAndRecordRequest(row, currentCsvRow, iterationResult, finished, selectedCount, iterations);
+            }
+        }
+
+        return finished;
+    }
+
+    private boolean isValidRow(RunnerRowData row) {
+        if (row == null || row.requestItem == null || row.preparedRequest == null) {
+            log.warn("Row is invalid, skipping execution");
+            return false;
+        }
+        return true;
+    }
+
+    private int executeAndRecordRequest(RunnerRowData row, Map<String, String> currentCsvRow,
+                                        IterationResult iterationResult, int totalFinished,
+                                        int selectedCount, int iterations) {
+        BatchResult result = executeSingleRequestWithCsv(row, currentCsvRow);
+
+        // 记录请求结果到执行历史
+        RequestResult requestResult = new RequestResult(
+                row.requestItem.getName(),
+                row.requestItem.getMethod(),
+                row.preparedRequest.url,
+                result.req,
+                result.resp,
+                result.cost,
+                result.status,
+                result.assertion,
+                row.testResults
+        );
+        iterationResult.addRequestResult(requestResult);
+
+        int newTotalFinished = totalFinished + 1;
+        SwingUtilities.invokeLater(() -> progressLabel.setText(newTotalFinished + "/" + (selectedCount * iterations)));
+
+        return newTotalFinished;
+    }
+
+    private void finalizeExecution() {
         SwingUtilities.invokeLater(() -> {
             runBtn.setEnabled(true);
             // 停止计时器
-            if (executionTimer != null && executionTimer.isRunning()) {
-                executionTimer.stop();
-            }
+            stopExecutionTimer();
 
             // 最终更新结果面板
             resultsPanel.updateExecutionHistory(executionHistory);
@@ -304,6 +328,12 @@ public class FunctionalPanel extends SingletonBasePanel {
                 mainTabbedPane.setSelectedIndex(1); // 切换到执行结果面板
             }
         });
+    }
+
+    private void stopExecutionTimer() {
+        if (executionTimer != null && executionTimer.isRunning()) {
+            executionTimer.stop();
+        }
     }
 
     private static class BatchResult {
@@ -347,13 +377,13 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         HttpResponse resp = null;
         String status;
-        String assertion = I18nUtil.getMessage("functional.status.not_executed");
+        String assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_NOT_EXECUTED);
         if (!preOk) {
-            status = I18nUtil.getMessage("functional.status.pre_script_failed");
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED);
         } else if (HttpUtil.isSSERequest(req)) {
-            status = I18nUtil.getMessage("functional.status.sse_batch_not_supported");
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED);
         } else if (HttpUtil.isWebSocketRequest(req)) {
-            status = I18nUtil.getMessage("functional.status.ws_batch_not_supported");
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED);
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
@@ -504,7 +534,8 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-
+        // No listeners to register for this panel
+        // Event handling is done through button action listeners in createButtonPanel()
     }
 
     // 弹出选择请求/分组对话框

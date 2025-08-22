@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance.threadgroup;
 
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -55,7 +57,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 顶部模式选择区域
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        topPanel.add(new JLabel("线程模式:"));
+        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)));
         modeComboBox = new JComboBox<>(ThreadGroupData.ThreadMode.values());
         modeComboBox.setPreferredSize(new Dimension(150, 28));
         topPanel.add(modeComboBox);
@@ -66,7 +68,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 中间卡片布局，用于切换不同模式的配置面板
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
-        cardPanel.setPreferredSize(new Dimension(350, 150));
+        // 动态调整配置面板大小以适应不同语言的标签长度
+        int configPanelWidth = I18nUtil.isChinese() ? 380 : 480;  // 英文需要更多空间
+        cardPanel.setPreferredSize(new Dimension(configPanelWidth, 150));
 
         // 初始化所有控件和面板
         // 1. 固定模式面板
@@ -76,7 +80,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         fixedLoopsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
         fixedLoopsSpinner.setPreferredSize(new Dimension(80, 28));
-        useTimeCheckBox = new JCheckBox("按时间");
+        useTimeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USE_TIME));
         durationSpinner = new JSpinner(new SpinnerNumberModel(60, 1, 86400, 10));
         durationSpinner.setPreferredSize(new Dimension(80, 28));
 
@@ -158,14 +162,18 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 预览图表区域
         previewPanel = new ThreadLoadPreviewPanel();
-        previewPanel.setPreferredSize(new Dimension(500, 180));
-        previewPanel.setBorder(BorderFactory.createTitledBorder("负载模式预览"));
+        // 在英文环境下适当调整预览面板的最小尺寸
+        int previewPanelWidth = I18nUtil.isChinese() ? 500 : 450;  // 英文环境给配置面板更多空间
+        previewPanel.setPreferredSize(new Dimension(previewPanelWidth, 180));
+        previewPanel.setMinimumSize(new Dimension(400, 180));  // 设置最小尺寸防止过度压缩
+        previewPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TITLE)));
 
         // 左侧配置区包装在一个面板中，以便控制布局
         JPanel configPanel = new JPanel(new BorderLayout());
         configPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
         configPanel.add(cardPanel, BorderLayout.NORTH);
-        configPanel.setPreferredSize(new Dimension(400, 180));
+        // 动态调整配置面板宽度以匹配卡片面板
+        configPanel.setPreferredSize(new Dimension(configPanelWidth, 180));
 
         // 添加到主面板
         mainPanel.add(configPanel, BorderLayout.WEST);
@@ -190,13 +198,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
-        fixedPanel.add(new JLabel("用户数:", SwingConstants.RIGHT), gbc);
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         fixedPanel.add(fixedNumThreadsSpinner, gbc);
 
         gbc.gridx = 2;
-        fixedPanel.add(new JLabel("执行方式:", SwingConstants.RIGHT), gbc);
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_MODE), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         fixedPanel.add(useTimeCheckBox, gbc);
@@ -204,13 +212,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第二行
         gbc.gridx = 0;
         gbc.gridy = 1;
-        fixedPanel.add(new JLabel("循环次数:", SwingConstants.RIGHT), gbc);
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_LOOPS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         fixedPanel.add(fixedLoopsSpinner, gbc);
 
         gbc.gridx = 2;
-        fixedPanel.add(new JLabel("持续时间(秒):", SwingConstants.RIGHT), gbc);
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_DURATION), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         fixedPanel.add(durationSpinner, gbc);
@@ -226,13 +234,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第一行
         gbc.gridx = 0;
         gbc.gridy = 0;
-        rampUpPanel.add(new JLabel("起始用户数:", SwingConstants.RIGHT), gbc);
+        rampUpPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_RAMPUP_START_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         rampUpPanel.add(rampUpStartThreadsSpinner, gbc);
 
         gbc.gridx = 2;
-        rampUpPanel.add(new JLabel("最终用户数:", SwingConstants.RIGHT), gbc);
+        rampUpPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_RAMPUP_END_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         rampUpPanel.add(rampUpEndThreadsSpinner, gbc);
@@ -240,13 +248,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第二行
         gbc.gridx = 0;
         gbc.gridy = 1;
-        rampUpPanel.add(new JLabel("递增时间(秒):", SwingConstants.RIGHT), gbc);
+        rampUpPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_RAMPUP_RAMP_TIME), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         rampUpPanel.add(rampUpTimeSpinner, gbc);
 
         gbc.gridx = 2;
-        rampUpPanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+        rampUpPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_RAMPUP_TEST_DURATION), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         rampUpPanel.add(rampUpDurationSpinner, gbc);
@@ -262,13 +270,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第一行
         gbc.gridx = 0;
         gbc.gridy = 0;
-        spikePanel.add(new JLabel("最小用户数:", SwingConstants.RIGHT), gbc);
+        spikePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_SPIKE_MIN_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         spikePanel.add(spikeMinThreadsSpinner, gbc);
 
         gbc.gridx = 2;
-        spikePanel.add(new JLabel("最大用户数:", SwingConstants.RIGHT), gbc);
+        spikePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_SPIKE_MAX_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         spikePanel.add(spikeMaxThreadsSpinner, gbc);
@@ -276,13 +284,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第二行
         gbc.gridx = 0;
         gbc.gridy = 1;
-        spikePanel.add(new JLabel("上升时间(秒):", SwingConstants.RIGHT), gbc);
+        spikePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_SPIKE_RAMP_UP_TIME), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         spikePanel.add(spikeRampUpTimeSpinner, gbc);
 
         gbc.gridx = 2;
-        spikePanel.add(new JLabel("保持时间(秒):", SwingConstants.RIGHT), gbc);
+        spikePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_SPIKE_HOLD_TIME), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         spikePanel.add(spikeHoldTimeSpinner, gbc);
@@ -290,13 +298,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第三行
         gbc.gridx = 0;
         gbc.gridy = 2;
-        spikePanel.add(new JLabel("下降时间(秒):", SwingConstants.RIGHT), gbc);
+        spikePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_SPIKE_RAMP_DOWN_TIME), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         spikePanel.add(spikeRampDownTimeSpinner, gbc);
 
         gbc.gridx = 2;
-        spikePanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+        spikePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_SPIKE_TEST_DURATION), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         spikePanel.add(spikeDurationSpinner, gbc);
@@ -312,13 +320,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第一行
         gbc.gridx = 0;
         gbc.gridy = 0;
-        stairsPanel.add(new JLabel("起始用户数:", SwingConstants.RIGHT), gbc);
+        stairsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_STAIRS_START_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         stairsPanel.add(stairsStartThreadsSpinner, gbc);
 
         gbc.gridx = 2;
-        stairsPanel.add(new JLabel("最终用户数:", SwingConstants.RIGHT), gbc);
+        stairsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_STAIRS_END_USERS), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         stairsPanel.add(stairsEndThreadsSpinner, gbc);
@@ -326,13 +334,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第二行
         gbc.gridx = 0;
         gbc.gridy = 1;
-        stairsPanel.add(new JLabel("阶梯步长:", SwingConstants.RIGHT), gbc);
+        stairsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_STAIRS_STEP_SIZE), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         stairsPanel.add(stairsStepSpinner, gbc);
 
         gbc.gridx = 2;
-        stairsPanel.add(new JLabel("阶梯保持(秒):", SwingConstants.RIGHT), gbc);
+        stairsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_STAIRS_HOLD_TIME), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
         stairsPanel.add(stairsHoldTimeSpinner, gbc);
@@ -340,7 +348,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 第三行
         gbc.gridx = 0;
         gbc.gridy = 2;
-        stairsPanel.add(new JLabel("测试持续(秒):", SwingConstants.RIGHT), gbc);
+        stairsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_STAIRS_TEST_DURATION), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 1;
         stairsPanel.add(stairsDurationSpinner, gbc);
@@ -620,15 +628,10 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
             // 坐标轴标签
             g2d.setColor(TEXT_COLOR);
-            g2d.drawString("时间 (秒)", PADDING + width / 2 - 20, PADDING + height + 30);
-
-//            // 旋转90度绘制Y轴标签 - 简化为只显示"线程"二字
-//            g2d.rotate(-Math.PI / 2);
-//            g2d.drawString("线程", -PADDING - height / 2 - 20, PADDING - 15);
-//            g2d.rotate(Math.PI / 2); // 恢复旋转
+            g2d.drawString(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TIME_SECONDS), PADDING + width / 2 - 20, PADDING + height + 30);
 
             // 在左上角添加模式信息
-            g2d.drawString("模式: " + previewData.mode.getDisplayName(), PADDING, PADDING - 10);
+            g2d.drawString(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_MODE_PREFIX) + " " + previewData.mode.getDisplayName(), PADDING, PADDING - 10);
         }
 
         private int getMaxThreads() {

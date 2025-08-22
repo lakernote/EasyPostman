@@ -1,29 +1,32 @@
 package com.laker.postman.panel.performance.threadgroup;
 
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
+
 /**
  * 线程组数据模型，支持多种线程模式
  */
 public class ThreadGroupData {
     // 线程组类型
     public enum ThreadMode {
-        FIXED("固定线程数"),           // 固定线程数
-        RAMP_UP("递增线程数"),         // 递增线程数
-        SPIKE("尖刺线程"),            // 尖刺模式
-        STAIRS("阶梯线程");           // 阶梯模式
+        FIXED(MessageKeys.THREADGROUP_MODE_FIXED),           // 固定线程数
+        RAMP_UP(MessageKeys.THREADGROUP_MODE_RAMP_UP),       // 递增线程数
+        SPIKE(MessageKeys.THREADGROUP_MODE_SPIKE),           // 尖刺模式
+        STAIRS(MessageKeys.THREADGROUP_MODE_STAIRS);         // 阶梯模式
 
-        private final String displayName;
+        private final String messageKey;
 
-        ThreadMode(String displayName) {
-            this.displayName = displayName;
+        ThreadMode(String messageKey) {
+            this.messageKey = messageKey;
         }
 
         public String getDisplayName() {
-            return displayName;
+            return I18nUtil.getMessage(messageKey);
         }
 
         @Override
         public String toString() {
-            return displayName;
+            return getDisplayName();
         }
     }
 

@@ -33,6 +33,7 @@ import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonPathUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
 
@@ -70,7 +71,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private TimerPropertyPanel timerPanel;
     private RequestEditSubPanel requestEditSubPanel;
     private boolean running = false;
-    private Thread runThread;
+    private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
     // 测试执行开始时间
@@ -79,7 +80,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
 
 
-    private final List<RequestResult> allRequestResults = Collections.synchronizedList(new ArrayList<>());
+    private final transient List<RequestResult> allRequestResults = Collections.synchronizedList(new ArrayList<>());
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
     private final Map<String, Integer> apiSuccessMap = new ConcurrentHashMap<>();
@@ -88,7 +89,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
     // 定时采样线程
-    private Timer trendTimer;
+    private transient Timer trendTimer;
 
     // 高效模式
     private boolean efficientMode = true;
@@ -120,7 +121,7 @@ public class PerformancePanel extends SingletonBasePanel {
         // 2. 右侧属性区（CardLayout）
         propertyCardLayout = new CardLayout();
         propertyPanel = new JPanel(propertyCardLayout);
-        propertyPanel.add(new JLabel(I18nUtil.getMessage("performance.property.select_node")), "empty");
+        propertyPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE)), "empty");
         threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, "threadGroup");
         requestEditSubPanel = new RequestEditSubPanel("");
@@ -140,9 +141,9 @@ public class PerformancePanel extends SingletonBasePanel {
         // 报告面板
         performanceReportPanel = new PerformanceReportPanel();
 
-        resultTabbedPane.addTab(I18nUtil.getMessage("performance.tab.trend"), performanceTrendPanel);
-        resultTabbedPane.addTab(I18nUtil.getMessage("performance.tab.report"), performanceReportPanel);
-        resultTabbedPane.addTab(I18nUtil.getMessage("performance.tab.result_tree"), performanceResultTreePanel);
+        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
+        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
+        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTreePanel);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -171,20 +172,20 @@ public class PerformancePanel extends SingletonBasePanel {
         btnPanel.add(runBtn);
         btnPanel.add(stopBtn);
         // 高效模式checkbox和问号提示
-        JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage("performance.efficient_mode"));
+        JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
         efficientCheckBox.setSelected(true); // 默认开启高效模式
-        efficientCheckBox.setToolTipText(I18nUtil.getMessage("performance.efficient_mode.tooltip"));
+        efficientCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP));
         efficientCheckBox.addActionListener(e -> efficientMode = efficientCheckBox.isSelected());
         btnPanel.add(efficientCheckBox);
         JLabel efficientHelp = new JLabel(new FlatSVGIcon("icons/help.svg", 16, 16));
         efficientHelp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        efficientHelp.setToolTipText(I18nUtil.getMessage("performance.efficient_mode.help"));
+        efficientHelp.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_HELP));
         efficientHelp.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 JOptionPane.showMessageDialog(PerformancePanel.this,
-                        I18nUtil.getMessage("performance.efficient_mode.desc"),
-                        I18nUtil.getMessage("performance.efficient_mode.help_title"), JOptionPane.INFORMATION_MESSAGE);
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_DESC),
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_HELP_TITLE), JOptionPane.INFORMATION_MESSAGE);
             }
         });
         btnPanel.add(efficientHelp);
@@ -196,7 +197,7 @@ public class PerformancePanel extends SingletonBasePanel {
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
         progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)); // 使用FlatLaf SVG图标
         progressLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
-        progressPanel.setToolTipText(I18nUtil.getMessage("performance.progress.tooltip"));
+        progressPanel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROGRESS_TOOLTIP));
         progressPanel.add(progressLabel);
         // ========== 内存占用显示 ==========
         MemoryLabel memoryLabel = new MemoryLabel();
@@ -246,15 +247,6 @@ public class PerformancePanel extends SingletonBasePanel {
         defaultReq.setMethod("GET");
         defaultReq.setUrl("https://www.baidu.com");
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
-
-//        // 添加默认断言
-//        DefaultMutableTreeNode assertionNode = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
-//        req.add(assertionNode);
-//
-//        // 添加默认定时器
-//        DefaultMutableTreeNode timerNode = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
-//        req.add(timerNode);
-
         group.add(req);
         root.add(group);
     }
@@ -411,6 +403,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     try {
                         t.join();
                     } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
                     }
                 }
             } else if (Objects.requireNonNull(jtNode.type) == NodeType.THREAD_GROUP) {
@@ -469,12 +462,13 @@ public class PerformancePanel extends SingletonBasePanel {
         try {
             // 等待所有线程完成，或者超时
             if (useTime) {
-                executor.awaitTermination(durationSeconds + 10, TimeUnit.SECONDS);
+                executor.awaitTermination(durationSeconds + 10L, TimeUnit.SECONDS);
             } else {
                 executor.awaitTermination(1, TimeUnit.HOURS);
             }
         } catch (InterruptedException exception) {
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("performance.msg.execution_interrupted", exception.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
+            Thread.currentThread().interrupt();
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED, exception.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             log.error(exception.getMessage(), exception);
         }
     }
@@ -538,10 +532,11 @@ public class PerformancePanel extends SingletonBasePanel {
 
         try {
             // 等待执行完成
-            scheduler.awaitTermination(totalDuration + 10, TimeUnit.SECONDS);
+            scheduler.awaitTermination(totalDuration + 10L, TimeUnit.SECONDS);
             executor.shutdown();
             executor.awaitTermination(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             log.error("递增线程执行中断", e);
         }
     }
@@ -652,7 +647,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         try {
             // 等待执行完成
-            scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
+            scheduler.awaitTermination(totalTime + 10L, TimeUnit.SECONDS);
             // 确保等待所有threadEndTimes中的线程完成
             for (Thread t : threadEndTimes.keySet()) {
                 try {
@@ -660,10 +655,12 @@ public class PerformancePanel extends SingletonBasePanel {
                         t.join(10000); // 设置超时时间避免永久阻塞
                     }
                 } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
                     log.error("等待线程完成时中断", ie);
                 }
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             log.error("尖刺模式执行中断", e);
         }
     }
@@ -760,7 +757,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         try {
             // 等待执行完成
-            scheduler.awaitTermination(totalTime + 10, TimeUnit.SECONDS);
+            scheduler.awaitTermination(totalTime + 10L, TimeUnit.SECONDS);
 
             // 确保等待所有threadEndTimes中的线程完成
             for (Thread t : threadEndTimes.keySet()) {
@@ -769,10 +766,12 @@ public class PerformancePanel extends SingletonBasePanel {
                         t.join(10000); // 设置超时时间避免永久阻塞
                     }
                 } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
                     log.error("等待线程完成时中断", ie);
                 }
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             log.error("阶梯模式执行中断", e);
         }
     }
@@ -949,7 +948,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     );
                 } catch (Exception ex) {
                     log.error("前置脚本: {}", ex.getMessage(), ex);
-                    errorMsg = I18nUtil.getMessage("performance.msg.pre_script_failed", ex.getMessage());
+                    errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_PRE_SCRIPT_FAILED, ex.getMessage());
                     preOk = false;
                     success = false;
                 }
@@ -992,6 +991,7 @@ public class PerformancePanel extends SingletonBasePanel {
                                 else if (">".equals(op)) pass = (resp.code > expect);
                                 else if ("<".equals(op)) pass = (resp.code < expect);
                             } catch (Exception ignored) {
+                                log.warn("断言响应码格式错误: {}", valStr);
                             }
                         } else if ("Contains".equals(type)) {
                             pass = resp.body.contains(assertion.content);
@@ -1062,6 +1062,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     try {
                         TimeUnit.MILLISECONDS.sleep(subNode2.timerData.delayMs);
                     } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
                         return;
                     }
                 }
@@ -1083,12 +1084,12 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (userObj instanceof JMeterTreeNode jtNode) {
                         switch (jtNode.type) {
                             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
-                            case REQUEST -> {
-                                // 保存RequestEditSubPanel表单到jtNode
-                                jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
-                            }
+                            case REQUEST -> jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
                             case ASSERTION -> assertionPanel.saveAssertionData();
                             case TIMER -> timerPanel.saveTimerData();
+                            default -> {
+                                // 其他类型节点不需要保存数据
+                            }
                         }
                     }
                 }
@@ -1132,12 +1133,12 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 右键菜单
         JPopupMenu treeMenu = new JPopupMenu();
-        JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage("performance.menu.add_thread_group"));
-        JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage("performance.menu.add_request"));
-        JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage("performance.menu.add_assertion"));
-        JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage("performance.menu.add_timer"));
-        JMenuItem renameNode = new JMenuItem(I18nUtil.getMessage("performance.menu.rename"));
-        JMenuItem deleteNode = new JMenuItem(I18nUtil.getMessage("performance.menu.delete"));
+        JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_THREAD_GROUP));
+        JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_REQUEST));
+        JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ASSERTION));
+        JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_TIMER));
+        JMenuItem renameNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_RENAME));
+        JMenuItem deleteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DELETE));
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
         treeMenu.add(addAssertion);
@@ -1159,7 +1160,7 @@ public class PerformancePanel extends SingletonBasePanel {
             if (node == null) return;
             Object userObj = node.getUserObject();
             if (!(userObj instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.THREAD_GROUP) {
-                JOptionPane.showMessageDialog(PerformancePanel.this, I18nUtil.getMessage("performance.msg.select_thread_group"), I18nUtil.getMessage("general.info"), JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(PerformancePanel.this, I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SELECT_THREAD_GROUP), I18nUtil.getMessage(MessageKeys.GENERAL_INFO), JOptionPane.WARNING_MESSAGE);
                 return;
             }
             // 多选请求弹窗

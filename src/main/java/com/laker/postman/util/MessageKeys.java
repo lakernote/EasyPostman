@@ -107,6 +107,7 @@ public final class MessageKeys {
     public static final String BUTTON_SEARCH = "button.search";
     public static final String BUTTON_LOAD = "button.load";
     public static final String BUTTON_CLEAR = "button.clear";
+    public static final String BUTTON_REFRESH = "button.refresh";
 
     // ============ 请求相关 ============
     public static final String NEW_REQUEST = "new.request";
@@ -360,4 +361,161 @@ public final class MessageKeys {
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_EMPTY = "collections.dialog.multi_select.empty";
     public static final String COLLECTIONS_DELETE_CONFIRM = "collections.delete.confirm";
     public static final String COLLECTIONS_DELETE_CONFIRM_TITLE = "collections.delete.confirm_title";
+
+    // ============ 功能测试执行结果相关 ============
+    public static final String FUNCTIONAL_EXECUTION_RESULTS = "functional.execution.results";
+    public static final String FUNCTIONAL_EXECUTION_HISTORY = "functional.execution.history";
+    public static final String FUNCTIONAL_EXECUTION_RESULTS_NO_DATA = "functional.execution.results.no_data";
+    public static final String FUNCTIONAL_EXECUTION_RESULTS_SUMMARY = "functional.execution.results.summary";
+    public static final String FUNCTIONAL_BUTTON_EXPAND_ALL = "functional.button.expand_all";
+    public static final String FUNCTIONAL_BUTTON_COLLAPSE_ALL = "functional.button.collapse_all";
+    public static final String FUNCTIONAL_TOOLTIP_EXPAND_ALL = "functional.tooltip.expand_all";
+    public static final String FUNCTIONAL_TOOLTIP_COLLAPSE_ALL = "functional.tooltip.collapse_all";
+    public static final String FUNCTIONAL_TOOLTIP_REFRESH = "functional.tooltip.refresh";
+    public static final String FUNCTIONAL_DETAIL_INFO = "functional.detail.info";
+    public static final String FUNCTIONAL_TAB_OVERVIEW = "functional.tab.overview";
+    public static final String FUNCTIONAL_STATUS_READY = "functional.status.ready";
+    public static final String FUNCTIONAL_STATUS_UPDATING = "functional.status.updating";
+    public static final String FUNCTIONAL_STATUS_UPDATED = "functional.status.updated";
+    public static final String FUNCTIONAL_STATUS_REFRESHING = "functional.status.refreshing";
+    public static final String FUNCTIONAL_STATUS_REFRESHED = "functional.status.refreshed";
+    public static final String FUNCTIONAL_STATUS_ITERATION_SELECTED = "functional.status.iteration_selected";
+    public static final String FUNCTIONAL_STATUS_REQUEST_SELECTED = "functional.status.request_selected";
+    public static final String FUNCTIONAL_STATUS_OVERVIEW_SELECTED = "functional.status.overview_selected";
+
+    // ============ 功能测试详情页面相关 ============
+    public static final String FUNCTIONAL_DETAIL_OVERVIEW = "functional.detail.overview";
+    public static final String FUNCTIONAL_DETAIL_ITERATION = "functional.detail.iteration";
+    public static final String FUNCTIONAL_DETAIL_EXECUTION_STATS = "functional.detail.execution_stats";
+    public static final String FUNCTIONAL_DETAIL_ITERATION_INFO = "functional.detail.iteration_info";
+    public static final String FUNCTIONAL_DETAIL_CSV_DATA = "functional.detail.csv_data";
+    public static final String FUNCTIONAL_DETAIL_WELCOME_MESSAGE = "functional.detail.welcome_message";
+    public static final String FUNCTIONAL_DETAIL_WELCOME_SUBTITLE = "functional.detail.welcome_subtitle";
+
+    // ============ 功能测试统计相关 ============
+    public static final String FUNCTIONAL_STATS_TOTAL_ITERATIONS = "functional.stats.total_iterations";
+    public static final String FUNCTIONAL_STATS_TOTAL_REQUESTS = "functional.stats.total_requests";
+    public static final String FUNCTIONAL_STATS_TOTAL_TIME = "functional.stats.total_time";
+    public static final String FUNCTIONAL_STATS_SUCCESS_RATE = "functional.stats.success_rate";
+    public static final String FUNCTIONAL_STATS_START_TIME = "functional.stats.start_time";
+    public static final String FUNCTIONAL_STATS_END_TIME = "functional.stats.end_time";
+    public static final String FUNCTIONAL_STATS_AVERAGE_TIME = "functional.stats.average_time";
+    public static final String FUNCTIONAL_STATS_STATUS = "functional.stats.status";
+    public static final String FUNCTIONAL_STATS_STATUS_COMPLETED = "functional.stats.status_completed";
+
+    // ============ 功能测试表格相关 ============
+    public static final String FUNCTIONAL_TABLE_ITERATION = "functional.table.iteration";
+    public static final String FUNCTIONAL_TABLE_REQUEST_NAME = "functional.table.request_name";
+    public static final String FUNCTIONAL_TABLE_METHOD = "functional.table.method";
+    public static final String FUNCTIONAL_TABLE_STATUS = "functional.table.status";
+    public static final String FUNCTIONAL_TABLE_TIME = "functional.table.time";
+    public static final String FUNCTIONAL_TABLE_ASSERTION = "functional.table.assertion";
+    public static final String FUNCTIONAL_TABLE_TIMESTAMP = "functional.table.timestamp";
+
+    // ============ 功能测试迭代相关 ============
+    public static final String FUNCTIONAL_ITERATION_ROUND = "functional.iteration.round";
+    public static final String FUNCTIONAL_ITERATION_START_TIME = "functional.iteration.start_time";
+    public static final String FUNCTIONAL_ITERATION_EXECUTION_TIME = "functional.iteration.execution_time";
+    public static final String FUNCTIONAL_ITERATION_REQUEST_COUNT = "functional.iteration.request_count";
+    public static final String FUNCTIONAL_ITERATION_PASSED_FORMAT = "functional.iteration.passed_format";
+
+    // ============ 线程组相关 ============
+    // 线程组模式
+    public static final String THREADGROUP_MODE_FIXED = "threadgroup.mode.fixed";
+    public static final String THREADGROUP_MODE_RAMP_UP = "threadgroup.mode.ramp_up";
+    public static final String THREADGROUP_MODE_SPIKE = "threadgroup.mode.spike";
+    public static final String THREADGROUP_MODE_STAIRS = "threadgroup.mode.stairs";
+
+    // 线程组界面标签
+    public static final String THREADGROUP_MODE_LABEL = "threadgroup.mode.label";
+    public static final String THREADGROUP_PREVIEW_TITLE = "threadgroup.preview.title";
+    public static final String THREADGROUP_PREVIEW_MODE = "threadgroup.preview.mode";
+    public static final String THREADGROUP_PREVIEW_TIME = "threadgroup.preview.time";
+    public static final String THREADGROUP_PREVIEW_THREADS = "threadgroup.preview.threads";
+
+    // 固定模式标签
+    public static final String THREADGROUP_FIXED_USERS = "threadgroup.fixed.users";
+    public static final String THREADGROUP_FIXED_EXECUTION_MODE = "threadgroup.fixed.execution_mode";
+    public static final String THREADGROUP_FIXED_USE_TIME = "threadgroup.fixed.use_time";
+    public static final String THREADGROUP_FIXED_LOOPS = "threadgroup.fixed.loops";
+    public static final String THREADGROUP_FIXED_DURATION = "threadgroup.fixed.duration";
+
+    // 递增模式标签
+    public static final String THREADGROUP_RAMPUP_START_USERS = "threadgroup.rampup.start_users";
+    public static final String THREADGROUP_RAMPUP_END_USERS = "threadgroup.rampup.end_users";
+    public static final String THREADGROUP_RAMPUP_RAMP_TIME = "threadgroup.rampup.ramp_time";
+    public static final String THREADGROUP_RAMPUP_TEST_DURATION = "threadgroup.rampup.test_duration";
+
+    // 尖刺模式标签
+    public static final String THREADGROUP_SPIKE_MIN_USERS = "threadgroup.spike.min_users";
+    public static final String THREADGROUP_SPIKE_MAX_USERS = "threadgroup.spike.max_users";
+    public static final String THREADGROUP_SPIKE_RAMP_UP_TIME = "threadgroup.spike.ramp_up_time";
+    public static final String THREADGROUP_SPIKE_HOLD_TIME = "threadgroup.spike.hold_time";
+    public static final String THREADGROUP_SPIKE_RAMP_DOWN_TIME = "threadgroup.spike.ramp_down_time";
+    public static final String THREADGROUP_SPIKE_TEST_DURATION = "threadgroup.spike.test_duration";
+
+    // 阶梯模式标签
+    public static final String THREADGROUP_STAIRS_START_USERS = "threadgroup.stairs.start_users";
+    public static final String THREADGROUP_STAIRS_END_USERS = "threadgroup.stairs.end_users";
+    public static final String THREADGROUP_STAIRS_STEP_SIZE = "threadgroup.stairs.step_size";
+    public static final String THREADGROUP_STAIRS_HOLD_TIME = "threadgroup.stairs.hold_time";
+    public static final String THREADGROUP_STAIRS_TEST_DURATION = "threadgroup.stairs.test_duration";
+
+    // 预览面板标签
+    public static final String THREADGROUP_PREVIEW_TIME_SECONDS = "threadgroup.preview.time_seconds";
+    public static final String THREADGROUP_PREVIEW_THREADS_LABEL = "threadgroup.preview.threads_label";
+    public static final String THREADGROUP_PREVIEW_MODE_PREFIX = "threadgroup.preview.mode_prefix";
+
+    // ============ Settings Dialog related ============
+    // Dialog title and labels
+    public static final String SETTINGS_DIALOG_TITLE = "settings.dialog.title";
+    public static final String SETTINGS_DIALOG_SAVE = "settings.dialog.save";
+    public static final String SETTINGS_DIALOG_CANCEL = "settings.dialog.cancel";
+
+    // Request settings section
+    public static final String SETTINGS_REQUEST_TITLE = "settings.request.title";
+    public static final String SETTINGS_REQUEST_MAX_BODY_SIZE = "settings.request.max_body_size";
+    public static final String SETTINGS_REQUEST_MAX_BODY_SIZE_TOOLTIP = "settings.request.max_body_size.tooltip";
+    public static final String SETTINGS_REQUEST_TIMEOUT = "settings.request.timeout";
+    public static final String SETTINGS_REQUEST_TIMEOUT_TOOLTIP = "settings.request.timeout.tooltip";
+    public static final String SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE = "settings.request.max_download_size";
+    public static final String SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE_TOOLTIP = "settings.request.max_download_size.tooltip";
+    public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS = "settings.request.follow_redirects";
+    public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS_TOOLTIP = "settings.request.follow_redirects.tooltip";
+    public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS_CHECKBOX = "settings.request.follow_redirects.checkbox";
+
+    // JMeter settings section
+    public static final String SETTINGS_JMETER_TITLE = "settings.jmeter.title";
+    public static final String SETTINGS_JMETER_MAX_IDLE = "settings.jmeter.max_idle";
+    public static final String SETTINGS_JMETER_MAX_IDLE_TOOLTIP = "settings.jmeter.max_idle.tooltip";
+    public static final String SETTINGS_JMETER_KEEP_ALIVE = "settings.jmeter.keep_alive";
+    public static final String SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP = "settings.jmeter.keep_alive.tooltip";
+
+    // Download settings section
+    public static final String SETTINGS_DOWNLOAD_TITLE = "settings.download.title";
+    public static final String SETTINGS_DOWNLOAD_SHOW_PROGRESS = "settings.download.show_progress";
+    public static final String SETTINGS_DOWNLOAD_SHOW_PROGRESS_TOOLTIP = "settings.download.show_progress.tooltip";
+    public static final String SETTINGS_DOWNLOAD_THRESHOLD = "settings.download.threshold";
+    public static final String SETTINGS_DOWNLOAD_THRESHOLD_TOOLTIP = "settings.download.threshold.tooltip";
+
+    // General settings section
+    public static final String SETTINGS_GENERAL_TITLE = "settings.general.title";
+    public static final String SETTINGS_GENERAL_MAX_HISTORY = "settings.general.max_history";
+    public static final String SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP = "settings.general.max_history.tooltip";
+
+    // Validation messages
+    public static final String SETTINGS_VALIDATION_ERROR_TITLE = "settings.validation.error.title";
+    public static final String SETTINGS_VALIDATION_MAX_BODY_SIZE_ERROR = "settings.validation.max_body_size.error";
+    public static final String SETTINGS_VALIDATION_TIMEOUT_ERROR = "settings.validation.timeout.error";
+    public static final String SETTINGS_VALIDATION_MAX_DOWNLOAD_SIZE_ERROR = "settings.validation.max_download_size.error";
+    public static final String SETTINGS_VALIDATION_MAX_IDLE_ERROR = "settings.validation.max_idle.error";
+    public static final String SETTINGS_VALIDATION_KEEP_ALIVE_ERROR = "settings.validation.keep_alive.error";
+    public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
+    public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
+    public static final String SETTINGS_VALIDATION_INVALID_NUMBER = "settings.validation.invalid_number";
+
+    // Success messages
+    public static final String SETTINGS_SAVE_SUCCESS = "settings.save.success";
+    public static final String SETTINGS_SAVE_SUCCESS_TITLE = "settings.save.success.title";
+
 }

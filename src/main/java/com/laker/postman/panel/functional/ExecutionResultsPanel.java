@@ -6,14 +6,16 @@ import com.laker.postman.model.IterationResult;
 import com.laker.postman.model.RequestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreePath;
+import javax.swing.event.ChangeListener;
+import javax.swing.tree.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
@@ -29,6 +31,9 @@ public class ExecutionResultsPanel extends JPanel {
     private JPanel detailPanel;
     private JTabbedPane detailTabs;
     private transient BatchExecutionHistory executionHistory; // 当前执行历史记录
+    private TreePath lastSelectedPath; // 保存最后选中的路径
+    private JLabel statusLabel; // 状态标签
+    private int lastSelectedRequestDetailTabIndex = 0; // 记住用户在RequestDetail中选择的tab索引
 
     public ExecutionResultsPanel() {
         initUI();
@@ -50,7 +55,7 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 创建分割面板
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(350);
+        splitPane.setDividerLocation(330);
         splitPane.setResizeWeight(0.3);
 
         // 左侧：结果树
@@ -62,10 +67,13 @@ public class ExecutionResultsPanel extends JPanel {
         splitPane.setRightComponent(detailPanel);
 
         add(splitPane, BorderLayout.CENTER);
+
+        // 添加状态栏
+        createStatusBar();
     }
 
     private void createResultsTree() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("执行结果");
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_RESULTS));
         treeModel = new DefaultTreeModel(root);
         resultsTree = new JTree(treeModel);
         resultsTree.setRootVisible(true);
@@ -73,78 +81,197 @@ public class ExecutionResultsPanel extends JPanel {
         resultsTree.setCellRenderer(new ExecutionResultTreeCellRenderer());
         resultsTree.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         resultsTree.setRowHeight(24);
+        resultsTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+
+        // 启用工具提示
+        ToolTipManager.sharedInstance().registerComponent(resultsTree);
     }
 
     private JPanel createTreePanel() {
         JPanel treePanel = new JPanel(new BorderLayout());
-        treePanel.setBorder(BorderFactory.createTitledBorder("执行历史"));
+        treePanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY)));
 
         JScrollPane treeScrollPane = new JScrollPane(resultsTree);
+        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16); // 改善滚动体验
         treePanel.add(treeScrollPane, BorderLayout.CENTER);
 
         // 添加工具栏
-        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        toolBar.setOpaque(false);
-
-        JButton expandAllBtn = new JButton("展开全部");
-        expandAllBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        expandAllBtn.addActionListener(e -> expandAll());
-
-        JButton collapseAllBtn = new JButton("收起全部");
-        collapseAllBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        collapseAllBtn.addActionListener(e -> collapseAll());
-
-        toolBar.add(expandAllBtn);
-        toolBar.add(collapseAllBtn);
+        JPanel toolBar = createToolBar();
         treePanel.add(toolBar, BorderLayout.SOUTH);
 
         return treePanel;
     }
 
+    private JPanel createToolBar() {
+        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        toolBar.setOpaque(false);
+
+        JButton expandAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_EXPAND_ALL));
+        expandAllBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        expandAllBtn.setIcon(new FlatSVGIcon("icons/expand.svg", 12, 12));
+        expandAllBtn.addActionListener(e -> expandAll());
+        expandAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
+
+        JButton collapseAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_COLLAPSE_ALL));
+        collapseAllBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        collapseAllBtn.setIcon(new FlatSVGIcon("icons/collapse.svg", 12, 12));
+        collapseAllBtn.addActionListener(e -> collapseAll());
+        collapseAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
+
+        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
+        refreshBtn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 12, 12));
+        refreshBtn.addActionListener(e -> refreshData());
+        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
+
+        toolBar.add(expandAllBtn);
+        toolBar.add(collapseAllBtn);
+        toolBar.add(refreshBtn);
+
+        return toolBar;
+    }
+
     private void createDetailPanel() {
         detailPanel = new JPanel(new BorderLayout());
-        detailPanel.setBorder(BorderFactory.createTitledBorder("详细信息"));
+        detailPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_INFO)));
 
         // 创建详情选项卡
         detailTabs = new JTabbedPane();
         detailTabs.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        detailTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT); // 支持滚动标签
 
         // 默认显示欢迎页面
-        JPanel welcomePanel = new JPanel(new BorderLayout());
-        JLabel welcomeLabel = new JLabel("<html><div style='text-align: center;'>" +
-                "<br><br><br>" +
-                "<span style='font-size: 16px; color: #666;'>选择左侧的请求记录查看详细信息</span>" +
-                "<br><br>" +
-                "<span style='font-size: 12px; color: #999;'>支持查看请求、响应、测试结果等</span>" +
-                "</div></html>");
-        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        welcomePanel.add(welcomeLabel, BorderLayout.CENTER);
-
-        detailTabs.addTab("概览", welcomePanel);
+        showWelcomePanel();
         detailPanel.add(detailTabs, BorderLayout.CENTER);
     }
 
+    private void createStatusBar() {
+        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        statusBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
+                BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
+
+        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_READY));
+        statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        statusBar.add(statusLabel);
+
+        add(statusBar, BorderLayout.SOUTH);
+    }
+
     private void registerListeners() {
+        // 鼠标事件 - 优化灵敏度
         resultsTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 1) { // 单击显示详情
-                    TreePath path = resultsTree.getPathForLocation(e.getX(), e.getY());
-                    if (path != null) {
-                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                        showNodeDetail(node);
-                    }
+                handleMouseClick(e);
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // 鼠标按下时立即处理选择，提高响应速度
+                TreePath path = resultsTree.getPathForLocation(e.getX(), e.getY());
+                if (path != null) {
+                    resultsTree.setSelectionPath(path);
+                    resultsTree.scrollPathToVisible(path);
                 }
             }
         });
+
+        // 键盘事件 - 改善键盘导航
+        resultsTree.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                handleKeyPress(e);
+            }
+        });
+
+        // 树选择事件 - 主要的内容显示逻辑
+        resultsTree.addTreeSelectionListener(e -> {
+            TreePath newPath = e.getNewLeadSelectionPath();
+            if (newPath != null) {
+                lastSelectedPath = newPath;
+                updateStatus();
+                // 延迟显示详情，避免频繁刷新
+                SwingUtilities.invokeLater(() -> {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) newPath.getLastPathComponent();
+                    showNodeDetail(node);
+                });
+            }
+        });
+    }
+
+    private void handleMouseClick(MouseEvent e) {
+        TreePath path = resultsTree.getPathForLocation(e.getX(), e.getY());
+        if (path == null) {
+            return;
+        }
+
+        // 确保路径被选中
+        if (!resultsTree.isPathSelected(path)) {
+            resultsTree.setSelectionPath(path);
+        }
+
+    }
+
+    private void handleKeyPress(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_ENTER, KeyEvent.VK_SPACE:
+                handleTreeSelection();
+                break;
+            case KeyEvent.VK_LEFT:
+                TreePath selectedPath = resultsTree.getSelectionPath();
+                if (selectedPath != null && resultsTree.isExpanded(selectedPath)) {
+                    resultsTree.collapsePath(selectedPath);
+                }
+                break;
+            case KeyEvent.VK_RIGHT:
+                TreePath selected = resultsTree.getSelectionPath();
+                if (selected != null && !resultsTree.isExpanded(selected)) {
+                    resultsTree.expandPath(selected);
+                }
+                break;
+            default:
+                // 不需要处理其他按键
+                break;
+        }
+    }
+
+    private void handleTreeSelection() {
+        TreePath path = resultsTree.getSelectionPath();
+        if (path != null) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            showNodeDetail(node);
+        }
+    }
+
+    private void updateStatus() {
+        if (lastSelectedPath != null) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) lastSelectedPath.getLastPathComponent();
+            Object userObject = node.getUserObject();
+
+            if (userObject instanceof IterationNodeData) {
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_ITERATION_SELECTED));
+            } else if (userObject instanceof RequestNodeData) {
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REQUEST_SELECTED));
+            } else {
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_OVERVIEW_SELECTED));
+            }
+        }
     }
 
     /**
      * 更新执行历史数据
      */
     public void updateExecutionHistory(BatchExecutionHistory history) {
-        this.executionHistory = history;
-        rebuildTree();
+        SwingUtilities.invokeLater(() -> {
+            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_UPDATING));
+            this.executionHistory = history;
+            // 重置tab索引为第一个，因为这是新的执行历史数据
+            lastSelectedRequestDetailTabIndex = 0;
+            rebuildTree();
+            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_UPDATED));
+        });
     }
 
     private void rebuildTree() {
@@ -152,15 +279,16 @@ public class ExecutionResultsPanel extends JPanel {
         root.removeAllChildren();
 
         if (executionHistory == null) {
-            root.setUserObject("执行结果 (无数据)");
+            root.setUserObject(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_RESULTS_NO_DATA));
             treeModel.nodeStructureChanged(root);
+            showWelcomePanel();
             return;
         }
 
         // 设置根节点信息
         long totalTime = executionHistory.getExecutionTime();
         int totalIterations = executionHistory.getIterations().size();
-        root.setUserObject(String.format("执行结果 (%d 轮迭代, %s)",
+        root.setUserObject(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_RESULTS_SUMMARY,
                 totalIterations, TimeDisplayUtil.formatElapsedTime(totalTime)));
 
         // 添加迭代节点
@@ -180,6 +308,52 @@ public class ExecutionResultsPanel extends JPanel {
 
         treeModel.nodeStructureChanged(root);
         expandAll(); // 默认展开所有节点
+
+        // 尝试恢复之前的选中状态
+        restoreSelection();
+    }
+
+    private void restoreSelection() {
+        if (lastSelectedPath != null) {
+            // 尝试找到相同的节点路径并选中
+            SwingUtilities.invokeLater(() -> {
+                TreePath newPath = findSimilarPath();
+                resultsTree.setSelectionPath(newPath);
+                resultsTree.scrollPathToVisible(newPath);
+            });
+        }
+    }
+
+    private TreePath findSimilarPath() {
+        // 简单实现：尝试选中根节点下的第一个子节点
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        if (root.getChildCount() > 0) {
+            DefaultMutableTreeNode firstChild = (DefaultMutableTreeNode) root.getChildAt(0);
+            return new TreePath(new Object[]{root, firstChild});
+        }
+        return new TreePath(root);
+    }
+
+    private void refreshData() {
+        if (executionHistory != null) {
+            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REFRESHING));
+            // 模拟刷新延迟
+            Timer timer = new Timer(100, e -> {
+                rebuildTree();
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REFRESHED));
+            });
+            timer.setRepeats(false);
+            timer.start();
+        }
+    }
+
+    private void showWelcomePanel() {
+        detailTabs.removeAll();
+        JPanel welcomePanel = createWelcomePanel();
+        detailTabs.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_OVERVIEW),
+                new FlatSVGIcon("icons/info.svg", 16, 16), welcomePanel);
+        detailTabs.revalidate();
+        detailTabs.repaint();
     }
 
     private void showNodeDetail(DefaultMutableTreeNode node) {
@@ -201,7 +375,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void showOverviewDetail() {
         if (executionHistory == null) {
-            detailTabs.addTab("概览", createWelcomePanel());
+            detailTabs.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_OVERVIEW), createWelcomePanel());
             return;
         }
 
@@ -218,7 +392,7 @@ public class ExecutionResultsPanel extends JPanel {
         scrollPane.setPreferredSize(new Dimension(0, 200));
         overviewPanel.add(scrollPane, BorderLayout.CENTER);
 
-        detailTabs.addTab("执行概览", overviewPanel);
+        detailTabs.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_OVERVIEW), overviewPanel);
     }
 
     private void showIterationDetail(IterationNodeData iterationData) {
@@ -230,18 +404,18 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 迭代信息
         JPanel infoPanel = new JPanel(new GridLayout(0, 2, 10, 5));
-        infoPanel.setBorder(BorderFactory.createTitledBorder("迭代信息"));
+        infoPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_ITERATION_INFO)));
 
-        infoPanel.add(new JLabel("迭代轮次:"));
-        infoPanel.add(new JLabel("第 " + (iteration.getIterationIndex() + 1) + " 轮"));
+        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND) + ":"));
+        infoPanel.add(new JLabel(I18nUtil.getMessage("functional.iteration.round.format", iteration.getIterationIndex() + 1)));
 
-        infoPanel.add(new JLabel("开始时间:"));
+        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_START_TIME) + ":"));
         infoPanel.add(new JLabel(formatTimestamp(iteration.getStartTime())));
 
-        infoPanel.add(new JLabel("执行时长:"));
+        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_EXECUTION_TIME) + ":"));
         infoPanel.add(new JLabel(TimeDisplayUtil.formatElapsedTime(iteration.getExecutionTime())));
 
-        infoPanel.add(new JLabel("请求数量:"));
+        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_REQUEST_COUNT) + ":"));
         infoPanel.add(new JLabel(String.valueOf(iteration.getRequestResults().size())));
 
         iterationPanel.add(infoPanel, BorderLayout.NORTH);
@@ -252,7 +426,7 @@ public class ExecutionResultsPanel extends JPanel {
             iterationPanel.add(csvPanel, BorderLayout.CENTER);
         }
 
-        detailTabs.addTab("迭代详情", iterationPanel);
+        detailTabs.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_ITERATION), iterationPanel);
     }
 
     private void showRequestDetail(RequestNodeData requestData) {
@@ -261,6 +435,11 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 清空现有的选项卡
         detailTabs.removeAll();
+
+        // 移除所有之前的监听器，避免重复添加
+        for (ChangeListener listener : detailTabs.getChangeListeners()) {
+            detailTabs.removeChangeListener(listener);
+        }
 
         // 请求信息（HTML） - 使用 getReq() 方法获取 PreparedRequest
         JEditorPane reqPane = new JEditorPane();
@@ -306,6 +485,23 @@ public class ExecutionResultsPanel extends JPanel {
             eventInfoPane.setCaretPosition(0);
             detailTabs.addTab("Event Info", new FlatSVGIcon("icons/detail.svg", 16, 16), new JScrollPane(eventInfoPane));
         }
+
+        // 确保索引在有效范围内，如果超出范围则重置为0
+        if (lastSelectedRequestDetailTabIndex >= detailTabs.getTabCount()) {
+            lastSelectedRequestDetailTabIndex = 0;
+        }
+
+        // 恢复用户上次选择的tab
+        detailTabs.setSelectedIndex(lastSelectedRequestDetailTabIndex);
+
+        // 添加tab选择监听器，记住用户的选择（只添加一次）
+        detailTabs.addChangeListener(e -> {
+            // 验证当前选择的索引是否在有效范围内
+            int currentIndex = detailTabs.getSelectedIndex();
+            if (currentIndex >= 0 && currentIndex < detailTabs.getTabCount()) {
+                lastSelectedRequestDetailTabIndex = currentIndex;
+            }
+        });
     }
 
     private void expandAll() {
@@ -333,7 +529,7 @@ public class ExecutionResultsPanel extends JPanel {
             long passedCount = iteration.getRequestResults().stream()
                     .filter(req -> "Pass".equals(req.getAssertion()))
                     .count();
-            return String.format("第 %d 轮 (%d/%d 通过, %s)",
+            return I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_PASSED_FORMAT,
                     iteration.getIterationIndex() + 1,
                     passedCount,
                     iteration.getRequestResults().size(),
@@ -379,13 +575,11 @@ public class ExecutionResultsPanel extends JPanel {
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(40, 167, 69)); // 绿色
                     }
-                    setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
                 } else if (requestData.request.getAssertion() != null && !requestData.request.getAssertion().isEmpty()) {
                     // 失败：红色文字和红色取消图标
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(220, 53, 69)); // 红色
                     }
-                    setIcon(new FlatSVGIcon("icons/cancel.svg", 16, 16));
                 } else {
                     // 未执行或其他状态：默认图标
                     setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
@@ -402,9 +596,9 @@ public class ExecutionResultsPanel extends JPanel {
         JPanel welcomePanel = new JPanel(new BorderLayout());
         JLabel welcomeLabel = new JLabel("<html><div style='text-align: center;'>" +
                 "<br><br><br>" +
-                "<span style='font-size: 16px; color: #666;'>选择左侧的记录查看详细信息</span>" +
+                "<span style='font-size: 16px; color: #666;'>" + I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) + "</span>" +
                 "<br><br>" +
-                "<span style='font-size: 12px; color: #999;'>支持查看请求、响应、测试结果等</span>" +
+                "<span style='font-size: 12px; color: #999;'>" + I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_SUBTITLE) + "</span>" +
                 "</div></html>");
         welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         welcomePanel.add(welcomeLabel, BorderLayout.CENTER);
@@ -413,7 +607,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private JPanel createStatsPanel() {
         JPanel statsPanel = new JPanel(new GridLayout(2, 4, 15, 5));
-        statsPanel.setBorder(BorderFactory.createTitledBorder("执行统计"));
+        statsPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_EXECUTION_STATS)));
 
         // 计算统计数据
         int totalIterations = executionHistory.getIterations().size();
@@ -428,27 +622,35 @@ public class ExecutionResultsPanel extends JPanel {
                 .count();
         double successRate = totalRequests > 0 ? (double) passedTests / totalRequests * 100 : 0;
 
-        statsPanel.add(new JLabel("总迭代数: " + totalIterations));
-        statsPanel.add(new JLabel("总请求数: " + totalRequests));
-        statsPanel.add(new JLabel("总耗时: " + TimeDisplayUtil.formatElapsedTime(totalTime)));
-        statsPanel.add(new JLabel(String.format("成功率: %.1f%%", successRate)));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_ITERATIONS) + ": " + totalIterations));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_REQUESTS) + ": " + totalRequests));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_TIME) + ": " + TimeDisplayUtil.formatElapsedTime(totalTime)));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_SUCCESS_RATE) + ": " + String.format("%.1f%%", successRate)));
 
-        statsPanel.add(new JLabel("开始时间: " + formatTimestamp(executionHistory.getStartTime())));
-        statsPanel.add(new JLabel("结束时间: " + formatTimestamp(executionHistory.getEndTime())));
-        statsPanel.add(new JLabel("平均耗时: " + (totalRequests > 0 ? totalTime / totalRequests : 0) + "ms"));
-        statsPanel.add(new JLabel("状态: 已完成"));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_START_TIME) + ": " + formatTimestamp(executionHistory.getStartTime())));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_END_TIME) + ": " + formatTimestamp(executionHistory.getEndTime())));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_AVERAGE_TIME) + ": " + (totalRequests > 0 ? totalTime / totalRequests : 0) + "ms"));
+        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS) + ": " + I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS_COMPLETED)));
 
         return statsPanel;
     }
 
     private JTable createSummaryTable() {
-        String[] columnNames = {"迭代", "请求名称", "方法", "状态", "耗时", "断言", "时间戳"};
+        String[] columnNames = {
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ITERATION),
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_REQUEST_NAME),
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_METHOD),
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_STATUS),
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_TIME),
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION),
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_TIMESTAMP)
+        };
 
         java.util.List<Object[]> tableData = new java.util.ArrayList<>();
         for (IterationResult iteration : executionHistory.getIterations()) {
             for (RequestResult request : iteration.getRequestResults()) {
                 Object[] row = {
-                        "第" + (iteration.getIterationIndex() + 1) + "轮",
+                        I18nUtil.getMessage("functional.iteration.round.prefix") + (iteration.getIterationIndex() + 1) + I18nUtil.getMessage("functional.iteration.round.suffix"),
                         request.getRequestName(),
                         request.getMethod(),
                         request.getStatus(),
@@ -472,7 +674,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private JPanel createCsvDataPanel(java.util.Map<String, String> csvData) {
         JPanel csvPanel = new JPanel(new BorderLayout());
-        csvPanel.setBorder(BorderFactory.createTitledBorder("CSV 数据"));
+        csvPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_CSV_DATA)));
 
         JTable csvTable = new JTable();
         String[] headers = csvData.keySet().toArray(new String[0]);

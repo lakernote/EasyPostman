@@ -1,13 +1,15 @@
 package com.laker.postman.common.setting;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class SettingDialog extends JDialog {
     public SettingDialog(Window owner) {
-        super(owner, "全局设置", ModalityType.APPLICATION_MODAL);
+        super(owner, I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_TITLE), ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
         SettingPanel panel = SingletonFactory.getInstance(SettingPanel.class);

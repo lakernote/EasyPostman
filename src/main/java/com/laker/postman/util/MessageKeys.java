@@ -144,6 +144,13 @@ public final class MessageKeys {
     public static final String TAB_REQUEST_BODY = "tab.request_body";
     public static final String TAB_RESPONSE_HEADERS = "tab.response_headers";
     public static final String TAB_RESPONSE_BODY = "tab.response_body";
+    public static final String TAB_CLOSE_OTHERS = "tab.close_others";
+    public static final String TAB_CLOSE_ALL = "tab.close_all";
+    public static final String TAB_UNSAVED_CHANGES_SAVE_CURRENT = "tab.unsaved_changes.save_current";
+    public static final String TAB_UNSAVED_CHANGES_SAVE_OTHERS = "tab.unsaved_changes.save_others";
+    public static final String TAB_UNSAVED_CHANGES_SAVE_ALL = "tab.unsaved_changes.save_all";
+    public static final String TAB_UNSAVED_CHANGES_TITLE = "tab.unsaved_changes.title";
+    public static final String TAB_CLOSE_CURRENT = "tab.close_current";
 
     // ============ 状态相关 ============
     public static final String STATUS_CANCELED = "status.canceled";
@@ -414,6 +421,7 @@ public final class MessageKeys {
 
     // ============ 功能测试迭代相关 ============
     public static final String FUNCTIONAL_ITERATION_ROUND = "functional.iteration.round";
+    public static final String FUNCTIONAL_ITERATION_ROUND_FORMAT = "functional.iteration.round.format";
     public static final String FUNCTIONAL_ITERATION_START_TIME = "functional.iteration.start_time";
     public static final String FUNCTIONAL_ITERATION_EXECUTION_TIME = "functional.iteration.execution_time";
     public static final String FUNCTIONAL_ITERATION_REQUEST_COUNT = "functional.iteration.request_count";

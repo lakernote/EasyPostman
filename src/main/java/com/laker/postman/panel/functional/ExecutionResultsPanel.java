@@ -11,7 +11,6 @@ import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
-import javax.swing.event.ChangeListener;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -143,6 +142,19 @@ public class ExecutionResultsPanel extends JPanel {
         // 默认显示欢迎页面
         showWelcomePanel();
         detailPanel.add(detailTabs, BorderLayout.CENTER);
+
+
+        detailTabs.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // 根据鼠标点击位置确定点击的标签页索引，而不是使用getSelectedIndex() 因为切换后可能不准了
+                int clickedTabIndex = detailTabs.indexAtLocation(e.getX(), e.getY());
+                if (clickedTabIndex >= 0 && clickedTabIndex < detailTabs.getTabCount()) {
+                    lastSelectedRequestDetailTabIndex = clickedTabIndex;
+                }
+            }
+
+        });
     }
 
     private void createStatusBar() {
@@ -369,8 +381,8 @@ public class ExecutionResultsPanel extends JPanel {
             showOverviewDetail();
         }
 
-        detailTabs.revalidate();
-        detailTabs.repaint();
+        detailTabs.revalidate(); // 重新验证布局
+        detailTabs.repaint(); // 重绘选项卡面板
     }
 
     private void showOverviewDetail() {
@@ -407,7 +419,7 @@ public class ExecutionResultsPanel extends JPanel {
         infoPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_ITERATION_INFO)));
 
         infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND) + ":"));
-        infoPanel.add(new JLabel(I18nUtil.getMessage("functional.iteration.round.format", iteration.getIterationIndex() + 1)));
+        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND_FORMAT, iteration.getIterationIndex() + 1)));
 
         infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_START_TIME) + ":"));
         infoPanel.add(new JLabel(formatTimestamp(iteration.getStartTime())));
@@ -431,17 +443,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void showRequestDetail(RequestNodeData requestData) {
         RequestResult request = requestData.request;
-
-
-        // 清空现有的选项卡
-        detailTabs.removeAll();
-
-        // 移除所有之前的监听器，避免重复添加
-        for (ChangeListener listener : detailTabs.getChangeListeners()) {
-            detailTabs.removeChangeListener(listener);
-        }
-
-        // 请求信息（HTML） - 使用 getReq() 方法获取 PreparedRequest
+        // 请求信息
         JEditorPane reqPane = new JEditorPane();
         reqPane.setContentType(TEXT_HTML);
         reqPane.setEditable(false);
@@ -449,7 +451,7 @@ public class ExecutionResultsPanel extends JPanel {
         reqPane.setCaretPosition(0);
         detailTabs.addTab("Request", new FlatSVGIcon("icons/http.svg", 16, 16), new JScrollPane(reqPane));
 
-        // 响应信息（HTML） - 使用 HttpHtmlRenderer.renderResponse
+        // 响应信息
         if (request.getResponse() != null) {
             JEditorPane respPane = new JEditorPane();
             respPane.setContentType(TEXT_HTML);
@@ -459,17 +461,7 @@ public class ExecutionResultsPanel extends JPanel {
             detailTabs.addTab("Response", new FlatSVGIcon("icons/check.svg", 16, 16), new JScrollPane(respPane));
         }
 
-        // Tests 断言结果Tab - 使用 HttpHtmlRenderer.renderTestResults
-        if (request.getTestResults() != null && !request.getTestResults().isEmpty()) {
-            JEditorPane testsPane = new JEditorPane();
-            testsPane.setContentType(TEXT_HTML);
-            testsPane.setEditable(false);
-            testsPane.setText(HttpHtmlRenderer.renderTestResults(request.getTestResults()));
-            testsPane.setCaretPosition(0);
-            detailTabs.addTab("Tests", new FlatSVGIcon("icons/code.svg", 16, 16), new JScrollPane(testsPane));
-        }
-
-        // Timing & Event Info Tab - 使用 HttpHtmlRenderer 的方法
+        // Timing & Event Info
         if (request.getResponse() != null && request.getResponse().httpEventInfo != null) {
             JEditorPane timingPane = new JEditorPane();
             timingPane.setContentType(TEXT_HTML);
@@ -486,22 +478,21 @@ public class ExecutionResultsPanel extends JPanel {
             detailTabs.addTab("Event Info", new FlatSVGIcon("icons/detail.svg", 16, 16), new JScrollPane(eventInfoPane));
         }
 
-        // 确保索引在有效范围内，如果超出范围则重置为0
+        // Tests
+        if (request.getTestResults() != null && !request.getTestResults().isEmpty()) {
+            JEditorPane testsPane = new JEditorPane();
+            testsPane.setContentType(TEXT_HTML);
+            testsPane.setEditable(false);
+            testsPane.setText(HttpHtmlRenderer.renderTestResults(request.getTestResults()));
+            testsPane.setCaretPosition(0);
+            detailTabs.addTab("Tests", new FlatSVGIcon("icons/code.svg", 16, 16), new JScrollPane(testsPane));
+        }
+
+        // 恢复上次选中的 tab
         if (lastSelectedRequestDetailTabIndex >= detailTabs.getTabCount()) {
             lastSelectedRequestDetailTabIndex = 0;
         }
-
-        // 恢复用户上次选择的tab
         detailTabs.setSelectedIndex(lastSelectedRequestDetailTabIndex);
-
-        // 添加tab选择监听器，记住用户的选择（只添加一次）
-        detailTabs.addChangeListener(e -> {
-            // 验证当前选择的索引是否在有效范围内
-            int currentIndex = detailTabs.getSelectedIndex();
-            if (currentIndex >= 0 && currentIndex < detailTabs.getTabCount()) {
-                lastSelectedRequestDetailTabIndex = currentIndex;
-            }
-        });
     }
 
     private void expandAll() {

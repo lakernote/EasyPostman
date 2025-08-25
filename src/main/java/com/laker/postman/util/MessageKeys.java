@@ -541,4 +541,48 @@ public final class MessageKeys {
     public static final String RESPONSE_HEADERS_COPY_ALL = "response.headers.copy_all";
     public static final String RESPONSE_HEADERS_SELECT_ALL = "response.headers.select_all";
 
+    // ============ CSV Data Panel related ============
+    public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";
+    public static final String CSV_STATUS_LOADED = "csv.status.loaded";
+    public static final String CSV_MANUAL_CREATED = "csv.manual_created";
+    public static final String CSV_BUTTON_CLEAR_TOOLTIP = "csv.button.clear.tooltip";
+    public static final String CSV_MENU_IMPORT_FILE = "csv.menu.import_file";
+    public static final String CSV_MENU_MANAGE_DATA = "csv.menu.manage_data";
+    public static final String CSV_MENU_CLEAR_DATA = "csv.menu.clear_data";
+    public static final String CSV_DATA_CLEARED = "csv.data.cleared";
+    public static final String CSV_DIALOG_MANAGEMENT_TITLE = "csv.dialog.management.title";
+    public static final String CSV_DATA_DRIVEN_TEST = "csv.data_driven_test";
+    public static final String CSV_DIALOG_DESCRIPTION = "csv.dialog.description";
+    public static final String CSV_CURRENT_STATUS = "csv.current_status";
+    public static final String CSV_OPERATIONS = "csv.operations";
+    public static final String CSV_BUTTON_SELECT_FILE = "csv.button.select_file";
+    public static final String CSV_BUTTON_MANAGE_DATA = "csv.button.manage_data";
+    public static final String CSV_BUTTON_CLEAR_DATA = "csv.button.clear_data";
+    public static final String CSV_NO_MANAGEABLE_DATA = "csv.no_manageable_data";
+    public static final String CSV_DATA_MANAGEMENT = "csv.data_management";
+    public static final String CSV_DATA_SOURCE_INFO = "csv.data_source_info";
+    public static final String CSV_BUTTON_ADD_ROW = "csv.button.add_row";
+    public static final String CSV_BUTTON_DELETE_ROW = "csv.button.delete_row";
+    public static final String CSV_BUTTON_ADD_COLUMN = "csv.button.add_column";
+    public static final String CSV_BUTTON_DELETE_COLUMN = "csv.button.delete_column";
+    public static final String CSV_SELECT_ROWS_TO_DELETE = "csv.select_rows_to_delete";
+    public static final String CSV_CONFIRM_DELETE_ROWS = "csv.confirm_delete_rows";
+    public static final String CSV_CONFIRM_DELETE = "csv.confirm_delete";
+    public static final String CSV_ENTER_COLUMN_NAME = "csv.enter_column_name";
+    public static final String CSV_ADD_COLUMN = "csv.add_column";
+    public static final String CSV_SELECT_COLUMNS_TO_DELETE = "csv.select_columns_to_delete";
+    public static final String CSV_CANNOT_DELETE_ALL_COLUMNS = "csv.cannot_delete_all_columns";
+    public static final String CSV_CONFIRM_DELETE_COLUMNS = "csv.confirm_delete_columns";
+    public static final String CSV_USAGE_INSTRUCTIONS = "csv.usage_instructions";
+    public static final String CSV_USAGE_TEXT = "csv.usage_text";
+    public static final String CSV_NO_VALID_DATA_ROWS = "csv.no_valid_data_rows";
+    public static final String CSV_DATA_SAVED = "csv.data_saved";
+    public static final String CSV_SAVE_SUCCESS = "csv.save_success";
+    public static final String CSV_SAVE_FAILED = "csv.save_failed";
+    public static final String CSV_SELECT_FILE = "csv.select_file";
+    public static final String CSV_FILE_FILTER = "csv.file_filter";
+    public static final String CSV_FILE_VALIDATION_FAILED = "csv.file_validation_failed";
+    public static final String CSV_NO_VALID_DATA = "csv.no_valid_data";
+    public static final String CSV_LOAD_FAILED = "csv.load_failed";
+
 }

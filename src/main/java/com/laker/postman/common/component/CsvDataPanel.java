@@ -5,6 +5,8 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.util.CsvDataUtil;
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -62,7 +64,7 @@ public class CsvDataPanel extends JPanel {
 
         // CSV 状态图标和文本
         JLabel csvIcon = new JLabel(new FlatSVGIcon("icons/csv.svg", 16, 16));
-        csvStatusLabel = new JLabel("未加载 CSV 数据");
+        csvStatusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
         csvStatusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         csvStatusLabel.setForeground(new Color(100, 100, 100));
 
@@ -70,7 +72,7 @@ public class CsvDataPanel extends JPanel {
         JButton csvClearBtn = new JButton();
         csvClearBtn.setIcon(new FlatSVGIcon("icons/close.svg", 14, 14));
         csvClearBtn.setPreferredSize(new Dimension(20, 20));
-        csvClearBtn.setToolTipText("清除 CSV 数据");
+        csvClearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_TOOLTIP));
         csvClearBtn.setBorderPainted(false);
         csvClearBtn.setContentAreaFilled(false);
         csvClearBtn.setFocusPainted(false);
@@ -93,18 +95,18 @@ public class CsvDataPanel extends JPanel {
 
         JPopupMenu csvMenu = new JPopupMenu();
 
-        JMenuItem loadCsvItem = new JMenuItem("导入 CSV 文件", new FlatSVGIcon("icons/import.svg", 16, 16));
+        JMenuItem loadCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_IMPORT_FILE), new FlatSVGIcon("icons/import.svg", 16, 16));
         loadCsvItem.addActionListener(e -> showEnhancedCsvManagementDialog());
         csvMenu.add(loadCsvItem);
 
-        JMenuItem manageCsvItem = new JMenuItem("管理 CSV 数据", new FlatSVGIcon("icons/code.svg", 16, 16));
+        JMenuItem manageCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA), new FlatSVGIcon("icons/code.svg", 16, 16));
         manageCsvItem.addActionListener(e -> showCsvDataManageDialog());
         manageCsvItem.setEnabled(false); // 默认禁用，有数据时启用
         csvMenu.add(manageCsvItem);
 
         csvMenu.addSeparator();
 
-        JMenuItem clearCsvItem = new JMenuItem("清除 CSV 数据", new FlatSVGIcon("icons/clear.svg", 16, 16));
+        JMenuItem clearCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_CLEAR_DATA), new FlatSVGIcon("icons/clear.svg", 16, 16));
         clearCsvItem.addActionListener(e -> clearCsvData());
         clearCsvItem.setEnabled(false); // 默认禁用，有数据时启用
         csvMenu.add(clearCsvItem);
@@ -131,8 +133,8 @@ public class CsvDataPanel extends JPanel {
         csvHeaders = null;
         updateCsvStatus();
         JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                "CSV 数据已清除",
-                "信息",
+                I18nUtil.getMessage(MessageKeys.CSV_DATA_CLEARED),
+                I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -143,8 +145,8 @@ public class CsvDataPanel extends JPanel {
         if (csvData == null || csvData.isEmpty()) {
             csvStatusPanel.setVisible(false);
         } else {
-            csvStatusLabel.setText(String.format("CSV: %s (%d 行数据)",
-                    csvFile != null ? csvFile.getName() : "手动创建",
+            csvStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
+                    csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED),
                     csvData.size()));
             csvStatusLabel.setForeground(new Color(0, 128, 0)); // 绿色表示已加载
             csvStatusPanel.setVisible(true);
@@ -157,7 +159,7 @@ public class CsvDataPanel extends JPanel {
      * 增强的 CSV 文件管理对话框
      */
     private void showEnhancedCsvManagementDialog() {
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), "CSV数据管理", true);
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.CSV_DIALOG_MANAGEMENT_TITLE), true);
         dialog.setSize(600, 430);
         dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
@@ -166,17 +168,11 @@ public class CsvDataPanel extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
-        JLabel titleLabel = new JLabel("CSV数据驱动测试");
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_DRIVEN_TEST));
         titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
-        JTextArea descArea = new JTextArea(
-                "CSV 数据驱动测试允许您使用外部数据文件为每行数据执行一次测试。\n" +
-                        "• CSV 文件第一行应为列标题\n" +
-                        "• 支持两种使用方式：\n" +
-                        "  1. 在请求URL、Header、Body中直接使用 {{列名}} 占位符\n" +
-                        "  2. 在脚本中使用 pm.variables.get('列名') 访问数据\n" +
-                        "• 支持的编码：UTF-8");
+        JTextArea descArea = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION));
         descArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         descArea.setEditable(false);
         descArea.setOpaque(false);
@@ -192,16 +188,16 @@ public class CsvDataPanel extends JPanel {
 
         // 当前状态显示
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.setBorder(BorderFactory.createTitledBorder("当前状态"));
+        statusPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_CURRENT_STATUS)));
 
         JLabel currentStatusLabel = new JLabel();
         if (csvData == null || csvData.isEmpty()) {
-            currentStatusLabel.setText("未加载 CSV 数据");
+            currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
             currentStatusLabel.setIcon(new FlatSVGIcon("icons/warning.svg", 16, 16));
             currentStatusLabel.setForeground(Color.GRAY);
         } else {
-            currentStatusLabel.setText(String.format("已加载: %s (%d 行数据)",
-                    csvFile != null ? csvFile.getName() : "手动创建", csvData.size()));
+            currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
+                    csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED), csvData.size()));
             currentStatusLabel.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
             currentStatusLabel.setForeground(new Color(0, 128, 0));
         }
@@ -210,21 +206,21 @@ public class CsvDataPanel extends JPanel {
 
         // 操作按钮面板 - 改为3行
         JPanel actionPanel = new JPanel(new GridLayout(3, 1, 5, 10));
-        actionPanel.setBorder(BorderFactory.createTitledBorder("操作"));
+        actionPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_OPERATIONS)));
 
         // 选择文件按钮
-        JButton selectFileBtn = new JButton("选择 CSV 文件");
+        JButton selectFileBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE));
         selectFileBtn.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
         selectFileBtn.setPreferredSize(new Dimension(200, 35));
 
         // 管理数据按钮
-        JButton manageDataBtn = new JButton("管理数据");
+        JButton manageDataBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA));
         manageDataBtn.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
         manageDataBtn.setPreferredSize(new Dimension(200, 35));
         manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
         // 清除数据按钮
-        JButton clearBtn = new JButton("清除数据");
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA));
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
         clearBtn.setPreferredSize(new Dimension(200, 35));
         clearBtn.setEnabled(csvData != null && !csvData.isEmpty());
@@ -232,7 +228,7 @@ public class CsvDataPanel extends JPanel {
         // 为按钮添加事件监听器，并确保状态更新
         selectFileBtn.addActionListener(e -> {
             if (selectCsvFile()) {
-                currentStatusLabel.setText(String.format("已加载: %s (%d 行数据)",
+                currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
                         csvFile.getName(), csvData.size()));
                 currentStatusLabel.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
                 currentStatusLabel.setForeground(new Color(0, 128, 0));
@@ -248,7 +244,7 @@ public class CsvDataPanel extends JPanel {
 
         clearBtn.addActionListener(e -> {
             clearCsvData();
-            currentStatusLabel.setText("未加载 CSV 数据");
+            currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
             currentStatusLabel.setIcon(new FlatSVGIcon("icons/warning.svg", 16, 16));
             currentStatusLabel.setForeground(Color.GRAY);
             manageDataBtn.setEnabled(false);
@@ -264,7 +260,7 @@ public class CsvDataPanel extends JPanel {
 
         // 底部按钮
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton closeBtn = new JButton("关闭");
+        JButton closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
         closeBtn.addActionListener(e -> dialog.dispose());
         bottomPanel.add(closeBtn);
         dialog.add(bottomPanel, BorderLayout.SOUTH);
@@ -277,11 +273,12 @@ public class CsvDataPanel extends JPanel {
      */
     private void showCsvDataManageDialog() {
         if (csvData == null || csvData.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "没有可管理的 CSV 数据", "提示", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.CSV_NO_MANAGEABLE_DATA),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        JDialog manageDialog = new JDialog((Frame) null, "CSV数据管理", true);
+        JDialog manageDialog = new JDialog((Frame) null, I18nUtil.getMessage(MessageKeys.CSV_DATA_MANAGEMENT), true);
         manageDialog.setSize(700, 550);
         manageDialog.setLocationRelativeTo(null);
         manageDialog.setLayout(new BorderLayout());
@@ -290,9 +287,8 @@ public class CsvDataPanel extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        JLabel infoLabel = new JLabel(String.format(
-                "<html>数据来源: <b>%s</b> | 行数: <b>%d</b></html>",
-                csvFile != null ? csvFile.getName() : "手动创建",
+        JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_SOURCE_INFO,
+                csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED),
                 csvData.size()));
         infoLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         topPanel.add(infoLabel, BorderLayout.CENTER);
@@ -416,23 +412,24 @@ public class CsvDataPanel extends JPanel {
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        JButton addRowBtn = new JButton("Add Row");
+        JButton addRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW));
         addRowBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
         List<String> finalHeaders = headers;
         addRowBtn.addActionListener(e -> editTableModel.addRow(new Object[finalHeaders.size()]));
 
-        JButton deleteRowBtn = new JButton("Delete Row");
+        JButton deleteRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW));
         deleteRowBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
         deleteRowBtn.addActionListener(e -> {
             int[] selectedRows = csvTable.getSelectedRows();
             if (selectedRows.length == 0) {
-                JOptionPane.showMessageDialog(manageDialog, "请先选择要删除的行", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_SELECT_ROWS_TO_DELETE),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             int confirm = JOptionPane.showConfirmDialog(manageDialog,
-                    String.format("确定要删除选中的 %d 行数据吗？", selectedRows.length),
-                    "确认删除", JOptionPane.YES_NO_OPTION);
+                    I18nUtil.getMessage(MessageKeys.CSV_CONFIRM_DELETE_ROWS, selectedRows.length),
+                    I18nUtil.getMessage(MessageKeys.CSV_CONFIRM_DELETE), JOptionPane.YES_NO_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 for (int i = selectedRows.length - 1; i >= 0; i--) {
@@ -441,10 +438,11 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton addColumnBtn = new JButton("Add Column");
+        JButton addColumnBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN));
         addColumnBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
         addColumnBtn.addActionListener(e -> {
-            String columnName = JOptionPane.showInputDialog(manageDialog, "请输入新列名:", "添加列", JOptionPane.PLAIN_MESSAGE);
+            String columnName = JOptionPane.showInputDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_ENTER_COLUMN_NAME),
+                    I18nUtil.getMessage(MessageKeys.CSV_ADD_COLUMN), JOptionPane.PLAIN_MESSAGE);
             if (columnName != null && !columnName.trim().isEmpty()) {
                 columnName = columnName.trim();
                 editTableModel.addColumn(columnName);
@@ -453,18 +451,20 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton deleteColumnBtn = new JButton("Delete Column");
+        JButton deleteColumnBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_COLUMN));
         deleteColumnBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
         deleteColumnBtn.addActionListener(e -> {
             int[] selectedColumns = csvTable.getSelectedColumns();
             if (selectedColumns.length == 0) {
-                JOptionPane.showMessageDialog(manageDialog, "请先选择要删除的列", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_SELECT_COLUMNS_TO_DELETE),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             // 检查是否要删除所有列
             if (selectedColumns.length >= editTableModel.getColumnCount()) {
-                JOptionPane.showMessageDialog(manageDialog, "不能删除所有列，至少需要保留一列", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_CANNOT_DELETE_ALL_COLUMNS),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -476,8 +476,8 @@ public class CsvDataPanel extends JPanel {
             }
 
             int confirm = JOptionPane.showConfirmDialog(manageDialog,
-                    String.format("确定要删除选中的列吗？\n列名: %s", columnNames.toString()),
-                    "确认删除", JOptionPane.YES_NO_OPTION);
+                    I18nUtil.getMessage(MessageKeys.CSV_CONFIRM_DELETE_COLUMNS, columnNames.toString()),
+                    I18nUtil.getMessage(MessageKeys.CSV_CONFIRM_DELETE), JOptionPane.YES_NO_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 // 从后往前删除，避免索引变化问题
@@ -523,12 +523,8 @@ public class CsvDataPanel extends JPanel {
 
         // 使用说明
         JPanel helpPanel = new JPanel(new BorderLayout());
-        helpPanel.setBorder(BorderFactory.createTitledBorder("使用说明"));
-        JTextArea helpText = new JTextArea(
-                """
-                        • 双击单元格可直接编辑内容
-                        • 支持两种使用方式：{{列名}} 占位符 或 pm.variables.get('列名')
-                        • 例如：URL中使用 {{baseUrl}}/users 或脚本中使用 pm.variables.get('userId')""");
+        helpPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS)));
+        JTextArea helpText = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_USAGE_TEXT));
         helpText.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         helpText.setEditable(false);
         helpText.setOpaque(false);
@@ -540,7 +536,7 @@ public class CsvDataPanel extends JPanel {
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        JButton saveBtn = new JButton("保存");
+        JButton saveBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE));
         saveBtn.setIcon(new FlatSVGIcon("icons/save.svg", 16, 16));
         saveBtn.addActionListener(e -> {
             try {
@@ -573,7 +569,8 @@ public class CsvDataPanel extends JPanel {
                 }
 
                 if (newCsvData.isEmpty()) {
-                    JOptionPane.showMessageDialog(manageDialog, "没有有效的数据行，请至少添加一行数据", "提示", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_NO_VALID_DATA_ROWS),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
@@ -585,18 +582,19 @@ public class CsvDataPanel extends JPanel {
                 updateCsvStatus();
 
                 JOptionPane.showMessageDialog(manageDialog,
-                        String.format("数据已保存！共 %d 行数据，%d 列", newCsvData.size(), currentHeaders.size()),
-                        "保存成功", JOptionPane.INFORMATION_MESSAGE);
+                        I18nUtil.getMessage(MessageKeys.CSV_DATA_SAVED, newCsvData.size(), currentHeaders.size()),
+                        I18nUtil.getMessage(MessageKeys.CSV_SAVE_SUCCESS), JOptionPane.INFORMATION_MESSAGE);
 
                 manageDialog.dispose();
 
             } catch (Exception ex) {
                 log.error("保存 CSV 数据失败", ex);
-                JOptionPane.showMessageDialog(manageDialog, "保存数据失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_SAVE_FAILED, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        JButton cancelBtn = new JButton("取消");
+        JButton cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
         cancelBtn.addActionListener(e -> manageDialog.dispose());
 
         buttonPanel.add(saveBtn);
@@ -612,8 +610,8 @@ public class CsvDataPanel extends JPanel {
      */
     private boolean selectCsvFile() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("选择 CSV 文件");
-        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.CSV_SELECT_FILE));
+        fileChooser.setFileFilter(new FileNameExtensionFilter(I18nUtil.getMessage(MessageKeys.CSV_FILE_FILTER), "csv"));
 
         // 设置默认目录
         if (csvFile != null && csvFile.getParentFile() != null) {
@@ -627,14 +625,15 @@ public class CsvDataPanel extends JPanel {
             // 验证文件
             String validation = CsvDataUtil.validateCsvFile(selectedFile);
             if (!validation.startsWith("文件格式正确")) {
-                JOptionPane.showMessageDialog(this, validation, "文件验证失败", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, validation, I18nUtil.getMessage(MessageKeys.CSV_FILE_VALIDATION_FAILED), JOptionPane.ERROR_MESSAGE);
                 return false;
             }
 
             try {
                 List<Map<String, String>> newCsvData = CsvDataUtil.readCsvData(selectedFile);
                 if (newCsvData.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "CSV 文件没有有效数据", "提示", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.CSV_NO_VALID_DATA),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                     return false;
                 }
 
@@ -645,7 +644,8 @@ public class CsvDataPanel extends JPanel {
 
             } catch (Exception e) {
                 log.error("加载 CSV 文件失败", e);
-                JOptionPane.showMessageDialog(this, "读取 CSV 文件失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.CSV_LOAD_FAILED, e.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 return false;
             }
         }
@@ -676,4 +676,3 @@ public class CsvDataPanel extends JPanel {
         return null;
     }
 }
-

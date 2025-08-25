@@ -8,6 +8,8 @@ import com.laker.postman.common.table.TextOrFileTableCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -50,7 +52,7 @@ public class RequestBodyPanel extends JPanel {
         setLayout(new BorderLayout());
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bodyTypeLabel = new JLabel("Type:");
+        bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
         leftPanel.add(bodyTypeLabel);
         String[] bodyTypes = {BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
@@ -58,7 +60,7 @@ public class RequestBodyPanel extends JPanel {
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
         leftPanel.add(bodyTypeComboBox);
         leftPanel.add(Box.createHorizontalStrut(10));
-        formatLabel = new JLabel("Format:");
+        formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
         leftPanel.add(formatLabel);
         String[] rawTypes = {RAW_TYPE_JSON};
         rawTypeComboBox = new JComboBox<>(rawTypes);
@@ -90,7 +92,7 @@ public class RequestBodyPanel extends JPanel {
 
     private JPanel createNonePanel() {
         JPanel nonePanel = new JPanel(new BorderLayout());
-        nonePanel.add(new JLabel("No Body for this request", SwingConstants.CENTER), BorderLayout.CENTER);
+        nonePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_NONE), SwingConstants.CENTER), BorderLayout.CENTER);
         return nonePanel;
     }
 
@@ -124,7 +126,7 @@ public class RequestBodyPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
         JPanel bottomPanel = new JPanel(new BorderLayout());
         // formatButton 已经在顶部面板创建并添加，这里无需再创建
-        wsSendButton = new JButton("Send Message");
+        wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_SEND_MESSAGE));
         wsSendButton.setVisible(false);
         bottomPanel.add(wsSendButton, BorderLayout.EAST);
         panel.add(bottomPanel, BorderLayout.SOUTH);
@@ -142,12 +144,12 @@ public class RequestBodyPanel extends JPanel {
 
     private void formatBody() {
         if (!isBodyTypeRAW()) {
-            JOptionPane.showMessageDialog(this, "Only Raw type Body can be formatted");
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_ONLY_RAW));
             return;
         }
         String bodyText = bodyArea.getText();
         if (StrUtil.isBlank(bodyText)) {
-            JOptionPane.showMessageDialog(this, "Body is empty, cannot format");
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_EMPTY));
             return;
         }
         if (RAW_TYPE_JSON.equals(currentRawType)) {
@@ -155,7 +157,7 @@ public class RequestBodyPanel extends JPanel {
                 JSON json = JSONUtil.parse(bodyText);
                 bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
             } else {
-                JOptionPane.showMessageDialog(this, "Body is not valid JSON, cannot format");
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_INVALID_JSON));
             }
         }
     }

@@ -526,4 +526,13 @@ public final class MessageKeys {
     public static final String SETTINGS_SAVE_SUCCESS = "settings.save.success";
     public static final String SETTINGS_SAVE_SUCCESS_TITLE = "settings.save.success.title";
 
+    // ============ 请求Body相关 ============
+    public static final String REQUEST_BODY_TYPE = "request.body.type";
+    public static final String REQUEST_BODY_FORMAT = "request.body.format";
+    public static final String REQUEST_BODY_NONE = "request.body.none";
+    public static final String REQUEST_BODY_SEND_MESSAGE = "request.body.send_message";
+    public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";
+    public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
+    public static final String REQUEST_BODY_FORMAT_INVALID_JSON = "request.body.format.invalid_json";
+
 }

@@ -380,9 +380,16 @@ public class CsvDataPanel extends JPanel {
             }
         };
 
+        // 封装设置渲染器的方法
+        Runnable applyEmptyCellRenderer = () -> {
+            for (int i = 0; i < csvTable.getColumnCount(); i++) {
+                csvTable.getColumnModel().getColumn(i).setCellRenderer(emptyCellRenderer);
+            }
+        };
+
         // 为所有列设置渲染器
+        applyEmptyCellRenderer.run();
         for (int i = 0; i < headers.size(); i++) {
-            csvTable.getColumnModel().getColumn(i).setCellRenderer(emptyCellRenderer);
             csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
         }
 
@@ -442,6 +449,7 @@ public class CsvDataPanel extends JPanel {
                 columnName = columnName.trim();
                 editTableModel.addColumn(columnName);
                 csvTable.getColumnModel().getColumn(csvTable.getColumnCount() - 1).setPreferredWidth(120);
+                applyEmptyCellRenderer.run(); // 新增列后重新设置渲染器
             }
         });
 
@@ -503,6 +511,7 @@ public class CsvDataPanel extends JPanel {
                 for (int i = 0; i < csvTable.getColumnCount(); i++) {
                     csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
                 }
+                applyEmptyCellRenderer.run(); // 删除列后重新设置渲染器
             }
         });
 

@@ -13,6 +13,15 @@ import java.util.Map;
  * JS脚本执行器，使用GraalVM的Polyglot API执行JavaScript脚本。
  */
 public class JsScriptExecutor {
+
+    private static final Engine ENGINE = Engine.newBuilder()
+            .option("engine.WarnInterpreterOnly", "false") // 禁用解释器模式警告
+            .build();
+
+    private JsScriptExecutor() {
+        // 工具类不应该被实例化
+    }
+
     /**
      * 执行JS脚本，自动注入所有变量、polyfill，并支持输出回调。
      *
@@ -30,8 +39,12 @@ public class JsScriptExecutor {
             }
 
             @Override
-            public void flush() {
-                String chunk = buffer.toString(StandardCharsets.UTF_8);
+            public void flush() throws IOException {
+                super.flush();
+                if (buffer.size() == 0) {
+                    return;
+                }
+                String chunk = bufferToString(buffer);
                 buffer.reset(); // 清空缓冲区
                 if (outputCallback != null && !chunk.isEmpty()) {
                     for (String line : chunk.split("\n")) {
@@ -47,15 +60,9 @@ public class JsScriptExecutor {
                 .allowAllAccess(true)
                 .out(outputStream)
                 .err(outputStream)
-                .engine(Engine.newBuilder()
-                        .option("engine.WarnInterpreterOnly", "false")
-                        .build())
+                .engine(ENGINE)
                 .build()) {
-            if (bindings != null) {
-                for (var entry : bindings.entrySet()) {
-                    context.getBindings("js").putMember(entry.getKey(), entry.getValue());
-                }
-            }
+            injectBindings(context, bindings);
             JsPolyfillInjector.injectAll(context);
             context.eval("js", script);
 
@@ -66,6 +73,18 @@ public class JsScriptExecutor {
                 outputCallback.onOutput("Error executing script: " + e.getMessage());
             }
         }
+    }
+
+    private static void injectBindings(Context context, Map<String, Object> bindings) {
+        if (bindings != null) {
+            for (var entry : bindings.entrySet()) {
+                context.getBindings("js").putMember(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    private static String bufferToString(ByteArrayOutputStream buffer) {
+        return buffer.size() == 0 ? "" : buffer.toString(StandardCharsets.UTF_8);
     }
 
     /**

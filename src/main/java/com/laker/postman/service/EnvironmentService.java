@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +21,11 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 public class EnvironmentService {
+
+    private EnvironmentService() {
+        // 工具类不应该被实例化
+    }
+
     private static final Map<String, Environment> environments = Collections.synchronizedMap(new LinkedHashMap<>());
     /**
      * -- GETTER --
@@ -27,10 +33,11 @@ public class EnvironmentService {
      */
     @Getter
     private static Environment activeEnvironment = null;
+
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{(.+?)}}");
 
     // 临时变量，仅本次请求有效，优先级高于环境变量
-    private static final Map<String, String> temporaryVariables = new HashMap<>();
+    private static final Map<String, String> temporaryVariables = new ConcurrentHashMap<>();
 
     static {
         loadEnvironments();

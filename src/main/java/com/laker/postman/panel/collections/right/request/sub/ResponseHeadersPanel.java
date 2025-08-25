@@ -57,6 +57,7 @@ public class ResponseHeadersPanel extends JPanel {
         selectAll.addActionListener(e -> headersTable.selectAll());
         // 鼠标右键自动选中行/单元格
         headersTable.addMouseListener(new MouseAdapter() {
+            @Override
             public void mousePressed(MouseEvent e) {
                 if (e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e)) {
                     int row = headersTable.rowAtPoint(e.getPoint());
@@ -67,6 +68,7 @@ public class ResponseHeadersPanel extends JPanel {
                 }
             }
 
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && headersTable.getSelectedRow() != -1) {
                     int row = headersTable.getSelectedRow();

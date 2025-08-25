@@ -535,4 +535,10 @@ public final class MessageKeys {
     public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
     public static final String REQUEST_BODY_FORMAT_INVALID_JSON = "request.body.format.invalid_json";
 
+    // ============ 响应头面板相关 ============
+    public static final String RESPONSE_HEADERS_COPY_SELECTED = "response.headers.copy_selected";
+    public static final String RESPONSE_HEADERS_COPY_CELL = "response.headers.copy_cell";
+    public static final String RESPONSE_HEADERS_COPY_ALL = "response.headers.copy_all";
+    public static final String RESPONSE_HEADERS_SELECT_ALL = "response.headers.select_all";
+
 }

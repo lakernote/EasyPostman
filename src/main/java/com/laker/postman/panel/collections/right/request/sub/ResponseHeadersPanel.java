@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -36,10 +38,10 @@ public class ResponseHeadersPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         // 右键菜单
         JPopupMenu popupMenu = new JPopupMenu();
-        JMenuItem copySelected = new JMenuItem("Copy Selected");
-        JMenuItem copyCell = new JMenuItem("Copy Cell");
-        JMenuItem copyAll = new JMenuItem("Copy All");
-        JMenuItem selectAll = new JMenuItem("Select All");
+        JMenuItem copySelected = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_COPY_SELECTED));
+        JMenuItem copyCell = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_COPY_CELL));
+        JMenuItem copyAll = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_COPY_ALL));
+        JMenuItem selectAll = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_SELECT_ALL));
         popupMenu.add(copySelected);
         popupMenu.add(copyCell);
         popupMenu.add(copyAll);

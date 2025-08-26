@@ -6,6 +6,8 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.component.ResultTreeCellRenderer;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -46,7 +48,7 @@ public class PerformanceResultTreePanel extends JPanel {
         searchPanel.add(searchField, BorderLayout.CENTER);
 
         // 结果树
-        resultRootNode = new DefaultMutableTreeNode("Result Tree");
+        resultRootNode = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE));
         resultTreeModel = new DefaultTreeModel(resultRootNode);
         resultTree = new JTree(resultTreeModel);
         resultTree.setRootVisible(true);
@@ -61,11 +63,11 @@ public class PerformanceResultTreePanel extends JPanel {
 
         // 详情tab
         resultDetailTabbedPane = new JTabbedPane();
-        resultDetailTabbedPane.addTab("Request", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Response", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Tests", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Timing", new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab("Event Info", new JScrollPane(new JEditorPane()));
+        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REQUEST), new JScrollPane(new JEditorPane()));
+        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESPONSE), new JScrollPane(new JEditorPane()));
+        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TESTS), new JScrollPane(new JEditorPane()));
+        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TIMING), new JScrollPane(new JEditorPane()));
+        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_EVENT_INFO), new JScrollPane(new JEditorPane()));
 
         // 主分割面板 - 左侧结果树，右侧详情
         JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, resultDetailTabbedPane);
@@ -96,15 +98,15 @@ public class PerformanceResultTreePanel extends JPanel {
                 if (info.testResults != null && !info.testResults.isEmpty()) {
                     setTabHtml(2, HttpHtmlRenderer.renderTestResults(info.testResults));
                 } else {
-                    setTabHtml(2, "<html><body><i>No assertion results</i></body></html>");
+                    setTabHtml(2, I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_ASSERTION_RESULTS));
                 }
                 // Timing
                 if (resp != null && resp.httpEventInfo != null) {
                     setTabHtml(3, HttpHtmlRenderer.renderTimingInfo(resp));
                     setTabHtml(4, HttpHtmlRenderer.renderEventInfo(resp));
                 } else {
-                    setTabHtml(3, "<html><body><i>No TimingInfo</i></body></html>");
-                    setTabHtml(4, "<html><body><i>No EventInfo</i></body></html>");
+                    setTabHtml(3, I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_TIMING_INFO));
+                    setTabHtml(4, I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_EVENT_INFO));
                 }
             } else {
                 clearDetailTabs();

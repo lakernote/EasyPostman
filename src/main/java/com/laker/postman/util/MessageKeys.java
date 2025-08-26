@@ -264,6 +264,14 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TAB_TREND = "performance.tab.trend";
     public static final String PERFORMANCE_TAB_REPORT = "performance.tab.report";
     public static final String PERFORMANCE_TAB_RESULT_TREE = "performance.tab.result_tree";
+    public static final String PERFORMANCE_TAB_REQUEST = "performance.tab.request";
+    public static final String PERFORMANCE_TAB_RESPONSE = "performance.tab.response";
+    public static final String PERFORMANCE_TAB_TESTS = "performance.tab.tests";
+    public static final String PERFORMANCE_TAB_TIMING = "performance.tab.timing";
+    public static final String PERFORMANCE_TAB_EVENT_INFO = "performance.tab.event_info";
+    public static final String PERFORMANCE_NO_ASSERTION_RESULTS = "performance.no_assertion_results";
+    public static final String PERFORMANCE_NO_TIMING_INFO = "performance.no_timing_info";
+    public static final String PERFORMANCE_NO_EVENT_INFO = "performance.no_event_info";
     public static final String PERFORMANCE_PROPERTY_SELECT_NODE = "performance.property.select_node";
     public static final String PERFORMANCE_EFFICIENT_MODE = "performance.efficient_mode";
     public static final String PERFORMANCE_EFFICIENT_MODE_TOOLTIP = "performance.efficient_mode.tooltip";

@@ -584,8 +584,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         /**
          * 生成优美刻度（nice ticks），如1-2-5-10-20等
-         * @param min 最小值
-         * @param max 最大值
+         *
+         * @param min      最小值
+         * @param max      最大值
          * @param maxTicks 最多刻度数
          * @return 刻度数组
          */
@@ -688,8 +689,8 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 default:
                     actualMax = 20; // 默认值
             }
-            // 增加30% 的安全余量
-            return (int) (actualMax * 1.3);
+            // 增加50% 的安全余量
+            return (int) (actualMax * 1.5);
         }
 
         private int getDuration() {
@@ -742,9 +743,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
             g2d.setColor(Color.WHITE);
             g2d.setStroke(new BasicStroke(1.0f));
             for (Point p : points) {
-                g2d.fill(new Rectangle2D.Double((double)p.x - 3, (double)p.y - 3, 6, 6));
+                g2d.fill(new Rectangle2D.Double((double) p.x - 3, (double) p.y - 3, 6, 6));
                 g2d.setColor(CURVE_COLOR);
-                g2d.draw(new Rectangle2D.Double((double)p.x - 3, (double)p.y - 3, 6, 6));
+                g2d.draw(new Rectangle2D.Double((double) p.x - 3, (double) p.y - 3, 6, 6));
                 g2d.setColor(Color.WHITE);
             }
         }

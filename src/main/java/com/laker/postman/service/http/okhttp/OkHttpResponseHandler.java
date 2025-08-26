@@ -3,6 +3,8 @@ package com.laker.postman.service.http.okhttp;
 import com.laker.postman.common.component.DownloadProgressDialog;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.Response;
@@ -62,8 +64,8 @@ public class OkHttpResponseHandler {
         okResponse.close();
     }
 
-    private static void handleSseResponse(Response okResponse, HttpResponse response) throws IOException {
-        response.body = "[SSE流响应，无法直接处理]";
+    private static void handleSseResponse(Response okResponse, HttpResponse response) {
+        response.body = I18nUtil.getMessage(MessageKeys.SSE_STREAM_UNSUPPORTED);
         response.bodySize = 0;
         response.isSse = true;
         if (okResponse.body() != null) {
@@ -141,7 +143,7 @@ public class OkHttpResponseHandler {
         int len;
         int contentLength = getContentLength(is, contentLengthHeader);
 
-        DownloadProgressDialog progressDialog = new DownloadProgressDialog("Download Progress");
+        DownloadProgressDialog progressDialog = new DownloadProgressDialog(I18nUtil.getMessage(MessageKeys.DOWNLOAD_PROGRESS_TITLE));
         progressDialog.startDownload(contentLength);
 
         // 只需调用此方法即可自动节流和切换线程
@@ -149,7 +151,7 @@ public class OkHttpResponseHandler {
             while ((len = is.read(buf)) != -1) {
                 if (progressDialog.isCancelled()) {
                     if (tempFile.exists()) tempFile.delete();
-                    throw new IOException("下载已取消");
+                    throw new IOException(I18nUtil.getMessage(MessageKeys.DOWNLOAD_CANCELLED));
                 }
                 bos.write(buf, 0, len);
                 totalBytes += len;
@@ -225,10 +227,10 @@ public class OkHttpResponseHandler {
             if (is != null) is.close();
             SwingUtilities.invokeLater(() -> {
                 JOptionPane.showMessageDialog(null,
-                        String.format("二进制内容超出最大下载限制%dMB（当前限制：%d MB）", contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
-                        "下载限制", JOptionPane.WARNING_MESSAGE);
+                        I18nUtil.getMessage(MessageKeys.BINARY_TOO_LARGE, contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
+                        I18nUtil.getMessage(MessageKeys.DOWNLOAD_LIMIT_TITLE), JOptionPane.WARNING_MESSAGE);
             });
-            response.body = String.format("[二进制内容超出最大下载限制，未下载。当前限制：%d MB]", maxDownloadSize / 1024 / 1024);
+            response.body = I18nUtil.getMessage(MessageKeys.BINARY_TOO_LARGE_BODY, maxDownloadSize / 1024 / 1024);
             response.bodySize = 0;
             response.filePath = null;
             return;
@@ -236,10 +238,10 @@ public class OkHttpResponseHandler {
         if (is != null) {
             FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null, contentLengthHeader);
             response.filePath = fs.file.getAbsolutePath();
-            response.body = "[二进制内容，已保存为临时文件]";
+            response.body = I18nUtil.getMessage(MessageKeys.BINARY_SAVED_TEMP_FILE);
             response.bodySize = fs.size;
         } else {
-            response.body = "[无响应体]";
+            response.body = I18nUtil.getMessage(MessageKeys.NO_RESPONSE_BODY);
             response.bodySize = 0;
         }
     }
@@ -277,9 +279,9 @@ public class OkHttpResponseHandler {
         if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
             if (body != null) body.close();
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null,
-                    String.format("文本内容超出最大下载限制%dMB（当前限制：%d MB）", contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
-                    "下载限制", JOptionPane.WARNING_MESSAGE));
-            response.body = String.format("[文本内容超出最大下载限制，未下载。当前限制：%d MB]", maxDownloadSize / 1024 / 1024);
+                    I18nUtil.getMessage(MessageKeys.TEXT_TOO_LARGE, contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
+                    I18nUtil.getMessage(MessageKeys.DOWNLOAD_LIMIT_TITLE), JOptionPane.WARNING_MESSAGE));
+            response.body = I18nUtil.getMessage(MessageKeys.TEXT_TOO_LARGE_BODY, maxDownloadSize / 1024 / 1024);
             response.bodySize = 0;
             response.filePath = null;
             return;
@@ -292,7 +294,7 @@ public class OkHttpResponseHandler {
                 response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
                 int maxBodySizeKB = getMaxBodySize() / 1024;
-                response.body = String.format("[响应体内容超过%dKB，已保存为临时文件，可下载查看完整内容]", maxBodySizeKB);
+                response.body = I18nUtil.getMessage(MessageKeys.BODY_TOO_LARGE_SAVED, maxBodySizeKB);
                 response.bodySize = fs.size;
             } else {
                 // 获取内容类型和字符集

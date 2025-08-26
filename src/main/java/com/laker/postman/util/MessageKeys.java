@@ -588,4 +588,17 @@ public final class MessageKeys {
     public static final String CSV_NO_VALID_DATA = "csv.no_valid_data";
     public static final String CSV_LOAD_FAILED = "csv.load_failed";
 
+    // ============ OkHttpResponseHandler ============
+    public static final String DOWNLOAD_PROGRESS_TITLE = "download.progress.title";
+    public static final String DOWNLOAD_CANCELLED = "download.cancelled";
+    public static final String BINARY_TOO_LARGE = "binary.too_large";
+    public static final String BINARY_TOO_LARGE_BODY = "binary.too_large.body";
+    public static final String BINARY_SAVED_TEMP_FILE = "binary.saved_temp_file";
+    public static final String NO_RESPONSE_BODY = "no.response.body";
+    public static final String DOWNLOAD_LIMIT_TITLE = "download.limit.title";
+    public static final String TEXT_TOO_LARGE = "text.too_large";
+    public static final String TEXT_TOO_LARGE_BODY = "text.too_large.body";
+    public static final String BODY_TOO_LARGE_SAVED = "body.too_large.saved";
+    public static final String SSE_STREAM_UNSUPPORTED = "sse.stream.unsupported";
+
 }

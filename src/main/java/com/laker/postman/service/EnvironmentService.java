@@ -37,22 +37,27 @@ public class EnvironmentService {
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{(.+?)}}");
 
     // 临时变量，仅本次请求有效，优先级高于环境变量
-    private static final Map<String, String> temporaryVariables = new ConcurrentHashMap<>();
+    private static final ThreadLocal<Map<String, String>> temporaryVariables = ThreadLocal.withInitial(ConcurrentHashMap::new);
 
     static {
         loadEnvironments();
     }
 
     public static void setTemporaryVariable(String key, String value) {
-        temporaryVariables.put(key, value);
+        if (value != null) {
+            temporaryVariables.get().put(key, value);
+        } else {
+            temporaryVariables.get().remove(key);
+        }
     }
 
     public static String getTemporaryVariable(String key) {
-        return temporaryVariables.get(key);
+        return temporaryVariables.get().get(key);
     }
 
     public static void clearTemporaryVariables() {
-        temporaryVariables.clear();
+        temporaryVariables.get().clear();
+        temporaryVariables.remove();
     }
 
     /**
@@ -221,7 +226,7 @@ public class EnvironmentService {
 
         while (matcher.find()) {
             String varName = matcher.group(1);
-            String value = temporaryVariables.get(varName); // 优先查临时变量
+            String value = temporaryVariables.get().get(varName); // 优先查临时变量
             if (value == null && activeEnvironment != null) {
                 value = activeEnvironment.getVariable(varName);
             }

@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
@@ -98,6 +99,11 @@ public class PerformancePanel extends SingletonBasePanel {
     private PerformanceResultTreePanel performanceResultTreePanel;
     private PerformanceTrendPanel performanceTrendPanel;
 
+    // CSV 数据管理面板
+    private CsvDataPanel csvDataPanel;
+    // CSV行索引分配器
+    private final AtomicInteger csvRowIndex = new AtomicInteger(0);
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -189,6 +195,8 @@ public class PerformancePanel extends SingletonBasePanel {
             }
         });
         btnPanel.add(efficientHelp);
+        csvDataPanel = new CsvDataPanel();
+        btnPanel.add(csvDataPanel);
         topPanel.add(btnPanel, BorderLayout.WEST);
         // ========== 执行进度指示器 ==========
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
@@ -285,7 +293,8 @@ public class PerformancePanel extends SingletonBasePanel {
         apiFailMap.clear();
         allRequestStartTimes.clear();
         allRequestResults.clear();
-
+        // CSV行索引重置
+        csvRowIndex.set(0);
 
         // 启动趋势图定时采样
         if (trendTimer != null) {
@@ -382,7 +391,7 @@ public class PerformancePanel extends SingletonBasePanel {
         double qps = totalReq;
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
         // 更新趋势图数据
-        log.info("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);
+        log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);
         performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
     }
 
@@ -929,10 +938,25 @@ public class PerformancePanel extends SingletonBasePanel {
             // 清理上次的临时变量
             EnvironmentService.clearTemporaryVariables();
 
+            // ====== CSV变量注入 ======
+            Map<String, String> csvRow = null;
+            if (csvDataPanel != null && csvDataPanel.hasData()) {
+                int rowCount = csvDataPanel.getRowCount();
+                if (rowCount > 0) {
+                    int rowIdx = csvRowIndex.getAndIncrement() % rowCount;
+                    csvRow = csvDataPanel.getRowData(rowIdx);
+                }
+            }
             // ====== 前置脚本 ======
             req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
             Map<String, Object> bindings = HttpUtil.prepareBindings(req);
             Postman pm = (Postman) bindings.get("pm");
+            // 注入CSV变量到pm
+            if (csvRow != null) {
+                for (Map.Entry<String, String> entry : csvRow.entrySet()) {
+                    pm.setVariable(entry.getKey(), entry.getValue());
+                }
+            }
             boolean preOk = true;
             String prescript = jtNode.httpRequestItem.getPrescript();
             if (prescript != null && !prescript.isBlank()) {

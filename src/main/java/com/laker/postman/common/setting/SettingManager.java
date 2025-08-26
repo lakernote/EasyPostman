@@ -61,7 +61,7 @@ public class SettingManager {
                 return 0;
             }
         }
-        return 0;
+        return 120000; // 默认120秒
     }
 
     public static void setRequestTimeout(int timeout) {

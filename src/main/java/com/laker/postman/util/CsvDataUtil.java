@@ -67,7 +67,7 @@ public class CsvDataUtil {
                 dataList.add(rowData);
             }
 
-            log.info("成功读取 CSV 文件: {}, 数据行数: {}", csvFile.getAbsolutePath(), dataList.size());
+            log.debug("成功读取 CSV 文件: {}, 数据行数: {}", csvFile.getAbsolutePath(), dataList.size());
             return dataList;
 
         } catch (Exception e) {

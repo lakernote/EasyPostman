@@ -14,20 +14,20 @@ import java.util.List;
  * 通用可关闭Tab组件，支持右上角红点脏标记
  */
 public class ClosableTabComponent extends JPanel {
-    int MAX_TAB_WIDTH = 100;
-    int TAB_HEIGHT = 20;
+    private static final int MAX_TAB_WIDTH = 100; // 最大Tab宽度
+    private static final int TAB_HEIGHT = 20; // Tab高度
     private final JLabel label;
     private final String rawTitle;
     private boolean dirty = false;
     private boolean newRequest = false;
     private final JTabbedPane tabbedPane;
     private final RequestEditSubPanel panel;
-    private final Runnable saveCallback;
+    private final transient Runnable saveCallback;
 
     public ClosableTabComponent(String title, RequestEditSubPanel panel, JTabbedPane tabbedPane, Runnable saveCallback) {
         setOpaque(false);
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 2));
+        setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         this.tabbedPane = tabbedPane;
         this.panel = panel;
         this.saveCallback = saveCallback;
@@ -81,9 +81,9 @@ public class ClosableTabComponent extends JPanel {
         if (newRequest) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int r = 8;
-            int x = getWidth() - r - 4;
-            int y = 4;
+            int r = 8; // 圆点直径
+            int x = getWidth() - r; // 组件宽度减去圆点直径和右侧边距，这样圆点就贴近右上角。
+            int y = 2; // 圆点的 y 坐标，距离顶部像素。
             g2.setColor(new Color(255, 204, 0, 180)); // yellow
             g2.fillOval(x, y, r, r);
             g2.dispose();
@@ -91,8 +91,8 @@ public class ClosableTabComponent extends JPanel {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int r = 8;
-            int x = getWidth() - r - 4;
-            int y = 4;
+            int x = getWidth() - r;
+            int y = 2;
             g2.setColor(new Color(209, 47, 47, 131)); // red
             g2.fillOval(x, y, r, r);
             g2.dispose();

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import java.awt.*;
@@ -38,6 +39,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
 public class RequestEditPanel extends SingletonBasePanel {
     public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
     public static final String PLUS_TAB = "+";
+    public static final String GROUP = "group";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
@@ -204,7 +206,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         panel.add(namePanel);
         panel.add(Box.createVerticalStrut(12));
         JPanel groupPanel = new JPanel(new BorderLayout(8, 0));
-        JLabel groupLabel = new JLabel(I18nUtil.getMessage("select.group"));
+        JLabel groupLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SELECT_GROUP));
         groupLabel.setPreferredSize(new Dimension(100, 28));
         groupPanel.add(groupLabel, BorderLayout.WEST);
         JTree groupTree = getGroupTree(groupTreeModel);
@@ -215,28 +217,32 @@ public class RequestEditPanel extends SingletonBasePanel {
         groupPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
         groupPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(groupPanel);
-        int result = JOptionPane.showConfirmDialog(null, panel, I18nUtil.getMessage("save.request"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(this, panel, I18nUtil.getMessage(MessageKeys.SAVE_REQUEST),
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.enter.request.name"), I18nUtil.getMessage("tip"), JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME),
+                        I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             javax.swing.tree.TreePath selectedPath = groupTree.getSelectionPath();
             if (selectedPath == null) {
-                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.select.group"), I18nUtil.getMessage("tip"), JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP),
+                        I18nUtil.getMessage(I18nUtil.getMessage(MessageKeys.TIP)), JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             Object selectedGroupNode = selectedPath.getLastPathComponent();
             Object[] groupObj = null;
             if (selectedGroupNode instanceof javax.swing.tree.DefaultMutableTreeNode node) {
                 Object userObj = node.getUserObject();
-                if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
+                if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
                     groupObj = arr;
                 }
             }
             if (groupObj == null) {
-                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.select.valid.group"), I18nUtil.getMessage("tip"), JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP),
+                        I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.WARNING_MESSAGE);
                 return null;
             }
             return new Object[]{groupObj, requestName};
@@ -255,11 +261,11 @@ public class RequestEditPanel extends SingletonBasePanel {
                 }
                 if (parent instanceof DefaultMutableTreeNode node) {
                     Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
+                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
                         int groupCount = 0;
                         for (int i = 0; i < node.getChildCount(); i++) {
                             Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && "group".equals(cArr[0])) {
+                            if (childObj instanceof Object[] cArr && GROUP.equals(cArr[0])) {
                                 groupCount++;
                             }
                         }
@@ -278,7 +284,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                     int groupIdx = -1;
                     for (int i = 0; i < node.getChildCount(); i++) {
                         Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                        if (childObj instanceof Object[] cArr && "group".equals(cArr[0])) {
+                        if (childObj instanceof Object[] cArr && GROUP.equals(cArr[0])) {
                             groupIdx++;
                             if (groupIdx == index) {
                                 return node.getChildAt(i);
@@ -296,10 +302,10 @@ public class RequestEditPanel extends SingletonBasePanel {
                 }
                 if (node instanceof DefaultMutableTreeNode treeNode) {
                     Object userObj = treeNode.getUserObject();
-                    if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
+                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
                         for (int i = 0; i < treeNode.getChildCount(); i++) {
                             Object childObj = ((DefaultMutableTreeNode) treeNode.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && "group".equals(cArr[0])) {
+                            if (childObj instanceof Object[] cArr && GROUP.equals(cArr[0])) {
                                 return false;
                             }
                         }
@@ -312,13 +318,13 @@ public class RequestEditPanel extends SingletonBasePanel {
         JTree groupTree = new JTree(filteredModel);
         groupTree.setRootVisible(false);
         groupTree.setShowsRootHandles(true);
-        groupTree.setCellRenderer(new javax.swing.tree.DefaultTreeCellRenderer() {
+        groupTree.setCellRenderer(new DefaultTreeCellRenderer() {
             @Override
             public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
                 super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
                 if (value instanceof DefaultMutableTreeNode node) {
                     Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && "group".equals(arr[0])) {
+                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
                         setText(String.valueOf(arr[1]));
                         // 橙色实心文件夹，模拟Postman分组
                         setIcon(IconFontSwing.buildIcon(FontAwesome.FOLDER_O, 14, new Color(255, 140, 0)));
@@ -357,7 +363,8 @@ public class RequestEditPanel extends SingletonBasePanel {
                 subPanel.updateRequestForm(item);
             }
         }
-        JOptionPane.showMessageDialog(null, I18nUtil.getMessage("request.saved"), I18nUtil.getMessage("success"), JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_SAVED),
+                I18nUtil.getMessage(MessageKeys.SUCCESS), JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -366,7 +373,8 @@ public class RequestEditPanel extends SingletonBasePanel {
     private void updateExistingRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
         if (!collectionPanel.updateExistingRequest(item)) {
             log.error("更新请求失败: {}", item.getId() + " - " + item.getName());
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("update.request.failed"), I18nUtil.getMessage("error"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.UPDATE_REQUEST_FAILED),
+                    I18nUtil.getMessage(MessageKeys.ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -459,7 +467,9 @@ public class RequestEditPanel extends SingletonBasePanel {
                     // 检测剪贴板cURL
                     String curlText = getClipboardCurlText();
                     if (curlText != null) {
-                        int result = JOptionPane.showConfirmDialog(null, I18nUtil.getMessage("clipboard.curl.detected"), I18nUtil.getMessage("import.curl"), JOptionPane.YES_NO_OPTION);
+                        int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(RequestEditPanel.class),
+                                I18nUtil.getMessage(MessageKeys.CLIPBOARD_CURL_DETECTED),
+                                I18nUtil.getMessage(MessageKeys.IMPORT_CURL), JOptionPane.YES_NO_OPTION);
                         if (result == JOptionPane.YES_OPTION) {
                             try {
                                 CurlRequest curlRequest = CurlParser.parse(curlText);
@@ -482,7 +492,9 @@ public class RequestEditPanel extends SingletonBasePanel {
                                     return;
                                 }
                             } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(null, I18nUtil.getMessage("parse.curl.error", ex.getMessage()), I18nUtil.getMessage("error"), JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(SingletonFactory.getInstance(RequestEditPanel.class),
+                                        I18nUtil.getMessage(MessageKeys.PARSE_CURL_ERROR, ex.getMessage()),
+                                        I18nUtil.getMessage(MessageKeys.ERROR), JOptionPane.ERROR_MESSAGE);
                             }
                         }
                     }

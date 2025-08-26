@@ -2,6 +2,7 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +12,7 @@ import java.awt.*;
  */
 public class StartButton extends JButton {
     public StartButton() {
-        super(I18nUtil.getMessage("button.start"));
+        super(I18nUtil.getMessage(MessageKeys.BUTTON_START));
         setIcon(new FlatSVGIcon("icons/start.svg"));
         setPreferredSize(new Dimension(90, 28));
     }

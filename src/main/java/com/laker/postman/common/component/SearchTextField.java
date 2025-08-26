@@ -3,6 +3,7 @@ package com.laker.postman.common.component;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import java.awt.*;
 
@@ -13,7 +14,7 @@ public class SearchTextField extends FlatTextField {
     public SearchTextField() {
         super();
         setLeadingIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
-        setPlaceholderText(I18nUtil.getMessage("button.search"));
+        setPlaceholderText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
         setPreferredSize(new Dimension(180, 28));
         setMaximumSize(new Dimension(180, 28));

@@ -4,10 +4,14 @@ import com.laker.postman.common.component.DownloadProgressDialog;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import javax.swing.*;
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +32,7 @@ public class OkHttpResponseHandler {
 
     public static void handleResponse(Response okResponse, HttpResponse response) throws IOException {
         response.code = okResponse.code();
+        response.message = okResponse.message();
         response.headers = new LinkedHashMap<>();
         int headersSize = 0;
         for (String name : okResponse.headers().names()) {
@@ -51,6 +56,10 @@ public class OkHttpResponseHandler {
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
+        if (okResponse.body() != null) {
+            okResponse.body().close();
+        }
+        okResponse.close();
     }
 
     private static void handleSseResponse(Response okResponse, HttpResponse response) throws IOException {
@@ -264,31 +273,37 @@ public class OkHttpResponseHandler {
     private static void handleTextResponse(Response okResponse, HttpResponse response, int contentLengthHeader) throws IOException {
         String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
         int maxDownloadSize = getMaxDownloadSize();
+        ResponseBody body = okResponse.body();
         if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
-            if (okResponse.body() != null) okResponse.body().close();
-            SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(null,
-                        String.format("文本内容超出最大下载限制%dMB（当前限制：%d MB）", contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
-                        "下载限制", JOptionPane.WARNING_MESSAGE);
-            });
+            if (body != null) body.close();
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null,
+                    String.format("文本内容超出最大下载限制%dMB（当前限制：%d MB）", contentLengthHeader / 1024 / 1024, maxDownloadSize / 1024 / 1024),
+                    "下载限制", JOptionPane.WARNING_MESSAGE));
             response.body = String.format("[文本内容超出最大下载限制，未下载。当前限制：%d MB]", maxDownloadSize / 1024 / 1024);
             response.bodySize = 0;
             response.filePath = null;
             return;
         }
-        if (okResponse.body() != null) {
-            String bodyStr = okResponse.body().string();
-            if (bodyStr.getBytes().length > getMaxBodySize()) { // 如果响应体内容超过设置值，保存为临时文件
+        if (body != null) {
+            byte[] bytes = body.bytes();
+            if (bytes.length > getMaxBodySize()) { // 如果响应体内容超过设置值，保存为临时文件
                 // 这里也用流写入
-                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bodyStr.getBytes()), "easyPostman_text_download_", ext != null ? ext : ".txt", contentLengthHeader);
+                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bytes), "easyPostman_text_download_", ext != null ? ext : ".txt", contentLengthHeader);
                 response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
                 int maxBodySizeKB = getMaxBodySize() / 1024;
                 response.body = String.format("[响应体内容超过%dKB，已保存为临时文件，可下载查看完整内容]", maxBodySizeKB);
                 response.bodySize = fs.size;
             } else {
-                response.body = bodyStr;
-                response.bodySize = bodyStr.getBytes().length;
+                // 获取内容类型和字符集
+                MediaType mediaType = body.contentType();
+                Charset charset = StandardCharsets.UTF_8; // 默认使用 UTF-8
+
+                if (mediaType != null && mediaType.charset() != null) {
+                    charset = mediaType.charset();
+                }
+                response.body = new String(bytes, charset);
+                response.bodySize = bytes.length;
                 response.filePath = null;
             }
         } else {

@@ -2,6 +2,7 @@ package com.laker.postman.service.curl;
 
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.PreparedRequest;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,19 @@ import java.util.regex.Pattern;
 /**
  * cURL 命令解析器，支持常见参数格式
  */
+@Slf4j
 public class CurlParser {
+
+    private CurlParser() {
+        // 私有构造函数，防止实例化
+    }
+
+    /**
+     * 解析 cURL 命令字符串为 CurlRequest 对象
+     *
+     * @param curl cURL 命令字符串
+     * @return 解析后的 CurlRequest 对象
+     */
     public static CurlRequest parse(String curl) {
         CurlRequest req = new CurlRequest();
         // 去除换行符 和多余空格
@@ -65,6 +78,29 @@ public class CurlParser {
                     // 如果是 multipart/form-data 格式，解析表单数据
                     if (contentType.startsWith("multipart/form-data")) {
                         parseMultipartFormData(req, req.body);
+                    }
+                }
+            }
+            // 6. Form (multipart/form-data)
+            else if (token.equals("-F") || token.equals("--form")) {
+                if (i + 1 < tokens.size()) {
+                    String formField = tokens.get(++i);
+                    int eqIdx = formField.indexOf('=');
+                    if (eqIdx > 0) {
+                        String key = formField.substring(0, eqIdx);
+                        String value = formField.substring(eqIdx + 1);
+                        if (value.startsWith("@")) {
+                            // 文件上传
+                            req.formFiles.put(key, value.substring(1));
+                        } else {
+                            // 普通表单字段
+                            req.formData.put(key, value);
+                        }
+                    }
+                    if (req.method == null) req.method = "POST";
+                    // 设置 Content-Type
+                    if (!req.headers.containsKey("Content-Type")) {
+                        req.headers.put("Content-Type", "multipart/form-data");
                     }
                 }
             }
@@ -134,7 +170,7 @@ public class CurlParser {
                 }
             }
         } catch (Exception e) {
-            System.err.println("解析 multipart/form-data 出错: " + e.getMessage());
+            log.error("解析 multipart/form-data 出错", e);
         }
     }
 
@@ -227,15 +263,41 @@ public class CurlParser {
             if (c == '\\' && i + 1 < str.length()) {
                 char next = str.charAt(i + 1);
                 switch (next) {
-                    case 'n': sb.append('\n'); i++; break;
-                    case 'r': sb.append('\r'); i++; break;
-                    case 't': sb.append('\t'); i++; break;
-                    case 'b': sb.append('\b'); i++; break;
-                    case 'f': sb.append('\f'); i++; break;
-                    case '\\': sb.append('\\'); i++; break;
-                    case '\'': sb.append('\''); i++; break;
-                    case '"': sb.append('"'); i++; break;
-                    default: sb.append(c); break;
+                    case 'n':
+                        sb.append('\n');
+                        i++;
+                        break;
+                    case 'r':
+                        sb.append('\r');
+                        i++;
+                        break;
+                    case 't':
+                        sb.append('\t');
+                        i++;
+                        break;
+                    case 'b':
+                        sb.append('\b');
+                        i++;
+                        break;
+                    case 'f':
+                        sb.append('\f');
+                        i++;
+                        break;
+                    case '\\':
+                        sb.append('\\');
+                        i++;
+                        break;
+                    case '\'':
+                        sb.append('\'');
+                        i++;
+                        break;
+                    case '"':
+                        sb.append('"');
+                        i++;
+                        break;
+                    default:
+                        sb.append(c);
+                        break;
                 }
             } else {
                 sb.append(c);

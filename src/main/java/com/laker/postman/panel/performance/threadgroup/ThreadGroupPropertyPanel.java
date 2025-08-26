@@ -582,35 +582,69 @@ public class ThreadGroupPropertyPanel extends JPanel {
             g2d.dispose();
         }
 
+        /**
+         * 生成优美刻度（nice ticks），如1-2-5-10-20等
+         * @param min 最小值
+         * @param max 最大值
+         * @param maxTicks 最多刻度数
+         * @return 刻度数组
+         */
+        private static java.util.List<Integer> getNiceTicks(int min, int max, int maxTicks) {
+            java.util.List<Integer> ticks = new java.util.ArrayList<>();
+            if (max <= min || maxTicks <= 0) return ticks;
+            int range = max - min;
+            if (range == 0) {
+                ticks.add(min);
+                return ticks;
+            }
+            // 计算优美间隔
+            double rawStep = (double) range / maxTicks;
+            double mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+            double[] niceSteps = {1, 2, 5, 10};
+            double niceStep = niceSteps[0] * mag;
+            for (double s : niceSteps) {
+                if (rawStep <= s * mag) {
+                    niceStep = s * mag;
+                    break;
+                }
+            }
+            int niceMin = (int) (Math.floor(min / niceStep) * niceStep);
+            int niceMax = (int) (Math.ceil(max / niceStep) * niceStep);
+            for (int v = niceMin; v <= niceMax; v += niceStep) {
+                if (v >= min && v <= max) {
+                    ticks.add(v);
+                }
+            }
+            if (!ticks.contains(max)) ticks.add(max);
+            return ticks;
+        }
+
         private void drawGrid(Graphics2D g2d, int width, int height) {
             g2d.setColor(GRID_COLOR);
             g2d.setStroke(new BasicStroke(0.5f));
 
-            // 水平网格线 - 5条线，均匀分布
+            // Y轴优美刻度
             int maxThreads = getMaxThreads();
-            for (int i = 0; i <= 5; i++) {
-                int y = PADDING + i * height / 5;
-                g2d.draw(new Line2D.Double(PADDING, y, PADDING + width, y));
-
-                // 添加Y轴刻度
-                if (i > 0) {
-                    int threadValue = maxThreads - (maxThreads * i / 5);
+            java.util.List<Integer> yTicks = getNiceTicks(0, maxThreads, 5);
+            for (int i = 0; i < yTicks.size(); i++) {
+                int threadValue = yTicks.get(i);
+                int y = PADDING + height - (int) ((double) threadValue / maxThreads * height);
+                g2d.draw(new java.awt.geom.Line2D.Double(PADDING, y, PADDING + width, y));
+                if (threadValue > 0) {
                     g2d.setColor(TEXT_COLOR);
                     g2d.drawString(String.valueOf(threadValue), PADDING - 30, y + 5);
                     g2d.setColor(GRID_COLOR);
                 }
             }
 
-            // 垂直网格线 - 根据测试持续时间计算
+            // X轴优美刻度
             int duration = getDuration();
-            int numVerticalLines = Math.min(10, duration); // 最多10条垂直线
-            for (int i = 0; i <= numVerticalLines; i++) {
-                int x = PADDING + i * width / numVerticalLines;
-                g2d.draw(new Line2D.Double(x, PADDING, x, PADDING + height));
-
-                // 添加X轴刻度
-                if (i > 0) {
-                    int timeValue = duration * i / numVerticalLines;
+            java.util.List<Integer> xTicks = getNiceTicks(0, duration, 10);
+            for (int i = 0; i < xTicks.size(); i++) {
+                int timeValue = xTicks.get(i);
+                int x = PADDING + (int) ((double) timeValue / duration * width);
+                g2d.draw(new java.awt.geom.Line2D.Double(x, PADDING, x, PADDING + height));
+                if (timeValue > 0) {
                     g2d.setColor(TEXT_COLOR);
                     g2d.drawString(timeValue + "s", x - 10, PADDING + height + 15);
                     g2d.setColor(GRID_COLOR);
@@ -708,9 +742,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
             g2d.setColor(Color.WHITE);
             g2d.setStroke(new BasicStroke(1.0f));
             for (Point p : points) {
-                g2d.fill(new Rectangle2D.Double(p.x - 3, p.y - 3, 6, 6));
+                g2d.fill(new Rectangle2D.Double((double)p.x - 3, (double)p.y - 3, 6, 6));
                 g2d.setColor(CURVE_COLOR);
-                g2d.draw(new Rectangle2D.Double(p.x - 3, p.y - 3, 6, 6));
+                g2d.draw(new Rectangle2D.Double((double)p.x - 3, (double)p.y - 3, 6, 6));
                 g2d.setColor(Color.WHITE);
             }
         }
@@ -719,13 +753,10 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int maxThreads = getMaxThreads();
 
             int x1 = PADDING;
-            // 快速上升到固定线程数
-            x1 += 10;
             int y2 = PADDING + height - height * previewData.fixedThreads / maxThreads;
             if (y2 < PADDING) y2 = PADDING + 5;
             points.add(new Point(x1, y2));
 
-            // 保持到结束
             x1 = PADDING + width;
             points.add(new Point(x1, y2));
         }
@@ -735,19 +766,15 @@ public class ThreadGroupPropertyPanel extends JPanel {
             int duration = getDuration();
 
             int x1 = PADDING;
-            // 递增起点
-            x1 += 10;
             int y2 = PADDING + height - height * previewData.rampUpStartThreads / maxThreads;
             if (y2 < PADDING) y2 = PADDING + 5;
             points.add(new Point(x1, y2));
 
-            // 递增终点
             int rampUpEndX = PADDING + (width * previewData.rampUpTime / duration);
             int y3 = PADDING + height - height * previewData.rampUpEndThreads / maxThreads;
             if (y3 < PADDING) y3 = PADDING + 5;
             points.add(new Point(rampUpEndX, y3));
 
-            // 结束点
             points.add(new Point(PADDING + width, y3));
         }
 
@@ -763,78 +790,72 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
 
             // 最小线程
-            x += 10;
             points.add(new Point(x, yMin));
 
             // 计算时间比例
             int totalPhaseTime = previewData.spikeRampUpTime + previewData.spikeHoldTime + previewData.spikeRampDownTime;
-            int availWidth = width - 20;
+            int availWidth = width;
 
             // 上升
-            x += availWidth * previewData.spikeRampUpTime / duration;
+            x = PADDING + (availWidth * previewData.spikeRampUpTime / duration);
             points.add(new Point(x, yMax));
 
             // 保持
-            x += availWidth * previewData.spikeHoldTime / duration;
+            x = PADDING + (availWidth * (previewData.spikeRampUpTime + previewData.spikeHoldTime) / duration);
             points.add(new Point(x, yMax));
 
             // 下降
-            x += availWidth * previewData.spikeRampDownTime / duration;
+            x = PADDING + (availWidth * (previewData.spikeRampUpTime + previewData.spikeHoldTime + previewData.spikeRampDownTime) / duration);
             points.add(new Point(x, yMin));
 
-            // 结束
             points.add(new Point(PADDING + width, yMin));
         }
 
         private void drawStairsCurve(List<Point> points, int width, int height) {
             int maxThreads = getMaxThreads();
-            int duration = previewData.stairsDuration; // 使用阶梯模式的总持续时间
+            int duration = previewData.stairsDuration; // 总持续时间
 
             int x = PADDING;
             int startThreads = previewData.stairsStartThreads;
             int endThreads = previewData.stairsEndThreads;
             int step = previewData.stairsStep;
+            int holdTime = previewData.stairsHoldTime;
 
-            // 起始点
-            x += 10;
-            int y = PADDING + height - height * startThreads / maxThreads;
+            int currentThreads = startThreads;
+            int time = 0;
+
+            // 计算y坐标
+            int y = PADDING + height - height * currentThreads / maxThreads;
             if (y < PADDING) y = PADDING + 5;
             points.add(new Point(x, y));
 
-            // 计算阶梯数
-            int steps = (int)Math.ceil((double)(endThreads - startThreads) / step);
-            if (steps <= 0) steps = 1;
+            while (time < duration && currentThreads < endThreads) {
+                // 计算下一个阶梯的时间
+                int nextTime = time + holdTime;
+                if (nextTime > duration) nextTime = duration;
 
-            int holdTime = previewData.stairsHoldTime;
-            // 计算每个阶梯的宽度，基于总持续时间和阶梯数
-            int totalStepsTime = holdTime * steps; // 所有阶梯占用的总时间
-            if (totalStepsTime > duration) {
-                // 如果计算出的总时间超过了设定的持续时间，调整holdTime
-                holdTime = duration / steps;
-            }
+                // 计算x坐标
+                int nextX = PADDING + (width * nextTime / duration);
+                // 水平线：用户数不变，x推进
+                points.add(new Point(nextX, y));
 
-            int stepWidth = (width - 20) * holdTime / duration;
-            int currentThreads = startThreads;
-
-            for (int i = 0; i < steps && currentThreads < endThreads; i++) {
-                // 当前阶梯水平线
-                x += stepWidth;
-                if (x > PADDING + width) break;
-                points.add(new Point(x, y));
-
-                // 上升到下一阶梯
+                // 竖线：用户数递增
                 currentThreads += step;
                 if (currentThreads > endThreads) currentThreads = endThreads;
+                int nextY = PADDING + height - height * currentThreads / maxThreads;
+                if (nextY < PADDING) nextY = PADDING + 5;
+                points.add(new Point(nextX, nextY));
 
-                y = PADDING + height - height * currentThreads / maxThreads;
-                if (y < PADDING) y = PADDING + 5;
-
-                points.add(new Point(x, y));
+                // 推进时间
+                time = nextTime;
+                y = nextY;
+                x = nextX;
             }
 
-            // 如果最后一个阶梯后还有剩余时间，添加一条水平线到结束
-            if (x < PADDING + width) {
-                points.add(new Point(PADDING + width, y));
+            // 如果最后一个点未到duration，补一段水平线到结束
+            int endX = PADDING + width;
+            if (x < endX) {
+                points.add(new Point(endX, y));
             }
         }
     }

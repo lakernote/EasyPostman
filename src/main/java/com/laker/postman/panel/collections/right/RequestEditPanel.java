@@ -12,6 +12,7 @@ import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
@@ -35,7 +36,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
  */
 @Slf4j
 public class RequestEditPanel extends SingletonBasePanel {
-    public static final String REQUEST_STRING = I18nUtil.getMessage("new.request");
+    public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
     public static final String PLUS_TAB = "+";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
@@ -163,8 +164,8 @@ public class RequestEditPanel extends SingletonBasePanel {
         } else {
             // 已存在的请求：弹出确认对话框
             int confirm = JOptionPane.showConfirmDialog(this,
-                    I18nUtil.getMessage("update.current.request", currentItem.getName()),
-                    I18nUtil.getMessage("update.request"),
+                    I18nUtil.getMessage(MessageKeys.UPDATE_CURRENT_REQUEST, currentItem.getName()),
+                    I18nUtil.getMessage(MessageKeys.UPDATE_REQUEST),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.QUESTION_MESSAGE);
 
@@ -181,16 +182,17 @@ public class RequestEditPanel extends SingletonBasePanel {
      * @param defaultName    默认请求名，可为null
      * @return Object[]{Object[] groupObj, String requestName}，若取消返回null
      */
-    public static Object[] showGroupAndNameDialog(TreeModel groupTreeModel, String defaultName) {
+    public Object[] showGroupAndNameDialog(TreeModel groupTreeModel, String defaultName) {
         if (groupTreeModel == null || groupTreeModel.getRoot() == null) {
-            JOptionPane.showMessageDialog(null, I18nUtil.getMessage("please.select.group"), I18nUtil.getMessage("tip"), JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP),
+                    I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.INFORMATION_MESSAGE);
             return null;
         }
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
         JPanel namePanel = new JPanel(new BorderLayout(8, 0));
-        JLabel nameLabel = new JLabel(I18nUtil.getMessage("request.name"));
+        JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_NAME));
         nameLabel.setPreferredSize(new Dimension(100, 28));
         JTextField nameField = new JTextField(20);
         nameField.setPreferredSize(new Dimension(180, 28));
@@ -435,6 +437,11 @@ public class RequestEditPanel extends SingletonBasePanel {
         add(tabbedPane, BorderLayout.CENTER);
         setupSaveShortcut();
         setupTabSelectionListener(); // 添加标签页切换监听器
+
+    }
+
+    @Override
+    protected void registerListeners() {
         // 添加鼠标监听，只在左键点击"+"Tab时新增
         tabbedPane.addMouseListener(new MouseAdapter() {
             @Override
@@ -479,15 +486,10 @@ public class RequestEditPanel extends SingletonBasePanel {
                             }
                         }
                     }
-                    addNewTab(I18nUtil.getMessage("new.request"));
+                    addNewTab(REQUEST_STRING);
                 }
             }
         });
-    }
-
-    @Override
-    protected void registerListeners() {
-
     }
 
 
@@ -511,7 +513,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      *
      * @param item 要保存的请求
      */
-    public static boolean saveRequestWithGroupDialog(HttpRequestItem item) {
+    public boolean saveRequestWithGroupDialog(HttpRequestItem item) {
         RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
         Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
@@ -521,7 +523,8 @@ public class RequestEditPanel extends SingletonBasePanel {
         item.setName(requestName);
         item.setId(IdUtil.simpleUUID());
         collectionPanel.saveRequestToGroup(groupObj, item);
-        JOptionPane.showMessageDialog(null, I18nUtil.getMessage("request.saved"), I18nUtil.getMessage("success"), JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_SAVED),
+                I18nUtil.getMessage(MessageKeys.SUCCESS), JOptionPane.INFORMATION_MESSAGE);
         return true;
     }
 }

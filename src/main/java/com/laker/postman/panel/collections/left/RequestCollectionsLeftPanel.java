@@ -609,7 +609,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             item.setFormData(curlRequest.formData);
             item.setFormFiles(curlRequest.formFiles);
             // 统一用RequestEditPanel弹窗选择分组和命名
-            boolean saved = RequestEditPanel.saveRequestWithGroupDialog(item);
+            boolean saved = SingletonFactory.getInstance(RequestEditPanel.class).saveRequestWithGroupDialog(item);
             // 导入成功后清空剪贴板
             if (saved) {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);

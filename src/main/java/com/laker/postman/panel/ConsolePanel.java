@@ -15,7 +15,7 @@ import java.awt.event.ActionListener;
 @Slf4j
 public class ConsolePanel extends SingletonBasePanel {
     private JTextPane consoleLogArea;
-    private StyledDocument consoleDoc;
+    private transient StyledDocument consoleDoc;
     private JButton closeBtn;
 
     // 日志类型
@@ -41,33 +41,23 @@ public class ConsolePanel extends SingletonBasePanel {
         consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
         consoleDoc = consoleLogArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
-        logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        logScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         closeBtn = new JButton();
         closeBtn.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
         closeBtn.setBorder(BorderFactory.createEmptyBorder());
         closeBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
         // 关闭按钮事件由外部注册
 
-        JButton clearBtn = new JButton();
-        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
-        clearBtn.setBorder(BorderFactory.createEmptyBorder());
-        clearBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
-        clearBtn.setToolTipText("Clear Log");
-        clearBtn.addActionListener(e -> {
-            try {
-                consoleDoc.remove(0, consoleDoc.getLength());
-            } catch (BadLocationException ex) {
-                // ignore
-            }
-        });
+        JButton clearBtn = getClearBtn();
 
         JTextField searchField = new SearchTextField();
-        JButton prevBtn = new JButton("Prev");
-        JButton nextBtn = new JButton("Next");
+        JButton prevBtn = new JButton();
+        prevBtn.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 20, 20));
+        JButton nextBtn = new JButton();
+        nextBtn.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 20, 20));
         prevBtn.setFocusable(false);
         nextBtn.setFocusable(false);
-        searchField.setToolTipText("Search log content");
         searchField.addActionListener(e -> nextBtn.doClick());
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         searchPanel.setOpaque(false);
@@ -118,6 +108,21 @@ public class ConsolePanel extends SingletonBasePanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         add(topPanel, BorderLayout.NORTH);
         add(logScroll, BorderLayout.CENTER);
+    }
+
+    private JButton getClearBtn() {
+        JButton clearBtn = new JButton();
+        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
+        clearBtn.setBorder(BorderFactory.createEmptyBorder());
+        clearBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
+        clearBtn.addActionListener(e -> {
+            try {
+                consoleDoc.remove(0, consoleDoc.getLength());
+            } catch (BadLocationException ex) {
+                // ignore
+            }
+        });
+        return clearBtn;
     }
 
     private void highlightSearchResult(int pos, int len) {

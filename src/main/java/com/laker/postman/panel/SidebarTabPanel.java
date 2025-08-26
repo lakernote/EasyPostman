@@ -3,6 +3,7 @@ package com.laker.postman.panel;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.common.tab.ConfirmableTabSelectionModel;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -10,7 +11,9 @@ import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.UserSettingsUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -23,6 +26,8 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.function.Supplier;
 
+import static com.laker.postman.util.MessageKeys.MENU_FUNCTIONAL;
+
 /**
  * 左侧标签页面板
  */
@@ -30,7 +35,9 @@ import java.util.function.Supplier;
 public class SidebarTabPanel extends SingletonBasePanel {
 
     private static final String TAB_TOGGLE = "Toggle";
+    @Getter
     private JTabbedPane tabbedPane;
+    @Getter
     private List<TabInfo> tabInfos;
     private JPanel consoleContainer;
     private JLabel consoleLabel;
@@ -41,11 +48,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     // 支持的tab标题i18n key
     private static final String[] TAB_TITLE_KEYS = {
-            "menu.collections",
-            "menu.environments",
-            "menu.functional",
-            "menu.performance",
-            "menu.history"
+            MessageKeys.MENU_COLLECTIONS,
+            MessageKeys.MENU_ENVIRONMENTS,
+            MessageKeys.MENU_FUNCTIONAL,
+            MessageKeys.MENU_PERFORMANCE,
+            MessageKeys.MENU_HISTORY
     };
     // 支持的语言
     private static final Locale[] SUPPORTED_LOCALES = {Locale.CHINESE, Locale.ENGLISH};
@@ -59,16 +66,18 @@ public class SidebarTabPanel extends SingletonBasePanel {
         setLayout(new BorderLayout());
         // 1. 创建标签页
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
+        // 替换 selectionModel，支持切换前拦截
+        tabbedPane.setModel(new ConfirmableTabSelectionModel(this));
         tabInfos = new ArrayList<>();
-        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.collections"), new FlatSVGIcon("icons/collections.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_COLLECTIONS), new FlatSVGIcon("icons/collections.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.environments"), new FlatSVGIcon("icons/environments.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS), new FlatSVGIcon("icons/environments.svg", 20, 20),
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.functional"), new FlatSVGIcon("icons/functional.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MENU_FUNCTIONAL), new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(FunctionalPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.performance"), new FlatSVGIcon("icons/performance.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_PERFORMANCE), new FlatSVGIcon("icons/performance.svg", 20, 20),
                 () -> SingletonFactory.getInstance(PerformancePanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage("menu.history"), new FlatSVGIcon("icons/history.svg", 20, 20),
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_HISTORY), new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
@@ -158,7 +167,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     private void createConsoleLabel() {
-        consoleLabel = new JLabel(I18nUtil.getMessage("console.title"));
+        consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
         consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
         consoleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -306,7 +315,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(81, 60));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText(I18nUtil.getMessage("sidebar.toggle")); // 悬停提示
+            iconLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SIDEBAR_TOGGLE)); // 悬停提示
             iconLabel.setPreferredSize(new Dimension(32, 32));
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
@@ -318,7 +327,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.setPreferredSize(new Dimension(30, 60));
             JLabel iconLabel = new JLabel(toggleIcon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText(I18nUtil.getMessage("sidebar.toggle")); // 悬停提示
+            iconLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SIDEBAR_TOGGLE)); // 悬停提示
             iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
             panel.add(Box.createVerticalGlue());
             panel.add(iconLabel);
@@ -367,17 +376,17 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     public void reloadI18n() {
         // 更新tabInfos的title
-        tabInfos.get(0).title = I18nUtil.getMessage("menu.collections");
-        tabInfos.get(1).title = I18nUtil.getMessage("menu.environments");
-        tabInfos.get(2).title = I18nUtil.getMessage("menu.functional");
-        tabInfos.get(3).title = I18nUtil.getMessage("menu.performance");
-        tabInfos.get(4).title = I18nUtil.getMessage("menu.history");
+        tabInfos.get(0).title = I18nUtil.getMessage(MessageKeys.MENU_COLLECTIONS);
+        tabInfos.get(1).title = I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS);
+        tabInfos.get(2).title = I18nUtil.getMessage(MENU_FUNCTIONAL);
+        tabInfos.get(3).title = I18nUtil.getMessage(MessageKeys.MENU_PERFORMANCE);
+        tabInfos.get(4).title = I18nUtil.getMessage(MessageKeys.MENU_HISTORY);
         // 刷新tab头部
         maxTabTitleWidth = getMaxTabTitleWidth();
         updateTabHeaders();
         // 刷新consoleLabel文本
         if (consoleLabel != null) {
-            consoleLabel.setText(I18nUtil.getMessage("console.title"));
+            consoleLabel.setText(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
         }
     }
 

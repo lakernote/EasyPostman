@@ -17,6 +17,7 @@ import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -171,7 +172,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
                     return; // 没有切换环境，不处理
                 }
                 if (isVariablesChanged()) {
-                    int option = JOptionPane.showConfirmDialog(this, I18nUtil.getMessage("env.dialog.save_changes"), I18nUtil.getMessage("env.dialog.save_changes.title"), JOptionPane.YES_NO_OPTION);
+                    int option = JOptionPane.showConfirmDialog(this,
+                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES),
+                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES_TITLE),
+                            JOptionPane.YES_NO_OPTION);
                     if (option == JOptionPane.YES_OPTION) {
                         saveVariables();
                     } else {
@@ -577,14 +581,14 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     // 判断当前表格内容和快照是否一致，使用JSON序列化比较
-    private boolean isVariablesChanged() {
+    public boolean isVariablesChanged() {
         List<Map<String, Object>> rows = getRows();
         String curJson = JSONUtil.toJsonStr(rows);
         boolean isVariablesChanged = !CharSequenceUtil.equals(curJson, originalVariablesSnapshot);
         if (isVariablesChanged) {
-            log.info("env name: {}", currentEnvironment != null ? currentEnvironment.getName() : "null");
-            log.info("current  variables: {}", curJson);
-            log.info("original variables: {}", originalVariablesSnapshot);
+            log.debug("env name: {}", currentEnvironment != null ? currentEnvironment.getName() : "null");
+            log.debug("current  variables: {}", curJson);
+            log.debug("original variables: {}", originalVariablesSnapshot);
         }
         return isVariablesChanged;
     }

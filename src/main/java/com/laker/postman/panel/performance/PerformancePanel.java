@@ -62,6 +62,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class PerformancePanel extends SingletonBasePanel {
+    public static final String EMPTY = "empty";
+    public static final String THREAD_GROUP = "threadGroup";
+    public static final String REQUEST = "request";
+    public static final String ASSERTION = "assertion";
+    public static final String TIMER = "timer";
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
@@ -110,7 +115,7 @@ public class PerformancePanel extends SingletonBasePanel {
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 
         // 1. 左侧树结构
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Test Plan", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
         createDefaultRequest(root);
         treeModel = new DefaultTreeModel(root);
         jmeterTree = new JTree(treeModel);
@@ -127,16 +132,16 @@ public class PerformancePanel extends SingletonBasePanel {
         // 2. 右侧属性区（CardLayout）
         propertyCardLayout = new CardLayout();
         propertyPanel = new JPanel(propertyCardLayout);
-        propertyPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE)), "empty");
+        propertyPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE)), EMPTY);
         threadGroupPanel = new ThreadGroupPropertyPanel();
-        propertyPanel.add(threadGroupPanel, "threadGroup");
+        propertyPanel.add(threadGroupPanel, THREAD_GROUP);
         requestEditSubPanel = new RequestEditSubPanel("");
-        propertyPanel.add(requestEditSubPanel, "request");
+        propertyPanel.add(requestEditSubPanel, REQUEST);
         assertionPanel = new AssertionPropertyPanel();
-        propertyPanel.add(assertionPanel, "assertion");
+        propertyPanel.add(assertionPanel, ASSERTION);
         timerPanel = new TimerPropertyPanel();
-        propertyPanel.add(timerPanel, "timer");
-        propertyCardLayout.show(propertyPanel, "empty");
+        propertyPanel.add(timerPanel, TIMER);
+        propertyCardLayout.show(propertyPanel, EMPTY);
 
         // 3. 结果区
         resultTabbedPane = new JTabbedPane();
@@ -241,7 +246,7 @@ public class PerformancePanel extends SingletonBasePanel {
             Object userObj = firstGroup.getUserObject();
             if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
                 // 显示线程组属性面板
-                propertyCardLayout.show(propertyPanel, "threadGroup");
+                propertyCardLayout.show(propertyPanel, THREAD_GROUP);
                 threadGroupPanel.setThreadGroupData(jtNode);
             }
         }
@@ -249,9 +254,9 @@ public class PerformancePanel extends SingletonBasePanel {
 
     private static void createDefaultRequest(DefaultMutableTreeNode root) {
         // 默认添加一个用户组和一个请求（www.baidu.com）
-        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
+        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_THREAD_GROUP), NodeType.THREAD_GROUP));
         HttpRequestItem defaultReq = new HttpRequestItem();
-        defaultReq.setName("Baidu Home Page");
+        defaultReq.setName(I18nUtil.getMessage(MessageKeys.PERFORMANCE_DEFAULT_REQUEST));
         defaultReq.setMethod("GET");
         defaultReq.setUrl("https://www.baidu.com");
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
@@ -1120,36 +1125,36 @@ public class PerformancePanel extends SingletonBasePanel {
                 // 回填当前节点数据
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
                 if (node == null) {
-                    propertyCardLayout.show(propertyPanel, "empty");
+                    propertyCardLayout.show(propertyPanel, EMPTY);
                     lastNode = null;
                     return;
                 }
                 Object userObj = node.getUserObject();
                 if (!(userObj instanceof JMeterTreeNode jtNode)) {
-                    propertyCardLayout.show(propertyPanel, "empty");
+                    propertyCardLayout.show(propertyPanel, EMPTY);
                     lastNode = node;
                     return;
                 }
                 switch (jtNode.type) {
                     case THREAD_GROUP -> {
-                        propertyCardLayout.show(propertyPanel, "threadGroup");
+                        propertyCardLayout.show(propertyPanel, THREAD_GROUP);
                         threadGroupPanel.setThreadGroupData(jtNode);
                     }
                     case REQUEST -> {
-                        propertyCardLayout.show(propertyPanel, "request");
+                        propertyCardLayout.show(propertyPanel, REQUEST);
                         if (jtNode.httpRequestItem != null) {
                             requestEditSubPanel.updateRequestForm(jtNode.httpRequestItem);
                         }
                     }
                     case ASSERTION -> {
-                        propertyCardLayout.show(propertyPanel, "assertion");
+                        propertyCardLayout.show(propertyPanel, ASSERTION);
                         assertionPanel.setAssertionData(jtNode);
                     }
                     case TIMER -> {
-                        propertyCardLayout.show(propertyPanel, "timer");
+                        propertyCardLayout.show(propertyPanel, TIMER);
                         timerPanel.setTimerData(jtNode);
                     }
-                    default -> propertyCardLayout.show(propertyPanel, "empty");
+                    default -> propertyCardLayout.show(propertyPanel, EMPTY);
                 }
                 lastNode = node;
             }
@@ -1200,7 +1205,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 // 选中第一个新加的请求节点
                 TreePath newPath = new TreePath(newNodes.get(0).getPath());
                 jmeterTree.setSelectionPath(newPath);
-                propertyCardLayout.show(propertyPanel, "request");
+                propertyCardLayout.show(propertyPanel, REQUEST);
                 requestEditSubPanel.updateRequestForm(((JMeterTreeNode) newNodes.get(0).getUserObject()).httpRequestItem);
             });
         });

@@ -283,6 +283,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_PRE_SCRIPT_FAILED = "performance.msg.pre_script_failed";
     public static final String PERFORMANCE_MSG_REQUEST_FAILED = "performance.msg.request_failed";
     public static final String PERFORMANCE_MSG_ASSERTION_FAILED = "performance.msg.assertion_failed";
+    public static final String PERFORMANCE_TEST_PLAN = "performance.test_plan";
+    public static final String PERFORMANCE_THREAD_GROUP = "performance.thread_group";
+    public static final String PERFORMANCE_DEFAULT_REQUEST = "performance.default_request";
 
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";

@@ -11,6 +11,7 @@ import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JComponentUtils;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,7 +25,7 @@ import java.util.List;
  * 历史记录面板
  */
 public class HistoryPanel extends SingletonBasePanel {
-    public static final String EMPTY_BODY_HTML = I18nUtil.getMessage("history.empty_body");
+    public static final String EMPTY_BODY_HTML = I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY);
     private JList<Object> historyList;
     private JPanel historyDetailPanel;
     private JTextPane historyDetailPane;
@@ -40,7 +41,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY), // 外边框
                 BorderFactory.createEmptyBorder(4, 8, 4, 8) // 内边框
         ));
-        JLabel title = new JLabel(I18nUtil.getMessage("menu.history"));
+        JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.MENU_HISTORY));
         title.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
         JButton clearBtn = new JButton(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setMargin(new Insets(0, 4, 0, 4));
@@ -69,7 +70,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 } else if (value instanceof RequestHistoryItem item) {
                     String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(item.requestTime));
                     label.setText(JComponentUtils.ellipsisText(String.format(" [%s] %s", item.method, item.url), list, 0, 45));
-                    label.setToolTipText(I18nUtil.getMessage("history.request_time", timeStr));
+                    label.setToolTipText(I18nUtil.getMessage(MessageKeys.HISTORY_REQUEST_TIME, timeStr));
                     label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }
                 if (isSelected && value instanceof RequestHistoryItem) {
@@ -196,9 +197,9 @@ public class HistoryPanel extends SingletonBasePanel {
             long t = item.requestTime;
             String groupLabel;
             if (t >= todayStart) {
-                groupLabel = I18nUtil.getMessage("history.today");
+                groupLabel = I18nUtil.getMessage(MessageKeys.HISTORY_TODAY);
             } else if (t >= yesterdayStart) {
-                groupLabel = I18nUtil.getMessage("history.yesterday");
+                groupLabel = I18nUtil.getMessage(MessageKeys.HISTORY_YESTERDAY);
             } else {
                 groupLabel = showFmt.format(new java.util.Date(t));
             }

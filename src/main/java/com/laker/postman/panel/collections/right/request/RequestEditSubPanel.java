@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request;
 
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -9,7 +9,7 @@ import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.ConsolePanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
@@ -22,6 +22,7 @@ import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ import java.awt.event.ActionEvent;
 import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.laker.postman.service.http.HttpUtil.*;
@@ -634,13 +636,13 @@ public class RequestEditSubPanel extends JPanel {
      * WebSocket消息类型及匹配逻辑
      */
     private enum WebSocketMsgType {
-        CONNECTED("ws.icon.connected"),
-        RECEIVED("ws.icon.received"),
-        BINARY("ws.icon.binary"),
-        SENT("ws.icon.sent"),
-        CLOSED("ws.icon.closed"),
-        WARNING("ws.icon.warning"),
-        INFO("ws.icon.info");
+        CONNECTED(MessageKeys.WS_ICON_CONNECTED),
+        RECEIVED(MessageKeys.WS_ICON_RECEIVED),
+        BINARY(MessageKeys.WS_ICON_BINARY),
+        SENT(MessageKeys.WS_ICON_SENT),
+        CLOSED(MessageKeys.WS_ICON_CLOSED),
+        WARNING(MessageKeys.WS_ICON_WARNING),
+        INFO(MessageKeys.WS_ICON_INFO);
 
         final String iconKey;
 
@@ -855,7 +857,7 @@ public class RequestEditSubPanel extends JPanel {
         }
         currentWorker.cancel(true);
         requestLinePanel.setSendButtonToSend(this::sendRequest);
-        statusCodeLabel.setText(I18nUtil.getMessage("status.canceled"));
+        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_CANCELED));
         statusCodeLabel.setForeground(new Color(255, 140, 0));
         currentWorker = null;
     }
@@ -863,10 +865,10 @@ public class RequestEditSubPanel extends JPanel {
 
     // UI状态：请求中
     private void updateUIForRequesting() {
-        statusCodeLabel.setText(I18nUtil.getMessage("status.requesting"));
+        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_REQUESTING));
         statusCodeLabel.setForeground(new Color(255, 140, 0));
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage("status.duration"), "--"));
-        responseSizeLabel.setText(I18nUtil.getMessage("status.response_size"));
+        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION), "--"));
+        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE));
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
         networkLogPanel.clearLog();
         // 禁用响应区tab按钮
@@ -885,7 +887,7 @@ public class RequestEditSubPanel extends JPanel {
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
-            statusCodeLabel.setText(I18nUtil.getMessage("status.prefix", statusText));
+            statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText));
             statusCodeLabel.setForeground(Color.RED);
             // 恢复 responseBodyPanel
             responseBodyPanel.setEnabled(true);
@@ -894,11 +896,11 @@ public class RequestEditSubPanel extends JPanel {
         responseHeadersPanel.setHeaders(resp.headers);
         setResponseBody(resp);
         Color statusColor = getStatusColor(resp.code);
-        statusCodeLabel.setText(I18nUtil.getMessage("status.prefix", statusText));
+        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText));
         statusCodeLabel.setForeground(statusColor);
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage("status.duration"), TimeDisplayUtil.formatElapsedTime(resp.costMs)));
+        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION), TimeDisplayUtil.formatElapsedTime(resp.costMs)));
         int bytes = resp.bodySize;
-        responseSizeLabel.setText(I18nUtil.getMessage("status.response_size").replace("--", getSizeText(bytes)));
+        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
         // 恢复 responseBodyPanel
         responseBodyPanel.setEnabled(true);
     }
@@ -913,7 +915,7 @@ public class RequestEditSubPanel extends JPanel {
     // 处理响应、后置脚本、变量提取、历史
     private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, PreparedRequest req, HttpResponse resp) {
         if (resp == null) {
-            log.error("响应为空，无法处理后续操作");
+            log.error("Response is null, cannot handle response.");
             return;
         }
         try {
@@ -923,7 +925,8 @@ public class RequestEditSubPanel extends JPanel {
             setTestResults(pm.testResults);
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
-            log.error("请求处理异常: {}", ex.getMessage(), ex);
+            log.error("Error handling response: {}", ex.getMessage(), ex);
+            ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
         }
     }
 
@@ -931,7 +934,7 @@ public class RequestEditSubPanel extends JPanel {
     /**
      * 设置测试结果到Tests Tab
      */
-    private void setTestResults(java.util.List<TestResult> testResults) {
+    private void setTestResults(List<TestResult> testResults) {
         String html = HttpHtmlRenderer.renderTestResults(testResults);
         testsPane.setText(html);
         testsPane.setCaretPosition(0);
@@ -940,15 +943,15 @@ public class RequestEditSubPanel extends JPanel {
         int testsTabIndex = 2;
         if (tabButtons != null && tabButtons.length > testsTabIndex) {
             JButton testsBtn = tabButtons[testsTabIndex];
-            if (CollectionUtil.isNotEmpty(testResults)) {
+            if (CollUtil.isNotEmpty(testResults)) {
                 boolean allPassed = testResults.stream().allMatch(r -> r.passed);
                 String countText = "(" + testResults.size() + ")";
                 String color = allPassed ? "#009900" : "#d32f2f"; // 绿色/红色
-                String countHtml = I18nUtil.getMessage("tab.tests") + "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
+                String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) + "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
                 testsBtn.setText("<html>" + countHtml + "</html>");
                 testsBtn.setForeground(Color.BLACK); // 保持主色为黑色
             } else {
-                testsBtn.setText(I18nUtil.getMessage("tab.tests"));
+                testsBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_TESTS));
                 testsBtn.setForeground(Color.BLACK); // 默认色
             }
         }

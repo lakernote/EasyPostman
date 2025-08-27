@@ -1,6 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
-import com.laker.postman.panel.ConsolePanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;

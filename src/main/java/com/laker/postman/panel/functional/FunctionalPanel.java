@@ -6,7 +6,7 @@ import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.ConsolePanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
 import com.laker.postman.panel.functional.table.RunnerTableModel;

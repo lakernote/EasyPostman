@@ -9,7 +9,7 @@ import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.ConsolePanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;

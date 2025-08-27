@@ -1,6 +1,6 @@
 package com.laker.postman.common.tab;
 
-import com.laker.postman.panel.SidebarTabPanel;
+import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

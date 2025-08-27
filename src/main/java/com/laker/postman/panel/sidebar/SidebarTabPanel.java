@@ -1,4 +1,4 @@
-package com.laker.postman.panel;
+package com.laker.postman.panel.sidebar;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;

@@ -9,7 +9,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.common.setting.SettingDialog;
-import com.laker.postman.panel.SidebarTabPanel;
+import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

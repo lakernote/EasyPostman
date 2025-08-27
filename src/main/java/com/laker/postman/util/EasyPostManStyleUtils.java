@@ -48,7 +48,7 @@ public class EasyPostManStyleUtils {
             // 应用FlatLaf增强设置
             applyFlatLafEnhancements();
 
-            log.info("风格应用成功");
+            log.debug("风格应用成功");
 
         } catch (Exception e) {
             // 如果应用样式失败，记录错误但不中断程序运行

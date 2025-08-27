@@ -140,23 +140,21 @@ public class ClosableTabComponent extends JPanel {
                 }
             }
             for (Component comp : toRemove) {
-                if (comp instanceof RequestEditSubPanel subPanel) {
-                    if (subPanel.isModified()) {
-                        int idx = tabbedPane.indexOfComponent(comp);
-                        if (firstDirtyIdx == -1) firstDirtyIdx = idx;
-                        int result = JOptionPane.showConfirmDialog(tabbedPane,
-                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_OTHERS),
-                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
-                                JOptionPane.YES_NO_CANCEL_OPTION,
-                                JOptionPane.WARNING_MESSAGE);
-                        if (result == JOptionPane.CANCEL_OPTION) {
-                            tabbedPane.setSelectedIndex(idx);
-                            return;
-                        }
-                        if (result == JOptionPane.YES_OPTION && saveCallback != null) {
-                            tabbedPane.setSelectedIndex(idx);
-                            saveCallback.run();
-                        }
+                if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
+                    int idx = tabbedPane.indexOfComponent(comp);
+                    if (firstDirtyIdx == -1) firstDirtyIdx = idx;
+                    int result = JOptionPane.showConfirmDialog(tabbedPane,
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_OTHERS),
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+                    if (result == JOptionPane.CANCEL_OPTION) {
+                        tabbedPane.setSelectedIndex(idx);
+                        return;
+                    }
+                    if (result == JOptionPane.YES_OPTION && saveCallback != null) {
+                        tabbedPane.setSelectedIndex(idx);
+                        saveCallback.run();
                     }
                 }
                 tabbedPane.remove(comp);
@@ -175,23 +173,21 @@ public class ClosableTabComponent extends JPanel {
                 }
             }
             for (Component comp : toRemove) {
-                if (comp instanceof RequestEditSubPanel subPanel) {
-                    if (subPanel.isModified()) {
-                        int idx = tabbedPane.indexOfComponent(comp);
-                        if (firstDirtyIdx == -1) firstDirtyIdx = idx;
-                        int result = JOptionPane.showConfirmDialog(tabbedPane,
-                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_ALL),
-                                I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
-                                JOptionPane.YES_NO_CANCEL_OPTION,
-                                JOptionPane.WARNING_MESSAGE);
-                        if (result == JOptionPane.CANCEL_OPTION) {
-                            tabbedPane.setSelectedIndex(idx);
-                            return;
-                        }
-                        if (result == JOptionPane.YES_OPTION && saveCallback != null) {
-                            tabbedPane.setSelectedIndex(idx);
-                            saveCallback.run();
-                        }
+                if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
+                    int idx = tabbedPane.indexOfComponent(comp);
+                    if (firstDirtyIdx == -1) firstDirtyIdx = idx;
+                    int result = JOptionPane.showConfirmDialog(tabbedPane,
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_ALL),
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+                    if (result == JOptionPane.CANCEL_OPTION) {
+                        tabbedPane.setSelectedIndex(idx);
+                        return;
+                    }
+                    if (result == JOptionPane.YES_OPTION && saveCallback != null) {
+                        tabbedPane.setSelectedIndex(idx);
+                        saveCallback.run();
                     }
                 }
                 tabbedPane.remove(comp);

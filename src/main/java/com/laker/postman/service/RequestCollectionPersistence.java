@@ -58,7 +58,7 @@ public class RequestCollectionPersistence {
             }
             groupNodeList.forEach(rootTreeNode::add);
             treeModel.reload(rootTreeNode);
-            log.info("加载请求组完成");
+            log.debug("加载请求组完成");
         } catch (Exception e) {
             log.error("加载请求组失败", e);
             JOptionPane.showMessageDialog(null, "加载请求组失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);

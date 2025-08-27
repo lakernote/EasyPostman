@@ -23,8 +23,8 @@ EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验
 
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
-- 📦 安装包下载地址: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍏 Mac: EasyPostman-最新版本.dmg
+- 📦 **安装包下载地址**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+    - 🍏 Mac(M芯): EasyPostman-最新版本.dmg
     - 🪟 Windows: EasyPostman-最新版本.msi
 - 💬 微信：**lakernote**
 

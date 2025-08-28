@@ -63,7 +63,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
 public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     public static final String REQUEST = "request";
     public static final String GROUP = "group";
-    public static final String ROOT = "-请求集合-";
+    public static final String ROOT = "root";
     public static final String EXPORT_FILE_NAME = "EasyPostman-Collections.json";
     // 请求集合的根节点
     private DefaultMutableTreeNode rootTreeNode;
@@ -202,22 +202,35 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-        // 监听树节点选择变化，始终响应选中事件，提升灵敏度
-        requestTree.addTreeSelectionListener(e -> {
-            TreePath selPath = requestTree.getSelectionPath();
-            if (selPath != null) {
-                log.debug("TreeSelection Selected path: {}", selPath);
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
-                if (node.getUserObject() instanceof Object[] obj && REQUEST.equals(obj[0])) {
-                    HttpRequestItem item = (HttpRequestItem) obj[1];
-                    SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
-                    UserSettingsUtil.saveLastOpenRequestId(item.getId());
-                }
-            }
-        });
 
         // 鼠标点击事件，右键弹出菜单
         requestTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
+                TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
+                // 如果点击位置没有直接命中节点，则获取最近的行
+                if (selRow == -1 || selPath == null) {
+                    // 获取最接近点击位置的行
+                    selRow = requestTree.getClosestRowForLocation(e.getX(), e.getY());
+                    if (selRow != -1) {
+                        selPath = requestTree.getPathForRow(selRow);
+                    }
+                }
+
+                if (selRow != -1 && selPath != null) {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+                    if (node.getUserObject() instanceof Object[] obj) {
+                        if (REQUEST.equals(obj[0])) {
+                            HttpRequestItem item = (HttpRequestItem) obj[1];
+                            // 记录最后打开的请求ID
+                            UserSettingsUtil.saveLastOpenRequestId(item.getId());
+                            SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+                        }
+                    }
+                }
+            }
+
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
@@ -935,7 +948,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 }
             }
         } else {
-            // 处理 root 节点（userObj 不是 Object[]，比如 "-请求集合-"）
+            // 处理 root 节点
             boolean childMatched = false;
             for (int i = 0; i < src.getChildCount(); i++) {
                 DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);

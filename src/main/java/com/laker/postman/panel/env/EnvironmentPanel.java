@@ -41,8 +41,9 @@ import java.util.Map;
  */
 @Slf4j
 public class EnvironmentPanel extends SingletonBasePanel {
+    public static final String SAVE_VARIABLES = "saveVariables";
     private EasyNameValueTablePanel variablesTablePanel;
-    private Environment currentEnvironment;
+    private transient Environment currentEnvironment;
     private JList<EnvironmentItem> environmentList;
     private DefaultListModel<EnvironmentItem> environmentListModel;
     private JTextField searchField;
@@ -100,15 +101,16 @@ public class EnvironmentPanel extends SingletonBasePanel {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         importExportPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
-        importBtn.setText(I18nUtil.getMessage("env.button.import"));
-        importBtn.setToolTipText(I18nUtil.getMessage("env.button.import"));
+        importBtn.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_IMPORT));
         importBtn.setFocusPainted(false);
         importBtn.setBackground(Color.WHITE);
         importBtn.setIconTextGap(6);
         JPopupMenu importMenu = new JPopupMenu();
-        JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage("env.menu.import_easy"), new FlatSVGIcon("icons/easy.svg", 20, 20));
+        JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_EASY),
+                new FlatSVGIcon("icons/easy.svg", 20, 20));
         importEasyToolsItem.addActionListener(e -> importEnvironments());
-        JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage("env.menu.import_postman"), new FlatSVGIcon("icons/postman.svg", 20, 20));
+        JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_POSTMAN),
+                new FlatSVGIcon("icons/postman.svg", 20, 20));
         importPostmanItem.addActionListener(e -> importPostmanEnvironments());
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
@@ -116,7 +118,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         importExportPanel.add(importBtn);
 
         JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
-        exportBtn.setText(I18nUtil.getMessage("env.button.export"));
+        exportBtn.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT));
         exportBtn.setFocusPainted(false);
         exportBtn.setBackground(Color.WHITE);
         exportBtn.setIconTextGap(6);
@@ -125,7 +127,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
 
         JButton saveVarButton = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
-        saveVarButton.setText(I18nUtil.getMessage("env.button.save"));
+        saveVarButton.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_SAVE));
         saveVarButton.addActionListener(e -> saveVariables());
         saveVarButton.setFocusable(false); // 设置按钮不可获取焦点
         exportBtn.setBackground(Color.WHITE); // 设置背景颜色
@@ -204,9 +206,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 增加 Command+S 保存快捷键（兼容 Mac 和 Windows Ctrl+S）
         KeyStroke saveKeyStroke = KeyStroke.getKeyStroke("meta S"); // Mac Command+S
         KeyStroke saveKeyStroke2 = KeyStroke.getKeyStroke("control S"); // Windows/Linux Ctrl+S
-        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke, "saveVariables");
-        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke2, "saveVariables");
-        this.getActionMap().put("saveVariables", new AbstractAction() {
+        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke, SAVE_VARIABLES);
+        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke2, SAVE_VARIABLES);
+        this.getActionMap().put(SAVE_VARIABLES, new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 saveVariables();
@@ -433,7 +435,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
      */
     private void importPostmanEnvironments() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage("env.dialog.import_postman.title"));
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_TITLE));
         int userSelection = fileChooser.showOpenDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             java.io.File fileToOpen = fileChooser.getSelectedFile();
@@ -455,7 +457,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     // 新增环境
     private void addEnvironment() {
-        String name = JOptionPane.showInputDialog(this, I18nUtil.getMessage("env.dialog.add.prompt"), I18nUtil.getMessage("env.dialog.add.title"), JOptionPane.PLAIN_MESSAGE);
+        String name = JOptionPane.showInputDialog(this,
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_ADD_PROMPT),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_ADD_TITLE), JOptionPane.PLAIN_MESSAGE);
         if (name != null && !name.trim().isEmpty()) {
             Environment env = new Environment(name.trim());
             env.setId("env-" + IdUtil.simpleUUID());
@@ -490,16 +494,23 @@ public class EnvironmentPanel extends SingletonBasePanel {
         EnvironmentItem item = environmentList.getSelectedValue();
         if (item == null) return;
         Environment env = item.getEnvironment();
-        Object result = JOptionPane.showInputDialog(this, I18nUtil.getMessage("env.dialog.rename.prompt"), I18nUtil.getMessage("env.dialog.rename.title"), JOptionPane.PLAIN_MESSAGE, null, null, env.getName());
+        Object result = JOptionPane.showInputDialog(this,
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_PROMPT),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_TITLE),
+                JOptionPane.PLAIN_MESSAGE, null, null, env.getName());
         if (result != null) {
             String newName = result.toString().trim();
             if (!newName.isEmpty() && !newName.equals(env.getName())) {
                 env.setName(newName);
                 EnvironmentService.saveEnvironment(env);
                 environmentListModel.setElementAt(new EnvironmentItem(env), environmentList.getSelectedIndex());
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.rename.success"), I18nUtil.getMessage("env.dialog.save_changes.title"), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES_TITLE), JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.rename.fail"), I18nUtil.getMessage("env.dialog.save_changes.title"), JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_FAIL),
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES_TITLE), JOptionPane.WARNING_MESSAGE);
             }
         }
     }
@@ -509,8 +520,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (item == null) return;
         Environment env = item.getEnvironment();
         int confirm = JOptionPane.showConfirmDialog(this,
-                I18nUtil.getMessage("env.dialog.delete.prompt", env.getName()),
-                I18nUtil.getMessage("env.dialog.delete.title"),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_PROMPT, env.getName()),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_TITLE),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
         if (confirm == JOptionPane.YES_OPTION) {
@@ -526,7 +537,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (item == null) return;
         Environment env = item.getEnvironment();
         try {
-            Environment copy = new Environment(env.getName() + I18nUtil.getMessage("env.name.copy_suffix"));
+            Environment copy = new Environment(env.getName() + " " + I18nUtil.getMessage(MessageKeys.ENV_NAME_COPY_SUFFIX));
             copy.setId("env-" + IdUtil.simpleUUID());
             // 复制变量
             for (String key : env.getVariables().keySet()) {
@@ -542,7 +553,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
             environmentList.setSelectedValue(copyItem, true);
         } catch (Exception ex) {
             log.error("复制环境失败", ex);
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.copy.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    I18nUtil.getMessage(MessageKeys.ENV_DIALOG_COPY_FAIL, ex.getMessage()),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -629,10 +642,15 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 // 只导出当前环境为Postman格式
                 String postmanEnvJson = PostmanImport.toPostmanEnvironmentJson(env);
                 FileUtil.writeUtf8String(postmanEnvJson, fileToSave);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.export_postman.success"), I18nUtil.getMessage("env.dialog.export_postman.title"), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage("env.dialog.export_postman.success"),
+                        I18nUtil.getMessage("env.dialog.export_postman.title"),
+                        JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 log.error("导出Postman环境失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("env.dialog.export_postman.fail", ex.getMessage()), I18nUtil.getMessage("general.error"), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage("env.dialog.export_postman.fail", ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }

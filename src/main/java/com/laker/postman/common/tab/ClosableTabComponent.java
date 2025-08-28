@@ -1,6 +1,8 @@
 package com.laker.postman.common.tab;
 
 
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -22,15 +24,13 @@ public class ClosableTabComponent extends JPanel {
     private boolean newRequest = false;
     private final JTabbedPane tabbedPane;
     private final RequestEditSubPanel panel;
-    private final transient Runnable saveCallback;
 
-    public ClosableTabComponent(String title, RequestEditSubPanel panel, JTabbedPane tabbedPane, Runnable saveCallback) {
+    public ClosableTabComponent(String title, RequestEditSubPanel panel, JTabbedPane tabbedPane) {
         setOpaque(false);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         this.tabbedPane = tabbedPane;
         this.panel = panel;
-        this.saveCallback = saveCallback;
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
         int textWidth = fm.stringWidth(title) + 32;
@@ -114,8 +114,8 @@ public class ClosableTabComponent extends JPanel {
                             JOptionPane.YES_NO_CANCEL_OPTION,
                             JOptionPane.WARNING_MESSAGE);
                     if (result == JOptionPane.CANCEL_OPTION) return;
-                    if (result == JOptionPane.YES_OPTION && saveCallback != null) {
-                        saveCallback.run();
+                    if (result == JOptionPane.YES_OPTION) {
+                        SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
                     }
                 }
                 tabbedPane.remove(idx);
@@ -152,9 +152,9 @@ public class ClosableTabComponent extends JPanel {
                         tabbedPane.setSelectedIndex(idx);
                         return;
                     }
-                    if (result == JOptionPane.YES_OPTION && saveCallback != null) {
+                    if (result == JOptionPane.YES_OPTION) {
                         tabbedPane.setSelectedIndex(idx);
-                        saveCallback.run();
+                        SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
                     }
                 }
                 tabbedPane.remove(comp);
@@ -185,9 +185,9 @@ public class ClosableTabComponent extends JPanel {
                         tabbedPane.setSelectedIndex(idx);
                         return;
                     }
-                    if (result == JOptionPane.YES_OPTION && saveCallback != null) {
+                    if (result == JOptionPane.YES_OPTION) {
                         tabbedPane.setSelectedIndex(idx);
-                        saveCallback.run();
+                        SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
                     }
                 }
                 tabbedPane.remove(comp);

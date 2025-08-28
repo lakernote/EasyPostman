@@ -64,6 +64,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     public static final String REQUEST = "request";
     public static final String GROUP = "group";
     public static final String ROOT = "-请求集合-";
+    public static final String EXPORT_FILE_NAME = "EasyPostman-Collections.json";
     // 请求集合的根节点
     private DefaultMutableTreeNode rootTreeNode;
     // 请求树组件
@@ -73,7 +74,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private FlatTextField searchField;
 
-    private RequestCollectionPersistence persistence;
+    private transient RequestCollectionPersistence persistence;
 
     @Override
     protected void initUI() {
@@ -169,7 +170,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             } catch (Exception ignored) {
             }
             if (clipboardText != null && clipboardText.trim().toLowerCase().startsWith("curl")) {
-                int result = JOptionPane.showConfirmDialog(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED), I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_TITLE), JOptionPane.YES_NO_OPTION);
+                int result = JOptionPane.showConfirmDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED),
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_TITLE), JOptionPane.YES_NO_OPTION);
                 if (result == JOptionPane.YES_OPTION) {
                     importCurlToCollection(clipboardText); // 自动填充
                     return;
@@ -199,35 +202,22 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-
-        // 鼠标点击事件：无论是否切换都触发（解决重复点击同一节点无响应问题）
-        requestTree.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
-                TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
-                // 如果点击位置没有直接命中节点，则获取最近的行
-                if (selRow == -1 || selPath == null) {
-                    // 获取最接近点击位置的行
-                    selRow = requestTree.getClosestRowForLocation(e.getX(), e.getY());
-                    if (selRow != -1) {
-                        selPath = requestTree.getPathForRow(selRow);
-                    }
-                }
-
-                if (selRow != -1 && selPath != null) {
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
-                    if (node.getUserObject() instanceof Object[] obj) {
-                        if (REQUEST.equals(obj[0])) {
-                            HttpRequestItem item = (HttpRequestItem) obj[1];
-                            // 记录最后打开的请求ID
-                            UserSettingsUtil.saveLastOpenRequestId(item.getId());
-                            SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
-                        }
-                    }
+        // 监听树节点选择变化，始终响应选中事件，提升灵敏度
+        requestTree.addTreeSelectionListener(e -> {
+            TreePath selPath = requestTree.getSelectionPath();
+            if (selPath != null) {
+                log.debug("TreeSelection Selected path: {}", selPath);
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+                if (node.getUserObject() instanceof Object[] obj && REQUEST.equals(obj[0])) {
+                    HttpRequestItem item = (HttpRequestItem) obj[1];
+                    SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+                    UserSettingsUtil.saveLastOpenRequestId(item.getId());
                 }
             }
+        });
 
+        // 鼠标点击事件，右键弹出菜单
+        requestTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
@@ -311,7 +301,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             return;
                         }
                         if (newName.isEmpty()) {
-                            JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
+                            JOptionPane.showMessageDialog(RequestCollectionsLeftPanel.this,
+                                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY),
+                                    I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                             return;
                         }
                         obj[1] = newName;
@@ -327,7 +319,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             return;
                         }
                         if (newName.isEmpty()) {
-                            JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
+                            JOptionPane.showMessageDialog(RequestCollectionsLeftPanel.this,
+                                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY),
+                                    I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                             return;
                         }
                         item.setName(newName);
@@ -343,7 +337,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                                 if (tabItem != null && item.getId().equals(tabItem.getId())) {
                                     tabbedPane.setTitleAt(i, newName);
                                     // 更新自定义标签组件
-                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, subPanel, tabbedPane, editPanel::saveCurrentRequest));
+                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, subPanel, tabbedPane));
                                     // 同步刷新内容
                                     subPanel.updateRequestForm(item);
                                 }
@@ -494,7 +488,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private void showAddGroupDialog(DefaultMutableTreeNode rootTreeNode) {
-        String groupName = JOptionPane.showInputDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT));
+        String groupName = JOptionPane.showInputDialog(this,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT));
         if (groupName != null && !groupName.trim().isEmpty()) {
             DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, groupName});
             rootTreeNode.add(groupNode);
@@ -508,16 +503,20 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private void exportRequestCollection() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
-        fileChooser.setSelectedFile(new File("EasyPostman-Collections.json"));
+        fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 persistence.exportRequestCollection(fileToSave);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                log.error("导出失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                log.error("Export error", ex);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -547,10 +546,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 treeModel.reload();
                 persistence.saveRequestGroups();
                 requestTree.expandPath(new TreePath(easyPostmanGroup.getPath()));
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                log.error("导入失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                log.error("Import error", ex);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -578,24 +581,34 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     treeModel.reload();
                     persistence.saveRequestGroups();
                     requestTree.expandPath(new TreePath(collectionNode.getPath()));
-                    JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_INVALID), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_INVALID),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 }
             } catch (Exception ex) {
                 log.error("Postman导入失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void importCurlToCollection(String defaultCurl) {
-        String curlText = LargeInputDialog.show(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE), I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), defaultCurl);
+        String curlText = LargeInputDialog.show(this,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), defaultCurl);
         if (curlText == null || curlText.trim().isEmpty()) return;
         try {
             CurlRequest curlRequest = CurlParser.parse(curlText);
             if (curlRequest.url == null) {
-                JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 return;
             }
             // 构造HttpRequestItem
@@ -615,7 +628,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -645,12 +660,16 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     // 支持指定分组导入cURL
     private void importCurlToGroup(String curlText, DefaultMutableTreeNode groupNode) {
-        String input = LargeInputDialog.show(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE), I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), curlText);
+        String input = LargeInputDialog.show(this,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), curlText);
         if (input == null || input.trim().isEmpty()) return;
         try {
             CurlRequest curlRequest = CurlParser.parse(input);
             if (curlRequest.url == null) {
-                JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 return;
             }
             HttpRequestItem item = new HttpRequestItem();
@@ -671,7 +690,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             // 导入成功后清空剪贴板
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -831,9 +852,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
                 String curl = CurlParser.toCurl(req);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(curl), null); // 将cUrl命令复制到剪贴板
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -946,13 +971,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     // 递归解析Postman集合为树结构，返回标准分组/请求节点列表
-    private java.util.List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
-        java.util.List<DefaultMutableTreeNode> nodeList = new java.util.ArrayList<>();
+    private List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
+        List<DefaultMutableTreeNode> nodeList = new ArrayList<>();
         for (Object obj : items) {
             JSONObject item = (JSONObject) obj;
             if (item.containsKey("item")) {
                 // 文件夹节点
-                String folderName = item.getStr("name", "未命名文件夹");
+                String folderName = item.getStr("name", "default group");
                 DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(new Object[]{GROUP, folderName});
                 // 先处理自身 request
                 if (item.containsKey(REQUEST)) {
@@ -961,7 +986,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 }
                 // 递归处理子节点
                 JSONArray children = item.getJSONArray("item");
-                java.util.List<DefaultMutableTreeNode> childNodes = parsePostmanItemsToTree(children);
+                List<DefaultMutableTreeNode> childNodes = parsePostmanItemsToTree(children);
                 for (DefaultMutableTreeNode child : childNodes) {
                     folderNode.add(child);
                 }
@@ -978,7 +1003,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     // 导出分组为Postman Collection
     private void exportGroupAsPostman(DefaultMutableTreeNode groupNode) {
         if (groupNode == null || !(groupNode.getUserObject() instanceof Object[] obj) || !GROUP.equals(obj[0])) {
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
             return;
         }
         String groupName = String.valueOf(obj[1]);
@@ -991,10 +1018,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             try {
                 JSONObject postmanCollection = PostmanImport.buildPostmanCollectionFromTreeNode(groupNode, groupName);
                 FileUtil.writeUtf8String(postmanCollection.toStringPretty(), fileToSave);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 log.error("导出Postman失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -1026,11 +1057,11 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     // 获取树中选中的所有请求（包含分组下所有请求）
-    public java.util.List<HttpRequestItem> getSelectedRequestsFromTree(JTree tree) {
-        java.util.List<HttpRequestItem> result = new java.util.ArrayList<>();
-        javax.swing.tree.TreePath[] paths = tree.getSelectionPaths();
+    public List<HttpRequestItem> getSelectedRequestsFromTree(JTree tree) {
+        List<HttpRequestItem> result = new ArrayList<>();
+        TreePath[] paths = tree.getSelectionPaths();
         if (paths == null) return result;
-        for (javax.swing.tree.TreePath path : paths) {
+        for (TreePath path : paths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             collectRequestsRecursively(node, result);
         }
@@ -1043,7 +1074,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     // 递归收集请求
-    private void collectRequestsRecursively(DefaultMutableTreeNode node, java.util.List<HttpRequestItem> list) {
+    private void collectRequestsRecursively(DefaultMutableTreeNode node, List<HttpRequestItem> list) {
         Object userObj = node.getUserObject();
         if (userObj instanceof Object[] obj) {
             if (REQUEST.equals(obj[0])) {
@@ -1061,7 +1092,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
      */
     public static void showMultiSelectRequestDialog(Consumer<List<HttpRequestItem>> onSelected) {
         RequestCollectionsLeftPanel requestCollectionsLeftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_MULTI_SELECT_TITLE), true);
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_MULTI_SELECT_TITLE), true);
         dialog.setSize(400, 500);
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(null);
@@ -1077,7 +1109,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         okBtn.addActionListener(e -> {
             List<HttpRequestItem> selected = requestCollectionsLeftPanel.getSelectedRequestsFromTree(tree);
             if (selected.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_MULTI_SELECT_EMPTY), I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_MULTI_SELECT_EMPTY),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
                 return;
             }
             onSelected.accept(selected);

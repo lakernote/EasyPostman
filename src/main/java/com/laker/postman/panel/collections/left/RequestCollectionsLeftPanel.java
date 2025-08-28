@@ -203,37 +203,34 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
 
-        // 鼠标点击事件，右键弹出菜单
+        // 鼠标点击事件，右键弹出菜单 左键打开请求
         requestTree.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
-                TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
-                // 如果点击位置没有直接命中节点，则获取最近的行
-                if (selRow == -1 || selPath == null) {
-                    // 获取最接近点击位置的行
-                    selRow = requestTree.getClosestRowForLocation(e.getX(), e.getY());
-                    if (selRow != -1) {
-                        selPath = requestTree.getPathForRow(selRow);
+            public void mousePressed(MouseEvent e) { // pressed 而不是 clicked，更加灵敏
+                // 统一处理左键和右键点击
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) { // 左键单击 打开请求
+                    int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
+                    TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
+                    // 如果点击位置没有直接命中节点，则获取最近的行
+                    if (selRow == -1 || selPath == null) {
+                        selRow = requestTree.getClosestRowForLocation(e.getX(), e.getY());
+                        if (selRow != -1) {
+                            selPath = requestTree.getPathForRow(selRow);
+                        }
                     }
-                }
-
-                if (selRow != -1 && selPath != null) {
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
-                    if (node.getUserObject() instanceof Object[] obj) {
-                        if (REQUEST.equals(obj[0])) {
-                            HttpRequestItem item = (HttpRequestItem) obj[1];
-                            // 记录最后打开的请求ID
-                            UserSettingsUtil.saveLastOpenRequestId(item.getId());
-                            SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+                    if (selRow != -1 && selPath != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+                        if (node.getUserObject() instanceof Object[] obj) {
+                            if (REQUEST.equals(obj[0])) {
+                                HttpRequestItem item = (HttpRequestItem) obj[1];
+                                // 记录最后打开的请求ID
+                                UserSettingsUtil.saveLastOpenRequestId(item.getId());
+                                SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+                            }
                         }
                     }
                 }
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (SwingUtilities.isRightMouseButton(e)) {
+                if (SwingUtilities.isRightMouseButton(e)) { // 右键点击 弹出菜单
                     int x = e.getX();
                     int y = e.getY();
                     int row = requestTree.getClosestRowForLocation(x, y);

@@ -448,9 +448,6 @@ public final class MessageKeys {
     // 线程组界面标签
     public static final String THREADGROUP_MODE_LABEL = "threadgroup.mode.label";
     public static final String THREADGROUP_PREVIEW_TITLE = "threadgroup.preview.title";
-    public static final String THREADGROUP_PREVIEW_MODE = "threadgroup.preview.mode";
-    public static final String THREADGROUP_PREVIEW_TIME = "threadgroup.preview.time";
-    public static final String THREADGROUP_PREVIEW_THREADS = "threadgroup.preview.threads";
 
     // 固定模式标签
     public static final String THREADGROUP_FIXED_USERS = "threadgroup.fixed.users";
@@ -482,7 +479,6 @@ public final class MessageKeys {
 
     // 预览面板标签
     public static final String THREADGROUP_PREVIEW_TIME_SECONDS = "threadgroup.preview.time_seconds";
-    public static final String THREADGROUP_PREVIEW_THREADS_LABEL = "threadgroup.preview.threads_label";
     public static final String THREADGROUP_PREVIEW_MODE_PREFIX = "threadgroup.preview.mode_prefix";
 
     // ============ Settings Dialog related ============

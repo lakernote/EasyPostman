@@ -15,6 +15,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -95,18 +96,21 @@ public class CsvDataPanel extends JPanel {
 
         JPopupMenu csvMenu = new JPopupMenu();
 
-        JMenuItem loadCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_IMPORT_FILE), new FlatSVGIcon("icons/import.svg", 16, 16));
+        JMenuItem loadCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_IMPORT_FILE),
+                new FlatSVGIcon("icons/import.svg", 16, 16));
         loadCsvItem.addActionListener(e -> showEnhancedCsvManagementDialog());
         csvMenu.add(loadCsvItem);
 
-        JMenuItem manageCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA), new FlatSVGIcon("icons/code.svg", 16, 16));
+        JMenuItem manageCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA),
+                new FlatSVGIcon("icons/code.svg", 16, 16));
         manageCsvItem.addActionListener(e -> showCsvDataManageDialog());
         manageCsvItem.setEnabled(false); // 默认禁用，有数据时启用
         csvMenu.add(manageCsvItem);
 
         csvMenu.addSeparator();
 
-        JMenuItem clearCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_CLEAR_DATA), new FlatSVGIcon("icons/clear.svg", 16, 16));
+        JMenuItem clearCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_CLEAR_DATA),
+                new FlatSVGIcon("icons/clear.svg", 16, 16));
         clearCsvItem.addActionListener(e -> clearCsvData());
         clearCsvItem.setEnabled(false); // 默认禁用，有数据时启用
         csvMenu.add(clearCsvItem);
@@ -159,7 +163,8 @@ public class CsvDataPanel extends JPanel {
      * 增强的 CSV 文件管理对话框
      */
     private void showEnhancedCsvManagementDialog() {
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.CSV_DIALOG_MANAGEMENT_TITLE), true);
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.CSV_DIALOG_MANAGEMENT_TITLE), true);
         dialog.setSize(600, 430);
         dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
@@ -300,23 +305,24 @@ public class CsvDataPanel extends JPanel {
         try {
             if (csvHeaders != null && !csvHeaders.isEmpty()) {
                 // 优先使用保存的列标题顺序
-                headers = new java.util.ArrayList<>(csvHeaders);
+                headers = new ArrayList<>(csvHeaders);
             } else if (csvFile != null) {
                 headers = CsvDataUtil.getCsvHeaders(csvFile);
                 csvHeaders = headers; // 保存列标题顺序
             } else {
                 // 从现有数据中获取列名，使用LinkedHashMap保持顺序
                 if (csvData.isEmpty()) {
-                    headers = new java.util.ArrayList<>();
+                    headers = new ArrayList<>();
                 } else {
                     // 如果数据使用的是LinkedHashMap，keySet()会保持插入顺序
-                    headers = new java.util.ArrayList<>(csvData.get(0).keySet());
+                    headers = new ArrayList<>(csvData.get(0).keySet());
                     csvHeaders = headers; // 保存列标题顺序
                 }
             }
         } catch (Exception e) {
-            headers = csvHeaders != null ? new java.util.ArrayList<>(csvHeaders) :
-                    (csvData.isEmpty() ? new java.util.ArrayList<>() : new java.util.ArrayList<>(csvData.get(0).keySet()));
+            log.error("获取 CSV 列标题失败", e);
+            headers = csvHeaders != null ? new ArrayList<>(csvHeaders) :
+                    (csvData.isEmpty() ? new ArrayList<>() : new ArrayList<>(csvData.get(0).keySet()));
         }
 
         // 创建表格数据，确保至少有5行用于编辑
@@ -392,7 +398,7 @@ public class CsvDataPanel extends JPanel {
         // 创建带样式的滚动面板
         JScrollPane scrollPane = new JScrollPane(csvTable);
         scrollPane.getViewport().setBackground(new Color(248, 250, 252)); // 与 EasyTablePanel 一致的背景色
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(237, 237, 237)),
                 BorderFactory.createEmptyBorder(8, 8, 8, 8))); // 参考 EasyTablePanel 的边框样式
@@ -446,7 +452,10 @@ public class CsvDataPanel extends JPanel {
             if (columnName != null && !columnName.trim().isEmpty()) {
                 columnName = columnName.trim();
                 editTableModel.addColumn(columnName);
-                csvTable.getColumnModel().getColumn(csvTable.getColumnCount() - 1).setPreferredWidth(120);
+                // 重新设置列宽
+                for (int i = 0; i < csvTable.getColumnCount(); i++) {
+                    csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
+                }
                 applyEmptyCellRenderer.run(); // 新增列后重新设置渲染器
             }
         });

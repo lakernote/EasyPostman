@@ -20,6 +20,10 @@ import java.util.Map;
 @Slf4j
 public class CsvDataUtil {
 
+    private CsvDataUtil() {
+        // 私有构造函数，防止实例化
+    }
+
     /**
      * 读取 CSV 文件数据
      *
@@ -84,26 +88,26 @@ public class CsvDataUtil {
      */
     public static String validateCsvFile(File csvFile) {
         if (csvFile == null || !csvFile.exists()) {
-            return "文件不存在";
+            return I18nUtil.getMessage(MessageKeys.CSV_FILE_NOT_EXIST);
         }
 
         if (!csvFile.isFile()) {
-            return "不是有效的文件";
+            return I18nUtil.getMessage(MessageKeys.CSV_FILE_NOT_VALID);
         }
 
         if (!csvFile.getName().toLowerCase().endsWith(".csv")) {
-            return "不是 CSV 文件";
+            return I18nUtil.getMessage(MessageKeys.CSV_FILE_NOT_CSV);
         }
 
         try {
             List<Map<String, String>> data = readCsvData(csvFile);
             if (data.isEmpty()) {
-                return "CSV 文件没有有效数据";
+                return I18nUtil.getMessage(MessageKeys.CSV_NO_VALID_DATA);
             }
 
-            return "文件格式正确，包含 " + data.size() + " 行数据";
+            return "";
         } catch (Exception e) {
-            return "文件格式错误: " + e.getMessage();
+            return I18nUtil.getMessage(MessageKeys.CSV_LOAD_FAILED, e.getMessage());
         }
     }
 

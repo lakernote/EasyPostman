@@ -1,5 +1,6 @@
 package com.laker.postman.common.component;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
@@ -632,9 +633,10 @@ public class CsvDataPanel extends JPanel {
             File selectedFile = fileChooser.getSelectedFile();
 
             // 验证文件
-            String validation = CsvDataUtil.validateCsvFile(selectedFile);
-            if (!validation.startsWith("文件格式正确")) {
-                JOptionPane.showMessageDialog(this, validation, I18nUtil.getMessage(MessageKeys.CSV_FILE_VALIDATION_FAILED), JOptionPane.ERROR_MESSAGE);
+            String validationMsg = CsvDataUtil.validateCsvFile(selectedFile);
+            if (CharSequenceUtil.isNotBlank(validationMsg)) {
+                JOptionPane.showMessageDialog(this, validationMsg,
+                        I18nUtil.getMessage(MessageKeys.CSV_FILE_VALIDATION_FAILED), JOptionPane.ERROR_MESSAGE);
                 return false;
             }
 

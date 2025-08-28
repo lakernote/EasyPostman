@@ -585,6 +585,9 @@ public final class MessageKeys {
     public static final String CSV_FILE_VALIDATION_FAILED = "csv.file_validation_failed";
     public static final String CSV_NO_VALID_DATA = "csv.no_valid_data";
     public static final String CSV_LOAD_FAILED = "csv.load_failed";
+    public static final String CSV_FILE_NOT_EXIST = "csv.file_not_exist";
+    public static final String CSV_FILE_NOT_VALID = "csv.file_not_valid";
+    public static final String CSV_FILE_NOT_CSV = "csv.file_not_csv";
 
     // ============ OkHttpResponseHandler ============
     public static final String DOWNLOAD_PROGRESS_TITLE = "download.progress.title";

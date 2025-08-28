@@ -9,10 +9,10 @@ import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -122,7 +122,7 @@ public class RequestEditSubPanel extends JPanel {
 
         // 2.1 Params
         paramsPanel = new EasyNameValueTablePanel("Key", "Value");
-        reqTabs.addTab(I18nUtil.getMessage("tab.params"), paramsPanel); // 2.1 添加参数选项卡
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel); // 2.1 添加参数选项卡
 
         // 添加Params面板的监听器，实现从Params到URL的联动
         paramsPanel.addTableModelListener(e -> {
@@ -133,24 +133,24 @@ public class RequestEditSubPanel extends JPanel {
 
         // 2.2 Auth 面板
         authTabPanel = new AuthTabPanel();
-        reqTabs.addTab(I18nUtil.getMessage("tab.authorization"), authTabPanel);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION), authTabPanel);
 
         // 2.3 Headers
         headersPanel = new EasyNameValueTablePanel("Key", "Value");
-        reqTabs.addTab(I18nUtil.getMessage("tab.request_headers"), headersPanel);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS), headersPanel);
 
         // 2.4 Body 面板
         requestBodyPanel = new RequestBodyPanel();
-        reqTabs.addTab(I18nUtil.getMessage("tab.request_body"), requestBodyPanel);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY), requestBodyPanel);
 
 
         // 2.5 脚本Tab
         scriptPanel = new ScriptPanel();
-        reqTabs.addTab(I18nUtil.getMessage("tab.scripts"), scriptPanel);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptPanel);
 
         // 2.6 Cookie 面板
         CookieTablePanel cookiePanel = new CookieTablePanel();
-        reqTabs.addTab(I18nUtil.getMessage("tab.cookies"), cookiePanel);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_COOKIES), cookiePanel);
 
         // 3. 响应面板
         JPanel responsePanel = new JPanel(new BorderLayout());
@@ -159,10 +159,10 @@ public class RequestEditSubPanel extends JPanel {
         // Tab栏（自定义按钮实现）
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         String[] tabNames = {
-                I18nUtil.getMessage("tab.response_body"),
-                I18nUtil.getMessage("tab.response_headers"),
-                I18nUtil.getMessage("tab.tests"),
-                I18nUtil.getMessage("tab.network_log")
+                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
+                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
+                I18nUtil.getMessage(MessageKeys.TAB_TESTS),
+                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG)
         };
         JButton[] tabButtons = new JButton[tabNames.length];
         this.tabButtons = tabButtons;
@@ -195,10 +195,10 @@ public class RequestEditSubPanel extends JPanel {
         JScrollPane testsScrollPane = new JScrollPane(testsPane);
         testsPanel.add(testsScrollPane, BorderLayout.CENTER);
         networkLogPanel = new NetworkLogPanel();
-        cardPanel.add(responseBodyPanel, I18nUtil.getMessage("tab.response_body"));
-        cardPanel.add(responseHeadersPanel, I18nUtil.getMessage("tab.response_headers"));
-        cardPanel.add(testsPanel, I18nUtil.getMessage("tab.tests"));
-        cardPanel.add(networkLogPanel, I18nUtil.getMessage("tab.network_log"));
+        cardPanel.add(responseBodyPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY));
+        cardPanel.add(responseHeadersPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
+        cardPanel.add(testsPanel, I18nUtil.getMessage(MessageKeys.TAB_TESTS));
+        cardPanel.add(networkLogPanel, I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG));
         responsePanel.add(cardPanel, BorderLayout.CENTER);
 
         // Tab按钮切换逻辑
@@ -214,7 +214,7 @@ public class RequestEditSubPanel extends JPanel {
             });
         }
         // 默认显示Body
-        ((CardLayout) cardPanel.getLayout()).show(cardPanel, I18nUtil.getMessage("tab.response_body"));
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY));
         // 默认禁用响应区tab按钮
         setResponseTabButtonsEnable(tabButtons, false);
 
@@ -385,8 +385,8 @@ public class RequestEditSubPanel extends JPanel {
                     // 弹窗提示用户是否切换到SSE监听模式
                     SwingUtilities.invokeLater(() -> {
                         int result = JOptionPane.showConfirmDialog(RequestEditSubPanel.this,
-                                I18nUtil.getMessage("sse.switch.tip"),
-                                I18nUtil.getMessage("sse.switch.title"),
+                                I18nUtil.getMessage(MessageKeys.SSE_SWITCH_TIP),
+                                I18nUtil.getMessage(MessageKeys.SSE_SWITCH_TITLE),
                                 JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE);
                         if (result == JOptionPane.YES_OPTION) {
@@ -401,8 +401,8 @@ public class RequestEditSubPanel extends JPanel {
                             // 定位到headerpanel table的最后一行
                             headersPanel.scrollRectToVisible();
                             JOptionPane.showMessageDialog(RequestEditSubPanel.this,
-                                    I18nUtil.getMessage("sse.header.added"),
-                                    I18nUtil.getMessage("operation.tip"),
+                                    I18nUtil.getMessage(MessageKeys.SSE_HEADER_ADDED),
+                                    I18nUtil.getMessage(MessageKeys.OPERATION_TIP),
                                     JOptionPane.INFORMATION_MESSAGE);
                             sendRequest(null);
                         }
@@ -458,9 +458,9 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                statusCodeLabel.setText(I18nUtil.getMessage("sse.failed", errorMsg));
+                                statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse(I18nUtil.getMessage("sse.failed", errorMsg), r);
+                                updateUIForResponse(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                             currentEventSource = null;
@@ -472,7 +472,7 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        statusCodeLabel.setText(I18nUtil.getMessage("sse.error", ex.getMessage()));
+                        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
                     });
                 }
@@ -519,8 +519,8 @@ public class RequestEditSubPanel extends JPanel {
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
                                 JOptionPane.showMessageDialog(null,
-                                        I18nUtil.getMessage("websocket.connected"),
-                                        I18nUtil.getMessage("websocket.success"),
+                                        I18nUtil.getMessage(MessageKeys.WEBSOCKET_CONNECTED),
+                                        I18nUtil.getMessage(MessageKeys.WEBSOCKET_SUCCESS),
                                         JOptionPane.INFORMATION_MESSAGE);
                             });
                             log.info("WebSocket连接已建立: {}", response.message());
@@ -574,10 +574,11 @@ public class RequestEditSubPanel extends JPanel {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
-                                String statusMsg = response != null ? I18nUtil.getMessage("websocket.failed", t.getMessage() + " (" + response.code() + ")") : I18nUtil.getMessage("websocket.failed", t.getMessage());
+                                String statusMsg = response != null ? I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")")
+                                        : I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
                                 statusCodeLabel.setText(statusMsg);
                                 statusCodeLabel.setForeground(Color.RED);
-                                updateUIForResponse(I18nUtil.getMessage("websocket.failed", t.getMessage()), resp);
+                                updateUIForResponse(I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage()), resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                         }
@@ -586,7 +587,7 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error("WebSocket连接异常: {}", ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        statusCodeLabel.setText(I18nUtil.getMessage("websocket.error", ex.getMessage()));
+                        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
                         requestBodyPanel.getWsSendButton().setEnabled(false);
                         requestBodyPanel.showWebSocketSendPanel(false);

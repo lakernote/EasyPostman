@@ -9,7 +9,6 @@ import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;
@@ -26,6 +25,7 @@ import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -998,7 +998,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     resp = HttpSingleRequestExecutor.execute(req);
                 } catch (Exception ex) {
                     log.error("请求执行失败: {}", ex.getMessage(), ex);
-                    errorMsg = I18nUtil.getMessage("performance.msg.request_failed", ex.getMessage());
+                    errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_FAILED, ex.getMessage());
                     success = false;
                 } finally {
                     costMs = System.currentTimeMillis() - startTime;
@@ -1032,7 +1032,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         }
                         if (!pass) {
                             success = false;
-                            errorMsg = I18nUtil.getMessage("performance.msg.assertion_failed", type, assertion.content);
+                            errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_ASSERTION_FAILED, type, assertion.content);
                         }
                         testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
                     }
@@ -1233,7 +1233,8 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!(userObj instanceof JMeterTreeNode jtNode)) return;
             if (jtNode.type == NodeType.ROOT) return;
             String oldName = jtNode.name;
-            String newName = JOptionPane.showInputDialog(PerformancePanel.this, I18nUtil.getMessage("performance.msg.rename_node"), oldName);
+            String newName = JOptionPane.showInputDialog(PerformancePanel.this,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_RENAME_NODE), oldName);
             if (newName != null && !newName.trim().isEmpty()) {
                 jtNode.name = newName.trim();
                 // 同步更新 request 类型的 httpRequestItem name 字段

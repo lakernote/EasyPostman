@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 import com.laker.postman.model.CookieInfo;
 import com.laker.postman.service.http.CookieService;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -16,7 +17,7 @@ import java.util.List;
 public class CookieTablePanel extends JPanel {
     private final JTable table;
     private final DefaultTableModel model;
-    private final Runnable cookieListener = this::loadCookies;
+    private final transient Runnable cookieListener = this::loadCookies;
 
     public CookieTablePanel() {
         setLayout(new BorderLayout());
@@ -32,27 +33,25 @@ public class CookieTablePanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnDelete = new JButton(I18nUtil.getMessage("cookie.button.delete"));
-        JButton btnClear = new JButton(I18nUtil.getMessage("cookie.button.clear"));
-        JButton btnAdd = new JButton(I18nUtil.getMessage("cookie.button.add"));
-        JButton btnRefresh = new JButton(I18nUtil.getMessage("cookie.button.refresh"));
+        JButton btnDelete = new JButton(I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_DELETE));
+        JButton btnClear = new JButton(I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_CLEAR));
+        JButton btnAdd = new JButton(I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_ADD));
+        JButton btnRefresh = new JButton(I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_REFRESH));
         btnPanel.add(btnAdd);
         btnPanel.add(btnDelete);
         btnPanel.add(btnClear);
         btnPanel.add(btnRefresh);
         add(btnPanel, BorderLayout.SOUTH);
 
-        btnAdd.setToolTipText(I18nUtil.getMessage("cookie.tooltip.add"));
-        btnDelete.setToolTipText(I18nUtil.getMessage("cookie.tooltip.delete"));
-        btnClear.setToolTipText(I18nUtil.getMessage("cookie.tooltip.clear"));
-        btnRefresh.setToolTipText(I18nUtil.getMessage("cookie.tooltip.refresh"));
+        btnAdd.setToolTipText(I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_ADD));
+        btnDelete.setToolTipText(I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_DELETE));
+        btnClear.setToolTipText(I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_CLEAR));
+        btnRefresh.setToolTipText(I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_REFRESH));
 
         btnAdd.addActionListener(e -> addCookieDialog());
         btnDelete.addActionListener(e -> deleteSelectedCookie());
         btnClear.addActionListener(e -> clearAllCookies());
-        btnRefresh.addActionListener(e -> {
-            CookieService.refreshCookies();
-        });
+        btnRefresh.addActionListener(e -> CookieService.refreshCookies());
 
         CookieService.registerCookieChangeListener(cookieListener);
         loadCookies();
@@ -81,7 +80,9 @@ public class CookieTablePanel extends JPanel {
     }
 
     private void clearAllCookies() {
-        int confirm = JOptionPane.showConfirmDialog(this, I18nUtil.getMessage("cookie.dialog.clear_confirm"), I18nUtil.getMessage("cookie.dialog.clear_confirm_title"), JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this,
+                I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_CLEAR_CONFIRM),
+                I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_CLEAR_CONFIRM_TITLE), JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             CookieService.clearAllCookies();
         }
@@ -105,7 +106,8 @@ public class CookieTablePanel extends JPanel {
         panel.add(pathField);
         panel.add(secureBox);
         panel.add(httpOnlyBox);
-        int result = JOptionPane.showConfirmDialog(this, panel, I18nUtil.getMessage("cookie.dialog.add_title"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(this, panel,
+                I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_ADD_TITLE), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String name = nameField.getText().trim();
             String value = valueField.getText().trim();
@@ -116,7 +118,9 @@ public class CookieTablePanel extends JPanel {
             if (!name.isEmpty() && !domain.isEmpty()) {
                 CookieService.addCookie(name, value, domain, path, secure, httpOnly);
             } else {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage("cookie.dialog.error.empty"), I18nUtil.getMessage("cookie.dialog.error.title"), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_ERROR_EMPTY),
+                        I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_ERROR_TITLE), JOptionPane.ERROR_MESSAGE);
             }
         }
     }

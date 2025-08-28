@@ -401,12 +401,12 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             }
         }
         if (installerUrl == null) {
-            JOptionPane.showMessageDialog(null, I18nUtil.getMessage("update.no_installer_found"),
-                    I18nUtil.getMessage("update.downloading"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND),
+                    I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), JOptionPane.ERROR_MESSAGE);
             return;
         }
         // 优化下载弹窗UI，增加图标、剩余时间、重试按钮
-        JDialog downloadingDialog = new JDialog((Frame) null, I18nUtil.getMessage("update.downloading"), true);
+        JDialog downloadingDialog = new JDialog((Frame) null, I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), true);
         downloadingDialog.setResizable(false);
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -419,7 +419,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         panel.add(iconLabel);
         panel.add(Box.createVerticalStrut(8));
         // 状态提示
-        JLabel statusLabel = new JLabel(I18nUtil.getMessage("update.connecting"), SwingConstants.CENTER);
+        JLabel statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_CONNECTING), SwingConstants.CENTER);
         statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
         statusLabel.setForeground(new Color(33, 37, 41));
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -456,12 +456,12 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JPanel btnPanel = new JPanel();
         btnPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 16, 0));
         btnPanel.setOpaque(false);
-        JButton cancelButton = new JButton(I18nUtil.getMessage("update.cancel_download"));
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
         cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
         cancelButton.setFocusPainted(false);
         cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        JButton retryButton = new JButton(I18nUtil.getMessage("update.retry"));
+        JButton retryButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_RETRY));
         retryButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
         retryButton.setFocusPainted(false);
         retryButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
@@ -496,7 +496,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    statusLabel.setText(I18nUtil.getMessage("update.connecting"));
+                    statusLabel.setText(I18nUtil.getMessage(MessageKeys.UPDATE_CONNECTING));
                     URL downloadUrl = new URL(finalInstallerUrl);
                     String fileName = finalInstallerUrl.substring(finalInstallerUrl.lastIndexOf('/') + 1);
                     File tempFile = File.createTempFile("EasyPostman-", fileName);
@@ -525,7 +525,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                             lastTime = System.currentTimeMillis();
                             lastDownloaded = 0;
                             startTime = System.currentTimeMillis();
-                            statusLabel.setText(I18nUtil.getMessage("update.downloading"));
+                            statusLabel.setText(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING));
                             // 优化：只在内容变化时刷新，避免乱晃
                             String lastSizeStr = "";
                             String lastSpeedStr = "";
@@ -540,21 +540,21 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                                 // 定长字符串，始终补齐空格，防止乱晃
                                 String sizeStr;
                                 if (downloaded == 0 && totalSize == 0) {
-                                    sizeStr = I18nUtil.getMessage("update.download_progress", "--", "-- MB");
+                                    sizeStr = I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_PROGRESS, "--", "-- MB");
                                 } else {
-                                    sizeStr = I18nUtil.getMessage("update.download_progress",
+                                    sizeStr = I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_PROGRESS,
                                             String.format("%.1f", downloaded / 1024.0 / 1024),
                                             String.format("%.1f", totalSize / 1024.0 / 1024));
                                 }
-                                String speedStr = I18nUtil.getMessage("update.download_speed", String.format("%.1f", speed / 1024));
+                                String speedStr = I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_SPEED, String.format("%.1f", speed / 1024));
                                 int remainSec;
                                 String timeStr;
                                 if (speed > 0 && totalSize > 0) {
                                     remainSec = (int) ((totalSize - downloaded) / speed);
-                                    timeStr = I18nUtil.getMessage("update.estimated_time", remainSec);
+                                    timeStr = I18nUtil.getMessage(MessageKeys.UPDATE_ESTIMATED_TIME, remainSec);
                                 } else {
                                     remainSec = -1;
-                                    timeStr = I18nUtil.getMessage("update.estimated_time", "--");
+                                    timeStr = I18nUtil.getMessage(MessageKeys.UPDATE_ESTIMATED_TIME, "--");
                                 }
                                 // 只有内容变化时才刷新，避免乱晃
                                 String finalLastSizeStr = lastSizeStr;
@@ -620,22 +620,22 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             protected void done() {
                 downloadingDialog.dispose();
                 if (cancelFlag[0]) {
-                    JOptionPane.showMessageDialog(null, I18nUtil.getMessage("update.download_cancelled"),
-                            I18nUtil.getMessage("update.downloading"), JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED),
+                            I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), JOptionPane.INFORMATION_MESSAGE);
                     return;
                 }
                 if (error != null) {
                     retryButton.setVisible(true);
-                    JOptionPane.showMessageDialog(null, error, I18nUtil.getMessage("update.downloading"), JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, error, I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), JOptionPane.ERROR_MESSAGE);
                 } else if (downloadedFile != null) {
-                    String tip = I18nUtil.getMessage("update.install_prompt");
-                    int open = JOptionPane.showConfirmDialog(null, tip, I18nUtil.getMessage("update.downloading"), JOptionPane.YES_NO_OPTION);
+                    String tip = I18nUtil.getMessage(MessageKeys.UPDATE_INSTALL_PROMPT);
+                    int open = JOptionPane.showConfirmDialog(null, tip, I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), JOptionPane.YES_NO_OPTION);
                     if (open == JOptionPane.YES_OPTION) {
                         try {
                             Desktop.getDesktop().open(downloadedFile);
                         } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(null, I18nUtil.getMessage("update.open_installer_failed", ex.getMessage()),
-                                    I18nUtil.getMessage("update.downloading"), JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.UPDATE_OPEN_INSTALLER_FAILED, ex.getMessage()),
+                                    I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), JOptionPane.ERROR_MESSAGE);
                         }
                         System.exit(0);
                     }
@@ -649,20 +649,20 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     // 错误友好提示
     private String getFriendlyError(Exception ex) {
         if (ex instanceof java.net.SocketTimeoutException) {
-            return I18nUtil.getMessage("error.network_timeout");
+            return I18nUtil.getMessage(MessageKeys.ERROR_NETWORK_TIMEOUT);
         } else if (ex instanceof java.net.UnknownHostException) {
-            return I18nUtil.getMessage("error.server_unreachable");
+            return I18nUtil.getMessage(MessageKeys.ERROR_SERVER_UNREACHABLE);
         } else if (ex instanceof java.io.FileNotFoundException) {
-            return I18nUtil.getMessage("error.invalid_download_link");
+            return I18nUtil.getMessage(MessageKeys.ERROR_INVALID_DOWNLOAD_LINK);
         } else if (ex instanceof java.io.IOException) {
             if (ex.getMessage() != null && ex.getMessage().contains("No space left on device")) {
-                return I18nUtil.getMessage("error.disk_space_insufficient");
+                return I18nUtil.getMessage(MessageKeys.ERROR_DISK_SPACE_INSUFFICIENT);
             } else if (ex.getMessage() != null && ex.getMessage().contains("Permission denied")) {
-                return I18nUtil.getMessage("error.permission_denied");
+                return I18nUtil.getMessage(MessageKeys.ERROR_PERMISSION_DENIED);
             }
-            return I18nUtil.getMessage("error.io_exception", ex.getMessage());
+            return I18nUtil.getMessage(MessageKeys.ERROR_IO_EXCEPTION, ex.getMessage());
         }
-        return I18nUtil.getMessage("update.download_failed", ex.getMessage());
+        return I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_FAILED, ex.getMessage());
     }
 
     /**

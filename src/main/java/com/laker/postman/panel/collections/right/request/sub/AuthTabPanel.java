@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,27 +22,27 @@ public class AuthTabPanel extends JPanel {
     public AuthTabPanel() {
         setLayout(new BorderLayout());
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        top.add(new JLabel(I18nUtil.getMessage("auth.type.label")));
+        top.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_LABEL)));
         typeCombo = new JComboBox<>(new String[]{AUTH_TYPE_NONE, AUTH_TYPE_BASIC, AUTH_TYPE_BEARER});
         top.add(typeCombo);
         add(top, BorderLayout.NORTH);
         JPanel cardPanel = new JPanel(new CardLayout());
         // No Auth
         JPanel noAuthPanel = new JPanel();
-        noAuthPanel.add(new JLabel(I18nUtil.getMessage("auth.type.none.desc")));
+        noAuthPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC)));
         cardPanel.add(noAuthPanel, AUTH_TYPE_NONE);
         // Basic
         JPanel basicPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        basicPanel.add(new JLabel(I18nUtil.getMessage("auth.username")));
+        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_USERNAME)));
         usernameField = new JTextField(12);
         basicPanel.add(usernameField);
-        basicPanel.add(new JLabel(I18nUtil.getMessage("auth.password")));
+        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_PASSWORD)));
         passwordField = new JTextField(12);
         basicPanel.add(passwordField);
         cardPanel.add(basicPanel, AUTH_TYPE_BASIC);
         // Bearer
         JPanel bearerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bearerPanel.add(new JLabel(I18nUtil.getMessage("auth.token")));
+        bearerPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TOKEN)));
         tokenField = new JTextField(24);
         bearerPanel.add(tokenField);
         cardPanel.add(bearerPanel, AUTH_TYPE_BEARER);

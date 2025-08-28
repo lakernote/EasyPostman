@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 import com.laker.postman.common.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.BasicCompletion;
@@ -40,20 +41,20 @@ public class ScriptPanel extends JPanel {
         loadEditorTheme(postscriptArea);
         addAutoCompletion(postscriptArea);
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab(I18nUtil.getMessage("script.tab.prescript"), new RTextScrollPane(prescriptArea)); // 用RTextScrollPane显示行号和代码折叠
-        tabbedPane.addTab(I18nUtil.getMessage("script.tab.postscript"), new RTextScrollPane(postscriptArea));
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_PRESCRIPT), new RTextScrollPane(prescriptArea)); // 用RTextScrollPane显示行号和代码折叠
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_POSTSCRIPT), new RTextScrollPane(postscriptArea));
 
         JTextArea helpArea = new JTextArea();
         helpArea.setEditable(false);
         helpArea.setLineWrap(true);
         helpArea.setWrapStyleWord(true);
-        helpArea.setText(I18nUtil.getMessage("script.help.text"));
-        tabbedPane.addTab(I18nUtil.getMessage("script.tab.help"), new JScrollPane(helpArea));
+        helpArea.setText(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TEXT));
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_HELP), new JScrollPane(helpArea));
 
         add(tabbedPane, BorderLayout.CENTER);
 
         // 右下角添加 Snippets 按钮
-        JButton snippetBtn = new JButton(I18nUtil.getMessage("script.button.snippets"));
+        JButton snippetBtn = new JButton(I18nUtil.getMessage(MessageKeys.SCRIPT_BUTTON_SNIPPETS));
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         btnPanel.add(snippetBtn);
         add(btnPanel, BorderLayout.SOUTH);

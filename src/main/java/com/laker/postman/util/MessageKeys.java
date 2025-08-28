@@ -60,7 +60,6 @@ public final class MessageKeys {
     public static final String ERROR_NETWORK = "error.network";
     public static final String ERROR_UPDATE_FAILED = "error.update_failed";
     public static final String ERROR_NO_VERSION_INFO = "error.no_version_info";
-    public static final String ERROR_OPEN_LOG_FAILED = "error.open_log_failed";
     public static final String ERROR_OPEN_LOG_MESSAGE = "error.open_log_message";
     public static final String ERROR_OPEN_LINK_FAILED = "error.open_link_failed";
     public static final String ERROR_NETWORK_TIMEOUT = "error.network_timeout";
@@ -86,11 +85,8 @@ public final class MessageKeys {
     // ============ 通用 ============
     public static final String GENERAL_ERROR = "general.error";
     public static final String GENERAL_ERROR_MESSAGE = "general.error.message";
-    public static final String GENERAL_WARNING = "general.warning";
     public static final String GENERAL_INFO = "general.info";
     public static final String GENERAL_TIP = "general.tip";
-    public static final String GENERAL_YES = "general.yes";
-    public static final String GENERAL_NO = "general.no";
     public static final String GENERAL_OK = "general.ok";
     public static final String GENERAL_CANCEL = "button.cancel";
     public static final String CONSOLE_TITLE = "console.title";
@@ -134,8 +130,6 @@ public final class MessageKeys {
     // ============ 标签页 ============
     public static final String TAB_PARAMS = "tab.params";
     public static final String TAB_AUTHORIZATION = "tab.authorization";
-    public static final String TAB_HEADERS = "tab.headers";
-    public static final String TAB_BODY = "tab.body";
     public static final String TAB_SCRIPTS = "tab.scripts";
     public static final String TAB_COOKIES = "tab.cookies";
     public static final String TAB_TESTS = "tab.tests";
@@ -158,14 +152,11 @@ public final class MessageKeys {
     public static final String STATUS_DURATION = "status.duration";
     public static final String STATUS_RESPONSE_SIZE = "status.response_size";
     public static final String STATUS_PREFIX = "status.prefix";
-    public static final String STATUS_UNKNOWN = "status.unknown";
 
     // ============ WebSocket相关 ============
     public static final String WEBSOCKET_CONNECTED = "websocket.connected";
     public static final String WEBSOCKET_SUCCESS = "websocket.success";
     public static final String WEBSOCKET_FAILED = "websocket.failed";
-    public static final String WEBSOCKET_CLOSING = "websocket.closing";
-    public static final String WEBSOCKET_CLOSED = "websocket.closed";
     public static final String WEBSOCKET_ERROR = "websocket.error";
 
     // ============ SSE相关 ============

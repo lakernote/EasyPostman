@@ -35,6 +35,6 @@ public class RequestCollectionsPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-
+        // no op
     }
 }

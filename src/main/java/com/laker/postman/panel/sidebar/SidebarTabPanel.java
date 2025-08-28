@@ -38,11 +38,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
     @Getter
     private JTabbedPane tabbedPane;
     @Getter
-    private List<TabInfo> tabInfos;
+    private transient List<TabInfo> tabInfos;
     private JPanel consoleContainer;
     private JLabel consoleLabel;
     private ConsolePanel consolePanel;
-    private JSplitPane splitPane;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
     private int lastSelectedTabIndex = 0; // 记录上一个被选中的标签索引
 
@@ -140,6 +139,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     private void setConsoleExpanded(boolean expanded) {
+        JSplitPane splitPane;
         removeAll();
         if (expanded) {
             consoleContainer.removeAll();

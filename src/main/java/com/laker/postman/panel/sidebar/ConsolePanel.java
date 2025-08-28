@@ -16,7 +16,10 @@ import java.awt.event.ActionListener;
 public class ConsolePanel extends SingletonBasePanel {
     private JTextPane consoleLogArea;
     private transient StyledDocument consoleDoc;
+    private JTextField searchField;
     private JButton closeBtn;
+    private JButton prevBtn;
+    private JButton nextBtn;
 
     // 日志类型
     public enum LogType {
@@ -31,40 +34,6 @@ public class ConsolePanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-
-    }
-
-    private void createConsolePanel() {
-        consoleLogArea = new JTextPane();
-        consoleLogArea.setEditable(false);
-        consoleLogArea.setFocusable(true);
-        consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
-        consoleDoc = consoleLogArea.getStyledDocument();
-        JScrollPane logScroll = new JScrollPane(consoleLogArea);
-        logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        closeBtn = new JButton();
-        closeBtn.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
-        closeBtn.setBorder(BorderFactory.createEmptyBorder());
-        closeBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
-        // 关闭按钮事件由外部注册
-
-        JButton clearBtn = getClearBtn();
-
-        JTextField searchField = new SearchTextField();
-        JButton prevBtn = new JButton();
-        prevBtn.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 20, 20));
-        JButton nextBtn = new JButton();
-        nextBtn.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 20, 20));
-        prevBtn.setFocusable(false);
-        nextBtn.setFocusable(false);
-        searchField.addActionListener(e -> nextBtn.doClick());
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
-        searchPanel.setOpaque(false);
-        searchPanel.add(searchField);
-        searchPanel.add(prevBtn);
-        searchPanel.add(nextBtn);
-
         final int[] lastMatchPos = {-1};
         final String[] lastKeyword = {""};
         nextBtn.addActionListener(e -> {
@@ -97,7 +66,38 @@ public class ConsolePanel extends SingletonBasePanel {
                 lastKeyword[0] = keyword;
             }
         });
+    }
 
+    private void createConsolePanel() {
+        consoleLogArea = new JTextPane();
+        consoleLogArea.setEditable(false);
+        consoleLogArea.setFocusable(true);
+        consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+        consoleDoc = consoleLogArea.getStyledDocument();
+        JScrollPane logScroll = new JScrollPane(consoleLogArea);
+        logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        closeBtn = new JButton();
+        closeBtn.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
+        closeBtn.setBorder(BorderFactory.createEmptyBorder());
+        closeBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
+        // 关闭按钮事件由外部注册
+
+        JButton clearBtn = getClearBtn();
+
+        searchField = new SearchTextField();
+        prevBtn = new JButton();
+        prevBtn.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 20, 20));
+        nextBtn = new JButton();
+        nextBtn.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 20, 20));
+        prevBtn.setFocusable(false);
+        nextBtn.setFocusable(false);
+        searchField.addActionListener(e -> nextBtn.doClick());
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.add(searchField);
+        searchPanel.add(prevBtn);
+        searchPanel.add(nextBtn);
         JPanel topPanel = new JPanel(new BorderLayout());
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         btnPanel.setOpaque(false);

@@ -21,6 +21,7 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -42,6 +43,9 @@ import java.util.Map;
 @Slf4j
 public class EnvironmentPanel extends SingletonBasePanel {
     public static final String SAVE_VARIABLES = "saveVariables";
+    public static final String COLUMN_NAME = "Name";
+    public static final String COLUMN_VALUE = "Value";
+    public static final String EXPORT_FILE_NAME = "EasyPostman-Environments.json";
     private EasyNameValueTablePanel variablesTablePanel;
     private transient Environment currentEnvironment;
     private JList<EnvironmentItem> environmentList;
@@ -144,7 +148,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (topComboBox != null) {
             topComboBox.setOnEnvironmentChange(env -> {
                 environmentListModel.clear();
-                java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
+                List<Environment> envs = EnvironmentService.getAllEnvironments();
                 for (Environment envItem : envs) {
                     environmentListModel.addElement(new EnvironmentItem(envItem));
                 }
@@ -154,7 +158,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 loadActiveEnvironmentVariables();
             });
         }
-        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
                 reloadEnvironmentList(searchField.getText());
             }
@@ -331,15 +335,15 @@ public class EnvironmentPanel extends SingletonBasePanel {
         currentEnvironment = env;
         variablesTablePanel.clear();
         if (env != null) {
-            java.util.List<Map<String, Object>> rows = new ArrayList<>();
+            List<Map<String, Object>> rows = new ArrayList<>();
             for (String key : env.getVariables().keySet()) {
                 if (CharSequenceUtil.isBlank(key)) {
                     continue;
                 }
                 String value = env.getVariable(key);
-                java.util.Map<String, Object> row = new LinkedHashMap<>();
-                row.put("Name", key);
-                row.put("Value", value);
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put(COLUMN_NAME, key);
+                row.put(COLUMN_VALUE, value);
                 rows.add(row);
             }
             variablesTablePanel.setRows(rows);
@@ -360,11 +364,11 @@ public class EnvironmentPanel extends SingletonBasePanel {
         List<Map<String, Object>> rows = variablesTablePanel.getRows();
         List<Map<String, Object>> newRows = new ArrayList<>();
         for (Map<String, Object> row : rows) {
-            String key = row.get("Name") == null ? null : row.get("Name").toString();
+            String key = row.get(COLUMN_NAME) == null ? null : row.get(COLUMN_NAME).toString();
             if (CharSequenceUtil.isBlank(key)) {
                 continue; // 跳过空key
             }
-            String value = row.get("Value") == null ? "" : row.get("Value").toString();
+            String value = row.get(COLUMN_VALUE) == null ? "" : row.get(COLUMN_VALUE).toString();
             currentEnvironment.addVariable(key, value);
             newRows.add(row);
         }
@@ -385,17 +389,21 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private void exportEnvironments() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_TITLE));
-        fileChooser.setSelectedFile(new File("EasyPostman-Environments.json"));
+        fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
                 java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
                 writer.write(JSONUtil.toJsonPrettyStr(envs));
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_SUCCESS), I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_TITLE), JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_TITLE), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                log.error("导出失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                log.error("Export Error", ex);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -415,7 +423,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 refreshListAndComboFromAdd(envs);
             } catch (Exception ex) {
                 log.error("Import Error", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -427,7 +437,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
             environmentComboBox.addItem(new EnvironmentItem(env)); // 添加到下拉框
             environmentListModel.addElement(new EnvironmentItem(env)); // 添加到列表
         }
-        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_SUCCESS), I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_TITLE), JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this,
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_SUCCESS),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_TITLE), JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -441,16 +453,20 @@ public class EnvironmentPanel extends SingletonBasePanel {
             java.io.File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                java.util.List<Environment> envs = PostmanImport.parsePostmanEnvironments(json);
+                List<Environment> envs = PostmanImport.parsePostmanEnvironments(json);
                 if (!envs.isEmpty()) {
                     // 导入新环境
                     refreshListAndComboFromAdd(envs);
                 } else {
-                    JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_INVALID), I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_TITLE), JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_INVALID),
+                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_TITLE), JOptionPane.WARNING_MESSAGE);
                 }
             } catch (Exception ex) {
-                log.error("Postman环境导入失败", ex);
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_FAIL, ex.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                log.error("Import Error", ex);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }

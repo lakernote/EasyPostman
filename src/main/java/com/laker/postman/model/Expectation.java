@@ -1,6 +1,10 @@
 package com.laker.postman.model;
 
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
+
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -18,35 +22,35 @@ public class Expectation {
 
     public void include(Object expected) {
         if (actual == null || expected == null || !actual.toString().contains(expected.toString())) {
-            throw new AssertionError("include断言失败: 期望包含=" + expected + ", 实际=" + actual);
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_INCLUDE_FAILED, expected, actual));
         }
     }
 
     public void eql(Object expected) {
-        if (actual == null ? expected != null : !actual.equals(expected)) {
-            throw new AssertionError("eql断言失败: 期望=" + expected + ", 实际=" + actual);
+        if (!Objects.equals(actual, expected)) {
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_EQL_FAILED, expected, actual));
         }
     }
 
     public void property(String property) {
         if (actual instanceof Map) {
             if (!((Map<?, ?>) actual).containsKey(property)) {
-                throw new AssertionError("property断言失败: 不存在属性=" + property);
+                throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_PROPERTY_NOT_FOUND, property));
             }
         } else {
-            throw new AssertionError("property断言失败: actual不是Map类型");
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_PROPERTY_NOT_MAP));
         }
     }
 
     public void match(String regex) {
         if (actual == null || !Pattern.compile(regex).matcher(actual.toString()).find()) {
-            throw new AssertionError("match断言失败: 正则=" + regex + ", 实际=" + actual);
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_MATCH_REGEX_FAILED, regex, actual));
         }
     }
 
     public void match(Pattern pattern) {
         if (actual == null || !pattern.matcher(actual.toString()).find()) {
-            throw new AssertionError("match断言失败: pattern=" + pattern + ", 实际=" + actual);
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_MATCH_PATTERN_FAILED, pattern, actual));
         }
     }
 
@@ -68,12 +72,12 @@ public class Expectation {
                 // Fall through to the error below
             }
         }
-        throw new AssertionError("Match assertion failed: invalid JavaScript RegExp object=" + jsRegExp + ", actual=" + actual);
+        throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_MATCH_JSREGEXP_FAILED, jsRegExp, actual));
     }
 
     public void below(Number max) {
         if (!(actual instanceof Number) || ((Number) actual).doubleValue() >= max.doubleValue()) {
-            throw new AssertionError("below断言失败: 期望小于=" + max + ", 实际=" + actual);
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_BELOW_FAILED, max, actual));
         }
     }
 }

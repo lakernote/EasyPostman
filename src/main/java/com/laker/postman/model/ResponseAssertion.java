@@ -1,6 +1,8 @@
 package com.laker.postman.model;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import java.util.List;
 import java.util.Map;
@@ -29,14 +31,14 @@ public class ResponseAssertion {
     // pm.response.to.have.status(200)
     public void status(int code) {
         if (response == null || response.code != code) {
-            throw new AssertionError("响应状态码断言失败: 期望=" + code + ", 实际=" + (response == null ? null : response.code));
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.RESPONSE_ASSERTION_STATUS_FAILED, code, response == null ? null : response.code));
         }
     }
 
     // pm.response.to.have.header('Content-Type')
     public void header(String name) {
         if (response == null || response.headers == null) {
-            throw new AssertionError("响应头不存在");
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.RESPONSE_ASSERTION_HEADER_NOT_FOUND));
         }
         boolean found = false;
         for (Map.Entry<String, List<String>> entry : response.headers.entrySet()) {
@@ -46,14 +48,14 @@ public class ResponseAssertion {
             }
         }
         if (!found) {
-            throw new AssertionError("响应头不存在: " + name);
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.RESPONSE_ASSERTION_HEADER_NOT_FOUND_WITH_NAME, name));
         }
     }
 
     // pm.expect(pm.response.responseTime).to.be.below(1000)
     public void below(long ms) {
         if (response == null || response.costMs >= ms) {
-            throw new AssertionError("响应耗时断言失败: 期望小于" + ms + ", 实际=" + (response == null ? null : response.costMs));
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.RESPONSE_ASSERTION_BELOW_FAILED, ms, response == null ? null : response.costMs));
         }
     }
 
@@ -69,7 +71,7 @@ public class ResponseAssertion {
                 return JSONUtil.parse(response.body);
             }
         } catch (Exception e) {
-            throw new AssertionError("响应体不是有效的JSON: " + e.getMessage());
+            throw new AssertionError(I18nUtil.getMessage(MessageKeys.RESPONSE_ASSERTION_INVALID_JSON, e.getMessage()));
         }
         return null;
     }

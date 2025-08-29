@@ -602,4 +602,21 @@ public final class MessageKeys {
     public static final String BODY_TOO_LARGE_SAVED = "body.too_large.saved";
     public static final String SSE_STREAM_UNSUPPORTED = "sse.stream.unsupported";
 
+    // ============ ResponseAssertion 国际化 ============
+    public static final String RESPONSE_ASSERTION_STATUS_FAILED = "response.assertion.status_failed";
+    public static final String RESPONSE_ASSERTION_HEADER_NOT_FOUND = "response.assertion.header_not_found";
+    public static final String RESPONSE_ASSERTION_HEADER_NOT_FOUND_WITH_NAME = "response.assertion.header_not_found_with_name";
+    public static final String RESPONSE_ASSERTION_BELOW_FAILED = "response.assertion.below_failed";
+    public static final String RESPONSE_ASSERTION_INVALID_JSON = "response.assertion.invalid_json";
+
+    // ============ Expectation 国际化 ============
+    public static final String EXPECTATION_INCLUDE_FAILED = "expectation.include_failed";
+    public static final String EXPECTATION_EQL_FAILED = "expectation.eql_failed";
+    public static final String EXPECTATION_PROPERTY_NOT_FOUND = "expectation.property_not_found";
+    public static final String EXPECTATION_PROPERTY_NOT_MAP = "expectation.property_not_map";
+    public static final String EXPECTATION_MATCH_REGEX_FAILED = "expectation.match_regex_failed";
+    public static final String EXPECTATION_MATCH_PATTERN_FAILED = "expectation.match_pattern_failed";
+    public static final String EXPECTATION_MATCH_JSREGEXP_FAILED = "expectation.match_jsregexp_failed";
+    public static final String EXPECTATION_BELOW_FAILED = "expectation.below_failed";
+
 }

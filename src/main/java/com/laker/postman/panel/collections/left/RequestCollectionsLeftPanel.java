@@ -600,7 +600,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 }
             } catch (Exception ex) {
-                log.error("Postman导入失败", ex);
+                log.error("Import error", ex);
                 JOptionPane.showMessageDialog(this,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
@@ -1032,7 +1032,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
                         I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                log.error("导出Postman失败", ex);
+                log.error("Export Postman error", ex);
                 JOptionPane.showMessageDialog(this,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);

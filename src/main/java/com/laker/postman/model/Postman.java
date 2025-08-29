@@ -46,7 +46,8 @@ public class Postman {
     // Postman 脚本中的 pm.test(name, fn)
     public void test(String name, Value fn) {
         if (this.response == null) {
-            throw new IllegalStateException("pm.response 为空，请确保在调用 pm.test 前已设置 response");
+            testResults.add(new TestResult(name, false, "pm.response is null"));
+            return;
         }
         if (fn != null && fn.canExecute()) {
             try {

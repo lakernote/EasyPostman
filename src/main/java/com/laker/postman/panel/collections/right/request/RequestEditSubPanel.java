@@ -53,6 +53,9 @@ import static com.laker.postman.service.http.HttpUtil.*;
 public class RequestEditSubPanel extends JPanel {
     public static final String TEXT_EVENT_STREAM = "text/event-stream";
     public static final String ACCEPT = "Accept";
+    public static final String USER_AGENT = "User-Agent";
+    public static final String EASY_POSTMAN_HTTP_CLIENT = "EasyPostman HTTP Client";
+    public static final String VALUE = "*/*";
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyNameValueTablePanel paramsPanel;
@@ -523,7 +526,6 @@ public class RequestEditSubPanel extends JPanel {
                                         I18nUtil.getMessage(MessageKeys.WEBSOCKET_SUCCESS),
                                         JOptionPane.INFORMATION_MESSAGE);
                             });
-                            log.info("WebSocket连接已建立: {}", response.message());
                             appendWebSocketMessage(WebSocketMsgType.CONNECTED, response.message());
                         }
 
@@ -565,12 +567,8 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                            log.error("WebSocket error", t);
                             appendWebSocketMessage(WebSocketMsgType.WARNING, t.getMessage());
-                            if (response != null) {
-                                log.error("WebSocket连接失败: {},响应状态: {},响应头: {}", t.getMessage(), response.code(), response.headers(), t);
-                            } else {
-                                log.error("WebSocket连接失败: {},响应状态: null,响应头: null", t.getMessage(), t);
-                            }
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
@@ -585,7 +583,7 @@ public class RequestEditSubPanel extends JPanel {
                     });
                     setResponseTabButtonsEnable(tabButtons, true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
-                    log.error("WebSocket连接异常: {}", ex.getMessage(), ex);
+                    log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
                         statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
@@ -672,16 +670,16 @@ public class RequestEditSubPanel extends JPanel {
         headersPanel.setMap(item.getHeaders());
         // 自动补充 User-Agent 和 Accept
         // 判断是否已存在 User-Agent（忽略大小写）
-        boolean hasUserAgent = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase("User-Agent"));
+        boolean hasUserAgent = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(USER_AGENT));
         if (!hasUserAgent) {
-            item.getHeaders().put("User-Agent", "EasyPostman HTTP Client");
-            headersPanel.addRow("User-Agent", "EasyPostman HTTP Client");
+            item.getHeaders().put(USER_AGENT, EASY_POSTMAN_HTTP_CLIENT);
+            headersPanel.addRow(USER_AGENT, EASY_POSTMAN_HTTP_CLIENT);
         }
         // 判断是否已存在 Accept（忽略大小写）
         boolean hasAccept = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT));
         if (!hasAccept) {
-            item.getHeaders().put(ACCEPT, "*/*");
-            headersPanel.addRow(ACCEPT, "*/*");
+            item.getHeaders().put(ACCEPT, VALUE);
+            headersPanel.addRow(ACCEPT, VALUE);
         }
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());

@@ -7,7 +7,6 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.collections.RequestCollectionsFactory;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.io.*;
@@ -44,7 +43,7 @@ public class RequestCollectionPersistence {
         if (!file.exists()) { // 如果文件不存在，则创建默认请求组
             RequestCollectionsFactory.createDefaultRequestGroups(rootTreeNode, treeModel); // 创建默认请求组
             saveRequestGroups(); // 保存默认请求组到文件
-            log.info("未找到请求组文件，已创建默认请求组");
+            log.info("File not found, created default request groups.");
             return;
         }
         try {
@@ -58,10 +57,9 @@ public class RequestCollectionPersistence {
             }
             groupNodeList.forEach(rootTreeNode::add);
             treeModel.reload(rootTreeNode);
-            log.debug("加载请求组完成");
+            log.info("Loaded request groups from file: {}", filePath);
         } catch (Exception e) {
-            log.error("加载请求组失败", e);
-            JOptionPane.showMessageDialog(null, "加载请求组失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            log.error("Error loading request groups from file: {}", filePath, e);
         }
     }
 
@@ -73,9 +71,9 @@ public class RequestCollectionPersistence {
                 array.add(buildGroupJson(groupNode));
             }
             writer.write(array.toStringPretty());
-            log.debug("保存内容为: {}", array.toStringPretty());
+            log.debug("Saved request groups to: {}", filePath);
         } catch (Exception ex) {
-            log.error("保存失败", ex);
+            log.error("Error saving request groups to file: {}", filePath, ex);
         }
     }
 

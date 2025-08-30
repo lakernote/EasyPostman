@@ -619,4 +619,32 @@ public final class MessageKeys {
     public static final String EXPECTATION_MATCH_JSREGEXP_FAILED = "expectation.match_jsregexp_failed";
     public static final String EXPECTATION_BELOW_FAILED = "expectation.below_failed";
 
+    // ============ ScriptPanel AutoCompletion 国际化 ============
+    public static final String AUTOCOMPLETE_PM = "autocomplete.pm";
+    public static final String AUTOCOMPLETE_POSTMAN = "autocomplete.postman";
+    public static final String AUTOCOMPLETE_REQUEST = "autocomplete.request";
+    public static final String AUTOCOMPLETE_RESPONSE = "autocomplete.response";
+    public static final String AUTOCOMPLETE_ENV = "autocomplete.env";
+    public static final String AUTOCOMPLETE_RESPONSE_BODY = "autocomplete.response_body";
+    public static final String AUTOCOMPLETE_RESPONSE_HEADERS = "autocomplete.response_headers";
+    public static final String AUTOCOMPLETE_STATUS = "autocomplete.status";
+    public static final String AUTOCOMPLETE_STATUS_CODE = "autocomplete.status_code";
+    public static final String AUTOCOMPLETE_SET_ENV = "autocomplete.set_env";
+    public static final String AUTOCOMPLETE_GET_ENV = "autocomplete.get_env";
+    public static final String AUTOCOMPLETE_IF = "autocomplete.if";
+    public static final String AUTOCOMPLETE_ELSE = "autocomplete.else";
+    public static final String AUTOCOMPLETE_FOR = "autocomplete.for";
+    public static final String AUTOCOMPLETE_WHILE = "autocomplete.while";
+    public static final String AUTOCOMPLETE_FUNCTION = "autocomplete.function";
+    public static final String AUTOCOMPLETE_RETURN = "autocomplete.return";
+    public static final String AUTOCOMPLETE_SNIPPET_SET_ENV = "autocomplete.snippet.set_env";
+    public static final String AUTOCOMPLETE_SNIPPET_GET_ENV = "autocomplete.snippet.get_env";
+    public static final String AUTOCOMPLETE_SNIPPET_BTOA = "autocomplete.snippet.btoa";
+    public static final String AUTOCOMPLETE_SNIPPET_ATOB = "autocomplete.snippet.atob";
+    public static final String AUTOCOMPLETE_SNIPPET_ENCODE_URI = "autocomplete.snippet.encode_uri";
+    public static final String AUTOCOMPLETE_SNIPPET_DECODE_URI = "autocomplete.snippet.decode_uri";
+    public static final String AUTOCOMPLETE_SNIPPET_CONSOLE_LOG = "autocomplete.snippet.console_log";
+    public static final String AUTOCOMPLETE_SNIPPET_JSON_PARSE = "autocomplete.snippet.json_parse";
+    public static final String AUTOCOMPLETE_SNIPPET_JSON_STRINGIFY = "autocomplete.snippet.json_stringify";
+
 }

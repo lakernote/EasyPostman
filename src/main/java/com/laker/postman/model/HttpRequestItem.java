@@ -21,6 +21,7 @@ public class HttpRequestItem implements Serializable {
     private String name = ""; // 请求名称
     private String url = ""; // 请求URL
     private String method = "GET"; // 请求方法（GET, POST, PUT, DELETE等）
+    private RequestItemProtocolEnum protocol = RequestItemProtocolEnum.HTTP; // 协议类型，默认HTTP
     private Map<String, String> headers = new LinkedHashMap<>(); // 请求头
     private String body = ""; // 请求体内容（如JSON、表单数据等）
     private Map<String, String> params = new LinkedHashMap<>(); // 请求参数（查询字符串）

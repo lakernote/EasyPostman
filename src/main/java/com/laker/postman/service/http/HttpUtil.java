@@ -5,8 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.js.JsScriptExecutor;
 import lombok.extern.slf4j.Slf4j;
@@ -102,11 +102,6 @@ public class HttpUtil {
             }
         }
         return false;
-    }
-
-
-    public static boolean isWebSocketRequest(PreparedRequest req) {
-        return StrUtil.startWithAny(req.url, "ws://", "wss://");
     }
 
     // 状态颜色
@@ -243,7 +238,10 @@ public class HttpUtil {
             JOptionPane.showMessageDialog(null, "请选择请求方法");
             return false;
         }
-        if (req.body != null && "GET".equalsIgnoreCase(req.method) && item.getBody() != null && !item.getBody().isEmpty()) {
+        if (item.getProtocol().isHttpProtocol()
+                && req.body != null
+                && "GET".equalsIgnoreCase(req.method)
+                && item.getBody() != null && !item.getBody().isEmpty()) {
             int confirm = JOptionPane.showConfirmDialog(
                     null,
                     "GET 请求通常不包含请求体，是否继续发送？",

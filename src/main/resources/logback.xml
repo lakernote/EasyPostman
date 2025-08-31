@@ -19,9 +19,9 @@
             <immediateFlush>true</immediateFlush>
         </encoder>
         <!-- 控制台日志级别过滤器：只输出 INFO 及以上级别的日志 (INFO, WARN, ERROR) -->
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${LOG_LEVEL}</level>
-        </filter>
+<!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
+<!--            <level>${LOG_LEVEL}</level>-->
+<!--        </filter>-->
     </appender>
 
     <!-- 文件输出配置 - 记录所有级别的日志到文件 -->

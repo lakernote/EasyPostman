@@ -8,6 +8,7 @@ import com.laker.postman.common.tab.PlusPanel;
 import com.laker.postman.common.tab.PlusTabComponent;
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.curl.CurlParser;
@@ -51,7 +52,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
         }
         String tabTitle = title != null ? title : REQUEST_STRING + (tabbedPane.getTabCount() + 1);
-        RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID());
+        RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID(), RequestItemProtocolEnum.HTTP);
         tabbedPane.addTab(tabTitle, subPanel);
         tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1,
                 new ClosableTabComponent(tabTitle, subPanel, tabbedPane));
@@ -114,7 +115,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             }
         }
         // 没有同id Tab则新建
-        RequestEditSubPanel subPanel = new RequestEditSubPanel(id);
+        RequestEditSubPanel subPanel = new RequestEditSubPanel(id, item.getProtocol());
         subPanel.updateRequestForm(item);
         String name = item.getName() != null ? item.getName() : REQUEST_STRING + (tabbedPane.getTabCount());
         int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;

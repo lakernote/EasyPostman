@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -22,12 +23,21 @@ public class RequestLinePanel extends JPanel {
     private final Color defaultButtonColor;
     private final Color textColor;
 
-    public RequestLinePanel(ActionListener sendAction) {
+    public RequestLinePanel(ActionListener sendAction, RequestItemProtocolEnum protocol) {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         String[] methods = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE"};
         methodBox = new JComboBox<>(methods);
+        if (protocol.isWebSocketProtocol()) {
+            // WebSocket协议：隐藏方法选择框，WebSocket都是GET
+            methodBox.setVisible(false);
+            methodBox.setSelectedItem("GET"); // 强制设置为GET
+        } else {
+            // HTTP协议：显示方法选择框
+            methodBox.setVisible(true);
+        }
         add(methodBox);
         add(Box.createHorizontalStrut(2));
+
         urlField = new JTextField("https://www.baidu.com", 25);
         add(urlField);
         add(Box.createHorizontalStrut(10));
@@ -85,8 +95,8 @@ public class RequestLinePanel extends JPanel {
         }
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
         sendButton.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
-        sendButton.setBackground(new java.awt.Color(0xD9D9D9)); // Postman浅灰色
-        sendButton.setForeground(new java.awt.Color(0x333333)); // 深灰文字
+        sendButton.setBackground(new Color(0xD9D9D9)); // Postman浅灰色
+        sendButton.setForeground(new Color(0x333333)); // 深灰文字
         sendButton.setEnabled(true);
         sendButton.addActionListener(cancelAction);
     }

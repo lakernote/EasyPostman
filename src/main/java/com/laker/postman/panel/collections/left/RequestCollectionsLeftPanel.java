@@ -17,6 +17,7 @@ import com.laker.postman.common.tree.TreeTransferHandler;
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.RequestCollectionPersistence;
@@ -52,7 +53,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
-import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
 
 /**
  * 请求集合面板，展示所有请求分组和请求项
@@ -259,36 +259,61 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 }
                 // 仅分组节点可新增文件/请求
                 if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
-                    JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP));
+                    JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
+                            new FlatSVGIcon("icons/user-group.svg", 16, 16));
                     addGroupItem.addActionListener(e -> addGroupUnderSelected());
                     menu.add(addGroupItem);
-                    JMenuItem addRequestItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST));
-                    addRequestItem.addActionListener(e -> addRequestUnderSelected());
-                    menu.add(addRequestItem);
-                    JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE));
+
+                    menu.addSeparator(); // 添加分隔线
+
+                    // 直接添加请求类型，不使用子菜单，参考Postman设计
+                    JMenuItem addHttpRequestItem = new JMenuItem("Add HTTP Request",
+                            new FlatSVGIcon("icons/http.svg", 16, 16));
+                    addHttpRequestItem.addActionListener(e -> addRequestUnderSelected(RequestItemProtocolEnum.HTTP));
+                    menu.add(addHttpRequestItem);
+
+                    JMenuItem addWebSocketRequestItem = new JMenuItem("Add WebSocket Request",
+                            new FlatSVGIcon("icons/websocket.svg", 16, 16)); // 使用专门的WebSocket图标
+                    addWebSocketRequestItem.addActionListener(e -> addRequestUnderSelected(RequestItemProtocolEnum.WEBSOCKET));
+                    menu.add(addWebSocketRequestItem);
+
+                    JMenuItem addSseRequestItem = new JMenuItem("Add SSE Request",
+                            new FlatSVGIcon("icons/sse.svg", 16, 16)); // 暂时使用HTTP图标，后续可以更换为专门的SSE图标
+                    addSseRequestItem.addActionListener(e -> addRequestUnderSelected(RequestItemProtocolEnum.SSE));
+                    menu.add(addSseRequestItem);
+                    menu.addSeparator(); // 添加分隔线
+
+                    JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
+                            new FlatSVGIcon("icons/duplicate.svg", 16, 16));
                     duplicateGroupItem.addActionListener(e -> duplicateSelectedGroup());
                     menu.add(duplicateGroupItem);
+
                     // 导出为Postman
-                    JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN));
+                    JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN),
+                            new FlatSVGIcon("icons/export.svg", 16, 16));
                     exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
                     menu.add(exportPostmanItem);
                     menu.addSeparator();
                 }
                 // 请求节点右键菜单增加"复制"
                 if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
-                    JMenuItem duplicateItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE));
+                    JMenuItem duplicateItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
+                            new FlatSVGIcon("icons/plus.svg", 16, 16));
                     duplicateItem.addActionListener(e -> duplicateSelectedRequest());
                     menu.add(duplicateItem);
                     // 复制为cURL命令
-                    JMenuItem copyAsCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL));
+                    JMenuItem copyAsCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL),
+                            new FlatSVGIcon("icons/curl.svg", 16, 16));
                     copyAsCurlItem.addActionListener(e -> copySelectedRequestAsCurl());
                     menu.add(copyAsCurlItem);
                     menu.addSeparator();
                 }
                 // 只有非根节点才显示重命名/删除
                 if (selectedNode != rootTreeNode) {
-                    JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_RENAME));
-                    JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE));
+                    JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_RENAME),
+                            new FlatSVGIcon("icons/refresh.svg", 16, 16));
+                    JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
+                            new FlatSVGIcon("icons/close.svg", 16, 16));
                     renameItem.addActionListener(e -> renameSelectedItem());
                     deleteItem.addActionListener(e -> deleteSelectedItem());
                     menu.add(renameItem);
@@ -486,6 +511,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             requestEditPanel.showOrCreateTab(item);
                             requestEditPanel.addPlusTab();
                         }
+                    } else {
+                        // 找不到对应请求时，默认打开一个新建请求
+                        requestEditPanel.addNewTab(RequestEditPanel.REQUEST_STRING);
                     }
                 } else {
                     // 没有lastId时，默认打开一个新建请求
@@ -650,18 +678,32 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         showAddGroupDialog(selectedNode);
     }
 
-    private void addRequestUnderSelected() {
+    private void addRequestUnderSelected(RequestItemProtocolEnum protocol) {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
-        // 先检测剪贴板是否有cURL命令
-        String curlText = getClipboardCurlText();
-        if (curlText != null) {
-            // 直接导入cURL到当前分组
-            importCurlToGroup(curlText, selectedNode);
-            return;
-        }
         // 添加空请求
-        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, HttpRequestFactory.createDefaultRequest()});
+        HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
+        defaultRequest.setProtocol(protocol);
+
+        // 根据协议类型设置不同的默认值
+        if (protocol.isWebSocketProtocol()) {
+            // WebSocket 默认配置
+            defaultRequest.setMethod("GET"); // WebSocket连接都是GET
+            defaultRequest.setUrl("wss://echo.websocket.org");
+            defaultRequest.setName("WebSocket Request");
+        } else if (protocol.isSseProtocol()) {
+            // SSE 默认配置
+            defaultRequest.setMethod("GET"); // SSE通常使用GET
+            defaultRequest.setUrl("https://httpbin.org/stream/10");
+            defaultRequest.setName("SSE Request");
+        } else {
+            // HTTP 默认配置
+            defaultRequest.setMethod("GET");
+            defaultRequest.setUrl("https://httpbin.org/get");
+            defaultRequest.setName("HTTP Request");
+        }
+
+        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, defaultRequest});
         selectedNode.add(reqNode);
         treeModel.reload(selectedNode);
         requestTree.expandPath(new TreePath(selectedNode.getPath()));

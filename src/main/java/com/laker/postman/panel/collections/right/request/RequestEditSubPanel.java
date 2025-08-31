@@ -1,6 +1,5 @@
 package com.laker.postman.panel.collections.right.request;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -63,13 +62,14 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private String id;
     private String name;
+    private RequestItemProtocolEnum protocol;
     // 状态展示组件
     private final JLabel statusCodeLabel;
     private final JLabel responseTimeLabel;
     private final JLabel responseSizeLabel;
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
-    private final RequestBodyPanel requestBodyPanel;
+    private RequestBodyPanel requestBodyPanel;
     private HttpRequestItem originalRequestItem;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;
@@ -94,12 +94,13 @@ public class RequestEditSubPanel extends JPanel {
     private boolean isUpdatingFromUrl = false;
     private boolean isUpdatingFromParams = false;
 
-    public RequestEditSubPanel(String id) {
+    public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
         this.id = id;
+        this.protocol = protocol;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
         // 1. 顶部请求行面板
-        requestLinePanel = new RequestLinePanel(this::sendRequest);
+        requestLinePanel = new RequestLinePanel(this::sendRequest, protocol);
         methodBox = requestLinePanel.getMethodBox();
         urlField = requestLinePanel.getUrlField();
         urlField.getDocument().addDocumentListener(new DocumentListener() {
@@ -143,7 +144,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS), headersPanel);
 
         // 2.4 Body 面板
-        requestBodyPanel = new RequestBodyPanel();
+        requestBodyPanel = new RequestBodyPanel(protocol);
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY), requestBodyPanel);
 
 
@@ -227,8 +228,9 @@ public class RequestEditSubPanel extends JPanel {
         add(splitPane, BorderLayout.CENTER);
 
         // WebSocket消息发送按钮事件绑定（只绑定一次）
-        requestBodyPanel.getWsSendButton().addActionListener(e -> sendWebSocketMessage());
-        requestBodyPanel.getWsSendButton().setEnabled(false);
+        if (protocol.isWebSocketProtocol()) {
+            requestBodyPanel.getWsSendButton().addActionListener(e -> sendWebSocketMessage());
+        }
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
     }
@@ -245,14 +247,19 @@ public class RequestEditSubPanel extends JPanel {
         headersPanel.addTableModelListener(e -> updateTabDirty());
         // 监听paramsPanel
         paramsPanel.addTableModelListener(e -> updateTabDirty());
-        // 监听bodyArea
-        if (requestBodyPanel.getBodyArea() != null) {
-            addDocumentListener(requestBodyPanel.getBodyArea().getDocument());
+        if (protocol.isHttpProtocol()) {
+            // 监听bodyArea
+            if (requestBodyPanel.getBodyArea() != null) {
+                addDocumentListener(requestBodyPanel.getBodyArea().getDocument());
+            }
+            if (requestBodyPanel.getFormDataTablePanel() != null) {
+                requestBodyPanel.getFormDataTablePanel().addTableModelListener(e -> updateTabDirty());
+
+            }
+            if (requestBodyPanel.getFormUrlencodedTablePanel() != null) {
+                requestBodyPanel.getFormUrlencodedTablePanel().addTableModelListener(e -> updateTabDirty());
+            }
         }
-        // 监听formDataTableModel
-        requestBodyPanel.getFormDataTablePanel().addTableModelListener(e -> updateTabDirty());
-        // 监听formUrlencodedTableModel
-        requestBodyPanel.getFormUrlencodedTablePanel().addTableModelListener(e -> updateTabDirty());
         // 监听脚本面板
         scriptPanel.addDirtyListeners(this::updateTabDirty);
     }
@@ -329,6 +336,20 @@ public class RequestEditSubPanel extends JPanel {
         EnvironmentService.clearTemporaryVariables();
 
         HttpRequestItem item = getCurrentRequest();
+
+        // 根据协议类型进行URL验证
+        String url = item.getUrl();
+        RequestItemProtocolEnum protocol = item.getProtocol();
+        if (protocol.isWebSocketProtocol()) {
+            // WebSocket只允许ws://或wss://协议
+            if (!url.toLowerCase().startsWith("ws://") && !url.toLowerCase().startsWith("wss://")) {
+                JOptionPane.showMessageDialog(this,
+                        "WebSocket requests must use ws:// or wss:// protocol",
+                        "Invalid URL Protocol", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         // 强制使用全局 followRedirects 设置
         item.setFollowRedirects(SettingManager.isFollowRedirects());
         PreparedRequest req = PreparedRequestBuilder.build(item);
@@ -340,15 +361,14 @@ public class RequestEditSubPanel extends JPanel {
 
         if (!validateRequest(req, item)) return;
         updateUIForRequesting();
-        // 协议分发
-        if (isSSERequest(req)) {
-            handleSseRequest(item, req, bindings);
-            requestBodyPanel.showWebSocketSendPanel(false);
-        } else if (isWebSocketRequest(req)) {
+
+        // 协议分发 - 根据HttpRequestItem的protocol字段分发
+        if (protocol.isWebSocketProtocol()) {
             handleWebSocketRequest(item, req, bindings);
+        } else if (isSSERequest(req)) {
+            handleSseRequest(item, req, bindings);
         } else {
             handleHttpRequest(item, req, bindings);
-            requestBodyPanel.showWebSocketSendPanel(false);
         }
     }
 
@@ -495,7 +515,6 @@ public class RequestEditSubPanel extends JPanel {
     // WebSocket请求处理
     private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
         currentWorker = new SwingWorker<>() {
-            WebSocket webSocket;
             final HttpResponse resp = new HttpResponse();
             long startTime;
             volatile boolean closed = false;
@@ -504,7 +523,7 @@ public class RequestEditSubPanel extends JPanel {
             protected Void doInBackground() {
                 try {
                     startTime = System.currentTimeMillis();
-                    webSocket = HttpSingleRequestExecutor.executeWebSocket(req, new WebSocketListener() {
+                    HttpSingleRequestExecutor.executeWebSocket(req, new WebSocketListener() {
                         @Override
                         public void onOpen(WebSocket webSocket, Response response) {
                             resp.headers = new LinkedHashMap<>();
@@ -517,8 +536,6 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse(String.valueOf(resp.code), resp);
                                 reqTabs.setSelectedComponent(requestBodyPanel);
-                                requestBodyPanel.getWsSendButton().setEnabled(true);
-                                requestBodyPanel.showWebSocketSendPanel(true);
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
                                 JOptionPane.showMessageDialog(null,
@@ -541,14 +558,14 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
-                            log.info("closing WebSocket: code={}, reason={}", code, reason);
+                            log.debug("closing WebSocket: code={}, reason={}", code, reason);
                             appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                             handleWebSocketClose();
                         }
 
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
-                            log.info("closed WebSocket: code={}, reason={}", code, reason);
+                            log.debug("closed WebSocket: code={}, reason={}", code, reason);
                             appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                             handleWebSocketClose();
                         }
@@ -559,8 +576,6 @@ public class RequestEditSubPanel extends JPanel {
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse("closed", resp);
-                                requestBodyPanel.getWsSendButton().setEnabled(false);
-                                requestBodyPanel.showWebSocketSendPanel(false);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
                         }
@@ -587,8 +602,6 @@ public class RequestEditSubPanel extends JPanel {
                     SwingUtilities.invokeLater(() -> {
                         statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
-                        requestBodyPanel.getWsSendButton().setEnabled(false);
-                        requestBodyPanel.showWebSocketSendPanel(false);
                     });
                 }
                 return null;
@@ -596,9 +609,7 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                if (resp != null) {
-                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
-                }
+                SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
             }
         };
         currentWorker.execute();
@@ -606,8 +617,17 @@ public class RequestEditSubPanel extends JPanel {
 
     // WebSocket消息发送逻辑
     private void sendWebSocketMessage() {
+
+        if (currentWebSocket == null) {
+            JOptionPane.showMessageDialog(this,
+                    I18nUtil.getMessage(MessageKeys.WEBSOCKET_NOT_CONNECTED),
+                    I18nUtil.getMessage(MessageKeys.OPERATION_TIP),
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         String msg = requestBodyPanel.getRawBody();
-        if (currentWebSocket != null && msg != null && !msg.isBlank()) {
+        if (msg != null && !msg.isBlank()) {
             currentWebSocket.send(msg); // 发送消息
             appendWebSocketMessage(WebSocketMsgType.SENT, msg);
             requestBodyPanel.getBodyArea().setText(""); // 清空输入框
@@ -632,26 +652,6 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * WebSocket消息类型及匹配逻辑
-     */
-    private enum WebSocketMsgType {
-        CONNECTED(MessageKeys.WS_ICON_CONNECTED),
-        RECEIVED(MessageKeys.WS_ICON_RECEIVED),
-        BINARY(MessageKeys.WS_ICON_BINARY),
-        SENT(MessageKeys.WS_ICON_SENT),
-        CLOSED(MessageKeys.WS_ICON_CLOSED),
-        WARNING(MessageKeys.WS_ICON_WARNING),
-        INFO(MessageKeys.WS_ICON_INFO);
-
-        final String iconKey;
-
-        WebSocketMsgType(String iconKey) {
-            this.iconKey = iconKey;
-        }
-
-    }
-
-    /**
      * 更新表单内容（用于切换请求或保存后刷新）
      */
     public void updateRequestForm(HttpRequestItem item) {
@@ -661,8 +661,9 @@ public class RequestEditSubPanel extends JPanel {
         String url = item.getUrl();
         urlField.setText(url);
         urlField.setCaretPosition(0); // 设置光标到开头
+
         // 如果URL中有参数，解析到paramsPanel
-        Map<String, String> mergedParams = getMergedParams(item.getParams(), url);
+        Map<String, String> mergedParams = HttpUtil.getMergedParams(item.getParams(), url);
         // 更新参数面板
         paramsPanel.setMap(mergedParams);
         methodBox.setSelectedItem(item.getMethod());
@@ -742,6 +743,7 @@ public class RequestEditSubPanel extends JPanel {
         item.setName(this.name); // 保证name不丢失
         item.setUrl(urlField.getText().trim());
         item.setMethod((String) methodBox.getSelectedItem());
+        item.setProtocol(protocol);
         item.setHeaders(headersPanel.getMap()); // 获取Headers表格内容
         item.setParams(paramsPanel.getMap()); // 获取Params表格内容
         // 统一通过requestBodyPanel获取body相关内容
@@ -843,7 +845,6 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-
     // 取消当前请求
     private void cancelCurrentRequest() {
         if (currentEventSource != null) {
@@ -860,7 +861,6 @@ public class RequestEditSubPanel extends JPanel {
         statusCodeLabel.setForeground(new Color(255, 140, 0));
         currentWorker = null;
     }
-
 
     // UI状态：请求中
     private void updateUIForRequesting() {
@@ -929,7 +929,6 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-
     /**
      * 设置测试结果到Tests Tab
      */
@@ -942,7 +941,7 @@ public class RequestEditSubPanel extends JPanel {
         int testsTabIndex = 2;
         if (tabButtons != null && tabButtons.length > testsTabIndex) {
             JButton testsBtn = tabButtons[testsTabIndex];
-            if (CollUtil.isNotEmpty(testResults)) {
+            if (testResults != null && !testResults.isEmpty()) {
                 boolean allPassed = testResults.stream().allMatch(r -> r.passed);
                 String countText = "(" + testResults.size() + ")";
                 String color = allPassed ? "#009900" : "#d32f2f"; // 绿色/红色
@@ -955,7 +954,6 @@ public class RequestEditSubPanel extends JPanel {
             }
         }
     }
-
 
     private int selectedTabIndex = 0;
 
@@ -982,4 +980,3 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 }
-

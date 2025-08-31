@@ -135,7 +135,7 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE)), EMPTY);
         threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, THREAD_GROUP);
-        requestEditSubPanel = new RequestEditSubPanel("");
+        requestEditSubPanel = new RequestEditSubPanel("", RequestItemProtocolEnum.HTTP);
         propertyPanel.add(requestEditSubPanel, REQUEST);
         assertionPanel = new AssertionPropertyPanel();
         propertyPanel.add(assertionPanel, ASSERTION);

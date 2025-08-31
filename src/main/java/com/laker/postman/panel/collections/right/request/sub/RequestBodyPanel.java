@@ -8,6 +8,7 @@ import com.laker.postman.common.table.TextOrFileTableCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -42,45 +43,83 @@ public class RequestBodyPanel extends JPanel {
     private final CardLayout bodyCardLayout;
     private final JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_RAW;
-    private String currentRawType = RAW_TYPE_JSON;
     @Getter
     private JButton wsSendButton;
-    private final JLabel bodyTypeLabel;
     private final JButton formatButton;
+    private final boolean isWebSocketMode;
 
-    public RequestBodyPanel() {
+    public RequestBodyPanel(RequestItemProtocolEnum protocol) {
+        this.isWebSocketMode = protocol.isWebSocketProtocol();
         setLayout(new BorderLayout());
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
+
+        // 根据协议类型设置标题
+        JLabel bodyTypeLabel;
+        if (isWebSocketMode) {
+            bodyTypeLabel = new JLabel("WebSocket Message");
+        } else {
+            bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
+        }
         leftPanel.add(bodyTypeLabel);
-        String[] bodyTypes = {BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
+
+        // 根据协议类型设置可用的body类型
+        String[] bodyTypes;
+        if (isWebSocketMode) {
+            // WebSocket只支持none和raw
+            bodyTypes = new String[]{BODY_TYPE_RAW};
+            currentBodyType = BODY_TYPE_RAW; // WebSocket默认使用raw
+        } else {
+            // HTTP支持所有类型
+            bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
+        }
+
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
+
         leftPanel.add(bodyTypeComboBox);
+
         leftPanel.add(Box.createHorizontalStrut(10));
         formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
-        leftPanel.add(formatLabel);
+
         String[] rawTypes = {RAW_TYPE_JSON};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
-        rawTypeComboBox.setVisible(isBodyTypeRAW());
-        formatLabel.setVisible(isBodyTypeRAW());
-        leftPanel.add(rawTypeComboBox);
+
+        // 根据模式和body类型决定是否显示format相关控件
+        boolean showFormatControls = !isWebSocketMode && isBodyTypeRAW();
+        rawTypeComboBox.setVisible(showFormatControls);
+        formatLabel.setVisible(showFormatControls);
+
+        if (!isWebSocketMode) {
+            leftPanel.add(formatLabel);
+            leftPanel.add(rawTypeComboBox);
+        }
+
         bodyTypePanel.add(leftPanel, BorderLayout.WEST);
+
         // 创建 formatButton 并放在右侧
         formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 20, 20));
         formatButton.addActionListener(e -> formatBody());
-        formatButton.setVisible(isBodyTypeRAW());
-        formatButton.setPreferredSize(new Dimension(32, 32)); // 推荐比图标略大
-        bodyTypePanel.add(formatButton, BorderLayout.EAST);
+        formatButton.setVisible(!isWebSocketMode && isBodyTypeRAW());
+        formatButton.setPreferredSize(new Dimension(32, 32));
+
+        if (!isWebSocketMode) {
+            bodyTypePanel.add(formatButton, BorderLayout.EAST);
+        }
+
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
         bodyCardPanel = new JPanel(bodyCardLayout);
         bodyCardPanel.add(createNonePanel(), BODY_TYPE_NONE);
-        bodyCardPanel.add(createFormDataPanel(), BODY_TYPE_FORM_DATA);
-        bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
+
+        // 根据协议类型决定是否创建form相关面板
+        if (!isWebSocketMode) {
+            bodyCardPanel.add(createFormDataPanel(), BODY_TYPE_FORM_DATA);
+            bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
+        }
+
         bodyCardPanel.add(createRawPanel(), BODY_TYPE_RAW);
         add(bodyCardPanel, BorderLayout.CENTER);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
@@ -124,22 +163,34 @@ public class RequestBodyPanel extends JPanel {
         bodyArea.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(bodyArea);
         panel.add(scrollPane, BorderLayout.CENTER);
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        // formatButton 已经在顶部面板创建并添加，这里无需再创建
-        wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_SEND_MESSAGE));
-        wsSendButton.setVisible(false);
-        bottomPanel.add(wsSendButton, BorderLayout.EAST);
-        panel.add(bottomPanel, BorderLayout.SOUTH);
+
+        // 只有WebSocket模式才显示发送按钮
+        if (isWebSocketMode) {
+            JPanel bottomPanel = new JPanel(new BorderLayout());
+            wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_SEND_MESSAGE));
+            wsSendButton.setVisible(true);
+            bottomPanel.add(wsSendButton, BorderLayout.EAST);
+            panel.add(bottomPanel, BorderLayout.SOUTH);
+        } else {
+            // HTTP模式下不需要发送按钮
+            wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_SEND_MESSAGE));
+            wsSendButton.setVisible(false);
+        }
+
         return panel;
     }
 
     private void switchBodyType(String bodyType) {
         currentBodyType = bodyType;
         bodyCardLayout.show(bodyCardPanel, bodyType);
-        boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
-        rawTypeComboBox.setVisible(isRaw);
-        formatLabel.setVisible(isRaw);
-        formatButton.setVisible(isRaw);
+
+        // 只有非WebSocket模式才需要动态调整format控件的显示
+        if (!isWebSocketMode) {
+            boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
+            rawTypeComboBox.setVisible(isRaw);
+            formatLabel.setVisible(isRaw);
+            formatButton.setVisible(isRaw);
+        }
     }
 
     private void formatBody() {
@@ -152,7 +203,7 @@ public class RequestBodyPanel extends JPanel {
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_EMPTY));
             return;
         }
-        if (RAW_TYPE_JSON.equals(currentRawType)) {
+        if (RAW_TYPE_JSON.equals(RAW_TYPE_JSON)) {
             if (JSONUtil.isTypeJSON(bodyText)) {
                 JSON json = JSONUtil.parse(bodyText);
                 bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
@@ -166,7 +217,6 @@ public class RequestBodyPanel extends JPanel {
     public String getBodyType() {
         return currentBodyType;
     }
-
 
     public String getRawBody() {
         return bodyArea != null ? bodyArea.getText().trim() : null;
@@ -207,27 +257,5 @@ public class RequestBodyPanel extends JPanel {
     public Map<String, String> getUrlencoded() {
         if (formUrlencodedTablePanel == null) return null;
         return formUrlencodedTablePanel.getMap();
-    }
-
-    // 切换到WebSocket消息发送面板
-    public void showWebSocketSendPanel(boolean show) {
-        if (show) {
-            // 自动切换到Body Tab的 type=raw
-            bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
-            currentBodyType = BODY_TYPE_RAW;
-            bodyCardLayout.show(bodyCardPanel, BODY_TYPE_RAW);
-            rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
-            currentRawType = RAW_TYPE_JSON;
-            wsSendButton.setVisible(true);
-            formatLabel.setVisible(false);
-            rawTypeComboBox.setVisible(false);
-            bodyTypeComboBox.setVisible(false);
-            bodyTypeLabel.setVisible(false);
-            formatButton.setVisible(false);
-        } else {
-            wsSendButton.setVisible(false);
-            bodyTypeComboBox.setVisible(true);
-            bodyTypeLabel.setVisible(true);
-        }
     }
 }

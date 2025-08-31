@@ -6,6 +6,7 @@ package com.laker.postman.util;
  */
 public final class MessageKeys {
 
+
     // 私有构造函数，防止实例化
     private MessageKeys() {
         throw new AssertionError("Utility class should not be instantiated");
@@ -158,6 +159,7 @@ public final class MessageKeys {
     public static final String WEBSOCKET_SUCCESS = "websocket.success";
     public static final String WEBSOCKET_FAILED = "websocket.failed";
     public static final String WEBSOCKET_ERROR = "websocket.error";
+    public static final String WEBSOCKET_NOT_CONNECTED = "websocket.not_connected";
 
     // ============ SSE相关 ============
     public static final String SSE_SWITCH_TIP = "sse.switch.tip";

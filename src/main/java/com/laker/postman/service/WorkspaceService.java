@@ -1,0 +1,1241 @@
+package com.laker.postman.service;
+
+import com.laker.postman.model.*;
+import com.laker.postman.util.WorkspaceStorageUtil;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.api.CloneCommand;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * 工作区服务类
+ * 负责工作区的创建、管理、Git操作等核心功能
+ */
+@Slf4j
+public class WorkspaceService {
+
+    private static final String WORKSPACE_NOT_FOUND_MSG = "Workspace not found: ";
+
+    private static WorkspaceService instance;
+    private List<Workspace> workspaces = new ArrayList<>();
+    @Getter
+    private Workspace currentWorkspace;
+
+    private WorkspaceService() {
+        loadWorkspaces();
+    }
+
+    public static synchronized WorkspaceService getInstance() {
+        if (instance == null) {
+            instance = new WorkspaceService();
+        }
+        return instance;
+    }
+
+    /**
+     * 获取所有工作区
+     */
+    public List<Workspace> getAllWorkspaces() {
+        return new ArrayList<>(workspaces);
+    }
+
+    /**
+     * 创建新工作区
+     */
+    public Workspace createWorkspace(Workspace workspace) throws Exception {
+        if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+            throw new IllegalArgumentException("不能创建默认工作区");
+        }
+        validateWorkspace(workspace);
+
+        // 生成唯一ID
+        workspace.setId(UUID.randomUUID().toString());
+        workspace.setCreatedAt(System.currentTimeMillis());
+        workspace.setUpdatedAt(System.currentTimeMillis());
+
+        // 对于非Git克隆模式，创建本地目录
+        if (workspace.getType() != WorkspaceType.GIT || workspace.getGitRepoSource() != GitRepoSource.CLONED) {
+            Path workspacePath = Paths.get(workspace.getPath());
+            if (!Files.exists(workspacePath)) {
+                Files.createDirectories(workspacePath);
+            }
+        }
+
+        // 根据工作区类型执行相应操作
+        if (workspace.getType() == WorkspaceType.GIT) {
+            handleGitWorkspace(workspace);
+        }
+
+        // 添加到工作区列表并保存
+        workspaces.add(workspace);
+        saveWorkspaces();
+
+        log.info("Created workspace: {} ({})", workspace.getName(), workspace.getType());
+        return workspace;
+    }
+
+    /**
+     * 处理Git工作区创建
+     */
+    private void handleGitWorkspace(Workspace workspace) throws Exception {
+        if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
+            cloneRepository(workspace);
+        } else if (workspace.getGitRepoSource() == GitRepoSource.INITIALIZED) {
+            initializeGitRepository(workspace);
+        }
+    }
+
+    /**
+     * Helper: Get CredentialsProvider for Git operations
+     */
+    private UsernamePasswordCredentialsProvider getCredentialsProvider(Workspace workspace) {
+        if (workspace.getGitAuthType() == GitAuthType.PASSWORD &&
+                workspace.getGitUsername() != null && workspace.getGitPassword() != null) {
+            return new UsernamePasswordCredentialsProvider(workspace.getGitUsername(), workspace.getGitPassword());
+        } else if (workspace.getGitAuthType() == GitAuthType.TOKEN &&
+                workspace.getGitToken() != null && workspace.getGitUsername() != null) {
+            return new UsernamePasswordCredentialsProvider(workspace.getGitUsername(), workspace.getGitToken());
+        }
+        return null;
+    }
+
+    /**
+     * 克隆远程仓库
+     */
+    private void cloneRepository(Workspace workspace) throws Exception {
+        CloneCommand cloneCommand = Git.cloneRepository()
+                .setURI(workspace.getGitRemoteUrl())
+                .setDirectory(new File(workspace.getPath()));
+
+        // 如果用户指定了特定的分支，设置分支名称
+        if (workspace.getCurrentBranch() != null && !workspace.getCurrentBranch().isEmpty()) {
+            cloneCommand.setBranch(workspace.getCurrentBranch());
+        }
+
+        // 设置认证信息
+        UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+        if (credentialsProvider != null) {
+            cloneCommand.setCredentialsProvider(credentialsProvider);
+        }
+
+        try (Git git = cloneCommand.call()) {
+            workspace.setLastCommitId(getLastCommitId(git));
+
+            // 获取实际的当前分支名称
+            String actualCurrentBranch = git.getRepository().getBranch();
+            workspace.setCurrentBranch(actualCurrentBranch);
+
+            // 设置远程分支信息
+            if (workspace.getRemoteBranch() != null && !workspace.getRemoteBranch().isEmpty()) {
+                // 用户已指定远程分支，使用用户指定的
+                // 验证远程分支是否存在
+                String remoteBranch = workspace.getRemoteBranch();
+                if (remoteBranch.startsWith("origin/")) {
+                    workspace.setRemoteBranch(remoteBranch);
+                } else {
+                    workspace.setRemoteBranch("origin/" + remoteBranch);
+                }
+            } else {
+                // 自动检测远程分支，统一转换为 origin/分支名 格式
+                String remoteBranch = git.getRepository().getConfig().getString("branch", actualCurrentBranch, "merge");
+                if (remoteBranch != null) {
+                    // 将 refs/heads/分支名 转换为 origin/分支名 格式
+                    if (remoteBranch.startsWith("refs/heads/")) {
+                        String branchName = remoteBranch.substring("refs/heads/".length());
+                        workspace.setRemoteBranch("origin/" + branchName);
+                    } else {
+                        workspace.setRemoteBranch(remoteBranch);
+                    }
+                } else {
+                    workspace.setRemoteBranch(null);
+                }
+            }
+
+            log.info("Successfully cloned repository: {} on branch: {}", workspace.getGitRemoteUrl(), actualCurrentBranch);
+        }
+    }
+
+    /**
+     * 初始化本地Git仓库
+     */
+    private void initializeGitRepository(Workspace workspace) throws Exception {
+        try (Git git = Git.init().setDirectory(new File(workspace.getPath())).call()) {
+            // 创建初始提交
+            createInitialCommit(git, workspace);
+
+            // 获取当前分支名称
+            String currentBranch = git.getRepository().getBranch();
+
+            // 如果用户指定了不同的分支名称，则创建并切换到该分支
+            if (workspace.getCurrentBranch() != null &&
+                    !workspace.getCurrentBranch().isEmpty() &&
+                    !workspace.getCurrentBranch().equals(currentBranch)) {
+
+                // 创建并切换到用户指定的分支
+                git.branchCreate()
+                        .setName(workspace.getCurrentBranch())
+                        .call();
+                git.checkout()
+                        .setName(workspace.getCurrentBranch())
+                        .call();
+
+                workspace.setCurrentBranch(workspace.getCurrentBranch());
+            } else {
+                // 使用默认分支名称
+                workspace.setCurrentBranch(currentBranch);
+            }
+
+            // INITIALIZED模式下不设置远程分支
+            workspace.setRemoteBranch(null);
+
+            log.info("Initialized git repository at: {} on branch: {}", workspace.getPath(), workspace.getCurrentBranch());
+        }
+    }
+
+    /**
+     * 创建初始提交
+     */
+    private void createInitialCommit(Git git, Workspace workspace) throws Exception {
+        // 创建README文件
+        Path readmePath = Paths.get(workspace.getPath(), "README.md");
+        Files.write(readmePath, String.format("# %s\n\n%s",
+                workspace.getName(),
+                workspace.getDescription() != null ? workspace.getDescription() : "EasyPostman Workspace").getBytes());
+
+        // 添加并提交
+        git.add().addFilepattern(".").call();
+        git.commit().setMessage("Initial commit").call();
+
+        workspace.setLastCommitId(getLastCommitId(git));
+    }
+
+    /**
+     * 获取最后一次提交ID
+     */
+    private String getLastCommitId(Git git) {
+        try {
+            return git.log().setMaxCount(1).call().iterator().next().getName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
+    /**
+     * 验证工作区参数
+     */
+    private void validateWorkspace(Workspace workspace) throws IllegalArgumentException {
+        if (workspace.getName() == null || workspace.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Workspace name is required");
+        }
+
+        if (workspace.getPath() == null || workspace.getPath().trim().isEmpty()) {
+            throw new IllegalArgumentException("Workspace path is required");
+        }
+
+        if (workspace.getType() == WorkspaceType.GIT) {
+            if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
+                if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty()) {
+                    throw new IllegalArgumentException("Git repository URL is required for cloning");
+                }
+
+                if (workspace.getGitAuthType() == GitAuthType.PASSWORD) {
+                    if (workspace.getGitUsername() == null || workspace.getGitPassword() == null) {
+                        throw new IllegalArgumentException("Username and password are required");
+                    }
+                } else if (workspace.getGitAuthType() == GitAuthType.TOKEN) {
+                    if (workspace.getGitUsername() == null || workspace.getGitToken() == null) {
+                        throw new IllegalArgumentException("Username and access token are required");
+                    }
+                }
+            }
+        }
+
+        // 检查路径是否已被其他工作区使用
+        String normalizedPath = Paths.get(workspace.getPath()).toAbsolutePath().normalize().toString();
+        boolean pathExists = workspaces.stream()
+                .anyMatch(w -> Paths.get(w.getPath()).toAbsolutePath().normalize().toString().equals(normalizedPath));
+
+        if (pathExists) {
+            throw new IllegalArgumentException("Path is already used by another workspace");
+        }
+
+        // 对于Git克隆模式，检查目标目录是否已存在且不为空
+        if (workspace.getType() == WorkspaceType.GIT && workspace.getGitRepoSource() == GitRepoSource.CLONED) {
+            Path targetPath = Paths.get(workspace.getPath());
+            if (Files.exists(targetPath)) {
+                try {
+                    // 检查目录是否为空
+                    boolean isEmpty = Files.list(targetPath).findAny().isEmpty();
+                    if (!isEmpty) {
+                        throw new IllegalArgumentException("Target directory is not empty: " + workspace.getPath());
+                    }
+                    // 如果目录存在但为空，删除它让Git克隆重新创建
+                    Files.delete(targetPath);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("Cannot access target directory: " + workspace.getPath());
+                }
+            }
+        }
+    }
+
+    /**
+     * 切换工作区
+     */
+    public void switchWorkspace(String workspaceId) {
+        Workspace workspace = workspaces.stream()
+                .filter(w -> w.getId().equals(workspaceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
+
+        currentWorkspace = workspace;
+        WorkspaceStorageUtil.saveCurrentWorkspace(workspaceId);
+        log.info("Switched to workspace: {}", workspace.getName());
+    }
+
+    /**
+     * 删除工作区
+     */
+    public void deleteWorkspace(String workspaceId) throws Exception {
+        Workspace workspace = workspaces.stream()
+                .filter(w -> w.getId().equals(workspaceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
+        if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+            throw new IllegalArgumentException("默认工作区不可删除");
+        }
+        // 删除工作区文件
+        Path workspacePath = Paths.get(workspace.getPath());
+        if (Files.exists(workspacePath)) {
+            deleteDirectoryRecursively(workspacePath);
+        }
+
+        workspaces.removeIf(w -> w.getId().equals(workspaceId));
+
+        // 如果删除的是当前工作区，切换到第一个可用工作区
+        if (currentWorkspace != null && currentWorkspace.getId().equals(workspaceId)) {
+            currentWorkspace = workspaces.isEmpty() ? null : workspaces.get(0);
+            WorkspaceStorageUtil.saveCurrentWorkspace(currentWorkspace != null ? currentWorkspace.getId() : null);
+        }
+
+        saveWorkspaces();
+        log.info("Deleted workspace: {}", workspace.getName());
+    }
+
+    /**
+     * 递归删除目录
+     */
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        if (Files.exists(directory)) {
+            try (var stream = Files.walk(directory)) {
+                stream.sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(file -> {
+                            if (!file.delete()) {
+                                log.warn("Failed to delete file: {}", file.getAbsolutePath());
+                            }
+                        });
+            }
+        }
+    }
+
+    /**
+     * 重命名工作区
+     */
+    public void renameWorkspace(String workspaceId, String newName) {
+        Workspace workspace = workspaces.stream()
+                .filter(w -> w.getId().equals(workspaceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
+        if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+            throw new IllegalArgumentException("默认工作区不可重命名");
+        }
+        if (newName == null || newName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Workspace name cannot be empty");
+        }
+
+        workspace.setName(newName.trim());
+        workspace.setUpdatedAt(System.currentTimeMillis());
+        saveWorkspaces();
+
+        log.info("Renamed workspace to: {}", newName);
+    }
+
+    /**
+     * Git操作结果封装
+     */
+    public static class GitOperationResult {
+        public boolean success = false;
+        public String message = "";
+        public List<String> affectedFiles = new ArrayList<>();
+        public String operationType = "";
+        public String details = "";
+    }
+
+    /**
+     * Git操作：拉取更新
+     */
+    public GitOperationResult pullUpdates(String workspaceId) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "拉取";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            String branch = git.getRepository().getBranch();
+            String tracking = git.getRepository().getConfig().getString("branch", branch, "merge");
+            log.info("Current branch: {}, tracking: {}", branch, tracking);
+
+            if (tracking == null) {
+                throw new IllegalStateException("本地分支未跟踪远程分支，无法拉取。请先设置 tracking 分支，例如：git branch --set-upstream-to=origin/" + branch);
+            }
+
+            // 记录拉取前的状态
+            var statusBefore = git.status().call();
+            String commitIdBefore = getLastCommitId(git);
+
+            if (!statusBefore.isClean()) {
+                log.warn("本地有未提交内容或冲突，自动执行 git reset --hard 和 git clean -fd");
+                result.details += "检测到本地未提交内容，自动清理:\n";
+
+                // 记录被清理的文件
+                if (!statusBefore.getModified().isEmpty()) {
+                    result.details += "  重置修改文件: " + String.join(", ", statusBefore.getModified()) + "\n";
+                }
+                if (!statusBefore.getUntracked().isEmpty()) {
+                    result.details += "  清理未跟踪文件: " + String.join(", ", statusBefore.getUntracked()) + "\n";
+                }
+
+                // 强制丢弃本地所有未提交内容和未跟踪文件
+                git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
+                git.clean().setCleanDirectories(true).setForce(true).call();
+
+                // 再次检查
+                var statusAfterClean = git.status().call();
+                if (!statusAfterClean.isClean()) {
+                    throw new IllegalStateException("自动清理后仍有未提交内容或冲突，请手动处理。");
+                }
+            }
+
+            var pullCommand = git.pull();
+            UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+            if (credentialsProvider != null) {
+                pullCommand.setCredentialsProvider(credentialsProvider);
+            }
+
+            var pullResult = pullCommand.call();
+            log.info("Pull result: {}", pullResult.isSuccessful());
+
+            if (!pullResult.isSuccessful()) {
+                throw new RuntimeException("Git pull failed: " + pullResult.toString());
+            }
+
+            String commitIdAfter = getLastCommitId(git);
+
+            // 检查是否有新的提交
+            if (!commitIdBefore.equals(commitIdAfter)) {
+                // 获取变更的文件列表
+                try {
+                    List<String> changedFiles = getChangedFilesBetweenCommits(workspaceId, commitIdBefore, commitIdAfter);
+                    result.affectedFiles.addAll(changedFiles);
+                    result.details += "拉取到新的提交，影响文件:\n";
+                    for (String file : changedFiles) {
+                        result.details += "  " + file + "\n";
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to get changed files", e);
+                    result.details += "无法获取详细的文件变更信息\n";
+                }
+                result.message = "成功拉取更新，共 " + result.affectedFiles.size() + " 个文件受影响";
+            } else {
+                result.message = "已是最新版本，无需更新";
+                result.details += "本地仓库已是最新状态\n";
+            }
+
+            workspace.setLastCommitId(commitIdAfter);
+            workspace.setUpdatedAt(System.currentTimeMillis());
+            saveWorkspaces();
+            result.success = true;
+
+            log.info("Pulled updates for workspace: {}", workspace.getName());
+        }
+
+        return result;
+    }
+
+    /**
+     * Git操作：推送变更
+     */
+    public GitOperationResult pushChanges(String workspaceId) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "推送";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            // 检查是否有远程仓库
+            var remotes = git.remoteList().call();
+            if (remotes.isEmpty()) {
+                throw new IllegalStateException("没有配置远程仓库，无法推送");
+            }
+
+            // 检查当前分支是否有上游分支
+            String currentBranch = git.getRepository().getBranch();
+            String tracking = git.getRepository().getConfig().getString("branch", currentBranch, "merge");
+            if (tracking == null) {
+                throw new IllegalStateException("当前分支没有设置上游分支，请先进行首次推送或设置上游分支");
+            }
+
+            // 获取远程分支名称 (去掉 refs/heads/ 前缀)
+            String remoteBranchName = tracking;
+            if (remoteBranchName.startsWith("refs/heads/")) {
+                remoteBranchName = remoteBranchName.substring("refs/heads/".length());
+            }
+
+            // 获取远程仓库名称
+            String remoteName = git.getRepository().getConfig().getString("branch", currentBranch, "remote");
+            if (remoteName == null) {
+                remoteName = "origin"; // 默认使用 origin
+            }
+
+            // 获取认证信息
+            UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+
+            // 正确计算未推送的提交
+            int unpushedCommitsCount = 0;
+
+            try {
+                // 先 fetch 最新的远程信息
+                var fetchCommand = git.fetch();
+                if (credentialsProvider != null) {
+                    fetchCommand.setCredentialsProvider(credentialsProvider);
+                }
+                fetchCommand.call();
+
+                // 比较本地分支和远程分支的差异
+                String localRef = "refs/heads/" + currentBranch;
+                String remoteRef = "refs/remotes/" + remoteName + "/" + remoteBranchName;
+
+                ObjectId localId = git.getRepository().resolve(localRef);
+                ObjectId remoteId = git.getRepository().resolve(remoteRef);
+
+                if (localId == null) {
+                    throw new IllegalStateException("无法找到本地分支: " + currentBranch);
+                }
+
+                if (remoteId != null) {
+                    // 获取本地领先于远程的提交
+                    Iterable<RevCommit> commits = git.log()
+                            .addRange(remoteId, localId)
+                            .call();
+
+                    for (RevCommit commit : commits) {
+                        unpushedCommitsCount++;
+
+                        // 获取提交涉及的文件
+                        try {
+                            if (commit.getParentCount() > 0) {
+                                var parent = commit.getParent(0);
+                                List<DiffEntry> diffs = git.diff()
+                                        .setOldTree(prepareTreeParser(git.getRepository(), parent.toObjectId()))
+                                        .setNewTree(prepareTreeParser(git.getRepository(), commit.toObjectId()))
+                                        .call();
+
+                                for (DiffEntry diff : diffs) {
+                                    String fileName = diff.getNewPath();
+                                    if (!result.affectedFiles.contains(fileName)) {
+                                        result.affectedFiles.add(fileName);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to get commit files for {}", commit.getName(), e);
+                        }
+                    }
+                } else {
+                    // 远程分支不存在，说明是首次推送
+                    log.info("远程分支不存在，将推送所有本地提交");
+                    Iterable<RevCommit> commits = git.log().call();
+                    for (RevCommit commit : commits) {
+                        unpushedCommitsCount++;
+
+                        // 获取提交涉及的文件 (简化处理，只获取前几个提交的文件)
+                        if (unpushedCommitsCount <= 10) {
+                            try {
+                                if (commit.getParentCount() > 0) {
+                                    var parent = commit.getParent(0);
+                                    List<DiffEntry> diffs = git.diff()
+                                            .setOldTree(prepareTreeParser(git.getRepository(), parent.toObjectId()))
+                                            .setNewTree(prepareTreeParser(git.getRepository(), commit.toObjectId()))
+                                            .call();
+
+                                    for (DiffEntry diff : diffs) {
+                                        String fileName = diff.getNewPath();
+                                        if (!result.affectedFiles.contains(fileName)) {
+                                            result.affectedFiles.add(fileName);
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                log.warn("Failed to get commit files for {}", commit.getName(), e);
+                            }
+                        }
+                    }
+                }
+
+                if (unpushedCommitsCount == 0) {
+                    result.success = true;
+                    result.message = "没有需要推送的提交，本地分支已是最新";
+                    result.details = "本地分支 " + currentBranch + " 与远程分支 " + remoteName + "/" + remoteBranchName + " 保持同步\n";
+                    return result;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to accurately count unpushed commits, proceeding with push", e);
+                // 如果无法准确计算，继续执行推送
+            }
+
+            // 执行推送 - 明确指定推送的分支
+            var pushCommand = git.push()
+                    .setRemote(remoteName)
+                    .add(currentBranch + ":" + remoteBranchName); // 明确指定本地分支推送到远程分支
+
+            if (credentialsProvider != null) {
+                pushCommand.setCredentialsProvider(credentialsProvider);
+            }
+
+            var pushResults = pushCommand.call();
+
+            result.details += "推送详情:\n";
+            result.details += "  本地分支: " + currentBranch + "\n";
+            result.details += "  远程分支: " + remoteName + "/" + remoteBranchName + "\n";
+            result.details += "  推送提交数: " + unpushedCommitsCount + "\n";
+
+            if (!result.affectedFiles.isEmpty()) {
+                result.details += "  涉及文件 (" + result.affectedFiles.size() + "):\n";
+                for (String file : result.affectedFiles) {
+                    result.details += "    " + file + "\n";
+                }
+            }
+
+            // 详细检查推送结果
+            boolean pushSuccess = false;
+            for (var pushResult : pushResults) {
+                result.details += "  推送结果状态: " + pushResult.toString() + "\n";
+
+                if (pushResult.getMessages() != null && !pushResult.getMessages().isEmpty()) {
+                    result.details += "  推送消息: " + pushResult.getMessages() + "\n";
+                }
+
+                // 检查每个 ref 的推送状态
+                for (var remoteRefUpdate : pushResult.getRemoteUpdates()) {
+                    result.details += "  分支更新: " + remoteRefUpdate.getSrcRef() + " -> " +
+                            remoteRefUpdate.getRemoteName() + " (" + remoteRefUpdate.getStatus() + ")\n";
+
+                    if (remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK ||
+                            remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
+                        pushSuccess = true;
+                    } else {
+                        result.details += "    错误信息: " + remoteRefUpdate.getMessage() + "\n";
+                    }
+                }
+            }
+
+            if (!pushSuccess) {
+                throw new RuntimeException("推送失败，请检查推送详情中的错误信息");
+            }
+
+            result.success = true;
+            result.message = "成功推送 " + unpushedCommitsCount + " 个提交，涉及 " + result.affectedFiles.size() + " 个文件";
+
+            log.info("Successfully pushed changes for workspace: {} to {}/{}",
+                    workspace.getName(), remoteName, remoteBranchName);
+        }
+
+        return result;
+    }
+
+    /**
+     * 强制推送变更（覆盖远程变更）
+     */
+    public GitOperationResult forcePushChanges(String workspaceId) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "强制推送";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            String currentBranch = git.getRepository().getBranch();
+
+            // 获取认证信息
+            UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+
+            // 执行强制推送
+            var pushCommand = git.push()
+                    .setForce(true); // 设置强制推送
+
+            if (credentialsProvider != null) {
+                pushCommand.setCredentialsProvider(credentialsProvider);
+            }
+
+            var pushResults = pushCommand.call();
+
+            result.details += "强制推送详情:\n";
+            result.details += "  本地分支: " + currentBranch + "\n";
+            result.details += "  ⚠️ 警告: 强制推送已覆盖远程变更\n";
+
+            // 检查推送结果
+            boolean pushSuccess = false;
+            for (var pushResult : pushResults) {
+                for (var remoteRefUpdate : pushResult.getRemoteUpdates()) {
+                    result.details += "  分支更新: " + remoteRefUpdate.getSrcRef() + " -> " +
+                            remoteRefUpdate.getRemoteName() + " (" + remoteRefUpdate.getStatus() + ")\n";
+
+                    if (remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK ||
+                            remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
+                        pushSuccess = true;
+                    }
+                }
+            }
+
+            if (!pushSuccess) {
+                throw new RuntimeException("强制推送失败");
+            }
+
+            result.success = true;
+            result.message = "强制推送成功，已覆盖远程变更";
+
+            log.info("Force pushed changes for workspace: {}", workspace.getName());
+        }
+
+        return result;
+    }
+
+    /**
+     * 暂存本地变更
+     */
+    public GitOperationResult stashChanges(String workspaceId) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "暂存";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            // 获取暂存前的状态
+            var status = git.status().call();
+
+            // 记录被暂存的文件
+            result.affectedFiles.addAll(status.getModified());
+            result.affectedFiles.addAll(status.getChanged());
+            result.affectedFiles.addAll(status.getAdded());
+            result.affectedFiles.addAll(status.getRemoved());
+
+            // 执行暂存
+            var stashResult = git.stashCreate()
+                    .call();
+
+            if (stashResult == null) {
+                throw new RuntimeException("暂存失败，可能没有变更需要暂存");
+            }
+
+            result.success = true;
+            result.message = "成功暂存 " + result.affectedFiles.size() + " 个文件的变更";
+            result.details = "暂存ID: " + stashResult.getName().substring(0, 8) + "\n";
+            result.details += "暂存时间: " +
+                java.time.LocalDateTime.now().format(
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n";
+            result.details += "暂存的文件:\n";
+            for (String file : result.affectedFiles) {
+                result.details += "  " + file + "\n";
+            }
+
+            log.info("Stashed changes for workspace: {}", workspace.getName());
+        }
+
+        return result;
+    }
+
+    /**
+     * 恢复暂存的变更
+     */
+    public GitOperationResult popStashChanges(String workspaceId) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "恢复暂存";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            // 检查是否有暂存
+            var stashList = git.stashList().call();
+            if (!stashList.iterator().hasNext()) {
+                throw new RuntimeException("没有找到暂存的变更");
+            }
+
+            // 恢复最新的暂存
+            git.stashApply().call();
+            git.stashDrop().call(); // 删除已应用的暂存
+
+            // 获取恢复后的状态
+            var status = git.status().call();
+            result.affectedFiles.addAll(status.getModified());
+            result.affectedFiles.addAll(status.getChanged());
+            result.affectedFiles.addAll(status.getAdded());
+
+            result.success = true;
+            result.message = "成功恢复暂存的变更";
+            result.details = "恢复的文件:\n";
+            for (String file : result.affectedFiles) {
+                result.details += "  " + file + "\n";
+            }
+
+            log.info("Popped stash for workspace: {}", workspace.getName());
+        }
+
+        return result;
+    }
+
+    /**
+     * 强制拉取更新（丢弃本地变更）
+     */
+    public GitOperationResult forcePullUpdates(String workspaceId) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "强制拉取";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            String branch = git.getRepository().getBranch();
+
+            // 记录拉取前的未提交变更（将被丢弃）
+            var statusBefore = git.status().call();
+            result.affectedFiles.addAll(statusBefore.getModified());
+            result.affectedFiles.addAll(statusBefore.getChanged());
+            result.affectedFiles.addAll(statusBefore.getAdded());
+            result.affectedFiles.addAll(statusBefore.getUntracked());
+
+            String commitIdBefore = getLastCommitId(git);
+
+            result.details += "⚠️ 强制拉取将丢弃以下本地变更:\n";
+            for (String file : result.affectedFiles) {
+                result.details += "  " + file + "\n";
+            }
+            result.details += "\n";
+
+            // 强制重置到远程分支状态
+            git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
+            git.clean().setCleanDirectories(true).setForce(true).call();
+
+            // 拉取远程变更
+            var pullCommand = git.pull();
+            UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+            if (credentialsProvider != null) {
+                pullCommand.setCredentialsProvider(credentialsProvider);
+            }
+
+            var pullResult = pullCommand.call();
+
+            if (!pullResult.isSuccessful()) {
+                throw new RuntimeException("强制拉取失败: " + pullResult.toString());
+            }
+
+            String commitIdAfter = getLastCommitId(git);
+
+            // 更新工作区信息
+            workspace.setLastCommitId(commitIdAfter);
+            workspace.setUpdatedAt(System.currentTimeMillis());
+            saveWorkspaces();
+
+            result.success = true;
+            result.message = "强制拉取成功，本地变更已被丢弃";
+
+            if (!commitIdBefore.equals(commitIdAfter)) {
+                result.details += "拉取到新的提交\n";
+            } else {
+                result.details += "已是最新版本\n";
+            }
+
+            log.info("Force pulled updates for workspace: {}", workspace.getName());
+        }
+
+        return result;
+    }
+
+    /**
+     * Git操作：提交变更
+     */
+    public GitOperationResult commitChanges(String workspaceId, String message) throws Exception {
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "提交";
+
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            // 检查是否有文件需要提交
+            var status = git.status().call();
+            boolean hasChanges = !status.getAdded().isEmpty() ||
+                    !status.getModified().isEmpty() ||
+                    !status.getRemoved().isEmpty() ||
+                    !status.getUntracked().isEmpty() ||
+                    !status.getMissing().isEmpty();
+
+            if (!hasChanges) {
+                throw new IllegalStateException("没有文件变更需要提交");
+            }
+
+            // 记录要提交的文件
+            result.details += "提交详情:\n";
+            result.details += "  提交信息: " + message + "\n";
+
+            if (!status.getAdded().isEmpty()) {
+                result.affectedFiles.addAll(status.getAdded());
+                result.details += "  新增文件 (" + status.getAdded().size() + "):\n";
+                for (String file : status.getAdded()) {
+                    result.details += "    + " + file + "\n";
+                }
+            }
+
+            if (!status.getModified().isEmpty()) {
+                result.affectedFiles.addAll(status.getModified());
+                result.details += "  修改文件 (" + status.getModified().size() + "):\n";
+                for (String file : status.getModified()) {
+                    result.details += "    M " + file + "\n";
+                }
+            }
+
+            if (!status.getRemoved().isEmpty()) {
+                result.affectedFiles.addAll(status.getRemoved());
+                result.details += "  删除文件 (" + status.getRemoved().size() + "):\n";
+                for (String file : status.getRemoved()) {
+                    result.details += "    - " + file + "\n";
+                }
+            }
+
+            if (!status.getUntracked().isEmpty()) {
+                result.affectedFiles.addAll(status.getUntracked());
+                result.details += "  未跟踪文件 (" + status.getUntracked().size() + "):\n";
+                for (String file : status.getUntracked()) {
+                    result.details += "    ? " + file + "\n";
+                }
+            }
+
+            git.add().addFilepattern(".").call();
+            var commitResult = git.commit().setMessage(message).call();
+
+            workspace.setLastCommitId(getLastCommitId(git));
+            workspace.setUpdatedAt(System.currentTimeMillis());
+            saveWorkspaces();
+
+            result.success = true;
+            result.message = "成功提交 " + result.affectedFiles.size() + " 个文件变更";
+            result.details += "  提交ID: " + commitResult.getName().substring(0, 8) + "\n";
+
+            log.info("Committed changes for workspace: {}", workspace.getName());
+        }
+
+        return result;
+    }
+
+    /**
+     * 获取工作区的Git状态（变更文件列表）
+     */
+    public GitStatusResult getGitStatus(String workspaceId) throws Exception {
+        Workspace workspace = workspaces.stream()
+                .filter(w -> w.getId().equals(workspaceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalArgumentException("Not a Git workspace");
+        }
+        File repoDir = new File(workspace.getPath());
+        try (Git git = Git.open(repoDir)) {
+            var status = git.status().call();
+            GitStatusResult result = new GitStatusResult();
+            result.added.addAll(status.getAdded());
+            result.changed.addAll(status.getChanged());
+            result.modified.addAll(status.getModified());
+            result.missing.addAll(status.getMissing());
+            result.removed.addAll(status.getRemoved());
+            result.untracked.addAll(status.getUntracked());
+            result.uncommitted.addAll(status.getUncommittedChanges());
+            return result;
+        }
+    }
+
+    /**
+     * 获取两个 commit 之间的变更文件列表
+     */
+    public List<String> getChangedFilesBetweenCommits(String workspaceId, String oldCommitId, String newCommitId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            ObjectId oldId = git.getRepository().resolve(oldCommitId);
+            ObjectId newId = git.getRepository().resolve(newCommitId);
+            List<DiffEntry> diffs = git.diff()
+                    .setOldTree(prepareTreeParser(git.getRepository(), oldId))
+                    .setNewTree(prepareTreeParser(git.getRepository(), newId))
+                    .call();
+            List<String> files = new ArrayList<>();
+            for (DiffEntry entry : diffs) {
+                files.add(entry.getNewPath());
+            }
+            return files;
+        }
+    }
+
+    /**
+     * 辅助方法：获取 commit 的 tree parser
+     */
+    private AbstractTreeIterator prepareTreeParser(Repository repository, ObjectId objectId) throws Exception {
+        try (RevWalk walk = new RevWalk(repository)) {
+            RevCommit commit = walk.parseCommit(objectId);
+            ObjectId treeId = commit.getTree().getId();
+            CanonicalTreeParser treeWalk = new CanonicalTreeParser();
+            try (var reader = repository.newObjectReader()) {
+                treeWalk.reset(reader, treeId);
+            }
+            return treeWalk;
+        }
+    }
+
+    /**
+     * 根据ID获取工作区
+     */
+    private Workspace getWorkspaceById(String workspaceId) {
+        return workspaces.stream()
+                .filter(w -> w.getId().equals(workspaceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
+    }
+
+    /**
+     * 加载工作区配置
+     */
+    private void loadWorkspaces() {
+        try {
+            workspaces = WorkspaceStorageUtil.loadWorkspaces();
+
+            String currentWorkspaceId = WorkspaceStorageUtil.getCurrentWorkspace();
+            if (currentWorkspaceId != null) {
+                currentWorkspace = workspaces.stream()
+                        .filter(w -> w.getId().equals(currentWorkspaceId))
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            // 如果没有当前工作区但有工作区列表，设置第一个为当前工作区
+            if (currentWorkspace == null && !workspaces.isEmpty()) {
+                currentWorkspace = workspaces.get(0);
+                WorkspaceStorageUtil.saveCurrentWorkspace(currentWorkspace.getId());
+            }
+
+            log.info("Loaded {} workspaces", workspaces.size());
+        } catch (Exception e) {
+            log.error("Failed to load workspaces", e);
+            workspaces = new ArrayList<>();
+        }
+    }
+
+    /**
+     * 保存工作区配置
+     */
+    private void saveWorkspaces() {
+        try {
+            WorkspaceStorageUtil.saveWorkspaces(workspaces);
+        } catch (Exception e) {
+            log.error("Failed to save workspaces", e);
+        }
+    }
+
+    /**
+     * 为 INITIALIZED 工作区添加远程仓库
+     */
+    public void addRemoteRepository(String workspaceId, String remoteUrl, String remoteBranch,
+                                    GitAuthType authType, String username, String password, String token) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT || workspace.getGitRepoSource() != GitRepoSource.INITIALIZED) {
+            throw new IllegalStateException("只有 INITIALIZED 类型的 Git 工作区才能添加远程仓库");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            // 添加远程仓库
+            git.remoteAdd()
+                    .setName("origin")
+                    .setUri(new org.eclipse.jgit.transport.URIish(remoteUrl))
+                    .call();
+
+            // 更新工作区信息
+            workspace.setGitRemoteUrl(remoteUrl);
+            workspace.setRemoteBranch(remoteBranch);
+            workspace.setGitAuthType(authType);
+            workspace.setGitUsername(username);
+
+            if (authType == GitAuthType.PASSWORD) {
+                workspace.setGitPassword(password);
+                workspace.setGitToken(null);
+            } else if (authType == GitAuthType.TOKEN) {
+                workspace.setGitToken(token);
+                workspace.setGitPassword(null);
+            }
+
+            workspace.setUpdatedAt(System.currentTimeMillis());
+            saveWorkspaces();
+
+            log.info("Added remote repository for workspace: {} -> {}", workspace.getName(), remoteUrl);
+        }
+    }
+
+    /**
+     * 首次推送到远程仓库（设置上游分支）
+     */
+    public void pushToRemoteForFirstTime(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().isEmpty()) {
+            throw new IllegalStateException("远程仓库未配置，请先添加远程仓库");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            String currentBranch = git.getRepository().getBranch();
+
+            // 获取用户配置的远程分支，如果没有配置则默认使用当前分支名
+            String configuredRemoteBranch = workspace.getRemoteBranch();
+            String targetRemoteBranch;
+
+            if (configuredRemoteBranch != null && !configuredRemoteBranch.trim().isEmpty()) {
+                // 处理用户配置的远程分支
+                if (configuredRemoteBranch.startsWith("origin/")) {
+                    // 去掉 origin/ 前缀，获取纯分支名
+                    targetRemoteBranch = configuredRemoteBranch.substring("origin/".length());
+                } else {
+                    targetRemoteBranch = configuredRemoteBranch;
+                }
+                log.info("Using configured remote branch: {} for local branch: {}", targetRemoteBranch, currentBranch);
+            } else {
+                // 如果没有配置远程分支，使用当前分支名
+                targetRemoteBranch = currentBranch;
+                log.info("No remote branch configured, using current branch name: {}", currentBranch);
+            }
+
+            // 推送到远程仓库并设置上游分支
+            var pushCommand = git.push()
+                    .setRemote("origin")
+                    .add(currentBranch + ":" + targetRemoteBranch); // 推送到指定的远程分支
+
+            // 设置认证信息
+            UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+            if (credentialsProvider != null) {
+                pushCommand.setCredentialsProvider(credentialsProvider);
+            }
+
+            // 执行推送
+            pushCommand.call();
+
+            // 推送成功后，设置上游分支为用户配置的远程分支
+            git.getRepository().getConfig().setString("branch", currentBranch, "remote", "origin");
+            git.getRepository().getConfig().setString("branch", currentBranch, "merge", "refs/heads/" + targetRemoteBranch);
+            git.getRepository().getConfig().save();
+
+            // 更新工作区的远程分支信息为完整格式
+            workspace.setRemoteBranch("origin/" + targetRemoteBranch);
+            workspace.setUpdatedAt(System.currentTimeMillis());
+            saveWorkspaces();
+
+            log.info("Successfully pushed local branch '{}' to remote branch 'origin/{}' and set upstream",
+                    currentBranch, targetRemoteBranch);
+        }
+    }
+
+    /**
+     * 检查工作区是否已配置远程仓库
+     */
+    public boolean hasRemoteRepository(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            return false;
+        }
+
+        // 检查工作区配置
+        if (workspace.getGitRemoteUrl() != null && !workspace.getGitRemoteUrl().isEmpty()) {
+            return true;
+        }
+
+        // 检查实际的 Git 配置
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            var remotes = git.remoteList().call();
+            return !remotes.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 获取远程仓库状态信息
+     */
+    public RemoteStatus getRemoteStatus(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            RemoteStatus status = new RemoteStatus();
+
+            // 获取远程仓库列表
+            var remotes = git.remoteList().call();
+            status.hasRemote = !remotes.isEmpty();
+
+            if (status.hasRemote) {
+                status.remoteUrl = remotes.get(0).getURIs().get(0).toString();
+
+                // 检查当前分支是否有上游分支
+                String currentBranch = git.getRepository().getBranch();
+                String tracking = git.getRepository().getConfig().getString("branch", currentBranch, "merge");
+                status.hasUpstream = tracking != null;
+                status.currentBranch = currentBranch;
+                status.upstreamBranch = tracking;
+            }
+
+            return status;
+        }
+    }
+}

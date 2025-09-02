@@ -14,19 +14,18 @@ import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.common.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.tree.TreeTransferHandler;
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.RequestCollectionPersistence;
+import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.SystemUtil;
 import com.laker.postman.util.UserSettingsUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,7 +52,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.laker.postman.service.http.HttpRequestFactory.*;
-import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
 
 /**
  * 请求集合面板，展示所有请求分组和请求项
@@ -94,8 +92,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 初始化请求树
         rootTreeNode = new DefaultMutableTreeNode(ROOT);
         treeModel = new DefaultTreeModel(rootTreeNode);
+        Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+        String filePath = SystemUtil.getCollectionPathForWorkspace(currentWorkspace);
         // 初始化持久化工具
-        persistence = new RequestCollectionPersistence(COLLECTION_PATH, rootTreeNode, treeModel);
+        persistence = new RequestCollectionPersistence(filePath, rootTreeNode, treeModel);
         // 创建树组件
         requestTree = new JTree(treeModel) {
             @Override
@@ -1208,5 +1208,16 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 确保焦点在树上（可选，用于突出显示）
         requestTree.requestFocusInWindow();
+    }
+
+    /**
+     * 切换到指定工作区的请求集合文件，并刷新树UI
+     */
+    public void switchWorkspaceAndRefreshUI(String collectionFilePath) {
+        if (persistence != null) {
+            persistence.setDataFilePath(collectionFilePath);
+        }
+        // 重新加载树结构
+        treeModel.reload(rootTreeNode);
     }
 }

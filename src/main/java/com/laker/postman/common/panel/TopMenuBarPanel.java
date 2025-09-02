@@ -8,8 +8,10 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
+import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.setting.SettingDialog;
-import com.laker.postman.panel.sidebar.SidebarTabPanel;
+import com.laker.postman.model.Workspace;
+import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -38,6 +40,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     @Getter
     private EnvironmentComboBox environmentComboBox;
 
+    private JLabel workspaceLabel;
     private JMenuBar menuBar;
 
     @Override
@@ -160,14 +163,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         for (Window window : Window.getWindows()) {
             SwingUtilities.updateComponentTreeUI(window);
         }
-        // 通知 SidebarTabPanel 刷新国际化
-        try {
-            SidebarTabPanel sidebar = SingletonFactory.getInstance(SidebarTabPanel.class);
-            sidebar.reloadI18n();
-        } catch (Exception e) {
-            log.warn("SidebarTabPanel reloadI18n failed", e);
-        }
-        JOptionPane.showMessageDialog(null,
+        JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED),
                 I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
                 JOptionPane.INFORMATION_MESSAGE);
@@ -217,10 +213,50 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         } else {
             environmentComboBox.reload();
         }
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+
+        // 创建工作区显示标签
+        if (workspaceLabel == null) {
+            workspaceLabel = new JLabel();
+            workspaceLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            workspaceLabel.setForeground(new Color(70, 70, 70));
+            workspaceLabel.setIcon(new FlatSVGIcon("icons/workspace.svg", 18, 18));
+            workspaceLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        }
+        updateWorkspaceDisplay();
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         rightPanel.setOpaque(false);
+        rightPanel.add(workspaceLabel);
         rightPanel.add(environmentComboBox);
         add(rightPanel, BorderLayout.EAST);
+    }
+
+    /**
+     * 更新工作区显示
+     */
+    public void updateWorkspaceDisplay() {
+        if (workspaceLabel == null) {
+            return;
+        }
+
+        try {
+            WorkspaceService workspaceService = WorkspaceService.getInstance();
+            Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
+
+            if (currentWorkspace != null) {
+                String displayText = currentWorkspace.getName();
+                // 如果工作区名称太长，截断显示
+                if (displayText.length() > 20) {
+                    displayText = displayText.substring(0, 15) + "...";
+                }
+                workspaceLabel.setText(displayText);
+            } else {
+                workspaceLabel.setText("No Workspace");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to update workspace display", e);
+            workspaceLabel.setText("No Workspace");
+        }
     }
 
     private void aboutActionPerformed() {

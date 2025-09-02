@@ -9,6 +9,7 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
+import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -49,6 +50,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private static final String[] TAB_TITLE_KEYS = {
             MessageKeys.MENU_COLLECTIONS,
             MessageKeys.MENU_ENVIRONMENTS,
+            MessageKeys.MENU_WORKSPACES,
             MessageKeys.MENU_FUNCTIONAL,
             MessageKeys.MENU_PERFORMANCE,
             MessageKeys.MENU_HISTORY
@@ -72,6 +74,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS), new FlatSVGIcon("icons/environments.svg", 20, 20),
                 () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_WORKSPACES), new FlatSVGIcon("icons/workspace.svg", 20, 20),
+                () -> SingletonFactory.getInstance(WorkspacePanel.class)));
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MENU_FUNCTIONAL), new FlatSVGIcon("icons/functional.svg", 20, 20),
                 () -> SingletonFactory.getInstance(FunctionalPanel.class)));
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_PERFORMANCE), new FlatSVGIcon("icons/performance.svg", 20, 20),
@@ -369,25 +373,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         revalidate(); // 重新布局
         repaint(); // 重绘组件
-    }
-
-    /**
-     * 重新加载国际化文本，刷新tab标题和consoleLabel
-     */
-    public void reloadI18n() {
-        // 更新tabInfos的title
-        tabInfos.get(0).title = I18nUtil.getMessage(MessageKeys.MENU_COLLECTIONS);
-        tabInfos.get(1).title = I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS);
-        tabInfos.get(2).title = I18nUtil.getMessage(MENU_FUNCTIONAL);
-        tabInfos.get(3).title = I18nUtil.getMessage(MessageKeys.MENU_PERFORMANCE);
-        tabInfos.get(4).title = I18nUtil.getMessage(MessageKeys.MENU_HISTORY);
-        // 刷新tab头部
-        maxTabTitleWidth = getMaxTabTitleWidth();
-        updateTabHeaders();
-        // 刷新consoleLabel文本
-        if (consoleLabel != null) {
-            consoleLabel.setText(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-        }
     }
 
     // Tab元数据结构，便于维护和扩展

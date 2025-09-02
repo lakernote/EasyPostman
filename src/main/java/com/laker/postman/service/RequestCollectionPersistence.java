@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Slf4j
 public class RequestCollectionPersistence {
-    private final String filePath;
+    private String filePath;
     private final DefaultMutableTreeNode rootTreeNode;
     private final DefaultTreeModel treeModel;
 
@@ -127,5 +127,18 @@ public class RequestCollectionPersistence {
         }
         groupJson.set("children", children);
         return groupJson;
+    }
+
+    /**
+     * 切换数据文件路径并重新加载集合
+     */
+    public void setDataFilePath(String path) {
+        if (path == null || path.isBlank()) return;
+        this.filePath = path;
+        // 清空现有树
+        rootTreeNode.removeAllChildren();
+        treeModel.reload(rootTreeNode);
+        // 重新加载
+        initRequestGroupsFromFile();
     }
 }

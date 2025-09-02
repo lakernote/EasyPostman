@@ -33,6 +33,7 @@ public final class MessageKeys {
     public static final String MENU_FUNCTIONAL = "menu.functional";
     public static final String MENU_PERFORMANCE = "menu.performance";
     public static final String MENU_HISTORY = "menu.history";
+    public static final String MENU_WORKSPACES = "menu.workspaces";
 
     // ============ 语言相关 ============
     public static final String LANGUAGE_CHANGED = "language.changed";
@@ -255,6 +256,42 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED = "functional.status.pre_script_failed";
     public static final String FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED = "functional.status.sse_batch_not_supported";
     public static final String FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED = "functional.status.ws_batch_not_supported";
+
+    // ============ 工作区相关 ============
+    public static final String WORKSPACE_NEW = "workspace.new";
+    public static final String WORKSPACE_CREATE = "workspace.create";
+    public static final String WORKSPACE_NAME = "workspace.name";
+    public static final String WORKSPACE_DEFAULT_NAME = "workspace.default.name";
+    public static final String WORKSPACE_DEFAULT_DESCRIPTION = "workspace.default.description";
+    public static final String WORKSPACE_DESCRIPTION = "workspace.description";
+    public static final String WORKSPACE_TYPE = "workspace.type";
+    public static final String WORKSPACE_TYPE_LOCAL = "workspace.type.local";
+    public static final String WORKSPACE_TYPE_GIT = "workspace.type.git";
+    public static final String WORKSPACE_PATH = "workspace.path";
+    public static final String WORKSPACE_SELECT_PATH = "workspace.select.path";
+    public static final String WORKSPACE_GIT_URL = "workspace.git.url";
+    public static final String WORKSPACE_GIT_USERNAME = "workspace.git.username";
+    public static final String WORKSPACE_GIT_PASSWORD = "workspace.git.password";
+    public static final String WORKSPACE_GIT_TOKEN = "workspace.git.token";
+    public static final String WORKSPACE_GIT_AUTH_TYPE = "workspace.git.auth.type";
+    public static final String WORKSPACE_GIT_AUTH_NONE = "workspace.git.auth.none";
+    public static final String WORKSPACE_GIT_AUTH_PASSWORD = "workspace.git.auth.password";
+    public static final String WORKSPACE_GIT_AUTH_TOKEN = "workspace.git.auth.token";
+    public static final String WORKSPACE_GIT_AUTH_SSH = "workspace.git.auth.ssh";
+    public static final String WORKSPACE_CLONE_FROM_REMOTE = "workspace.clone.from.remote";
+    public static final String WORKSPACE_INIT_LOCAL = "workspace.init.local";
+    public static final String WORKSPACE_RENAME = "workspace.rename";
+    public static final String WORKSPACE_DELETE = "workspace.delete";
+    public static final String WORKSPACE_DELETE_CONFIRM = "workspace.delete.confirm";
+    public static final String WORKSPACE_SWITCH = "workspace.switch";
+    public static final String WORKSPACE_INFO = "workspace.info";
+    public static final String WORKSPACE_GIT_PULL = "workspace.git.pull";
+    public static final String WORKSPACE_GIT_PUSH = "workspace.git.push";
+    public static final String WORKSPACE_GIT_COMMIT = "workspace.git.commit";
+    public static final String WORKSPACE_VALIDATION_NAME_REQUIRED = "workspace.validation.name.required";
+    public static final String WORKSPACE_VALIDATION_PATH_REQUIRED = "workspace.validation.path.required";
+    public static final String WORKSPACE_VALIDATION_GIT_URL_REQUIRED = "workspace.validation.git.url.required";
+    public static final String WORKSPACE_VALIDATION_AUTH_REQUIRED = "workspace.validation.auth.required";
 
     // ============ 性能测试相关 ============
     public static final String PERFORMANCE_TAB_TREND = "performance.tab.trend";

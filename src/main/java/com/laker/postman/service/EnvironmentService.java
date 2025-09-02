@@ -5,6 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
+import com.laker.postman.model.Workspace;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -61,10 +62,20 @@ public class EnvironmentService {
     }
 
     /**
+     * 切换环境变量数据文件路径，并重新加载
+     */
+    public static void setDataFilePath(String path) {
+        if (path == null || path.isBlank()) return;
+        loadEnvironments();
+    }
+
+    /**
      * 加载所有环境变量
      */
     public static void loadEnvironments() {
-        File file = new File(SystemUtil.ENV_PATH);
+        Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+        String filePath = SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+        File file = new File(filePath);
         if (!file.exists()) {
             log.info("环境变量文件不存在，将创建默认环境");
             createDefaultEnvironments();
@@ -138,7 +149,9 @@ public class EnvironmentService {
      */
     public static void saveEnvironments() {
         try {
-            File file = new File(SystemUtil.ENV_PATH);
+            Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+            String filePath = SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+            File file = new File(filePath);
             File parentDir = file.getParentFile();
             if (!parentDir.exists()) {
                 parentDir.mkdirs();

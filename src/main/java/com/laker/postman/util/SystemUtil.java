@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import com.laker.postman.model.Workspace;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
@@ -15,8 +16,8 @@ import java.nio.file.Paths;
 @Slf4j
 public class SystemUtil {
     public static final String LOG_DIR = getUserHomeEasyPostmanPath() + "logs" + File.separator;
-    public static final String COLLECTION_PATH = getUserHomeEasyPostmanPath() + "collections.json";
-    public static final String ENV_PATH = getUserHomeEasyPostmanPath() + "environments.json";
+    private static final String COLLECTION_PATH = getUserHomeEasyPostmanPath() + "collections.json";
+    private static final String ENV_PATH = getUserHomeEasyPostmanPath() + "environments.json";
 
     public static String getUserHomeEasyPostmanPath() {
         return System.getProperty("user.home") + File.separator + "EasyPostman" + File.separator;
@@ -73,5 +74,19 @@ public class SystemUtil {
             log.warn("获取剪贴板cURL文本失败", e);
         }
         return null;
+    }
+
+    public static String getEnvPathForWorkspace(Workspace ws) {
+        if (ws == null) {
+            return ENV_PATH;
+        }
+        return ws.getPath() + File.separator + "environments.json";
+    }
+
+    public static String getCollectionPathForWorkspace(Workspace ws) {
+        if (ws == null) {
+            return COLLECTION_PATH;
+        }
+        return ws.getPath() + File.separator + "collections.json";
     }
 }

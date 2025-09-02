@@ -695,4 +695,14 @@ public class EnvironmentPanel extends SingletonBasePanel {
             comboBox.setModel(new DefaultComboBoxModel<>(items.toArray(new EnvironmentItem[0])));
         }
     }
+
+    /**
+     * 切换到指定工作区的环境数据文件，并刷新UI
+     */
+    public void switchWorkspaceAndRefreshUI(String envFilePath) {
+        EnvironmentService.setDataFilePath(envFilePath);
+        this.refreshUI();
+        // 同步刷新顶部环境下拉框
+        SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload();
+    }
 }

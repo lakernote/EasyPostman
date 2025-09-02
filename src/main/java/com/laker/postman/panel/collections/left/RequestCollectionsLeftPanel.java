@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static com.laker.postman.service.http.HttpRequestFactory.*;
 import static com.laker.postman.util.SystemUtil.COLLECTION_PATH;
 
 /**
@@ -684,7 +685,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 添加空请求
         HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
         defaultRequest.setProtocol(protocol);
-
+        defaultRequest.getHeaders().put(USER_AGENT, EASY_POSTMAN_CLIENT);
         // 根据协议类型设置不同的默认值
         if (protocol.isWebSocketProtocol()) {
             // WebSocket 默认配置
@@ -694,8 +695,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         } else if (protocol.isSseProtocol()) {
             // SSE 默认配置
             defaultRequest.setMethod("GET"); // SSE通常使用GET
-            defaultRequest.setUrl("https://httpbin.org/stream/10");
+            defaultRequest.setUrl("https://sse.dev/test");
             defaultRequest.setName("SSE Request");
+            defaultRequest.getHeaders().put(ACCEPT, TEXT_EVENT_STREAM);
         } else {
             // HTTP 默认配置
             defaultRequest.setMethod("GET");

@@ -136,7 +136,7 @@ public class GitOperationDialog extends JDialog {
 
         // 更新警告面板可见性
         boolean hasIssues = !check.getWarnings().isEmpty() ||
-                          (operation == GitOperation.PULL && check.isHasUncommittedChanges());
+                (operation == GitOperation.PULL && check.isHasUncommittedChanges());
         warningPanel.setVisible(hasIssues);
 
         // 重新布局
@@ -551,8 +551,8 @@ public class GitOperationDialog extends JDialog {
         int totalChanges = status.added.size() + status.modified.size() + status.removed.size() +
                 status.untracked.size() + status.changed.size() + status.missing.size();
 
-        sb.append("=== 文件变更统计 ===\n");
-        sb.append(String.format("总变更文件: %d\n\n", totalChanges));
+        sb.append(String.format("总变更文件: %d", totalChanges));
+        sb.append("\n\n");
 
         if (totalChanges == 0) {
             sb.append("🎉 没有检测到文件变更\n");
@@ -705,8 +705,8 @@ public class GitOperationDialog extends JDialog {
                             if ("commit_first".equals(choice)) {
                                 publish("先提交本地变更...");
                                 String autoCommitMsg = "Auto commit before pull - " +
-                                    java.time.LocalDateTime.now().format(
-                                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                                        java.time.LocalDateTime.now().format(
+                                                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), autoCommitMsg);
                                 notifyWorkspacePanel(commitResult);
 

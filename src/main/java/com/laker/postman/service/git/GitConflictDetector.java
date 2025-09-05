@@ -108,10 +108,41 @@ public class GitConflictDetector {
             String tracking = git.getRepository().getConfig()
                     .getString("branch", currentBranch, "merge");
 
+            // 检查是否有远程仓库
+            var remotes = git.remoteList().call();
+            boolean hasRemote = !remotes.isEmpty();
+
             if (tracking == null) {
-                result.warnings.add("当前分支没有设置远程跟踪分支");
-                result.canPull = false;
-                result.canPush = false;
+                if (!hasRemote) {
+                    // 没有远程仓库，也没有跟踪分支
+                    result.warnings.add("当前分支没有设置远程仓库");
+                    result.canPull = false;
+                    result.canPush = false;
+                } else {
+                    // 有远程仓库但没有设置跟踪分支（典型的 init 类型工作区情况）
+                    result.warnings.add("当前分支没有设置远程跟踪分支");
+                    result.canPull = false;
+
+                    // 对于 init 类型，如果有本地提交且有远程仓库，可以尝试推送
+                    // 检查是否有本地提交
+                    try {
+                        Iterable<RevCommit> localCommits = git.log().setMaxCount(1).call();
+                        boolean hasLocalCommits = localCommits.iterator().hasNext();
+                        result.canPush = hasLocalCommits && !result.hasUncommittedChanges;
+
+                        if (hasLocalCommits) {
+                            result.hasLocalCommits = true;
+                            // 计算本地提交数（最多检查前100个）
+                            Iterable<RevCommit> allCommits = git.log().setMaxCount(100).call();
+                            for (RevCommit ignored : allCommits) {
+                                result.localCommitsAhead++;
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to check local commits", e);
+                        result.canPush = false;
+                    }
+                }
                 return;
             }
 
@@ -153,11 +184,22 @@ public class GitConflictDetector {
                     result.remoteCommitsBehind++;
                 }
                 result.hasRemoteCommits = result.remoteCommitsBehind > 0;
+            } else if (localId != null && remoteId == null) {
+                // 本地分支存在但远程分支不存在（首次推送的情况）
+                try {
+                    Iterable<RevCommit> localCommits = git.log().call();
+                    for (RevCommit ignored : localCommits) {
+                        result.localCommitsAhead++;
+                    }
+                    result.hasLocalCommits = result.localCommitsAhead > 0;
+                } catch (Exception e) {
+                    log.warn("Failed to count local commits", e);
+                }
             }
 
             // 设置操作可行性
             result.canPush = result.hasLocalCommits && !result.hasUncommittedChanges;
-            result.canPull = true; // pull总是可以尝试
+            result.canPull = remoteId != null; // 只有远程分支存在时才能拉取
 
         } catch (Exception e) {
             log.warn("Failed to check remote status", e);
@@ -198,7 +240,14 @@ public class GitConflictDetector {
             result.warnings.add("没有本地提交需要推送");
             result.suggestions.add("本地仓库已与远程仓库同步");
         } else {
-            if (result.hasRemoteCommits) {
+            // 检查是否为首次推送情况（init 类型工作区常见）
+            boolean isFirstPush = result.warnings.stream()
+                    .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
+
+            if (isFirstPush) {
+                result.suggestions.add("检测到首次推送情况，将设置上游分支");
+                result.suggestions.add("可以推送 " + result.localCommitsAhead + " 个本地提交到远程仓库");
+            } else if (result.hasRemoteCommits) {
                 result.warnings.add("远程仓库有新的提交，推送可能失败");
                 result.suggestions.add("建议先拉取远程变更，然后再推送");
             } else {
@@ -208,6 +257,17 @@ public class GitConflictDetector {
     }
 
     private static void generatePullSuggestions(GitStatusCheck result) {
+        // 检查是否没有远程跟踪分支
+        boolean noTracking = result.warnings.stream()
+                .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
+
+        if (noTracking) {
+            result.warnings.add("无法拉取：当前分支没有设置远程跟踪分支");
+            result.suggestions.add("请先配置远程仓库并设置上游分支");
+            result.suggestions.add("或者先进行首次推送以建立跟踪关系");
+            return;
+        }
+
         if (result.hasUncommittedChanges) {
             result.warnings.add("有未提交的变更，拉取可能导致冲突");
             result.suggestions.add("建议先提交或暂存本地变更");

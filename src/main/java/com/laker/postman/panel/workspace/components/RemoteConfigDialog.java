@@ -46,7 +46,7 @@ public class RemoteConfigDialog extends ProgressDialog {
     private void initComponents() {
         remoteUrlField = new JTextField(30);
         remoteBranchField = new JTextField(15);
-        remoteBranchField.setText("origin/main"); // 默认远程分支
+        remoteBranchField.setText("master"); // 默认远程分支
 
         gitAuthPanel = new GitAuthPanel();
 

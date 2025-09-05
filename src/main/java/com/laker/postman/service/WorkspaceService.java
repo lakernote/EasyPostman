@@ -11,6 +11,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
@@ -771,8 +772,8 @@ public class WorkspaceService {
             result.message = "成功暂存 " + result.affectedFiles.size() + " 个文件的变更";
             result.details = "暂存ID: " + stashResult.getName().substring(0, 8) + "\n";
             result.details += "暂存时间: " +
-                java.time.LocalDateTime.now().format(
-                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n";
+                    java.time.LocalDateTime.now().format(
+                            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n";
             result.details += "暂存的文件:\n";
             for (String file : result.affectedFiles) {
                 result.details += "  " + file + "\n";
@@ -839,8 +840,6 @@ public class WorkspaceService {
         }
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
-            String branch = git.getRepository().getBranch();
-
             // 记录拉取前的未提交变更（将被丢弃）
             var statusBefore = git.status().call();
             result.affectedFiles.addAll(statusBefore.getModified());
@@ -870,7 +869,7 @@ public class WorkspaceService {
             var pullResult = pullCommand.call();
 
             if (!pullResult.isSuccessful()) {
-                throw new RuntimeException("强制拉取失败: " + pullResult.toString());
+                throw new RuntimeException("强制拉取失败: " + pullResult);
             }
 
             String commitIdAfter = getLastCommitId(git);
@@ -1097,7 +1096,7 @@ public class WorkspaceService {
             // 添加远程仓库
             git.remoteAdd()
                     .setName("origin")
-                    .setUri(new org.eclipse.jgit.transport.URIish(remoteUrl))
+                    .setUri(new URIish(remoteUrl))
                     .call();
 
             // 更新工作区信息
@@ -1188,7 +1187,7 @@ public class WorkspaceService {
     /**
      * 检查工作区是否已配置远程仓库
      */
-    public boolean hasRemoteRepository(String workspaceId) throws Exception {
+    public boolean hasRemoteRepository(String workspaceId) {
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
             return false;

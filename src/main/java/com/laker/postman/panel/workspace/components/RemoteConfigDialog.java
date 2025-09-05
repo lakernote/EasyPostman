@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 
@@ -157,15 +158,14 @@ public class RemoteConfigDialog extends ProgressDialog {
 
     @Override
     protected SwingWorker<Void, String> createWorkerTask() {
-        return new SwingWorker<Void, String>() {
+        return new SwingWorker<>() {
             @Override
-            protected Void doInBackground() throws Exception {
+            protected Void doInBackground() {
                 publish("正在配置远程仓库...");
                 setProgress(10);
 
                 // 调用 WorkspaceService 配置远程仓库
-                com.laker.postman.service.WorkspaceService workspaceService =
-                        com.laker.postman.service.WorkspaceService.getInstance();
+                WorkspaceService workspaceService = WorkspaceService.getInstance();
 
                 try {
                     // 获取输入值

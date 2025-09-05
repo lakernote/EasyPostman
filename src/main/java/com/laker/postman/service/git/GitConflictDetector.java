@@ -1,4 +1,4 @@
-package com.laker.postman.util;
+package com.laker.postman.service.git;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

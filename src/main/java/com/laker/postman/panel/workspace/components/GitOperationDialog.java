@@ -8,7 +8,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.EasyPostManFontUtil;
-import com.laker.postman.util.GitConflictDetector;
+import com.laker.postman.service.git.GitConflictDetector;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

@@ -645,17 +645,18 @@ public class WorkspaceService {
             // 详细检查推送结果
             boolean pushSuccess = false;
             for (var pushResult : pushResults) {
-                result.details += "  推送结果状态: " + pushResult.toString() + "\n";
-
-                if (pushResult.getMessages() != null && !pushResult.getMessages().isEmpty()) {
-                    result.details += "  推送消息: " + pushResult.getMessages() + "\n";
+                // 只在有错误或警告时输出推送消息
+                String msg = pushResult.getMessages();
+                if (msg != null && !msg.isEmpty() && (msg.toLowerCase().contains("error") || msg.toLowerCase().contains("fail"))) {
+                    result.details += "  推送消息: " + msg + "\n";
                 }
-
-                // 检查每个 ref 的推送状态
+                // 输出每个 ref 的推送状态
                 for (var remoteRefUpdate : pushResult.getRemoteUpdates()) {
                     result.details += "  分支更新: " + remoteRefUpdate.getSrcRef() + " -> " +
                             remoteRefUpdate.getRemoteName() + " (" + remoteRefUpdate.getStatus() + ")\n";
-
+                    if (remoteRefUpdate.getMessage() != null && !remoteRefUpdate.getMessage().isEmpty()) {
+                        result.details += "    详细信息: " + remoteRefUpdate.getMessage() + "\n";
+                    }
                     if (remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK ||
                             remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
                         pushSuccess = true;

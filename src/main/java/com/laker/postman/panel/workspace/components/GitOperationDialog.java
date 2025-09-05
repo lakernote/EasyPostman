@@ -345,12 +345,7 @@ public class GitOperationDialog extends JDialog {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         // 文件变更选项卡
-        tabbedPane.addTab("文件变更", new FlatSVGIcon("icons/file.svg", 16, 16), createChangedFilesPanel());
-
-        // 如果是提交操作，添加提交信息选项卡
-        if (operation == GitOperation.COMMIT) {
-            tabbedPane.addTab("提交信息", new FlatSVGIcon("icons/edit.svg", 16, 16), createCommitMessagePanel());
-        }
+        tabbedPane.addTab("文件变更", new FlatSVGIcon("icons/file.svg", 16, 16), createChangedFilesPanelWithCommit());
 
         // 操作历史选项卡（可选）
         tabbedPane.addTab("操作说明", new FlatSVGIcon("icons/info.svg", 16, 16), createOperationDescPanel());
@@ -367,81 +362,43 @@ public class GitOperationDialog extends JDialog {
         return panel;
     }
 
-    private JPanel createChangedFilesPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private JPanel createChangedFilesPanelWithCommit() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(new TitledBorder("变更文件列表"));
 
+        // 文件变更区域
         changedFilesArea = new JTextArea();
         changedFilesArea.setEditable(false);
         changedFilesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         changedFilesArea.setBackground(new Color(248, 248, 248));
         changedFilesArea.setText("正在加载文件变更信息...");
-
         JScrollPane scrollPane = new JScrollPane(changedFilesArea);
-        scrollPane.setPreferredSize(new Dimension(0, 300));
-        panel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setPreferredSize(new Dimension(0, 200));
+        panel.add(scrollPane);
 
         // 刷新按钮
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshButton = new JButton("刷新", new FlatSVGIcon("icons/refresh.svg", 16, 16));
         refreshButton.addActionListener(e -> loadGitStatus());
         buttonPanel.add(refreshButton);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+        panel.add(buttonPanel);
 
-        return panel;
-    }
+        // 若为提交操作，直接在下方显示提交信息区域
+        if (operation == GitOperation.COMMIT) {
+            JPanel commitPanel = new JPanel(new BorderLayout());
+            commitPanel.setBorder(new TitledBorder("提交信息"));
 
-    /**
-     * 重新加载Git状态
-     */
-    private void loadGitStatus() {
-        // 重新执行预检查来刷新状态
-        performPreOperationCheck();
-    }
-
-    private JPanel createCommitMessagePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new TitledBorder("提交信息"));
-
-        // 提交信息输入区域
-        commitMessageArea = new JTextArea(8, 50);
-        commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        commitMessageArea.setLineWrap(true);
-        commitMessageArea.setWrapStyleWord(true);
-        commitMessageArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        JScrollPane scrollPane = new JScrollPane(commitMessageArea);
-        scrollPane.setBorder(BorderFactory.createLoweredBevelBorder());
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        // 快捷提交信息按钮
-        JPanel quickMessagePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        quickMessagePanel.setBorder(BorderFactory.createTitledBorder("快捷提交信息"));
-
-        String[] quickMessages = {
-                "feat: 添加新功能",
-                "fix: 修复bug",
-                "docs: 更新文档",
-                "style: 代码格式调整",
-                "refactor: 重构代码",
-                "test: 添加测试",
-                "chore: 更新构建配置"
-        };
-
-        for (String msg : quickMessages) {
-            JButton btn = new JButton(msg);
-            btn.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-            btn.addActionListener(e -> {
-                if (commitMessageArea.getText().trim().isEmpty()) {
-                    commitMessageArea.setText(msg);
-                } else {
-                    commitMessageArea.append("\n" + msg);
-                }
-            });
-            quickMessagePanel.add(btn);
+            commitMessageArea = new JTextArea(3, 10);
+            commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            commitMessageArea.setLineWrap(true);
+            commitMessageArea.setWrapStyleWord(true);
+            commitMessageArea.setBackground(Color.WHITE);
+            commitMessageArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            JScrollPane commitScroll = new JScrollPane(commitMessageArea);
+            commitPanel.add(commitScroll, BorderLayout.CENTER);
+            panel.add(commitPanel);
         }
-
-        panel.add(quickMessagePanel, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -806,5 +763,13 @@ public class GitOperationDialog extends JDialog {
             progressBar.setIndeterminate(false);
             executeButton.setEnabled(true);
         }
+    }
+
+    /**
+     * 重新加载Git状态
+     */
+    private void loadGitStatus() {
+        // 重新执行预检查来刷新状态
+        performPreOperationCheck();
     }
 }

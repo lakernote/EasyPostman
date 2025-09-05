@@ -377,12 +377,6 @@ public class GitOperationDialog extends JDialog {
         scrollPane.setPreferredSize(new Dimension(0, 200));
         panel.add(scrollPane);
 
-        // 刷新按钮
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton refreshButton = new JButton("刷新", new FlatSVGIcon("icons/refresh.svg", 16, 16));
-        refreshButton.addActionListener(e -> loadGitStatus());
-        buttonPanel.add(refreshButton);
-        panel.add(buttonPanel);
 
         // 若为提交操作，直接在下方显示提交信息区域
         if (operation == GitOperation.COMMIT) {
@@ -471,6 +465,11 @@ public class GitOperationDialog extends JDialog {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
+        // 创建刷新按钮
+        JButton refreshButton = new JButton("刷新", new FlatSVGIcon("icons/refresh.svg", 16, 16));
+        refreshButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        refreshButton.addActionListener(e -> loadGitStatus());
+
         executeButton = new JButton(operation.getDisplayName(), new FlatSVGIcon("icons/" + operation.getIconName(), 16, 16));
         executeButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         executeButton.addActionListener(new ExecuteActionListener());
@@ -479,6 +478,8 @@ public class GitOperationDialog extends JDialog {
         cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         cancelButton.addActionListener(e -> dispose());
 
+        // 按照从左到右的顺序添加按钮：刷新、执行、取消
+        panel.add(refreshButton);
         panel.add(executeButton);
         panel.add(cancelButton);
 
@@ -769,7 +770,62 @@ public class GitOperationDialog extends JDialog {
      * 重新加载Git状态
      */
     private void loadGitStatus() {
-        // 重新执行预检查来刷新状态
-        performPreOperationCheck();
+        // 显示加载状态
+        statusLabel.setText("正在刷新Git状态...");
+        statusLabel.setForeground(Color.BLUE);
+        changedFilesArea.setText("正在刷新文件变更信息...");
+
+        // 在后台线程执行刷新操作，避免阻塞UI
+        SwingWorker<Void, String> refreshWorker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                // 重新执行预检查来刷新状态
+                publish("正在检查Git状态和潜在冲突...");
+
+                // 执行冲突检测
+                statusCheck = GitConflictDetector.checkGitStatus(workspace.getPath(), operation.name());
+
+                publish("正在加载文件变更信息...");
+                // 加载文件变更信息
+                GitStatusResult gitStatus = workspaceService.getGitStatus(workspace.getId());
+
+                // 在EDT中更新UI
+                SwingUtilities.invokeLater(() -> {
+                    // 显示检测结果
+                    displayStatusCheck(statusCheck);
+
+                    // 显示文件变更信息
+                    displayGitStatus(gitStatus);
+
+                    statusLabel.setText("Git状态刷新完成");
+                    statusLabel.setForeground(Color.DARK_GRAY);
+                });
+
+                return null;
+            }
+
+            @Override
+            protected void process(List<String> chunks) {
+                if (!chunks.isEmpty()) {
+                    statusLabel.setText(chunks.get(chunks.size() - 1));
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // 检查是否有异常
+                } catch (Exception e) {
+                    log.error("Failed to refresh git status", e);
+                    SwingUtilities.invokeLater(() -> {
+                        statusLabel.setText("刷新失败: " + e.getMessage());
+                        statusLabel.setForeground(Color.RED);
+                        changedFilesArea.setText("刷新文件变更信息失败: " + e.getMessage());
+                    });
+                }
+            }
+        };
+
+        refreshWorker.execute();
     }
 }

@@ -170,7 +170,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 创建日志文本区域
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        logArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         logArea.setBackground(new Color(248, 248, 248));
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
@@ -182,9 +182,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         JButton clearLogButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
         clearLogButton.setIcon(new FlatSVGIcon("icons/clear.svg", 20, 20));
         clearLogButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        clearLogButton.addActionListener(e -> {
-            logArea.setText("");
-        });
+        clearLogButton.addActionListener(e -> logArea.setText(""));
         logToolbar.add(clearLogButton);
         panel.add(logToolbar, BorderLayout.SOUTH);
 
@@ -195,7 +193,6 @@ public class WorkspacePanel extends SingletonBasePanel {
      * 显示创建工作区对话框
      */
     private void showCreateWorkspaceDialog() {
-        logMessage("打开创建工作区对话框");
         WorkspaceCreateDialog dialog = new WorkspaceCreateDialog(
                 SwingUtilities.getWindowAncestor(this)
         );
@@ -351,7 +348,6 @@ public class WorkspacePanel extends SingletonBasePanel {
      */
     private void switchToWorkspace(Workspace workspace) {
         try {
-            logMessage("正在切换到工作区: " + workspace.getName());
             workspaceService.switchWorkspace(workspace.getId());
             // 切换环境变量文件
             SingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
@@ -460,7 +456,6 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (newName != null && !newName.trim().isEmpty() && !newName.equals(workspace.getName())) {
             try {
-                logMessage("重命名工作区: " + workspace.getName() + " -> " + newName.trim());
                 workspaceService.renameWorkspace(workspace.getId(), newName.trim());
                 refreshWorkspaceList();
                 // 如果重命名的是当前工作区，更新顶部菜单栏显示
@@ -501,7 +496,6 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (choice == 0) { // 删除
             try {
-                logMessage("删除工作区: " + workspace.getName());
                 workspaceService.deleteWorkspace(workspace.getId());
                 refreshWorkspaceList();
                 SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();

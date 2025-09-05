@@ -4,16 +4,10 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
-import com.laker.postman.model.GitOperation;
-import com.laker.postman.model.RemoteStatus;
-import com.laker.postman.model.Workspace;
-import com.laker.postman.model.WorkspaceType;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
-import com.laker.postman.panel.workspace.components.GitOperationDialog;
-import com.laker.postman.panel.workspace.components.RemoteConfigDialog;
-import com.laker.postman.panel.workspace.components.WorkspaceCreateDialog;
-import com.laker.postman.panel.workspace.components.WorkspaceDetailPanel;
+import com.laker.postman.panel.workspace.components.*;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +68,6 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 刷新工作区列表
         refreshWorkspaceList();
-        logMessage("工作区面板初始化完成");
     }
 
     /**
@@ -106,8 +99,6 @@ public class WorkspacePanel extends SingletonBasePanel {
      */
     private JScrollPane createWorkspaceListPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("工作区列表"));
-
         // 创建列表模型和列表
         listModel = new DefaultListModel<>();
         workspaceList = new JList<>(listModel);
@@ -172,7 +163,7 @@ public class WorkspacePanel extends SingletonBasePanel {
      */
     private JPanel createLogPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        TitledBorder border = BorderFactory.createTitledBorder("操作日志");
+        TitledBorder border = BorderFactory.createTitledBorder("日志");
         panel.setBorder(border);
         panel.setPreferredSize(new Dimension(0, 150));
 
@@ -181,7 +172,6 @@ public class WorkspacePanel extends SingletonBasePanel {
         logArea.setEditable(false);
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
         logArea.setBackground(new Color(248, 248, 248));
-        logArea.setText("欢迎使用工作区管理面板\n");
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
         logScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
@@ -194,80 +184,11 @@ public class WorkspacePanel extends SingletonBasePanel {
         clearLogButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         clearLogButton.addActionListener(e -> {
             logArea.setText("");
-            logMessage("日志已清空");
         });
         logToolbar.add(clearLogButton);
         panel.add(logToolbar, BorderLayout.SOUTH);
 
         return panel;
-    }
-
-    /**
-     * 自定义列表单元格渲染器
-     */
-    private class WorkspaceListCellRenderer extends DefaultListCellRenderer {
-        @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                      boolean isSelected, boolean cellHasFocus) {
-            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-            if (value instanceof Workspace workspace) {
-                configureWorkspaceIcon(workspace);
-                configureWorkspaceText(workspace);
-                configureWorkspaceStyle();
-                setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-            }
-
-            return this;
-        }
-
-        private void configureWorkspaceIcon(Workspace workspace) {
-            FlatSVGIcon icon;
-            if (workspace.getType() == WorkspaceType.LOCAL) {
-                icon = new FlatSVGIcon("icons/local.svg", 20, 20);
-            } else {
-                icon = new FlatSVGIcon("icons/git.svg", 20, 20);
-            }
-            setIcon(icon);
-        }
-
-        private void configureWorkspaceText(Workspace workspace) {
-            StringBuilder text = new StringBuilder();
-            text.append(HTML_START);
-
-            Workspace current = workspaceService.getCurrentWorkspace();
-            boolean isCurrent = current != null && current.getId().equals(workspace.getId());
-
-            // 如果是当前工作区，设置文字颜色为主题色
-            if (isCurrent) {
-                text.append("<b style='color: #0078d4;'>").append(workspace.getName()).append("</b>");
-            } else {
-                text.append("<b>").append(workspace.getName()).append("</b>");
-            }
-
-            text.append("<br>");
-
-            // 描述部分也根据是否为当前工作区设置不同颜色
-            if (isCurrent) {
-                text.append("<small style='color: #0078d4;'>");
-            } else {
-                text.append("<small style='color: gray;'>");
-            }
-
-            text.append(workspace.getType() == WorkspaceType.LOCAL ?
-                    I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL) : I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_GIT));
-            if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
-                text.append(" - ").append(workspace.getDescription());
-            }
-            text.append("</small>");
-            text.append(HTML_END);
-
-            setText(text.toString());
-        }
-
-        private void configureWorkspaceStyle() {
-            setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        }
     }
 
     /**
@@ -331,7 +252,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         }
 
         // 根据工作区类型显示不同的Git操作
-        if (workspace.getGitRepoSource() == com.laker.postman.model.GitRepoSource.INITIALIZED) {
+        if (workspace.getGitRepoSource() == GitRepoSource.INITIALIZED) {
             addInitializedGitMenuItems(menu, workspace);
         }
 

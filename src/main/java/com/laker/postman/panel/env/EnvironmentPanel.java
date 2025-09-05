@@ -21,6 +21,7 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -159,15 +160,15 @@ public class EnvironmentPanel extends SingletonBasePanel {
             });
         }
         searchField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+            public void insertUpdate(DocumentEvent e) {
                 reloadEnvironmentList(searchField.getText());
             }
 
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 reloadEnvironmentList(searchField.getText());
             }
 
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 reloadEnvironmentList(searchField.getText());
             }
         });
@@ -324,10 +325,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
      */
     public void loadActiveEnvironmentVariables() {
         Environment env = EnvironmentService.getActiveEnvironment();
-        if (env != null) {
-            currentEnvironment = env;
-            loadVariables(env);
-        }
+        currentEnvironment = env;
+        loadVariables(env);
     }
 
     private void loadVariables(Environment env) {
@@ -544,6 +543,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
             environmentListModel.removeElement(new EnvironmentItem(env));
             EnvironmentService.deleteEnvironment(env.getId());
             SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload(); // 刷新顶部下拉框
+            // 设置当前的变量表格为激活环境
+            loadActiveEnvironmentVariables();
         }
     }
 

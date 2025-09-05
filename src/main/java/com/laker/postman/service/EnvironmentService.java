@@ -198,6 +198,10 @@ public class EnvironmentService {
             firstEnv.setActive(true);
             activeEnvironment = firstEnv;
         }
+        // if environments is empty after removal, set activeEnvironment to null
+        if (environments.isEmpty()) {
+            activeEnvironment = null;
+        }
         saveEnvironments();
     }
 

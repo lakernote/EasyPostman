@@ -7,8 +7,8 @@ import com.laker.postman.model.GitStatusResult;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.service.git.GitConflictDetector;
+import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -135,8 +135,8 @@ public class GitOperationDialog extends JDialog {
         // 根据检测结果显示操作选择
         updateActionChoices(check);
 
-        // 更新警告面板可见性
         boolean hasIssues = !check.getWarnings().isEmpty() ||
+                !check.getSuggestions().isEmpty() ||
                 (operation == GitOperation.PULL && check.isHasUncommittedChanges());
         warningPanel.setVisible(hasIssues);
 

@@ -18,6 +18,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -614,7 +615,7 @@ public class GitOperationDialog extends JDialog {
             showProgress();
 
             // 在后台线程执行操作
-            SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
+            SwingWorker<Void, String> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() throws Exception {
                     executeGitOperationWithChoice(userChoice);
@@ -637,7 +638,7 @@ public class GitOperationDialog extends JDialog {
                         statusLabel.setForeground(Color.GREEN);
 
                         // 操作成功后重新加载Git状态
-                        SwingUtilities.invokeLater(() -> loadGitStatus());
+                        SwingUtilities.invokeLater(GitOperationDialog.this::loadGitStatus);
 
                         // 显示成功对话框
                         JOptionPane.showMessageDialog(
@@ -752,7 +753,7 @@ public class GitOperationDialog extends JDialog {
                 return "default";
             }
 
-            for (AbstractButton button : java.util.Collections.list(actionChoiceGroup.getElements())) {
+            for (AbstractButton button : Collections.list(actionChoiceGroup.getElements())) {
                 if (button.isSelected()) {
                     String text = button.getText();
 

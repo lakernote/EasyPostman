@@ -57,8 +57,8 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
     private void initComponents() {
         // 基本信息
-        nameField = new JTextField(20);
-        descriptionArea = new JTextArea(3, 20);
+        nameField = new JTextField(10);
+        descriptionArea = new JTextArea(3, 10);
         descriptionArea.setLineWrap(true);
         descriptionArea.setBackground(Color.white);
         descriptionArea.setWrapStyleWord(true);
@@ -71,7 +71,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         typeGroup.add(gitTypeRadio);
 
         // 路径选择 - 设置默认工作区目录
-        pathField = new JTextField(25);
+        pathField = new JTextField(15);
         setDefaultWorkspacePath(); // 设置默认路径
 
         browseButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_SELECT_PATH));
@@ -88,7 +88,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         gitModeGroup.add(cloneRadio);
         gitModeGroup.add(initRadio);
 
-        gitUrlField = new JTextField(25);
+        gitUrlField = new JTextField(15);
         gitAuthPanel = new GitAuthPanel();
 
         // 初始化分支字段
@@ -161,8 +161,8 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         // 为内容面板添加滚动支持
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setBorder(null);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
         containerPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -182,7 +182,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         add(containerPanel, BorderLayout.CENTER);
 
         // 设置对话框的初始大小
-        setPreferredSize(new Dimension(650, 520));
+        setPreferredSize(new Dimension(450, 520));
     }
 
     @Override
@@ -383,9 +383,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 调整对话框大小以适应内容
         if (isGit) {
-            setPreferredSize(new Dimension(650, 680));
+            setPreferredSize(new Dimension(550, 680));
         } else {
-            setPreferredSize(new Dimension(650, 420));
+            setPreferredSize(new Dimension(550, 420));
         }
 
         pack();

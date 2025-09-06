@@ -143,28 +143,27 @@ public class WorkspaceService {
             String actualCurrentBranch = git.getRepository().getBranch();
             workspace.setCurrentBranch(actualCurrentBranch);
 
-            // 设置远程分支信息
-            if (workspace.getRemoteBranch() != null && !workspace.getRemoteBranch().isEmpty()) {
-                // 用户已指定远程分支，使用用户指定的
-                // 验证远程分支是否存在
-                String remoteBranch = workspace.getRemoteBranch();
-                if (remoteBranch.startsWith("origin/")) {
-                    workspace.setRemoteBranch(remoteBranch);
+            // 自动检测远程分支，统一转换为 origin/分支名 格式
+            String remoteBranch = git.getRepository().getConfig().getString("branch", actualCurrentBranch, "merge");
+            if (remoteBranch != null) {
+                // 将 refs/heads/分支名 转换为 origin/分支名 格式
+                if (remoteBranch.startsWith("refs/heads/")) {
+                    String branchName = remoteBranch.substring("refs/heads/".length());
+                    workspace.setRemoteBranch("origin/" + branchName);
                 } else {
-                    workspace.setRemoteBranch("origin/" + remoteBranch);
+                    workspace.setRemoteBranch(remoteBranch);
                 }
             } else {
-                // 自动检测远程分支，统一转换为 origin/分支名 格式
-                String remoteBranch = git.getRepository().getConfig().getString("branch", actualCurrentBranch, "merge");
-                if (remoteBranch != null) {
-                    // 将 refs/heads/分支名 转换为 origin/分支名 格式
-                    if (remoteBranch.startsWith("refs/heads/")) {
-                        String branchName = remoteBranch.substring("refs/heads/".length());
-                        workspace.setRemoteBranch("origin/" + branchName);
-                    } else {
-                        workspace.setRemoteBranch(remoteBranch);
-                    }
-                } else {
+                // remoteBranch 为空，说明远程仓库可能为空，自动为本地分支绑定远程分支关系
+                try {
+                    var config = git.getRepository().getConfig();
+                    config.setString("branch", actualCurrentBranch, "remote", "origin");
+                    config.setString("branch", actualCurrentBranch, "merge", "refs/heads/" + actualCurrentBranch);
+                    config.save();
+                    workspace.setRemoteBranch("origin/" + actualCurrentBranch);
+                    log.info("远程仓库为空，已自动为本地分支 '{}' 绑定上游: origin/{}", actualCurrentBranch, actualCurrentBranch);
+                } catch (Exception e) {
+                    log.warn("自动绑定远程分支失败: {}", e.getMessage(), e);
                     workspace.setRemoteBranch(null);
                 }
             }

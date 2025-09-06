@@ -61,7 +61,7 @@ public class WorkspaceService {
     /**
      * 创建新工作区
      */
-    public Workspace createWorkspace(Workspace workspace) throws Exception {
+    public void createWorkspace(Workspace workspace) throws Exception {
         if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
             throw new IllegalArgumentException("不能创建默认工作区");
         }
@@ -90,7 +90,6 @@ public class WorkspaceService {
         saveWorkspaces();
 
         log.info("Created workspace: {} ({})", workspace.getName(), workspace.getType());
-        return workspace;
     }
 
     /**

@@ -1,10 +1,12 @@
 package com.laker.postman.panel.workspace.components;
 
+import cn.hutool.core.util.RandomUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
+import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -25,6 +27,7 @@ import java.io.File;
 public class WorkspaceCreateDialog extends ProgressDialog {
 
     private static final String DEFAULT_BRANCH = "master";
+    public static final String WORKSPACES = "workspaces";
 
     @Getter
     private transient Workspace workspace;
@@ -112,7 +115,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
      * 设置默认的工作区路径
      */
     private void setDefaultWorkspacePath() {
-        String defaultWorkspaceDir = SystemUtil.getUserHomeEasyPostmanPath() + "workspaces";
+        String defaultWorkspaceDir = SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES;
         pathField.setText(defaultWorkspaceDir);
     }
 
@@ -132,10 +135,10 @@ public class WorkspaceCreateDialog extends ProgressDialog {
                 .replaceAll("^_|_$", ""); // 去除首尾下划线
 
         if (cleanName.isEmpty()) {
-            cleanName = "workspace";
+            cleanName = RandomUtil.randomString(10); // 如果清理后为空，使用随机字符串
         }
 
-        return SystemUtil.getUserHomeEasyPostmanPath() + "workspaces" + File.separator + cleanName;
+        return SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES + File.separator + cleanName;
     }
 
     @Override
@@ -420,7 +423,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         String currentPath = pathField.getText().trim();
         if (currentPath.isEmpty()) {
-            currentPath = SystemUtil.getUserHomeEasyPostmanPath() + "workspaces";
+            currentPath = SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES;
         }
 
         // 确保父目录存在
@@ -473,20 +476,14 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
     @Override
     protected SwingWorker<Void, String> createWorkerTask() {
-        return new SwingWorker<Void, String>() {
+        return new SwingWorker<>() {
             @Override
-            protected Void doInBackground() throws Exception {
+            protected Void doInBackground() {
                 publish("正在创建工作区...");
                 setProgress(10);
-
-                // 调用 WorkspaceService 创建工作区
-                com.laker.postman.service.WorkspaceService workspaceService =
-                        com.laker.postman.service.WorkspaceService.getInstance();
-
                 try {
                     // 使用 WorkspaceService 创建工作区，它会处理所有的 Git 操作
-                    workspaceService.createWorkspace(workspace);
-
+                    WorkspaceService.getInstance().createWorkspace(workspace);
                     publish("工作区创建完成！");
                     setProgress(100);
                 } catch (Exception e) {

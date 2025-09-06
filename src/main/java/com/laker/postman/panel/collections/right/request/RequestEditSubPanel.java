@@ -38,10 +38,10 @@ import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.InterruptedIOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import static com.laker.postman.service.http.HttpUtil.*;
 
@@ -85,6 +85,8 @@ public class RequestEditSubPanel extends JPanel {
     private EventSource currentEventSource;
     // WebSocket连接对象
     private volatile WebSocket currentWebSocket;
+    // WebSocket连接ID，用于防止过期连接的回调
+    private volatile String currentWebSocketConnectionId;
     JSplitPane splitPane;
     private final JEditorPane testsPane;
 
@@ -514,6 +516,10 @@ public class RequestEditSubPanel extends JPanel {
 
     // WebSocket请求处理
     private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
+        // 生成新的连接ID，用于识别当前有效连接
+        final String connectionId = UUID.randomUUID().toString();
+        currentWebSocketConnectionId = connectionId;
+
         currentWorker = new SwingWorker<>() {
             final HttpResponse resp = new HttpResponse();
             long startTime;
@@ -523,9 +529,21 @@ public class RequestEditSubPanel extends JPanel {
             protected Void doInBackground() {
                 try {
                     startTime = System.currentTimeMillis();
+                    // 在连接开始时记录连接状态日志
+                    log.debug("Starting WebSocket connection with ID: {}", connectionId);
+
                     HttpSingleRequestExecutor.executeWebSocket(req, new WebSocketListener() {
                         @Override
                         public void onOpen(WebSocket webSocket, Response response) {
+                            // 检查连接ID是否还有效，防止过期连接回调
+                            if (!connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("Ignoring onOpen callback for expired connection ID: {}, current ID: {}",
+                                        connectionId, currentWebSocketConnectionId);
+                                // 关闭过期的连接
+                                webSocket.close(1000, "Connection expired");
+                                return;
+                            }
+
                             resp.headers = new LinkedHashMap<>();
                             for (String name : response.headers().names()) {
                                 resp.headers.put(name, response.headers(name));
@@ -544,16 +562,31 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onMessage(okhttp3.WebSocket webSocket, String text) {
+                            // 检查连接ID是否还有效
+                            if (!connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("Ignoring onMessage callback for expired connection ID: {}", connectionId);
+                                return;
+                            }
                             appendWebSocketMessage(WebSocketMsgType.RECEIVED, text);
                         }
 
                         @Override
                         public void onMessage(okhttp3.WebSocket webSocket, ByteString bytes) {
+                            // 检查连接ID是否还有效
+                            if (!connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("Ignoring onMessage(binary) callback for expired connection ID: {}", connectionId);
+                                return;
+                            }
                             appendWebSocketMessage(WebSocketMsgType.BINARY, bytes.hex());
                         }
 
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
+                            // 检查连接ID是否还有效
+                            if (!connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("Ignoring onClosing callback for expired connection ID: {}", connectionId);
+                                return;
+                            }
                             log.debug("closing WebSocket: code={}, reason={}", code, reason);
                             appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                             handleWebSocketClose();
@@ -561,6 +594,11 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
+                            // 检查连接ID是否还有效
+                            if (!connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("Ignoring onClosed callback for expired connection ID: {}", connectionId);
+                                return;
+                            }
                             log.debug("closed WebSocket: code={}, reason={}", code, reason);
                             appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                             handleWebSocketClose();
@@ -569,7 +607,10 @@ public class RequestEditSubPanel extends JPanel {
                         private void handleWebSocketClose() {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
-                            currentWebSocket = null;
+                            // 只有当前有效连接才清空currentWebSocket
+                            if (connectionId.equals(currentWebSocketConnectionId)) {
+                                currentWebSocket = null;
+                            }
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse("closed", resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
@@ -578,6 +619,11 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                            // 检查连接ID是否还有效
+                            if (!connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("Ignoring onFailure callback for expired connection ID: {}", connectionId);
+                                return;
+                            }
                             log.error("WebSocket error", t);
                             appendWebSocketMessage(WebSocketMsgType.WARNING, t.getMessage());
                             closed = true;
@@ -605,7 +651,10 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
+                // 只有当前有效连接才记录历史
+                if (connectionId.equals(currentWebSocketConnectionId)) {
+                    SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
+                }
             }
         };
         currentWorker.execute();
@@ -636,7 +685,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 格式化WebSocket消息，添加图标前缀
+     * 格式化WebSocket消息，添加图标前缀和时间戳
      *
      * @param type    消息类型
      * @param message 原始消息
@@ -644,7 +693,9 @@ public class RequestEditSubPanel extends JPanel {
      */
     private String formatWebSocketMessage(WebSocketMsgType type, String message) {
         if (message == null) return "";
-        return I18nUtil.getMessage(type.iconKey) + message;
+        // 添加时间戳
+        String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+        return "[" + timestamp + "] " + I18nUtil.getMessage(type.iconKey) + " " + message;
     }
 
     /**
@@ -851,11 +902,19 @@ public class RequestEditSubPanel extends JPanel {
             currentWebSocket.close(1000, "User canceled"); // 关闭WebSocket连接
             currentWebSocket = null;
         }
+        // 清空WebSocket连接ID，使过期的连接回调失效
+        currentWebSocketConnectionId = null;
+
         currentWorker.cancel(true);
         requestLinePanel.setSendButtonToSend(this::sendRequest);
         statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_CANCELED));
         statusCodeLabel.setForeground(new Color(255, 140, 0));
         currentWorker = null;
+
+        // 为WebSocket连接添加取消消息
+        if (protocol.isWebSocketProtocol()) {
+            appendWebSocketMessage(WebSocketMsgType.WARNING, "User canceled");
+        }
     }
 
     // UI状态：请求中

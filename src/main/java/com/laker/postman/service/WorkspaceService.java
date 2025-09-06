@@ -234,6 +234,7 @@ public class WorkspaceService {
         try {
             return git.log().setMaxCount(1).call().iterator().next().getName();
         } catch (Exception e) {
+            log.error("Failed to get the last commit id from git log", e);
             return null;
         }
     }

@@ -167,9 +167,12 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        String shortCommitId = workspace.getLastCommitId().length() > 8
-                ? workspace.getLastCommitId().substring(0, 8)
-                : workspace.getLastCommitId();
+        String shortCommitId = "";
+        if (workspace.getLastCommitId() != null) {
+            shortCommitId = workspace.getLastCommitId().length() > 8
+                    ? workspace.getLastCommitId().substring(0, 8)
+                    : workspace.getLastCommitId();
+        }
         JLabel commitLabel = new JLabel(shortCommitId);
         commitLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
         panel.add(commitLabel, gbc);

@@ -460,14 +460,26 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         }
 
         // Git工作区特殊验证
+        // 克隆模式下必须提供Git URL 和认证信息 和分支信息
         if (gitTypeRadio.isSelected() && cloneRadio.isSelected()) {
             String gitUrl = gitUrlField.getText().trim();
             if (gitUrl.isEmpty()) {
                 throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_GIT_URL_REQUIRED));
             }
+            String branch = branchField.getText().trim();
+            if (branch.isEmpty()) {
+                throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_GIT_BRANCH_INVALID));
+            }
 
             // 验证认证信息
             gitAuthPanel.validateAuth();
+        }
+        // 初始化模式下只需要验证分支信息
+        if (gitTypeRadio.isSelected() && initRadio.isSelected()) {
+            String branch = branchField.getText().trim();
+            if (branch.isEmpty()) {
+                throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_GIT_BRANCH_INVALID));
+            }
         }
 
         // 构建workspace对象供后续使用

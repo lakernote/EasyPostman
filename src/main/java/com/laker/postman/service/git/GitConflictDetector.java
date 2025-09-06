@@ -230,6 +230,15 @@ public class GitConflictDetector {
         // 2. 如果 fetch 失败，则不建议拉取
         result.canPull = remoteId != null && fetchSuccess;
 
+        // 检查远程仓库状态并添加相应建议
+        if (remoteId == null) {
+            // 远程分支不存在，说明远程仓库为空
+            result.suggestions.add("远程仓库为空");
+            result.suggestions.add("远程仓库没有同名分支");
+            result.suggestions.add("首次推送相对安全");
+            result.suggestions.add("等待首次推送内容");
+        }
+
         // Push 操作判断：
         // 1. 必须有本地提交
         // 2. 不能有未提交的变更（除非是 init 类型的首次推送）
@@ -485,13 +494,25 @@ public class GitConflictDetector {
             return;
         }
 
+        // 检查是否是空仓库或远程仓库为空的情况
+        boolean isEmptyRemote = result.suggestions.stream()
+                .anyMatch(suggestion -> suggestion.contains("远程仓库为空") ||
+                                      suggestion.contains("远程仓库没有同名分支") ||
+                                      suggestion.contains("首次推送相对安全"));
+
+        if (isEmptyRemote) {
+            result.suggestions.add("📍 远程仓库状态：远程仓库当前为空");
+            result.suggestions.add("虽然可以尝试拉取，但远程仓库没有内容可拉取");
+            result.suggestions.add("建议先向远程仓库推送本地内容");
+        }
+
         if (result.hasUncommittedChanges) {
             result.warnings.add("有未提交的变更，拉取可能导致冲突");
             result.suggestions.add("建议先提交或暂存本地变更");
             result.suggestions.add("或者选择强制拉取（将丢弃本地未提交变更）");
-        } else if (!result.hasRemoteCommits) {
+        } else if (!result.hasRemoteCommits && !isEmptyRemote) {
             result.suggestions.add("本地仓库已是最新状态");
-        } else {
+        } else if (result.hasRemoteCommits) {
             result.suggestions.add("可以安全拉取 " + result.remoteCommitsBehind + " 个远程提交");
         }
 

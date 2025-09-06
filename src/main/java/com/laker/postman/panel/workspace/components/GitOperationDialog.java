@@ -206,24 +206,84 @@ public class GitOperationDialog extends JDialog {
      * 更新执行按钮状态
      */
     private void updateExecuteButtonState(GitConflictDetector.GitStatusCheck check) {
-        boolean canExecute = switch (operation) {
-            case COMMIT -> check.isCanCommit();
-            case PUSH -> check.isCanPush() || check.isHasLocalCommits(); // 允许用户选择强制推送
-            case PULL -> check.isCanPull();
-        };
+        boolean canExecute = false;
+        String disabledReason = "";
+
+        switch (operation) {
+            case COMMIT -> {
+                canExecute = check.isCanCommit();
+                if (!canExecute) {
+                    if (!check.isHasUncommittedChanges() && !check.isHasUntrackedFiles()) {
+                        disabledReason = "没有可提交的变更";
+                    } else {
+                        disabledReason = "检测到问题，请查看操作检查信息";
+                    }
+                }
+            }
+            case PUSH -> {
+                // Push 操作的复杂判断逻辑
+                boolean hasRemoteRepo = !check.getWarnings().stream()
+                        .anyMatch(warning -> warning.contains("没有设置远程仓库"));
+                boolean hasTracking = !check.getWarnings().stream()
+                        .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
+                boolean isFirstPush = check.getWarnings().stream()
+                        .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
+                boolean isEmptyRemote = check.getSuggestions().stream()
+                        .anyMatch(suggestion -> suggestion.contains("远程仓库没有同名分支") ||
+                                suggestion.contains("远程仓库为空") ||
+                                suggestion.contains("等待首次推送"));
+
+                if (!hasRemoteRepo) {
+                    canExecute = false;
+                    disabledReason = "没有配置远程仓库";
+                } else if (!check.isHasLocalCommits()) {
+                    canExecute = false;
+                    disabledReason = "没有本地提交需要推送";
+                } else if (isFirstPush || isEmptyRemote) {
+                    // 首次推送或远程仓库为空的情况，允许推送
+                    canExecute = true;
+                } else {
+                    // 普通推送情况，使用 GitConflictDetector 的判断
+                    canExecute = check.isCanPush() || check.isHasLocalCommits();
+                    if (!canExecute) {
+                        disabledReason = "推送条件不满足，请查看操作检查信息";
+                    }
+                }
+            }
+            case PULL -> {
+                boolean hasRemoteRepo = !check.getWarnings().stream()
+                        .anyMatch(warning -> warning.contains("没有设置远程仓库"));
+                boolean hasTracking = !check.getWarnings().stream()
+                        .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
+                boolean isEmptyRemote = check.getSuggestions().stream()
+                        .anyMatch(suggestion -> suggestion.contains("远程仓库为空") ||
+                                suggestion.contains("无内容可拉取") ||
+                                suggestion.contains("已是最新状态"));
+
+                if (!hasRemoteRepo) {
+                    canExecute = false;
+                    disabledReason = "没有配置远程仓库";
+                } else if (!hasTracking) {
+                    canExecute = false;
+                    disabledReason = "当前分支没有设置远程跟踪分支";
+                } else if (isEmptyRemote) {
+                    // 远程仓库为空，虽然可以尝试拉取，但实际上没有内容
+                    canExecute = true; // 允许用户执行，让他们看到"无内容可拉取"的结果
+                } else {
+                    canExecute = check.isCanPull();
+                    if (!canExecute) {
+                        disabledReason = "无法连接到远程仓库或拉取条件不满足";
+                    }
+                }
+            }
+        }
 
         executeButton.setEnabled(canExecute);
+        executeButton.setToolTipText(canExecute ? null : disabledReason);
 
-        if (!canExecute) {
-            String reason = switch (operation) {
-                case COMMIT -> "没有可提交的变更";
-                case PUSH -> "没有本地提交需要推送";
-                case PULL -> "无法连接到远程仓库";
-            };
-            executeButton.setToolTipText(reason);
-        } else {
-            executeButton.setToolTipText(null);
-        }
+        // 记录按钮状态到日志，方便调试
+        log.debug("Operation: {}, CanExecute: {}, Reason: {}",
+                operation, canExecute, disabledReason);
     }
 
     private void initUI() {
@@ -515,20 +575,7 @@ public class GitOperationDialog extends JDialog {
 
         if (totalChanges == 0) {
             sb.append("🎉 没有检测到文件变更\n");
-            // 对于不同操作类型，设置不同的按钮状态
-            if (operation == GitOperation.COMMIT) {
-                // commit需要有变更才能执行
-                executeButton.setEnabled(false);
-            } else if (operation == GitOperation.PUSH) {
-                // push可以推送已有的提交，即使没有新的变更
-                executeButton.setEnabled(true);
-            } else {
-                // pull操作可以执行
-                executeButton.setEnabled(true);
-            }
         } else {
-            executeButton.setEnabled(true);
-
             appendFileList(sb, "📝 新增文件", status.added);
             appendFileList(sb, "✏️ 修改文件", status.modified);
             appendFileList(sb, "📦 暂存文件", status.changed);

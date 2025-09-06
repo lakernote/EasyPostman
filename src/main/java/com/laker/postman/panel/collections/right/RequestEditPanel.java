@@ -109,7 +109,6 @@ public class RequestEditPanel extends SingletonBasePanel {
             if (comp instanceof RequestEditSubPanel subPanel) {
                 if (id.equals(subPanel.getId())) {
                     tabbedPane.setSelectedIndex(i);
-                    subPanel.updateRequestForm(item);
                     return;
                 }
             }

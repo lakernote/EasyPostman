@@ -30,6 +30,11 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
             setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         }
 
+        if (isSelected) {
+            setBackground(new Color(255, 230, 180));
+        } else {
+            setBackground(list.getBackground());
+        }
         return this;
     }
 

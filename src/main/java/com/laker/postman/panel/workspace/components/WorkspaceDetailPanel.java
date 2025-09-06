@@ -1,5 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.util.EasyPostManFontUtil;
@@ -45,7 +46,9 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        infoSection.add(new JLabel(workspace.getType().toString()), gbc);
+        infoSection.add(new JLabel(workspace.getType() == WorkspaceType.LOCAL ?
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL) :
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_GIT)), gbc);
 
         // 路径
         gbc.gridx = 0;
@@ -60,17 +63,15 @@ public class WorkspaceDetailPanel extends JPanel {
         infoSection.add(pathLabel, gbc);
 
         // 描述
-        if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
-            gbc.gridx = 0;
-            gbc.gridy = 3;
-            gbc.weightx = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            infoSection.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DESCRIPTION) + ":"), gbc);
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            infoSection.add(new JLabel(workspace.getDescription()), gbc);
-        }
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        infoSection.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DESCRIPTION) + ":"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        infoSection.add(new JLabel(workspace.getDescription()), gbc);
 
         // 创建时间
         gbc.gridx = 0;
@@ -114,71 +115,64 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1.0; // 值扩展填充剩余空间
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(new JLabel(workspace.getGitRepoSource().toString()), gbc);
+        panel.add(new JLabel(workspace.getGitRepoSource() == GitRepoSource.CLONED ?
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CLONE_FROM_REMOTE) :
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_INIT_LOCAL)), gbc);
         row++;
 
         // 远程仓库 URL
-        if (workspace.getGitRemoteUrl() != null) {
-            gbc.gridx = 0;
-            gbc.gridy = row;
-            gbc.weightx = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("远程仓库:"), gbc);
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            JLabel urlLabel = new JLabel(workspace.getGitRemoteUrl());
-            urlLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-            panel.add(urlLabel, gbc);
-            row++;
-        }
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("远程仓库:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JLabel urlLabel = new JLabel(workspace.getGitRemoteUrl());
+        urlLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        panel.add(urlLabel, gbc);
+        row++;
 
         // 当前分支
-        if (workspace.getCurrentBranch() != null) {
-            gbc.gridx = 0;
-            gbc.gridy = row;
-            gbc.weightx = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("当前分支:"), gbc);
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(new JLabel(workspace.getCurrentBranch()), gbc);
-            row++;
-        }
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("本地分支:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(new JLabel(workspace.getCurrentBranch()), gbc);
+        row++;
 
         // 远程分支
-        if (workspace.getRemoteBranch() != null) {
-            gbc.gridx = 0;
-            gbc.gridy = row;
-            gbc.weightx = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("远程分支:"), gbc);
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(new JLabel(workspace.getRemoteBranch()), gbc);
-            row++;
-        }
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("远程分支:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(new JLabel(workspace.getRemoteBranch()), gbc);
+        row++;
 
         // 最后提交 ID
-        if (workspace.getLastCommitId() != null) {
-            gbc.gridx = 0;
-            gbc.gridy = row;
-            gbc.weightx = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("最后提交:"), gbc);
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            String shortCommitId = workspace.getLastCommitId().length() > 8
-                    ? workspace.getLastCommitId().substring(0, 8)
-                    : workspace.getLastCommitId();
-            JLabel commitLabel = new JLabel(shortCommitId);
-            commitLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-            panel.add(commitLabel, gbc);
-            row++;
-        }
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("最后提交:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        String shortCommitId = workspace.getLastCommitId().length() > 8
+                ? workspace.getLastCommitId().substring(0, 8)
+                : workspace.getLastCommitId();
+        JLabel commitLabel = new JLabel(shortCommitId);
+        commitLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        panel.add(commitLabel, gbc);
 
         return panel;
     }

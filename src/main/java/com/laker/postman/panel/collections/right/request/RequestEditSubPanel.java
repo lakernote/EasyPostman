@@ -538,10 +538,6 @@ public class RequestEditSubPanel extends JPanel {
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
-                                JOptionPane.showMessageDialog(null,
-                                        I18nUtil.getMessage(MessageKeys.WEBSOCKET_CONNECTED),
-                                        I18nUtil.getMessage(MessageKeys.WEBSOCKET_SUCCESS),
-                                        JOptionPane.INFORMATION_MESSAGE);
                             });
                             appendWebSocketMessage(WebSocketMsgType.CONNECTED, response.message());
                         }

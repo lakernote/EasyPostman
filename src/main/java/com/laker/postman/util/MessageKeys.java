@@ -156,8 +156,6 @@ public final class MessageKeys {
     public static final String STATUS_PREFIX = "status.prefix";
 
     // ============ WebSocket相关 ============
-    public static final String WEBSOCKET_CONNECTED = "websocket.connected";
-    public static final String WEBSOCKET_SUCCESS = "websocket.success";
     public static final String WEBSOCKET_FAILED = "websocket.failed";
     public static final String WEBSOCKET_ERROR = "websocket.error";
     public static final String WEBSOCKET_NOT_CONNECTED = "websocket.not_connected";

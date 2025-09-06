@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -231,7 +233,19 @@ public class WorkspaceService {
      */
     private String getLastCommitId(Git git) {
         try {
-            return git.log().setMaxCount(1).call().iterator().next().getName();
+            var logCommand = git.log().setMaxCount(1);
+            var commits = logCommand.call();
+            var iterator = commits.iterator();
+            if (iterator.hasNext()) {
+                return iterator.next().getName();
+            } else {
+                // 仓库为空，没有提交
+                return null;
+            }
+        } catch (NoHeadException e) {
+            // 仓库为空，没有 HEAD
+            log.warn("Repository has no HEAD (empty repository): {}", e.getMessage());
+            return null;
         } catch (Exception e) {
             log.error("Failed to get the last commit id from git log", e);
             return null;
@@ -415,6 +429,59 @@ public class WorkspaceService {
             var statusBefore = git.status().call();
             String commitIdBefore = getLastCommitId(git);
 
+            // 检查是否是空仓库的情况
+            if (commitIdBefore == null) {
+                // 本地仓库为空，尝试从远程拉取
+                log.info("本地仓库为空，尝试从远程拉取初始内容");
+                result.details += "检测到本地仓库为空，尝试从远程拉取初始内容\n";
+
+                try {
+                    // 先尝试 fetch 来检查远程是否有内容
+                    var fetchCommand = git.fetch();
+                    UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+                    if (credentialsProvider != null) {
+                        fetchCommand.setCredentialsProvider(credentialsProvider);
+                    }
+                    fetchCommand.call();
+
+                    // 检查远程分支是否存在
+                    String remoteName = git.getRepository().getConfig().getString("branch", branch, "remote");
+                    if (remoteName == null) {
+                        remoteName = "origin";
+                    }
+
+                    String remoteBranchName = tracking;
+                    if (remoteBranchName.startsWith("refs/heads/")) {
+                        remoteBranchName = remoteBranchName.substring("refs/heads/".length());
+                    }
+
+                    String remoteRef = "refs/remotes/" + remoteName + "/" + remoteBranchName;
+                    ObjectId remoteId = git.getRepository().resolve(remoteRef);
+
+                    if (remoteId == null) {
+                        // 远程分支不存在，说明远程仓库也是空的
+                        result.success = true;
+                        result.message = "远程仓库为空，无内容可拉取";
+                        result.details += "远程仓库目前为空，等待首次推送内容\n";
+                        log.info("Remote repository is empty, nothing to pull");
+                        return result;
+                    }
+
+                } catch (RefNotAdvertisedException e) {
+                    // 远程分支不存在的错误
+                    result.success = true;
+                    result.message = "远程仓库为空或远程分支不存在，无内容可拉取";
+                    result.details += "远程仓库为空或分支 '" + tracking + "' 不存在\n";
+                    result.details += "这通常发生在远程仓库刚创建且未推送任何内容时\n";
+                    log.info("Remote branch does not exist: {}", e.getMessage());
+                    return result;
+                } catch (Exception e) {
+                    log.warn("Failed to fetch from remote repository", e);
+                    // 如果 fetch 失败，可能是网络问题或认证问题
+                    throw new RuntimeException("无法连接到远程仓库: " + e.getMessage(), e);
+                }
+            }
+
             if (!statusBefore.isClean()) {
                 log.warn("本地有未提交内容或冲突，自动执行 git reset --hard 和 git clean -fd");
                 result.details += "检测到本地未提交内容，自动清理:\n";
@@ -438,47 +505,62 @@ public class WorkspaceService {
                 }
             }
 
-            var pullCommand = git.pull();
-            UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
-            if (credentialsProvider != null) {
-                pullCommand.setCredentialsProvider(credentialsProvider);
-            }
-
-            var pullResult = pullCommand.call();
-            log.info("Pull result: {}", pullResult.isSuccessful());
-
-            if (!pullResult.isSuccessful()) {
-                throw new RuntimeException("Git pull failed: " + pullResult.toString());
-            }
-
-            String commitIdAfter = getLastCommitId(git);
-
-            // 检查是否有新的提交
-            if (!commitIdBefore.equals(commitIdAfter)) {
-                // 获取变更的文件列表
-                try {
-                    List<String> changedFiles = getChangedFilesBetweenCommits(workspaceId, commitIdBefore, commitIdAfter);
-                    result.affectedFiles.addAll(changedFiles);
-                    result.details += "拉取到新的提交，影响文件:\n";
-                    for (String file : changedFiles) {
-                        result.details += "  " + file + "\n";
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to get changed files", e);
-                    result.details += "无法获取详细的文件变更信息\n";
+            try {
+                var pullCommand = git.pull();
+                UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+                if (credentialsProvider != null) {
+                    pullCommand.setCredentialsProvider(credentialsProvider);
                 }
-                result.message = "成功拉取更新，共 " + result.affectedFiles.size() + " 个文件受影响";
-            } else {
-                result.message = "已是最新版本，无需更新";
-                result.details += "本地仓库已是最新状态\n";
+
+                var pullResult = pullCommand.call();
+                log.info("Pull result: {}", pullResult.isSuccessful());
+
+                if (!pullResult.isSuccessful()) {
+                    throw new RuntimeException("Git pull failed: " + pullResult.toString());
+                }
+
+                String commitIdAfter = getLastCommitId(git);
+
+                // 检查是否有新的提交
+                if (commitIdBefore == null || !commitIdBefore.equals(commitIdAfter)) {
+                    // 获取变更的文件列表
+                    try {
+                        if (commitIdBefore != null && commitIdAfter != null) {
+                            List<String> changedFiles = getChangedFilesBetweenCommits(workspaceId, commitIdBefore, commitIdAfter);
+                            result.affectedFiles.addAll(changedFiles);
+                            result.details += "拉取到新的提交，影响文件:\n";
+                            for (String file : changedFiles) {
+                                result.details += "  " + file + "\n";
+                            }
+                        } else if (commitIdAfter != null) {
+                            // 从空仓库拉取到了内容
+                            result.details += "从远程仓库拉取到初始内容\n";
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to get changed files", e);
+                        result.details += "无法获取详细的文件变更信息\n";
+                    }
+                    result.message = "成功拉取更新，共 " + result.affectedFiles.size() + " 个文件受影响";
+                } else {
+                    result.message = "已是最新版本，无需更新";
+                    result.details += "本地仓库已是最新状态\n";
+                }
+
+                workspace.setLastCommitId(commitIdAfter);
+                workspace.setUpdatedAt(System.currentTimeMillis());
+                saveWorkspaces();
+                result.success = true;
+
+                log.info("Pulled updates for workspace: {}", workspace.getName());
+
+            } catch (RefNotAdvertisedException e) {
+                // 处理远程分支不存在的情况
+                result.success = true;
+                result.message = "远程分支不存在，无内容可拉取";
+                result.details += "远程分支 '" + tracking + "' 不存在或为空\n";
+                result.details += "这通常发生在远程仓库刚创建且未推送任何内容时\n";
+                log.info("Remote branch does not exist during pull: {}", e.getMessage());
             }
-
-            workspace.setLastCommitId(commitIdAfter);
-            workspace.setUpdatedAt(System.currentTimeMillis());
-            saveWorkspaces();
-            result.success = true;
-
-            log.info("Pulled updates for workspace: {}", workspace.getName());
         }
 
         return result;

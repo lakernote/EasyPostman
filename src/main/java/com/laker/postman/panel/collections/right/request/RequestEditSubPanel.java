@@ -695,7 +695,7 @@ public class RequestEditSubPanel extends JPanel {
         if (message == null) return "";
         // 添加时间戳
         String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        return "[" + timestamp + "] " + I18nUtil.getMessage(type.iconKey) + " " + message;
+        return "[" + timestamp + "]" + I18nUtil.getMessage(type.iconKey) + " " + message;
     }
 
     /**

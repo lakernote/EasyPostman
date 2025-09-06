@@ -41,7 +41,7 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
     private void configureWorkspaceIcon(Workspace workspace) {
         FlatSVGIcon icon;
         if (workspace.getType() == WorkspaceType.LOCAL) {
-            icon = new FlatSVGIcon("icons/local.svg", 20, 20);
+            icon = new FlatSVGIcon("icons/local.svg", 18, 18);
         } else {
             icon = new FlatSVGIcon("icons/git.svg", 20, 20);
         }

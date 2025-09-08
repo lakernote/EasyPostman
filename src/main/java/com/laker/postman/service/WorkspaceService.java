@@ -1189,9 +1189,32 @@ public class WorkspaceService {
                     .setUri(new URIish(remoteUrl))
                     .call();
 
+            // 获取当前分支名称
+            String currentBranch = git.getRepository().getBranch();
+
+            // 处理远程分支名称
+            String targetRemoteBranch = remoteBranch;
+            if (targetRemoteBranch != null && targetRemoteBranch.startsWith("origin/")) {
+                // 去掉 origin/ 前缀，获取纯分支名
+                targetRemoteBranch = targetRemoteBranch.substring("origin/".length());
+            }
+
+            // 如果没有指定远程分支，使用当前分支名
+            if (targetRemoteBranch == null || targetRemoteBranch.trim().isEmpty()) {
+                targetRemoteBranch = currentBranch;
+            }
+
+            // 设置当前分支的 tracking 关系
+            var config = git.getRepository().getConfig();
+            config.setString("branch", currentBranch, "remote", "origin");
+            config.setString("branch", currentBranch, "merge", "refs/heads/" + targetRemoteBranch);
+            config.save();
+
+            log.info("设置分支 tracking 关系: {} -> origin/{}", currentBranch, targetRemoteBranch);
+
             // 更新工作区信息
             workspace.setGitRemoteUrl(remoteUrl);
-            workspace.setRemoteBranch(remoteBranch);
+            workspace.setRemoteBranch("origin/" + targetRemoteBranch); // 保存完整的远程分支格式
             workspace.setGitAuthType(authType);
             workspace.setGitUsername(username);
 
@@ -1206,7 +1229,8 @@ public class WorkspaceService {
             workspace.setUpdatedAt(System.currentTimeMillis());
             saveWorkspaces();
 
-            log.info("Added remote repository for workspace: {} -> {}", workspace.getName(), remoteUrl);
+            log.info("Added remote repository for workspace: {} -> {}, tracking: {}",
+                    workspace.getName(), remoteUrl, "origin/" + targetRemoteBranch);
         }
     }
 

@@ -851,9 +851,13 @@ public class GitOperationDialog extends JDialog {
             protected Void doInBackground() throws Exception {
                 // 重新执行预检查来刷新状态
                 publish("正在检查Git状态和潜在冲突...");
-
+                // 获取认证信息
+                CredentialsProvider credentialsProvider = null;
+                if (workspace.getGitAuthType() != null) {
+                    credentialsProvider = getCredentialsProvider();
+                }
                 // 执行冲突检测
-                statusCheck = GitConflictDetector.checkGitStatus(workspace.getPath(), operation.name());
+                statusCheck = GitConflictDetector.checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider);
 
                 publish("正在加载文件变更信息...");
                 // 加载文件变更信息

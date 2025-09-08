@@ -51,13 +51,6 @@ public class GitConflictDetector {
     }
 
     /**
-     * 检查Git仓库状态，判断是否可以执行指定操作
-     */
-    public static GitStatusCheck checkGitStatus(String workspacePath, String operationType) {
-        return checkGitStatus(workspacePath, operationType, null);
-    }
-
-    /**
      * 检查Git仓库状态，判断是否可以执行指定操作（带认证信息）
      */
     public static GitStatusCheck checkGitStatus(String workspacePath, String operationType,

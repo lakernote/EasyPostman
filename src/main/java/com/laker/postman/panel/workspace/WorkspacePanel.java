@@ -492,7 +492,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 JOptionPane.WARNING_MESSAGE,
                 null,
                 options,
-                options[1]
+                options[0] // default option
         );
 
         if (choice == 0) { // 删除

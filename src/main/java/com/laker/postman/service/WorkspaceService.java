@@ -1235,29 +1235,6 @@ public class WorkspaceService {
     }
 
     /**
-     * 检查工作区是否已配置远程仓库
-     */
-    public boolean hasRemoteRepository(String workspaceId) {
-        Workspace workspace = getWorkspaceById(workspaceId);
-        if (workspace.getType() != WorkspaceType.GIT) {
-            return false;
-        }
-
-        // 检查工作区配置
-        if (workspace.getGitRemoteUrl() != null && !workspace.getGitRemoteUrl().isEmpty()) {
-            return true;
-        }
-
-        // 检查实际的 Git 配置
-        try (Git git = Git.open(new File(workspace.getPath()))) {
-            var remotes = git.remoteList().call();
-            return !remotes.isEmpty();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
      * 获取远程仓库状态信息
      */
     public RemoteStatus getRemoteStatus(String workspaceId) throws Exception {
@@ -1285,6 +1262,9 @@ public class WorkspaceService {
             }
 
             return status;
+        } catch (Exception e) {
+            log.error("Failed to get remote status for workspace: {}", workspace.getName(), e);
+            throw e;
         }
     }
 }

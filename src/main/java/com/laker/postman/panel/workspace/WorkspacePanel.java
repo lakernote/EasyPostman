@@ -260,8 +260,8 @@ public class WorkspacePanel extends SingletonBasePanel {
 
     private void addInitializedGitMenuItems(JPopupMenu menu, Workspace workspace) {
         try {
-            boolean hasRemote = workspaceService.hasRemoteRepository(workspace.getId());
-            if (!hasRemote) {
+            RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
+            if (!remoteStatus.hasRemote) {
                 // 还未配置远程仓库
                 JMenuItem configRemoteItem = new JMenuItem("配置远程仓库");
                 configRemoteItem.setIcon(new FlatSVGIcon("icons/git.svg", 16, 16));
@@ -281,17 +281,15 @@ public class WorkspacePanel extends SingletonBasePanel {
         commitItem.addActionListener(e -> performGitCommit(workspace));
         menu.add(commitItem);
 
-        // 2.只有已配置远程仓库的工作区才显示拉取操作
         try {
-            if (workspaceService.hasRemoteRepository(workspace.getId())) {
+            RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
+            if (remoteStatus.hasRemote) { // 2.只有已配置远程仓库的工作区才显示拉取操作
                 JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
                 pullItem.setIcon(new FlatSVGIcon("icons/download.svg", 16, 16));
                 pullItem.addActionListener(e -> performGitPull(workspace));
                 menu.add(pullItem);
 
-                // 3.只有有上游分支的工作区才显示推送操作
-                RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
-                if (remoteStatus.hasUpstream) {
+                if (remoteStatus.hasUpstream) { // 3.只有有上游分支的工作区才显示推送操作
                     JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
                     pushItem.setIcon(new FlatSVGIcon("icons/upload.svg", 16, 16));
                     pushItem.addActionListener(e -> performGitPush(workspace));

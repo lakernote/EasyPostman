@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import cn.hutool.core.util.RandomUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.exception.WorkspaceCreateException;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
@@ -12,6 +13,7 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -24,6 +26,7 @@ import java.io.File;
  * 创建工作区对话框
  * 支持创建本地工作区和Git工作区
  */
+@Slf4j
 public class WorkspaceCreateDialog extends ProgressDialog {
 
     private static final String DEFAULT_BRANCH = "master";
@@ -500,7 +503,8 @@ public class WorkspaceCreateDialog extends ProgressDialog {
                     setProgress(100);
                 } catch (Exception e) {
                     // 重新抛出异常，让 SwingWorker 的错误处理机制处理
-                    throw new RuntimeException("创建工作区失败: " + e.getMessage(), e);
+                    log.error("创建工作区失败", e);
+                    throw new WorkspaceCreateException("创建工作区失败: " + e.getMessage(), e);
                 }
 
                 return null;

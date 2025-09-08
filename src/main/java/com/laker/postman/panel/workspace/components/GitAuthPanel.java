@@ -41,7 +41,7 @@ public class GitAuthPanel extends JPanel {
         passwordUsernameField = new JTextField(15);
         passwordField = new JPasswordField(15);
         tokenUsernameField = new JTextField(15);
-        tokenField = new JTextField(25);
+        tokenField = new JTextField(15);
 
         // 设置默认字体
         Font defaultFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
@@ -148,7 +148,6 @@ public class GitAuthPanel extends JPanel {
     private JPanel createSshAuthPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel label = new JLabel("SSH Key 认证（暂未实现）");
-        label.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 11));
         label.setForeground(Color.GRAY);
         panel.add(label);
         return panel;

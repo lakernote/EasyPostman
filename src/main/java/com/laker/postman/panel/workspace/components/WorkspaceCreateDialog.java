@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -84,7 +86,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         browseButton.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
 
         // 自动生成路径选项
-        autoGeneratePathCheckBox = new JCheckBox("根据名称自动生成路径", true);
+        autoGeneratePathCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.WORKSPACE_AUTO_GENERATE_PATH), true);
         autoGeneratePathCheckBox.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
 
         // Git相关组件
@@ -102,7 +104,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         branchField.setText(DEFAULT_BRANCH);
 
         // 进度相关组件
-        progressPanel = new ProgressPanel("操作进度");
+        progressPanel = new ProgressPanel("Progress");
         progressPanel.setVisible(false);
 
         // 设置默认字体
@@ -207,23 +209,23 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         browseButton.addActionListener(this::browseForPath);
 
         // 名称字段变化监听器 - 自动生成路径
-        nameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        nameField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+            public void insertUpdate(DocumentEvent e) {
                 if (autoGeneratePathCheckBox.isSelected()) {
                     updatePathFromName();
                 }
             }
 
             @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 if (autoGeneratePathCheckBox.isSelected()) {
                     updatePathFromName();
                 }
             }
 
             @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 if (autoGeneratePathCheckBox.isSelected()) {
                     updatePathFromName();
                 }

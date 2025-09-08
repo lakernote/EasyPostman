@@ -291,6 +291,7 @@ public final class MessageKeys {
     public static final String WORKSPACE_VALIDATION_GIT_URL_REQUIRED = "workspace.validation.git.url.required";
     public static final String WORKSPACE_VALIDATION_GIT_BRANCH_INVALID = "workspace.validation.git.branch.invalid";
     public static final String WORKSPACE_VALIDATION_AUTH_REQUIRED = "workspace.validation.auth.required";
+    public static final String WORKSPACE_AUTO_GENERATE_PATH = "workspace.auto_generate_path";
 
     // ============ 性能测试相关 ============
     public static final String PERFORMANCE_TAB_TREND = "performance.tab.trend";

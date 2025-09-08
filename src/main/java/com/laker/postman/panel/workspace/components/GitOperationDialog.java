@@ -224,11 +224,12 @@ public class GitOperationDialog extends JDialog {
         // 文件变更区域
         JPanel filesPanel = createFilesPanel();
 
-        // 使用分割面板
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, statusPanel, filesPanel);
-        splitPane.setResizeWeight(0.3);
+        // 使用水平分割面板 - 左边状态检查，右边文件变更
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, statusPanel, filesPanel);
+        splitPane.setResizeWeight(0.5); // 左右各占50%
         splitPane.setBorder(null);
         splitPane.setDividerSize(8);
+        splitPane.setDividerLocation(380); // 设置初始分割位置
 
         panel.add(splitPane, BorderLayout.CENTER);
 
@@ -259,15 +260,18 @@ public class GitOperationDialog extends JDialog {
 
         panel.add(statusInfoPanel, BorderLayout.NORTH);
 
-        // 添加详细信息区域
+        // 添加详细信息区域 - 调整高度适应左右布局
         JTextArea detailsArea = new JTextArea();
         detailsArea.setEditable(false);
         detailsArea.setBackground(new Color(248, 248, 248));
         detailsArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 10));
         detailsArea.setBorder(new EmptyBorder(5, 5, 5, 5));
+        detailsArea.setLineWrap(true);
+        detailsArea.setWrapStyleWord(true);
 
         JScrollPane detailsScrollPane = new JScrollPane(detailsArea);
-        detailsScrollPane.setPreferredSize(new Dimension(0, 60));
+        detailsScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        detailsScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         detailsScrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
 
         panel.add(detailsScrollPane, BorderLayout.CENTER);
@@ -288,23 +292,31 @@ public class GitOperationDialog extends JDialog {
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
         ));
 
+        // 文件变更显示区域
+        JPanel fileChangesPanel = new JPanel(new BorderLayout());
+
         fileChangesArea = new JTextArea();
         fileChangesArea.setEditable(false);
         fileChangesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
         fileChangesArea.setBackground(new Color(248, 248, 248));
         fileChangesArea.setText("正在加载文件变更信息...");
+        fileChangesArea.setLineWrap(true);
+        fileChangesArea.setWrapStyleWord(true);
 
         JScrollPane scrollPane = new JScrollPane(fileChangesArea);
-        scrollPane.setPreferredSize(new Dimension(0, 150));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
 
-        panel.add(scrollPane, BorderLayout.CENTER);
+        fileChangesPanel.add(scrollPane, BorderLayout.CENTER);
 
         // 如果是提交操作，添加提交信息输入区域
         if (operation == GitOperation.COMMIT) {
             JPanel commitPanel = createCommitMessagePanel();
-            panel.add(commitPanel, BorderLayout.SOUTH);
+            fileChangesPanel.add(commitPanel, BorderLayout.SOUTH);
         }
+
+        panel.add(fileChangesPanel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -321,6 +333,7 @@ public class GitOperationDialog extends JDialog {
                 TitledBorder.TOP,
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
         ));
+        panel.setPreferredSize(new Dimension(0, 120)); // 设置固定高度
 
         commitMessageArea = new JTextArea(3, 0);
         commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
@@ -333,7 +346,8 @@ public class GitOperationDialog extends JDialog {
 
         JScrollPane scrollPane = new JScrollPane(commitMessageArea);
         scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
-        scrollPane.setPreferredSize(new Dimension(0, 80));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         panel.add(scrollPane, BorderLayout.CENTER);
 

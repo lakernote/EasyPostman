@@ -4,8 +4,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.transport.CredentialsProvider;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -52,6 +54,14 @@ public class GitConflictDetector {
      * 检查Git仓库状态，判断是否可以执行指定操作
      */
     public static GitStatusCheck checkGitStatus(String workspacePath, String operationType) {
+        return checkGitStatus(workspacePath, operationType, null);
+    }
+
+    /**
+     * 检查Git仓库状态，判断是否可以执行指定操作（带认证信息）
+     */
+    public static GitStatusCheck checkGitStatus(String workspacePath, String operationType,
+                                                CredentialsProvider credentialsProvider) {
         GitStatusCheck result = new GitStatusCheck();
 
         try (Git git = Git.open(new File(workspacePath))) {
@@ -60,7 +70,7 @@ public class GitConflictDetector {
             checkLocalStatus(status, result);
 
             // 检查远程状态
-            checkRemoteStatus(git, result);
+            checkRemoteStatus(git, result, credentialsProvider);
 
             // 根据操作类型生成建议
             generateSuggestions(result, operationType);
@@ -76,33 +86,35 @@ public class GitConflictDetector {
     private static void checkLocalStatus(Status status, GitStatusCheck result) {
         // 检查未提交的变更
         result.hasUncommittedChanges = !status.getModified().isEmpty() ||
-                                      !status.getChanged().isEmpty() ||
-                                      !status.getRemoved().isEmpty() ||
-                                      !status.getMissing().isEmpty();
+                !status.getChanged().isEmpty() ||
+                !status.getRemoved().isEmpty() ||
+                !status.getMissing().isEmpty();
 
         if (result.hasUncommittedChanges) {
+            // 计算未提交变更的数量和文件列表
             result.uncommittedCount = status.getModified().size() +
-                                    status.getChanged().size() +
-                                    status.getRemoved().size() +
-                                    status.getMissing().size();
-            result.uncommittedFiles.addAll(status.getModified());
-            result.uncommittedFiles.addAll(status.getChanged());
-            result.uncommittedFiles.addAll(status.getRemoved());
-            result.uncommittedFiles.addAll(status.getMissing());
+                    status.getChanged().size() +
+                    status.getRemoved().size() +
+                    status.getMissing().size();
+            result.uncommittedFiles.addAll(status.getModified()); // 修改的文件
+            result.uncommittedFiles.addAll(status.getChanged()); // 新增的文件
+            result.uncommittedFiles.addAll(status.getRemoved()); // 删除的文件
+            result.uncommittedFiles.addAll(status.getMissing()); // 丢失的文件
         }
 
         // 检查未跟踪的文件
         result.hasUntrackedFiles = !status.getUntracked().isEmpty();
         if (result.hasUntrackedFiles) {
             result.untrackedCount = status.getUntracked().size();
-            result.untrackedFilesList.addAll(status.getUntracked());
+            result.untrackedFilesList.addAll(status.getUntracked()); // 未跟踪的文件
         }
 
         // 检查是否可以提交
         result.canCommit = result.hasUncommittedChanges || result.hasUntrackedFiles;
     }
 
-    private static void checkRemoteStatus(Git git, GitStatusCheck result) {
+    private static void checkRemoteStatus(Git git, GitStatusCheck result,
+                                          CredentialsProvider credentialsProvider) {
         try {
             String currentBranch = git.getRepository().getBranch();
             String tracking = git.getRepository().getConfig()
@@ -195,18 +207,28 @@ public class GitConflictDetector {
             // 尝试 fetch 最新的远程状态（用于更准确的检测）
             boolean fetchSuccess = false;
             try {
-                git.fetch().setDryRun(false).call();
+                var fetchCommand = git.fetch().setDryRun(false);
+                // 如果提供了认证信息，使用它
+                if (credentialsProvider != null) {
+                    fetchCommand.setCredentialsProvider(credentialsProvider);
+                }
+                fetchCommand.call();
                 log.debug("Fetched latest remote status for conflict detection");
                 fetchSuccess = true;
 
                 // fetch 成功后重新解析远程分支ID
                 remoteId = git.getRepository().resolve(remoteRef);
-            } catch (org.eclipse.jgit.api.errors.RefNotAdvertisedException e) {
+            } catch (RefNotAdvertisedException e) {
                 log.debug("Remote branch does not exist: {}", e.getMessage());
                 // 远程分支不存在是正常情况，不是错误
             } catch (Exception fetchEx) {
                 log.debug("Failed to fetch remote status, using cached refs: {}", fetchEx.getMessage());
-                result.warnings.add("无法获取最新远程状态，使用本地缓存");
+                // 只有在真正需要远程状态时才添加警告
+                if (credentialsProvider != null) {
+                    result.warnings.add("无法获取最新远程状态: " + fetchEx.getMessage());
+                } else {
+                    log.debug("No credentials provided for fetch, skipping remote status update");
+                }
             }
 
             // 设置操作可行性
@@ -497,8 +519,8 @@ public class GitConflictDetector {
         // 检查是否是空仓库或远程仓库为空的情况
         boolean isEmptyRemote = result.suggestions.stream()
                 .anyMatch(suggestion -> suggestion.contains("远程仓库为空") ||
-                                      suggestion.contains("远程仓库没有同名分支") ||
-                                      suggestion.contains("首次推送相对安全"));
+                        suggestion.contains("远程仓库没有同名分支") ||
+                        suggestion.contains("首次推送相对安全"));
 
         if (isEmptyRemote) {
             result.suggestions.add("📍 远程仓库状态：远程仓库当前为空");

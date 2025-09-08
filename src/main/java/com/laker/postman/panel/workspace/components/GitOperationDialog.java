@@ -11,6 +11,7 @@ import com.laker.postman.service.git.GitConflictDetector;
 import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.transport.CredentialsProvider;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -71,8 +72,14 @@ public class GitOperationDialog extends JDialog {
                 statusLabel.setText("正在检查Git状态和潜在冲突...");
                 statusLabel.setForeground(Color.BLUE);
 
-                // 执行冲突检测
-                statusCheck = GitConflictDetector.checkGitStatus(workspace.getPath(), operation.name());
+                // 获取认证信息
+                CredentialsProvider credentialsProvider = null;
+                if (workspace.getGitAuthType() != null) {
+                    credentialsProvider = getCredentialsProvider();
+                }
+
+                // 执行冲突检测，传递认证信息
+                statusCheck = GitConflictDetector.checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider);
 
                 // 显示检测结果
                 displayStatusCheck(statusCheck);
@@ -89,6 +96,22 @@ public class GitOperationDialog extends JDialog {
                 statusLabel.setForeground(Color.RED);
             }
         });
+    }
+
+    /**
+     * 获取认证信息提供者
+     */
+    private org.eclipse.jgit.transport.CredentialsProvider getCredentialsProvider() {
+        if (workspace.getGitAuthType() == com.laker.postman.model.GitAuthType.PASSWORD &&
+                workspace.getGitUsername() != null && workspace.getGitPassword() != null) {
+            return new org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider(
+                    workspace.getGitUsername(), workspace.getGitPassword());
+        } else if (workspace.getGitAuthType() == com.laker.postman.model.GitAuthType.TOKEN &&
+                workspace.getGitToken() != null && workspace.getGitUsername() != null) {
+            return new org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider(
+                    workspace.getGitUsername(), workspace.getGitToken());
+        }
+        return null;
     }
 
     /**

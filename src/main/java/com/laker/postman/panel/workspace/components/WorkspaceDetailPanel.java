@@ -20,7 +20,7 @@ public class WorkspaceDetailPanel extends JPanel {
 
         // 基本信息
         JPanel infoSection = new JPanel(new GridBagLayout());
-        infoSection.setBorder(BorderFactory.createTitledBorder("基本信息"));
+        infoSection.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_BASIC_INFO)));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST; // 确保左对齐
@@ -78,7 +78,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridy = 4;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        infoSection.add(new JLabel("创建时间:"), gbc);
+        infoSection.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_CREATED_TIME) + ":"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -99,7 +99,7 @@ public class WorkspaceDetailPanel extends JPanel {
      */
     private JPanel createGitInfoPanel(Workspace workspace) {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Git 信息"));
+        panel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_GIT_INFO)));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST; // 确保左对齐
@@ -111,7 +111,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridy = row;
         gbc.weightx = 0; // 标签不扩展
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("仓库来源:"), gbc);
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REPO_SOURCE) + ":"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0; // 值扩展填充剩余空间
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -125,7 +125,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridy = row;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("远程仓库:"), gbc);
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_REPO) + ":"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -139,7 +139,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridy = row;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("本地分支:"), gbc);
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_LOCAL_BRANCH) + ":"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -151,7 +151,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridy = row;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("远程分支:"), gbc);
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -163,7 +163,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.gridy = row;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("最后提交:"), gbc);
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_LAST_COMMIT) + ":"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;

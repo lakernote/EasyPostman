@@ -294,6 +294,16 @@ public final class MessageKeys {
     public static final String WORKSPACE_VALIDATION_AUTH_REQUIRED = "workspace.validation.auth.required";
     public static final String WORKSPACE_AUTO_GENERATE_PATH = "workspace.auto_generate_path";
 
+    // ============ 工作区详情面板相关 ============
+    public static final String WORKSPACE_DETAIL_BASIC_INFO = "workspace.detail.basic_info";
+    public static final String WORKSPACE_DETAIL_CREATED_TIME = "workspace.detail.created_time";
+    public static final String WORKSPACE_DETAIL_GIT_INFO = "workspace.detail.git_info";
+    public static final String WORKSPACE_DETAIL_REPO_SOURCE = "workspace.detail.repo_source";
+    public static final String WORKSPACE_DETAIL_REMOTE_REPO = "workspace.detail.remote_repo";
+    public static final String WORKSPACE_DETAIL_LOCAL_BRANCH = "workspace.detail.local_branch";
+    public static final String WORKSPACE_DETAIL_REMOTE_BRANCH = "workspace.detail.remote_branch";
+    public static final String WORKSPACE_DETAIL_LAST_COMMIT = "workspace.detail.last_commit";
+
     // ============ 性能测试相关 ============
     public static final String PERFORMANCE_TAB_TREND = "performance.tab.trend";
     public static final String PERFORMANCE_TAB_REPORT = "performance.tab.report";

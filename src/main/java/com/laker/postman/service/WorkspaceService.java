@@ -344,14 +344,22 @@ public class WorkspaceService {
 
         workspaces.removeIf(w -> w.getId().equals(workspaceId));
 
-        // 如果删除的是当前工作区，切换到第一个可用工作区
+        // 如果删除的是当前工作区，切换到默认工作区
         if (currentWorkspace != null && currentWorkspace.getId().equals(workspaceId)) {
-            currentWorkspace = workspaces.isEmpty() ? null : workspaces.get(0);
+            // 优先切换到默认工作区
+            currentWorkspace = getDefaultWorkspace();
             WorkspaceStorageUtil.saveCurrentWorkspace(currentWorkspace != null ? currentWorkspace.getId() : null);
         }
 
         saveWorkspaces();
         log.info("Deleted workspace: {}", workspace.getName());
+    }
+
+    public Workspace getDefaultWorkspace() {
+        return workspaces.stream()
+                .filter(WorkspaceStorageUtil::isDefaultWorkspace)
+                .findFirst()
+                .orElse(workspaces.isEmpty() ? null : workspaces.get(0));
     }
 
     /**

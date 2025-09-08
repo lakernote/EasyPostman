@@ -30,6 +30,7 @@ public class WorkspacePanel extends SingletonBasePanel {
 
     private static final String HTML_START = "<html>";
     private static final String HTML_END = "</html>";
+    public static final String HH_MM_SS = "HH:mm:ss";
 
     private JList<Workspace> workspaceList;
     private DefaultListModel<Workspace> listModel;
@@ -496,7 +497,27 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (choice == 0) { // 删除
             try {
+                // 检查是否删除的是当前工作区
+                boolean isDeletingCurrentWorkspace = workspaceService.getCurrentWorkspace() != null &&
+                        workspaceService.getCurrentWorkspace().getId().equals(workspace.getId());
+
                 workspaceService.deleteWorkspace(workspace.getId());
+
+                // 如果删除的是当前工作区，需要切换到新的当前工作区并刷新相关UI
+                if (isDeletingCurrentWorkspace) {
+                    Workspace newCurrentWorkspace = workspaceService.getCurrentWorkspace();
+                    if (newCurrentWorkspace != null) {
+                        // 切换环境变量文件
+                        SingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(
+                                SystemUtil.getEnvPathForWorkspace(newCurrentWorkspace));
+                        // 切换请求集合文件
+                        SingletonFactory.getInstance(RequestCollectionsLeftPanel.class).switchWorkspaceAndRefreshUI(
+                                SystemUtil.getCollectionPathForWorkspace(newCurrentWorkspace));
+
+                        logMessage("已自动切换到工作区: " + newCurrentWorkspace.getName());
+                    }
+                }
+
                 refreshWorkspaceList();
                 SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
                 logMessage("工作区删除成功: " + workspace.getName());
@@ -614,7 +635,7 @@ public class WorkspacePanel extends SingletonBasePanel {
     private void logMessage(String message) {
         if (logArea != null) {
             SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
                 String timestamp = sdf.format(new Date());
                 logArea.append("[" + timestamp + "] " + message + "\n");
                 logArea.setCaretPosition(logArea.getDocument().getLength());
@@ -628,7 +649,7 @@ public class WorkspacePanel extends SingletonBasePanel {
     private void logError(String message) {
         if (logArea != null) {
             SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
                 String timestamp = sdf.format(new Date());
                 logArea.append("[" + timestamp + "] ERROR: " + message + "\n");
                 logArea.setCaretPosition(logArea.getDocument().getLength());
@@ -642,7 +663,7 @@ public class WorkspacePanel extends SingletonBasePanel {
     public void logGitOperationResult(WorkspaceService.GitOperationResult result) {
         if (logArea != null) {
             SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
                 String timestamp = sdf.format(new Date());
 
                 // 操作标题

@@ -358,6 +358,12 @@ public final class MessageKeys {
     public static final String HISTORY_YESTERDAY = "history.yesterday";
     public static final String HISTORY_REQUEST_TIME = "history.request_time";
 
+    // ============ Tab标签页相关 ============
+    public static final String TAB_REQUEST = "tab.request";
+    public static final String TAB_RESPONSE = "tab.response";
+    public static final String TAB_TIMING = "tab.timing";
+    public static final String TAB_EVENTS = "tab.events";
+
     // ============ 应用相关 ============
     public static final String APP_NAME = "app.name";
     public static final String SPLASH_STATUS_STARTING = "splash.status.starting";

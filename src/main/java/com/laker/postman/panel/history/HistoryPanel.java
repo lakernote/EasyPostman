@@ -28,7 +28,11 @@ public class HistoryPanel extends SingletonBasePanel {
     public static final String EMPTY_BODY_HTML = I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY);
     private JList<Object> historyList;
     private JPanel historyDetailPanel;
-    private JTextPane historyDetailPane;
+    private JTabbedPane historyDetailTabPane;
+    private JTextPane requestPane;
+    private JTextPane responsePane;
+    private JTextPane timingPane;
+    private JTextPane eventPane;
     private DefaultListModel<Object> historyListModel;
 
     @Override
@@ -85,18 +89,40 @@ public class HistoryPanel extends SingletonBasePanel {
         listScroll.setMinimumSize(new Dimension(220, 240));
         listScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
 
-        // 详情区
+        // 详情区 - 改为 Tab 形式
         historyDetailPanel = new JPanel(new BorderLayout());
-        historyDetailPane = new JTextPane();
-        historyDetailPane.setEditable(false);
-        historyDetailPane.setContentType("text/html");
-        historyDetailPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        JScrollPane detailScroll = new JScrollPane(historyDetailPane);
-        detailScroll.setPreferredSize(new Dimension(340, 240));
-        detailScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        detailScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        historyDetailPanel.add(detailScroll, BorderLayout.CENTER);
-        historyDetailPane.setText(EMPTY_BODY_HTML);
+
+        // 创建 Tab 面板
+        historyDetailTabPane = new JTabbedPane();
+        historyDetailTabPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+
+        // 创建各个标签页
+        requestPane = createDetailPane();
+        responsePane = createDetailPane();
+        timingPane = createDetailPane();
+        eventPane = createDetailPane();
+
+        // 添加标签页
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST, "Request"),
+                new JScrollPane(requestPane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE, "Response"),
+                new JScrollPane(responsePane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_TIMING, "Timing"),
+                new JScrollPane(timingPane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_EVENTS, "Events"),
+                new JScrollPane(eventPane));
+
+        // 设置滚动策略
+        for (int i = 0; i < historyDetailTabPane.getTabCount(); i++) {
+            JScrollPane scrollPane = (JScrollPane) historyDetailTabPane.getComponentAt(i);
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        }
+
+        historyDetailPanel.add(historyDetailTabPane, BorderLayout.CENTER);
+
+        // 初始化显示空内容
+        clearDetailPanes();
         historyDetailPanel.setVisible(true);
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScroll, historyDetailPanel);
@@ -111,6 +137,67 @@ public class HistoryPanel extends SingletonBasePanel {
         SwingUtilities.invokeLater(() -> historyList.repaint());
     }
 
+    /**
+     * 创建详情面板
+     */
+    private JTextPane createDetailPane() {
+        JTextPane pane = new JTextPane();
+        pane.setEditable(false);
+        pane.setContentType("text/html");
+        pane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        return pane;
+    }
+
+    /**
+     * 清空所有详情面板
+     */
+    private void clearDetailPanes() {
+        requestPane.setText(EMPTY_BODY_HTML);
+        responsePane.setText(EMPTY_BODY_HTML);
+        timingPane.setText(EMPTY_BODY_HTML);
+        eventPane.setText(EMPTY_BODY_HTML);
+    }
+
+    /**
+     * 更新详情面板内容
+     */
+    private void updateDetailPanes(RequestHistoryItem item) {
+        if (item == null) {
+            clearDetailPanes();
+            return;
+        }
+
+        // 更新各个标签页内容
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 请求标签页
+                requestPane.setText(HttpHtmlRenderer.renderRequest(item.request));
+                requestPane.setCaretPosition(0);
+
+                // 响应标签页
+                responsePane.setText(HttpHtmlRenderer.renderResponse(item.response));
+                responsePane.setCaretPosition(0);
+
+                // 时序标签页
+                timingPane.setText(HttpHtmlRenderer.renderTimingInfo(item.response));
+                timingPane.setCaretPosition(0);
+
+                // 事件标签页
+                eventPane.setText(HttpHtmlRenderer.renderEventInfo(item.response));
+                eventPane.setCaretPosition(0);
+            } catch (Exception e) {
+                // 如果渲染失败，显示错误信息
+                String errorHtml = "<html><body style='font-family:monospace;font-size:9px;'>" +
+                        "<div style='color:#d32f2f;'>渲染详情时出错: " + e.getMessage() + "</div>" +
+                        "</body></html>";
+                requestPane.setText(errorHtml);
+                responsePane.setText(errorHtml);
+                timingPane.setText(errorHtml);
+                eventPane.setText(errorHtml);
+            }
+        });
+    }
+
     @Override
     protected void registerListeners() {
         // 监听列表选择变化
@@ -118,14 +205,13 @@ public class HistoryPanel extends SingletonBasePanel {
             if (!e.getValueIsAdjusting()) {
                 int idx = historyList.getSelectedIndex();
                 if (idx == -1) {
-                    historyDetailPane.setText(EMPTY_BODY_HTML);
+                    clearDetailPanes();
                 } else {
                     Object value = historyListModel.get(idx);
                     if (value instanceof RequestHistoryItem item) {
-                        historyDetailPane.setText(HttpHtmlRenderer.renderHistoryDetail(item));
-                        historyDetailPane.setCaretPosition(0);
+                        updateDetailPanes(item);
                     } else {
-                        historyDetailPane.setText(EMPTY_BODY_HTML);
+                        clearDetailPanes();
                     }
                 }
             }
@@ -170,7 +256,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
         // 清空UI列表
         historyListModel.clear();
-        historyDetailPane.setText(EMPTY_BODY_HTML);
+        clearDetailPanes();
         historyDetailPanel.setVisible(true);
     }
 

@@ -1,12 +1,13 @@
 package com.laker.postman.service.render;
 
-import com.laker.postman.model.*;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.TestResult;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 统一的HTTP请求/响应HTML渲染工具类
@@ -17,7 +18,6 @@ public class HttpHtmlRenderer {
     // CSS样式常量
     private static final String BASE_STYLE = "font-family:monospace;";
     private static final String DETAIL_FONT_SIZE = "font-size:9px;";
-    private static final String NORMAL_FONT_SIZE = "font-size:10px;";
 
     // 颜色常量
     private static final String COLOR_PRIMARY = "#1976d2";
@@ -35,34 +35,10 @@ public class HttpHtmlRenderer {
 
     // HTML模板常量
     private static final String HTML_TEMPLATE = "<html><body style='%s'>%s</body></html>";
-    private static final String DIVIDER = "<hr style='border:0;border-top:1.5px dashed #bbb;margin:12px 0;'>";
-    private static final String TABLE_STYLE = "border='1' cellspacing='0' cellpadding='3'";
-    private static final String PRE_STYLE = "";
 
     // 时间格式化器
     private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    /**
-     * 渲染完整的历史记录详情HTML
-     */
-    public static String renderHistoryDetail(RequestHistoryItem item) {
-        if (item == null) {
-            return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:" + COLOR_GRAY + ";'>无历史记录详情</div>");
-        }
-
-        String content = buildBasicInfoHtml(item) +
-                buildRequestHeadersHtml(item) +
-                buildRequestBodyHtml(item) +
-                DIVIDER +
-                buildResponseHeadersHtml(item) +
-                buildResponseBodyHtml(item) +
-                DIVIDER +
-                renderTimingInfo(item.response) +
-                DIVIDER +
-                renderEventInfo(item.response);
-
-        return createHtmlDocument(DETAIL_FONT_SIZE, content);
-    }
 
     /**
      * 单独渲染Timing信息
@@ -232,253 +208,10 @@ public class HttpHtmlRenderer {
         return "<div style='color:" + COLOR_GRAY + ";'>" + message + "</div>";
     }
 
-    private static String createLabelValue(String label, String value) {
-        return "<b>" + label + ":</b> " + escapeHtml(safeString(value)) + "<br/>";
-    }
-
     private static String safeString(String str) {
         return str != null ? str : "-";
     }
 
-    private static String buildBasicInfoHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder()
-                .append("<div style='margin-bottom:12px;padding:6px 0;border-bottom:1px solid #e0e0e0;'>")
-                .append("<span style='font-weight:bold;color:").append(COLOR_PRIMARY).append(";font-size:10px;'>")
-                .append(item.method).append("</span> ")
-                .append("<span style='color:").append(COLOR_SUCCESS).append(";font-size:10px;word-break:break-all;'>")
-                .append(escapeHtml(item.url)).append("</span><br>")
-                .append("<span style='color:").append(COLOR_GRAY).append(";'>Status</span>: ")
-                .append("<span style='font-weight:bold;color:").append(getStatusColor(item.responseCode)).append(";'>")
-                .append(item.responseCode).append("</span>  ");
-
-        if (item.response != null) {
-            sb.append(buildProtocolInfo(item.response))
-                    .append(buildThreadInfo(item.response))
-                    .append(buildConnectionDetails(item.response));
-        }
-
-        return sb.append("</div>").toString();
-    }
-
-    private static String buildProtocolInfo(HttpResponse response) {
-        String protocol = response.protocol != null ? response.protocol : "-";
-        return "<span style='color:" + COLOR_GRAY + ";'>Protocol</span>: " +
-                "<span style='color:" + COLOR_PRIMARY + ";'>" + protocol + "</span>";
-    }
-
-    private static String buildThreadInfo(HttpResponse response) {
-        String thread = response.threadName != null ? escapeHtml(response.threadName) : "-";
-        return "<br><span style='color:" + COLOR_GRAY + ";'>Thread</span>: " +
-                "<span style='color:" + COLOR_PRIMARY + ";'>" + thread + "</span>";
-    }
-
-    private static String buildConnectionDetails(HttpResponse response) {
-        if (response.httpEventInfo != null) {
-            String local = safeString(response.httpEventInfo.getLocalAddress());
-            String remote = safeString(response.httpEventInfo.getRemoteAddress());
-            return "<br><span style='color:" + COLOR_GRAY + ";'>Connection</span>: " +
-                    "<span style='color:" + COLOR_PRIMARY + ";'>" + escapeHtml(local) + "</span> " +
-                    "<span style='color:" + COLOR_GRAY + ";'>→</span> " +
-                    "<span style='color:" + COLOR_PRIMARY + ";'>" + escapeHtml(remote) + "</span>";
-        }
-        return "";
-    }
-
-    private static String buildRequestHeadersHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder()
-                .append("<div style='margin-bottom:8px;'><b style='color:").append(COLOR_PRIMARY).append(";'>[Request Headers]</b></div>")
-                .append("<pre style='margin:0;'>");
-
-        if (item.request != null && item.request.okHttpHeaders != null && item.request.okHttpHeaders.size() > 0) {
-            for (int i = 0; i < item.request.okHttpHeaders.size(); i++) {
-                String name = item.request.okHttpHeaders.name(i);
-                String value = item.request.okHttpHeaders.value(i);
-                sb.append(escapeHtml(name)).append(": ").append(escapeHtml(value)).append("\n");
-            }
-        } else {
-            sb.append("(None)");
-        }
-
-        return sb.append("</pre>").toString();
-    }
-
-    private static String buildRequestBodyHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder()
-                .append("<div style='margin:8px 0 4px 0;'><b style='color:").append(COLOR_PRIMARY).append(";'>[Request Body]</b></div>");
-
-        if (item.request == null) {
-            return sb.append("<pre style='margin:0;'>(None)</pre>").toString();
-        }
-
-        boolean hasContent = false;
-
-        // OkHttp请求体
-        if (isNotEmpty(item.request.okHttpRequestBody)) {
-            sb.append(buildBodySection(item.request.okHttpRequestBody));
-            hasContent = true;
-        }
-
-        // Form数据
-        hasContent |= appendFormData(sb, "form-data", item.request.formData);
-        hasContent |= appendFormData(sb, "form-files", item.request.formFiles);
-        hasContent |= appendFormData(sb, "x-www-form-urlencoded", item.request.urlencoded);
-
-        if (!hasContent && isEmpty(item.request.body)) {
-            sb.append("<pre style='margin:0;'>(None)</pre>");
-        }
-
-        return sb.toString();
-    }
-
-    private static boolean appendFormData(StringBuilder sb, String title, Map<String, String> data) {
-        if (data != null && !data.isEmpty()) {
-            sb.append("<b>").append(title).append("</b><br><pre style='margin:0;'>");
-            data.forEach((key, value) ->
-                    sb.append(escapeHtml(key)).append(" = ").append(escapeHtml(value)).append("\n"));
-            sb.append("</pre>");
-            return true;
-        }
-        return false;
-    }
-
-    private static String buildBodySection(String content) {
-        return "<br><pre style='margin:0;" + PRE_STYLE + "'>" +
-                escapeHtml(content) + "</pre>";
-    }
-
-    private static String buildResponseHeadersHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder()
-                .append("<div style='margin-bottom:8px;'><b style='color:").append(COLOR_SUCCESS).append(";'>[Response Headers]</b></div>")
-                .append("<pre style='margin:0;'>");
-
-        if (item.response != null && item.response.headers != null && !item.response.headers.isEmpty()) {
-            item.response.headers.forEach((key, values) -> {
-                sb.append(escapeHtml(key)).append(": ");
-                if (values != null && !values.isEmpty()) {
-                    sb.append(escapeHtml(String.join(", ", values)));
-                }
-                sb.append("\n");
-            });
-        } else {
-            sb.append("(None)");
-        }
-
-        sb.append("</pre>");
-
-        if (item.response != null) {
-            sb.append("<div style='color:").append(COLOR_GRAY).append(";font-size:10px;margin-bottom:4px;'>Headers Size: ")
-                    .append(HttpUtil.getSizeText(item.response.headersSize)).append("</div>");
-        }
-
-        return sb.toString();
-    }
-
-    private static String buildResponseBodyHtml(RequestHistoryItem item) {
-        StringBuilder sb = new StringBuilder()
-                .append("<div style='margin:8px 0 4px 0;'><b style='color:").append(COLOR_SUCCESS).append(";'>[Response Body]</b></div>")
-                .append("<pre style='margin:0;'>");
-
-        if (item.response != null && item.response.body != null && !item.response.body.isEmpty()) {
-            sb.append(escapeHtml(item.response.body));
-        } else {
-            sb.append("(None)");
-        }
-
-        sb.append("</pre>");
-
-        if (item.response != null) {
-            sb.append("<div style='color:").append(COLOR_GRAY).append(";font-size:10px;margin-bottom:4px;'>Body Size: ")
-                    .append(HttpUtil.getSizeText(item.response.bodySize)).append("</div>");
-        }
-
-        return sb.toString();
-    }
-
-    private static String buildRequestHeadersTable(PreparedRequest req) {
-        if (req.okHttpHeaders == null || req.okHttpHeaders.size() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder()
-                .append("<b>请求头:</b><br/><table ").append(TABLE_STYLE).append(">");
-
-        for (int i = 0; i < req.okHttpHeaders.size(); i++) {
-            String name = req.okHttpHeaders.name(i);
-            String value = req.okHttpHeaders.value(i);
-            sb.append("<tr><td>").append(escapeHtml(name)).append(":</td><td>")
-                    .append(escapeHtml(value)).append("</td></tr>");
-        }
-
-        return sb.append("</table>").toString();
-    }
-
-    private static String buildRequestBodyContent(PreparedRequest req) {
-        StringBuilder sb = new StringBuilder();
-
-        if (isNotEmpty(req.okHttpRequestBody)) {
-            sb.append("<br/><pre style='").append(PRE_STYLE).append("'>")
-                    .append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
-        }
-
-        sb.append(buildFormDataTable("Form Data", req.formData))
-                .append(buildFormDataTable("Form Files", req.formFiles))
-                .append(buildFormDataTable("x-www-form-urlencoded", req.urlencoded));
-
-        return sb.toString();
-    }
-
-    private static String buildFormDataTable(String title, Map<String, String> data) {
-        if (data == null || data.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder()
-                .append("<b>").append(title).append(":</b><br/><table ").append(TABLE_STYLE).append(">");
-
-        data.forEach((key, value) ->
-                sb.append("<tr><td>").append(escapeHtml(key)).append(":</td><td>")
-                        .append(escapeHtml(value)).append("</td></tr>"));
-
-        return sb.append("</table>").toString();
-    }
-
-    private static String buildConnectionInfo(HttpResponse resp) {
-        if (resp.httpEventInfo == null) {
-            return "";
-        }
-
-        String local = safeString(resp.httpEventInfo.getLocalAddress());
-        String remote = safeString(resp.httpEventInfo.getRemoteAddress());
-
-        return "<b>Connection:</b> " + escapeHtml(local) +
-                " <span style='color:" + COLOR_GRAY + ";'>→</span> " +
-                escapeHtml(remote) + "<br/>";
-    }
-
-    private static String buildResponseHeadersTable(HttpResponse resp) {
-        if (resp.headers == null || resp.headers.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder()
-                .append("<b>响应头:</b><br/><table ").append(TABLE_STYLE).append(">");
-
-        resp.headers.forEach((key, values) -> {
-            sb.append("<tr><td>").append(escapeHtml(key)).append(":</td><td>");
-            if (values != null && !values.isEmpty()) {
-                sb.append(escapeHtml(String.join(", ", values)));
-            }
-            sb.append("</td></tr>");
-        });
-
-        return sb.append("</table>").toString();
-    }
-
-    private static String buildResponseBodyContent(HttpResponse resp) {
-        String body = resp.body != null ? resp.body : "<无响应体>";
-        return "<b>响应体:</b><br/><pre style='" + PRE_STYLE + "'>" +
-                escapeHtml(body) + "</pre>";
-    }
 
     private static String buildTestResultRow(TestResult testResult) {
         String rowBg = "background:rgb(245,247,250);";
@@ -613,10 +346,6 @@ public class HttpHtmlRenderer {
 
     private static boolean isNotEmpty(String str) {
         return str != null && !str.isEmpty();
-    }
-
-    private static boolean isEmpty(String str) {
-        return str == null || str.isEmpty();
     }
 
     public static String escapeHtml(String s) {

@@ -375,7 +375,7 @@ public final class MessageKeys {
 
     // ============ 集合菜单相关 ============
     public static final String COLLECTIONS_MENU_ADD_GROUP = "collections.menu.add_group";
-    public static final String COLLECTIONS_MENU_ADD_REQUEST = "collections.menu.add_request";
+    public static final String COLLECTIONS_MENU_ADD_ROOT_GROUP = "collections.menu.add_root_group";
     public static final String COLLECTIONS_MENU_DUPLICATE = "collections.menu.duplicate";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN = "collections.menu.export_postman";
     public static final String COLLECTIONS_MENU_COPY_CURL = "collections.menu.copy_curl";

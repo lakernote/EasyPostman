@@ -248,16 +248,19 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 JPopupMenu menu = new JPopupMenu();
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
                 Object userObj = selectedNode != null ? selectedNode.getUserObject() : null;
-                // 如果树为空或未选中任何节点，允许新增分组
+
+                // 无论何时都提供"创建root分组"的选项
+                JMenuItem addRootGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_ROOT_GROUP),
+                        new FlatSVGIcon("icons/user-group.svg", 16, 16));
+                addRootGroupItem.addActionListener(e -> showAddGroupDialog(rootTreeNode));
+                menu.add(addRootGroupItem);
+
+                // 如果树为空或未选中任何节点，只显示根级别创建分组选项
                 if (selectedNode == null || selectedNode == rootTreeNode) {
-                    JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP));
-                    addGroupItem.addActionListener(e -> {
-                        showAddGroupDialog(rootTreeNode);
-                    });
-                    menu.add(addGroupItem);
                     menu.show(requestTree, x, y);
                     return;
                 }
+
                 // 仅分组节点可新增文件/请求
                 if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
                     JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),

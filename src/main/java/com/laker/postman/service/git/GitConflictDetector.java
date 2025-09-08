@@ -4,6 +4,7 @@ import com.laker.postman.model.GitStatusCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -39,6 +40,9 @@ public class GitConflictDetector {
         GitStatusCheck result = new GitStatusCheck();
 
         try (Git git = Git.open(new File(workspacePath))) {
+            // 获取基本信息
+            result.currentBranch = git.getRepository().getBranch();
+
             // 检查本地状态
             Status status = git.status().call();
             checkLocalStatus(status, result);
@@ -52,6 +56,7 @@ public class GitConflictDetector {
         } catch (Exception e) {
             log.error("Failed to check git status", e);
             result.warnings.add("无法检查Git状态: " + e.getMessage());
+            result.hasAuthenticationIssue = true;
         }
 
         return result;
@@ -96,22 +101,28 @@ public class GitConflictDetector {
 
             // 检查是否有远程仓库
             var remotes = git.remoteList().call();
-            boolean hasRemote = !remotes.isEmpty();
+            result.hasRemoteRepository = !remotes.isEmpty();
 
-            if (tracking == null) {
-                if (!hasRemote) {
-                    // 没有远程仓库，也没有跟踪分支
-                    result.warnings.add("当前分支没有设置远程仓库");
-                    result.canPull = false;
-                    result.canPush = false;
-                } else {
-                    // 有远程仓库但没有设置跟踪分支（典型的 init 类型工作区情况）
-                    result.warnings.add("当前分支没有设置远程跟踪分支");
-                    result.canPull = false;
+            if (!result.hasRemoteRepository) {
+                result.warnings.add("当前分支没有设置远程仓库");
+                result.canPull = false;
+                result.canPush = false;
+                return;
+            }
 
-                    // 对于 init 类型，需要检查潜在的冲突
-                    checkInitTypeConflicts(git, result, currentBranch);
-                }
+            // 设置远程仓库URL
+            result.remoteUrl = remotes.get(0).getURIs().get(0).toString();
+
+            result.hasUpstreamBranch = tracking != null;
+
+            if (!result.hasUpstreamBranch) {
+                // 有远程仓库但没有设置跟踪分支（典型的 init 类型工作区情况）
+                result.isInitTypeWorkspace = true;
+                result.warnings.add("当前分支没有设置远程跟踪分支");
+                result.canPull = false;
+
+                // 对于 init 类型，需要检查潜在的冲突
+                checkInitTypeConflicts(git, result, currentBranch);
                 return;
             }
 
@@ -127,6 +138,7 @@ public class GitConflictDetector {
             if (remoteBranchName.startsWith(REFS_HEADS_PREFIX)) {
                 remoteBranchName = remoteBranchName.substring(REFS_HEADS_PREFIX.length());
             }
+            result.remoteBranch = remoteName + "/" + remoteBranchName;
 
             // 比较本地和远程分支
             String localRef = REFS_HEADS_PREFIX + currentBranch;
@@ -134,6 +146,8 @@ public class GitConflictDetector {
 
             ObjectId localId = git.getRepository().resolve(localRef);
             ObjectId remoteId = git.getRepository().resolve(remoteRef);
+
+            result.isEmptyLocalRepository = localId == null;
 
             // 检查本地提交情况
             if (localId != null) {
@@ -159,8 +173,15 @@ public class GitConflictDetector {
                             result.remoteCommitsBehind++;
                         }
                         result.hasRemoteCommits = result.remoteCommitsBehind > 0;
-                    } else if (result.hasLocalCommits && remoteId == null) {
+
+                        // 设置需要强制操作的标志
+                        result.needsForcePush = result.hasRemoteCommits && result.localCommitsAhead > 0;
+                        result.needsForcePull = result.hasUncommittedChanges && result.hasRemoteCommits;
+
+                    } else if (result.hasLocalCommits) {
                         // 本地有提交但远程分支不存在（首次推送情况）
+                        result.isFirstPush = true;
+                        result.isRemoteRepositoryEmpty = true;
                         Iterable<RevCommit> allCommits = git.log().call();
                         for (RevCommit ignored : allCommits) {
                             result.localCommitsAhead++;
@@ -172,6 +193,7 @@ public class GitConflictDetector {
                     log.debug("Repository has no HEAD (empty repository): {}", e.getMessage());
                     result.hasLocalCommits = false;
                     result.localCommitsAhead = 0;
+                    result.isEmptyLocalRepository = true;
                 } catch (Exception e) {
                     log.warn("Failed to count commits", e);
                     result.warnings.add("无法统计提交信息: " + e.getMessage());
@@ -189,17 +211,22 @@ public class GitConflictDetector {
                 fetchCommand.call();
                 log.debug("Fetched latest remote status for conflict detection");
                 fetchSuccess = true;
+                result.canConnectToRemote = true;
 
                 // fetch 成功后重新解析远程分支ID
                 remoteId = git.getRepository().resolve(remoteRef);
             } catch (RefNotAdvertisedException e) {
                 log.debug("Remote branch does not exist: {}", e.getMessage());
-                // 远程分支不存在是正常情况，不是错误
+                result.isRemoteRepositoryEmpty = true;
+                result.isFirstPush = true;
+                result.canConnectToRemote = true;
             } catch (Exception fetchEx) {
                 log.debug("Failed to fetch remote status, using cached refs: {}", fetchEx.getMessage());
+                result.canConnectToRemote = false;
                 // 只有在真正需要远程状态时才添加警告
                 if (credentialsProvider != null) {
                     result.warnings.add("无法获取最新远程状态: " + fetchEx.getMessage());
+                    result.hasAuthenticationIssue = true;
                 } else {
                     log.debug("No credentials provided for fetch, skipping remote status update");
                 }
@@ -211,6 +238,7 @@ public class GitConflictDetector {
         } catch (Exception e) {
             log.warn("Failed to check remote status", e);
             result.warnings.add("无法检查远程状态: " + e.getMessage());
+            result.hasAuthenticationIssue = true;
             // 发生错误时，保守设置操作能力
             result.canPull = false;
             result.canPush = false;
@@ -229,9 +257,9 @@ public class GitConflictDetector {
         // 检查远程仓库状态并添加相应建议
         if (remoteId == null) {
             // 远程分支不存在，说明远程仓库为空
+            result.isRemoteRepositoryEmpty = true;
             result.suggestions.add("远程仓库为空");
             result.suggestions.add("远程仓库没有同名分支");
-            result.suggestions.add("首次推送相对安全");
             result.suggestions.add("等待首次推送内容");
         }
 
@@ -242,12 +270,15 @@ public class GitConflictDetector {
             result.canPush = false;
         } else if (result.hasUncommittedChanges) {
             // 有未提交变更时，只有在特殊情况下才能推送
-            result.canPush = result.warnings.stream()
-                    .anyMatch(warning -> warning.contains("没有设置远程跟踪分支")); // init 类型的首次推送可能允许
+            result.canPush = result.isInitTypeWorkspace; // init 类型的首次推送可能允许
         } else {
             // 没有未提交变更，可以推送
             result.canPush = true;
         }
+
+        // 设置需要强制操作的标志
+        result.needsForcePush = result.hasRemoteCommits && result.localCommitsAhead > 0;
+        result.needsForcePull = result.hasUncommittedChanges && result.hasRemoteCommits;
 
         // 如果远程有新提交，推送可能会失败
         if (result.hasRemoteCommits && result.canPush) {
@@ -256,6 +287,7 @@ public class GitConflictDetector {
 
         // 如果本地仓库为空，则无法进行任何操作
         if (localId == null) {
+            result.isEmptyLocalRepository = true;
             result.canPush = false;
             if (remoteId != null) {
                 result.canPull = fetchSuccess; // 空本地仓库可以拉取远程内容
@@ -274,10 +306,9 @@ public class GitConflictDetector {
             try {
                 Iterable<RevCommit> localCommits = git.log().setMaxCount(1).call();
                 hasLocalCommits = localCommits.iterator().hasNext();
-            } catch (org.eclipse.jgit.api.errors.NoHeadException e) {
+            } catch (NoHeadException e) {
                 // 空仓库，没有提交
                 log.debug("Repository has no HEAD (empty repository): {}", e.getMessage());
-                hasLocalCommits = false;
             }
 
             if (hasLocalCommits) {
@@ -359,20 +390,23 @@ public class GitConflictDetector {
                     .setNewTree(prepareTreeParser(git.getRepository(), localCommitId))
                     .call();
 
-            int conflictingFiles = 0;
             List<String> conflictFiles = new ArrayList<>();
 
             for (var diff : diffs) {
                 String fileName = diff.getNewPath();
                 // 检查是否是同一文件的不同版本（潜在冲突）
                 if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY) {
-                    conflictingFiles++;
                     conflictFiles.add(fileName);
                 }
             }
 
-            if (conflictingFiles > 0) {
-                result.warnings.add("检测到 " + conflictingFiles + " 个文件可能存在内容冲突");
+            // 设置冲突状态
+            result.hasFileConflicts = !conflictFiles.isEmpty();
+            result.conflictingFilesCount = conflictFiles.size();
+            result.conflictingFiles.addAll(conflictFiles);
+
+            if (result.hasFileConflicts) {
+                result.warnings.add("检测到 " + result.conflictingFilesCount + " 个文件可能存在内容冲突");
                 result.suggestions.add("冲突文件: " + String.join(", ", conflictFiles.subList(0, Math.min(5, conflictFiles.size()))));
                 if (conflictFiles.size() > 5) {
                     result.suggestions.add("还有 " + (conflictFiles.size() - 5) + " 个文件可能冲突");
@@ -399,6 +433,9 @@ public class GitConflictDetector {
                 treeParser.reset(reader, treeId);
             }
             return treeParser;
+        } catch (Exception ex) {
+            log.warn("Failed to prepare tree parser", ex);
+            throw ex;
         }
     }
 
@@ -463,16 +500,10 @@ public class GitConflictDetector {
     }
 
     private static void generatePullSuggestions(GitStatusCheck result) {
-        // 检查是否没有远程跟踪分支
-        boolean noTracking = result.warnings.stream()
-                .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
-
-        if (noTracking) {
+        // 直接使用布尔属性而不是文本判断
+        if (!result.hasUpstreamBranch) {
             // 检查是否是 init 类型且可能有冲突的情况
-            boolean hasConflictWarning = result.warnings.stream()
-                    .anyMatch(warning -> warning.contains("可能存在文件冲突") || warning.contains("已存在同名分支"));
-
-            if (hasConflictWarning) {
+            if (result.hasFileConflicts) {
                 result.warnings.add("⚠️ 无法直接拉取：检测到潜在的文件冲突");
                 result.suggestions.add("建议先手动处理文件冲突：");
                 result.suggestions.add("1. 备份当前本地文件");
@@ -487,13 +518,8 @@ public class GitConflictDetector {
             return;
         }
 
-        // 检查是否是空仓库或远程仓库为空的情况
-        boolean isEmptyRemote = result.suggestions.stream()
-                .anyMatch(suggestion -> suggestion.contains("远程仓库为空") ||
-                        suggestion.contains("远程仓库没有同名分支") ||
-                        suggestion.contains("首次推送相对安全"));
-
-        if (isEmptyRemote) {
+        // 直接使用布尔属性检查空仓库状态
+        if (result.isRemoteRepositoryEmpty) {
             result.suggestions.add("📍 远程仓库状态：远程仓库当前为空");
             result.suggestions.add("虽然可以尝试拉取，但远程仓库没有内容可拉取");
             result.suggestions.add("建议先向远程仓库推送本地内容");
@@ -503,7 +529,7 @@ public class GitConflictDetector {
             result.warnings.add("有未提交的变更，拉取可能导致冲突");
             result.suggestions.add("建议先提交或暂存本地变更");
             result.suggestions.add("或者选择强制拉取（将丢弃本地未提交变更）");
-        } else if (!result.hasRemoteCommits && !isEmptyRemote) {
+        } else if (!result.hasRemoteCommits && !result.isRemoteRepositoryEmpty) {
             result.suggestions.add("本地仓库已是最新状态");
         } else if (result.hasRemoteCommits) {
             result.suggestions.add("可以安全拉取 " + result.remoteCommitsBehind + " 个远程提交");

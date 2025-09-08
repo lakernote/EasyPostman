@@ -683,69 +683,31 @@ public class GitOperationDialog extends JDialog {
      */
     private void updateExecuteButtonState(GitStatusCheck check) {
         boolean canExecute = false;
-        String disabledReason = "";
 
         switch (operation) {
             case COMMIT -> {
                 canExecute = check.canCommit;
-                if (!canExecute) {
-                    if (!check.hasUncommittedChanges && !check.hasUntrackedFiles) {
-                        disabledReason = "没有可提交的变更";
-                    } else {
-                        disabledReason = "检测到问题，请查看状态检查信息";
-                    }
-                }
             }
             case PUSH -> {
-                boolean hasRemoteRepo = !check.warnings.stream()
-                        .anyMatch(warning -> warning.contains("没有设置远程仓库"));
-                boolean isFirstPush = check.warnings.stream()
-                        .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
-                boolean isEmptyRemote = check.suggestions.stream()
-                        .anyMatch(suggestion -> suggestion.contains("远程仓库没有同名分支") ||
-                                suggestion.contains("远程仓库为空") ||
-                                suggestion.contains("等待首次推送"));
-
-                if (!hasRemoteRepo) {
-                    disabledReason = "没有配置远程仓库";
-                } else if (!check.hasLocalCommits) {
-                    disabledReason = "没有本地提交需要推送";
-                } else if (isFirstPush || isEmptyRemote) {
+                if (check.isFirstPush || check.isRemoteRepositoryEmpty) {
                     canExecute = true;
                 } else {
-                    canExecute = true;
+                    canExecute = check.canPush;
                 }
             }
             case PULL -> {
-                boolean hasRemoteRepo = !check.warnings.stream()
-                        .anyMatch(warning -> warning.contains("没有设置远程仓库"));
-                boolean hasTracking = !check.warnings.stream()
-                        .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
-                boolean isEmptyRemote = check.suggestions.stream()
-                        .anyMatch(suggestion -> suggestion.contains("远程仓库为空") ||
-                                suggestion.contains("无内容可拉取") ||
-                                suggestion.contains("已是最新状态"));
-
-                if (!hasRemoteRepo) {
-                    disabledReason = "没有配置远程仓库";
-                } else if (!hasTracking) {
-                    disabledReason = "当前分支没有设置远程跟踪分支";
-                } else if (isEmptyRemote) {
+                if (check.isRemoteRepositoryEmpty) {
                     canExecute = true;
                 } else {
                     canExecute = check.canPull;
-                    if (!canExecute) {
-                        disabledReason = "无法连接到远程仓库或拉取条件不满足";
-                    }
                 }
             }
         }
 
         executeButton.setEnabled(canExecute);
-        executeButton.setToolTipText(canExecute ? null : disabledReason);
 
-        log.debug("Operation: {}, CanExecute: {}, Reason: {}",
-                operation, canExecute, disabledReason);
+        log.debug("Operation: {}, CanExecute: {}",
+                operation, canExecute);
     }
 
     /**

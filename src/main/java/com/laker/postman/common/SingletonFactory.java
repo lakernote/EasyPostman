@@ -1,5 +1,6 @@
 package com.laker.postman.common;
 
+import com.laker.postman.common.exception.GetInstanceException;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,6 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class SingletonFactory {
     private static final Map<Class<?>, Object> INSTANCE_MAP = new ConcurrentHashMap<>();
+
+    private SingletonFactory() {
+        // 私有构造函数，防止实例化
+    }
 
     /**
      * 获取无参构造的单例实例
@@ -79,7 +84,7 @@ public class SingletonFactory {
                 SingletonBasePanel.setCreatingAllowed(false);
             }
 
-            throw new RuntimeException("创建单例失败: " + clazz.getName(), e);
+            throw new GetInstanceException("创建单例失败: " + clazz.getName(), e);
         }
     }
 }

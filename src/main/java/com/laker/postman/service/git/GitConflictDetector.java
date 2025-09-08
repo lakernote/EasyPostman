@@ -1,13 +1,17 @@
 package com.laker.postman.service.git;
 
-import lombok.Getter;
+import com.laker.postman.model.GitStatusCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,29 +30,6 @@ public class GitConflictDetector {
         // 工具类，隐藏构造函数
     }
 
-    /**
-     * Git状态检查结果
-     */
-    @Getter
-    public static class GitStatusCheck {
-        private boolean hasUncommittedChanges = false;
-        private boolean hasUntrackedFiles = false;
-        private boolean hasLocalCommits = false;
-        private boolean hasRemoteCommits = false;
-        private boolean canCommit = false;
-        private boolean canPush = false;
-        private boolean canPull = false;
-        private final List<String> warnings = new ArrayList<>();
-        private final List<String> suggestions = new ArrayList<>();
-
-        // 详细信息
-        private int uncommittedCount = 0;
-        private int untrackedCount = 0;
-        private int localCommitsAhead = 0;
-        private int remoteCommitsBehind = 0;
-        private final List<String> uncommittedFiles = new ArrayList<>();
-        private final List<String> untrackedFilesList = new ArrayList<>();
-    }
 
     /**
      * 检查Git仓库状态，判断是否可以执行指定操作（带认证信息）
@@ -408,12 +389,12 @@ public class GitConflictDetector {
     /**
      * 辅助方法：准备树解析器
      */
-    private static org.eclipse.jgit.treewalk.AbstractTreeIterator prepareTreeParser(
-            org.eclipse.jgit.lib.Repository repository, ObjectId objectId) throws Exception {
-        try (org.eclipse.jgit.revwalk.RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(repository)) {
-            org.eclipse.jgit.revwalk.RevCommit commit = walk.parseCommit(objectId);
+    private static AbstractTreeIterator prepareTreeParser(
+            Repository repository, ObjectId objectId) throws Exception {
+        try (RevWalk walk = new RevWalk(repository)) {
+            RevCommit commit = walk.parseCommit(objectId);
             ObjectId treeId = commit.getTree().getId();
-            org.eclipse.jgit.treewalk.CanonicalTreeParser treeParser = new org.eclipse.jgit.treewalk.CanonicalTreeParser();
+            CanonicalTreeParser treeParser = new CanonicalTreeParser();
             try (var reader = repository.newObjectReader()) {
                 treeParser.reset(reader, treeId);
             }
@@ -422,9 +403,6 @@ public class GitConflictDetector {
     }
 
     private static void generateSuggestions(GitStatusCheck result, String operationType) {
-        // 不要清空现有的警告和建议，因为它们包含了重要的状态检测信息
-        // 只在必要时添加新的建议
-
         // 根据操作类型生成建议
         switch (operationType.toLowerCase()) {
             case "commit":
@@ -437,7 +415,7 @@ public class GitConflictDetector {
                 generatePullSuggestions(result);
                 break;
             default:
-                result.getSuggestions().add("未知的操作类型: " + operationType);
+                result.suggestions.add("未知的操作类型: " + operationType);
         }
     }
 

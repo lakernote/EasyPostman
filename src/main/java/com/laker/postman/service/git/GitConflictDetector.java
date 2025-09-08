@@ -457,10 +457,40 @@ public class GitConflictDetector {
     }
 
     private static void generateCommitSuggestions(GitStatusCheck result) {
-        if (result.hasUncommittedChanges) {
-            result.suggestions.add("可以提交 " + result.uncommittedCount + " 个变更");
+        if (result.canCommit) {
+            StringBuilder suggestion = new StringBuilder();
+            suggestion.append("可以提交变更");
+
+            int totalChanges = 0;
+            List<String> changeTypes = new ArrayList<>();
+
+            if (result.hasUncommittedChanges && result.uncommittedCount > 0) {
+                totalChanges += result.uncommittedCount;
+                changeTypes.add(result.uncommittedCount + " 个文件变更");
+            }
+
+            if (result.hasUntrackedFiles && result.untrackedCount > 0) {
+                totalChanges += result.untrackedCount;
+                changeTypes.add(result.untrackedCount + " 个未跟踪文件");
+            }
+
+            if (totalChanges > 0) {
+                suggestion.append("：").append(String.join("、", changeTypes));
+                suggestion.append("（共 ").append(totalChanges).append(" 个文件）");
+            }
+
+            result.suggestions.add(suggestion.toString());
+
+            // 添加具体的操作建议
+            if (result.hasUntrackedFiles) {
+                result.suggestions.add("未跟踪文件将被添加到版本控制中");
+            }
+            if (result.hasUncommittedChanges) {
+                result.suggestions.add("已修改的文件将被提交");
+            }
         } else {
             result.suggestions.add("没有要提交的变更");
+            result.suggestions.add("所有文件都已是最新状态且已提交");
         }
     }
 
@@ -468,34 +498,62 @@ public class GitConflictDetector {
         if (result.hasUncommittedChanges) {
             result.warnings.add("有未提交的变更，无法推送");
             result.suggestions.add("请先提交所有变更，然后再推送");
-        } else if (!result.hasLocalCommits) {
-            result.warnings.add("没有本地提交需要推送");
-            result.suggestions.add("本地仓库已与远程仓库同步");
-        } else {
-            // 检查是否为首次推送情况（init 类型工作区常见）
-            boolean isFirstPush = result.warnings.stream()
-                    .anyMatch(warning -> warning.contains("没有设置远程跟踪分支"));
+            return;
+        }
 
-            // 检查是否有潜在的文件冲突
-            boolean hasConflictWarning = result.warnings.stream()
-                    .anyMatch(warning -> warning.contains("可能存在文件冲突") || warning.contains("已存在同名分支"));
-
-            if (isFirstPush) {
-                if (hasConflictWarning) {
-                    result.warnings.add("⚠️ 首次推送可能覆盖远程分支已有内容");
-                    result.suggestions.add("建议使用 --force-with-lease 进行安全的强制推送");
-                    result.suggestions.add("或者先拉取远程分支内容进行手动合并");
-                    result.suggestions.add("推送前请确认要覆盖的远程文件");
-                } else {
-                    result.suggestions.add("检测到首次推送情况，将设置上游分支");
-                    result.suggestions.add("可以推送 " + result.localCommitsAhead + " 个本地提交到远程仓库");
-                }
-            } else if (result.hasRemoteCommits) {
-                result.warnings.add("远程仓库有新的提交，推送可能失败");
-                result.suggestions.add("建议先拉取远程变更，然后再推送");
+        if (!result.hasLocalCommits) {
+            if (result.hasUntrackedFiles) {
+                result.warnings.add("有未跟踪文件但没有提交");
+                result.suggestions.add("请先提交未跟踪文件，然后再推送");
             } else {
-                result.suggestions.add("可以安全推送 " + result.localCommitsAhead + " 个本地提交");
+                result.warnings.add("没有本地提交需要推送");
+                result.suggestions.add("本地仓库已与远程仓库同步");
             }
+            return;
+        }
+
+        // 分析推送场景
+        if (result.isInitTypeWorkspace || result.isFirstPush || result.isRemoteRepositoryEmpty) {
+            // 首次推送或初始化类型工作区
+            handleFirstPushSuggestions(result);
+        } else if (result.needsForcePush) {
+            // 需要强制推送的情况（有分歧历史）
+            result.warnings.add("⚠️ 本地和远程有分歧的提交历史");
+            result.suggestions.add("本地领先 " + result.localCommitsAhead + " 个提交");
+            result.suggestions.add("远程领先 " + result.remoteCommitsBehind + " 个提交");
+            result.suggestions.add("建议先拉取远程变更进行合并，或使用强制推送");
+            result.suggestions.add("强制推送将覆盖远程的 " + result.remoteCommitsBehind + " 个提交");
+        } else if (result.hasRemoteCommits) {
+            // 远程有新提交，但可以快进合并
+            result.warnings.add("远程仓库有新的提交");
+            result.suggestions.add("远程领先 " + result.remoteCommitsBehind + " 个提交");
+            result.suggestions.add("建议先拉取远程变更，然后再推送");
+            result.suggestions.add("这样可以避免推送冲突");
+        } else {
+            // 正常推送情况
+            result.suggestions.add("可以安全推送 " + result.localCommitsAhead + " 个本地提交");
+            result.suggestions.add("推送后远程仓库将与本地同步");
+        }
+    }
+
+    /**
+     * 处理首次推送的建议
+     */
+    private static void handleFirstPushSuggestions(GitStatusCheck result) {
+        if (result.hasFileConflicts) {
+            result.warnings.add("⚠️ 首次推送可能覆盖远程分支已有内容");
+            result.suggestions.add("检测到 " + result.conflictingFilesCount + " 个文件可能冲突");
+            result.suggestions.add("建议使用 --force-with-lease 进行安全的强制推送");
+            result.suggestions.add("或者先拉取远程分支内容进行手动合并");
+            result.suggestions.add("推送前请确认要覆盖的远程文件");
+        } else if (result.isRemoteRepositoryEmpty) {
+            result.suggestions.add("✅ 远程仓库为空，首次推送安全");
+            result.suggestions.add("将推送 " + result.localCommitsAhead + " 个本地提交到远程仓库");
+            result.suggestions.add("推送后将自动设置上游分支跟踪");
+        } else {
+            result.suggestions.add("检测到首次推送情况");
+            result.suggestions.add("将推送 " + result.localCommitsAhead + " 个本地提交");
+            result.suggestions.add("推送后将设置上游分支跟踪");
         }
     }
 

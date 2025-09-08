@@ -267,16 +267,6 @@ public class WorkspacePanel extends SingletonBasePanel {
                 configRemoteItem.setIcon(new FlatSVGIcon("icons/git.svg", 16, 16));
                 configRemoteItem.addActionListener(e -> configureRemoteRepository(workspace));
                 menu.add(configRemoteItem);
-            } else {
-                // 已配置远程仓库，检查是否已推送过
-                RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
-                if (!remoteStatus.hasUpstream) {
-                    // 还未首次推送
-                    JMenuItem firstPushItem = new JMenuItem("首次推送到远程");
-                    firstPushItem.setIcon(new FlatSVGIcon("icons/upload.svg", 16, 16));
-                    firstPushItem.addActionListener(e -> performFirstPush(workspace));
-                    menu.add(firstPushItem);
-                }
             }
         } catch (Exception ex) {
             log.warn("Failed to check remote status for workspace: {}", workspace.getId(), ex);
@@ -284,26 +274,22 @@ public class WorkspacePanel extends SingletonBasePanel {
     }
 
     private void addStandardGitMenuItems(JPopupMenu menu, Workspace workspace) {
-        // 只有已配置远程仓库的工作区才显示拉取操作
+
+        // 1.提交操作 始终显示
+        JMenuItem commitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT));
+        commitItem.setIcon(new FlatSVGIcon("icons/save.svg", 16, 16));
+        commitItem.addActionListener(e -> performGitCommit(workspace));
+        menu.add(commitItem);
+
+        // 2.只有已配置远程仓库的工作区才显示拉取操作
         try {
             if (workspaceService.hasRemoteRepository(workspace.getId())) {
                 JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
                 pullItem.setIcon(new FlatSVGIcon("icons/download.svg", 16, 16));
                 pullItem.addActionListener(e -> performGitPull(workspace));
                 menu.add(pullItem);
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to check remote repository for workspace: {}", workspace.getId(), ex);
-        }
 
-        JMenuItem commitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT));
-        commitItem.setIcon(new FlatSVGIcon("icons/save.svg", 16, 16));
-        commitItem.addActionListener(e -> performGitCommit(workspace));
-        menu.add(commitItem);
-
-        // 只有已配置远程仓库且已设置上游分支的工作区才显示推送操作
-        try {
-            if (workspaceService.hasRemoteRepository(workspace.getId())) {
+                // 3.只有有上游分支的工作区才显示推送操作
                 RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
                 if (remoteStatus.hasUpstream) {
                     JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
@@ -313,7 +299,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 }
             }
         } catch (Exception ex) {
-            log.warn("Failed to check upstream status for workspace: {}", workspace.getId(), ex);
+            log.warn("Failed to check remote repository for workspace: {}", workspace.getId(), ex);
         }
     }
 
@@ -419,29 +405,6 @@ public class WorkspacePanel extends SingletonBasePanel {
             refreshWorkspaceList();
         } else {
             logMessage("取消Git推送操作");
-        }
-    }
-
-    /**
-     * 首次推送到远程仓库
-     */
-    private void performFirstPush(Workspace workspace) {
-        try {
-            logMessage("正在进行首次推送: " + workspace.getName());
-            workspaceService.pushToRemoteForFirstTime(workspace.getId());
-            logMessage("首次推送完成: " + workspace.getName());
-            refreshWorkspaceList();
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "首次推送到远程仓库成功！",
-                    "推送成功",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-        } catch (Exception e) {
-            log.error("First push failed", e);
-            logError("首次推送失败: " + e.getMessage());
-            showError("首次推送失败: " + e.getMessage());
         }
     }
 
@@ -554,19 +517,6 @@ public class WorkspacePanel extends SingletonBasePanel {
                 );
                 refreshWorkspaceList();
                 logMessage("远程仓库配置成功");
-
-                // 提示用户可以进行首次推送
-                int choice = JOptionPane.showConfirmDialog(
-                        this,
-                        "远程仓库配置成功！是否现在进行首次推送？",
-                        "配置成功",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.QUESTION_MESSAGE
-                );
-
-                if (choice == JOptionPane.YES_OPTION) {
-                    performFirstPush(workspace);
-                }
             } catch (Exception e) {
                 log.error("Failed to configure remote repository", e);
                 logError("配置远程仓库失败: " + e.getMessage());

@@ -1066,10 +1066,7 @@ public class WorkspaceService {
      * 获取工作区的Git状态（变更文件列表）
      */
     public GitStatusResult getGitStatus(String workspaceId) throws Exception {
-        Workspace workspace = workspaces.stream()
-                .filter(w -> w.getId().equals(workspaceId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
+        Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
             throw new IllegalArgumentException("Not a Git workspace");
         }
@@ -1085,6 +1082,9 @@ public class WorkspaceService {
             result.untracked.addAll(status.getUntracked());
             result.uncommitted.addAll(status.getUncommittedChanges());
             return result;
+        } catch (Exception e) {
+            log.error("Failed to get Git status for workspace: {}", workspace.getName(), e);
+            throw e;
         }
     }
 
@@ -1105,6 +1105,9 @@ public class WorkspaceService {
                 files.add(entry.getNewPath());
             }
             return files;
+        } catch (Exception e) {
+            log.error("Failed to get changed files between commits", e);
+            throw e;
         }
     }
 
@@ -1120,6 +1123,9 @@ public class WorkspaceService {
                 treeWalk.reset(reader, treeId);
             }
             return treeWalk;
+        } catch (Exception e) {
+            log.error("Failed to prepare tree parser", e);
+            throw e;
         }
     }
 

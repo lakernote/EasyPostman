@@ -192,7 +192,7 @@ public class GitOperationDialog extends JDialog {
         return switch (operation) {
             case COMMIT -> new Color(34, 139, 34);   // 绿色
             case PUSH -> new Color(30, 144, 255);    // 蓝色
-            case PULL -> new Color(239, 212, 177);     // 橙色
+            case PULL -> new Color(228, 190, 141);     // 橙色
         };
     }
 

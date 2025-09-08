@@ -147,7 +147,7 @@ public class GitAuthPanel extends JPanel {
 
     private JPanel createSshAuthPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel label = new JLabel("SSH Key 认证（暂未实现）");
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_SSH_NOT_IMPLEMENTED));
         label.setForeground(Color.GRAY);
         panel.add(label);
         return panel;

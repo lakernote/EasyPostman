@@ -276,6 +276,7 @@ public final class MessageKeys {
     public static final String WORKSPACE_GIT_AUTH_PASSWORD = "workspace.git.auth.password";
     public static final String WORKSPACE_GIT_AUTH_TOKEN = "workspace.git.auth.token";
     public static final String WORKSPACE_GIT_AUTH_SSH = "workspace.git.auth.ssh";
+    public static final String WORKSPACE_GIT_AUTH_SSH_NOT_IMPLEMENTED = "workspace.git.auth.ssh.not_implemented";
     public static final String WORKSPACE_CLONE_FROM_REMOTE = "workspace.clone.from.remote";
     public static final String WORKSPACE_INIT_LOCAL = "workspace.init.local";
     public static final String WORKSPACE_RENAME = "workspace.rename";

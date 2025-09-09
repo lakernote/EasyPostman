@@ -2,6 +2,7 @@ package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.laker.postman.common.EasyPostManSplashWindow;
+import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.EasyPostManStyleUtils;
 import com.laker.postman.util.I18nUtil;
@@ -37,9 +38,11 @@ public class App {
             EasyPostManSplashWindow splash = new EasyPostManSplashWindow();
             // 6. 异步加载主窗口
             splash.initMainFrame();
+            // 7. 启动后台版本检查
+            UpdateService.getInstance().checkUpdateOnStartup();
         });
 
-        // 7. 设置全局异常处理器，防止程序因未捕获异常崩溃
+        // 8. 设置全局异常处理器，防止程序因未捕获异常崩溃
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(

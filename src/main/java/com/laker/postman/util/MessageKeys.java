@@ -42,6 +42,9 @@ public final class MessageKeys {
     public static final String UPDATE_CHECKING = "update.checking";
     public static final String UPDATE_LATEST_VERSION = "update.latest_version";
     public static final String UPDATE_NEW_VERSION_FOUND = "update.new_version_found";
+    public static final String UPDATE_NEW_VERSION_AVAILABLE = "update.new_version_available";
+    public static final String UPDATE_LATER = "update.later";
+    public static final String UPDATE_NOW = "update.now";
     public static final String UPDATE_MANUAL_DOWNLOAD = "update.manual_download";
     public static final String UPDATE_AUTO_DOWNLOAD = "update.auto_download";
     public static final String UPDATE_CANCEL = "update.cancel";

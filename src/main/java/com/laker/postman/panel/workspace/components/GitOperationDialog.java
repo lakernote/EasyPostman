@@ -14,7 +14,6 @@ import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -458,22 +457,6 @@ public class GitOperationDialog extends JDialog {
         statusIcon.setIcon(new FlatSVGIcon(iconPath, 16, 16));
         statusMessage.setText(message);
         statusMessage.setForeground(color);
-    }
-
-    /**
-     * 获取认证信息提供者
-     */
-    private CredentialsProvider getCredentialsProvider() {
-        if (workspace.getGitAuthType() == com.laker.postman.model.GitAuthType.PASSWORD &&
-                workspace.getGitUsername() != null && workspace.getGitPassword() != null) {
-            return new UsernamePasswordCredentialsProvider(
-                    workspace.getGitUsername(), workspace.getGitPassword());
-        } else if (workspace.getGitAuthType() == com.laker.postman.model.GitAuthType.TOKEN &&
-                workspace.getGitToken() != null && workspace.getGitUsername() != null) {
-            return new UsernamePasswordCredentialsProvider(
-                    workspace.getGitUsername(), workspace.getGitToken());
-        }
-        return null;
     }
 
     /**

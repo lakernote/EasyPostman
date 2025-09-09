@@ -276,7 +276,6 @@ public final class MessageKeys {
     public static final String WORKSPACE_GIT_AUTH_PASSWORD = "workspace.git.auth.password";
     public static final String WORKSPACE_GIT_AUTH_TOKEN = "workspace.git.auth.token";
     public static final String WORKSPACE_GIT_AUTH_SSH = "workspace.git.auth.ssh";
-    public static final String WORKSPACE_GIT_AUTH_SSH_NOT_IMPLEMENTED = "workspace.git.auth.ssh.not_implemented";
     // 添加SSH认证相关的消息键
     public static final String WORKSPACE_GIT_SSH_SELECT_KEY = "workspace.git.ssh.select_key";
     public static final String WORKSPACE_GIT_SSH_PASSPHRASE = "workspace.git.ssh.passphrase";
@@ -706,5 +705,14 @@ public final class MessageKeys {
     public static final String AUTOCOMPLETE_SNIPPET_CONSOLE_LOG = "autocomplete.snippet.console_log";
     public static final String AUTOCOMPLETE_SNIPPET_JSON_PARSE = "autocomplete.snippet.json_parse";
     public static final String AUTOCOMPLETE_SNIPPET_JSON_STRINGIFY = "autocomplete.snippet.json_stringify";
+
+    // ============ 工作区远程配置相关 ============
+    public static final String WORKSPACE_REMOTE_CONFIG_TITLE = "workspace.remote.config.title";
+    public static final String WORKSPACE_CONFIG_PROGRESS = "workspace.config.progress";
+    public static final String WORKSPACE_CONFIG_PROGRESS_START = "workspace.config.progress.start";
+    public static final String WORKSPACE_CONFIG_PROGRESS_VALIDATING = "workspace.config.progress.validating";
+    public static final String WORKSPACE_CONFIG_PROGRESS_DONE = "workspace.config.progress.done";
+    public static final String WORKSPACE_CONFIG_PROGRESS_FAILED = "workspace.config.progress.failed";
+    public static final String WORKSPACE_VALIDATION_GIT_URL_INVALID = "workspace.validation.git.url.invalid";
 
 }

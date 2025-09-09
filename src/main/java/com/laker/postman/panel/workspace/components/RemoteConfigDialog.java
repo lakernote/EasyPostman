@@ -4,11 +4,15 @@ import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+
+import static com.laker.postman.util.MessageKeys.*;
 
 /**
  * 远程仓库配置对话框
@@ -37,7 +41,7 @@ public class RemoteConfigDialog extends ProgressDialog {
     private final transient Workspace workspace;
 
     public RemoteConfigDialog(Window parent, Workspace workspace) {
-        super(parent, "配置远程仓库 - " + workspace.getName());
+        super(parent, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE) + " - " + workspace.getName());
         this.workspace = workspace;
         initComponents();
         initDialog();
@@ -51,7 +55,7 @@ public class RemoteConfigDialog extends ProgressDialog {
         gitAuthPanel = new GitAuthPanel();
 
         // 进度相关组件
-        progressPanel = new ProgressPanel("配置进度");
+        progressPanel = new ProgressPanel(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS));
         progressPanel.setVisible(false);
 
         // 设置默认字体
@@ -78,7 +82,7 @@ public class RemoteConfigDialog extends ProgressDialog {
         southPanel.add(progressPanel, BorderLayout.NORTH);
 
         // 按钮面板
-        JPanel buttonPanel = createStandardButtonPanel("确定");
+        JPanel buttonPanel = createStandardButtonPanel(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         southPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         mainPanel.add(southPanel, BorderLayout.SOUTH);
@@ -90,7 +94,7 @@ public class RemoteConfigDialog extends ProgressDialog {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
-                "远程仓库配置",
+                I18nUtil.getMessage(WORKSPACE_REMOTE_CONFIG_TITLE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
@@ -105,7 +109,7 @@ public class RemoteConfigDialog extends ProgressDialog {
         // 远程仓库URL
         gbc.gridx = 0;
         gbc.gridy = 0;
-        basicPanel.add(new JLabel("远程仓库 URL:"), gbc);
+        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_URL) + ":"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
@@ -116,7 +120,7 @@ public class RemoteConfigDialog extends ProgressDialog {
         gbc.gridy = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
-        basicPanel.add(new JLabel("远程分支:"), gbc);
+        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
@@ -139,17 +143,17 @@ public class RemoteConfigDialog extends ProgressDialog {
     protected void validateInput() throws IllegalArgumentException {
         String url = remoteUrlField.getText().trim();
         if (url.isEmpty()) {
-            throw new IllegalArgumentException("远程仓库 URL 不能为空");
+            throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_GIT_URL_REQUIRED));
         }
 
         // 简单的URL格式验证
         if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("git@")) {
-            throw new IllegalArgumentException("请输入有效的 Git 仓库 URL");
+            throw new IllegalArgumentException(I18nUtil.getMessage(WORKSPACE_VALIDATION_GIT_URL_INVALID));
         }
 
         String branch = remoteBranchField.getText().trim();
         if (branch.isEmpty()) {
-            throw new IllegalArgumentException("远程分支不能为空");
+            throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_GIT_BRANCH_INVALID));
         }
 
         // 验证认证信息
@@ -161,7 +165,7 @@ public class RemoteConfigDialog extends ProgressDialog {
         return new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
-                publish("正在配置远程仓库...");
+                publish(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS_START));
                 setProgress(10);
 
                 // 调用 WorkspaceService 配置远程仓库
@@ -176,7 +180,7 @@ public class RemoteConfigDialog extends ProgressDialog {
                     String password = gitAuthPanel.getPassword();
                     String token = gitAuthPanel.getToken();
 
-                    publish("正在验证远程仓库配置...");
+                    publish(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS_VALIDATING));
                     setProgress(30);
 
                     // 使用 WorkspaceService 添加远程仓库
@@ -190,11 +194,11 @@ public class RemoteConfigDialog extends ProgressDialog {
                             token
                     );
 
-                    publish("远程仓库配置完成！");
+                    publish(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS_DONE));
                     setProgress(100);
                 } catch (Exception e) {
                     // 重新抛出异常，让 SwingWorker 的错误处理机制处理
-                    throw new RuntimeException("配置远程仓库失败: " + e.getMessage(), e);
+                    throw new RuntimeException(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS_FAILED, e.getMessage()), e);
                 }
 
                 return null;

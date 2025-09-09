@@ -22,6 +22,8 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static com.laker.postman.service.git.GitConflictDetector.checkGitStatus;
@@ -273,8 +275,8 @@ public class GitOperationDialog extends JDialog {
         detailsArea.setWrapStyleWord(true);
 
         JScrollPane detailsScrollPane = new JScrollPane(detailsArea);
-        detailsScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        detailsScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        detailsScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        detailsScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         detailsScrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
 
         panel.add(detailsScrollPane, BorderLayout.CENTER);
@@ -307,8 +309,8 @@ public class GitOperationDialog extends JDialog {
         fileChangesArea.setWrapStyleWord(true);
 
         JScrollPane scrollPane = new JScrollPane(fileChangesArea);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
 
         fileChangesPanel.add(scrollPane, BorderLayout.CENTER);
@@ -336,21 +338,17 @@ public class GitOperationDialog extends JDialog {
                 TitledBorder.TOP,
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
         ));
-        panel.setPreferredSize(new Dimension(0, 120)); // 设置固定高度
+        panel.setPreferredSize(new Dimension(0, 60)); // 设置固定高度
 
-        commitMessageArea = new JTextArea(3, 0);
-        commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        commitMessageArea = new JTextArea(1, 0);
+        commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         commitMessageArea.setLineWrap(true);
         commitMessageArea.setWrapStyleWord(true);
-        commitMessageArea.setBorder(new EmptyBorder(8, 8, 8, 8));
-
-        // 添加占位符提示
-        commitMessageArea.setToolTipText("请输入提交信息，建议格式：feat: 新功能 / fix: 修复问题 / docs: 文档更新");
 
         JScrollPane scrollPane = new JScrollPane(commitMessageArea);
         scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -484,11 +482,11 @@ public class GitOperationDialog extends JDialog {
         // 显示详细的状态检查信息
         displayStatusDetails(check);
 
-        // 显示操作选择（如果需要）
-        updateActionChoices(check);
-
         // 更新执行按钮状态
         updateExecuteButtonState(check);
+
+        // 显示操作选择（如果需要）
+        updateActionChoices(check);
     }
 
     /**
@@ -551,29 +549,54 @@ public class GitOperationDialog extends JDialog {
 
         boolean showOptions = false;
 
-        if (operation == GitOperation.COMMIT) {
+        if (operation == GitOperation.COMMIT && check.canCommit) {
             showOptions = true;
             addOptionTitle("请选择提交方式：");
             addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
-            addOption(OPTION_COMMIT_AND_PUSH, "提交并推送（提交后自动推送到远程仓库）", "适合多人协作，提交后自动推送到远程", false);
+            addOption(OPTION_COMMIT_AND_PUSH, "提交并推送", "提交后自动推送到远程仓库（适合多人协作）", false);
+
         } else if (operation == GitOperation.PULL && check.hasUncommittedChanges) {
             showOptions = true;
-            addOptionTitle("检测到未提交变更，请选择处理方式：");
-            addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "推荐选项，保留所有变更", true);
-            addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "临时保存变更", false);
-            addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 将永久丢失未提交的变更", false, Color.RED);
-            addOption(OPTION_CANCEL, "取消操作，手动处理", "退出并手动处理冲突", false);
+            // 如果可以自动合并，优先推荐提交后拉取
+            if (check.canAutoMerge) {
+                addOptionTitle("💡 检测到可以自动合并，建议直接提交后拉取");
+                addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取（推荐）", "无冲突，可安全自动合并", true);
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 将永久丢失未提交的变更", false, Color.RED);
+            } else if (check.hasActualConflicts) {
+                addOptionTitle("⚠️ 检测到存在文件冲突，推荐以下处理方式");
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 避免冲突但会永久丢失本地变更", true, Color.RED);
+                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", false);
+            } else {
+                // 无法确定冲突情况，提供所有选项
+                addOptionTitle("检测到未提交变更，请选择处理方式：");
+                addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "推荐选项，保留所有变更", true);
+                addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "适用于临时变更", false);
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 将永久丢失未提交的变更", false, Color.RED);
+            }
 
         } else if (operation == GitOperation.PUSH && check.hasRemoteCommits) {
             showOptions = true;
-            addOptionTitle("远程仓库有新提交，请选择处理方式：");
-            addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
-            addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程仓库的变更", false, Color.RED);
+
+            if (check.canAutoMerge && !check.hasActualConflicts) {
+                addOptionTitle("💡 可以自动合并，建议先拉取");
+                addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送（推荐）", "无冲突，可安全自动合并", true);
+                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程仓库的变更", false, Color.RED);
+            } else if (check.hasActualConflicts) {
+                addOptionTitle("⚠️ 检测到文件冲突，推荐以下处理方式");
+                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程的 " + check.remoteCommitsBehind + " 个提交", false, Color.RED);
+                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", false);
+            } else {
+                // 传统处理方式
+                addOptionTitle("远程仓库有新提交，请选择处理方式：");
+                addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
+                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程仓库的变更", false, Color.RED);
+            }
         }
 
         if (showOptions) {
             optionsPanel.setVisible(true);
             stepIndicator.setCurrentStep(2);
+            updateExecuteButtonStateByChoice();
         } else {
             optionsPanel.setVisible(false);
             stepIndicator.setCurrentStep(3);
@@ -613,6 +636,9 @@ public class GitOperationDialog extends JDialog {
         }
         optionGroup.add(radio);
 
+        // 监听选项变化，动态更新按钮状态
+        radio.addActionListener(e -> updateExecuteButtonStateByChoice());
+
         JLabel descLabel = new JLabel(description);
         descLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 10));
         descLabel.setForeground(Color.GRAY);
@@ -622,6 +648,43 @@ public class GitOperationDialog extends JDialog {
         optionPanel.add(descLabel, BorderLayout.CENTER);
 
         optionsPanel.add(optionPanel);
+    }
+
+    // 根据当前选项动态判断按钮可用性
+    private void updateExecuteButtonStateByChoice() {
+        String choice = getUserChoice();
+        boolean canExecute = false;
+        switch (operation) {
+            case PULL -> {
+                // 只要不是取消，选了强制拉取/暂存/先提交都允许
+                if (OPTION_FORCE.equals(choice) || OPTION_STASH.equals(choice) || OPTION_COMMIT_FIRST.equals(choice)) {
+                    canExecute = true;
+                } else if (OPTION_CANCEL.equals(choice)) {
+                    canExecute = false;
+                } else {
+                    // 默认按 canPull
+                    canExecute = statusCheck != null && statusCheck.canPull;
+                }
+            }
+            case PUSH -> {
+                if (OPTION_FORCE.equals(choice) || OPTION_PULL_FIRST.equals(choice)) {
+                    canExecute = true;
+                } else if (OPTION_CANCEL.equals(choice)) {
+                    canExecute = false;
+                } else {
+                    canExecute = statusCheck != null && statusCheck.canPush;
+                }
+            }
+            case COMMIT -> {
+                // 提交和提交并推送都允许
+                if (OPTION_COMMIT_FIRST.equals(choice) || OPTION_COMMIT_AND_PUSH.equals(choice)) {
+                    canExecute = true;
+                } else {
+                    canExecute = statusCheck != null && statusCheck.canCommit;
+                }
+            }
+        }
+        executeButton.setEnabled(canExecute);
     }
 
     /**
@@ -811,8 +874,7 @@ public class GitOperationDialog extends JDialog {
                             if (OPTION_COMMIT_FIRST.equals(choice)) {
                                 publish("先提交本地变更...");
                                 String autoCommitMsg = "Auto commit before pull - " +
-                                        java.time.LocalDateTime.now().format(
-                                                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), autoCommitMsg);
                                 notifyWorkspacePanel(commitResult);
 
@@ -850,18 +912,6 @@ public class GitOperationDialog extends JDialog {
             worker.execute();
         }
 
-        private String getUserChoice() {
-            if (optionGroup == null) {
-                return "default";
-            }
-
-            var selection = optionGroup.getSelection();
-            if (selection != null) {
-                return selection.getActionCommand();
-            }
-
-            return "default";
-        }
 
         private boolean validateOperation() {
             if (operation == GitOperation.COMMIT) {
@@ -898,5 +948,20 @@ public class GitOperationDialog extends JDialog {
             progressBar.setIndeterminate(false);
             executeButton.setEnabled(true);
         }
+    }
+
+    /**
+     * 获取用户当前选择的操作选项
+     */
+    private String getUserChoice() {
+        if (optionGroup == null) {
+            return "default";
+        }
+        ButtonModel selection = optionGroup.getSelection();
+        if (selection != null) {
+            return selection.getActionCommand();
+        }
+
+        return "default";
     }
 }

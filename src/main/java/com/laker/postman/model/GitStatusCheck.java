@@ -30,6 +30,12 @@ public class GitStatusCheck {
     public boolean needsForcePush = false; // 是否需要强制推送
     public boolean needsForcePull = false; // 是否需要强制拉取
 
+    // 冲突检测
+    public boolean hasActualConflicts = false; // 是否存在实际内容冲突
+    public boolean canAutoMerge = false; // 是否可以自动合并
+    public boolean hasOnlyNewFiles = false; // 是否只是新文件（无冲突）
+    public boolean hasNonOverlappingChanges = false; // 是否为非重叠变更
+
     // 网络和认证状态
     public boolean canConnectToRemote = false; // 是否能连接到远程仓库
     public boolean hasAuthenticationIssue = false; // 是否存在认证问题

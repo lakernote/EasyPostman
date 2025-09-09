@@ -235,6 +235,9 @@ public class GitConflictDetector {
             // 设置操作可行性
             determineOperationCapabilities(result, localId, remoteId, fetchSuccess);
 
+            // 执行冲突检测
+            performIntelligentConflictDetection(git, result, localId, remoteId);
+
         } catch (Exception e) {
             log.warn("Failed to check remote status", e);
             result.warnings.add("无法检查远程状态: " + e.getMessage());
@@ -595,6 +598,162 @@ public class GitConflictDetector {
 
         if (result.hasUntrackedFiles) {
             result.suggestions.add("注意：有 " + result.untrackedCount + " 个未跟踪文件可能与远程变更冲突");
+        }
+    }
+
+    /**
+     * 执行冲突检测
+     * 通过分析本地和远程的变更，判断是否存在实际冲突以及是否可以自动合并
+     */
+    private static void performIntelligentConflictDetection(Git git, GitStatusCheck result, ObjectId localId, ObjectId remoteId) {
+        try {
+            // 如果本地或远程仓库为空，则无法进行智能冲突检测
+            if (localId == null || remoteId == null) {
+                result.hasActualConflicts = false;
+                result.canAutoMerge = false;
+                return;
+            }
+
+            // 查找共同的基础提交（merge base）
+            ObjectId mergeBase = findMergeBase(git, localId, remoteId);
+
+            if (mergeBase == null) {
+                // 没有共同基础，可能是完全不同的历史
+                result.hasActualConflicts = true;
+                result.canAutoMerge = false;
+                result.warnings.add("本地和远程分支没有共同的提交历史");
+                return;
+            }
+
+            // 如果merge base等于远程ID，说明远程是本地的子集，可以快进推送
+            if (mergeBase.equals(remoteId)) {
+                result.hasActualConflicts = false;
+                result.canAutoMerge = true;
+                result.suggestions.add("✅ 可以安全推送（快进合并）");
+                return;
+            }
+
+            // 如果merge base等于本地ID，说明本地是远程的子集，可以快进拉取
+            if (mergeBase.equals(localId)) {
+                result.hasActualConflicts = false;
+                result.canAutoMerge = true;
+                result.suggestions.add("✅ 可以安全拉取（快进合并）");
+                return;
+            }
+
+            // 分析文件级别的冲突
+            analyzeFileConflicts(git, result, mergeBase, localId, remoteId);
+
+        } catch (Exception e) {
+            log.debug("智能冲突检测失败", e);
+            result.hasActualConflicts = false;
+            result.canAutoMerge = false;
+        }
+    }
+
+    /**
+     * 查找两个提交的合并基础
+     */
+    private static ObjectId findMergeBase(Git git, ObjectId commit1, ObjectId commit2) {
+        try {
+            try (RevWalk walk = new RevWalk(git.getRepository())) {
+                RevCommit c1 = walk.parseCommit(commit1);
+                RevCommit c2 = walk.parseCommit(commit2);
+
+                walk.setRevFilter(org.eclipse.jgit.revwalk.filter.RevFilter.MERGE_BASE);
+                walk.markStart(c1);
+                walk.markStart(c2);
+
+                RevCommit mergeBase = walk.next();
+                return mergeBase != null ? mergeBase.getId() : null;
+            }
+        } catch (Exception e) {
+            log.debug("Failed to find merge base", e);
+            return null;
+        }
+    }
+
+    /**
+     * 分析文件级别的冲突
+     */
+    private static void analyzeFileConflicts(Git git, GitStatusCheck result, ObjectId mergeBase,
+                                             ObjectId localId, ObjectId remoteId) {
+        try {
+            // 获取从merge base到本地的变更
+            var localDiffs = git.diff()
+                    .setOldTree(prepareTreeParser(git.getRepository(), mergeBase))
+                    .setNewTree(prepareTreeParser(git.getRepository(), localId))
+                    .call();
+
+            // 获取从merge base到远程的变更
+            var remoteDiffs = git.diff()
+                    .setOldTree(prepareTreeParser(git.getRepository(), mergeBase))
+                    .setNewTree(prepareTreeParser(git.getRepository(), remoteId))
+                    .call();
+
+            // 分析冲突情况
+            List<String> localChangedFiles = new ArrayList<>();
+            List<String> remoteChangedFiles = new ArrayList<>();
+            List<String> conflictFiles = new ArrayList<>();
+            List<String> newFiles = new ArrayList<>();
+
+            // 收集本地变更的文件
+            for (var diff : localDiffs) {
+                String filePath = diff.getNewPath();
+                localChangedFiles.add(filePath);
+                if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
+                    newFiles.add(filePath);
+                }
+            }
+
+            // 收集远程变更的文件并检查冲突
+            for (var diff : remoteDiffs) {
+                String filePath = diff.getNewPath();
+                remoteChangedFiles.add(filePath);
+
+                // 如果本地也修改了同一个文件，可能存在冲突
+                if (localChangedFiles.contains(filePath)) {
+                    conflictFiles.add(filePath);
+                }
+
+                if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
+                    newFiles.add(filePath);
+                }
+            }
+
+            // 设置检测结果
+            result.hasActualConflicts = !conflictFiles.isEmpty();
+            result.conflictingFilesCount = conflictFiles.size();
+            result.conflictingFiles.addAll(conflictFiles);
+
+            // 判断是否只有新文件
+            result.hasOnlyNewFiles = conflictFiles.isEmpty() && !newFiles.isEmpty();
+
+            // 判断是否为非重叠变更
+            result.hasNonOverlappingChanges = conflictFiles.isEmpty() &&
+                    (!localChangedFiles.isEmpty() || !remoteChangedFiles.isEmpty());
+
+            // 判断是否可以自动合并
+            result.canAutoMerge = conflictFiles.isEmpty() || result.hasOnlyNewFiles;
+
+            // 添加详细建议
+            if (result.hasActualConflicts) {
+                result.warnings.add("检测到 " + conflictFiles.size() + " 个文件存在实际冲突");
+                result.suggestions.add("冲突文件: " + String.join(", ",
+                        conflictFiles.subList(0, Math.min(3, conflictFiles.size()))));
+                if (conflictFiles.size() > 3) {
+                    result.suggestions.add("还有 " + (conflictFiles.size() - 3) + " 个文件存在冲突");
+                }
+            } else if (result.hasNonOverlappingChanges) {
+                result.suggestions.add("✅ 检测到非重叠变更，可以安全自动合并");
+            } else if (result.hasOnlyNewFiles) {
+                result.suggestions.add("✅ 只包含新文件，可以安全合并");
+            }
+
+        } catch (Exception e) {
+            log.debug("文件冲突分析失败", e);
+            result.hasActualConflicts = true;
+            result.canAutoMerge = false;
         }
     }
 }

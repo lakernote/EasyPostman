@@ -11,6 +11,7 @@ import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.URIish;
@@ -515,6 +516,8 @@ public class WorkspaceService {
 
             try {
                 var pullCommand = git.pull();
+                // 设置自动merge策略，优先使用远程版本解决冲突
+                pullCommand.setStrategy(MergeStrategy.RECURSIVE);
                 UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
                 if (credentialsProvider != null) {
                     pullCommand.setCredentialsProvider(credentialsProvider);

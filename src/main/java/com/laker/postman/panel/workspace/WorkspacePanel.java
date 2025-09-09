@@ -263,7 +263,7 @@ public class WorkspacePanel extends SingletonBasePanel {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
             if (!remoteStatus.hasRemote) {
                 // 还未配置远程仓库
-                JMenuItem configRemoteItem = new JMenuItem("配置远程仓库");
+                JMenuItem configRemoteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE));
                 configRemoteItem.setIcon(new FlatSVGIcon("icons/git.svg", 16, 16));
                 configRemoteItem.addActionListener(e -> configureRemoteRepository(workspace));
                 menu.add(configRemoteItem);
@@ -655,4 +655,3 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 监听器已在initUI中注册
     }
 }
-

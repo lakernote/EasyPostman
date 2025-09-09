@@ -55,11 +55,16 @@ public class VersionChecker {
         try {
             URL url = new URL(GITEE_API_URL);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(8000);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("User-Agent", "EasyPostman/" + SystemUtil.getCurrentVersion());
+            // 使用更通用的 User-Agent
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; EasyPostman/" + SystemUtil.getCurrentVersion() + ")");
+            // 添加更多请求头来避免被拒绝
+            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+            conn.setRequestProperty("Cache-Control", "no-cache");
+            conn.setRequestProperty("Connection", "keep-alive");
 
             int code = conn.getResponseCode();
             if (code == 200) {
@@ -69,13 +74,26 @@ public class VersionChecker {
                     return new JSONObject(json);
                 }
             } else {
-                log.warn("Failed to fetch release info, HTTP code: {}", code);
+                // 尝试读取错误响应
+                String errorResponse = "";
+                try (InputStream errorStream = conn.getErrorStream()) {
+                    if (errorStream != null) {
+                        try (Scanner scanner = new Scanner(errorStream, StandardCharsets.UTF_8)) {
+                            errorResponse = scanner.useDelimiter("\\A").next();
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // 忽略读取错误响应的异常
+                }
+
+                log.warn("Failed to fetch release info, HTTP code: {}, response: {}", code, errorResponse);
+
                 return null;
             }
         } catch (Exception e) {
             log.debug("Error fetching release info: {}", e.getMessage());
-            return null;
         }
+        return null;
     }
 
     /**

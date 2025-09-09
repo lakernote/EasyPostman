@@ -312,7 +312,7 @@ public class WorkspacePanel extends SingletonBasePanel {
 
             // 删除
             JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_DELETE));
-            deleteItem.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+            deleteItem.setIcon(new FlatSVGIcon("icons/close.svg", 16, 16));
             deleteItem.addActionListener(e -> deleteWorkspace(workspace));
             menu.add(deleteItem);
         }

@@ -36,6 +36,7 @@ public class GitOperationDialog extends JDialog {
     private static final String OPTION_COMMIT_FIRST = "commit_first"; // 先提交
     private static final String OPTION_STASH = "stash"; // 暂存
     private static final String OPTION_PULL_FIRST = "pull_first"; // 先拉取
+    private static final String OPTION_COMMIT_AND_PUSH = "commit_and_push"; // 提交并推送
 
     private final transient Workspace workspace;
     private final GitOperation operation;
@@ -622,7 +623,13 @@ public class GitOperationDialog extends JDialog {
 
         boolean showOptions = false;
 
-        if (operation == GitOperation.PULL && check.hasUncommittedChanges) {
+        if (operation == GitOperation.COMMIT) {
+            // 增加“提交并推送”选项
+            showOptions = true;
+            addOptionTitle("请选择提交方式：");
+            addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
+            addOption(OPTION_COMMIT_AND_PUSH, "提交并推送（提交后自动推送到远程仓库）", "适合多人协作，提交后自动推送到远程", false);
+        } else if (operation == GitOperation.PULL && check.hasUncommittedChanges) {
             showOptions = true;
             addOptionTitle("检测到未提交变更，请选择处理方式：");
 
@@ -844,9 +851,18 @@ public class GitOperationDialog extends JDialog {
 
                     switch (operation) {
                         case COMMIT -> {
-                            publish("正在提交变更...");
-                            var result = workspaceService.commitChanges(workspace.getId(), commitMessage);
-                            notifyWorkspacePanel(result);
+                            if (OPTION_COMMIT_AND_PUSH.equals(choice)) {
+                                publish("正在提交变更...");
+                                var commitResult = workspaceService.commitChanges(workspace.getId(), commitMessage);
+                                notifyWorkspacePanel(commitResult);
+                                publish("提交完成，正在推送到远程仓库...");
+                                var pushResult = workspaceService.pushChanges(workspace.getId());
+                                notifyWorkspacePanel(pushResult);
+                            } else {
+                                publish("正在提交变更...");
+                                var result = workspaceService.commitChanges(workspace.getId(), commitMessage);
+                                notifyWorkspacePanel(result);
+                            }
                         }
                         case PUSH -> {
                             if (OPTION_FORCE.equals(choice)) {

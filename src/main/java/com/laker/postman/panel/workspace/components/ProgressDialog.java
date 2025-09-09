@@ -8,7 +8,6 @@ import lombok.Getter;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.function.Consumer;
 
 /**
  * 带进度显示的对话框基类
@@ -25,7 +24,7 @@ public abstract class ProgressDialog extends JDialog {
     protected JButton confirmButton;
     protected JButton cancelButton;
 
-    public ProgressDialog(Window parent, String title) {
+    ProgressDialog(Window parent, String title) {
         super(parent, title, ModalityType.APPLICATION_MODAL);
     }
 
@@ -56,6 +55,7 @@ public abstract class ProgressDialog extends JDialog {
 
     /**
      * 获取操作任务 - 子类需要实现
+     *
      * @return 返回一个SwingWorker来执行后台任务
      */
     protected abstract SwingWorker<Void, String> createWorkerTask();
@@ -180,7 +180,7 @@ public abstract class ProgressDialog extends JDialog {
         // 设置进度更新处理器
         worker.addPropertyChangeListener(evt -> {
             if ("state".equals(evt.getPropertyName()) &&
-                SwingWorker.StateValue.DONE == evt.getNewValue()) {
+                    SwingWorker.StateValue.DONE == evt.getNewValue()) {
                 try {
                     worker.get(); // 检查是否有异常
                     onOperationSuccess();
@@ -203,161 +203,5 @@ public abstract class ProgressDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.ERROR),
                 JOptionPane.ERROR_MESSAGE
         );
-    }
-
-    /**
-     * 创建一个标准的SwingWorker，带有进度更新功能
-     */
-    protected SwingWorker<Void, String> createStandardWorker(ProgressStep... steps) {
-        return new SwingWorker<Void, String>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                int totalSteps = steps.length;
-                for (int i = 0; i < totalSteps; i++) {
-                    ProgressStep step = steps[i];
-                    publish(step.message);
-                    setProgress(step.progress);
-
-                    if (step.action != null) {
-                        step.action.accept(this);
-                    } else {
-                        // 默认模拟延迟
-                        Thread.sleep(step.duration);
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            protected void process(java.util.List<String> chunks) {
-                if (!chunks.isEmpty()) {
-                    progressPanel.getStatusLabel().setText(chunks.get(chunks.size() - 1));
-                }
-            }
-        };
-    }
-
-    /**
-     * 创建一个智能的SwingWorker，支持动态进度更新
-     */
-    protected SwingWorker<Void, String> createDynamicWorker(String operationName, Runnable actualOperation) {
-        return new SwingWorker<Void, String>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                publish("正在" + operationName + "...");
-                setProgress(0);
-
-                long startTime = System.currentTimeMillis();
-
-                // 启动一个监控线程，动态更新进度
-                Thread progressMonitor = new Thread(() -> {
-                    try {
-                        int progress = 0;
-                        while (progress < 90 && !isCancelled()) {
-                            Thread.sleep(100);
-                            progress = Math.min(90, (int)((System.currentTimeMillis() - startTime) / 50)); // 每50ms增加1%
-                            setProgress(progress);
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                });
-
-                progressMonitor.start();
-
-                try {
-                    // 执行实际操作
-                    actualOperation.run();
-
-                    // 操作完成，设置进度到100%
-                    setProgress(100);
-                    publish(operationName + "完成！");
-                } finally {
-                    progressMonitor.interrupt();
-                }
-
-                return null;
-            }
-
-            @Override
-            protected void process(java.util.List<String> chunks) {
-                if (!chunks.isEmpty()) {
-                    progressPanel.getStatusLabel().setText(chunks.get(chunks.size() - 1));
-                }
-            }
-        };
-    }
-
-    /**
-     * 创建一个带有实际操作回调的SwingWorker
-     */
-    protected SwingWorker<Void, String> createCallbackWorker(ProgressCallback callback) {
-        return new SwingWorker<Void, String>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                ProgressReporter reporter = new ProgressReporter() {
-                    @Override
-                    public void updateProgress(int progress, String message) {
-                        setProgress(progress);
-                        publish(message);
-                    }
-
-                    @Override
-                    public void setMessage(String message) {
-                        publish(message);
-                    }
-                };
-
-                callback.execute(reporter);
-                return null;
-            }
-
-            @Override
-            protected void process(java.util.List<String> chunks) {
-                if (!chunks.isEmpty()) {
-                    progressPanel.getStatusLabel().setText(chunks.get(chunks.size() - 1));
-                }
-            }
-        };
-    }
-
-    /**
-     * 进度报告接口
-     */
-    public interface ProgressReporter {
-        void updateProgress(int progress, String message);
-        void setMessage(String message);
-    }
-
-    /**
-     * 进度回调接口
-     */
-    public interface ProgressCallback {
-        void execute(ProgressReporter reporter) throws Exception;
-    }
-
-    /**
-     * 进度步骤封装类
-     */
-    public static class ProgressStep {
-        public final String message;
-        public final int progress;
-        public final long duration;
-        public final Consumer<SwingWorker<Void, String>> action;
-
-        public ProgressStep(String message, int progress, long duration) {
-            this(message, progress, duration, null);
-        }
-
-        public ProgressStep(String message, int progress, Consumer<SwingWorker<Void, String>> action) {
-            this(message, progress, 500, action);
-        }
-
-        public ProgressStep(String message, int progress, long duration, Consumer<SwingWorker<Void, String>> action) {
-            this.message = message;
-            this.progress = progress;
-            this.duration = duration;
-            this.action = action;
-        }
     }
 }

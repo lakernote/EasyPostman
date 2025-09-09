@@ -190,7 +190,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         add(containerPanel, BorderLayout.CENTER);
 
         // 设置对话框的初始大小
-        setPreferredSize(new Dimension(450, 520));
+        setPreferredSize(new Dimension(550, 520));
     }
 
     @Override
@@ -391,9 +391,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 调整对话框大小以适应内容
         if (isGit) {
-            setPreferredSize(new Dimension(650, 680));
+            setPreferredSize(new Dimension(550, 680));
         } else {
-            setPreferredSize(new Dimension(650, 420));
+            setPreferredSize(new Dimension(550, 420));
         }
 
         pack();
@@ -407,13 +407,13 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 根据模式控制分支字段的标签和状态
         if (cloneRadio.isSelected()) {
-            branchLabel.setText("远程分支:");
+            branchLabel.setText(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":");
             branchField.setEnabled(true);
             if (branchField.getText().trim().isEmpty()) {
                 branchField.setText(DEFAULT_BRANCH);
             }
         } else {
-            branchLabel.setText("本地分支:");
+            branchLabel.setText(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_LOCAL_BRANCH) + ":");
             branchField.setEnabled(true);
             if (branchField.getText().trim().isEmpty()) {
                 branchField.setText(DEFAULT_BRANCH);

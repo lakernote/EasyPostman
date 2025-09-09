@@ -1,5 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
@@ -54,8 +55,9 @@ public class GitAuthPanel extends JPanel {
         sshKeyPathField = new JTextField(20);
         sshPassphraseField = new JPasswordField(20);
 
-        // SSH 认证相关组件
-        sshKeyBrowseButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
+        sshKeyBrowseButton = new JButton("", new FlatSVGIcon("icons/file.svg", 20, 20));
+        sshKeyBrowseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
+        sshKeyBrowseButton.setFocusPainted(false);
 
         // 设置默认字体
         Font defaultFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
@@ -65,7 +67,6 @@ public class GitAuthPanel extends JPanel {
         tokenField.setFont(defaultFont);
         sshKeyPathField.setFont(defaultFont);
         sshPassphraseField.setFont(defaultFont);
-        sshKeyBrowseButton.setFont(defaultFont);
     }
 
     private void setupLayout() {
@@ -194,29 +195,33 @@ public class GitAuthPanel extends JPanel {
     private JPanel createSshAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
+        // SSH 私钥路径行
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_KEY_PATH) + ":"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         panel.add(sshKeyPathField, gbc);
+        gbc.gridx = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        gbc.insets = new Insets(8, 3, 8, 8);
+        panel.add(sshKeyBrowseButton, gbc);
 
+        // SSH 密码行
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(8, 8, 8, 8);
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_PASSPHRASE) + ":"), gbc);
         gbc.gridx = 1;
+        gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         panel.add(sshPassphraseField, gbc);
-
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.gridheight = 2;
-        gbc.fill = GridBagConstraints.VERTICAL;
-        panel.add(sshKeyBrowseButton, gbc);
 
         return panel;
     }
@@ -242,11 +247,11 @@ public class GitAuthPanel extends JPanel {
         tokenField.setEnabled(enabled);
         sshKeyPathField.setEnabled(enabled);
         sshPassphraseField.setEnabled(enabled);
+        sshKeyBrowseButton.setEnabled(enabled);
     }
 
     /**
      * 验证认证信息
-        sshKeyBrowseButton.setEnabled(enabled);
      */
     public void validateAuth() throws IllegalArgumentException {
         GitAuthType selectedAuthType = (GitAuthType) authTypeCombo.getSelectedItem();

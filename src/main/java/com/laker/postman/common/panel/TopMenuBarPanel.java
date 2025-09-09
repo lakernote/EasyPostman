@@ -7,7 +7,10 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.common.frame.MainFrame;
-import com.laker.postman.common.setting.SettingDialog;
+import com.laker.postman.common.setting.PerformanceSettingsDialog;
+import com.laker.postman.common.setting.RequestSettingsDialog;
+import com.laker.postman.common.setting.SystemSettingsDialog;
+import com.laker.postman.common.setting.UISettingsDialog;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
@@ -163,15 +166,52 @@ public class TopMenuBarPanel extends SingletonBasePanel {
 
     private void addSettingMenu() {
         JMenu settingMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS));
-        JMenuItem settingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS_GLOBAL));
-        settingMenuItem.addActionListener(e -> showSettingDialog());
-        settingMenu.add(settingMenuItem);
+
+        // 请求设置
+        JMenuItem requestSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE));
+        requestSettingMenuItem.addActionListener(e -> showRequestSettingDialog());
+        settingMenu.add(requestSettingMenuItem);
+
+        // 性能设置
+        JMenuItem performanceSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE));
+        performanceSettingMenuItem.addActionListener(e -> showPerformanceSettingDialog());
+        settingMenu.add(performanceSettingMenuItem);
+
+        // 界面设置
+        JMenuItem uiSettingMenuItem = new JMenuItem("界面设置");
+        uiSettingMenuItem.addActionListener(e -> showUISettingDialog());
+        settingMenu.add(uiSettingMenuItem);
+
+        // 系统设置
+        JMenuItem systemSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE));
+        systemSettingMenuItem.addActionListener(e -> showSystemSettingDialog());
+        settingMenu.add(systemSettingMenuItem);
+
         menuBar.add(settingMenu);
     }
 
-    private void showSettingDialog() {
+
+    private void showRequestSettingDialog() {
         Window window = SwingUtilities.getWindowAncestor(this);
-        SettingDialog dialog = new SettingDialog(window);
+        RequestSettingsDialog dialog = new RequestSettingsDialog(window);
+        dialog.setVisible(true);
+    }
+
+    private void showPerformanceSettingDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        PerformanceSettingsDialog dialog = new PerformanceSettingsDialog(window);
+        dialog.setVisible(true);
+    }
+
+    private void showUISettingDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        UISettingsDialog dialog = new UISettingsDialog(window);
+        dialog.setVisible(true);
+    }
+
+    private void showSystemSettingDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        SystemSettingsDialog dialog = new SystemSettingsDialog(window);
         dialog.setVisible(true);
     }
 

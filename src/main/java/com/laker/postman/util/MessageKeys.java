@@ -730,4 +730,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_AUTO_UPDATE_INTERVAL_ERROR = "settings.validation.auto_update_interval.error";
     public static final String SETTINGS_VALIDATION_AUTO_UPDATE_STARTUP_DELAY_ERROR = "settings.validation.auto_update_startup_delay.error";
 
+    // ============ UI设置相关 ============
+    public static final String SETTINGS_UI_TITLE = "settings.ui.title";
+
 }

@@ -178,7 +178,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         settingMenu.add(performanceSettingMenuItem);
 
         // 界面设置
-        JMenuItem uiSettingMenuItem = new JMenuItem("界面设置");
+        JMenuItem uiSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_TITLE));
         uiSettingMenuItem.addActionListener(e -> showUISettingDialog());
         settingMenu.add(uiSettingMenuItem);
 

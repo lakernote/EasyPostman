@@ -26,21 +26,20 @@ public class UpdateProgressDialog {
     public UpdateProgressDialog(JFrame parent) {
         dialog = new JDialog(parent, I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), true);
         dialog.setResizable(false);
-        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+
+        // 创建组件并直接初始化引用
+        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_CONNECTING), SwingConstants.CENTER);
+        progressBar = new JProgressBar(0, 100);
+        sizeLabel = createInfoLabel("-- / -- MB");
+        speedLabel = createInfoLabel("-- KB/s");
+        timeLabel = createInfoLabel("--");
+        cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
 
         JPanel panel = createContentPanel();
         dialog.setContentPane(panel);
         dialog.pack();
         dialog.setLocationRelativeTo(parent);
-
-        // 初始化组件引用
-        Component[] components = findComponents(panel);
-        statusLabel = (JLabel) components[0];
-        progressBar = (JProgressBar) components[1];
-        sizeLabel = (JLabel) components[2];
-        speedLabel = (JLabel) components[3];
-        timeLabel = (JLabel) components[4];
-        cancelButton = (JButton) components[5];
     }
 
     private JPanel createContentPanel() {
@@ -56,24 +55,22 @@ public class UpdateProgressDialog {
         panel.add(iconLabel);
         panel.add(Box.createVerticalStrut(12));
 
-        // 状态标签
-        JLabel status = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_CONNECTING), SwingConstants.CENTER);
-        status.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
-        status.setForeground(new Color(33, 37, 41));
-        status.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel.add(status);
+        // 状态标签 - 使用已初始化的 statusLabel
+        statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
+        statusLabel.setForeground(new Color(33, 37, 41));
+        statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(statusLabel);
         panel.add(Box.createVerticalStrut(16));
 
-        // 进度条
-        JProgressBar progress = new JProgressBar(0, 100);
-        progress.setStringPainted(true);
-        progress.setString("0%");
-        progress.setPreferredSize(new Dimension(320, 28));
-        progress.setMaximumSize(new Dimension(320, 28));
-        progress.setAlignmentX(Component.CENTER_ALIGNMENT);
-        progress.setBackground(new Color(240, 242, 245));
-        progress.setForeground(new Color(33, 150, 243));
-        panel.add(progress);
+        // 进度条 - 使用已初始化的 progressBar
+        progressBar.setStringPainted(true);
+        progressBar.setString("0%");
+        progressBar.setPreferredSize(new Dimension(320, 28));
+        progressBar.setMaximumSize(new Dimension(320, 28));
+        progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        progressBar.setBackground(new Color(240, 242, 245));
+        progressBar.setForeground(new Color(33, 150, 243));
+        panel.add(progressBar);
         panel.add(Box.createVerticalStrut(16));
 
         // 信息面板
@@ -81,19 +78,18 @@ public class UpdateProgressDialog {
         panel.add(infoPanel);
         panel.add(Box.createVerticalStrut(20));
 
-        // 取消按钮
-        JButton cancel = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
-        cancel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
-        cancel.setFocusPainted(false);
-        cancel.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
-        cancel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cancel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cancel.addActionListener(e -> {
+        // 取消按钮 - 使用已初始化的 cancelButton
+        cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
+        cancelButton.setFocusPainted(false);
+        cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 24, 8, 24));
+        cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cancelButton.addActionListener(e -> {
             if (onCancelListener != null) {
                 onCancelListener.run();
             }
         });
-        panel.add(cancel);
+        panel.add(cancelButton);
 
         return panel;
     }
@@ -111,13 +107,10 @@ public class UpdateProgressDialog {
         gbc.weightx = 1.0;
         gbc.insets = new Insets(2, 0, 2, 0);
 
-        JLabel size = createInfoLabel("-- / -- MB");
-        JLabel speed = createInfoLabel("-- KB/s");
-        JLabel time = createInfoLabel("--");
-
-        infoPanel.add(size, gbc);
-        infoPanel.add(speed, gbc);
-        infoPanel.add(time, gbc);
+        // 使用已初始化的组件
+        infoPanel.add(sizeLabel, gbc);
+        infoPanel.add(speedLabel, gbc);
+        infoPanel.add(timeLabel, gbc);
 
         return infoPanel;
     }
@@ -127,43 +120,6 @@ public class UpdateProgressDialog {
         label.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         label.setForeground(new Color(108, 117, 125));
         return label;
-    }
-
-    private Component[] findComponents(Container container) {
-        Component[] result = new Component[6];
-        findComponentsRecursively(container, result, new int[]{0});
-        return result;
-    }
-
-    private void findComponentsRecursively(Container container, Component[] result, int[] index) {
-        for (Component comp : container.getComponents()) {
-            if (comp instanceof JLabel && ((JLabel) comp).getFont() != null && ((JLabel) comp).getFont().isBold()) {
-                if (result[0] == null) result[0] = comp; // statusLabel
-            } else if (comp instanceof JProgressBar) {
-                result[1] = comp; // progressBar
-            } else if (comp instanceof JLabel && index[0] >= 2 && index[0] <= 4) {
-                result[index[0]] = comp; // info labels
-                index[0]++;
-            } else if (comp instanceof JButton) {
-                result[5] = comp; // cancelButton
-            } else if (comp instanceof Container) {
-                findComponentsRecursively((Container) comp, result, index);
-            }
-
-            if (comp instanceof JLabel && result[0] != null && result[1] != null &&
-                    !((JLabel) comp).getFont().isBold() && result[2] == null) {
-                result[2] = comp;
-                index[0] = 3;
-            } else if (comp instanceof JLabel && result[2] != null && result[3] == null &&
-                    !((JLabel) comp).getFont().isBold()) {
-                result[3] = comp;
-                index[0] = 4;
-            } else if (comp instanceof JLabel && result[3] != null && result[4] == null &&
-                    !((JLabel) comp).getFont().isBold()) {
-                result[4] = comp;
-                index[0] = 5;
-            }
-        }
     }
 
     /**
@@ -177,9 +133,6 @@ public class UpdateProgressDialog {
             statusLabel.setText(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING));
 
             // 更新大小信息
-            String sizeText = String.format("%.1f / %.1f MB",
-                    downloaded / 1024.0 / 1024.0,
-                    total / 1024.0 / 1024.0);
             sizeLabel.setText(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_PROGRESS,
                     String.format("%.1f", downloaded / 1024.0 / 1024.0),
                     String.format("%.1f", total / 1024.0 / 1024.0)));

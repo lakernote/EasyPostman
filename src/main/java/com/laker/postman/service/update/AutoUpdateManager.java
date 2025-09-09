@@ -1,5 +1,7 @@
 package com.laker.postman.service.update;
 
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -139,7 +141,7 @@ public class AutoUpdateManager {
     private void showNoUpdateMessage(UpdateInfo updateInfo) {
         JOptionPane.showMessageDialog(null,
                 updateInfo.getMessage(),
-                "检查更新",
+                I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE),
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -148,8 +150,8 @@ public class AutoUpdateManager {
      */
     private void showCheckFailedMessage(UpdateInfo updateInfo) {
         JOptionPane.showMessageDialog(null,
-                "检查更新失败: " + updateInfo.getMessage(),
-                "检查更新",
+                I18nUtil.getMessage(MessageKeys.ERROR_UPDATE_FAILED, updateInfo.getMessage()),
+                I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE),
                 JOptionPane.ERROR_MESSAGE);
     }
 

@@ -8,6 +8,7 @@ import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 /**
  * Git认证配置面板公共组件
@@ -25,8 +26,15 @@ public class GitAuthPanel extends JPanel {
     private JTextField tokenUsernameField;
     @Getter
     private JTextField tokenField;
+    @Getter
+    private JTextField sshKeyPathField;
+    @Getter
+    private JPasswordField sshPassphraseField;
 
     private JPanel authDetailsPanel;
+
+    // SSH 认证相关组件
+    private JButton sshKeyBrowseButton;
 
     public GitAuthPanel() {
         initComponents();
@@ -42,6 +50,11 @@ public class GitAuthPanel extends JPanel {
         passwordField = new JPasswordField(15);
         tokenUsernameField = new JTextField(15);
         tokenField = new JTextField(15);
+        sshKeyPathField = new JTextField(15);
+        sshPassphraseField = new JPasswordField(15);
+
+        // SSH 认证相关组件
+        sshKeyBrowseButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
 
         // 设置默认字体
         Font defaultFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
@@ -49,6 +62,8 @@ public class GitAuthPanel extends JPanel {
         passwordField.setFont(defaultFont);
         tokenUsernameField.setFont(defaultFont);
         tokenField.setFont(defaultFont);
+        sshKeyPathField.setFont(defaultFont);
+        sshPassphraseField.setFont(defaultFont);
     }
 
     private void setupLayout() {
@@ -82,7 +97,33 @@ public class GitAuthPanel extends JPanel {
 
     private void setupEventHandlers() {
         authTypeCombo.addActionListener(e -> updateAuthDetailsPanel());
+
+        // SSH 私钥文件选择事件
+        sshKeyBrowseButton.addActionListener(e -> selectSshKeyFile());
+
         updateAuthDetailsPanel(); // 初始状态
+    }
+
+    /**
+     * 选择SSH私钥文件
+     */
+    private void selectSshKeyFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+        // 设置默认目录为用户主目录下的 .ssh 文件夹
+        String userHome = System.getProperty("user.home");
+        File sshDir = new File(userHome, ".ssh");
+        if (sshDir.exists() && sshDir.isDirectory()) {
+            fileChooser.setCurrentDirectory(sshDir);
+        }
+
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            java.io.File selectedFile = fileChooser.getSelectedFile();
+            sshKeyPathField.setText(selectedFile.getAbsolutePath());
+        }
     }
 
     private JPanel createNoAuthPanel() {
@@ -146,10 +187,32 @@ public class GitAuthPanel extends JPanel {
     }
 
     private JPanel createSshAuthPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_SSH_NOT_IMPLEMENTED));
-        label.setForeground(Color.GRAY);
-        panel.add(label);
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_KEY_PATH) + ":"), gbc);
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(sshKeyPathField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_PASSPHRASE) + ":"), gbc);
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(sshPassphraseField, gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.gridheight = 2;
+        gbc.fill = GridBagConstraints.VERTICAL;
+        panel.add(sshKeyBrowseButton, gbc);
+
         return panel;
     }
 
@@ -172,6 +235,8 @@ public class GitAuthPanel extends JPanel {
         passwordField.setEnabled(enabled);
         tokenUsernameField.setEnabled(enabled);
         tokenField.setEnabled(enabled);
+        sshKeyPathField.setEnabled(enabled);
+        sshPassphraseField.setEnabled(enabled);
     }
 
     /**
@@ -189,6 +254,11 @@ public class GitAuthPanel extends JPanel {
             String usernameText = tokenUsernameField.getText().trim();
             String tokenText = tokenField.getText().trim();
             if (usernameText.isEmpty() || tokenText.isEmpty()) {
+                throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_AUTH_REQUIRED));
+            }
+        } else if (selectedAuthType == GitAuthType.SSH_KEY) {
+            String sshKeyPathText = sshKeyPathField.getText().trim();
+            if (sshKeyPathText.isEmpty()) {
                 throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_AUTH_REQUIRED));
             }
         }
@@ -219,6 +289,20 @@ public class GitAuthPanel extends JPanel {
      */
     public String getToken() {
         return tokenField.getText().trim();
+    }
+
+    /**
+     * 获取SSH私钥路径
+     */
+    public String getSshKeyPath() {
+        return sshKeyPathField.getText().trim();
+    }
+
+    /**
+     * 获取SSH私钥密码
+     */
+    public String getSshPassphrase() {
+        return new String(sshPassphraseField.getPassword());
     }
 
     /**

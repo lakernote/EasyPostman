@@ -1,6 +1,7 @@
 package com.laker.postman.service;
 
 import com.laker.postman.model.*;
+import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.util.WorkspaceStorageUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -121,6 +122,20 @@ public class WorkspaceService {
     }
 
     /**
+     * Helper: Get SSH TransportConfigCallback for SSH authentication
+     */
+    private SshCredentialsProvider getSshCredentialsProvider(Workspace workspace) {
+        if (workspace.getGitAuthType() == GitAuthType.SSH_KEY &&
+                workspace.getSshPrivateKeyPath() != null) {
+            return new SshCredentialsProvider(
+                    workspace.getSshPrivateKeyPath(),
+                    workspace.getSshPassphrase()
+            );
+        }
+        return null;
+    }
+
+    /**
      * 克隆远程仓库
      */
     private void cloneRepository(Workspace workspace) throws Exception {
@@ -137,6 +152,12 @@ public class WorkspaceService {
         UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
         if (credentialsProvider != null) {
             cloneCommand.setCredentialsProvider(credentialsProvider);
+        } else {
+            // 尝试使用 SSH 认证
+            SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
+            if (sshCredentialsProvider != null) {
+                cloneCommand.setTransportConfigCallback(sshCredentialsProvider);
+            }
         }
 
         try (Git git = cloneCommand.call()) {
@@ -448,8 +469,12 @@ public class WorkspaceService {
                     // 先尝试 fetch 来检查远程是否有内容
                     var fetchCommand = git.fetch();
                     UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+                    SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
+
                     if (credentialsProvider != null) {
                         fetchCommand.setCredentialsProvider(credentialsProvider);
+                    } else if (sshCredentialsProvider != null) {
+                        fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
                     }
                     fetchCommand.call();
 
@@ -518,9 +543,15 @@ public class WorkspaceService {
                 var pullCommand = git.pull();
                 // 设置自动merge策略，优先使用远程版本解决冲突
                 pullCommand.setStrategy(MergeStrategy.RECURSIVE);
+
+                // 设置认证信息 - 支持SSH
                 UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+                SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
+
                 if (credentialsProvider != null) {
                     pullCommand.setCredentialsProvider(credentialsProvider);
+                } else if (sshCredentialsProvider != null) {
+                    pullCommand.setTransportConfigCallback(sshCredentialsProvider);
                 }
 
                 var pullResult = pullCommand.call();
@@ -624,8 +655,13 @@ public class WorkspaceService {
             try {
                 // 先 fetch 最新的远程信息
                 var fetchCommand = git.fetch();
+
+                SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
+
                 if (credentialsProvider != null) {
                     fetchCommand.setCredentialsProvider(credentialsProvider);
+                } else if (sshCredentialsProvider != null) {
+                    fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
                 }
                 fetchCommand.call();
 
@@ -715,9 +751,12 @@ public class WorkspaceService {
             var pushCommand = git.push()
                     .setRemote(remoteName)
                     .add(currentBranch + ":" + remoteBranchName); // 明确指定本地分支推送到远程分支
-
+            SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
+            // 设置认证信息 - 支持SSH
             if (credentialsProvider != null) {
                 pushCommand.setCredentialsProvider(credentialsProvider);
+            } else if (sshCredentialsProvider != null) {
+                pushCommand.setTransportConfigCallback(sshCredentialsProvider);
             }
 
             var pushResults = pushCommand.call();

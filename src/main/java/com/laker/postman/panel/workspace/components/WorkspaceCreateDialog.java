@@ -584,6 +584,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
                 } else if (authType == GitAuthType.TOKEN) {
                     ws.setGitUsername(gitAuthPanel.getUsername());
                     ws.setGitToken(gitAuthPanel.getToken());
+                } else if (authType == GitAuthType.SSH_KEY) {
+                    ws.setSshPrivateKeyPath(gitAuthPanel.getSshKeyPath());
+                    ws.setSshPassphrase(gitAuthPanel.getSshPassphrase());
                 }
             } else {
                 ws.setGitRepoSource(GitRepoSource.INITIALIZED);

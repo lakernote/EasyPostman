@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitStatusCheck;
 import com.laker.postman.model.GitStatusResult;
@@ -12,6 +13,7 @@ import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -193,7 +195,7 @@ public class GitOperationDialog extends JDialog {
         return switch (operation) {
             case COMMIT -> new Color(34, 139, 34);   // 绿色
             case PUSH -> new Color(30, 144, 255);    // 蓝色
-            case PULL -> new Color(228, 190, 141);     // 橙色
+            case PULL -> new Color(216, 209, 160);     // 橙色
         };
     }
 
@@ -412,80 +414,6 @@ public class GitOperationDialog extends JDialog {
         return panel;
     }
 
-    /**
-     * 步骤指示器组件
-     */
-    private static class StepIndicator extends JPanel {
-        private final GitOperation operation;
-        private final String[] steps;
-        private int currentStep = 0;
-
-        public StepIndicator(GitOperation operation) {
-            this.operation = operation;
-            this.steps = getStepsForOperation(operation);
-
-            setLayout(new FlowLayout(FlowLayout.CENTER, 20, 0));
-            setOpaque(false);
-
-            initSteps();
-        }
-
-        private String[] getStepsForOperation(GitOperation operation) {
-            return switch (operation) {
-                case COMMIT -> new String[]{"检查状态", "选择文件", "输入信息", "执行提交"};
-                case PUSH -> new String[]{"检查状态", "确认变更", "选择策略", "执行推送"};
-                case PULL -> new String[]{"检查状态", "确认变更", "选择策略", "执行拉取"};
-            };
-        }
-
-        private void initSteps() {
-            for (int i = 0; i < steps.length; i++) {
-                if (i > 0) {
-                    add(createArrow());
-                }
-                add(createStepCircle(i + 1, steps[i], i == currentStep));
-            }
-        }
-
-        private JPanel createStepCircle(int number, String text, boolean active) {
-            JPanel panel = new JPanel(new BorderLayout());
-            panel.setOpaque(false);
-
-            // 圆圈
-            JLabel circle = new JLabel(String.valueOf(number), SwingConstants.CENTER);
-            circle.setPreferredSize(new Dimension(30, 30));
-            circle.setOpaque(true);
-            circle.setBackground(active ? new Color(30, 144, 255) : Color.LIGHT_GRAY);
-            circle.setForeground(Color.WHITE);
-            circle.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-            circle.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
-
-            // 文本
-            JLabel label = new JLabel(text, SwingConstants.CENTER);
-            label.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 10));
-            label.setForeground(active ? Color.BLACK : Color.GRAY);
-
-            panel.add(circle, BorderLayout.CENTER);
-            panel.add(label, BorderLayout.SOUTH);
-
-            return panel;
-        }
-
-        private JLabel createArrow() {
-            JLabel arrow = new JLabel("→");
-            arrow.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 16));
-            arrow.setForeground(Color.LIGHT_GRAY);
-            return arrow;
-        }
-
-        public void setCurrentStep(int step) {
-            this.currentStep = step;
-            removeAll();
-            initSteps();
-            revalidate();
-            repaint();
-        }
-    }
 
     /**
      * 执行操作前检查
@@ -534,14 +462,14 @@ public class GitOperationDialog extends JDialog {
     /**
      * 获取认证信息提供者
      */
-    private org.eclipse.jgit.transport.CredentialsProvider getCredentialsProvider() {
+    private CredentialsProvider getCredentialsProvider() {
         if (workspace.getGitAuthType() == com.laker.postman.model.GitAuthType.PASSWORD &&
                 workspace.getGitUsername() != null && workspace.getGitPassword() != null) {
-            return new org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider(
+            return new UsernamePasswordCredentialsProvider(
                     workspace.getGitUsername(), workspace.getGitPassword());
         } else if (workspace.getGitAuthType() == com.laker.postman.model.GitAuthType.TOKEN &&
                 workspace.getGitToken() != null && workspace.getGitUsername() != null) {
-            return new org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider(
+            return new UsernamePasswordCredentialsProvider(
                     workspace.getGitUsername(), workspace.getGitToken());
         }
         return null;
@@ -624,7 +552,6 @@ public class GitOperationDialog extends JDialog {
         boolean showOptions = false;
 
         if (operation == GitOperation.COMMIT) {
-            // 增加“提交并推送”选项
             showOptions = true;
             addOptionTitle("请选择提交方式：");
             addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
@@ -632,7 +559,6 @@ public class GitOperationDialog extends JDialog {
         } else if (operation == GitOperation.PULL && check.hasUncommittedChanges) {
             showOptions = true;
             addOptionTitle("检测到未提交变更，请选择处理方式：");
-
             addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "推荐选项，保留所有变更", true);
             addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "临时保存变更", false);
             addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 将永久丢失未提交的变更", false, Color.RED);
@@ -641,7 +567,6 @@ public class GitOperationDialog extends JDialog {
         } else if (operation == GitOperation.PUSH && check.hasRemoteCommits) {
             showOptions = true;
             addOptionTitle("远程仓库有新提交，请选择处理方式：");
-
             addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
             addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程仓库的变更", false, Color.RED);
         }
@@ -727,8 +652,7 @@ public class GitOperationDialog extends JDialog {
 
         executeButton.setEnabled(canExecute);
 
-        log.debug("Operation: {}, CanExecute: {}",
-                operation, canExecute);
+        log.debug("Operation: {}, CanExecute: {}", operation, canExecute);
     }
 
     /**

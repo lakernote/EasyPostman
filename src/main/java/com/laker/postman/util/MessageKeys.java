@@ -718,4 +718,16 @@ public final class MessageKeys {
     public static final String WORKSPACE_CONFIG_PROGRESS_FAILED = "workspace.config.progress.failed";
     public static final String WORKSPACE_VALIDATION_GIT_URL_INVALID = "workspace.validation.git.url.invalid";
 
+    // ============ 自动更新设置相关 ============
+    public static final String SETTINGS_AUTO_UPDATE_TITLE = "settings.auto_update.title";
+    public static final String SETTINGS_AUTO_UPDATE_ENABLED = "settings.auto_update.enabled";
+    public static final String SETTINGS_AUTO_UPDATE_ENABLED_TOOLTIP = "settings.auto_update.enabled.tooltip";
+    public static final String SETTINGS_AUTO_UPDATE_ENABLED_CHECKBOX = "settings.auto_update.enabled.checkbox";
+    public static final String SETTINGS_AUTO_UPDATE_INTERVAL = "settings.auto_update.interval";
+    public static final String SETTINGS_AUTO_UPDATE_INTERVAL_TOOLTIP = "settings.auto_update.interval.tooltip";
+    public static final String SETTINGS_AUTO_UPDATE_STARTUP_DELAY = "settings.auto_update.startup_delay";
+    public static final String SETTINGS_AUTO_UPDATE_STARTUP_DELAY_TOOLTIP = "settings.auto_update.startup_delay.tooltip";
+    public static final String SETTINGS_VALIDATION_AUTO_UPDATE_INTERVAL_ERROR = "settings.validation.auto_update_interval.error";
+    public static final String SETTINGS_VALIDATION_AUTO_UPDATE_STARTUP_DELAY_ERROR = "settings.validation.auto_update_startup_delay.error";
+
 }

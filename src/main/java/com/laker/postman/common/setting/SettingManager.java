@@ -179,4 +179,62 @@ public class SettingManager {
         props.setProperty("max_history_count", String.valueOf(count));
         save();
     }
+
+    // ===== 自动更新设置 =====
+
+    /**
+     * 是否启用自动检查更新
+     */
+    public static boolean isAutoUpdateCheckEnabled() {
+        String val = props.getProperty("auto_update_check_enabled");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return true; // 默认开启
+    }
+
+    public static void setAutoUpdateCheckEnabled(boolean enabled) {
+        props.setProperty("auto_update_check_enabled", String.valueOf(enabled));
+        save();
+    }
+
+    /**
+     * 自动检查更新的间隔时间（小时）
+     */
+    public static long getAutoUpdateCheckIntervalHours() {
+        String val = props.getProperty("auto_update_check_interval_hours");
+        if (val != null) {
+            try {
+                return Long.parseLong(val);
+            } catch (NumberFormatException e) {
+                return 24L;
+            }
+        }
+        return 24L; // 默认24小时
+    }
+
+    public static void setAutoUpdateCheckIntervalHours(long hours) {
+        props.setProperty("auto_update_check_interval_hours", String.valueOf(hours));
+        save();
+    }
+
+    /**
+     * 启动时延迟检查更新的时间（秒）
+     */
+    public static long getAutoUpdateStartupDelaySeconds() {
+        String val = props.getProperty("auto_update_startup_delay_seconds");
+        if (val != null) {
+            try {
+                return Long.parseLong(val);
+            } catch (NumberFormatException e) {
+                return 2L;
+            }
+        }
+        return 2L; // 默认2秒
+    }
+
+    public static void setAutoUpdateStartupDelaySeconds(long seconds) {
+        props.setProperty("auto_update_startup_delay_seconds", String.valueOf(seconds));
+        save();
+    }
 }

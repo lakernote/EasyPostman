@@ -32,10 +32,6 @@ public class UpdateService {
      */
     public void checkUpdateOnStartup() {
         log.info("Initializing auto-update system");
-
-        // 配置更新参数：启用自动检查，3秒延迟，24小时间隔
-        autoUpdateManager.configure(true, 3, 24);
-
         // 启动后台更新检查
         autoUpdateManager.startBackgroundCheck();
     }

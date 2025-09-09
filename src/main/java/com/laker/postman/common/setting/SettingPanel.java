@@ -28,6 +28,11 @@ public class SettingPanel extends SingletonBasePanel {
     private JCheckBox followRedirectsCheckBox;
     private JTextField maxHistoryCountField;
 
+    // 自动更新设置字段
+    private JCheckBox autoUpdateCheckBox;
+    private JTextField autoUpdateIntervalField;
+    private JTextField autoUpdateStartupDelayField;
+
     // 用于输入验证的映射
     private final Map<JTextField, Predicate<String>> validators = new HashMap<>();
     private final Map<JTextField, String> errorMessages = new HashMap<>();
@@ -189,6 +194,49 @@ public class SettingPanel extends SingletonBasePanel {
         maxHistoryCountField.setText(String.valueOf(SettingManager.getMaxHistoryCount()));
         generalPanel.add(maxHistoryCountField, gbc);
 
+        // ===== 自动更新设置面板 =====
+        JPanel autoUpdatePanel = createSectionPanel(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE));
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        // 自动更新
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        JLabel autoUpdateLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_ENABLED));
+        autoUpdateLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_ENABLED_TOOLTIP));
+        autoUpdatePanel.add(autoUpdateLabel, gbc);
+
+        gbc.gridx = 1;
+        autoUpdateCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_ENABLED_CHECKBOX), SettingManager.isAutoUpdateCheckEnabled());
+        autoUpdatePanel.add(autoUpdateCheckBox, gbc);
+
+        // 更新间隔
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        JLabel autoUpdateIntervalLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL));
+        autoUpdateIntervalLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL_TOOLTIP));
+        autoUpdatePanel.add(autoUpdateIntervalLabel, gbc);
+
+        gbc.gridx = 1;
+        autoUpdateIntervalField = new JTextField(10);
+        autoUpdateIntervalField.setText(String.valueOf(SettingManager.getAutoUpdateCheckIntervalHours()));
+        autoUpdatePanel.add(autoUpdateIntervalField, gbc);
+
+        // 启动时延迟
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        JLabel autoUpdateStartupDelayLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY));
+        autoUpdateStartupDelayLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY_TOOLTIP));
+        autoUpdatePanel.add(autoUpdateStartupDelayLabel, gbc);
+
+        gbc.gridx = 1;
+        autoUpdateStartupDelayField = new JTextField(10);
+        autoUpdateStartupDelayField.setText(String.valueOf(SettingManager.getAutoUpdateStartupDelaySeconds()));
+        autoUpdatePanel.add(autoUpdateStartupDelayField, gbc);
+
         // 添加所有面板到主面板
         mainPanel.add(requestPanel);
         mainPanel.add(Box.createVerticalStrut(10));
@@ -197,6 +245,8 @@ public class SettingPanel extends SingletonBasePanel {
         mainPanel.add(downloadPanel);
         mainPanel.add(Box.createVerticalStrut(10));
         mainPanel.add(generalPanel);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(autoUpdatePanel);
         mainPanel.add(Box.createVerticalGlue()); // 添加弹性空间使面板保持在顶部
 
         // 创建滚动面板
@@ -221,7 +271,7 @@ public class SettingPanel extends SingletonBasePanel {
         add(btnPanel, BorderLayout.SOUTH);
 
         // 设置面板首选大小
-        setPreferredSize(new Dimension(500, 450));
+        setPreferredSize(new Dimension(500, 500));
 
         // 设置输入验证
         setupValidators();
@@ -252,6 +302,8 @@ public class SettingPanel extends SingletonBasePanel {
         validators.put(jmeterKeepAliveField, s -> isInteger(s) && Integer.parseInt(s) > 0);
         validators.put(downloadProgressDialogThresholdField, s -> isInteger(s) && Integer.parseInt(s) >= 0);
         validators.put(maxHistoryCountField, s -> isInteger(s) && Integer.parseInt(s) > 0);
+        validators.put(autoUpdateIntervalField, s -> isInteger(s) && Integer.parseInt(s) > 0);
+        validators.put(autoUpdateStartupDelayField, s -> isInteger(s) && Integer.parseInt(s) >= 0);
 
         // 设置错误消息
         errorMessages.put(maxBodySizeField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_BODY_SIZE_ERROR));
@@ -261,6 +313,8 @@ public class SettingPanel extends SingletonBasePanel {
         errorMessages.put(jmeterKeepAliveField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_KEEP_ALIVE_ERROR));
         errorMessages.put(downloadProgressDialogThresholdField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_THRESHOLD_ERROR));
         errorMessages.put(maxHistoryCountField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_HISTORY_ERROR));
+        errorMessages.put(autoUpdateIntervalField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_AUTO_UPDATE_INTERVAL_ERROR));
+        errorMessages.put(autoUpdateStartupDelayField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_AUTO_UPDATE_STARTUP_DELAY_ERROR));
 
         // 添加实时验证
         DocumentListener validationListener = new DocumentListener() {
@@ -333,6 +387,9 @@ public class SettingPanel extends SingletonBasePanel {
         showDownloadProgressCheckBox.addKeyListener(keyAdapter);
         followRedirectsCheckBox.addKeyListener(keyAdapter);
         maxHistoryCountField.addKeyListener(keyAdapter);
+        autoUpdateCheckBox.addKeyListener(keyAdapter);
+        autoUpdateIntervalField.addKeyListener(keyAdapter);
+        autoUpdateStartupDelayField.addKeyListener(keyAdapter);
     }
 
     @Override
@@ -387,6 +444,8 @@ public class SettingPanel extends SingletonBasePanel {
             long jmeterKeepAlive = Long.parseLong(jmeterKeepAliveField.getText().trim());
             int thresholdMB = Integer.parseInt(downloadProgressDialogThresholdField.getText().trim());
             int maxHistoryCount = Integer.parseInt(maxHistoryCountField.getText().trim());
+            int autoUpdateInterval = Integer.parseInt(autoUpdateIntervalField.getText().trim());
+            int autoUpdateStartupDelay = Integer.parseInt(autoUpdateStartupDelayField.getText().trim());
 
             SettingManager.setMaxBodySize(sizeKB * 1024);
             SettingManager.setRequestTimeout(timeout);
@@ -397,6 +456,9 @@ public class SettingPanel extends SingletonBasePanel {
             SettingManager.setDownloadProgressDialogThreshold(thresholdMB * 1024 * 1024);
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
             SettingManager.setMaxHistoryCount(maxHistoryCount);
+            SettingManager.setAutoUpdateCheckEnabled(autoUpdateCheckBox.isSelected());
+            SettingManager.setAutoUpdateCheckIntervalHours(autoUpdateInterval);
+            SettingManager.setAutoUpdateStartupDelaySeconds(autoUpdateStartupDelay);
 
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS), I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);
             Window window = SwingUtilities.getWindowAncestor(this);

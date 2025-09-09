@@ -1,5 +1,6 @@
 package com.laker.postman.service.update;
 
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +23,6 @@ public class AutoUpdateManager {
     private final VersionChecker versionChecker;
     private final UpdateUIManager uiManager;
     private final ScheduledExecutorService scheduler;
-
-    // 更新配置
-    private boolean autoCheckEnabled = true;
-    private long startupDelaySeconds = 3;
-    private long checkIntervalHours = 24; // 每24小时检查一次
 
     private AutoUpdateManager() {
         this.versionChecker = new VersionChecker();
@@ -56,17 +52,22 @@ public class AutoUpdateManager {
      * 启动自动更新检查（应用启动时调用）
      */
     public void startBackgroundCheck() {
+        boolean autoCheckEnabled = SettingManager.isAutoUpdateCheckEnabled();
+        long startupDelaySeconds = SettingManager.getAutoUpdateStartupDelaySeconds();
+        long checkIntervalHours = SettingManager.getAutoUpdateCheckIntervalHours();
+
         if (!autoCheckEnabled) {
-            log.debug("Auto-update check is disabled");
+            log.info("Auto-update check is disabled");
             return;
         }
 
-        log.info("Starting background update check with {}s delay", startupDelaySeconds);
+        log.info("Starting background update check with {}s delay, interval: {}h",
+                startupDelaySeconds, checkIntervalHours);
 
         // 启动延迟检查
         scheduler.schedule(this::performUpdateCheck, startupDelaySeconds, TimeUnit.SECONDS);
 
-        // 设置定期检查（每24小时）
+        // 设置定期检查
         scheduler.scheduleAtFixedRate(this::performUpdateCheck,
                 checkIntervalHours, checkIntervalHours, TimeUnit.HOURS);
     }
@@ -169,17 +170,5 @@ public class AutoUpdateManager {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
-    }
-
-    /**
-     * 配置更新检查参数
-     */
-    public void configure(boolean autoCheckEnabled, long startupDelaySeconds, long checkIntervalHours) {
-        this.autoCheckEnabled = autoCheckEnabled;
-        this.startupDelaySeconds = startupDelaySeconds;
-        this.checkIntervalHours = checkIntervalHours;
-
-        log.info("Update configuration: autoCheck={}, startupDelay={}s, interval={}h",
-                autoCheckEnabled, startupDelaySeconds, checkIntervalHours);
     }
 }

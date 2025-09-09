@@ -4,6 +4,7 @@ import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.common.panel.TopMenuBarPanel;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -186,7 +187,6 @@ public class UpdateService {
         updateButton.setFocusPainted(false);
         updateButton.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         updateButton.setBackground(new Color(0, 123, 255));
-        updateButton.setForeground(Color.WHITE);
         updateButton.addActionListener(e -> {
             parentWindow.dispose();
             showUpdateDialog(latestVersion);
@@ -252,16 +252,7 @@ public class UpdateService {
                                         JOptionPane.ERROR_MESSAGE);
                             }
                         } else if (r == 1) {
-                            // 自动下载 - 这里可以调用TopMenuBarPanel的下载方法
-                            // 为了简化，暂时跳转到手动下载页面
-                            try {
-                                Desktop.getDesktop().browse(new URI(RELEASE_URL));
-                            } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(null,
-                                        I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()),
-                                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                                        JOptionPane.ERROR_MESSAGE);
-                            }
+                            SingletonFactory.getInstance(TopMenuBarPanel.class).startDownloadWithProgress(latestReleaseJson);
                         }
                     });
                 }

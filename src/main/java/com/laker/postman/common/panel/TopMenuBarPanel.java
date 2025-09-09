@@ -413,7 +413,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     /**
      * 自动下载最新安装包并显示进度弹窗，支持取消
      */
-    private void startDownloadWithProgress(JSONObject latestReleaseJson) {
+    public void startDownloadWithProgress(JSONObject latestReleaseJson) {
         JSONArray assets = latestReleaseJson.getJSONArray("assets");
         String installerUrl = null;
         String osName = System.getProperty("os.name").toLowerCase();

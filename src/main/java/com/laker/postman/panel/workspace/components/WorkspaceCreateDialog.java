@@ -391,9 +391,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 调整对话框大小以适应内容
         if (isGit) {
-            setPreferredSize(new Dimension(550, 680));
+            setPreferredSize(new Dimension(650, 680));
         } else {
-            setPreferredSize(new Dimension(550, 420));
+            setPreferredSize(new Dimension(650, 420));
         }
 
         pack();

@@ -9,6 +9,7 @@ import com.laker.postman.model.GitStatusResult;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -425,12 +426,14 @@ public class GitOperationDialog extends JDialog {
 
                 // 获取认证信息
                 CredentialsProvider credentialsProvider = null;
+                SshCredentialsProvider sshCredentialsProvider = null;
                 if (workspace.getGitAuthType() != null) {
-                    credentialsProvider = getCredentialsProvider();
+                    credentialsProvider = workspaceService.getCredentialsProvider(workspace);
+                    sshCredentialsProvider = workspaceService.getSshCredentialsProvider(workspace);
                 }
 
                 // 执行冲突检测，传递认证信息
-                statusCheck = checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider);
+                statusCheck = checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider, sshCredentialsProvider);
 
                 // 显示检测结果
                 displayStatusCheck(statusCheck);

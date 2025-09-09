@@ -110,7 +110,7 @@ public class WorkspaceService {
     /**
      * Helper: Get CredentialsProvider for Git operations
      */
-    private UsernamePasswordCredentialsProvider getCredentialsProvider(Workspace workspace) {
+    public UsernamePasswordCredentialsProvider getCredentialsProvider(Workspace workspace) {
         if (workspace.getGitAuthType() == GitAuthType.PASSWORD &&
                 workspace.getGitUsername() != null && workspace.getGitPassword() != null) {
             return new UsernamePasswordCredentialsProvider(workspace.getGitUsername(), workspace.getGitPassword());
@@ -124,7 +124,7 @@ public class WorkspaceService {
     /**
      * Helper: Get SSH TransportConfigCallback for SSH authentication
      */
-    private SshCredentialsProvider getSshCredentialsProvider(Workspace workspace) {
+    public SshCredentialsProvider getSshCredentialsProvider(Workspace workspace) {
         if (workspace.getGitAuthType() == GitAuthType.SSH_KEY &&
                 workspace.getSshPrivateKeyPath() != null) {
             return new SshCredentialsProvider(

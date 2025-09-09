@@ -31,12 +31,12 @@ public class GitConflictDetector {
         // 工具类，隐藏构造函数
     }
 
-
     /**
-     * 检查Git仓库状态，判断是否可以执行指定操作（带认证信息）
+     * 检查Git仓库状态，判断是否可以执行指定操作（完整版本，支持所有认证方式）
      */
     public static GitStatusCheck checkGitStatus(String workspacePath, String operationType,
-                                                CredentialsProvider credentialsProvider) {
+                                                CredentialsProvider credentialsProvider,
+                                                SshCredentialsProvider sshCredentialsProvider) {
         GitStatusCheck result = new GitStatusCheck();
 
         try (Git git = Git.open(new File(workspacePath))) {
@@ -48,7 +48,7 @@ public class GitConflictDetector {
             checkLocalStatus(status, result);
 
             // 检查远程状态
-            checkRemoteStatus(git, result, credentialsProvider);
+            checkRemoteStatus(git, result, credentialsProvider, sshCredentialsProvider);
 
             // 根据操作类型生成建议
             generateSuggestions(result, operationType);
@@ -93,7 +93,8 @@ public class GitConflictDetector {
     }
 
     private static void checkRemoteStatus(Git git, GitStatusCheck result,
-                                          CredentialsProvider credentialsProvider) {
+                                          CredentialsProvider credentialsProvider,
+                                          SshCredentialsProvider sshCredentialsProvider) {
         try {
             String currentBranch = git.getRepository().getBranch();
             String tracking = git.getRepository().getConfig()
@@ -122,7 +123,7 @@ public class GitConflictDetector {
                 result.canPull = false;
 
                 // 对于 init 类型，需要检查潜在的冲突
-                checkInitTypeConflicts(git, result, currentBranch);
+                checkInitTypeConflicts(git, result, currentBranch, credentialsProvider, sshCredentialsProvider);
                 return;
             }
 
@@ -204,8 +205,10 @@ public class GitConflictDetector {
             boolean fetchSuccess = false;
             try {
                 var fetchCommand = git.fetch().setDryRun(false);
-                // 如果提供了认证信息，使用它
-                if (credentialsProvider != null) {
+                // 设置认证信息 - 支持SSH和其他认证方式
+                if (sshCredentialsProvider != null) {
+                    fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
+                } else if (credentialsProvider != null) {
                     fetchCommand.setCredentialsProvider(credentialsProvider);
                 }
                 fetchCommand.call();
@@ -224,7 +227,7 @@ public class GitConflictDetector {
                 log.debug("Failed to fetch remote status, using cached refs: {}", fetchEx.getMessage());
                 result.canConnectToRemote = false;
                 // 只有在真正需要远程状态时才添加警告
-                if (credentialsProvider != null) {
+                if (credentialsProvider != null || sshCredentialsProvider != null) {
                     result.warnings.add("无法获取最新远程状态: " + fetchEx.getMessage());
                     result.hasAuthenticationIssue = true;
                 } else {
@@ -302,7 +305,9 @@ public class GitConflictDetector {
      * 检查 init 类型工作区的潜在冲突
      * 当本地仓库已有内容，但要绑定到已存在的远程分支时
      */
-    private static void checkInitTypeConflicts(Git git, GitStatusCheck result, String currentBranch) {
+    private static void checkInitTypeConflicts(Git git, GitStatusCheck result, String currentBranch,
+                                               CredentialsProvider credentialsProvider,
+                                               SshCredentialsProvider sshCredentialsProvider) {
         try {
             // 检查是否有本地提交
             boolean hasLocalCommits = false;
@@ -331,6 +336,14 @@ public class GitConflictDetector {
                 try {
                     // 尝试获取远程分支信息（不会修改工作区）
                     var fetchCommand = git.fetch().setDryRun(true);
+
+                    // 设置认证信息 - 支持SSH和其他认证方式
+                    if (sshCredentialsProvider != null) {
+                        fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
+                    } else if (credentialsProvider != null) {
+                        fetchCommand.setCredentialsProvider(credentialsProvider);
+                    }
+
                     fetchCommand.call();
 
                     // 检查远程是否有同名分支

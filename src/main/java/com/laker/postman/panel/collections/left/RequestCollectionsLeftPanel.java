@@ -297,12 +297,19 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             new FlatSVGIcon("icons/export.svg", 16, 16));
                     exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
                     menu.add(exportPostmanItem);
+
+                    // 转移到其他工作区
+                    JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_MOVE_TO_WORKSPACE),
+                            new FlatSVGIcon("icons/workspace.svg", 16, 16));
+                    moveToWorkspaceItem.addActionListener(e -> moveCollectionToWorkspace(selectedNode));
+                    menu.add(moveToWorkspaceItem);
+
                     menu.addSeparator();
                 }
                 // 请求节点右键菜单增加"复制"
                 if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
                     JMenuItem duplicateItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
-                            new FlatSVGIcon("icons/plus.svg", 16, 16));
+                            new FlatSVGIcon("icons/duplicate.svg", 16, 16));
                     duplicateItem.addActionListener(e -> duplicateSelectedRequest());
                     menu.add(duplicateItem);
                     // 复制为cURL命令
@@ -1222,5 +1229,166 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         }
         // 重新加载树结构
         treeModel.reload(rootTreeNode);
+    }
+
+    /**
+     * 转移集合到其他工作区
+     */
+    private void moveCollectionToWorkspace(DefaultMutableTreeNode selectedNode) {
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof Object[] obj) || !GROUP.equals(obj[0])) {
+            return;
+        }
+
+        String collectionName = String.valueOf(obj[1]);
+
+        try {
+            // 获取所有工作区
+            WorkspaceService workspaceService = WorkspaceService.getInstance();
+            List<Workspace> allWorkspaces = workspaceService.getAllWorkspaces();
+            Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
+
+            // 过滤掉当前工作区
+            List<Workspace> availableWorkspaces = allWorkspaces.stream()
+                    .filter(w -> currentWorkspace == null || !w.getId().equals(currentWorkspace.getId()))
+                    .toList();
+
+            if (availableWorkspaces.isEmpty()) {
+                JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
+                        "没有其他可用的工作区",
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // 创建工作区选择对话框
+            Workspace selectedWorkspace = showWorkspaceSelectionDialog(availableWorkspaces);
+            if (selectedWorkspace == null) {
+                return; // 用户取消选择
+            }
+
+            // 确认转移操作
+            int confirm = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM,
+                            collectionName, selectedWorkspace.getName()),
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            // 执行转移操作
+            performCollectionMove(selectedNode, selectedWorkspace);
+
+        } catch (Exception ex) {
+            log.error("Move collection to workspace failed", ex);
+            JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_MOVE_TO_WORKSPACE_FAIL, ex.getMessage()),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * 显示工作区选择对话框
+     */
+    private Workspace showWorkspaceSelectionDialog(List<Workspace> workspaces) {
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_MOVE_TO_WORKSPACE_SELECT), true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setLayout(new BorderLayout());
+
+        // 创建工作区列表
+        DefaultListModel<Workspace> listModel = new DefaultListModel<>();
+        for (Workspace workspace : workspaces) {
+            listModel.addElement(workspace);
+        }
+
+        JList<Workspace> workspaceList = new JList<>(listModel);
+        workspaceList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        workspaceList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Workspace workspace) {
+                    setText(workspace.getName());
+                    setIcon(new FlatSVGIcon("icons/workspace.svg", 16, 16));
+                    setToolTipText(workspace.getDescription());
+                }
+                return this;
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(workspaceList);
+        dialog.add(scrollPane, BorderLayout.CENTER);
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
+
+        final Workspace[] selectedWorkspace = {null};
+
+        okButton.addActionListener(e -> {
+            Workspace selected = workspaceList.getSelectedValue();
+            if (selected == null) {
+                JOptionPane.showMessageDialog(dialog,
+                        "请选择一个工作区",
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            selectedWorkspace[0] = selected;
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(okButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+        return selectedWorkspace[0];
+    }
+
+    /**
+     * 执行集合转移操作
+     */
+    private void performCollectionMove(DefaultMutableTreeNode collectionNode, Workspace targetWorkspace) {
+        // 1. 深拷贝集合节点（包含所有子节点）
+        DefaultMutableTreeNode copiedNode = deepCopyGroupNode(collectionNode);
+
+        // 2. 获取目标工作区的集合文件路径
+        String targetCollectionPath = SystemUtil.getCollectionPathForWorkspace(targetWorkspace);
+
+        // 3. 创建目标工作区的持久化工具
+        DefaultMutableTreeNode targetRootNode = new DefaultMutableTreeNode(ROOT);
+        DefaultTreeModel targetTreeModel = new DefaultTreeModel(targetRootNode);
+        RequestCollectionPersistence targetPersistence = new RequestCollectionPersistence(
+                targetCollectionPath, targetRootNode, targetTreeModel);
+
+        // 4. 加载目标工作区的现有集合
+        targetPersistence.initRequestGroupsFromFile();
+
+        // 5. 将集合添加到目标工作区
+        targetRootNode.add(copiedNode);
+
+        // 6. 保存到目标工作区
+        targetPersistence.saveRequestGroups();
+
+        // 7. 从当前工作区删除原集合
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) collectionNode.getParent();
+        if (parent != null) {
+            parent.remove(collectionNode);
+            treeModel.reload();
+            persistence.saveRequestGroups();
+        }
+
+        log.info("Successfully moved collection '{}' to workspace '{}'",
+                ((Object[]) collectionNode.getUserObject())[1], targetWorkspace.getName());
     }
 }

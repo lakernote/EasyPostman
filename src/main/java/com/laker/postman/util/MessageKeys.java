@@ -397,6 +397,12 @@ public final class MessageKeys {
     public static final String COLLECTIONS_MENU_COPY_CURL_FAIL = "collections.menu.copy_curl.fail";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP = "collections.menu.export_postman.select_group";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE = "collections.menu.export_postman.dialog_title";
+    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE = "collections.menu.move_to_workspace";
+    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_SELECT = "collections.menu.move_to_workspace.select";
+    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_SUCCESS = "collections.menu.move_to_workspace.success";
+    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_FAIL = "collections.menu.move_to_workspace.fail";
+    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM = "collections.menu.move_to_workspace.confirm";
+    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE = "collections.menu.move_to_workspace.confirm_title";
 
     // ============ 集合导出导入相关 ============
     public static final String COLLECTIONS_EXPORT_DIALOG_TITLE = "collections.export.dialog_title";

@@ -11,6 +11,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
+import com.laker.postman.common.table.ValidatingTableCellEditor;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.TableModelEvent;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -54,6 +56,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private JTextField searchField;
     private JButton addEnvButton;
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
+    private boolean isLoadingData = false; // 用于控制是否正在加载数据，防止自动保存
 
     @Override
     protected void initUI() {
@@ -100,6 +103,56 @@ public class EnvironmentPanel extends SingletonBasePanel {
         rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
 
         add(rightPanel, BorderLayout.CENTER);
+
+        // 初始化表格验证和自动保存功能
+        initTableValidationAndAutoSave();
+    }
+
+    /**
+     * 初始化表格验证和自动保存功能
+     */
+    private void initTableValidationAndAutoSave() {
+        // 为Name列（第0列）设置非空验证编辑器
+        ValidatingTableCellEditor nameEditor = new ValidatingTableCellEditor(false, "变量名不能为空");
+        variablesTablePanel.setColumnEditor(0, nameEditor);
+
+        // 添加表格模型监听器，实现自动保存
+        variablesTablePanel.addTableModelListener(e -> {
+            if (currentEnvironment == null || isLoadingData) return;
+
+            // 防止在加载数据时触发自动保存
+            if (e.getType() == TableModelEvent.INSERT ||
+                    e.getType() == TableModelEvent.UPDATE ||
+                    e.getType() == TableModelEvent.DELETE) {
+
+                // 使用 SwingUtilities.invokeLater 确保在事件处理完成后执行保存
+                SwingUtilities.invokeLater(() -> {
+                    if (!isLoadingData && isVariablesChanged()) {
+                        autoSaveVariables();
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 自动保存变量（无提示框版本）
+     */
+    private void autoSaveVariables() {
+        if (currentEnvironment == null) return;
+
+        try {
+            variablesTablePanel.stopCellEditing();
+            currentEnvironment.getVariables().clear();
+            List<Map<String, Object>> newRows = getRowDatasFromTable();
+            EnvironmentService.saveEnvironment(currentEnvironment);
+            // 保存后更新快照
+            originalVariablesSnapshot = JSONUtil.toJsonStr(newRows);
+
+            log.debug("自动保存环境变量: {}", currentEnvironment.getName());
+        } catch (Exception ex) {
+            log.error("自动保存环境变量失败", ex);
+        }
     }
 
     private JPanel getButtonsPanel() {
@@ -333,6 +386,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         variablesTablePanel.stopCellEditing();
         currentEnvironment = env;
         variablesTablePanel.clear();
+        isLoadingData = true; // 设置标志位，开始加载数据
         if (env != null) {
             List<Map<String, Object>> rows = new ArrayList<>();
             for (String key : env.getVariables().keySet()) {
@@ -351,6 +405,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             variablesTablePanel.clear();
             originalVariablesSnapshot = JSONUtil.toJsonStr(new ArrayList<>()); // 空快照
         }
+        isLoadingData = false; // 清除标志位，结束加载数据
     }
 
     /**

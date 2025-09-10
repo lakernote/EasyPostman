@@ -360,6 +360,19 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (currentEnvironment == null) return;
         variablesTablePanel.stopCellEditing();
         currentEnvironment.getVariables().clear();
+        List<Map<String, Object>> newRows = getRowDatasFromTable();
+        EnvironmentService.saveEnvironment(currentEnvironment);
+        // 保存后更新快照为json字符串
+        originalVariablesSnapshot = JSONUtil.toJsonStr(newRows);
+
+        // 显示保存成功提示
+        JOptionPane.showMessageDialog(this,
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS_TITLE),
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private List<Map<String, Object>> getRowDatasFromTable() {
         List<Map<String, Object>> rows = variablesTablePanel.getRows();
         List<Map<String, Object>> newRows = new ArrayList<>();
         for (Map<String, Object> row : rows) {
@@ -371,15 +384,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             currentEnvironment.addVariable(key, value);
             newRows.add(row);
         }
-        EnvironmentService.saveEnvironment(currentEnvironment);
-        // 保存后更新快照为json字符串
-        originalVariablesSnapshot = JSONUtil.toJsonStr(newRows);
-
-        // 显示保存成功提示
-        JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS_TITLE),
-                JOptionPane.INFORMATION_MESSAGE);
+        return newRows;
     }
 
     /**
@@ -612,7 +617,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     // 判断当前表格内容和快照是否一致，使用JSON序列化比较
     public boolean isVariablesChanged() {
-        List<Map<String, Object>> rows = getRows();
+        List<Map<String, Object>> rows = getRowDatasFromTable();
         String curJson = JSONUtil.toJsonStr(rows);
         boolean isVariablesChanged = !CharSequenceUtil.equals(curJson, originalVariablesSnapshot);
         if (isVariablesChanged) {
@@ -621,27 +626,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
             log.debug("original variables: {}", originalVariablesSnapshot);
         }
         return isVariablesChanged;
-    }
-
-    private List<Map<String, Object>> getRows() {
-        List<Map<String, Object>> rows = new ArrayList<>(variablesTablePanel.getRows());
-        // 直接移除最后一行空行（所有字段都为 null 或空串）
-        if (!rows.isEmpty()) {
-            Map<String, Object> last = rows.get(rows.size() - 1);
-            boolean empty = true;
-            if (last != null) {
-                for (Object v : last.values()) {
-                    if (v != null && !(v instanceof String && ((String) v).trim().isEmpty())) {
-                        empty = false;
-                        break;
-                    }
-                }
-            }
-            if (empty) {
-                rows.remove(rows.size() - 1);
-            }
-        }
-        return rows;
     }
 
     // 导出选中环境为Postman格式

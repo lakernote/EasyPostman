@@ -19,65 +19,52 @@ import java.util.List;
  */
 @Slf4j
 public class ExitDialog {
-
     private ExitDialog() {
         throw new IllegalStateException("Utility class");
     }
 
+    /**
+     * 显示退出确认对话框，处理未保存内容。
+     */
     public static void show() {
-        // Check for unsaved changes
         RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
-        boolean hasUnsaved = false;
-        // Collect all unsaved tab indexes
         List<Integer> unsavedTabs = new ArrayList<>();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-            if (tabbedPane.getComponentAt(i) instanceof RequestEditSubPanel subPanel) {
-                if (subPanel.isModified()) {
-                    hasUnsaved = true;
-                    unsavedTabs.add(i);
-                }
+            if (tabbedPane.getComponentAt(i) instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
+                unsavedTabs.add(i);
             }
         }
-        if (hasUnsaved) { // If there are unsaved changes, prompt user to save
-            int result = JOptionPane.showConfirmDialog(tabbedPane,
+
+        // 如果有未保存内容，弹出自定义对话框
+        if (!unsavedTabs.isEmpty()) {
+            String[] options = {
+                    I18nUtil.getMessage(MessageKeys.EXIT_SAVE_ALL), // "全部保存"
+                    I18nUtil.getMessage(MessageKeys.EXIT_DISCARD_ALL), // "全部不保存"
+                    I18nUtil.getMessage(MessageKeys.EXIT_CANCEL) // "取消"
+            };
+            int result = JOptionPane.showOptionDialog(tabbedPane,
                     I18nUtil.getMessage(MessageKeys.EXIT_UNSAVED_CHANGES),
                     I18nUtil.getMessage(MessageKeys.EXIT_UNSAVED_CHANGES_TITLE),
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.WARNING_MESSAGE);
-            if (result == JOptionPane.CANCEL_OPTION) {  // User chose cancel, exit dialog
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+                    null,
+                    options,
+                    options[0]);
+            if (result == 2 || result == JOptionPane.CLOSED_OPTION) {
+                // 用户取消，直接返回
                 return;
             }
-            if (result == JOptionPane.YES_OPTION) {  // User chose yes, save all unsaved tabs
-                // Save all unsaved tabs
+            if (result == 0) {
+                // 全部保存
                 for (Integer i : unsavedTabs) {
                     tabbedPane.setSelectedIndex(i);
                     editPanel.saveCurrentRequest();
                 }
             }
-            // Use invokeLater to ensure dialog order
-            SwingUtilities.invokeLater(() -> {
-                int exitResult = JOptionPane.showConfirmDialog(null,
-                        I18nUtil.getMessage(MessageKeys.EXIT_CONFIRM),
-                        I18nUtil.getMessage(MessageKeys.EXIT_TITLE),
-                        JOptionPane.YES_NO_OPTION);
-                if (exitResult != JOptionPane.YES_OPTION) {
-                    return;
-                }
-                log.info("User chose to exit application");
-                SingletonFactory.getInstance(MainFrame.class).dispose();
-                System.exit(0);
-            });
-            return;
+            // result == 1 全部不保存，直接退出
         }
-        // No unsaved content, show exit confirmation directly
-        int result = JOptionPane.showConfirmDialog(null,
-                I18nUtil.getMessage(MessageKeys.EXIT_CONFIRM),
-                I18nUtil.getMessage(MessageKeys.EXIT_TITLE),
-                JOptionPane.YES_NO_OPTION);
-        if (result != JOptionPane.YES_OPTION) {
-            return;
-        }
+        // 没有未保存内容，或已处理完未保存内容，直接退出
         log.info("User chose to exit application");
         SingletonFactory.getInstance(MainFrame.class).dispose();
         System.exit(0);

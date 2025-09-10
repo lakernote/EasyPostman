@@ -384,6 +384,9 @@ public final class MessageKeys {
     public static final String EXIT_UNSAVED_CHANGES_TITLE = "exit.unsaved_changes.title";
     public static final String EXIT_CONFIRM = "exit.confirm";
     public static final String EXIT_TITLE = "exit.title";
+    public static final String EXIT_SAVE_ALL = "exit.save_all";
+    public static final String EXIT_DISCARD_ALL = "exit.discard_all";
+    public static final String EXIT_CANCEL = "exit.cancel";
 
     // ============ 集合相关 ============
     public static final String COLLECTIONS_EXPORT_TOOLTIP = "collections.export.tooltip";
@@ -654,8 +657,8 @@ public final class MessageKeys {
     // ============ OkHttpResponseHandler ============
     public static final String DOWNLOAD_PROGRESS_TITLE = "download.progress.title";
     public static final String DOWNLOAD_CANCELLED = "download.cancelled";
-    public static final String BINARY_TOO_LARGE = "binary.too_large";
-    public static final String BINARY_TOO_LARGE_BODY = "binary.too_large.body";
+    public static final String BINARY_TOO_LARGE = "binary.too.large";
+    public static final String BINARY_TOO_LARGE_BODY = "binary.too.large.body";
     public static final String BINARY_SAVED_TEMP_FILE = "binary.saved_temp_file";
     public static final String NO_RESPONSE_BODY = "no.response.body";
     public static final String DOWNLOAD_LIMIT_TITLE = "download.limit.title";

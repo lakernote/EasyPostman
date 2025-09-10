@@ -113,7 +113,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
      */
     private void initTableValidationAndAutoSave() {
         // 为Name列（第0列）设置非空验证编辑器
-        ValidatingTableCellEditor nameEditor = new ValidatingTableCellEditor(false, "变量名不能为空");
+        ValidatingTableCellEditor nameEditor = new ValidatingTableCellEditor(false, I18nUtil.getMessage(MessageKeys.ENV_VALIDATION_NAME_REQUIRED));
         variablesTablePanel.setColumnEditor(0, nameEditor);
 
         // 添加表格模型监听器，实现自动保存

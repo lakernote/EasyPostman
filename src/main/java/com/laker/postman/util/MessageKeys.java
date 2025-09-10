@@ -238,6 +238,7 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_EXPORT_POSTMAN_TITLE = "env.dialog.export_postman.title";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_SUCCESS = "env.dialog.export_postman.success";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_FAIL = "env.dialog.export_postman.fail";
+    public static final String ENV_VALIDATION_NAME_REQUIRED = "env.validation.name.required";
 
     // ============ 功能测试相关 ============
     public static final String FUNCTIONAL_TAB_REQUEST_CONFIG = "functional.tab.request_config";

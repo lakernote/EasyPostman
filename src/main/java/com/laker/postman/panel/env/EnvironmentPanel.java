@@ -54,7 +54,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private JList<EnvironmentItem> environmentList;
     private DefaultListModel<EnvironmentItem> environmentListModel;
     private JTextField searchField;
-    private JButton addEnvButton;
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
     private boolean isLoadingData = false; // 用于控制是否正在加载数据，防止自动保存
 
@@ -67,18 +66,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 左侧环境列表面板
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setPreferredSize(new Dimension(250, 400));
-        // 顶部搜索+新增
-        JPanel searchPanel = new JPanel();
-        searchPanel.setLayout(new BorderLayout(5, 5));
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        searchField = new SearchTextField();
-
-        addEnvButton = new JButton(new FlatSVGIcon("icons/plus.svg", 20, 20));
-        addEnvButton.setFocusable(false);
-
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(addEnvButton, BorderLayout.EAST);
-        leftPanel.add(searchPanel, BorderLayout.NORTH);
+        // 顶部搜索和导入导出按钮
+        leftPanel.add(getSearchAndImportPanel(), BorderLayout.NORTH);
 
         // 环境列表
         environmentListModel = new DefaultListModel<>();
@@ -95,9 +84,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
-        JPanel importExportPanel = getButtonsPanel();
-        rightPanel.add(importExportPanel, BorderLayout.NORTH);
-
         // 变量表格
         variablesTablePanel = new EasyNameValueTablePanel();
         rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
@@ -160,11 +146,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
         }
     }
 
-    private JPanel getButtonsPanel() {
-        JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        importExportPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+    private JPanel getSearchAndImportPanel() {
+        JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        importExportPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
-        importBtn.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_IMPORT));
         importBtn.setFocusPainted(false);
         importBtn.setBackground(Color.WHITE);
         importBtn.setIconTextGap(6);
@@ -181,27 +166,19 @@ public class EnvironmentPanel extends SingletonBasePanel {
         importExportPanel.add(importBtn);
 
         JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
-        exportBtn.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT));
         exportBtn.setFocusPainted(false);
         exportBtn.setBackground(Color.WHITE);
         exportBtn.setIconTextGap(6);
         exportBtn.addActionListener(e -> exportEnvironments());
         importExportPanel.add(exportBtn);
 
-
-        JButton saveVarButton = new JButton(new FlatSVGIcon("icons/save.svg", 20, 20));
-        saveVarButton.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_SAVE));
-        saveVarButton.addActionListener(e -> saveVariables());
-        saveVarButton.setFocusable(false); // 设置按钮不可获取焦点
-        exportBtn.setBackground(Color.WHITE); // 设置背景颜色
-        exportBtn.setIconTextGap(6); // 设置图标和文字间距
-        importExportPanel.add(saveVarButton);
+        searchField = new SearchTextField();
+        importExportPanel.add(searchField);
         return importExportPanel;
     }
 
     @Override
     protected void registerListeners() {
-        addEnvButton.addActionListener(e -> addEnvironment());
         // 联动菜单栏右上角下拉框
         EnvironmentComboBox topComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
         if (topComboBox != null) {

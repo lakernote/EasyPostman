@@ -202,9 +202,6 @@ public final class MessageKeys {
     public static final String COOKIE_DIALOG_ERROR_TITLE = "cookie.dialog.error.title";
 
     // ============ 环境变量相关 ============
-    public static final String ENV_BUTTON_IMPORT = "env.button.import";
-    public static final String ENV_BUTTON_EXPORT = "env.button.export";
-    public static final String ENV_BUTTON_SAVE = "env.button.save";
     public static final String ENV_BUTTON_ADD = "env.button.add";
     public static final String ENV_BUTTON_RENAME = "env.button.rename";
     public static final String ENV_BUTTON_DUPLICATE = "env.button.duplicate";
@@ -238,7 +235,6 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_EXPORT_POSTMAN_TITLE = "env.dialog.export_postman.title";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_SUCCESS = "env.dialog.export_postman.success";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_FAIL = "env.dialog.export_postman.fail";
-    public static final String ENV_VALIDATION_NAME_REQUIRED = "env.validation.name.required";
 
     // ============ 功能测试相关 ============
     public static final String FUNCTIONAL_TAB_REQUEST_CONFIG = "functional.tab.request_config";
@@ -385,11 +381,8 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL_DETECTED = "collections.import.curl.detected";
     public static final String COLLECTIONS_IMPORT_CURL_TITLE = "collections.import.curl.title";
     public static final String COLLECTIONS_IMPORT_EASY = "collections.import.easy";
-    public static final String COLLECTIONS_IMPORT_EASY_TOOLTIP = "collections.import.easy.tooltip";
     public static final String COLLECTIONS_IMPORT_POSTMAN = "collections.import.postman";
-    public static final String COLLECTIONS_IMPORT_POSTMAN_TOOLTIP = "collections.import.postman.tooltip";
     public static final String COLLECTIONS_IMPORT_CURL = "collections.import.curl";
-    public static final String COLLECTIONS_IMPORT_CURL_TOOLTIP = "collections.import.curl.tooltip";
 
     // ============ 集合菜单相关 ============
     public static final String COLLECTIONS_MENU_ADD_GROUP = "collections.menu.add_group";
@@ -533,7 +526,6 @@ public final class MessageKeys {
 
     // ============ Settings Dialog related ============
     // Dialog title and labels
-    public static final String SETTINGS_DIALOG_TITLE = "settings.dialog.title";
     public static final String SETTINGS_DIALOG_SAVE = "settings.dialog.save";
     public static final String SETTINGS_DIALOG_CANCEL = "settings.dialog.cancel";
 

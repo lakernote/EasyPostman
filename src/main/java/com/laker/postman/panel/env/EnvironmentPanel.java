@@ -11,7 +11,6 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.panel.TopMenuBarPanel;
-import com.laker.postman.common.table.ValidatingTableCellEditor;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
@@ -98,14 +97,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
      * 初始化表格验证和自动保存功能
      */
     private void initTableValidationAndAutoSave() {
-        // 为Name列（第0列）设置非空验证编辑器
-        ValidatingTableCellEditor nameEditor = new ValidatingTableCellEditor(false, I18nUtil.getMessage(MessageKeys.ENV_VALIDATION_NAME_REQUIRED));
-        variablesTablePanel.setColumnEditor(0, nameEditor);
-
-        // 为Value列（第1列）设置验证编辑器，启用跨列验证
-        ValidatingTableCellEditor valueEditor = new ValidatingTableCellEditor(true, ""); // Value列允许为空
-        valueEditor.enableCrossColumnValidation(0, 1); // Name列索引0，Value列索引1
-        variablesTablePanel.setColumnEditor(1, valueEditor);
 
         // 添加表格模型监听器，实现自动保存
         variablesTablePanel.addTableModelListener(e -> {

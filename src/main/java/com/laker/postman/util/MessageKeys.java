@@ -22,7 +22,6 @@ public final class MessageKeys {
     public static final String MENU_THEME_MAC = "menu.theme.mac";
     public static final String MENU_LANGUAGE = "menu.language";
     public static final String MENU_SETTINGS = "menu.settings";
-    public static final String MENU_SETTINGS_GLOBAL = "menu.settings.global";
     public static final String MENU_HELP = "menu.help";
     public static final String MENU_HELP_UPDATE = "menu.help.update";
     public static final String MENU_HELP_FEEDBACK = "menu.help.feedback";
@@ -39,8 +38,6 @@ public final class MessageKeys {
     public static final String LANGUAGE_CHANGED = "language.changed";
 
     // ============ 更新相关 ============
-    public static final String UPDATE_CHECKING = "update.checking";
-    public static final String UPDATE_LATEST_VERSION = "update.latest_version";
     public static final String UPDATE_NEW_VERSION_FOUND = "update.new_version_found";
     public static final String UPDATE_NEW_VERSION_AVAILABLE = "update.new_version_available";
     public static final String UPDATE_LATER = "update.later";
@@ -54,7 +51,6 @@ public final class MessageKeys {
     public static final String UPDATE_DOWNLOAD_SPEED = "update.download_speed";
     public static final String UPDATE_ESTIMATED_TIME = "update.estimated_time";
     public static final String UPDATE_CANCEL_DOWNLOAD = "update.cancel_download";
-    public static final String UPDATE_RETRY = "update.retry";
     public static final String UPDATE_DOWNLOAD_CANCELLED = "update.download_cancelled";
     public static final String UPDATE_DOWNLOAD_FAILED = "update.download_failed";
     public static final String UPDATE_INSTALL_PROMPT = "update.install_prompt";
@@ -62,9 +58,7 @@ public final class MessageKeys {
     public static final String UPDATE_NO_INSTALLER_FOUND = "update.no_installer_found";
 
     // ============ 错误消息 ============
-    public static final String ERROR_NETWORK = "error.network";
     public static final String ERROR_UPDATE_FAILED = "error.update_failed";
-    public static final String ERROR_NO_VERSION_INFO = "error.no_version_info";
     public static final String ERROR_OPEN_LOG_MESSAGE = "error.open_log_message";
     public static final String ERROR_OPEN_LINK_FAILED = "error.open_link_failed";
     public static final String ERROR_NETWORK_TIMEOUT = "error.network_timeout";
@@ -121,8 +115,6 @@ public final class MessageKeys {
     public static final String PLEASE_SELECT_VALID_GROUP = "please.select.valid.group";
     public static final String REQUEST_SAVED = "request.saved";
     public static final String SUCCESS = "success";
-    public static final String UPDATE_REQUEST = "update.request";
-    public static final String UPDATE_CURRENT_REQUEST = "update.current.request";
     public static final String UPDATE_REQUEST_FAILED = "update.request.failed";
     public static final String ERROR = "error";
 
@@ -382,8 +374,6 @@ public final class MessageKeys {
     // ============ 退出相关 ============
     public static final String EXIT_UNSAVED_CHANGES = "exit.unsaved_changes";
     public static final String EXIT_UNSAVED_CHANGES_TITLE = "exit.unsaved_changes.title";
-    public static final String EXIT_CONFIRM = "exit.confirm";
-    public static final String EXIT_TITLE = "exit.title";
     public static final String EXIT_SAVE_ALL = "exit.save_all";
     public static final String EXIT_DISCARD_ALL = "exit.discard_all";
     public static final String EXIT_CANCEL = "exit.cancel";

@@ -164,16 +164,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             // 新请求：弹出对话框让用户输入名称和选择文件夹
             saveNewRequest(collectionPanel, currentItem);
         } else {
-            // 已存在的请求：弹出确认对话框
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    I18nUtil.getMessage(MessageKeys.UPDATE_CURRENT_REQUEST, currentItem.getName()),
-                    I18nUtil.getMessage(MessageKeys.UPDATE_REQUEST),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
-
-            if (confirm == JOptionPane.YES_OPTION) {
-                updateExistingRequest(collectionPanel, currentItem);
-            }
+            updateExistingRequest(collectionPanel, currentItem);
         }
     }
 

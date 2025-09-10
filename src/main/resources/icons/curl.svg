@@ -1,9 +1,1 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="24" height="24" rx="12" fill="#222"/>
-  <path d="M7.5 16.5C7.5 18.1569 8.84315 19.5 10.5 19.5H13.5C15.1569 19.5 16.5 18.1569 16.5 16.5V7.5C16.5 5.84315 15.1569 4.5 13.5 4.5H10.5C8.84315 4.5 7.5 5.84315 7.5 7.5" stroke="#00B386" stroke-width="1.5"/>
-  <circle cx="8.5" cy="7.5" r="1" fill="#00B386"/>
-  <circle cx="15.5" cy="16.5" r="1" fill="#00B386"/>
-  <path d="M6 12H18" stroke="#00B386" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="12" y="22" text-anchor="middle" font-size="4" fill="#fff" font-family="monospace">curl</text>
-</svg>
-
+<svg width="24" height="24" viewBox="0 0 0.72 0.72" xmlns="http://www.w3.org/2000/svg"><path d="M.36.06a.3.3 0 1 0 .3.3.3.3 0 0 0-.3-.3m.026.4A.2.2 0 0 0 .462.444v.053A.2.2 0 0 1 .38.512a.13.13 0 0 1-.1-.04A.17.17 0 0 1 .246.36.2.2 0 0 1 .263.278.12.12 0 0 1 .312.224.14.14 0 0 1 .387.205a.2.2 0 0 1 .088.021L.454.278.42.263A.1.1 0 0 0 .386.257.07.07 0 0 0 .33.284.13.13 0 0 0 .31.36q0 .1.075.1"/></svg>

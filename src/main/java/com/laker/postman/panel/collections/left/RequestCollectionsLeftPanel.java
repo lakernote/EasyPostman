@@ -186,14 +186,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private JPopupMenu getImportMenu() {
         JPopupMenu importMenu = new JPopupMenu();
-        JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_EASY), new FlatSVGIcon("icons/easy.svg", 20, 20));
-        importEasyToolsItem.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_EASY_TOOLTIP));
+        JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_EASY),
+                new FlatSVGIcon("icons/easy.svg", 20, 20));
         importEasyToolsItem.addActionListener(e -> importRequestCollection());
-        JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN), new FlatSVGIcon("icons/postman.svg", 20, 20));
-        importPostmanItem.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_TOOLTIP));
+        JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN),
+                new FlatSVGIcon("icons/postman.svg", 20, 20));
         importPostmanItem.addActionListener(e -> importPostmanCollection());
-        JMenuItem importCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL), new FlatSVGIcon("icons/curl.svg", 20, 20));
-        importCurlItem.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_TOOLTIP));
+        JMenuItem importCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL),
+                new FlatSVGIcon("icons/curl.svg", 20, 20));
         importCurlItem.addActionListener(e -> importCurlToCollection(null));
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);

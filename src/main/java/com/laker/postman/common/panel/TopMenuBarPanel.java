@@ -251,7 +251,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             workspaceLabel = new JLabel();
             workspaceLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
             workspaceLabel.setForeground(new Color(70, 70, 70));
-            workspaceLabel.setIcon(new FlatSVGIcon("icons/workspace.svg", 18, 18));
+            workspaceLabel.setIcon(new FlatSVGIcon("icons/workspace.svg", 24, 24));
             workspaceLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
         }
         updateWorkspaceDisplay();

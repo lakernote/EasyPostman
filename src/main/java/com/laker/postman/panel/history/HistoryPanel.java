@@ -94,7 +94,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
         // 创建 Tab 面板
         historyDetailTabPane = new JTabbedPane();
-        historyDetailTabPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        historyDetailTabPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
 
         // 创建各个标签页
         requestPane = createDetailPane();
@@ -103,14 +103,10 @@ public class HistoryPanel extends SingletonBasePanel {
         eventPane = createDetailPane();
 
         // 添加标签页
-        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST, "Request"),
-                new JScrollPane(requestPane));
-        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE, "Response"),
-                new JScrollPane(responsePane));
-        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_TIMING, "Timing"),
-                new JScrollPane(timingPane));
-        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_EVENTS, "Events"),
-                new JScrollPane(eventPane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST), new JScrollPane(requestPane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE), new JScrollPane(responsePane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_TIMING), new JScrollPane(timingPane));
+        historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_EVENTS), new JScrollPane(eventPane));
 
         // 设置滚动策略
         for (int i = 0; i < historyDetailTabPane.getTabCount(); i++) {

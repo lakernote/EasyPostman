@@ -75,7 +75,7 @@ public class WorkspacePanel extends SingletonBasePanel {
      * 创建工具栏
      */
     private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         toolbar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 新建工作区按钮

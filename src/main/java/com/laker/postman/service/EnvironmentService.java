@@ -40,6 +40,9 @@ public class EnvironmentService {
     // 临时变量，仅本次请求有效，优先级高于环境变量
     private static final ThreadLocal<Map<String, String>> temporaryVariables = ThreadLocal.withInitial(ConcurrentHashMap::new);
 
+    // 当前数据文件路径
+    private static String currentDataFilePath;
+
     static {
         loadEnvironments();
     }
@@ -62,22 +65,33 @@ public class EnvironmentService {
     }
 
     /**
+     * 获取当前数据文件路径
+     */
+    public static String getDataFilePath() {
+        if (currentDataFilePath != null) {
+            return currentDataFilePath;
+        }
+        // 如果没有设置，返回当前工作区的环境文件路径
+        Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+        return SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+    }
+
+    /**
      * 切换环境变量数据文件路径，并重新加载
      */
     public static void setDataFilePath(String path) {
         if (path == null || path.isBlank()) return;
-        loadEnvironments();
+        currentDataFilePath = path;
+        loadEnvironmentsFromPath(path);
     }
 
     /**
-     * 加载所有环境变量
+     * 从指定路径加载环境变量
      */
-    public static void loadEnvironments() {
-        Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
-        String filePath = SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+    private static void loadEnvironmentsFromPath(String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
-            log.info("环境变量文件不存在，将创建默认环境");
+            log.info("环境变量文件不存在: {}, 将创建默认环境", filePath);
             createDefaultEnvironments();
             return;
         }
@@ -113,8 +127,21 @@ public class EnvironmentService {
                 saveEnvironments();
             }
         } catch (Exception e) {
-            log.error("加载环境变量失败", e);
+            log.error("加载环境变量失败: {}", filePath, e);
             createDefaultEnvironments();
+        }
+    }
+
+    /**
+     * 加载所有环境变量
+     */
+    public static void loadEnvironments() {
+        if (currentDataFilePath != null) {
+            loadEnvironmentsFromPath(currentDataFilePath);
+        } else {
+            Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+            String filePath = SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+            loadEnvironmentsFromPath(filePath);
         }
     }
 
@@ -149,8 +176,14 @@ public class EnvironmentService {
      */
     public static void saveEnvironments() {
         try {
-            Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
-            String filePath = SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+            String filePath;
+            if (currentDataFilePath != null) {
+                filePath = currentDataFilePath;
+            } else {
+                Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+                filePath = SystemUtil.getEnvPathForWorkspace(currentWorkspace);
+            }
+
             File file = new File(filePath);
             File parentDir = file.getParentFile();
             if (!parentDir.exists()) {

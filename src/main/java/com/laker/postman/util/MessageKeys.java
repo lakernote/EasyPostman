@@ -236,6 +236,14 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_EXPORT_POSTMAN_SUCCESS = "env.dialog.export_postman.success";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_FAIL = "env.dialog.export_postman.fail";
 
+    // 环境转移到其他工作区相关
+    public static final String ENV_MENU_MOVE_TO_WORKSPACE = "env.menu.move_to_workspace";
+    public static final String ENV_MENU_MOVE_TO_WORKSPACE_SELECT = "env.menu.move_to_workspace.select";
+    public static final String ENV_MENU_MOVE_TO_WORKSPACE_SUCCESS = "env.menu.move_to_workspace.success";
+    public static final String ENV_MENU_MOVE_TO_WORKSPACE_FAIL = "env.menu.move_to_workspace.fail";
+    public static final String ENV_MENU_MOVE_TO_WORKSPACE_CONFIRM = "env.menu.move_to_workspace.confirm";
+    public static final String ENV_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE = "env.menu.move_to_workspace.confirm_title";
+
     // ============ 功能测试相关 ============
     public static final String FUNCTIONAL_TAB_REQUEST_CONFIG = "functional.tab.request_config";
     public static final String FUNCTIONAL_TAB_EXECUTION_RESULTS = "functional.tab.execution_results";

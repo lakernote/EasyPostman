@@ -116,6 +116,11 @@ public class EnvironmentPanel extends SingletonBasePanel {
         ValidatingTableCellEditor nameEditor = new ValidatingTableCellEditor(false, I18nUtil.getMessage(MessageKeys.ENV_VALIDATION_NAME_REQUIRED));
         variablesTablePanel.setColumnEditor(0, nameEditor);
 
+        // 为Value列（第1列）设置验证编辑器，启用跨列验证
+        ValidatingTableCellEditor valueEditor = new ValidatingTableCellEditor(true, ""); // Value列允许为空
+        valueEditor.enableCrossColumnValidation(0, 1); // Name列索引0，Value列索引1
+        variablesTablePanel.setColumnEditor(1, valueEditor);
+
         // 添加表格模型监听器，实现自动保存
         variablesTablePanel.addTableModelListener(e -> {
             if (currentEnvironment == null || isLoadingData) return;

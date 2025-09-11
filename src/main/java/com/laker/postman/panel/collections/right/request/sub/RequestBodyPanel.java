@@ -12,9 +12,13 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -39,7 +43,7 @@ public class RequestBodyPanel extends JPanel {
     @Getter
     private EasyNameValueTablePanel formUrlencodedTablePanel;
     @Getter
-    private JTextArea bodyArea;
+    private RSyntaxTextArea bodyArea;
     private final CardLayout bodyCardLayout;
     private final JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_RAW;
@@ -158,9 +162,15 @@ public class RequestBodyPanel extends JPanel {
 
     private JPanel createRawPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        bodyArea = new JTextArea(5, 20);
-        bodyArea.setBackground(Color.WHITE);
-        bodyArea.setLineWrap(true);
+        bodyArea = new RSyntaxTextArea(5, 20);
+        bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON); // 默认JSON高亮
+        try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
+            if (in != null) {
+                Theme theme = Theme.load(in);
+                theme.apply(bodyArea);
+            }
+        } catch (Exception ignored) {
+        }
         JScrollPane scrollPane = new JScrollPane(bodyArea);
         panel.add(scrollPane, BorderLayout.CENTER);
 

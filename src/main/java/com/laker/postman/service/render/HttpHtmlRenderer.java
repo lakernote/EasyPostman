@@ -233,10 +233,9 @@ public class HttpHtmlRenderer {
 
         // 添加时序表格行
 
-        return "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timing]</b></div>" +
-                "<div style='margin:8px 0;'>" +
-                "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timing Timeline]</b></div>" +
-                "<table style='border-collapse:collapse;margin:8px 0;'>" +
+        return "<div>" +
+                "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timeline]</b></div>" +
+                "<table style='border-collapse:collapse;margin:4px 0;'>" +
 
                 // 添加时序表格行
                 createTimingRow("Total", calc.getTotal(), COLOR_ERROR, true, "总耗时（CallStart→CallEnd，整个请求生命周期）") +

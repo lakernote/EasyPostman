@@ -20,6 +20,7 @@ import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -77,6 +78,7 @@ public class RequestEditSubPanel extends JPanel {
     private final ResponseBodyPanel responseBodyPanel;
     @Getter
     private final NetworkLogPanel networkLogPanel; // 网络日志面板
+    private JTextPane timingPane;
     private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
@@ -168,7 +170,8 @@ public class RequestEditSubPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
                 I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
                 I18nUtil.getMessage(MessageKeys.TAB_TESTS),
-                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG)
+                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG),
+                I18nUtil.getMessage(MessageKeys.TAB_TIMING)
         };
         JButton[] tabButtons = new JButton[tabNames.length];
         this.tabButtons = tabButtons;
@@ -201,10 +204,15 @@ public class RequestEditSubPanel extends JPanel {
         JScrollPane testsScrollPane = new JScrollPane(testsPane);
         testsPanel.add(testsScrollPane, BorderLayout.CENTER);
         networkLogPanel = new NetworkLogPanel();
+        timingPane = new JTextPane();
+        timingPane.setEditable(false);
+        timingPane.setContentType("text/html");
+        timingPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         cardPanel.add(responseBodyPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY));
         cardPanel.add(responseHeadersPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
         cardPanel.add(testsPanel, I18nUtil.getMessage(MessageKeys.TAB_TESTS));
         cardPanel.add(networkLogPanel, I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG));
+        cardPanel.add(new JScrollPane(timingPane), I18nUtil.getMessage(MessageKeys.TAB_TIMING));
         responsePanel.add(cardPanel, BorderLayout.CENTER);
 
         // Tab按钮切换逻辑
@@ -932,6 +940,7 @@ public class RequestEditSubPanel extends JPanel {
         // 清空响应内容
         responseHeadersPanel.setHeaders(new LinkedHashMap<>());
         responseBodyPanel.setBodyText(null);
+        timingPane.setText("");
         // 清空网络日志
         networkLogPanel.clearLog();
         // 清空测试结果
@@ -948,6 +957,8 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
         responseHeadersPanel.setHeaders(resp.headers);
+        timingPane.setText(HttpHtmlRenderer.renderTimingInfo(resp));
+        timingPane.setCaretPosition(0);
         setResponseBody(resp);
         Color statusColor = getStatusColor(resp.code);
         statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText));

@@ -45,7 +45,7 @@ fi
 
 # Step 1: 清理 & 构建项目
 echo "🚀 开始构建项目..."
-mvn clean package -DskipTests
+mvn clean package -DskipTests=false
 if [ $? -ne 0 ]; then
     echo "❌ Maven 构建失败，请检查错误日志"
     exit 1

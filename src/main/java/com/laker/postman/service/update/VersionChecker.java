@@ -1,5 +1,6 @@
 package com.laker.postman.service.update;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.util.SystemUtil;
@@ -36,10 +37,10 @@ public class VersionChecker {
                 return UpdateInfo.noUpdateAvailable("No version information found");
             }
 
-            if (compareVersion(latestVersion, currentVersion) > 0) {
+            if (compareVersion(latestVersion, currentVersion) > 0 && CharSequenceUtil.isNotBlank(getDownloadUrl(releaseInfo))) {
                 return UpdateInfo.updateAvailable(currentVersion, latestVersion, releaseInfo);
             } else {
-                return UpdateInfo.noUpdateAvailable("Already the latest version");
+                return UpdateInfo.noUpdateAvailable("Already the latest version " + currentVersion);
             }
 
         } catch (Exception e) {

@@ -45,7 +45,7 @@ if %MAJOR_JVER% lss 17 (
 )
 
 :: Step 1: Clean and build project
-call mvn clean package -DskipTests
+call mvn clean package -DskipTests=false
 if errorlevel 1 (
     echo ERROR: Maven build failed
     pause

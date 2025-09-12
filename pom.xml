@@ -138,6 +138,14 @@
             <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
             <version>${org.eclipse.jgit.version}</version>
         </dependency>
+
+        <!--testng -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>7.8.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

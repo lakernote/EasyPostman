@@ -5,6 +5,11 @@ package com.laker.postman.util;
  * 提供将字节数转换为更友好的显示格式
  */
 public class FileSizeDisplayUtil {
+
+    private FileSizeDisplayUtil() {
+        // 私有构造函数，防止实例化
+    }
+
     /**
      * 格式化文件大小显示，自动选择单位，保留两位小数，去除无意义的.00
      *

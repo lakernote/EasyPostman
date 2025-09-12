@@ -5,6 +5,11 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 
 public class JsonPathUtil {
+
+    private JsonPathUtil() {
+        // 私有构造函数，防止实例化
+    }
+
     /**
      * 从JSON对象中提取指定路径的值，支持简单的$.a.b[0].c格式
      *

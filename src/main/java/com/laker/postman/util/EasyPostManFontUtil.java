@@ -107,7 +107,7 @@ public class EasyPostManFontUtil {
      * @return Font 如果找到可用字体则返回，否则返回 null
      */
     private static Font findAvailableFont(int style, int size, String[] fontNames) {
-        if (fontNames == null || fontNames.length == 0) {
+        if (fontNames == null) {
             return null;
         }
 
@@ -147,35 +147,5 @@ public class EasyPostManFontUtil {
             }
         }
         return true;
-    }
-
-    /**
-     * 获取系统中所有可用的字体名称
-     *
-     * @return 字体名称数组
-     */
-    public static String[] getAvailableFontNames() {
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        return ge.getAvailableFontFamilyNames();
-    }
-
-    /**
-     * 检查指定字体是否在系统中可用
-     *
-     * @param fontName 字体名称
-     * @return true 如果字体可用
-     */
-    public static boolean isFontInstalled(String fontName) {
-        if (fontName == null || fontName.trim().isEmpty()) {
-            return false;
-        }
-
-        String[] availableFonts = getAvailableFontNames();
-        for (String availableFont : availableFonts) {
-            if (availableFont.equalsIgnoreCase(fontName.trim())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

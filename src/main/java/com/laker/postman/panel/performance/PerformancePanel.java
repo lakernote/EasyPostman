@@ -80,7 +80,6 @@ public class PerformancePanel extends SingletonBasePanel {
     private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
-    // 测试执行开始时间
     private long startTime;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
@@ -331,7 +330,29 @@ public class PerformancePanel extends SingletonBasePanel {
                     stopBtn.setEnabled(false);
                     stopTrendTimer();
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
-                    performanceReportPanel.updateReport(apiCostMap, apiSuccessMap, apiFailMap, allRequestStartTimes, allRequestResults);
+
+                    // Create thread-safe copies before updating the report
+                    List<Long> startTimesCopy;
+                    List<RequestResult> resultsCopy;
+                    Map<String, List<Long>> apiCostMapCopy = new HashMap<>();
+
+                    synchronized (allRequestStartTimes) {
+                        startTimesCopy = new ArrayList<>(allRequestStartTimes);
+                    }
+
+                    synchronized (allRequestResults) {
+                        resultsCopy = new ArrayList<>(allRequestResults);
+                    }
+
+                    // Create thread-safe copies for each API cost list
+                    for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                        List<Long> costList = entry.getValue();
+                        synchronized (costList) {
+                            apiCostMapCopy.put(entry.getKey(), new ArrayList<>(costList));
+                        }
+                    }
+
+                    performanceReportPanel.updateReport(apiCostMapCopy, apiSuccessMap, apiFailMap, startTimesCopy, resultsCopy);
                 });
             }
         });

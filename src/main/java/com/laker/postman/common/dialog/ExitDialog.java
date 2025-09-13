@@ -2,13 +2,17 @@ package com.laker.postman.common.dialog;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.common.tab.ClosableTabComponent;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.service.UnSavedNewRequestService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,11 +34,25 @@ public class ExitDialog {
         RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
         List<Integer> unsavedTabs = new ArrayList<>();
+        List<HttpRequestItem> newRequestItems = new ArrayList<>(); // For new requests
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-            if (tabbedPane.getComponentAt(i) instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
-                unsavedTabs.add(i);
+            Component tabComp = tabbedPane.getTabComponentAt(i);
+            Component comp = tabbedPane.getComponentAt(i);
+            if (tabComp instanceof ClosableTabComponent closable &&
+                    comp instanceof RequestEditSubPanel subPanel) {
+                if (closable.newRequest) {
+                    // Collect new requests
+                    HttpRequestItem item = subPanel.getCurrentRequest();
+                    if (item != null) {
+                        newRequestItems.add(item);
+                    }
+                }
+                if (subPanel.isModified()) {
+                    unsavedTabs.add(i);
+                }
             }
         }
+        UnSavedNewRequestService.save(newRequestItems);
 
         // 如果有未保存内容，弹出自定义对话框
         if (!unsavedTabs.isEmpty()) {

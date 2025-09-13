@@ -21,7 +21,7 @@ public class ClosableTabComponent extends JPanel {
     private final JLabel label;
     private final String rawTitle;
     private boolean dirty = false;
-    private boolean newRequest = false;
+    public boolean newRequest = false;
     private final JTabbedPane tabbedPane;
     private final RequestEditSubPanel panel;
 

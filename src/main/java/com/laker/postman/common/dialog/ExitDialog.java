@@ -52,6 +52,10 @@ public class ExitDialog {
                 }
             }
         }
+        // 只保存最新的10个 newRequestItems
+        if (newRequestItems.size() > 20) {
+            newRequestItems = new ArrayList<>(newRequestItems.subList(newRequestItems.size() - 20, newRequestItems.size()));
+        }
         UnSavedNewRequestService.save(newRequestItems);
 
         // 如果有未保存内容，弹出自定义对话框

@@ -821,7 +821,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         userObj[1] = item;
         treeModel.nodeChanged(requestNode);
         persistence.saveRequestGroups();
-        // 新增：保存后去除Tab红点
+        // 保存后去除Tab红点
         SwingUtilities.invokeLater(() -> {
             RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
             JTabbedPane tabbedPane = editPanel.getTabbedPane();

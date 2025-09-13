@@ -295,7 +295,7 @@ public class RequestEditSubPanel extends JPanel {
      * 设置原始请求数据（脏数据检测）
      */
     public void setOriginalRequestItem(HttpRequestItem item) {
-        if (item != null && item.getName() != null) {
+        if (item != null && !item.isNewRequest()) {
             // 深拷贝，避免引用同一对象导致脏检测失效
             this.originalRequestItem = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
         } else {

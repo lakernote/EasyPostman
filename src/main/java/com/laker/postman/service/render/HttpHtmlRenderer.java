@@ -289,7 +289,7 @@ public class HttpHtmlRenderer {
         // 背景色为 rgb(245,247,250)，并加大列间距
         return "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Event Info]</b></div>" +
                 // 设置背景色和列间距
-                "<table style='border-collapse:collapse;background:rgb(245,247,250);border-radius:4px;padding:6px 8px;color:#444;margin:8px 0;'>" +
+                "<table style='border-collapse:collapse;background:rgb(245,247,250);border-radius:4px;padding:3px 4px;color:#444;margin:4px 0;'>" +
                 createEventRow("QueueStart", formatMillis(info.getQueueStart())) +
                 createEventRow("Local", escapeHtml(info.getLocalAddress())) +
                 createEventRow("Remote", escapeHtml(info.getRemoteAddress())) +

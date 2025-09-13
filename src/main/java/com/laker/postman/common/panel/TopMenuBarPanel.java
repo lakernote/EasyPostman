@@ -300,13 +300,13 @@ public class TopMenuBarPanel extends SingletonBasePanel {
                 + "<img src='" + iconUrl + "' width='56' height='56' style='margin-bottom:10px;'/>"
                 + "</div>"
                 + "<div style='font-size:16px; font-weight:bold; color:#212529; text-align:center; margin-bottom:6px;'>EasyPostman</div>"
-                + "<div style='font-size:12px; color:#666; text-align:center; margin-bottom:12px;>"
+                + "<div style='font-size:12px; color:#666; text-align:center; margin-bottom:12px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_VERSION, getCurrentVersion()) + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:2px;>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_AUTHOR) + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:2px;>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_LICENSE) + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:8px;>"
+                + "<div style='font-size:10px; color:#444; margin-bottom:8px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_WECHAT) + "</div>"
                 + "<hr style='border:none; border-top:1px solid #eee; margin:10px 0;'>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
@@ -344,7 +344,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             }
         });
         // 直接用JEditorPane，不用滚动条，且自适应高度
-        editorPane.setPreferredSize(new Dimension(310, 310));
+        editorPane.setPreferredSize(new Dimension(310, 350));
         return editorPane;
     }
 

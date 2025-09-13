@@ -1,0 +1,4 @@
+- https://www.svgviewer.dev/
+- https://icon-icons.com/
+- https://anyconv.com/png-to-icns-converter/
+- https://www.flaticon.com/

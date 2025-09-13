@@ -19,6 +19,7 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.RequestCollectionPersistence;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -75,6 +76,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private transient RequestCollectionPersistence persistence;
 
+    private transient RequestCollectionsService collectionsService;
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -86,6 +89,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         JScrollPane treeScrollPane = getTreeScrollPane();
         add(treeScrollPane, BorderLayout.CENTER);
+        collectionsService = new RequestCollectionsService(rootTreeNode, requestTree);
     }
 
     private JScrollPane getTreeScrollPane() {
@@ -506,31 +510,18 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         SwingUtilities.invokeLater(() -> {  // 异步加载请求组
             persistence.initRequestGroupsFromFile(); // 从文件加载请求集合
-            // 加载完成后，自动打开最后一次请求,如果没有这默认打开一个新建请求
             SwingUtilities.invokeLater(() -> {
-                RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-                String lastId = UserSettingsUtil.getLastOpenRequestId();
-                if (lastId != null && !lastId.isEmpty()) {
-                    DefaultMutableTreeNode node = findRequestNodeById(rootTreeNode, lastId);
-                    if (node != null) {
-                        TreePath path = new TreePath(node.getPath());
-                        requestTree.setSelectionPath(path);
-                        requestTree.scrollPathToVisible(path);
-                        Object[] obj = (Object[]) node.getUserObject();
-                        if (REQUEST.equals(obj[0])) {
-                            HttpRequestItem item = (HttpRequestItem) obj[1];
-                            requestEditPanel.showOrCreateTab(item);
-                            requestEditPanel.addPlusTab();
-                        }
-                    } else {
-                        // 找不到对应请求时，默认打开一个新建请求
-                        requestEditPanel.addNewTab(RequestEditPanel.REQUEST_STRING);
-                    }
-                } else {
-                    // 没有lastId时，默认打开一个新建请求
+                // 恢复未保存的新建请求
+                int unSaved = collectionsService.restoreUnSavedNewRequests();
+                // 加载完成后，自动打开最后一次请求,如果没有这默认打开一个新建请求
+                DefaultMutableTreeNode node = collectionsService.restoreLastSavedRequests();
+                if (unSaved == 0 && node == null) {
+                    // 自动创建一个新请求
+                    RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
                     requestEditPanel.addNewTab(RequestEditPanel.REQUEST_STRING);
+                } else {
+                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
                 }
-
             });
         });
 
@@ -819,7 +810,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         if (item == null || item.getId() == null || item.getId().isEmpty()) {
             return false;
         }
-        DefaultMutableTreeNode requestNode = findRequestNodeById(rootTreeNode, item.getId());
+        DefaultMutableTreeNode requestNode = collectionsService.findRequestNodeById(rootTreeNode, item.getId());
         if (requestNode == null) {
             return false;
         }
@@ -848,32 +839,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         return true;
     }
 
-    /**
-     * 根据ID查找请求节点
-     */
-    private DefaultMutableTreeNode findRequestNodeById(DefaultMutableTreeNode node, String id) {
-        if (node == null) return null;
-
-        Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj) {
-            if (REQUEST.equals(obj[0])) {
-                HttpRequestItem item = (HttpRequestItem) obj[1];
-                if (id.equals(item.getId())) {
-                    return node;
-                }
-            }
-        }
-
-        for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            DefaultMutableTreeNode result = findRequestNodeById(child, id);
-            if (result != null) {
-                return result;
-            }
-        }
-
-        return null;
-    }
 
     /**
      * 获取分组树的 TreeModel（用于分组选择树）
@@ -1199,7 +1164,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             return;
         }
 
-        DefaultMutableTreeNode targetNode = findRequestNodeById(rootTreeNode, requestId);
+        DefaultMutableTreeNode targetNode = collectionsService.findRequestNodeById(rootTreeNode, requestId);
         if (targetNode == null) { // 如果没有找到对应的请求节点
             return;
         }

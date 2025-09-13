@@ -47,7 +47,7 @@ public class ExitDialog {
                         newRequestItems.add(item);
                     }
                 }
-                if (subPanel.isModified()) {
+                if (closable.dirty) {
                     unsavedTabs.add(i);
                 }
             }

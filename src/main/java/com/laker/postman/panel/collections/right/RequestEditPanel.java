@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
@@ -11,6 +12,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.service.collections.RequestCollectionsTabsService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -51,7 +53,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
         }
-        String tabTitle = title != null ? title : REQUEST_STRING + (tabbedPane.getTabCount() + 1);
+        String tabTitle = title != null ? title : REQUEST_STRING;
         RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID(), RequestItemProtocolEnum.HTTP);
         tabbedPane.addTab(tabTitle, subPanel);
         tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1,
@@ -59,7 +61,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
-        updateTabNew(subPanel, true); // 设置新建状态
+        RequestCollectionsTabsService.updateTabNew(subPanel, true); // 设置新建状态
         return subPanel;
     }
 
@@ -116,8 +118,8 @@ public class RequestEditPanel extends SingletonBasePanel {
         // 没有同id Tab则新建
         RequestEditSubPanel subPanel = new RequestEditSubPanel(id, item.getProtocol());
         subPanel.updateRequestForm(item);
-        String name = item.getName() != null ? item.getName() : REQUEST_STRING + (tabbedPane.getTabCount());
-        int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
+        String name = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : REQUEST_STRING;
+        int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0; // 插入到“+”Tab前
         tabbedPane.insertTab(name, null, subPanel, null, plusTabIdx);
         tabbedPane.setTabComponentAt(plusTabIdx,
                 new ClosableTabComponent(name, subPanel, tabbedPane));
@@ -379,14 +381,6 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
-    public void updateTabNew(RequestEditSubPanel panel, boolean isNew) {
-        int idx = tabbedPane.indexOfComponent(panel);
-        if (idx < 0) return;
-        Component tabComp = tabbedPane.getTabComponentAt(idx);
-        if (tabComp instanceof ClosableTabComponent closable) {
-            closable.setNewRequest(isNew);
-        }
-    }
 
     /**
      * 设置标签页切换监听器，实现反向定位到左侧树节点

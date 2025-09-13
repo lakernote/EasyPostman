@@ -20,7 +20,7 @@ public class ClosableTabComponent extends JPanel {
     private static final int TAB_HEIGHT = 20; // Tab高度
     private final JLabel label;
     private final String rawTitle;
-    private boolean dirty = false;
+    public boolean dirty = false;
     public boolean newRequest = false;
     private final JTabbedPane tabbedPane;
     private final RequestEditSubPanel panel;

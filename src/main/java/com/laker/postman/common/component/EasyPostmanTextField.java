@@ -14,10 +14,15 @@ public class EasyPostmanTextField extends JTextField {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
 
     // Postman 风格颜色
+    private static final Color DEFINED_VAR_BG = new Color(180, 210, 255, 120); // 半透明淡蓝
+    private static final Color DEFINED_VAR_BORDER = new Color(80, 150, 255); // 蓝色边框
+    private static final Color UNDEFINED_VAR_BG = new Color(255, 200, 200, 120); // 半透明红
     private static final Color UNDEFINED_VAR_BORDER = new Color(255, 100, 100); // 红色
 
     public EasyPostmanTextField(String text, int columns) {
         super(text, columns);
+        // 启用 ToolTip 支持，必须设置（即使内容为空）
+        setToolTipText("");
     }
 
 
@@ -58,16 +63,8 @@ public class EasyPostmanTextField extends JTextField {
                 }
                 // 判断变量状态
                 boolean isDefined = isVariableDefined(seg.name);
-                Color bgColor;
-                Color borderColor;
-                if (isDefined) {
-                    // 偏蓝色（蓝色+橙色混合，柔和）
-                    bgColor = new Color(180, 210, 255, 120); // 半透明淡蓝
-                    borderColor = new Color(80, 150, 255); // 蓝色边框
-                } else {
-                    bgColor = new Color(255, 200, 200, 120); // 半透明红
-                    borderColor = UNDEFINED_VAR_BORDER;
-                }
+                Color bgColor = isDefined ? DEFINED_VAR_BG : UNDEFINED_VAR_BG;
+                Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
                 String varText = value.substring(seg.start, seg.end);
                 int varWidth = fm.stringWidth(varText);
                 // 只绘制变量的半透明背景和边框，不绘制文本
@@ -81,6 +78,55 @@ public class EasyPostmanTextField extends JTextField {
         } catch (Exception ignored) {
             // 忽略异常，通常由于文本为空或光标位置异常导致
         }
+    }
+
+    @Override
+    public String getToolTipText(java.awt.event.MouseEvent event) {
+        String value = getText();
+        List<VariableSegment> segments = getVariableSegments(value);
+        if (segments.isEmpty()) return super.getToolTipText(event);
+        try {
+            int mouseX = event.getX();
+            Rectangle startRect = modelToView2D(0).getBounds();
+            FontMetrics fm = getFontMetrics(getFont());
+            int x = startRect.x;
+            int last = 0;
+            for (VariableSegment seg : segments) {
+                if (seg.start > last) {
+                    String before = value.substring(last, seg.start);
+                    int w = fm.stringWidth(before);
+                    x += w;
+                }
+                String varText = value.substring(seg.start, seg.end);
+                int varWidth = fm.stringWidth(varText);
+                if (mouseX >= x && mouseX <= x + varWidth) {
+                    // 鼠标悬浮在变量上
+                    String varName = seg.name;
+                    String varValue = getVariableValue(varName);
+                    if (varValue != null) {
+                        return varName + " = " + varValue;
+                    } else {
+                        return varName + " 未定义";
+                    }
+                }
+                x += varWidth;
+                last = seg.end;
+            }
+        } catch (Exception ignored) {
+            // 忽略异常，通常由于文本为空或光标位置异常导致
+        }
+        return super.getToolTipText(event);
+    }
+
+    private String getVariableValue(String varName) {
+        Object temp = EnvironmentService.getTemporaryVariable(varName);
+        if (temp != null) return temp.toString();
+        Environment activeEnv = EnvironmentService.getActiveEnvironment();
+        if (activeEnv != null && activeEnv.getVariable(varName) != null) {
+            Object v = activeEnv.getVariable(varName);
+            return v == null ? null : v.toString();
+        }
+        return null;
     }
 
     private List<VariableSegment> getVariableSegments(String value) {

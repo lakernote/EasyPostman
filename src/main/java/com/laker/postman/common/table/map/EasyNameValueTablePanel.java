@@ -1,5 +1,11 @@
 package com.laker.postman.common.table.map;
 
+import com.laker.postman.common.component.EasyPostmanTextField;
+
+import javax.swing.*;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,15 +18,23 @@ public class EasyNameValueTablePanel extends EasyTablePanel {
     private final String nameCol;
     private final String valueCol;
 
-    public EasyNameValueTablePanel(String nameCol, String valueCol) {
-        super(new String[]{nameCol, valueCol});
-        this.nameCol = nameCol;
-        this.valueCol = valueCol;
-    }
 
     public EasyNameValueTablePanel() {
         this("Name", "Value");
     }
+
+
+    public EasyNameValueTablePanel(String nameCol, String valueCol) {
+        super(new String[]{nameCol, valueCol});
+        this.nameCol = nameCol;
+        this.valueCol = valueCol;
+
+        setColumnEditor(0, new EasyPostmanTextFieldCellEditor());
+        setColumnEditor(1, new EasyPostmanTextFieldCellEditor());
+        setColumnRenderer(0, new EasyPostmanTextFieldCellRenderer());
+        setColumnRenderer(1, new EasyPostmanTextFieldCellRenderer());
+    }
+
 
     /**
      * 获取表格内容为Map（第一列为key，第二列为value）
@@ -55,6 +69,45 @@ public class EasyNameValueTablePanel extends EasyTablePanel {
                 rows.add(row);
             }
             super.setRows(rows);
+        }
+    }
+
+    // ========== EasyPostmanTextField cell renderer/editor ==========
+    private static class EasyPostmanTextFieldCellRenderer extends EasyPostmanTextField implements TableCellRenderer {
+        public EasyPostmanTextFieldCellRenderer() {
+            super(1);
+            setBorder(null);
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            setText(value == null ? "" : value.toString());
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+            } else {
+                setBackground(table.getBackground());
+            }
+            return this;
+        }
+    }
+
+    private static class EasyPostmanTextFieldCellEditor extends AbstractCellEditor implements TableCellEditor {
+        private final EasyPostmanTextField textField = new EasyPostmanTextField(1);
+
+        public EasyPostmanTextFieldCellEditor() {
+            textField.setBorder(null);
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return textField.getText();
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            textField.setText(value == null ? "" : value.toString());
+            return textField;
         }
     }
 }

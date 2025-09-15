@@ -2,7 +2,7 @@
 
 # EasyPostman
 
-> 🚀 一款高仿 Postman + 简易版 JMeter 的开源接口调试与压测工具，专为开发者优化，界面简洁、功能强大。
+> 🚀 一款高仿 Postman + 简易版 JMeter 的开源接口调试与压测工具，专为开发者优化，界面简洁、功能强大，内置 Git 集成，支持团队协作与版本控制。
 
 ![GitHub license](https://img.shields.io/github/license/lakernote/easy-postman)
 ![Java](https://img.shields.io/badge/Java-17+-orange)
@@ -10,7 +10,7 @@
 
 ## 💡 项目介绍
 
-EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，并集成简易版 JMeter 的批量请求与压力测试能力。项目采用 Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护您的接口数据隐私。
+EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，并集成简易版 JMeter 的批量请求与压力测试能力。项目采用 Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护您的接口数据隐私。同时，内置 Git 工作区功能，支持接口数据的版本管理与团队协作，轻松实现多端同步与协作开发。
 
 ### 🔥 开发理念
 - **🎯 专注核心功能** - 简洁而不简单，功能丰富而不臃肿

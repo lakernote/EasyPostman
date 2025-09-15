@@ -17,14 +17,13 @@ public class RequestCollectionsService {
         // Prevent instantiation
     }
 
-    public static int restoreOpenedRequests() {
+    public static void restoreOpenedRequests() {
         List<HttpRequestItem> unSavedRequests = OpenedRequestsService.getAll();
         for (HttpRequestItem item : unSavedRequests) {
             RequestEditSubPanel panel = RequestsTabsService.addTab(item);
             RequestsTabsService.updateTabNew(panel, item.isNewRequest());
         }
         OpenedRequestsService.clear();
-        return unSavedRequests.size();
     }
 
     /**

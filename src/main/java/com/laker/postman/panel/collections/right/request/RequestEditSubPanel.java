@@ -258,6 +258,8 @@ public class RequestEditSubPanel extends JPanel {
         headersPanel.addTableModelListener(e -> updateTabDirty());
         // 监听paramsPanel
         paramsPanel.addTableModelListener(e -> updateTabDirty());
+        // 监听认证面板
+        authTabPanel.addDirtyListener(this::updateTabDirty);
         if (protocol.isHttpProtocol()) {
             // 监听bodyArea
             if (requestBodyPanel.getBodyArea() != null) {

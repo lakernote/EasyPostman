@@ -4,7 +4,11 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 认证Tab面板
@@ -18,6 +22,7 @@ public class AuthTabPanel extends JPanel {
     private final JTextField passwordField;
     private final JTextField tokenField;
     private String currentType = AUTH_TYPE_NONE;
+    private final List<Runnable> dirtyListeners = new ArrayList<>();
 
     public AuthTabPanel() {
         setLayout(new BorderLayout());
@@ -51,7 +56,17 @@ public class AuthTabPanel extends JPanel {
             currentType = (String) typeCombo.getSelectedItem();
             CardLayout cl = (CardLayout) cardPanel.getLayout();
             cl.show(cardPanel, currentType);
+            fireDirty();
         });
+        // 监听文本框内容变化
+        DocumentListener docListener = new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { fireDirty(); }
+            public void removeUpdate(DocumentEvent e) { fireDirty(); }
+            public void changedUpdate(DocumentEvent e) { fireDirty(); }
+        };
+        usernameField.getDocument().addDocumentListener(docListener);
+        passwordField.getDocument().addDocumentListener(docListener);
+        tokenField.getDocument().addDocumentListener(docListener);
         // 默认显示
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, AUTH_TYPE_NONE);
     }
@@ -88,5 +103,16 @@ public class AuthTabPanel extends JPanel {
 
     public void setToken(String t) {
         tokenField.setText(t == null ? "" : t);
+    }
+
+    /**
+     * 注册脏数据监听器
+     */
+    public void addDirtyListener(Runnable listener) {
+        if (listener != null) dirtyListeners.add(listener);
+    }
+
+    private void fireDirty() {
+        for (Runnable l : dirtyListeners) l.run();
     }
 }

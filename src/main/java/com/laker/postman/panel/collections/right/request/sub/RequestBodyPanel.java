@@ -9,6 +9,8 @@ import com.laker.postman.common.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.VariableSegment;
+import com.laker.postman.util.EasyPostmanVariableUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -17,6 +19,9 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
 
 import javax.swing.*;
+import javax.swing.event.MouseInputAdapter;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
 import java.awt.*;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
@@ -173,6 +178,72 @@ public class RequestBodyPanel extends JPanel {
         }
         JScrollPane scrollPane = new JScrollPane(bodyArea);
         panel.add(scrollPane, BorderLayout.CENTER);
+
+        // ====== 变量高亮和悬浮提示 ======
+        // 变量高亮
+        DefaultHighlighter highlighter = (DefaultHighlighter) bodyArea.getHighlighter();
+        DefaultHighlighter.DefaultHighlightPainter definedPainter = new DefaultHighlighter.DefaultHighlightPainter(new Color(180, 210, 255, 120));
+        DefaultHighlighter.DefaultHighlightPainter undefinedPainter = new DefaultHighlighter.DefaultHighlightPainter(new Color(255, 200, 200, 120));
+        bodyArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void updateHighlights() {
+                highlighter.removeAllHighlights();
+                String text = bodyArea.getText();
+                java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
+                for (VariableSegment seg : segments) {
+                    boolean isDefined = EasyPostmanVariableUtil.isVariableDefined(seg.name);
+                    try {
+                        highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
+                    } catch (BadLocationException ignored) {
+                    }
+                }
+            }
+
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateHighlights();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateHighlights();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateHighlights();
+            }
+        });
+        // 初始化高亮
+        SwingUtilities.invokeLater(() -> {
+            String text = bodyArea.getText();
+            java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
+            for (VariableSegment seg : segments) {
+                boolean isDefined = EasyPostmanVariableUtil.isVariableDefined(seg.name);
+                try {
+                    highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
+                } catch (BadLocationException ignored) {
+                }
+            }
+        });
+        // 悬浮提示
+        bodyArea.addMouseMotionListener(new MouseInputAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int pos = bodyArea.viewToModel2D(e.getPoint());
+                String text = bodyArea.getText();
+                java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
+                for (VariableSegment seg : segments) {
+                    if (pos >= seg.start && pos <= seg.end) {
+                        String varName = seg.name;
+                        String varValue = EasyPostmanVariableUtil.getVariableValue(varName);
+                        if (varValue != null) {
+                            bodyArea.setToolTipText(varName + " = " + varValue);
+                        } else {
+                            bodyArea.setToolTipText(varName + " 未定义");
+                        }
+                        return;
+                    }
+                }
+                bodyArea.setToolTipText(null);
+            }
+        });
 
         // 只有WebSocket模式才显示发送按钮
         if (isWebSocketMode) {

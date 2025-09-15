@@ -1,21 +1,16 @@
 package com.laker.postman.common.component;
 
-import com.laker.postman.model.Environment;
-import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.model.VariableSegment;
+import com.laker.postman.util.EasyPostmanVariableUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 public class EasyPostmanTextField extends JTextField {
-    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
-
     // Postman 风格颜色
     private static final Color DEFINED_VAR_BG = new Color(180, 210, 255, 120); // 半透明淡蓝
     private static final Color DEFINED_VAR_BORDER = new Color(80, 150, 255); // 蓝色边框
@@ -36,24 +31,13 @@ public class EasyPostmanTextField extends JTextField {
     }
 
 
-    private boolean isVariableDefined(String varName) {
-        // 检查临时变量
-        if (EnvironmentService.getTemporaryVariable(varName) != null) {
-            return true;
-        }
-        // 检查活动环境变量
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        return activeEnv != null && activeEnv.getVariable(varName) != null;
-    }
-
-
     @Override
     protected void paintComponent(Graphics g) {
         // 先绘制文本、光标、选区
         super.paintComponent(g);
 
         String value = getText();
-        List<VariableSegment> segments = getVariableSegments(value);
+        List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(value);
         if (segments.isEmpty()) return;
 
         try {
@@ -72,7 +56,7 @@ public class EasyPostmanTextField extends JTextField {
                     x += w;
                 }
                 // 判断变量状态
-                boolean isDefined = isVariableDefined(seg.name);
+                boolean isDefined = EasyPostmanVariableUtil.isVariableDefined(seg.name);
                 Color bgColor = isDefined ? DEFINED_VAR_BG : UNDEFINED_VAR_BG;
                 Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
                 String varText = value.substring(seg.start, seg.end);
@@ -93,7 +77,7 @@ public class EasyPostmanTextField extends JTextField {
     @Override
     public String getToolTipText(MouseEvent event) {
         String value = getText();
-        List<VariableSegment> segments = getVariableSegments(value);
+        List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(value);
         if (segments.isEmpty()) return super.getToolTipText(event);
         try {
             int mouseX = event.getX();
@@ -112,7 +96,7 @@ public class EasyPostmanTextField extends JTextField {
                 if (mouseX >= x && mouseX <= x + varWidth) {
                     // 鼠标悬浮在变量上
                     String varName = seg.name;
-                    String varValue = getVariableValue(varName);
+                    String varValue = EasyPostmanVariableUtil.getVariableValue(varName);
                     if (varValue != null) {
                         return varName + " = " + varValue;
                     } else {
@@ -126,37 +110,5 @@ public class EasyPostmanTextField extends JTextField {
             log.error("getToolTipText", e);
         }
         return super.getToolTipText(event);
-    }
-
-    private String getVariableValue(String varName) {
-        Object temp = EnvironmentService.getTemporaryVariable(varName);
-        if (temp != null) return temp.toString();
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        if (activeEnv != null && activeEnv.getVariable(varName) != null) {
-            Object v = activeEnv.getVariable(varName);
-            return v == null ? null : v.toString();
-        }
-        return null;
-    }
-
-    private List<VariableSegment> getVariableSegments(String value) {
-        List<VariableSegment> segments = new ArrayList<>();
-        Matcher m = VARIABLE_PATTERN.matcher(value);
-        while (m.find()) {
-            segments.add(new VariableSegment(m.start(), m.end(), m.group(1)));
-        }
-        return segments;
-    }
-
-    private static class VariableSegment {
-        int start;
-        int end;
-        String name;
-
-        VariableSegment(int start, int end, String name) {
-            this.start = start;
-            this.end = end;
-            this.name = name;
-        }
     }
 }

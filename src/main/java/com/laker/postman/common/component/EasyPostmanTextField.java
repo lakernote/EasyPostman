@@ -100,7 +100,7 @@ public class EasyPostmanTextField extends JTextField {
                     if (varValue != null) {
                         return varName + " = " + varValue;
                     } else {
-                        return varName + " 未定义";
+                        return "[" + varName + "] not found";
                     }
                 }
                 x += varWidth;

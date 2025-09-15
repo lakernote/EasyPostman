@@ -236,7 +236,7 @@ public class RequestBodyPanel extends JPanel {
                         if (varValue != null) {
                             bodyArea.setToolTipText(varName + " = " + varValue);
                         } else {
-                            bodyArea.setToolTipText(varName + " 未定义");
+                            bodyArea.setToolTipText("[" + varName + "] not found");
                         }
                         return;
                     }

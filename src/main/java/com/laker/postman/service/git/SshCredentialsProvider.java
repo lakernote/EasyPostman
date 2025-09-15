@@ -47,9 +47,9 @@ public class SshCredentialsProvider implements TransportConfigCallback {
                 (session, resourceKey, retryIndex) -> passphrase);
 
         return new SshdSessionFactoryBuilder()
-                .setPreferredAuthentications("publickey") // 使用公钥认证
-                .setDefaultKeysProvider(ignoredSshDirBecauseWeUseAnInMemorySetOfKeyPairs -> keyPairs)
-                .setHomeDirectory(FS.DETECTED.userHome()) //设置用户主目录
+//                .setPreferredAuthentications("publickey") // 可选 使用公钥认证
+                .setDefaultKeysProvider(ignoredSshDirBecauseWeUseAnInMemorySetOfKeyPairs -> keyPairs) // 设置密钥提供者
+                .setHomeDirectory(FS.DETECTED.userHome()) //设置用户主目录 影响.ssh/known_hosts 等
                 .setSshDirectory(new File(FS.DETECTED.userHome(), ".ssh")) //设置.ssh目录
                 .build(null);
     }

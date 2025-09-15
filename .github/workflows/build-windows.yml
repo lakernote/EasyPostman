@@ -13,7 +13,7 @@ on:
         default: '1.0.0'
 jobs:
   build-msi:
-    runs-on: windows-latest
+    runs-on: windows-2022-latest #windows-latest
     env:
       APP_NAME: EasyPostman
       MAIN_CLASS: com.laker.postman.App
@@ -100,7 +100,8 @@ jobs:
             --java-options "-Dfile.encoding=UTF-8"
 
       - name: Upload MSI Installer Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-v${{ env.VERSION }}-windows-installer
           path: ${{ env.OUTPUT_DIR }}/
+          if-no-files-found: warn

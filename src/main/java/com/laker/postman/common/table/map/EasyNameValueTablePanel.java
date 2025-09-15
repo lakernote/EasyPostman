@@ -83,7 +83,9 @@ public class EasyNameValueTablePanel extends EasyTablePanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             setText(value == null ? "" : value.toString());
-            if (isSelected) {
+            if (value == null || value.toString().isEmpty()) {
+                setBackground(Color.WHITE);
+            } else if (isSelected) {
                 setBackground(table.getSelectionBackground());
             } else {
                 setBackground(table.getBackground());

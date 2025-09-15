@@ -2,14 +2,17 @@ package com.laker.postman.common.component;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 public class EasyPostmanTextField extends JTextField {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
 
@@ -75,13 +78,13 @@ public class EasyPostmanTextField extends JTextField {
                 x += varWidth;
                 last = seg.end;
             }
-        } catch (Exception ignored) {
-            // 忽略异常，通常由于文本为空或光标位置异常导致
+        } catch (Exception e) {
+            log.error("paintComponent", e);
         }
     }
 
     @Override
-    public String getToolTipText(java.awt.event.MouseEvent event) {
+    public String getToolTipText(MouseEvent event) {
         String value = getText();
         List<VariableSegment> segments = getVariableSegments(value);
         if (segments.isEmpty()) return super.getToolTipText(event);
@@ -112,8 +115,8 @@ public class EasyPostmanTextField extends JTextField {
                 x += varWidth;
                 last = seg.end;
             }
-        } catch (Exception ignored) {
-            // 忽略异常，通常由于文本为空或光标位置异常导致
+        } catch (Exception e) {
+            log.error("getToolTipText", e);
         }
         return super.getToolTipText(event);
     }

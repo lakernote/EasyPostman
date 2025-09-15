@@ -1271,7 +1271,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private void showAddRequestDialog(DefaultMutableTreeNode groupNode) {
         JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_TITLE), true);
-        dialog.setSize(400, 280);
+        dialog.setSize(400, 260);
         dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
 
@@ -1291,7 +1291,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 协议类型选择优化为水平排列的卡片式按钮
         JPanel protocolPanel = new JPanel();
-        protocolPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        protocolPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 5));
         protocolPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL)

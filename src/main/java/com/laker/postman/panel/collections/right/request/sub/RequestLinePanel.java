@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.EasyPostmanTextField;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.util.I18nUtil;
@@ -38,7 +39,7 @@ public class RequestLinePanel extends JPanel {
         add(methodBox);
         add(Box.createHorizontalStrut(2));
 
-        urlField = new JTextField("https://www.baidu.com", 25);
+        urlField = new EasyPostmanTextField("https://www.baidu.com", 25);
         add(urlField);
         add(Box.createHorizontalStrut(10));
         sendButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));

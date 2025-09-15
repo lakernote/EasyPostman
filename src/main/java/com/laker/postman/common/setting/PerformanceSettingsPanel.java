@@ -90,7 +90,7 @@ public class PerformanceSettingsPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(450, 250));
+        setPreferredSize(new Dimension(500, 250));
 
         setupValidators();
         setupKeyboardNavigation();

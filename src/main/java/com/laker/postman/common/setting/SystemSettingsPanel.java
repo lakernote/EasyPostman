@@ -102,7 +102,7 @@ public class SystemSettingsPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(450, 280));
+        setPreferredSize(new Dimension(500, 280));
 
         setupValidators();
         setupKeyboardNavigation();

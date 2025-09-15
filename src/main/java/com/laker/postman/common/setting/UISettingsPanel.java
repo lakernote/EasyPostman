@@ -120,7 +120,7 @@ public class UISettingsPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(450, 300));
+        setPreferredSize(new Dimension(500, 300));
 
         setupValidators();
         setupKeyboardNavigation();
@@ -148,11 +148,19 @@ public class UISettingsPanel extends JPanel {
 
         DocumentListener validationListener = new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) { validateField(e); }
+            public void insertUpdate(DocumentEvent e) {
+                validateField(e);
+            }
+
             @Override
-            public void removeUpdate(DocumentEvent e) { validateField(e); }
+            public void removeUpdate(DocumentEvent e) {
+                validateField(e);
+            }
+
             @Override
-            public void changedUpdate(DocumentEvent e) { validateField(e); }
+            public void changedUpdate(DocumentEvent e) {
+                validateField(e);
+            }
 
             private void validateField(DocumentEvent e) {
                 for (Map.Entry<JTextField, Predicate<String>> entry : validators.entrySet()) {
@@ -227,7 +235,7 @@ public class UISettingsPanel extends JPanel {
                 field.setBackground(new Color(255, 220, 220));
                 field.requestFocus();
                 JOptionPane.showMessageDialog(this, errorMessages.get(field),
-                    I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_TITLE), JOptionPane.WARNING_MESSAGE);
+                        I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_TITLE), JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -241,7 +249,7 @@ public class UISettingsPanel extends JPanel {
             SettingManager.setMaxHistoryCount(maxHistoryCount);
 
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);
 
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JDialog dialog) {
@@ -249,7 +257,7 @@ public class UISettingsPanel extends JPanel {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_INVALID_NUMBER),
-                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 }

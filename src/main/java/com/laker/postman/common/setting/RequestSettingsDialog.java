@@ -22,7 +22,7 @@ public class RequestSettingsDialog extends JDialog {
     }
 
     private void initUI() {
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setResizable(true);
 
         settingsPanel = new RequestSettingsPanel();

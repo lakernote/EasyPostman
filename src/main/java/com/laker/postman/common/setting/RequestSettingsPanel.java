@@ -119,7 +119,7 @@ public class RequestSettingsPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(450, 300));
+        setPreferredSize(new Dimension(500, 300));
 
         setupValidators();
         setupKeyboardNavigation();

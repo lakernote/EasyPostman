@@ -1289,9 +1289,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         namePanel.add(nameLabel, BorderLayout.NORTH);
         namePanel.add(nameField, BorderLayout.CENTER);
 
-        // 协议类型选择
+        // 协议类型选择优化为水平排列的卡片式按钮
         JPanel protocolPanel = new JPanel();
-        protocolPanel.setLayout(new BoxLayout(protocolPanel, BoxLayout.Y_AXIS));
+        protocolPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
         protocolPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL)
@@ -1299,26 +1299,35 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 创建单选按钮组
         ButtonGroup protocolGroup = new ButtonGroup();
-        JRadioButton httpRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_HTTP), true);
-        JRadioButton webSocketRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_WEBSOCKET));
-        JRadioButton sseRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_SSE));
+        JToggleButton httpBtn = new JToggleButton("HTTP");
+        httpBtn.setIcon(new FlatSVGIcon("icons/http.svg", 24, 24));
+        httpBtn.setSelected(true);
+        httpBtn.setFocusPainted(false);
+        httpBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        httpBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        httpBtn.setPreferredSize(new Dimension(100, 60));
 
-        // 设置图标
-        httpRadio.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
-        webSocketRadio.setIcon(new FlatSVGIcon("icons/websocket.svg", 16, 16));
-        sseRadio.setIcon(new FlatSVGIcon("icons/sse.svg", 16, 16));
+        JToggleButton wsBtn = new JToggleButton("WebSocket");
+        wsBtn.setIcon(new FlatSVGIcon("icons/websocket.svg", 24, 24));
+        wsBtn.setFocusPainted(false);
+        wsBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        wsBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        wsBtn.setPreferredSize(new Dimension(100, 60));
 
-        // 添加到按钮组
-        protocolGroup.add(httpRadio);
-        protocolGroup.add(webSocketRadio);
-        protocolGroup.add(sseRadio);
+        JToggleButton sseBtn = new JToggleButton("SSE");
+        sseBtn.setIcon(new FlatSVGIcon("icons/sse.svg", 24, 24));
+        sseBtn.setFocusPainted(false);
+        sseBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        sseBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        sseBtn.setPreferredSize(new Dimension(100, 60));
 
-        // 添加到面板
-        protocolPanel.add(httpRadio);
-        protocolPanel.add(Box.createVerticalStrut(8));
-        protocolPanel.add(webSocketRadio);
-        protocolPanel.add(Box.createVerticalStrut(8));
-        protocolPanel.add(sseRadio);
+        protocolGroup.add(httpBtn);
+        protocolGroup.add(wsBtn);
+        protocolGroup.add(sseBtn);
+
+        protocolPanel.add(httpBtn);
+        protocolPanel.add(wsBtn);
+        protocolPanel.add(sseBtn);
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -1338,11 +1347,11 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
             // 确定选择的协议类型
             RequestItemProtocolEnum protocol;
-            if (httpRadio.isSelected()) {
+            if (httpBtn.isSelected()) {
                 protocol = RequestItemProtocolEnum.HTTP;
-            } else if (webSocketRadio.isSelected()) {
+            } else if (wsBtn.isSelected()) {
                 protocol = RequestItemProtocolEnum.WEBSOCKET;
-            } else if (sseRadio.isSelected()) {
+            } else if (sseBtn.isSelected()) {
                 protocol = RequestItemProtocolEnum.SSE;
             } else {
                 protocol = RequestItemProtocolEnum.HTTP; // 默认为HTTP

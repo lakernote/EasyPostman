@@ -432,9 +432,6 @@ public final class MessageKeys {
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_TITLE = "collections.dialog.add_request.title";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME = "collections.dialog.add_request.name";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL = "collections.dialog.add_request.protocol";
-    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_HTTP = "collections.dialog.add_request.http";
-    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_WEBSOCKET = "collections.dialog.add_request.websocket";
-    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_SSE = "collections.dialog.add_request.sse";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME_EMPTY = "collections.dialog.add_request.name_empty";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY = "collections.dialog.rename_group.empty";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT = "collections.dialog.rename_request.prompt";

@@ -27,7 +27,6 @@ import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
-import com.laker.postman.util.UserSettingsUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -225,8 +224,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         if (node.getUserObject() instanceof Object[] obj) {
                             if (REQUEST.equals(obj[0])) {
                                 HttpRequestItem item = (HttpRequestItem) obj[1];
-                                // 记录最后打开的请求ID
-                                UserSettingsUtil.saveLastOpenRequestId(item.getId());
                                 SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
                             }
                         }
@@ -517,8 +514,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 } else {
                     SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
                 }
-//                 定位到最后打开的请求
-//                locateAndSelectRequest(UserSettingsUtil.getLastOpenRequestId());
             });
         });
 

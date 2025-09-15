@@ -12,7 +12,6 @@ import java.util.Map;
 
 @Slf4j
 public class UserSettingsUtil {
-    private static final String KEY_LAST_OPEN_REQUEST_ID = "lastOpenRequestId";
     private static final String KEY_SIDEBAR_EXPANDED = "sidebarExpanded";
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
@@ -105,16 +104,6 @@ public class UserSettingsUtil {
 
     public static Map<String, Object> getAll() {
         return Collections.unmodifiableMap(readSettings());
-    }
-
-
-    // lastOpenRequestId 专用方法
-    public static void saveLastOpenRequestId(String id) {
-        set(KEY_LAST_OPEN_REQUEST_ID, id);
-    }
-
-    public static String getLastOpenRequestId() {
-        return getString(KEY_LAST_OPEN_REQUEST_ID);
     }
 
     // sidebarExpanded 专用方法

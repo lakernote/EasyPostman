@@ -261,6 +261,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                 // 仅分组节点可新增文件/请求
                 if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
+                    menu.addSeparator();
                     JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
                             new FlatSVGIcon("icons/user-group.svg", 16, 16));
                     addGroupItem.addActionListener(e -> addGroupUnderSelected());
@@ -1271,7 +1272,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_TITLE), true);
         dialog.setSize(400, 280);
-        dialog.setLocationRelativeTo(this);
+        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
 
         // 主面板
@@ -1367,7 +1368,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 设置默认焦点和按钮
         dialog.getRootPane().setDefaultButton(okButton);
-        SwingUtilities.invokeLater(() -> nameField.requestFocus());
+        SwingUtilities.invokeLater(nameField::requestFocus);
 
         dialog.setVisible(true);
     }

@@ -76,8 +76,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private transient RequestCollectionPersistence persistence;
 
-    private transient RequestCollectionsService collectionsService;
-
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -89,7 +87,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         JScrollPane treeScrollPane = getTreeScrollPane();
         add(treeScrollPane, BorderLayout.CENTER);
-        collectionsService = new RequestCollectionsService(rootTreeNode, requestTree);
     }
 
     private JScrollPane getTreeScrollPane() {
@@ -511,17 +508,17 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         SwingUtilities.invokeLater(() -> {  // 异步加载请求组
             persistence.initRequestGroupsFromFile(); // 从文件加载请求集合
             SwingUtilities.invokeLater(() -> {
-                // 恢复未保存的新建请求
-                int unSaved = collectionsService.restoreUnSavedNewRequests();
-                // 加载完成后，自动打开最后一次请求,如果没有这默认打开一个新建请求
-                DefaultMutableTreeNode node = collectionsService.restoreLastSavedRequests();
-                if (unSaved == 0 && node == null) {
+                // 恢复之前已打开请求
+                int openedRequests = RequestCollectionsService.restoreOpenedRequests();
+                if (openedRequests == 0) {
                     // 自动创建一个新请求
                     RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
                     requestEditPanel.addNewTab(RequestEditPanel.REQUEST_STRING);
                 } else {
                     SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
                 }
+//                 定位到最后打开的请求
+//                locateAndSelectRequest(UserSettingsUtil.getLastOpenRequestId());
             });
         });
 
@@ -810,7 +807,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         if (item == null || item.getId() == null || item.getId().isEmpty()) {
             return false;
         }
-        DefaultMutableTreeNode requestNode = collectionsService.findRequestNodeById(rootTreeNode, item.getId());
+        DefaultMutableTreeNode requestNode = RequestCollectionsService.findRequestNodeById(rootTreeNode, item.getId());
         if (requestNode == null) {
             return false;
         }
@@ -1164,7 +1161,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             return;
         }
 
-        DefaultMutableTreeNode targetNode = collectionsService.findRequestNodeById(rootTreeNode, requestId);
+        DefaultMutableTreeNode targetNode = RequestCollectionsService.findRequestNodeById(rootTreeNode, requestId);
         if (targetNode == null) { // 如果没有找到对应的请求节点
             return;
         }
@@ -1181,7 +1178,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 滚动到可见区域
         requestTree.scrollPathToVisible(treePath);
 
-        // 确保焦点在树上（可选，用于突出显示）
+        // 确保焦点在树上（用于突出显示）
         requestTree.requestFocusInWindow();
     }
 

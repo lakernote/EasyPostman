@@ -71,6 +71,7 @@ public class RequestEditSubPanel extends JPanel {
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
     private RequestBodyPanel requestBodyPanel;
+    @Getter
     private HttpRequestItem originalRequestItem;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;

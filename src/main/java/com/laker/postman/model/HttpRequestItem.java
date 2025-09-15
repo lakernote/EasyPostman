@@ -53,6 +53,8 @@ public class HttpRequestItem implements Serializable {
     // 是否自动重定向（默认true）
     private boolean isFollowRedirects = true;
 
+    private boolean newRequest = false; // 是否为新建请求（未命名）
+
     /**
      * 变量提取规则类
      */

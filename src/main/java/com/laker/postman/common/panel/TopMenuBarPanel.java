@@ -5,13 +5,13 @@ import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
-import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.setting.PerformanceSettingsDialog;
 import com.laker.postman.common.setting.RequestSettingsDialog;
 import com.laker.postman.common.setting.SystemSettingsDialog;
 import com.laker.postman.common.setting.UISettingsDialog;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.EasyPostManFontUtil;
@@ -56,7 +56,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler((e) -> ExitDialog.show());
+        FlatDesktop.setQuitHandler((e) -> ExitService.beforeExit());
     }
 
     private void initComponents() {
@@ -79,7 +79,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
         exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         exitMenuItem.setMnemonic('X');
-        exitMenuItem.addActionListener(e -> ExitDialog.show());
+        exitMenuItem.addActionListener(e -> ExitService.beforeExit());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);

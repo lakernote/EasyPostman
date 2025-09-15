@@ -2,8 +2,8 @@ package com.laker.postman.common.frame;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
-import com.laker.postman.common.dialog.ExitDialog;
 import com.laker.postman.panel.EasyPostmanMainPanel;
+import com.laker.postman.service.ExitService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.UserSettingsUtil;
@@ -59,7 +59,7 @@ public class MainFrame extends JFrame {
             @Override
             public void windowClosing(WindowEvent e) { // 当窗口关闭时触发
                 saveWindowState(); // 保存窗口状态
-                ExitDialog.show();
+                ExitService.beforeExit();
             }
 
             @Override

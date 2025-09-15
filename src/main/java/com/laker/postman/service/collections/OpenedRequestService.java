@@ -1,4 +1,4 @@
-package com.laker.postman.service;
+package com.laker.postman.service.collections;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONArray;

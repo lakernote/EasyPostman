@@ -17,8 +17,8 @@ import com.laker.postman.common.tree.TreeTransferHandler;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.service.RequestCollectionPersistence;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.collections.RequestCollectionPersistence;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
@@ -506,14 +506,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             persistence.initRequestGroupsFromFile(); // 从文件加载请求集合
             SwingUtilities.invokeLater(() -> {
                 // 恢复之前已打开请求
-                int openedRequests = RequestCollectionsService.restoreOpenedRequests();
-                if (openedRequests == 0) {
-                    // 自动创建一个新请求
-                    RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-                    requestEditPanel.addNewTab(RequestEditPanel.REQUEST_STRING);
-                } else {
-                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
-                }
+                RequestCollectionsService.restoreOpenedRequests();
+                // 增加一个plusTab
+                SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
             });
         });
 
@@ -1186,6 +1181,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         }
         // 重新加载树结构
         treeModel.reload(rootTreeNode);
+        // 清空 RequestEditPanel 中的请求
+        SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
+        // 新增一个空白请求Tab
+        SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
     }
 
     /**

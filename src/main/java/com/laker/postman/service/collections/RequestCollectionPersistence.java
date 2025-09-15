@@ -1,10 +1,9 @@
-package com.laker.postman.service;
+package com.laker.postman.service.collections;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.service.collections.RequestCollectionsFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;

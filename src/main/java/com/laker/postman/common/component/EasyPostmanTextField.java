@@ -22,6 +22,13 @@ public class EasyPostmanTextField extends JTextField {
     private static final Color UNDEFINED_VAR_BG = new Color(255, 200, 200, 120); // 半透明红
     private static final Color UNDEFINED_VAR_BORDER = new Color(255, 100, 100); // 红色
 
+    public EasyPostmanTextField(int columns) {
+        super(columns);
+        // 启用 ToolTip 支持，必须设置（即使内容为空）
+        setToolTipText("");
+
+    }
+
     public EasyPostmanTextField(String text, int columns) {
         super(text, columns);
         // 启用 ToolTip 支持，必须设置（即使内容为空）

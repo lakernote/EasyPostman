@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.common.component.EasyPostmanTextField;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -39,16 +40,16 @@ public class AuthTabPanel extends JPanel {
         // Basic
         JPanel basicPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_USERNAME)));
-        usernameField = new JTextField(12);
+        usernameField = new EasyPostmanTextField(12);
         basicPanel.add(usernameField);
         basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_PASSWORD)));
-        passwordField = new JTextField(12);
+        passwordField = new EasyPostmanTextField(12);
         basicPanel.add(passwordField);
         cardPanel.add(basicPanel, AUTH_TYPE_BASIC);
         // Bearer
         JPanel bearerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bearerPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TOKEN)));
-        tokenField = new JTextField(24);
+        tokenField = new EasyPostmanTextField(24);
         bearerPanel.add(tokenField);
         cardPanel.add(bearerPanel, AUTH_TYPE_BEARER);
         add(cardPanel, BorderLayout.CENTER);
@@ -60,9 +61,17 @@ public class AuthTabPanel extends JPanel {
         });
         // 监听文本框内容变化
         DocumentListener docListener = new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { fireDirty(); }
-            public void removeUpdate(DocumentEvent e) { fireDirty(); }
-            public void changedUpdate(DocumentEvent e) { fireDirty(); }
+            public void insertUpdate(DocumentEvent e) {
+                fireDirty();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                fireDirty();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                fireDirty();
+            }
         };
         usernameField.getDocument().addDocumentListener(docListener);
         passwordField.getDocument().addDocumentListener(docListener);

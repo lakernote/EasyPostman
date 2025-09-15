@@ -5,7 +5,12 @@ on:
   push:
     tags:
       - 'v*'  # 匹配 v1.0, v1.2.3 等格式
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
 jobs:
   build-msi:
     runs-on: windows-latest

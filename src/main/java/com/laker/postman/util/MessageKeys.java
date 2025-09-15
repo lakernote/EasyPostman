@@ -395,6 +395,7 @@ public final class MessageKeys {
     // ============ 集合菜单相关 ============
     public static final String COLLECTIONS_MENU_ADD_GROUP = "collections.menu.add_group";
     public static final String COLLECTIONS_MENU_ADD_ROOT_GROUP = "collections.menu.add_root_group";
+    public static final String COLLECTIONS_MENU_ADD_REQUEST = "collections.menu.add_request";
     public static final String COLLECTIONS_MENU_DUPLICATE = "collections.menu.duplicate";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN = "collections.menu.export_postman";
     public static final String COLLECTIONS_MENU_COPY_CURL = "collections.menu.copy_curl";
@@ -407,7 +408,6 @@ public final class MessageKeys {
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE = "collections.menu.export_postman.dialog_title";
     public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE = "collections.menu.move_to_workspace";
     public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_SELECT = "collections.menu.move_to_workspace.select";
-    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_SUCCESS = "collections.menu.move_to_workspace.success";
     public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_FAIL = "collections.menu.move_to_workspace.fail";
     public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM = "collections.menu.move_to_workspace.confirm";
     public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE = "collections.menu.move_to_workspace.confirm_title";
@@ -429,6 +429,13 @@ public final class MessageKeys {
     // ============ 集合对话框相关 ============
     public static final String COLLECTIONS_DIALOG_ADD_GROUP_PROMPT = "collections.dialog.add_group.prompt";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT = "collections.dialog.rename_group.prompt";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_TITLE = "collections.dialog.add_request.title";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME = "collections.dialog.add_request.name";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL = "collections.dialog.add_request.protocol";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_HTTP = "collections.dialog.add_request.http";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_WEBSOCKET = "collections.dialog.add_request.websocket";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_SSE = "collections.dialog.add_request.sse";
+    public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME_EMPTY = "collections.dialog.add_request.name_empty";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY = "collections.dialog.rename_group.empty";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT = "collections.dialog.rename_request.prompt";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY = "collections.dialog.rename_request.empty";

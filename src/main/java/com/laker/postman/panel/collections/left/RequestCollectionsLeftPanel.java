@@ -18,8 +18,8 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.collections.RequestCollectionsService;
+import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -266,24 +266,11 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     addGroupItem.addActionListener(e -> addGroupUnderSelected());
                     menu.add(addGroupItem);
 
-                    menu.addSeparator(); // 添加分隔线
-
-                    // 直接添加请求类型，不使用子菜单，参考Postman设计
-                    JMenuItem addHttpRequestItem = new JMenuItem("Add HTTP Request",
+                    // 合并添加请求为单个菜单项，点击弹出对话框
+                    JMenuItem addRequestItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
                             new FlatSVGIcon("icons/http.svg", 16, 16));
-                    addHttpRequestItem.addActionListener(e -> addRequestUnderSelected(RequestItemProtocolEnum.HTTP));
-                    menu.add(addHttpRequestItem);
-
-                    JMenuItem addWebSocketRequestItem = new JMenuItem("Add WebSocket Request",
-                            new FlatSVGIcon("icons/websocket.svg", 16, 16)); // 使用专门的WebSocket图标
-                    addWebSocketRequestItem.addActionListener(e -> addRequestUnderSelected(RequestItemProtocolEnum.WEBSOCKET));
-                    menu.add(addWebSocketRequestItem);
-
-                    JMenuItem addSseRequestItem = new JMenuItem("Add SSE Request",
-                            new FlatSVGIcon("icons/sse.svg", 16, 16)); // 暂时使用HTTP图标，后续可以更换为专门的SSE图标
-                    addSseRequestItem.addActionListener(e -> addRequestUnderSelected(RequestItemProtocolEnum.SSE));
-                    menu.add(addSseRequestItem);
-                    menu.addSeparator(); // 添加分隔线
+                    addRequestItem.addActionListener(e -> showAddRequestDialog(selectedNode));
+                    menu.add(addRequestItem);
 
                     JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
@@ -665,77 +652,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
         showAddGroupDialog(selectedNode);
-    }
-
-    private void addRequestUnderSelected(RequestItemProtocolEnum protocol) {
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-        if (selectedNode == null) return;
-        // 添加空请求
-        HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
-        defaultRequest.setProtocol(protocol);
-        defaultRequest.getHeaders().put(USER_AGENT, EASY_POSTMAN_CLIENT);
-        // 根据协议类型设置不同的默认值
-        if (protocol.isWebSocketProtocol()) {
-            // WebSocket 默认配置
-            defaultRequest.setMethod("GET"); // WebSocket连接都是GET
-            defaultRequest.setUrl("wss://echo.websocket.org");
-            defaultRequest.setName("WebSocket Request");
-        } else if (protocol.isSseProtocol()) {
-            // SSE 默认配置
-            defaultRequest.setMethod("GET"); // SSE通常使用GET
-            defaultRequest.setUrl("https://sse.dev/test");
-            defaultRequest.setName("SSE Request");
-            defaultRequest.getHeaders().put(ACCEPT, TEXT_EVENT_STREAM);
-        } else {
-            // HTTP 默认配置
-            defaultRequest.setMethod("GET");
-            defaultRequest.setUrl("https://httpbin.org/get");
-            defaultRequest.setName("HTTP Request");
-        }
-
-        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, defaultRequest});
-        selectedNode.add(reqNode);
-        treeModel.reload(selectedNode);
-        requestTree.expandPath(new TreePath(selectedNode.getPath()));
-        persistence.saveRequestGroups();
-    }
-
-    // 支持指定分组导入cURL
-    private void importCurlToGroup(String curlText, DefaultMutableTreeNode groupNode) {
-        String input = LargeInputDialog.show(this,
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), curlText);
-        if (input == null || input.trim().isEmpty()) return;
-        try {
-            CurlRequest curlRequest = CurlParser.parse(input);
-            if (curlRequest.url == null) {
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            HttpRequestItem item = new HttpRequestItem();
-            item.setName(curlRequest.url);
-            item.setUrl(curlRequest.url);
-            item.setMethod(curlRequest.method);
-            item.setHeaders(curlRequest.headers);
-            item.setBody(curlRequest.body);
-            item.setParams(curlRequest.params);
-            item.setFormData(curlRequest.formData);
-            item.setFormFiles(curlRequest.formFiles);
-            // 直接保存到当前分组
-            DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, item});
-            groupNode.add(reqNode);
-            treeModel.reload(groupNode);
-            requestTree.expandPath(new TreePath(groupNode.getPath()));
-            persistence.saveRequestGroups();
-            // 导入成功后清空剪贴板
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     private void saveRequestGroups() {
@@ -1346,5 +1262,150 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         log.info("Successfully moved collection '{}' to workspace '{}'",
                 ((Object[]) collectionNode.getUserObject())[1], targetWorkspace.getName());
+    }
+
+    /**
+     * 显示添加请求的对话框，包含协议选择和名称输入
+     */
+    private void showAddRequestDialog(DefaultMutableTreeNode groupNode) {
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_TITLE), true);
+        dialog.setSize(400, 280);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        // 主面板
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+
+        // 请求名称输入
+        JPanel namePanel = new JPanel(new BorderLayout(10, 5));
+        JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_NAME));
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD));
+        JTextField nameField = new JTextField();
+        nameField.setPreferredSize(new Dimension(0, 30));
+        namePanel.add(nameLabel, BorderLayout.NORTH);
+        namePanel.add(nameField, BorderLayout.CENTER);
+
+        // 协议类型选择
+        JPanel protocolPanel = new JPanel();
+        protocolPanel.setLayout(new BoxLayout(protocolPanel, BoxLayout.Y_AXIS));
+        protocolPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL)
+        ));
+
+        // 创建单选按钮组
+        ButtonGroup protocolGroup = new ButtonGroup();
+        JRadioButton httpRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_HTTP), true);
+        JRadioButton webSocketRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_WEBSOCKET));
+        JRadioButton sseRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_SSE));
+
+        // 设置图标
+        httpRadio.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
+        webSocketRadio.setIcon(new FlatSVGIcon("icons/websocket.svg", 16, 16));
+        sseRadio.setIcon(new FlatSVGIcon("icons/sse.svg", 16, 16));
+
+        // 添加到按钮组
+        protocolGroup.add(httpRadio);
+        protocolGroup.add(webSocketRadio);
+        protocolGroup.add(sseRadio);
+
+        // 添加到面板
+        protocolPanel.add(httpRadio);
+        protocolPanel.add(Box.createVerticalStrut(8));
+        protocolPanel.add(webSocketRadio);
+        protocolPanel.add(Box.createVerticalStrut(8));
+        protocolPanel.add(sseRadio);
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
+
+        okButton.addActionListener(e -> {
+            String requestName = nameField.getText().trim();
+            if (requestName.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_NAME_EMPTY),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                        JOptionPane.WARNING_MESSAGE);
+                nameField.requestFocus();
+                return;
+            }
+
+            // 确定选择的协议类型
+            RequestItemProtocolEnum protocol;
+            if (httpRadio.isSelected()) {
+                protocol = RequestItemProtocolEnum.HTTP;
+            } else if (webSocketRadio.isSelected()) {
+                protocol = RequestItemProtocolEnum.WEBSOCKET;
+            } else if (sseRadio.isSelected()) {
+                protocol = RequestItemProtocolEnum.SSE;
+            } else {
+                protocol = RequestItemProtocolEnum.HTTP; // 默认为HTTP
+            }
+
+            // 创建请求
+            createNewRequest(groupNode, protocol, requestName);
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(okButton);
+        buttonPanel.add(cancelButton);
+
+        // 组装对话框
+        mainPanel.add(namePanel);
+        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(protocolPanel);
+
+        dialog.add(mainPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 设置默认焦点和按钮
+        dialog.getRootPane().setDefaultButton(okButton);
+        SwingUtilities.invokeLater(() -> nameField.requestFocus());
+
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 创建新请求并添加到指定分组
+     */
+    private void createNewRequest(DefaultMutableTreeNode groupNode, RequestItemProtocolEnum protocol, String requestName) {
+        // 创建默认请求
+        HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
+        defaultRequest.setProtocol(protocol);
+        defaultRequest.setName(requestName);
+        defaultRequest.getHeaders().put(USER_AGENT, EASY_POSTMAN_CLIENT);
+
+        // 根据协议类型设置不同的默认值
+        if (protocol.isWebSocketProtocol()) {
+            // WebSocket 默认配置
+            defaultRequest.setMethod("GET"); // WebSocket连接都是GET
+            defaultRequest.setUrl("wss://echo.websocket.org");
+        } else if (protocol.isSseProtocol()) {
+            // SSE 默认配置
+            defaultRequest.setMethod("GET"); // SSE通常使用GET
+            defaultRequest.setUrl("https://sse.dev/test");
+            defaultRequest.getHeaders().put(ACCEPT, TEXT_EVENT_STREAM);
+        } else {
+            // HTTP 默认配置
+            defaultRequest.setMethod("GET");
+            defaultRequest.setUrl("https://httpbin.org/get");
+        }
+
+        // 添加到树中
+        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, defaultRequest});
+        groupNode.add(reqNode);
+        treeModel.reload(groupNode);
+        requestTree.expandPath(new TreePath(groupNode.getPath()));
+        persistence.saveRequestGroups();
+
+        // 自动打开新创建的请求
+        SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(defaultRequest);
     }
 }

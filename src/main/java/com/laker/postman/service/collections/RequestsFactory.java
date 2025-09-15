@@ -8,14 +8,14 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
 @Slf4j
-public class RequestCollectionsFactory {
+public class RequestsFactory {
 
     public static final String REQUEST = "request";
     public static final String APPLICATION_JSON = "application/json";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String HTTPS_HTTPBIN_ORG_POST = "https://httpbin.org/post";
 
-    private RequestCollectionsFactory() {
+    private RequestsFactory() {
         throw new IllegalStateException("Utility class");
     }
 

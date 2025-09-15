@@ -18,7 +18,7 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.collections.RequestCollectionPersistence;
+import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
@@ -73,7 +73,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private FlatTextField searchField;
 
-    private transient RequestCollectionPersistence persistence;
+    private transient RequestsPersistence persistence;
 
     @Override
     protected void initUI() {
@@ -95,7 +95,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
         String filePath = SystemUtil.getCollectionPathForWorkspace(currentWorkspace);
         // 初始化持久化工具
-        persistence = new RequestCollectionPersistence(filePath, rootTreeNode, treeModel);
+        persistence = new RequestsPersistence(filePath, rootTreeNode, treeModel);
         // 创建树组件
         requestTree = new JTree(treeModel) {
             @Override
@@ -1324,7 +1324,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 3. 创建目标工作区的持久化工具
         DefaultMutableTreeNode targetRootNode = new DefaultMutableTreeNode(ROOT);
         DefaultTreeModel targetTreeModel = new DefaultTreeModel(targetRootNode);
-        RequestCollectionPersistence targetPersistence = new RequestCollectionPersistence(
+        RequestsPersistence targetPersistence = new RequestsPersistence(
                 targetCollectionPath, targetRootNode, targetTreeModel);
 
         // 4. 加载目标工作区的现有集合

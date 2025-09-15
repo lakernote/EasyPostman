@@ -18,12 +18,12 @@ public class RequestCollectionsService {
     }
 
     public static int restoreOpenedRequests() {
-        List<HttpRequestItem> unSavedRequests = OpenedRequestService.getAll();
+        List<HttpRequestItem> unSavedRequests = OpenedRequestsService.getAll();
         for (HttpRequestItem item : unSavedRequests) {
-            RequestEditSubPanel panel = RequestCollectionsTabsService.addTab(item);
-            RequestCollectionsTabsService.updateTabNew(panel, item.isNewRequest());
+            RequestEditSubPanel panel = RequestsTabsService.addTab(item);
+            RequestsTabsService.updateTabNew(panel, item.isNewRequest());
         }
-        OpenedRequestService.clear();
+        OpenedRequestsService.clear();
         return unSavedRequests.size();
     }
 

@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-public class RequestCollectionPersistence {
+public class RequestsPersistence {
     private String filePath;
     private final DefaultMutableTreeNode rootTreeNode;
     private final DefaultTreeModel treeModel;
 
-    public RequestCollectionPersistence(String filePath, DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
+    public RequestsPersistence(String filePath, DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
         this.filePath = filePath;
         this.rootTreeNode = rootTreeNode;
         this.treeModel = treeModel;
@@ -40,7 +40,7 @@ public class RequestCollectionPersistence {
     public void initRequestGroupsFromFile() {
         File file = new File(filePath);
         if (!file.exists()) { // 如果文件不存在，则创建默认请求组
-            RequestCollectionsFactory.createDefaultRequestGroups(rootTreeNode, treeModel); // 创建默认请求组
+            RequestsFactory.createDefaultRequestGroups(rootTreeNode, treeModel); // 创建默认请求组
             saveRequestGroups(); // 保存默认请求组到文件
             log.info("File not found, created default request groups.");
             return;

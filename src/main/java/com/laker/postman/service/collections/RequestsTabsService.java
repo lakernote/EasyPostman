@@ -14,9 +14,9 @@ import javax.swing.*;
 import java.awt.*;
 
 @Slf4j
-public class RequestCollectionsTabsService {
+public class RequestsTabsService {
 
-    private RequestCollectionsTabsService() {
+    private RequestsTabsService() {
         // no-op
     }
 

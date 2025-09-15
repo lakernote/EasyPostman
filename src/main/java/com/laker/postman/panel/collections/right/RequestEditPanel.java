@@ -12,7 +12,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.service.collections.RequestCollectionsTabsService;
+import com.laker.postman.service.collections.RequestsTabsService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -61,7 +61,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
-        RequestCollectionsTabsService.updateTabNew(subPanel, true); // 设置新建状态
+        RequestsTabsService.updateTabNew(subPanel, true); // 设置新建状态
         return subPanel;
     }
 

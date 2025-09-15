@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class OpenedRequestService {
+public class OpenedRequestsService {
 
     public static final String PATHNAME = SystemUtil.getUserHomeEasyPostmanPath() + "opened_requests.json";
 
-    private OpenedRequestService() {
+    private OpenedRequestsService() {
         throw new IllegalStateException("Utility class");
     }
 

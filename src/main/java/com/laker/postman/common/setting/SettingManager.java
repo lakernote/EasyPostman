@@ -180,6 +180,23 @@ public class SettingManager {
         save();
     }
 
+    public static int getMaxOpenedRequestsCount() {
+        String val = props.getProperty("max_opened_requests_count");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 20;
+            }
+        }
+        return 20;
+    }
+
+    public static void setMaxOpenedRequestsCount(int count) {
+        props.setProperty("max_opened_requests_count", String.valueOf(count));
+        save();
+    }
+
     // ===== 自动更新设置 =====
 
     /**

@@ -110,8 +110,9 @@ public class OpenedRequestsService {
         }
 
         // 只保存最新的多少个请求
-        if (openedRequestItem.size() > 20) {
-            openedRequestItem = new ArrayList<>(openedRequestItem.subList(openedRequestItem.size() - 20, openedRequestItem.size()));
+        int maxOpenedRequests = com.laker.postman.common.setting.SettingManager.getMaxOpenedRequestsCount();
+        if (openedRequestItem.size() > maxOpenedRequests) {
+            openedRequestItem = new ArrayList<>(openedRequestItem.subList(openedRequestItem.size() - maxOpenedRequests, openedRequestItem.size()));
         }
 
         // 保存所有到单独的 JSON 文件

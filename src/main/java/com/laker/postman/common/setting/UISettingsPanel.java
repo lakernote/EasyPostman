@@ -21,6 +21,7 @@ public class UISettingsPanel extends JPanel {
     private JCheckBox showDownloadProgressCheckBox;
     private JTextField downloadProgressDialogThresholdField;
     private JTextField maxHistoryCountField;
+    private JTextField maxOpenedRequestsCountField;
     private JButton saveBtn;
     private JButton cancelBtn;
 
@@ -98,6 +99,18 @@ public class UISettingsPanel extends JPanel {
         maxHistoryCountField.setText(String.valueOf(SettingManager.getMaxHistoryCount()));
         generalPanel.add(maxHistoryCountField, gbc);
 
+        // 最大打开请求数
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        JLabel maxOpenedRequestsCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_MAX_OPENED_REQUESTS));
+        maxOpenedRequestsCountLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP));
+        generalPanel.add(maxOpenedRequestsCountLabel, gbc);
+
+        gbc.gridx = 1;
+        maxOpenedRequestsCountField = new JTextField(10);
+        maxOpenedRequestsCountField.setText(String.valueOf(SettingManager.getMaxOpenedRequestsCount()));
+        generalPanel.add(maxOpenedRequestsCountField, gbc);
+
         mainPanel.add(downloadPanel);
         mainPanel.add(Box.createVerticalStrut(10));
         mainPanel.add(generalPanel);
@@ -142,9 +155,11 @@ public class UISettingsPanel extends JPanel {
     private void setupValidators() {
         validators.put(downloadProgressDialogThresholdField, s -> isInteger(s) && Integer.parseInt(s) >= 0);
         validators.put(maxHistoryCountField, s -> isInteger(s) && Integer.parseInt(s) > 0);
+        validators.put(maxOpenedRequestsCountField, s -> isInteger(s) && Integer.parseInt(s) > 0);
 
         errorMessages.put(downloadProgressDialogThresholdField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_THRESHOLD_ERROR));
         errorMessages.put(maxHistoryCountField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_HISTORY_ERROR));
+        errorMessages.put(maxOpenedRequestsCountField, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR));
 
         DocumentListener validationListener = new DocumentListener() {
             @Override
@@ -208,6 +223,7 @@ public class UISettingsPanel extends JPanel {
         downloadProgressDialogThresholdField.addKeyListener(keyAdapter);
         showDownloadProgressCheckBox.addKeyListener(keyAdapter);
         maxHistoryCountField.addKeyListener(keyAdapter);
+        maxOpenedRequestsCountField.addKeyListener(keyAdapter);
     }
 
     private void registerListeners() {
@@ -243,10 +259,12 @@ public class UISettingsPanel extends JPanel {
         try {
             int thresholdMB = Integer.parseInt(downloadProgressDialogThresholdField.getText().trim());
             int maxHistoryCount = Integer.parseInt(maxHistoryCountField.getText().trim());
+            int maxOpenedRequestsCount = Integer.parseInt(maxOpenedRequestsCountField.getText().trim());
 
             SettingManager.setShowDownloadProgressDialog(showDownloadProgressCheckBox.isSelected());
             SettingManager.setDownloadProgressDialogThreshold(thresholdMB * 1024 * 1024);
             SettingManager.setMaxHistoryCount(maxHistoryCount);
+            SettingManager.setMaxOpenedRequestsCount(maxOpenedRequestsCount);
 
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS),
                     I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);

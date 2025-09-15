@@ -573,6 +573,8 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_TITLE = "settings.general.title";
     public static final String SETTINGS_GENERAL_MAX_HISTORY = "settings.general.max_history";
     public static final String SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP = "settings.general.max_history.tooltip";
+    public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS = "settings.general.max_opened_requests";
+    public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP = "settings.general.max_opened_requests.tooltip";
 
     // Validation messages
     public static final String SETTINGS_VALIDATION_ERROR_TITLE = "settings.validation.error.title";
@@ -584,6 +586,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_INVALID_NUMBER = "settings.validation.invalid_number";
+    public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
 
     // Success messages
     public static final String SETTINGS_SAVE_SUCCESS = "settings.save.success";

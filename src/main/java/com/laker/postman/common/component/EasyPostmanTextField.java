@@ -14,8 +14,6 @@ public class EasyPostmanTextField extends JTextField {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
 
     // Postman 风格颜色
-    private static final Color DEFINED_VAR_BORDER = new Color(255, 180, 80); // 橙色
-
     private static final Color UNDEFINED_VAR_BORDER = new Color(255, 100, 100); // 红色
 
     public EasyPostmanTextField(String text, int columns) {
@@ -60,8 +58,16 @@ public class EasyPostmanTextField extends JTextField {
                 }
                 // 判断变量状态
                 boolean isDefined = isVariableDefined(seg.name);
-                Color bgColor = isDefined ? new Color(255, 230, 170, 120) : new Color(255, 200, 200, 120); // 半透明
-                Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
+                Color bgColor;
+                Color borderColor;
+                if (isDefined) {
+                    // 偏蓝色（蓝色+橙色混合，柔和）
+                    bgColor = new Color(180, 210, 255, 120); // 半透明淡蓝
+                    borderColor = new Color(80, 150, 255); // 蓝色边框
+                } else {
+                    bgColor = new Color(255, 200, 200, 120); // 半透明红
+                    borderColor = UNDEFINED_VAR_BORDER;
+                }
                 String varText = value.substring(seg.start, seg.end);
                 int varWidth = fm.stringWidth(varText);
                 // 只绘制变量的半透明背景和边框，不绘制文本
@@ -72,7 +78,9 @@ public class EasyPostmanTextField extends JTextField {
                 x += varWidth;
                 last = seg.end;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // 忽略异常，通常由于文本为空或光标位置异常导致
+        }
     }
 
     private List<VariableSegment> getVariableSegments(String value) {
@@ -85,7 +93,8 @@ public class EasyPostmanTextField extends JTextField {
     }
 
     private static class VariableSegment {
-        int start, end;
+        int start;
+        int end;
         String name;
 
         VariableSegment(int start, int end, String name) {

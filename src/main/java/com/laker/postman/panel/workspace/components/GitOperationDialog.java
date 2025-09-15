@@ -344,6 +344,7 @@ public class GitOperationDialog extends JDialog {
         commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         commitMessageArea.setLineWrap(true);
         commitMessageArea.setWrapStyleWord(true);
+        commitMessageArea.setText("Update at " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
         JScrollPane scrollPane = new JScrollPane(commitMessageArea);
         scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));

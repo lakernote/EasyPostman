@@ -362,6 +362,11 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             logMessage("Git拉取操作完成: " + workspace.getName());
+            // 刷新 requests 和 env 面板
+            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+            SingletonFactory.getInstance(EnvironmentPanel.class)
+                .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             refreshWorkspaceList();
         } else {
             logMessage("取消Git拉取操作");
@@ -400,6 +405,11 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             logMessage("Git推送操作完成: " + workspace.getName());
+            // 刷新 requests 和 env 面板
+            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+            SingletonFactory.getInstance(EnvironmentPanel.class)
+                .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             refreshWorkspaceList();
         } else {
             logMessage("取消Git推送操作");

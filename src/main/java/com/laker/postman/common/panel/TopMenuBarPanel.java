@@ -1,6 +1,5 @@
 package com.laker.postman.common.panel;
 
-import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
@@ -63,7 +62,6 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         menuBar = new JMenuBar();
         menuBar.setBorder(BorderFactory.createEmptyBorder());
         addFileMenu();
-        addThemeMenu();
         addLanguageMenu();
         addSettingMenu();
         addHelpMenu();
@@ -93,34 +91,6 @@ public class TopMenuBarPanel extends SingletonBasePanel {
             JOptionPane.showMessageDialog(null,
                     I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LOG_MESSAGE),
                     I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void addThemeMenu() {
-        JMenu themeMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_THEME));
-        ButtonGroup themeGroup = new ButtonGroup();
-        JRadioButtonMenuItem lightTheme = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_LIGHT));
-        JRadioButtonMenuItem intellijTheme = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_INTELLIJ));
-        JRadioButtonMenuItem macLightTheme = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_MAC));
-        themeGroup.add(lightTheme);
-        themeGroup.add(intellijTheme);
-        themeGroup.add(macLightTheme);
-        themeMenu.add(lightTheme);
-        themeMenu.add(intellijTheme);
-        themeMenu.add(macLightTheme);
-        setThemeSelection(lightTheme, intellijTheme, macLightTheme);
-        lightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatLightLaf"));
-        intellijTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.FlatIntelliJLaf"));
-        macLightTheme.addActionListener(e -> switchLaf("com.formdev.flatlaf.themes.FlatMacLightLaf"));
-        menuBar.add(themeMenu);
-    }
-
-    private void setThemeSelection(JRadioButtonMenuItem lightTheme, JRadioButtonMenuItem intellijTheme, JRadioButtonMenuItem macLightTheme) {
-        String lafClass = UIManager.getLookAndFeel().getClass().getName();
-        switch (lafClass) {
-            case "com.formdev.flatlaf.FlatLightLaf" -> lightTheme.setSelected(true);
-            case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> macLightTheme.setSelected(true);
-            default -> intellijTheme.setSelected(true);
         }
     }
 
@@ -353,34 +323,5 @@ public class TopMenuBarPanel extends SingletonBasePanel {
      */
     private void checkUpdate() {
         UpdateService.getInstance().checkUpdateManually();
-    }
-
-    private void switchLaf(String className) {
-        try {
-            FlatAnimatedLafChange.showSnapshot();
-            switch (className) {
-                case "com.formdev.flatlaf.FlatLightLaf" -> com.formdev.flatlaf.FlatLightLaf.setup();
-                case "com.formdev.flatlaf.FlatIntelliJLaf" -> com.formdev.flatlaf.FlatIntelliJLaf.setup();
-                case "com.formdev.flatlaf.themes.FlatMacLightLaf" -> com.formdev.flatlaf.themes.FlatMacLightLaf.setup();
-                default -> UIManager.setLookAndFeel(className);
-            }
-            // 更新全局字体
-            Font font = UIManager.getFont("defaultFont");
-            UIManager.put("Label.font", font);
-            UIManager.put("Button.font", font);
-            UIManager.put("TextField.font", font);
-            UIManager.put("TextArea.font", font);
-            UIManager.put("ComboBox.font", font);
-            // 重新初始化菜单栏以应用新主题
-            menuBar.removeAll();
-            initComponents();
-            // 重新绘制所有窗口
-            for (Window window : Window.getWindows()) {
-                SwingUtilities.updateComponentTreeUI(window);
-            }
-            FlatAnimatedLafChange.hideSnapshotWithAnimation();
-        } catch (Exception e) {
-            log.error("Failed to switch LookAndFeel", e);
-        }
     }
 }

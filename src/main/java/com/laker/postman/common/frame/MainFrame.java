@@ -59,7 +59,7 @@ public class MainFrame extends JFrame {
             @Override
             public void windowClosing(WindowEvent e) { // 当窗口关闭时触发
                 saveWindowState(); // 保存窗口状态
-                ExitService.beforeExit();
+                ExitService.exit();
             }
 
             @Override

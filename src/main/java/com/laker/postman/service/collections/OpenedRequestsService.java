@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.common.tab.ClosableTabComponent;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -78,7 +79,7 @@ public class OpenedRequestsService {
                     options[0]);
             if (result == 2 || result == JOptionPane.CLOSED_OPTION) {
                 // 用户取消，直接返回
-                return;
+                throw new CancelException("User cancelled exit to save unsaved changes");
             }
             if (result == 0) {
                 // 全部保存

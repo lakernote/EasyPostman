@@ -56,7 +56,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler((e) -> ExitService.beforeExit());
+        FlatDesktop.setQuitHandler((e) -> ExitService.exit());
     }
 
     private void initComponents() {
@@ -79,7 +79,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
         exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         exitMenuItem.setMnemonic('X');
-        exitMenuItem.addActionListener(e -> ExitService.beforeExit());
+        exitMenuItem.addActionListener(e -> ExitService.exit());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);

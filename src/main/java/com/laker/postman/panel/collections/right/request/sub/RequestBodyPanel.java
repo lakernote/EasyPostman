@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
@@ -106,17 +106,19 @@ public class RequestBodyPanel extends JPanel {
             leftPanel.add(rawTypeComboBox);
         }
 
-        bodyTypePanel.add(leftPanel, BorderLayout.WEST);
 
         // 创建 formatButton 并放在右侧
         formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 20, 20));
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(!isWebSocketMode && isBodyTypeRAW());
-        formatButton.setPreferredSize(new Dimension(32, 32));
 
         if (!isWebSocketMode) {
-            bodyTypePanel.add(formatButton, BorderLayout.EAST);
+            leftPanel.add(Box.createHorizontalStrut(5));
+            leftPanel.add(formatButton);
         }
+
+        bodyTypePanel.add(leftPanel, BorderLayout.WEST);
+
 
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
@@ -280,7 +282,7 @@ public class RequestBodyPanel extends JPanel {
             return;
         }
         String bodyText = bodyArea.getText();
-        if (StrUtil.isBlank(bodyText)) {
+        if (CharSequenceUtil.isBlank(bodyText)) {
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_EMPTY));
             return;
         }

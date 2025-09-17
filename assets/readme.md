@@ -2,3 +2,6 @@
 - https://icon-icons.com/
 - https://anyconv.com/png-to-icns-converter/
 - https://www.flaticon.com/
+- https://www.svgrepo.com/
+- https://freesvgicons.com/search?q=http
+- https://flowbite.com/icons/

@@ -84,4 +84,7 @@ public class EasyPostManColors {
 
     // 分隔符背景色
     public static final Color SEPARATOR_BACKGROUND = new Color(240, 240, 240);
+
+    // ==================== tab头选中背景色 ====================
+    public static final Color TAB_SELECTED_BACKGROUND = new Color(220, 230, 238);
 }

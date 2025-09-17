@@ -369,7 +369,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                                 if (tabItem != null && item.getId().equals(tabItem.getId())) {
                                     tabbedPane.setTitleAt(i, newName);
                                     // 更新自定义标签组件
-                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, subPanel, tabbedPane));
+                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName));
                                     // 同步刷新内容
                                     subPanel.updateRequestForm(item);
                                 }

@@ -55,7 +55,7 @@ public class OpenedRequestsService {
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component tabComp = tabbedPane.getTabComponentAt(i);
             if (tabComp instanceof ClosableTabComponent closable) {
-                if (closable.dirty) {
+                if (closable.isDirty()) {
                     unsavedTabs.add(i);
                 }
             }
@@ -98,10 +98,10 @@ public class OpenedRequestsService {
             Component comp = tabbedPane.getComponentAt(i);
             if (tabComp instanceof ClosableTabComponent closable && comp instanceof RequestEditSubPanel subPanel) {
                 HttpRequestItem item;
-                if (closable.newRequest) {
+                if (closable.isNewRequest()) {
                     item = subPanel.getCurrentRequest();
                     item.setNewRequest(true);
-                } else if (closable.dirty && !saveAll) {
+                } else if (closable.isDirty() && !saveAll) {
                     item = subPanel.getOriginalRequestItem();
                 } else {
                     item = subPanel.getCurrentRequest();

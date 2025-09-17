@@ -56,8 +56,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         String tabTitle = title != null ? title : REQUEST_STRING;
         RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID(), RequestItemProtocolEnum.HTTP);
         tabbedPane.addTab(tabTitle, subPanel);
-        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1,
-                new ClosableTabComponent(tabTitle, subPanel, tabbedPane));
+        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(tabTitle));
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
@@ -121,8 +120,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         String name = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : REQUEST_STRING;
         int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0; // 插入到“+”Tab前
         tabbedPane.insertTab(name, null, subPanel, null, plusTabIdx);
-        tabbedPane.setTabComponentAt(plusTabIdx,
-                new ClosableTabComponent(name, subPanel, tabbedPane));
+        tabbedPane.setTabComponentAt(plusTabIdx, new ClosableTabComponent(name));
         tabbedPane.setSelectedIndex(plusTabIdx);
     }
 
@@ -349,15 +347,13 @@ public class RequestEditPanel extends SingletonBasePanel {
             tabbedPane.setTitleAt(currentTabIndex, requestName);
             Component tabComp = tabbedPane.getTabComponentAt(currentTabIndex);
             if (tabComp instanceof ClosableTabComponent) {
-                tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName, getCurrentSubPanel(), tabbedPane));
+                tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName));
             }
             RequestEditSubPanel subPanel = getCurrentSubPanel();
             if (subPanel != null) {
                 subPanel.updateRequestForm(item);
             }
         }
-        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_SAVED),
-                I18nUtil.getMessage(MessageKeys.SUCCESS), JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

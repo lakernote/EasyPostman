@@ -2,13 +2,18 @@ package com.laker.postman.common.tab;
 
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.constants.EasyPostManColors;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,17 +25,21 @@ public class ClosableTabComponent extends JPanel {
     private static final int TAB_HEIGHT = 20; // Tab高度
     private final JLabel label;
     private final String rawTitle;
-    public boolean dirty = false;
-    public boolean newRequest = false;
+    @Getter
+    private boolean dirty = false;
+    @Getter
+    private boolean newRequest = false;
     private final JTabbedPane tabbedPane;
-    private final RequestEditSubPanel panel;
 
-    public ClosableTabComponent(String title, RequestEditSubPanel panel, JTabbedPane tabbedPane) {
+    private boolean hoverClose = false; // 鼠标是否悬浮在关闭按钮区域
+    private static final int CLOSE_DIAMETER = 10; // 关闭按钮直径
+    private static final int CLOSE_MARGIN = 0; // 关闭按钮距离顶部和右侧的距离
+
+    public ClosableTabComponent(String title) {
         setOpaque(false);
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-        this.tabbedPane = tabbedPane;
-        this.panel = panel;
+        setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        this.tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
         int textWidth = fm.stringWidth(title) + 32;
@@ -61,13 +70,34 @@ public class ClosableTabComponent extends JPanel {
         // 添加右键菜单
         JPopupMenu menu = getPopupMenu();
         this.setComponentPopupMenu(menu);
-        addMouseListener(new java.awt.event.MouseAdapter() {
+        addMouseMotionListener(new MouseMotionAdapter() {
             @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
-                    int idx = tabbedPane.indexOfTabComponent(ClosableTabComponent.this);
-                    if (idx != -1) {
-                        tabbedPane.setSelectedIndex(idx);
+            public void mouseMoved(MouseEvent e) {
+                if (!hoverClose) {
+                    hoverClose = true;
+                    repaint();
+                }
+            }
+        });
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (hoverClose) {
+                    hoverClose = false;
+                    repaint();
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {  // 左键点击
+                    int idx = tabbedPane.indexOfTabComponent(ClosableTabComponent.this); // 获取当前Tab的索引
+                    if (idx != -1) { // 确保索引有效
+                        if (isInCloseButton(e.getX(), e.getY())) {
+                            closeCurrent();
+                            return;
+                        }
+                        tabbedPane.setSelectedIndex(idx); // 选中当前Tab
                     }
                 }
             }
@@ -75,28 +105,43 @@ public class ClosableTabComponent extends JPanel {
         rawTitle = title;
     }
 
+    private Rectangle getCloseButtonBounds() {
+        int r = CLOSE_DIAMETER;
+        int x = getWidth() - r - CLOSE_MARGIN;
+        int y = CLOSE_MARGIN;
+        return new Rectangle(x, y, r, r);
+    }
+
+    private boolean isInCloseButton(int x, int y) {
+        return getCloseButtonBounds().contains(x, y);
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (newRequest) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int r = 8; // 圆点直径
-            int x = getWidth() - r; // 组件宽度减去圆点直径和右侧边距，这样圆点就贴近右上角。
-            int y = 2; // 圆点的 y 坐标，距离顶部像素。
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // 抗锯齿
+        Rectangle closeRect = getCloseButtonBounds();
+        int r = CLOSE_DIAMETER;
+        int x = closeRect.x;
+        int y = closeRect.y;
+        if (hoverClose) {
+            // 绘制关闭按钮
+            g2.setColor(EasyPostManColors.TAB_SELECTED_BACKGROUND);
+            g2.fillOval(x, y, r, r);
+            g2.setColor(Color.BLACK);
+            int pad = 2;
+            g2.setStroke(new BasicStroke(1.5f));
+            g2.drawLine(x + pad, y + pad, x + r - pad, y + r - pad);
+            g2.drawLine(x + r - pad, y + pad, x + pad, y + r - pad);
+        } else if (newRequest) {
             g2.setColor(new Color(255, 204, 0, 180)); // yellow
             g2.fillOval(x, y, r, r);
-            g2.dispose();
         } else if (dirty) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int r = 8;
-            int x = getWidth() - r;
-            int y = 2;
             g2.setColor(new Color(209, 47, 47, 131)); // red
             g2.fillOval(x, y, r, r);
-            g2.dispose();
         }
+        g2.dispose();
     }
 
     private JPopupMenu getPopupMenu() {
@@ -104,33 +149,9 @@ public class ClosableTabComponent extends JPanel {
         JMenuItem closeCurrent = new JMenuItem(I18nUtil.getMessage(MessageKeys.TAB_CLOSE_CURRENT));
         JMenuItem closeOthers = new JMenuItem(I18nUtil.getMessage(MessageKeys.TAB_CLOSE_OTHERS));
         JMenuItem closeAll = new JMenuItem(I18nUtil.getMessage(MessageKeys.TAB_CLOSE_ALL));
-        closeCurrent.addActionListener(e -> {
-            int idx = tabbedPane.indexOfComponent(panel);
-            if (idx >= 0) {
-                if (panel.isModified()) {
-                    int result = JOptionPane.showConfirmDialog(tabbedPane,
-                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
-                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
-                            JOptionPane.YES_NO_CANCEL_OPTION,
-                            JOptionPane.WARNING_MESSAGE);
-                    if (result == JOptionPane.CANCEL_OPTION) return;
-                    if (result == JOptionPane.YES_OPTION) {
-                        SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
-                    }
-                }
-                tabbedPane.remove(idx);
-                // 如果还有请求Tab，且没有选中Tab，则选中最后一个请求Tab
-                int count = tabbedPane.getTabCount();
-                if (count > 1) { // 还有请求Tab和+Tab
-                    int selected = tabbedPane.getSelectedIndex();
-                    if (selected == -1 || selected == count - 1) { // 没有选中或选中的是+Tab
-                        tabbedPane.setSelectedIndex(count - 2); // 选中最后一个请求Tab
-                    }
-                }
-            }
-        });
+        closeCurrent.addActionListener(e -> closeCurrent());
         closeOthers.addActionListener(e -> {
-            int thisIdx = tabbedPane.indexOfComponent(panel);
+            int thisIdx = tabbedPane.indexOfTabComponent(this);
             List<Component> toRemove = new ArrayList<>();
             int firstDirtyIdx = -1;
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
@@ -160,7 +181,7 @@ public class ClosableTabComponent extends JPanel {
                 tabbedPane.remove(comp);
             }
             // 操作完成后，定位到当前tab
-            int idx = tabbedPane.indexOfComponent(panel);
+            int idx = tabbedPane.indexOfTabComponent(this);
             if (idx >= 0) tabbedPane.setSelectedIndex(idx);
         });
         closeAll.addActionListener(e -> {
@@ -197,6 +218,33 @@ public class ClosableTabComponent extends JPanel {
         menu.add(closeOthers);
         menu.add(closeAll);
         return menu;
+    }
+
+    private void closeCurrent() {
+        int idx = tabbedPane.indexOfTabComponent(this);
+        if (idx >= 0) {
+            RequestEditSubPanel editSubPanel = (RequestEditSubPanel) tabbedPane.getComponentAt(idx);
+            if (editSubPanel.isModified()) {
+                int result = JOptionPane.showConfirmDialog(tabbedPane,
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+                if (result == JOptionPane.CANCEL_OPTION) return;
+                if (result == JOptionPane.YES_OPTION) {
+                    SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
+                }
+            }
+            tabbedPane.remove(idx);
+            // 如果还有请求Tab，且没有选中Tab，则选中最后一个请求Tab
+            int count = tabbedPane.getTabCount();
+            if (count > 1) { // 还有请求Tab和+Tab
+                int selected = tabbedPane.getSelectedIndex();
+                if (selected == -1 || selected == count - 1) { // 没有选中或选中的是+Tab
+                    tabbedPane.setSelectedIndex(count - 2); // 选中最后一个请求Tab
+                }
+            }
+        }
     }
 
     public void setDirty(boolean dirty) {

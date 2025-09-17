@@ -31,8 +31,7 @@ public class RequestsTabsService {
         String tabTitle = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
         JTabbedPane tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
         tabbedPane.addTab(tabTitle, subPanel);
-        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1,
-                new ClosableTabComponent(tabTitle, subPanel, tabbedPane));
+        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(tabTitle));
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         return subPanel;
     }

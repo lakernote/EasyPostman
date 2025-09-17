@@ -21,8 +21,9 @@ import java.util.List;
  * 通用可关闭Tab组件，支持右上角红点脏标记
  */
 public class ClosableTabComponent extends JPanel {
-    private static final int MAX_TAB_WIDTH = 100; // 最大Tab宽度
-    private static final int TAB_HEIGHT = 20; // Tab高度
+    private static final int MAX_TAB_WIDTH = 160; // 最大Tab宽度
+    private static final int MIN_TAB_WIDTH = 80;  // 最小Tab宽度
+    private static final int TAB_HEIGHT = 28; // Tab高度
     private final JLabel label;
     private final String rawTitle;
     @Getter
@@ -38,12 +39,12 @@ public class ClosableTabComponent extends JPanel {
     public ClosableTabComponent(String title) {
         setOpaque(false);
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         this.tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
-        int textWidth = fm.stringWidth(title) + 32;
-        int tabWidth = Math.min(textWidth, MAX_TAB_WIDTH);
+        int textWidth = fm.stringWidth(title) + MIN_TAB_WIDTH; // 预留关闭按钮和内边距空间
+        int tabWidth = Math.min(textWidth, MAX_TAB_WIDTH);   // 限制最大宽度
         setPreferredSize(new Dimension(tabWidth, TAB_HEIGHT));
         // 截断文本并设置tooltip
         String displayTitle = title;

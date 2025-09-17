@@ -1,10 +1,11 @@
-package com.laker.postman.common.panel;
+package com.laker.postman.panel.topmenu;
 
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.setting.PerformanceSettingsDialog;
 import com.laker.postman.common.setting.RequestSettingsDialog;
 import com.laker.postman.common.setting.SystemSettingsDialog;

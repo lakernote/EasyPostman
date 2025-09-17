@@ -3,7 +3,7 @@ package com.laker.postman.panel.workspace;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.common.panel.TopMenuBarPanel;
+import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;

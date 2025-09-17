@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.tab.ConfirmableTabSelectionModel;
+import com.laker.postman.model.TabInfo;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -25,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import java.util.function.Supplier;
 
 import static com.laker.postman.util.MessageKeys.MENU_FUNCTIONAL;
 
@@ -373,27 +373,5 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         revalidate(); // 重新布局
         repaint(); // 重绘组件
-    }
-
-    // Tab元数据结构，便于维护和扩展
-    private static class TabInfo {
-        String title;
-        Icon icon;
-        Supplier<JPanel> panelSupplier; // 用于懒加载面板
-        JPanel panel;
-
-        TabInfo(String title, Icon icon, Supplier<JPanel> panelSupplier) {
-            this.title = title;
-            this.icon = icon;
-            this.panelSupplier = panelSupplier;
-        }
-
-        JPanel getPanel() { // 懒加载面板
-            if (panel == null) {
-                panel = panelSupplier.get();
-                log.debug("Loaded panel for tab: {}", title);
-            }
-            return panel;
-        }
     }
 }

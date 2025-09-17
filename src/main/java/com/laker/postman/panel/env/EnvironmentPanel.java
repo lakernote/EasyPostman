@@ -11,7 +11,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.common.panel.TopMenuBarPanel;
+import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;

@@ -21,6 +21,7 @@ import java.util.List;
  * 通用可关闭Tab组件，支持右上角红点脏标记
  */
 public class ClosableTabComponent extends JPanel {
+    public static final String ELLIPSIS = "...";
     private static final int MAX_TAB_WIDTH = 160; // 最大Tab宽度
     private static final int MIN_TAB_WIDTH = 80;  // 最小Tab宽度
     private static final int TAB_HEIGHT = 28; // Tab高度
@@ -40,6 +41,7 @@ public class ClosableTabComponent extends JPanel {
         setOpaque(false);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        setToolTipText(title); // 设置完整标题为tooltip
         this.tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
@@ -48,22 +50,20 @@ public class ClosableTabComponent extends JPanel {
         setPreferredSize(new Dimension(tabWidth, TAB_HEIGHT));
         // 截断文本并设置tooltip
         String displayTitle = title;
-        int maxLabelWidth = tabWidth - 10;
-        String ellipsis = "...";
-        if (fm.stringWidth(title) > maxLabelWidth) {
-            int len = title.length();
-            while (len > 0 && fm.stringWidth(title.substring(0, len) + ellipsis) > maxLabelWidth) {
-                len--;
+        int maxLabelWidth = tabWidth - 10; // 预留关闭按钮和内边距空间
+        if (fm.stringWidth(title) > maxLabelWidth) { // 需要截断
+            int len = title.length(); // 从完整标题开始
+            while (len > 0 && fm.stringWidth(title.substring(0, len) + ELLIPSIS) > maxLabelWidth) { // 逐渐减少长度
+                len--; // 减少一个字符
             }
-            displayTitle = title.substring(0, len) + ellipsis;
+            displayTitle = title.substring(0, len) + ELLIPSIS; // 截断并添加省略号
         }
         label = new JLabel(displayTitle) {
             @Override
-            public boolean contains(int x, int y) {
+            public boolean contains(int x, int y) { // 重写contains方法，避免遮挡关闭按钮的鼠标事件
                 return false;
             }
         };
-        label.setToolTipText(title);
         label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setVerticalAlignment(SwingConstants.CENTER);

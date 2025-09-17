@@ -66,7 +66,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         sidebarExpanded = UserSettingsUtil.isSidebarExpanded();
         setLayout(new BorderLayout());
         // 1. 创建标签页
-        tabbedPane = new JTabbedPane(SwingConstants.LEFT);
+        tabbedPane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
         // 替换 selectionModel，支持切换前拦截
         tabbedPane.setModel(new ConfirmableTabSelectionModel(this));
         tabInfos = new ArrayList<>();

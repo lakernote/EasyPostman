@@ -3,6 +3,7 @@ package com.laker.postman.common.tab;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.EasyPostManColors;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.util.I18nUtil;
@@ -37,7 +38,7 @@ public class ClosableTabComponent extends JPanel {
     private static final int CLOSE_DIAMETER = 10; // 关闭按钮直径
     private static final int CLOSE_MARGIN = 0; // 关闭按钮距离顶部和右侧的距离
 
-    public ClosableTabComponent(String title) {
+    public ClosableTabComponent(String title, RequestItemProtocolEnum protocol) {
         setOpaque(false);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
@@ -64,6 +65,7 @@ public class ClosableTabComponent extends JPanel {
                 return false;
             }
         };
+        label.setIcon(protocol.getIcon());
         label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setVerticalAlignment(SwingConstants.CENTER);

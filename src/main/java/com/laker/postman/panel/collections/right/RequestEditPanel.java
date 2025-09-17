@@ -56,7 +56,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         String tabTitle = title != null ? title : REQUEST_STRING;
         RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID(), RequestItemProtocolEnum.HTTP);
         tabbedPane.addTab(tabTitle, subPanel);
-        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(tabTitle));
+        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(tabTitle, RequestItemProtocolEnum.HTTP));
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
@@ -120,7 +120,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         String name = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : REQUEST_STRING;
         int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0; // 插入到“+”Tab前
         tabbedPane.insertTab(name, null, subPanel, null, plusTabIdx);
-        tabbedPane.setTabComponentAt(plusTabIdx, new ClosableTabComponent(name));
+        tabbedPane.setTabComponentAt(plusTabIdx, new ClosableTabComponent(name, item.getProtocol()));
         tabbedPane.setSelectedIndex(plusTabIdx);
     }
 
@@ -347,7 +347,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             tabbedPane.setTitleAt(currentTabIndex, requestName);
             Component tabComp = tabbedPane.getTabComponentAt(currentTabIndex);
             if (tabComp instanceof ClosableTabComponent) {
-                tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName));
+                tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName, item.getProtocol()));
             }
             RequestEditSubPanel subPanel = getCurrentSubPanel();
             if (subPanel != null) {

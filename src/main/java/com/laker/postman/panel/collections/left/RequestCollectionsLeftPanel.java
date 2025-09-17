@@ -269,7 +269,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                     // 合并添加请求为单个菜单项，点击弹出对话框
                     JMenuItem addRequestItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
-                            new FlatSVGIcon("icons/http.svg", 16, 16));
+                            new FlatSVGIcon("icons/request.svg", 16, 16));
                     addRequestItem.addActionListener(e -> showAddRequestDialog(selectedNode));
                     menu.add(addRequestItem);
 
@@ -369,7 +369,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                                 if (tabItem != null && item.getId().equals(tabItem.getId())) {
                                     tabbedPane.setTitleAt(i, newName);
                                     // 更新自定义标签组件
-                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName));
+                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, item.getProtocol()));
                                     // 同步刷新内容
                                     subPanel.updateRequestForm(item);
                                 }

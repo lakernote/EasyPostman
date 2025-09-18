@@ -130,7 +130,9 @@ public class ClosableTabComponent extends JPanel {
         int y = closeRect.y;
         if (hoverClose) {
             // 绘制关闭按钮
-            g2.setColor(EasyPostManColors.TAB_SELECTED_BACKGROUND);
+            Color base = EasyPostManColors.TAB_SELECTED_BACKGROUND;
+            Color transparent = new Color(base.getRed(), base.getGreen(), base.getBlue(), 180); // 180透明度代表半透明
+            g2.setColor(transparent);
             g2.fillOval(x, y, r, r);
             g2.setColor(Color.BLACK);
             int pad = 2;

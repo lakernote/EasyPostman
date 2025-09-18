@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.right.request;
 
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
@@ -238,9 +239,17 @@ public class RequestEditSubPanel extends JPanel {
         splitPane.setResizeWeight(0.5); // 设置分割线位置，表示请求部分占50%
         add(splitPane, BorderLayout.CENTER);
 
-        // WebSocket消息发送按钮事件绑定（只绑定一次）
         if (protocol.isWebSocketProtocol()) {
-            requestBodyPanel.getWsSendButton().addActionListener(e -> sendWebSocketMessage());
+            // WebSocket消息发送按钮事件绑定（只绑定一次）
+            requestBodyPanel.setWsSendActionListener(e -> sendWebSocketMessage());
+            splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占30%
+            // 切换到WebSocket协议时，默认选中Body Tab
+            reqTabs.setSelectedComponent(requestBodyPanel);
+            // 隐藏认证tab和cookie tab
+            reqTabs.remove(authTabPanel);
+            reqTabs.remove(cookiePanel);
+            // 初始时禁用发送和定时按钮，只有连接后才可用
+            requestBodyPanel.setWebSocketConnected(false);
         }
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
@@ -567,6 +576,8 @@ public class RequestEditSubPanel extends JPanel {
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
+                                // 连接成功后启用发送和定时按钮
+                                requestBodyPanel.setWebSocketConnected(true);
                             });
                             appendWebSocketMessage(WebSocketMsgType.CONNECTED, response.message());
                         }
@@ -594,37 +605,32 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
                             // 检查连接ID是否还有效
-                            if (!connectionId.equals(currentWebSocketConnectionId)) {
-                                log.debug("Ignoring onClosing callback for expired connection ID: {}", connectionId);
-                                return;
+                            if (CharSequenceUtil.isBlank(currentWebSocketConnectionId) || connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("closing WebSocket: code={}, reason={}", code, reason);
+                                appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
+                                handleWebSocketClose();
                             }
-                            log.debug("closing WebSocket: code={}, reason={}", code, reason);
-                            appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
-                            handleWebSocketClose();
                         }
 
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
                             // 检查连接ID是否还有效
-                            if (!connectionId.equals(currentWebSocketConnectionId)) {
-                                log.debug("Ignoring onClosed callback for expired connection ID: {}", connectionId);
-                                return;
+                            if (CharSequenceUtil.isBlank(currentWebSocketConnectionId) || connectionId.equals(currentWebSocketConnectionId)) {
+                                log.debug("closed WebSocket: code={}, reason={}", code, reason);
+                                appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
+                                handleWebSocketClose();
                             }
-                            log.debug("closed WebSocket: code={}, reason={}", code, reason);
-                            appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
-                            handleWebSocketClose();
                         }
 
                         private void handleWebSocketClose() {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
-                            // 只有当前有效连接才清空currentWebSocket
-                            if (connectionId.equals(currentWebSocketConnectionId)) {
-                                currentWebSocket = null;
-                            }
+                            currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse("closed", resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                                // 断开后禁用发送和定时按钮
+                                requestBodyPanel.setWebSocketConnected(false);
                             });
                         }
 
@@ -646,6 +652,8 @@ public class RequestEditSubPanel extends JPanel {
                                 statusCodeLabel.setForeground(Color.RED);
                                 updateUIForResponse(I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage()), resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                                // 失败后禁用发送和定时按钮
+                                requestBodyPanel.setWebSocketConnected(false);
                             });
                         }
                     });
@@ -655,6 +663,8 @@ public class RequestEditSubPanel extends JPanel {
                     SwingUtilities.invokeLater(() -> {
                         statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         statusCodeLabel.setForeground(Color.RED);
+                        // 失败后禁用发送和定时按钮
+                        requestBodyPanel.setWebSocketConnected(false);
                     });
                 }
                 return null;
@@ -675,18 +685,14 @@ public class RequestEditSubPanel extends JPanel {
     private void sendWebSocketMessage() {
 
         if (currentWebSocket == null) {
-            JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage(MessageKeys.WEBSOCKET_NOT_CONNECTED),
-                    I18nUtil.getMessage(MessageKeys.OPERATION_TIP),
-                    JOptionPane.WARNING_MESSAGE);
+            appendWebSocketMessage(WebSocketMsgType.INFO, I18nUtil.getMessage(MessageKeys.WEBSOCKET_NOT_CONNECTED));
             return;
         }
 
         String msg = requestBodyPanel.getRawBody();
-        if (msg != null && !msg.isBlank()) {
+        if (CharSequenceUtil.isNotBlank(msg)) {
             currentWebSocket.send(msg); // 发送消息
             appendWebSocketMessage(WebSocketMsgType.SENT, msg);
-            requestBodyPanel.getBodyArea().setText(""); // 清空输入框
         }
     }
 

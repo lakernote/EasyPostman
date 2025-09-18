@@ -16,10 +16,6 @@ public final class MessageKeys {
     public static final String MENU_FILE = "menu.file";
     public static final String MENU_FILE_LOG = "menu.file.log";
     public static final String MENU_FILE_EXIT = "menu.file.exit";
-    public static final String MENU_THEME = "menu.theme";
-    public static final String MENU_THEME_LIGHT = "menu.theme.light";
-    public static final String MENU_THEME_INTELLIJ = "menu.theme.intellij";
-    public static final String MENU_THEME_MAC = "menu.theme.mac";
     public static final String MENU_LANGUAGE = "menu.language";
     public static final String MENU_SETTINGS = "menu.settings";
     public static final String MENU_HELP = "menu.help";
@@ -103,6 +99,7 @@ public final class MessageKeys {
     public static final String BUTTON_LOAD = "button.load";
     public static final String BUTTON_CLEAR = "button.clear";
     public static final String BUTTON_REFRESH = "button.refresh";
+    public static final String BUTTON_CONNECT = "button.connect";
 
     // ============ 请求相关 ============
     public static final String NEW_REQUEST = "new.request";
@@ -739,5 +736,13 @@ public final class MessageKeys {
 
     // ============ UI设置相关 ============
     public static final String SETTINGS_UI_TITLE = "settings.ui.title";
+
+    // WebSocket面板相关
+    public static final String WEBSOCKET_PANEL_LABEL_SEND_MESSAGE = "websocket.panel.label.send_message";
+    public static final String WEBSOCKET_PANEL_CHECKBOX_CLEAR = "websocket.panel.checkbox.clear";
+    public static final String WEBSOCKET_PANEL_LABEL_TIMEOUT = "websocket.panel.label.timeout";
+    public static final String WEBSOCKET_PANEL_BUTTON_START = "websocket.panel.button.start";
+    public static final String WEBSOCKET_PANEL_BUTTON_STOP = "websocket.panel.button.stop";
+    public static final String WEBSOCKET_PANEL_BUTTON_SEND = "websocket.panel.button.send";
 
 }

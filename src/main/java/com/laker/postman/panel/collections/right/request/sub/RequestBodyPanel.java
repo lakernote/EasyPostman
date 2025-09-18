@@ -14,6 +14,7 @@ import com.laker.postman.util.EasyPostmanVariableUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
+import lombok.Setter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -23,6 +24,8 @@ import javax.swing.event.MouseInputAdapter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,100 +43,122 @@ public class RequestBodyPanel extends JPanel {
     public static final String RAW_TYPE_JSON = "JSON";
 
     @Getter
-    private final JComboBox<String> bodyTypeComboBox;
-    private final JLabel formatLabel;
-    private final JComboBox<String> rawTypeComboBox;
+    private JComboBox<String> bodyTypeComboBox;
+    private JLabel formatLabel;
+    private JComboBox<String> rawTypeComboBox;
     @Getter
     private EasyTablePanel formDataTablePanel;
     @Getter
     private EasyNameValueTablePanel formUrlencodedTablePanel;
     @Getter
     private RSyntaxTextArea bodyArea;
-    private final CardLayout bodyCardLayout;
-    private final JPanel bodyCardPanel;
+    private CardLayout bodyCardLayout;
+    private JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_RAW;
     @Getter
     private JButton wsSendButton;
-    private final JButton formatButton;
+    private JButton formatButton;
     private final boolean isWebSocketMode;
+
+    private Timer wsTimer; // 定时发送用
+    private JButton wsTimedSendButton; // 定时发送按钮
+    private JTextField wsIntervalField; // 定时间隔输入框
+    private JCheckBox wsClearInputCheckBox; // 清空输入复选框
+
+    @Setter
+    private transient ActionListener wsSendActionListener; // 外部注入的发送回调
 
     public RequestBodyPanel(RequestItemProtocolEnum protocol) {
         this.isWebSocketMode = protocol.isWebSocketProtocol();
         setLayout(new BorderLayout());
+        if (isWebSocketMode) {
+            initWebSocketBodyPanel();
+        } else {
+            initHttpBodyPanel();
+        }
+    }
+
+    /**
+     * 初始化 HTTP 模式下的 Body 面板
+     */
+    private void initHttpBodyPanel() {
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        // 根据协议类型设置标题
-        JLabel bodyTypeLabel;
-        if (isWebSocketMode) {
-            bodyTypeLabel = new JLabel("WebSocket Message");
-        } else {
-            bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
-        }
+        JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
         leftPanel.add(bodyTypeLabel);
-
-        // 根据协议类型设置可用的body类型
-        String[] bodyTypes;
-        if (isWebSocketMode) {
-            // WebSocket只支持none和raw
-            bodyTypes = new String[]{BODY_TYPE_RAW};
-            currentBodyType = BODY_TYPE_RAW; // WebSocket默认使用raw
-        } else {
-            // HTTP支持所有类型
-            bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
-        }
-
+        String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
-
         leftPanel.add(bodyTypeComboBox);
-
         leftPanel.add(Box.createHorizontalStrut(10));
         formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
-
         String[] rawTypes = {RAW_TYPE_JSON};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
-
-        // 根据模式和body类型决定是否显示format相关控件
-        boolean showFormatControls = !isWebSocketMode && isBodyTypeRAW();
+        boolean showFormatControls = isBodyTypeRAW();
         rawTypeComboBox.setVisible(showFormatControls);
         formatLabel.setVisible(showFormatControls);
-
-        if (!isWebSocketMode) {
-            leftPanel.add(formatLabel);
-            leftPanel.add(rawTypeComboBox);
-        }
-
-
-        // 创建 formatButton 并放在右侧
+        leftPanel.add(formatLabel);
+        leftPanel.add(rawTypeComboBox);
         formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 20, 20));
         formatButton.addActionListener(e -> formatBody());
-        formatButton.setVisible(!isWebSocketMode && isBodyTypeRAW());
-
-        if (!isWebSocketMode) {
-            leftPanel.add(Box.createHorizontalStrut(5));
-            leftPanel.add(formatButton);
-        }
-
+        formatButton.setVisible(isBodyTypeRAW());
+        leftPanel.add(Box.createHorizontalStrut(5));
+        leftPanel.add(formatButton);
         bodyTypePanel.add(leftPanel, BorderLayout.WEST);
-
-
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
         bodyCardPanel = new JPanel(bodyCardLayout);
         bodyCardPanel.add(createNonePanel(), BODY_TYPE_NONE);
-
-        // 根据协议类型决定是否创建form相关面板
-        if (!isWebSocketMode) {
-            bodyCardPanel.add(createFormDataPanel(), BODY_TYPE_FORM_DATA);
-            bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
-        }
-
+        bodyCardPanel.add(createFormDataPanel(), BODY_TYPE_FORM_DATA);
+        bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
         bodyCardPanel.add(createRawPanel(), BODY_TYPE_RAW);
         add(bodyCardPanel, BorderLayout.CENTER);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
+    }
+
+    /**
+     * 初始化 WebSocket 模式下的 Body 面板
+     */
+    private void initWebSocketBodyPanel() {
+        JPanel bodyTypePanel = new JPanel(new BorderLayout());
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_LABEL_SEND_MESSAGE));
+        leftPanel.add(bodyTypeLabel);
+        String[] bodyTypes = new String[]{BODY_TYPE_RAW};
+        bodyTypeComboBox = new JComboBox<>(bodyTypes);
+        bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
+        bodyTypeComboBox.setVisible(false);
+        leftPanel.add(bodyTypeComboBox);
+        formatLabel = null;
+        rawTypeComboBox = null;
+        formatButton = null;
+        bodyTypePanel.add(leftPanel, BorderLayout.WEST);
+        add(bodyTypePanel, BorderLayout.NORTH);
+        bodyCardLayout = new CardLayout();
+        bodyCardPanel = new JPanel(bodyCardLayout);
+        JPanel rawPanel = createRawPanel();
+        bodyCardPanel.add(rawPanel, BODY_TYPE_RAW);
+        add(bodyCardPanel, BorderLayout.CENTER);
+        bodyCardLayout.show(bodyCardPanel, BODY_TYPE_RAW);
+        // WebSocket底部操作按钮
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        wsClearInputCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_CHECKBOX_CLEAR));
+        bottomPanel.add(wsClearInputCheckBox);
+        bottomPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_LABEL_TIMEOUT)));
+        wsIntervalField = new JTextField("1000", 5); // 默认1000ms
+        bottomPanel.add(wsIntervalField);
+        wsTimedSendButton = new JButton(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_START));
+        wsTimedSendButton.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+        wsTimedSendButton.addActionListener(e -> toggleWsTimer());
+        bottomPanel.add(wsTimedSendButton);
+        wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_SEND));
+        wsSendButton.setIcon(new FlatSVGIcon("icons/send.svg", 16, 16));
+        wsSendButton.setVisible(true);
+        wsSendButton.addActionListener(e -> wsSendAndMaybeClear());
+        bottomPanel.add(wsSendButton);
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
     private boolean isBodyTypeRAW() {
@@ -247,28 +272,67 @@ public class RequestBodyPanel extends JPanel {
             }
         });
 
-        // 只有WebSocket模式才显示发送按钮
-        if (isWebSocketMode) {
-            JPanel bottomPanel = new JPanel(new BorderLayout());
-            wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_SEND_MESSAGE));
-            wsSendButton.setVisible(true);
-            bottomPanel.add(wsSendButton, BorderLayout.EAST);
-            panel.add(bottomPanel, BorderLayout.SOUTH);
-        } else {
-            // HTTP模式下不需要发送按钮
-            wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_SEND_MESSAGE));
-            wsSendButton.setVisible(false);
-        }
-
         return panel;
+    }
+
+    // WebSocket发送并根据checkbox清空输入
+    private void wsSendAndMaybeClear() {
+        if (wsSendActionListener != null) {
+            wsSendActionListener.actionPerformed(new ActionEvent(wsSendButton, ActionEvent.ACTION_PERFORMED, null));
+        }
+        if (wsClearInputCheckBox != null && wsClearInputCheckBox.isSelected()) {
+            bodyArea.setText("");
+        }
+    }
+
+    // 定时发送逻辑
+    private void toggleWsTimer() {
+        // 只有已连接WebSocket时才能启动定时器
+        if (wsSendButton == null || !wsSendButton.isEnabled()) {
+            // 未连接时，直接返回，不允许启动定时器
+            return;
+        }
+        if (wsTimer != null && wsTimer.isRunning()) {
+            wsTimer.stop();
+            wsTimedSendButton.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_START));
+            wsIntervalField.setEnabled(true);
+            wsClearInputCheckBox.setEnabled(true);
+            wsSendButton.setEnabled(true);
+        } else {
+            int interval = 1000;
+            try {
+                interval = Integer.parseInt(wsIntervalField.getText().trim());
+                if (interval < 100) interval = 100; // 最小100ms
+            } catch (Exception ignored) {
+            }
+            wsTimer = new Timer(interval, e -> {
+                if (wsSendButton.isEnabled()) {
+                    wsSendAndMaybeClear();
+                }
+            });
+            wsTimer.start();
+            wsTimedSendButton.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_STOP));
+            wsIntervalField.setEnabled(false);
+            wsClearInputCheckBox.setEnabled(false);
+            wsSendButton.setEnabled(true);
+        }
+    }
+
+    /**
+     * WebSocket连接状态变化时调用，控制发送和定时按钮的可用性
+     *
+     * @param connected 是否已连接
+     */
+    public void setWebSocketConnected(boolean connected) {
+        if (wsSendButton != null) wsSendButton.setEnabled(connected);
+        if (wsTimedSendButton != null) wsTimedSendButton.setEnabled(connected);
     }
 
     private void switchBodyType(String bodyType) {
         currentBodyType = bodyType;
         bodyCardLayout.show(bodyCardPanel, bodyType);
-
-        // 只有非WebSocket模式才需要动态调整format控件的显示
-        if (!isWebSocketMode) {
+        // 只有HTTP模式才需要动态调整format控件的显示
+        if (!isWebSocketMode && formatLabel != null && rawTypeComboBox != null && formatButton != null) {
             boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
             rawTypeComboBox.setVisible(isRaw);
             formatLabel.setVisible(isRaw);

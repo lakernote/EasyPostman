@@ -23,9 +23,11 @@ public class RequestLinePanel extends JPanel {
     private final JButton sendButton;
     private final Color defaultButtonColor;
     private final Color textColor;
+    private final RequestItemProtocolEnum protocol;
 
     public RequestLinePanel(ActionListener sendAction, RequestItemProtocolEnum protocol) {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        this.protocol = protocol;
         String[] methods = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE"};
         methodBox = new JComboBox<>(methods);
         if (protocol.isWebSocketProtocol()) {
@@ -43,7 +45,12 @@ public class RequestLinePanel extends JPanel {
         add(urlField);
         add(Box.createHorizontalStrut(10));
         sendButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
-        sendButton.setIcon(new FlatSVGIcon("icons/send.svg", 20, 20));
+        if (protocol.isWebSocketProtocol()) {
+            sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT));
+            sendButton.setIcon(new FlatSVGIcon("icons/connect.svg", 20, 20));
+        } else {
+            sendButton.setIcon(new FlatSVGIcon("icons/send.svg", 20, 20));
+        }
         sendButton.setIconTextGap(6); // 图标和文字之间的间距
         defaultButtonColor = sendButton.getBackground();
         textColor = sendButton.getForeground();
@@ -67,8 +74,13 @@ public class RequestLinePanel extends JPanel {
         for (ActionListener al : sendButton.getActionListeners()) {
             sendButton.removeActionListener(al);
         }
-        sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
-        sendButton.setIcon(new FlatSVGIcon("icons/send.svg", 20, 20));
+        if (protocol.isWebSocketProtocol()) {
+            sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT));
+            sendButton.setIcon(new FlatSVGIcon("icons/connect.svg", 20, 20));
+        } else {
+            sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
+            sendButton.setIcon(new FlatSVGIcon("icons/send.svg", 20, 20));
+        }
         sendButton.setBackground(defaultButtonColor); // Postman浅蓝色
         sendButton.setForeground(textColor);
         sendButton.setEnabled(true);

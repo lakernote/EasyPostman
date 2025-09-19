@@ -10,6 +10,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +78,33 @@ public class WebSocketResponsePanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         add(scrollPane, BorderLayout.CENTER);
+
+        // 美化表格
+        JTableHeader header = table.getTableHeader();
+        header.setBackground(new Color(245, 247, 250));
+        header.setForeground(new Color(60, 75, 100));
+        header.setFont(header.getFont().deriveFont(Font.BOLD, 12f));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(180, 200, 230)));
+        table.setForeground(new Color(40, 40, 40));
+        table.setGridColor(new Color(220, 225, 235));
+        table.setShowGrid(true);
+        table.setSelectionBackground(new Color(220, 235, 255));
+        table.setSelectionForeground(new Color(30, 60, 120));
+        table.setRowHeight(24);
+        table.setBorder(BorderFactory.createLineBorder(new Color(200, 210, 230), 1));
+        // 选中行加粗
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (isSelected) {
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                } else {
+                    c.setFont(c.getFont().deriveFont(Font.PLAIN));
+                }
+                return c;
+            }
+        });
 
         // 事件
         clearButton.addActionListener(e -> clearMessages());

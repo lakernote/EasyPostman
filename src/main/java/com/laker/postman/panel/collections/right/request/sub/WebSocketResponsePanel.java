@@ -11,6 +11,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * WebSocket响应体面板，三列：icon、时间、内容，支持搜索、清除、类型过滤
@@ -28,7 +29,7 @@ public class WebSocketResponsePanel extends JPanel {
 
     public WebSocketResponsePanel() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         // 顶部工具栏
         JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
@@ -51,9 +52,14 @@ public class WebSocketResponsePanel extends JPanel {
         table.setRowHeight(22);
         table.getColumnModel().getColumn(0).setMaxWidth(32);
         table.getColumnModel().getColumn(0).setCellRenderer(new IconCellRenderer());
-        table.getColumnModel().getColumn(1).setMaxWidth(80);
+        table.getColumnModel().getColumn(1).setMaxWidth(60);
+        // 设置第2列（时间列）居中
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(2).setPreferredWidth(400);
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         add(scrollPane, BorderLayout.CENTER);
 
         // 事件
@@ -76,21 +82,26 @@ public class WebSocketResponsePanel extends JPanel {
 
     public void addMessage(MessageType type, String time, String content) {
         allRows.add(new MessageRow(type, time, content));
-        filterAndShow();
+        SwingUtilities.invokeLater(this::filterAndShow);
     }
 
     public void clearMessages() {
         allRows.clear();
-        filterAndShow();
+        SwingUtilities.invokeLater(this::filterAndShow);
     }
 
     private void filterAndShow() {
+        // 确保在 EDT 内执行
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::filterAndShow);
+            return;
+        }
         String search = searchField.getText().trim().toLowerCase();
         String typeFilter = (String) typeFilterBox.getSelectedItem();
         List<MessageRow> filtered = allRows.stream()
                 .filter(row -> ("全部".equals(typeFilter) || row.type.display.equals(typeFilter)))
                 .filter(row -> search.isEmpty() || row.content.toLowerCase().contains(search))
-                .toList();
+                .collect(Collectors.toList());
         tableModel.setRowCount(0);
         for (MessageRow row : filtered) {
             tableModel.addRow(new Object[]{row.type.icon, row.time, row.content});

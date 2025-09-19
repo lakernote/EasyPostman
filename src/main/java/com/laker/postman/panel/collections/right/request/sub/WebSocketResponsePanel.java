@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 
@@ -58,6 +60,20 @@ public class WebSocketResponsePanel extends JPanel {
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(2).setPreferredWidth(400);
+        table.setCellSelectionEnabled(true);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        // 鼠标监听，点击第三列弹窗显示完整内容
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                if (row >= 0 && col == 2 && e.getClickCount() >= 1) {
+                    String content = (String) table.getValueAt(row, col);
+                    showContentDialog(content);
+                }
+            }
+        });
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         add(scrollPane, BorderLayout.CENTER);
@@ -149,5 +165,60 @@ public class WebSocketResponsePanel extends JPanel {
             setHorizontalAlignment(CENTER);
             return this;
         }
+    }
+
+    // 弹窗显示完整内容，支持格式化和复制
+    private void showContentDialog(String content) {
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "消息内容", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JTextArea textArea = new JTextArea();
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton copyBtn = new JButton("复制");
+        JButton formatBtn = new JButton("格式化");
+        JButton rawBtn = new JButton("原始");
+        btnPanel.add(copyBtn);
+        btnPanel.add(formatBtn);
+        btnPanel.add(rawBtn);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setContentPane(panel);
+        // 判断是否为JSON
+        boolean isJson = JSONUtil.isTypeJSON(content);
+        String[] rawContent = {content};
+        textArea.setText(content);
+        formatBtn.setEnabled(isJson);
+        rawBtn.setEnabled(false);
+        formatBtn.addActionListener(e -> {
+            String formatted = formatJson(rawContent[0]);
+            textArea.setText(formatted);
+            formatBtn.setEnabled(false);
+            rawBtn.setEnabled(true);
+        });
+        rawBtn.addActionListener(e -> {
+            textArea.setText(rawContent[0]);
+            formatBtn.setEnabled(isJson);
+            rawBtn.setEnabled(false);
+        });
+        copyBtn.addActionListener(e -> {
+            textArea.selectAll();
+            textArea.copy();
+        });
+        dialog.setVisible(true);
+    }
+
+
+    // 简单格式化JSON
+    private String formatJson(String str) {
+        if (JSONUtil.isTypeJSON(str)) {
+            JSON formatJson = JSONUtil.parse(str);
+            return JSONUtil.toJsonPrettyStr(formatJson);
+        }
+        return str;
+
     }
 }

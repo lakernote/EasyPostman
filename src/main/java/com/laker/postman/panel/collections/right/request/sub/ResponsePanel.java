@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
@@ -32,61 +33,95 @@ public class ResponsePanel extends JPanel {
     private int selectedTabIndex = 0;
     private final JPanel cardPanel;
     private final String[] tabNames;
+    private final RequestItemProtocolEnum protocol;
+    private final WebSocketResponsePanel webSocketResponsePanel;
 
-    public ResponsePanel() {
+    public ResponsePanel(RequestItemProtocolEnum protocol) {
+        this.protocol = protocol;
         setLayout(new BorderLayout());
-        // Tab栏（自定义按钮实现）
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        tabNames = new String[]{
-                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
-                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
-                I18nUtil.getMessage(MessageKeys.TAB_TESTS),
-                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG),
-                I18nUtil.getMessage(MessageKeys.TAB_TIMING)
-        };
-        tabButtons = new JButton[tabNames.length];
-        for (int i = 0; i < tabNames.length; i++) {
-            tabButtons[i] = new TabButton(tabNames[i], i);
-            tabBar.add(tabButtons[i]);
+        if (protocol.isWebSocketProtocol()) {
+            tabNames = new String[]{I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG), I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS), I18nUtil.getMessage(MessageKeys.TAB_TESTS)};
+            tabButtons = new JButton[tabNames.length];
+            for (int i = 0; i < tabNames.length; i++) {
+                tabButtons[i] = new TabButton(tabNames[i], i);
+                tabBar.add(tabButtons[i]);
+            }
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            statusCodeLabel = new JLabel();
+            responseTimeLabel = new JLabel();
+            responseSizeLabel = new JLabel();
+            statusBar.add(statusCodeLabel);
+            statusBar.add(responseTimeLabel);
+            statusBar.add(responseSizeLabel);
+            JPanel topResponseBar = new JPanel(new BorderLayout());
+            topResponseBar.add(tabBar, BorderLayout.WEST);
+            topResponseBar.add(statusBar, BorderLayout.EAST);
+            add(topResponseBar, BorderLayout.NORTH);
+            cardPanel = new JPanel(new CardLayout());
+            webSocketResponsePanel = new WebSocketResponsePanel();
+            responseHeadersPanel = new ResponseHeadersPanel();
+            JPanel testsPanel = new JPanel(new BorderLayout());
+            testsPane = new JEditorPane();
+            testsPane.setContentType("text/html");
+            testsPane.setEditable(false);
+            JScrollPane testsScrollPane = new JScrollPane(testsPane);
+            testsPanel.add(testsScrollPane, BorderLayout.CENTER);
+            cardPanel.add(webSocketResponsePanel, tabNames[0]);
+            cardPanel.add(responseHeadersPanel, tabNames[1]);
+            cardPanel.add(testsPanel, tabNames[2]);
+            networkLogPanel = null;
+            timingPane = null;
+            responseBodyPanel = null;
+            add(cardPanel, BorderLayout.CENTER);
+        } else {
+            tabNames = new String[]{
+                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
+                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
+                    I18nUtil.getMessage(MessageKeys.TAB_TESTS),
+                    I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG),
+                    I18nUtil.getMessage(MessageKeys.TAB_TIMING)
+            };
+            tabButtons = new JButton[tabNames.length];
+            for (int i = 0; i < tabNames.length; i++) {
+                tabButtons[i] = new TabButton(tabNames[i], i);
+                tabBar.add(tabButtons[i]);
+            }
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            statusCodeLabel = new JLabel();
+            responseTimeLabel = new JLabel();
+            responseSizeLabel = new JLabel();
+            statusBar.add(statusCodeLabel);
+            statusBar.add(responseTimeLabel);
+            statusBar.add(responseSizeLabel);
+            JPanel topResponseBar = new JPanel(new BorderLayout());
+            topResponseBar.add(tabBar, BorderLayout.WEST);
+            topResponseBar.add(statusBar, BorderLayout.EAST);
+            add(topResponseBar, BorderLayout.NORTH);
+            cardPanel = new JPanel(new CardLayout());
+            responseBodyPanel = new ResponseBodyPanel();
+            responseBodyPanel.setEnabled(false);
+            responseBodyPanel.setBodyText(null);
+            responseHeadersPanel = new ResponseHeadersPanel();
+            JPanel testsPanel = new JPanel(new BorderLayout());
+            testsPane = new JEditorPane();
+            testsPane.setContentType("text/html");
+            testsPane.setEditable(false);
+            JScrollPane testsScrollPane = new JScrollPane(testsPane);
+            testsPanel.add(testsScrollPane, BorderLayout.CENTER);
+            networkLogPanel = new NetworkLogPanel();
+            timingPane = new JTextPane();
+            timingPane.setEditable(false);
+            timingPane.setContentType("text/html");
+            timingPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+            cardPanel.add(responseBodyPanel, tabNames[0]);
+            cardPanel.add(responseHeadersPanel, tabNames[1]);
+            cardPanel.add(testsPanel, tabNames[2]);
+            cardPanel.add(networkLogPanel, tabNames[3]);
+            cardPanel.add(new JScrollPane(timingPane), tabNames[4]);
+            webSocketResponsePanel = null;
+            add(cardPanel, BorderLayout.CENTER);
         }
-        // 状态栏（不可点击）
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
-        statusCodeLabel = new JLabel();
-        responseTimeLabel = new JLabel();
-        responseSizeLabel = new JLabel();
-        statusBar.add(statusCodeLabel);
-        statusBar.add(responseTimeLabel);
-        statusBar.add(responseSizeLabel);
-        JPanel topResponseBar = new JPanel(new BorderLayout());
-        topResponseBar.add(tabBar, BorderLayout.WEST);
-        topResponseBar.add(statusBar, BorderLayout.EAST);
-        add(topResponseBar, BorderLayout.NORTH);
-
-        // CardLayout内容区
-        cardPanel = new JPanel(new CardLayout());
-        responseBodyPanel = new ResponseBodyPanel();
-        responseBodyPanel.setEnabled(false);
-        responseBodyPanel.setBodyText(null);
-        responseHeadersPanel = new ResponseHeadersPanel();
-        JPanel testsPanel = new JPanel(new BorderLayout());
-        testsPane = new JEditorPane();
-        testsPane.setContentType("text/html");
-        testsPane.setEditable(false);
-        JScrollPane testsScrollPane = new JScrollPane(testsPane);
-        testsPanel.add(testsScrollPane, BorderLayout.CENTER);
-        networkLogPanel = new NetworkLogPanel();
-        timingPane = new JTextPane();
-        timingPane.setEditable(false);
-        timingPane.setContentType("text/html");
-        timingPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        cardPanel.add(responseBodyPanel, tabNames[0]);
-        cardPanel.add(responseHeadersPanel, tabNames[1]);
-        cardPanel.add(testsPanel, tabNames[2]);
-        cardPanel.add(networkLogPanel, tabNames[3]);
-        cardPanel.add(new JScrollPane(timingPane), tabNames[4]);
-        add(cardPanel, BorderLayout.CENTER);
-
-        // Tab按钮切换逻辑
         for (int i = 0; i < tabButtons.length; i++) {
             final int idx = i;
             tabButtons[i].addActionListener(e -> {
@@ -98,8 +133,7 @@ public class ResponsePanel extends JPanel {
                 }
             });
         }
-        // 默认显示Body
-        ((CardLayout) cardPanel.getLayout()).show(cardPanel, tabNames[0]);
+        // 默认所有按钮不可用
         setResponseTabButtonsEnable(false);
     }
 
@@ -110,6 +144,10 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setResponseBody(HttpResponse resp) {
+        if (protocol.isWebSocketProtocol()) {
+            // WebSocket响应体由 WebSocketResponsePanel 维护，不做处理
+            return;
+        }
         responseBodyPanel.setBodyText(resp);
     }
 
@@ -159,9 +197,13 @@ public class ResponsePanel extends JPanel {
 
     public void clearAll() {
         responseHeadersPanel.setHeaders(new LinkedHashMap<>());
-        responseBodyPanel.setBodyText(null);
-        timingPane.setText("");
-        networkLogPanel.clearLog();
+        if (protocol.isWebSocketProtocol()) {
+            if (webSocketResponsePanel != null) webSocketResponsePanel.clearMessages();
+        } else {
+            responseBodyPanel.setBodyText(null);
+            timingPane.setText("");
+            networkLogPanel.clearLog();
+        }
         setTestResults(new ArrayList<>());
     }
 

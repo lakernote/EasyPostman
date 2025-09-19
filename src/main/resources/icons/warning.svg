@@ -1,7 +1,1 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- 扁平风格警告图标，黄色三角形加感叹号 -->
-  <polygon points="12,3 22,20 2,20" fill="#FFC107"/>
-  <rect x="11" y="9" width="2" height="5" rx="1" fill="#fff"/>
-  <rect x="11" y="16" width="2" height="2" rx="1" fill="#fff"/>
-</svg>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0M12 9v4m0 4h.01"/></svg>

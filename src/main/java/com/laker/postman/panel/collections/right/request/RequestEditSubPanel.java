@@ -161,7 +161,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_COOKIES), cookiePanel);
 
         // 3. 响应面板
-        responsePanel = new ResponsePanel();
+        responsePanel = new ResponsePanel(protocol);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(2); // 设置分割条的宽度
         splitPane.setResizeWeight(0.5); // 设置分割线位置，表示请求部分占50%
@@ -535,7 +535,6 @@ public class RequestEditSubPanel extends JPanel {
                             // 检查连接ID是否还有效
                             if (CharSequenceUtil.isBlank(currentWebSocketConnectionId) || connectionId.equals(currentWebSocketConnectionId)) {
                                 log.debug("closing WebSocket: code={}, reason={}", code, reason);
-                                appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
                                 handleWebSocketClose();
                             }
                         }
@@ -545,7 +544,7 @@ public class RequestEditSubPanel extends JPanel {
                             // 检查连接ID是否还有效
                             if (CharSequenceUtil.isBlank(currentWebSocketConnectionId) || connectionId.equals(currentWebSocketConnectionId)) {
                                 log.debug("closed WebSocket: code={}, reason={}", code, reason);
-                                appendWebSocketMessage(WebSocketMsgType.CLOSED, code + ", " + reason);
+                                appendWebSocketMessage(WebSocketMsgType.CLOSED, code + " " + reason);
                                 handleWebSocketClose();
                             }
                         }
@@ -625,22 +624,23 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void appendWebSocketMessage(WebSocketMsgType type, String text) {
-        String formattedText = formatWebSocketMessage(type, text);
-        SwingUtilities.invokeLater(() -> responsePanel.getResponseBodyPanel().appendBodyText(formattedText));
+        if (responsePanel.getProtocol().isWebSocketProtocol() && responsePanel.getWebSocketResponsePanel() != null) {
+            String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            WebSocketResponsePanel.MessageType msgType = mapToWebSocketPanelType(type);
+            responsePanel.getWebSocketResponsePanel().addMessage(msgType, timestamp, text);
+        }
     }
 
-    /**
-     * 格式化WebSocket消息，添加图标前缀和时间戳
-     *
-     * @param type    消息类型
-     * @param message 原始消息
-     * @return 格式化后的消息
-     */
-    private String formatWebSocketMessage(WebSocketMsgType type, String message) {
-        if (message == null) return "";
-        // 添加时间戳
-        String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        return "[" + timestamp + "]" + I18nUtil.getMessage(type.iconKey) + " " + message;
+    private WebSocketResponsePanel.MessageType mapToWebSocketPanelType(WebSocketMsgType type) {
+        return switch (type) {
+            case SENT -> WebSocketResponsePanel.MessageType.SENT;
+            case RECEIVED -> WebSocketResponsePanel.MessageType.RECEIVED;
+            case CONNECTED -> WebSocketResponsePanel.MessageType.CONNECTED;
+            case CLOSED -> WebSocketResponsePanel.MessageType.CLOSED;
+            case WARNING -> WebSocketResponsePanel.MessageType.WARNING;
+            case INFO -> WebSocketResponsePanel.MessageType.INFO;
+            case BINARY -> WebSocketResponsePanel.MessageType.BINARY;
+        };
     }
 
     /**
@@ -868,9 +868,11 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.setResponseTime(0);
         responsePanel.setResponseSize(0);
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
-        responsePanel.getNetworkLogPanel().clearLog();
-        responsePanel.setResponseTabButtonsEnable(false);
-        responsePanel.getResponseBodyPanel().setEnabled(false);
+        if (!protocol.isWebSocketProtocol()) {
+            responsePanel.getNetworkLogPanel().clearLog();
+            responsePanel.setResponseTabButtonsEnable(false);
+            responsePanel.getResponseBodyPanel().setEnabled(false);
+        }
         responsePanel.clearAll();
     }
 
@@ -882,13 +884,15 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
         responsePanel.setResponseHeaders(resp);
-        responsePanel.setTiming(resp);
-        responsePanel.setResponseBody(resp);
+        if (!protocol.isWebSocketProtocol()) {
+            responsePanel.setTiming(resp);
+            responsePanel.setResponseBody(resp);
+            responsePanel.getResponseBodyPanel().setEnabled(true);
+        }
         Color statusColor = getStatusColor(resp.code);
         responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), statusColor);
         responsePanel.setResponseTime(resp.costMs);
         responsePanel.setResponseSize(resp.bodySize);
-        responsePanel.getResponseBodyPanel().setEnabled(true);
     }
 
     private void setTestResults(List<TestResult> testResults) {

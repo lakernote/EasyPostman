@@ -20,11 +20,8 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
-import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.TimeDisplayUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
@@ -44,8 +41,10 @@ import java.awt.event.FocusEvent;
 import java.io.InterruptedIOException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.laker.postman.service.http.HttpUtil.*;
 
@@ -66,41 +65,30 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private String id;
     private String name;
-    private RequestItemProtocolEnum protocol;
-    // 状态展示组件
-    private final JLabel statusCodeLabel;
-    private final JLabel responseTimeLabel;
-    private final JLabel responseSizeLabel;
+    private final RequestItemProtocolEnum protocol;
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
-    private RequestBodyPanel requestBodyPanel;
+    private final RequestBodyPanel requestBodyPanel;
     @Getter
     private HttpRequestItem originalRequestItem;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;
-    private final ResponseHeadersPanel responseHeadersPanel;
-    private final ResponseBodyPanel responseBodyPanel;
-    @Getter
-    private final NetworkLogPanel networkLogPanel; // 网络日志面板
-    private JTextPane timingPane;
     private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
-    private SwingWorker<Void, Void> currentWorker;
+    private transient SwingWorker<Void, Void> currentWorker;
     // 当前 SSE 事件源, 用于取消 SSE 请求
-    private EventSource currentEventSource;
+    private transient EventSource currentEventSource;
     // WebSocket连接对象
-    private volatile WebSocket currentWebSocket;
+    private volatile transient WebSocket currentWebSocket;
     // WebSocket连接ID，用于防止过期连接的回调
     private volatile String currentWebSocketConnectionId;
     JSplitPane splitPane;
-    private final JEditorPane testsPane;
-
-    private final JButton[] tabButtons;
-
     // 双向联动控制标志，防止循环更新
     private boolean isUpdatingFromUrl = false;
     private boolean isUpdatingFromParams = false;
+    @Getter
+    private final ResponsePanel responsePanel;
 
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
         this.id = id;
@@ -173,77 +161,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_COOKIES), cookiePanel);
 
         // 3. 响应面板
-        JPanel responsePanel = new JPanel(new BorderLayout());
-        // 顶部区域：tabBar在左，statusBar在右
-        JPanel topResponseBar = new JPanel(new BorderLayout());
-        // Tab栏（自定义按钮实现）
-        JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        String[] tabNames = {
-                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
-                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
-                I18nUtil.getMessage(MessageKeys.TAB_TESTS),
-                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG),
-                I18nUtil.getMessage(MessageKeys.TAB_TIMING)
-        };
-        JButton[] tabButtons = new JButton[tabNames.length];
-        this.tabButtons = tabButtons;
-        for (int i = 0; i < tabNames.length; i++) {
-            tabButtons[i] = new TabButton(tabNames[i], i);
-            tabBar.add(tabButtons[i]);
-        }
-        topResponseBar.add(tabBar, BorderLayout.WEST);
-        // 状态栏（不可点击）
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
-        statusCodeLabel = new JLabel();
-        responseTimeLabel = new JLabel();
-        responseSizeLabel = new JLabel();
-        statusBar.add(statusCodeLabel);
-        statusBar.add(responseTimeLabel);
-        statusBar.add(responseSizeLabel);
-        topResponseBar.add(statusBar, BorderLayout.EAST);
-        responsePanel.add(topResponseBar, BorderLayout.NORTH);
-
-        // CardLayout内容区
-        JPanel cardPanel = new JPanel(new CardLayout());
-        responseBodyPanel = new ResponseBodyPanel();
-        responseBodyPanel.setEnabled(false); // 响应体面板初始不可编辑
-        responseBodyPanel.setBodyText(null); // 初始无响应内容
-        responseHeadersPanel = new ResponseHeadersPanel();
-        JPanel testsPanel = new JPanel(new BorderLayout());
-        testsPane = new JEditorPane();
-        testsPane.setContentType("text/html");
-        testsPane.setEditable(false);
-        JScrollPane testsScrollPane = new JScrollPane(testsPane);
-        testsPanel.add(testsScrollPane, BorderLayout.CENTER);
-        networkLogPanel = new NetworkLogPanel();
-        timingPane = new JTextPane();
-        timingPane.setEditable(false);
-        timingPane.setContentType("text/html");
-        timingPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        cardPanel.add(responseBodyPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY));
-        cardPanel.add(responseHeadersPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
-        cardPanel.add(testsPanel, I18nUtil.getMessage(MessageKeys.TAB_TESTS));
-        cardPanel.add(networkLogPanel, I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG));
-        cardPanel.add(new JScrollPane(timingPane), I18nUtil.getMessage(MessageKeys.TAB_TIMING));
-        responsePanel.add(cardPanel, BorderLayout.CENTER);
-
-        // Tab按钮切换逻辑
-        for (int i = 0; i < tabButtons.length; i++) {
-            final int idx = i;
-            tabButtons[i].addActionListener(e -> {
-                CardLayout cl = (CardLayout) cardPanel.getLayout();
-                cl.show(cardPanel, tabNames[idx]);
-                selectedTabIndex = idx;
-                for (JButton btn : tabButtons) {
-                    btn.repaint();
-                }
-            });
-        }
-        // 默认显示Body
-        ((CardLayout) cardPanel.getLayout()).show(cardPanel, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY));
-        // 默认禁用响应区tab按钮
-        setResponseTabButtonsEnable(tabButtons, false);
-
+        responsePanel = new ResponsePanel();
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(2); // 设置分割条的宽度
         splitPane.setResizeWeight(0.5); // 设置分割线位置，表示请求部分占50%
@@ -354,7 +272,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void setResponseBody(HttpResponse resp) {
-        responseBodyPanel.setBodyText(resp);
+        responsePanel.getResponseBodyPanel().setBodyText(resp);
     }
 
 
@@ -413,7 +331,7 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    setResponseTabButtonsEnable(tabButtons, true);
+                    responsePanel.setResponseTabButtonsEnable(true);
                     resp = RedirectHandler.executeWithRedirects(req, 10);
                     if (resp != null) {
                         statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
@@ -496,7 +414,7 @@ public class RequestEditSubPanel extends JPanel {
                         public void onEvent(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
                                 setResponseBody(r);
-                                responseSizeLabel.setText("ResponseSize: " + getSizeText(r.bodySize));
+                                responsePanel.getResponseSizeLabel().setText("ResponseSize: " + getSizeText(r.bodySize));
                             });
                         }
 
@@ -513,8 +431,8 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
-                                statusCodeLabel.setForeground(Color.RED);
+                                responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
+                                responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                                 updateUIForResponse(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                             });
@@ -523,12 +441,12 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     };
                     currentEventSource = HttpSingleRequestExecutor.executeSSE(req, new SseEventListener(callback, resp, sseBodyBuilder, startTime));
-                    setResponseTabButtonsEnable(tabButtons, true); // 启用响应区的tab按钮
+                    responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
-                        statusCodeLabel.setForeground(Color.RED);
+                        responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
+                        responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                     });
                 }
                 return null;
@@ -658,8 +576,8 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 String statusMsg = response != null ? I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")")
                                         : I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
-                                statusCodeLabel.setText(statusMsg);
-                                statusCodeLabel.setForeground(Color.RED);
+                                responsePanel.getStatusCodeLabel().setText(statusMsg);
+                                responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                                 updateUIForResponse(I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage()), resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 失败后禁用发送和定时按钮
@@ -667,12 +585,12 @@ public class RequestEditSubPanel extends JPanel {
                             });
                         }
                     });
-                    setResponseTabButtonsEnable(tabButtons, true); // 启用响应区的tab按钮
+                    responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
-                        statusCodeLabel.setForeground(Color.RED);
+                        responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
+                        responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                         // 失败后禁用发送和定时按钮
                         requestBodyPanel.setWebSocketConnected(false);
                     });
@@ -708,7 +626,7 @@ public class RequestEditSubPanel extends JPanel {
 
     private void appendWebSocketMessage(WebSocketMsgType type, String text) {
         String formattedText = formatWebSocketMessage(type, text);
-        SwingUtilities.invokeLater(() -> responseBodyPanel.appendBodyText(formattedText));
+        SwingUtilities.invokeLater(() -> responsePanel.getResponseBodyPanel().appendBodyText(formattedText));
     }
 
     /**
@@ -934,8 +852,8 @@ public class RequestEditSubPanel extends JPanel {
 
         currentWorker.cancel(true);
         requestLinePanel.setSendButtonToSend(this::sendRequest);
-        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_CANCELED));
-        statusCodeLabel.setForeground(new Color(255, 140, 0));
+        responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.STATUS_CANCELED));
+        responsePanel.getStatusCodeLabel().setForeground(new Color(255, 140, 0));
         currentWorker = null;
 
         // 为WebSocket连接添加取消消息
@@ -946,54 +864,35 @@ public class RequestEditSubPanel extends JPanel {
 
     // UI状态：请求中
     private void updateUIForRequesting() {
-        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_REQUESTING));
-        statusCodeLabel.setForeground(new Color(255, 140, 0));
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION), "--"));
-        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE));
+        responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_REQUESTING), new Color(255, 140, 0));
+        responsePanel.setResponseTime(0);
+        responsePanel.setResponseSize(0);
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
-        networkLogPanel.clearLog();
-        // 禁用响应区tab按钮
-        setResponseTabButtonsEnable(tabButtons, false);
-        // 只禁用 responseBodyPanel
-        responseBodyPanel.setEnabled(false);
-        // 清空响应内容
-        responseHeadersPanel.setHeaders(new LinkedHashMap<>());
-        responseBodyPanel.setBodyText(null);
-        timingPane.setText("");
-        // 清空网络日志
-        networkLogPanel.clearLog();
-        // 清空测试结果
-        setTestResults(new ArrayList<>());
+        responsePanel.getNetworkLogPanel().clearLog();
+        responsePanel.setResponseTabButtonsEnable(false);
+        responsePanel.getResponseBodyPanel().setEnabled(false);
+        responsePanel.clearAll();
     }
 
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
-            statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText));
-            statusCodeLabel.setForeground(Color.RED);
-            // 恢复 responseBodyPanel
-            responseBodyPanel.setEnabled(true);
+            responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), Color.RED);
+            responsePanel.getResponseBodyPanel().setEnabled(true);
             return;
         }
-        responseHeadersPanel.setHeaders(resp.headers);
-        timingPane.setText(HttpHtmlRenderer.renderTimingInfo(resp));
-        timingPane.setCaretPosition(0);
-        setResponseBody(resp);
+        responsePanel.setResponseHeaders(resp);
+        responsePanel.setTiming(resp);
+        responsePanel.setResponseBody(resp);
         Color statusColor = getStatusColor(resp.code);
-        statusCodeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText));
-        statusCodeLabel.setForeground(statusColor);
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION), TimeDisplayUtil.formatElapsedTime(resp.costMs)));
-        int bytes = resp.bodySize;
-        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
-        // 恢复 responseBodyPanel
-        responseBodyPanel.setEnabled(true);
+        responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), statusColor);
+        responsePanel.setResponseTime(resp.costMs);
+        responsePanel.setResponseSize(resp.bodySize);
+        responsePanel.getResponseBodyPanel().setEnabled(true);
     }
 
-    private void setResponseTabButtonsEnable(JButton[] tabButtons, boolean enable) {
-        if (tabButtons == null) return;
-        for (JButton btn : tabButtons) {
-            btn.setEnabled(enable);
-        }
+    private void setTestResults(List<TestResult> testResults) {
+        responsePanel.setTestResults(testResults);
     }
 
     // 处理响应、后置脚本、变量提取、历史
@@ -1011,57 +910,6 @@ public class RequestEditSubPanel extends JPanel {
         } catch (Exception ex) {
             log.error("Error handling response: {}", ex.getMessage(), ex);
             ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-        }
-    }
-
-    /**
-     * 设置测试结果到Tests Tab
-     */
-    private void setTestResults(List<TestResult> testResults) {
-        String html = HttpHtmlRenderer.renderTestResults(testResults);
-        testsPane.setText(html);
-        testsPane.setCaretPosition(0);
-        // 动态设置Tests按钮文本和颜色
-        // Tests按钮在tabButtons中的下标
-        int testsTabIndex = 2;
-        if (tabButtons != null && tabButtons.length > testsTabIndex) {
-            JButton testsBtn = tabButtons[testsTabIndex];
-            if (testResults != null && !testResults.isEmpty()) {
-                boolean allPassed = testResults.stream().allMatch(r -> r.passed);
-                String countText = "(" + testResults.size() + ")";
-                String color = allPassed ? "#009900" : "#d32f2f"; // 绿色/红色
-                String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) + "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
-                testsBtn.setText("<html>" + countHtml + "</html>");
-                testsBtn.setForeground(Color.BLACK); // 保持主色为黑色
-            } else {
-                testsBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_TESTS));
-                testsBtn.setForeground(Color.BLACK); // 默认色
-            }
-        }
-    }
-
-    private int selectedTabIndex = 0;
-
-    // 自定义TabButton，支持底部高亮
-    private class TabButton extends JButton {
-        private final int tabIndex;
-
-        public TabButton(String text, int tabIndex) {
-            super(text);
-            this.tabIndex = tabIndex;
-            setFocusPainted(false);
-            setBorderPainted(false);
-            setContentAreaFilled(false);
-            setOpaque(true);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (selectedTabIndex == tabIndex) {
-                g.setColor(new Color(141, 188, 223)); // Google蓝
-                g.fillRect(0, getHeight() - 3, getWidth(), 3);
-            }
         }
     }
 

@@ -82,7 +82,7 @@ public class RedirectHandler {
                 sb.append("状态码: ").append(info.statusCode).append(", ");
                 sb.append("URL: ").append(info.url);
                 sb.append(", Location: ").append(info.location);
-                SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(req.id).getNetworkLogPanel().appendLog(sb.toString(), java.awt.Color.ORANGE, true);
+                SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(req.id).getResponsePanel().getNetworkLogPanel().appendLog(sb.toString(), java.awt.Color.ORANGE, true);
                 prevUrl = nextUrl;
             } else {
                 return resp;

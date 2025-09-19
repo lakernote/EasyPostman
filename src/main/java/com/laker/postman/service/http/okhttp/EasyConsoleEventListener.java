@@ -87,7 +87,7 @@ public class EasyConsoleEventListener extends EventListener {
                 if (editSubPanel == null) {
                     editSubPanel = SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(reqItemId);
                 }
-                NetworkLogPanel netPanel = editSubPanel.getNetworkLogPanel();
+                NetworkLogPanel netPanel = editSubPanel.getResponsePanel().getNetworkLogPanel();
                 netPanel.appendLog(logMsg, logColor, bold);
             } catch (Exception ignore) {
             }

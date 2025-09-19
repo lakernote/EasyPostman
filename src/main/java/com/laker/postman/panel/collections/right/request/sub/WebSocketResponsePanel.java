@@ -12,6 +12,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.ClipboardOwner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -63,15 +65,38 @@ public class WebSocketResponsePanel extends JPanel {
         table.getColumnModel().getColumn(2).setPreferredWidth(400);
         table.setCellSelectionEnabled(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        // 鼠标监听，点击第三列弹窗显示完整内容
+        // 鼠标监听，右键第三列弹出菜单
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                int row = table.rowAtPoint(e.getPoint());
-                int col = table.columnAtPoint(e.getPoint());
-                if (row >= 0 && col == 2 && e.getClickCount() >= 1) {
-                    String content = (String) table.getValueAt(row, col);
-                    showContentDialog(content);
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                maybeShowPopup(e);
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                maybeShowPopup(e);
+            }
+
+            private void maybeShowPopup(java.awt.event.MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    int col = table.columnAtPoint(e.getPoint());
+                    if (row >= 0 && col == 2) {
+                        table.setRowSelectionInterval(row, row);
+                        String content = (String) table.getValueAt(row, col);
+                        JPopupMenu popupMenu = new JPopupMenu();
+                        JMenuItem copyItem = new JMenuItem("复制");
+                        JMenuItem detailItem = new JMenuItem("详情");
+                        copyItem.addActionListener(ev -> {
+                            // 复制内容到剪贴板
+                            StringSelection selection = new StringSelection(content);
+                            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, (ClipboardOwner) null);
+                        });
+                        detailItem.addActionListener(ev -> showContentDialog(content));
+                        popupMenu.add(copyItem);
+                        popupMenu.add(detailItem);
+                        popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                    }
                 }
             }
         });
@@ -192,7 +217,7 @@ public class WebSocketResponsePanel extends JPanel {
         }
     }
 
-    // 弹窗显示完整内容，支持格式化和复制
+    // 弹窗显示完整内容，支持格式化和复制，支持ESC关闭
     private void showContentDialog(String content) {
         JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "消息内容", Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setSize(600, 400);
@@ -236,6 +261,10 @@ public class WebSocketResponsePanel extends JPanel {
             textArea.copy();
         });
         cancelBtn.addActionListener(e -> dialog.dispose());
+        // 支持ESC关闭
+        dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
+                KeyStroke.getKeyStroke("ESCAPE"),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
         dialog.getRootPane().setDefaultButton(cancelBtn);
         cancelBtn.requestFocusInWindow();
         dialog.setVisible(true);

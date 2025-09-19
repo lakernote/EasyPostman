@@ -745,4 +745,23 @@ public final class MessageKeys {
     public static final String WEBSOCKET_PANEL_BUTTON_STOP = "websocket.panel.button.stop";
     public static final String WEBSOCKET_PANEL_BUTTON_SEND = "websocket.panel.button.send";
 
+    // ============ WebSocket面板相关 ============
+    public static final String WEBSOCKET_COLUMN_TYPE = "websocket.column.type";
+    public static final String WEBSOCKET_COLUMN_TIME = "websocket.column.time";
+    public static final String WEBSOCKET_COLUMN_CONTENT = "websocket.column.content";
+    public static final String WEBSOCKET_TYPE_ALL = "websocket.type.all";
+    public static final String WEBSOCKET_TYPE_SENT = "websocket.type.sent";
+    public static final String WEBSOCKET_TYPE_RECEIVED = "websocket.type.received";
+    public static final String WEBSOCKET_TYPE_CONNECTED = "websocket.type.connected";
+    public static final String WEBSOCKET_TYPE_CLOSED = "websocket.type.closed";
+    public static final String WEBSOCKET_TYPE_WARNING = "websocket.type.warning";
+    public static final String WEBSOCKET_TYPE_INFO = "websocket.type.info";
+    public static final String WEBSOCKET_TYPE_BINARY = "websocket.type.binary";
+    public static final String BUTTON_CLEAR_MESSAGES = "button.clear_messages";
+    public static final String BUTTON_COPY = "button.copy";
+    public static final String BUTTON_DETAIL = "button.detail";
+    public static final String BUTTON_FORMAT = "button.format";
+    public static final String BUTTON_RAW = "button.raw";
+    public static final String WEBSOCKET_DIALOG_TITLE = "websocket.dialog.title";
+
 }

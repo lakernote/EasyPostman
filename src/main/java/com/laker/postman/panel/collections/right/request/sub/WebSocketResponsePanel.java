@@ -4,6 +4,8 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -13,10 +15,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.ClipboardOwner;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * WebSocket响应体面板，三列：icon、时间、内容，支持搜索、清除、类型过滤
@@ -29,8 +29,21 @@ public class WebSocketResponsePanel extends JPanel {
     private final JButton clearButton;
     private final List<MessageRow> allRows = new ArrayList<>();
 
-    private static final String[] COLUMN_NAMES = {"类型", "时间", "内容"};
-    private static final String[] TYPE_FILTERS = {"全部", "发送", "接收", "连接", "断开", "警告", "信息", "二进制"};
+    private static final String[] COLUMN_NAMES = {
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT)
+    };
+    private static final String[] TYPE_FILTERS = {
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_SENT),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_RECEIVED),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CONNECTED),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CLOSED),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_WARNING),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_INFO),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_BINARY)
+    };
 
     public WebSocketResponsePanel() {
         setLayout(new BorderLayout());
@@ -39,7 +52,7 @@ public class WebSocketResponsePanel extends JPanel {
         JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
-        clearButton = new JButton("清除消息");
+        clearButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR_MESSAGES));
         clearButton.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
         toolBar.add(searchField);
         toolBar.add(typeFilterBox);
@@ -85,12 +98,12 @@ public class WebSocketResponsePanel extends JPanel {
                         table.setRowSelectionInterval(row, row);
                         String content = (String) table.getValueAt(row, col);
                         JPopupMenu popupMenu = new JPopupMenu();
-                        JMenuItem copyItem = new JMenuItem("复制");
-                        JMenuItem detailItem = new JMenuItem("详情");
+                        JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+                        JMenuItem detailItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.BUTTON_DETAIL));
                         copyItem.addActionListener(ev -> {
                             // 复制内容到剪贴板
                             StringSelection selection = new StringSelection(content);
-                            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, (ClipboardOwner) null);
+                            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
                         });
                         detailItem.addActionListener(ev -> showContentDialog(content));
                         popupMenu.add(copyItem);
@@ -165,9 +178,10 @@ public class WebSocketResponsePanel extends JPanel {
         String search = searchField.getText().trim().toLowerCase();
         String typeFilter = (String) typeFilterBox.getSelectedItem();
         List<MessageRow> filtered = allRows.stream()
-                .filter(row -> ("全部".equals(typeFilter) || row.type.display.equals(typeFilter)))
+                .filter(row -> (I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
+                        || row.type.display.equals(typeFilter)))
                 .filter(row -> search.isEmpty() || row.content.toLowerCase().contains(search))
-                .collect(Collectors.toList());
+                .toList();
         tableModel.setRowCount(0);
         for (MessageRow row : filtered) {
             tableModel.addRow(new Object[]{row.type.icon, row.time, row.content});
@@ -176,13 +190,13 @@ public class WebSocketResponsePanel extends JPanel {
 
     // 消息类型
     public enum MessageType {
-        SENT("发送", new FlatSVGIcon("icons/ws-send.svg", 16, 16)),
-        RECEIVED("接收", new FlatSVGIcon("icons/ws-receive.svg", 16, 16)),
-        CONNECTED("连接", new FlatSVGIcon("icons/ws-connect.svg", 16, 16)),
-        CLOSED("断开", new FlatSVGIcon("icons/ws-close.svg", 16, 16)),
-        WARNING("警告", new FlatSVGIcon("icons/warning.svg", 16, 16)),
-        INFO("信息", new FlatSVGIcon("icons/ws-info.svg", 16, 16)),
-        BINARY("二进制", new FlatSVGIcon("icons/binary.svg", 16, 16));
+        SENT(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_SENT), new FlatSVGIcon("icons/ws-send.svg", 16, 16)),
+        RECEIVED(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_RECEIVED), new FlatSVGIcon("icons/ws-receive.svg", 16, 16)),
+        CONNECTED(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CONNECTED), new FlatSVGIcon("icons/ws-connect.svg", 16, 16)),
+        CLOSED(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CLOSED), new FlatSVGIcon("icons/ws-close.svg", 16, 16)),
+        WARNING(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_WARNING), new FlatSVGIcon("icons/warning.svg", 16, 16)),
+        INFO(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_INFO), new FlatSVGIcon("icons/ws-info.svg", 16, 16)),
+        BINARY(I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_BINARY), new FlatSVGIcon("icons/binary.svg", 16, 16));
         public final String display;
         public final Icon icon;
 
@@ -209,7 +223,8 @@ public class WebSocketResponsePanel extends JPanel {
     // icon渲染
     private static class IconCellRenderer extends DefaultTableCellRenderer {
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
             setIcon(value instanceof Icon ? (Icon) value : null);
             setText("");
             setHorizontalAlignment(CENTER);
@@ -219,7 +234,8 @@ public class WebSocketResponsePanel extends JPanel {
 
     // 弹窗显示完整内容，支持格式化和复制，支持ESC关闭
     private void showContentDialog(String content) {
-        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "消息内容", Dialog.ModalityType.APPLICATION_MODAL);
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
+                I18nUtil.getMessage(MessageKeys.WEBSOCKET_DIALOG_TITLE), Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setSize(600, 400);
         dialog.setLocationRelativeTo(this);
         JPanel panel = new JPanel(new BorderLayout(5, 5));
@@ -229,10 +245,10 @@ public class WebSocketResponsePanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(textArea);
         panel.add(scrollPane, BorderLayout.CENTER);
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton copyBtn = new JButton("复制");
-        JButton formatBtn = new JButton("格式化");
-        JButton rawBtn = new JButton("原始");
-        JButton cancelBtn = new JButton("取消");
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        JButton formatBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_FORMAT));
+        JButton rawBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_RAW));
+        JButton cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
         btnPanel.add(copyBtn);
         btnPanel.add(formatBtn);
         btnPanel.add(rawBtn);

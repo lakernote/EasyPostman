@@ -44,14 +44,23 @@ public class ClosableTabComponent extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         setToolTipText(title); // 设置完整标题为tooltip
         this.tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
+
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
-        int textWidth = fm.stringWidth(title) + MIN_TAB_WIDTH; // 预留关闭按钮和内边距空间
-        int tabWidth = Math.min(textWidth, MAX_TAB_WIDTH);   // 限制最大宽度
+        // 计算关闭按钮占用的空间：按钮直径 + 间距 + 右边距 + 左侧图标空间
+        int closeButtonSpace = CLOSE_DIAMETER + 8 + CLOSE_MARGIN; // 8px为文本与按钮之间的间距
+        int iconSpace = 20; // 为协议图标预留空间
+        int padding = 20; // 左右内边距
+
+        // 计算合理的Tab宽度
+        int idealTextWidth = fm.stringWidth(title);
+        int totalRequiredWidth = idealTextWidth + iconSpace + closeButtonSpace + padding;
+        int tabWidth = Math.max(Math.min(totalRequiredWidth, MAX_TAB_WIDTH), MIN_TAB_WIDTH);
         setPreferredSize(new Dimension(tabWidth, TAB_HEIGHT));
+
         // 截断文本并设置tooltip
         String displayTitle = title;
-        int maxLabelWidth = tabWidth - 10; // 预留关闭按钮和内边距空间
+        int maxLabelWidth = tabWidth - iconSpace - closeButtonSpace - padding; // 为图标和关闭按钮预留空间
         if (fm.stringWidth(title) > maxLabelWidth) { // 需要截断
             int len = title.length(); // 从完整标题开始
             while (len > 0 && fm.stringWidth(title.substring(0, len) + ELLIPSIS) > maxLabelWidth) { // 逐渐减少长度
@@ -59,6 +68,7 @@ public class ClosableTabComponent extends JPanel {
             }
             displayTitle = title.substring(0, len) + ELLIPSIS; // 截断并添加省略号
         }
+
         label = new JLabel(displayTitle) {
             @Override
             public boolean contains(int x, int y) { // 重写contains方法，避免遮挡关闭按钮的鼠标事件
@@ -66,8 +76,8 @@ public class ClosableTabComponent extends JPanel {
             }
         };
         label.setIcon(protocol.getIcon());
-        label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, closeButtonSpace + 4)); // 右侧预留关闭按钮空间
+        label.setHorizontalAlignment(SwingConstants.LEFT); // 改为左对齐，避免文本居中与按钮重叠
         label.setVerticalAlignment(SwingConstants.CENTER);
         add(label, BorderLayout.CENTER);
         // 添加右键菜单

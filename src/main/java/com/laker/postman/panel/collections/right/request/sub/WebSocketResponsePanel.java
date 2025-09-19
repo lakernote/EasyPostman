@@ -211,6 +211,8 @@ public class WebSocketResponsePanel extends JPanel {
             textArea.copy();
         });
         cancelBtn.addActionListener(e -> dialog.dispose());
+        dialog.getRootPane().setDefaultButton(cancelBtn);
+        cancelBtn.requestFocusInWindow();
         dialog.setVisible(true);
     }
 

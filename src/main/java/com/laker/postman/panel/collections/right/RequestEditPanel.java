@@ -423,7 +423,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 去掉默认边框
         // 设置tabbedPane为单行滚动模式，防止多行tab顺序混乱
-        tabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         add(tabbedPane, BorderLayout.CENTER);
         setupSaveShortcut();
         setupTabSelectionListener(); // 添加标签页切换监听器

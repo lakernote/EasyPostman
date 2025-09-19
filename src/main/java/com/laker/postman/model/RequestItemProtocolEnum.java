@@ -8,9 +8,9 @@ import javax.swing.*;
 
 @Getter
 public enum RequestItemProtocolEnum {
-    HTTP("HTTP", new FlatSVGIcon("icons/http.svg", 20, 20)),
-    WEBSOCKET("WebSocket", new FlatSVGIcon("icons/websocket.svg", 20, 20)),
-    SSE("SSE", new FlatSVGIcon("icons/sse.svg", 20, 20));
+    HTTP("HTTP", new FlatSVGIcon("icons/http.svg", 16, 16)),
+    WEBSOCKET("WebSocket", new FlatSVGIcon("icons/websocket.svg", 16, 16)),
+    SSE("SSE", new FlatSVGIcon("icons/sse.svg", 16, 16));
 
     private final String protocol;
     private final Icon icon;

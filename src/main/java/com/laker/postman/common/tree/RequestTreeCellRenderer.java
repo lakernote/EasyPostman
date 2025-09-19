@@ -5,8 +5,6 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.http.HttpUtil;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -23,9 +21,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
         Object userObject = node.getUserObject();
-        if (RequestCollectionsLeftPanel.ROOT.equals(userObject)) {
-            setIcon(IconFontSwing.buildIcon(FontAwesome.FOLDER, 18, new Color(120, 120, 120)));
-        } else if (userObject instanceof Object[] obj) {
+        if (userObject instanceof Object[] obj) {
             if (RequestCollectionsLeftPanel.GROUP.equals(obj[0])) {
                 setIcon(new FlatSVGIcon("icons/group.svg", 16, 16));
                 setText((String) obj[1]);
@@ -40,7 +36,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
                 // 根据协议类型设置不同的图标和显示样式
                 if (protocol.isWebSocketProtocol()) {
                     setIcon(new FlatSVGIcon("icons/websocket.svg", 16, 16));
-                    setText("<html><span style='color:#1976D2;font-weight:bold;font-size:8px'>WS</span> <span style='font-size:9px'>" + name + "</span></html>");
+                    setText("<html><span style='color:#1976D2;font-weight:bold;font-size:8px'>WS</span> <span style='font-size:8px'>" + name + "</span></html>");
                 } else {
                     if (protocol.isSseProtocol()) {
                         setIcon(new FlatSVGIcon("icons/sse.svg", 16, 16));
@@ -48,7 +44,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
                         setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
                     }
                     setText("<html><span style='color:" + methodColor + ";font-weight:bold;font-size:8px'>" +
-                            (method == null ? "" : method) + "</span> <span style='font-size:9px'>" + name + "</span></html>");
+                            (method == null ? "" : method) + "</span> <span style='font-size:8px'>" + name + "</span></html>");
                 }
             }
         }

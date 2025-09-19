@@ -111,8 +111,7 @@ public class ClosableTabComponent extends JPanel {
     private Rectangle getCloseButtonBounds() {
         int r = CLOSE_DIAMETER;
         int x = getWidth() - r - CLOSE_MARGIN;
-        int y = CLOSE_MARGIN;
-        return new Rectangle(x, y, r, r);
+        return new Rectangle(x, (getHeight() - r) / 2, r, r);
     }
 
     private boolean isInCloseButton(int x, int y) {
@@ -124,10 +123,9 @@ public class ClosableTabComponent extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // 抗锯齿
-        Rectangle closeRect = getCloseButtonBounds();
         int r = CLOSE_DIAMETER;
-        int x = closeRect.x;
-        int y = closeRect.y;
+        int x = getWidth() - r - CLOSE_MARGIN;
+        int y = (getHeight() - r) / 2;
         if (hoverClose) {
             // 绘制关闭按钮
             Color base = EasyPostManColors.TAB_SELECTED_BACKGROUND;

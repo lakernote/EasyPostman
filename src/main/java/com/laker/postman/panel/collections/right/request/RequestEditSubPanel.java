@@ -919,6 +919,8 @@ public class RequestEditSubPanel extends JPanel {
     private void autoPrependHttpsIfNeeded() {
         String url = urlField.getText().trim();
         if (url.isEmpty()) return;
+        // 如果是环境变量占位符开头，直接返回
+        if (url.startsWith("{{")) return;
         String lower = url.toLowerCase();
         if (!(lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("ws://") || lower.startsWith("wss://"))) {
             if (protocol != null && protocol.isWebSocketProtocol()) {

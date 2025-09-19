@@ -182,9 +182,11 @@ public class WebSocketResponsePanel extends JPanel {
         JButton copyBtn = new JButton("复制");
         JButton formatBtn = new JButton("格式化");
         JButton rawBtn = new JButton("原始");
+        JButton cancelBtn = new JButton("取消");
         btnPanel.add(copyBtn);
         btnPanel.add(formatBtn);
         btnPanel.add(rawBtn);
+        btnPanel.add(cancelBtn);
         panel.add(btnPanel, BorderLayout.SOUTH);
         dialog.setContentPane(panel);
         // 判断是否为JSON
@@ -208,6 +210,7 @@ public class WebSocketResponsePanel extends JPanel {
             textArea.selectAll();
             textArea.copy();
         });
+        cancelBtn.addActionListener(e -> dialog.dispose());
         dialog.setVisible(true);
     }
 

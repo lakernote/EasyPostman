@@ -39,6 +39,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.io.InterruptedIOException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -122,6 +124,14 @@ public class RequestEditSubPanel extends JPanel {
                 parseUrlParamsToParamsPanel();
             }
         });
+        // 自动补全URL协议
+        urlField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                autoPrependHttpsIfNeeded();
+            }
+        });
+        urlField.addActionListener(e -> autoPrependHttpsIfNeeded());
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(requestLinePanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
@@ -1052,6 +1062,23 @@ public class RequestEditSubPanel extends JPanel {
                 g.setColor(new Color(141, 188, 223)); // Google蓝
                 g.fillRect(0, getHeight() - 3, getWidth(), 3);
             }
+        }
+    }
+
+    /**
+     * 如果urlField内容没有协议，自动补全https:// 或 wss://，根据protocol判断
+     */
+    private void autoPrependHttpsIfNeeded() {
+        String url = urlField.getText().trim();
+        if (url.isEmpty()) return;
+        String lower = url.toLowerCase();
+        if (!(lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("ws://") || lower.startsWith("wss://"))) {
+            if (protocol != null && protocol.isWebSocketProtocol()) {
+                url = "wss://" + url;
+            } else {
+                url = "https://" + url;
+            }
+            urlField.setText(url);
         }
     }
 }

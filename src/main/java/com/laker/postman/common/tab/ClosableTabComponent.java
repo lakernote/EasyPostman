@@ -48,7 +48,7 @@ public class ClosableTabComponent extends JPanel {
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
         // 计算关闭按钮占用的空间：按钮直径 + 间距 + 右边距 + 左侧图标空间
-        int closeButtonSpace = CLOSE_DIAMETER + 8 + CLOSE_MARGIN; // 8px为文本与按钮之间的间距
+        int closeButtonSpace = CLOSE_DIAMETER + 4 + CLOSE_MARGIN; // 8px为文本与按钮之间的间距
         int iconSpace = 20; // 为协议图标预留空间
         int padding = 20; // 左右内边距
 

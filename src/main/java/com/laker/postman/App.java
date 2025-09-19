@@ -25,7 +25,7 @@ public class App {
         // Swing 推荐在事件分派线程（EDT）中运行所有 UI 相关操作
         SwingUtilities.invokeLater(() -> {
             // 1. 设置全局字体，适配不同操作系统，提升商务观感
-            Font font = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11);
+            Font font = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
             // 设置全局字体（包括菜单、弹窗等）
             EasyPostManFontUtil.setupGlobalFont(font);
             // 2. 设置主题

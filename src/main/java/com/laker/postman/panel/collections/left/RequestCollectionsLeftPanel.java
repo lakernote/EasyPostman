@@ -384,7 +384,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 if (selectedNode != null && selectedNode.getParent() != null) {
                     // 删除前弹出确认提示
                     int confirm = JOptionPane.showConfirmDialog(
-                            requestTree,
+                            SingletonFactory.getInstance(MainFrame.class),
                             I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM),
                             I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM_TITLE),
                             JOptionPane.YES_NO_OPTION

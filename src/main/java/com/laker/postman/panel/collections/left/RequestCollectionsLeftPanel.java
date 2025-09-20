@@ -1082,9 +1082,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 选中目标节点
         requestTree.setSelectionPath(treePath);
 
-        // 滚动到可见区域
-        requestTree.scrollPathToVisible(treePath);
-
         // 确保焦点在树上（用于突出显示）
         requestTree.requestFocusInWindow();
     }

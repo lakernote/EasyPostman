@@ -453,24 +453,4 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
         return null;
     }
-
-    /**
-     * 通过弹窗让用户选择分组和命名，保存 HttpRequestItem 到集合（公用方法，适用于cURL导入等场景）
-     *
-     * @param item 要保存的请求
-     */
-    public boolean saveRequestWithGroupDialog(HttpRequestItem item) {
-        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
-        Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
-        if (result == null) return false;
-        Object[] groupObj = (Object[]) result[0];
-        String requestName = (String) result[1];
-        item.setName(requestName);
-        item.setId(IdUtil.simpleUUID());
-        collectionPanel.saveRequestToGroup(groupObj, item);
-        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_SAVED),
-                I18nUtil.getMessage(MessageKeys.SUCCESS), JOptionPane.INFORMATION_MESSAGE);
-        return true;
-    }
 }

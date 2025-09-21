@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.left;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -24,6 +25,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
@@ -257,7 +259,7 @@ public class LeftTopPanel extends SingletonBasePanel {
             item.setFormData(curlRequest.formData);
             item.setFormFiles(curlRequest.formFiles);
             // 统一用RequestEditPanel弹窗选择分组和命名
-            boolean saved = SingletonFactory.getInstance(RequestEditPanel.class).saveRequestWithGroupDialog(item);
+            boolean saved = saveRequestWithGroupDialog(item);
             // 导入成功后清空剪贴板
             if (saved) {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
@@ -270,9 +272,32 @@ public class LeftTopPanel extends SingletonBasePanel {
     }
 
 
+    /**
+     * 通过弹窗让用户选择分组和命名，保存 HttpRequestItem 到集合（公用方法，适用于cURL导入等场景）
+     *
+     * @param item 要保存的请求
+     */
+    private boolean saveRequestWithGroupDialog(HttpRequestItem item) {
+        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
+        Object[] result = requestEditPanel.showGroupAndNameDialog(groupTreeModel, item.getName());
+        if (result == null) return false;
+        Object[] groupObj = (Object[]) result[0];
+        String requestName = (String) result[1];
+        item.setName(requestName);
+        item.setId(IdUtil.simpleUUID());
+        collectionPanel.saveRequestToGroup(groupObj, item);
+        requestEditPanel.showOrCreateTab(item); // 打开请求编辑tab
+        // tree选中新增的请求节点
+        collectionPanel.locateAndSelectRequest(item.getId());
+        return true;
+    }
+
+
     // 递归解析Postman集合为树结构，返回标准分组/请求节点列表
-    private java.util.List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
-        java.util.List<DefaultMutableTreeNode> nodeList = new ArrayList<>();
+    private List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
+        List<DefaultMutableTreeNode> nodeList = new ArrayList<>();
         for (Object obj : items) {
             JSONObject item = (JSONObject) obj;
             if (item.containsKey("item")) {

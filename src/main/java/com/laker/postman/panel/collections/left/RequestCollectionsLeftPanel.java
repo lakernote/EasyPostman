@@ -501,6 +501,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 // 反向定位到最后一个请求
                 if (lastNonNewRequest != null) {
                     locateAndSelectRequest(lastNonNewRequest.getId());
+                } else  { // 没有请求时默认展开第一个组
+                    if (rootTreeNode.getChildCount() > 0) {
+                        DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);
+                        TreePath path = new TreePath(firstGroup.getPath());
+                        requestTree.setSelectionPath(path);
+                        requestTree.expandPath(path);
+                    }
                 }
             });
         });

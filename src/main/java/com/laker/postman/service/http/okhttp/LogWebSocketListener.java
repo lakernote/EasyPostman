@@ -21,13 +21,13 @@ public class LogWebSocketListener extends WebSocketListener {
 
     @Override
     public void onMessage(WebSocket webSocket, String text) {
-        ConsolePanel.appendLog("[WebSocket] onMessage: " + text, ConsolePanel.LogType.INFO);
+//        ConsolePanel.appendLog("[WebSocket] onMessage: " + text, ConsolePanel.LogType.INFO);
         delegate.onMessage(webSocket, text);
     }
 
     @Override
     public void onMessage(WebSocket webSocket, okio.ByteString bytes) {
-        ConsolePanel.appendLog("[WebSocket] onMessage(bytes): " + bytes.hex(), ConsolePanel.LogType.INFO);
+//        ConsolePanel.appendLog("[WebSocket] onMessage(bytes): " + bytes.hex(), ConsolePanel.LogType.INFO);
         delegate.onMessage(webSocket, bytes);
     }
 

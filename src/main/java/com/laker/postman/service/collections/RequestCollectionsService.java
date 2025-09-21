@@ -17,9 +17,20 @@ public class RequestCollectionsService {
         // Prevent instantiation
     }
 
+    public static HttpRequestItem getLastNonNewRequest() {
+        List<HttpRequestItem> requestItems = OpenedRequestsService.getAll();
+        for (int i = requestItems.size() - 1; i >= 0; i--) {
+            HttpRequestItem item = requestItems.get(i);
+            if (!item.isNewRequest()) {
+                return item;
+            }
+        }
+        return null;
+    }
+
     public static void restoreOpenedRequests() {
-        List<HttpRequestItem> unSavedRequests = OpenedRequestsService.getAll();
-        for (HttpRequestItem item : unSavedRequests) {
+        List<HttpRequestItem> requestItems = OpenedRequestsService.getAll();
+        for (HttpRequestItem item : requestItems) {
             RequestEditSubPanel panel = RequestsTabsService.addTab(item);
             RequestsTabsService.updateTabNew(panel, item.isNewRequest());
         }

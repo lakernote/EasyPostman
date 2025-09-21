@@ -493,10 +493,15 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         SwingUtilities.invokeLater(() -> {  // 异步加载请求组
             persistence.initRequestGroupsFromFile(); // 从文件加载请求集合
             SwingUtilities.invokeLater(() -> {
+                HttpRequestItem lastNonNewRequest = RequestCollectionsService.getLastNonNewRequest();
                 // 恢复之前已打开请求
                 RequestCollectionsService.restoreOpenedRequests();
                 // 增加一个plusTab
                 SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                // 反向定位到最后一个请求
+                if (lastNonNewRequest != null) {
+                    locateAndSelectRequest(lastNonNewRequest.getId());
+                }
             });
         });
 

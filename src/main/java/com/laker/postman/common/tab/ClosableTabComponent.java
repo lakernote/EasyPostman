@@ -3,12 +3,15 @@ package com.laker.postman.common.tab;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.EasyPostManColors;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,6 +24,7 @@ import java.util.List;
 /**
  * 通用可关闭Tab组件，支持右上角红点脏标记
  */
+@Slf4j
 public class ClosableTabComponent extends JPanel {
     public static final String ELLIPSIS = "...";
     private static final int MAX_TAB_WIDTH = 160; // 最大Tab宽度
@@ -111,11 +115,30 @@ public class ClosableTabComponent extends JPanel {
                             return;
                         }
                         tabbedPane.setSelectedIndex(idx); // 选中当前Tab
+                        // 反向定位到左侧树节点
+                        locateRequestTreeNode(idx);
                     }
                 }
             }
         });
         rawTitle = title;
+    }
+
+    private void locateRequestTreeNode(int idx) {
+        Component selectedComponent = tabbedPane.getComponentAt(idx);
+        if (selectedComponent instanceof RequestEditSubPanel subPanel) {
+            HttpRequestItem currentRequest = subPanel.getCurrentRequest();
+            if (currentRequest != null && currentRequest.getId() != null) {
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                        collectionPanel.locateAndSelectRequest(currentRequest.getId());
+                    } catch (Exception ex) {
+                        log.error("定位请求节点时出错", ex);
+                    }
+                });
+            }
+        }
     }
 
     private Rectangle getCloseButtonBounds() {

@@ -377,47 +377,6 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
-
-    /**
-     * 设置标签页切换监听器，实现反向定位到左侧树节点
-     */
-    private void setupTabSelectionListener() {
-        tabbedPane.addChangeListener(e -> {
-            // 获取当前选中的标签页
-            int selectedIndex = tabbedPane.getSelectedIndex();
-            if (selectedIndex < 0 || isPlusTab(selectedIndex)) {
-                return; // 如果是+Tab或无效索引，不处理
-            }
-
-            Component selectedComponent = tabbedPane.getComponentAt(selectedIndex);
-            if (selectedComponent instanceof RequestEditSubPanel subPanel) {
-                HttpRequestItem currentRequest = subPanel.getCurrentRequest();
-                if (currentRequest != null && currentRequest.getId() != null) {
-                    // 在左侧树中定位到对应的请求节点
-                    locateRequestInLeftTree(currentRequest.getId());
-                }
-            }
-        });
-    }
-
-    /**
-     * 在左侧集合树中定位指定ID的请求
-     */
-    private void locateRequestInLeftTree(String requestId) {
-        if (requestId == null || requestId.isEmpty()) {
-            return;
-        }
-
-        SwingUtilities.invokeLater(() -> {
-            try {
-                RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-                collectionPanel.locateAndSelectRequest(requestId);
-            } catch (Exception ex) {
-                log.debug("定位请求节点时出错: {}", ex.getMessage());
-            }
-        });
-    }
-
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -426,8 +385,6 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         add(tabbedPane, BorderLayout.CENTER);
         setupSaveShortcut();
-        setupTabSelectionListener(); // 添加标签页切换监听器
-
     }
 
     @Override
@@ -488,15 +445,10 @@ public class RequestEditPanel extends SingletonBasePanel {
 
 
     public RequestEditSubPanel getRequestEditSubPanel(String reqItemId) {
-        // 通过 RequestEditPanel 获取 tabbedPane
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-        JTabbedPane tabbedPane = requestEditPanel.getTabbedPane();
         for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
             Component comp = tabbedPane.getComponentAt(i);
-            if (comp instanceof RequestEditSubPanel subPanel) {
-                if (reqItemId.equals(subPanel.getId())) {
-                    return subPanel;
-                }
+            if (comp instanceof RequestEditSubPanel subPanel && reqItemId.equals(subPanel.getId())) {
+                return subPanel;
             }
         }
         return null;

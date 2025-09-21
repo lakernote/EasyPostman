@@ -11,11 +11,11 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.postman.PostmanImport;
@@ -253,14 +253,14 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
-        JMenuItem addItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD));
+        JMenuItem addItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD), new FlatSVGIcon("icons/environments.svg", 16, 16));
         addItem.addActionListener(e -> addEnvironment());
         envListMenu.add(addItem);
         envListMenu.addSeparator();
-        JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_RENAME));
-        JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DUPLICATE)); // 复制菜单项
-        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE));
-        JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT_POSTMAN));
+        JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_RENAME), new FlatSVGIcon("icons/refresh.svg", 16, 16));
+        JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DUPLICATE), new FlatSVGIcon("icons/duplicate.svg", 16, 16)); // 复制菜单项
+        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE), new FlatSVGIcon("icons/close.svg", 16, 16));
+        JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT_POSTMAN), new FlatSVGIcon("icons/postman.svg", 16, 16));
         exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
         renameItem.addActionListener(e -> renameSelectedEnvironment());
         copyItem.addActionListener(e -> copySelectedEnvironment()); // 复制事件
@@ -272,7 +272,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         envListMenu.add(exportPostmanItem);
 
         // 转移到其他工作区
-        JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE));
+        JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE), new FlatSVGIcon("icons/workspace.svg", 16, 16));
         moveToWorkspaceItem.addActionListener(e -> moveEnvironmentToWorkspace());
         envListMenu.add(moveToWorkspaceItem);
 
@@ -562,9 +562,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 env.setName(newName);
                 EnvironmentService.saveEnvironment(env);
                 environmentListModel.setElementAt(new EnvironmentItem(env), environmentList.getSelectedIndex());
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES_TITLE), JOptionPane.INFORMATION_MESSAGE);
+                // 同步刷新顶部环境下拉框
+                SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload();
             } else {
                 JOptionPane.showMessageDialog(this,
                         I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_FAIL),

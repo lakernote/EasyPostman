@@ -172,7 +172,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                 // 无论何时都提供"创建root分组"的选项
                 JMenuItem addRootGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_ROOT_GROUP),
-                        new FlatSVGIcon("icons/user-group.svg", 16, 16));
+                        new FlatSVGIcon("icons/group.svg", 16, 16));
                 addRootGroupItem.addActionListener(e -> showAddGroupDialog(rootTreeNode));
                 menu.add(addRootGroupItem);
 
@@ -186,7 +186,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
                     menu.addSeparator();
                     JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
-                            new FlatSVGIcon("icons/user-group.svg", 16, 16));
+                            new FlatSVGIcon("icons/group.svg", 16, 16));
                     addGroupItem.addActionListener(e -> addGroupUnderSelected());
                     menu.add(addGroupItem);
 

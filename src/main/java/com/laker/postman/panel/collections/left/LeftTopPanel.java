@@ -5,9 +5,12 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.dialog.LargeInputDialog;
 import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -18,7 +21,10 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -30,18 +36,71 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
 @Slf4j
-public class ImportAndExportComponent {
+public class LeftTopPanel extends SingletonBasePanel {
+    private FlatTextField searchField;
 
-    private ImportAndExportComponent() {
+    @Override
+    protected void initUI() {
+        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置上下左右边距
 
+        JButton importBtn = getImportBtn();
+        JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
+        exportBtn.setFocusPainted(false);
+        exportBtn.setBackground(Color.WHITE);
+        exportBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_TOOLTIP));
+        exportBtn.addActionListener(e -> exportRequestCollection());
+
+        searchField = new SearchTextField();
+
+        add(importBtn);
+        add(exportBtn);
+        add(searchField);
+    }
+
+    @Override
+    protected void registerListeners() {
+        // 搜索过滤逻辑
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            private void filterTree() {
+                RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                String text = searchField.getText().trim();
+                if (text.isEmpty()) {
+                    // 展开所有一级分组，显示全部
+                    expandAll(leftPanel.getRequestTree(), false);
+                    leftPanel.getTreeModel().setRoot(leftPanel.getRootTreeNode());
+                    leftPanel.getTreeModel().reload();
+                    return;
+                }
+                DefaultMutableTreeNode filteredRoot = new DefaultMutableTreeNode(ROOT);
+                filterNodes(leftPanel.getRootTreeNode(), filteredRoot, text.toLowerCase());
+                leftPanel.getTreeModel().setRoot(filteredRoot);
+                leftPanel.getTreeModel().reload();
+                expandAll(leftPanel.getRequestTree(), true);
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                filterTree();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                filterTree();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                filterTree();
+            }
+        });
     }
 
 
-    public static JButton getImportBtn() {
+    public JButton getImportBtn() {
         // 使用SVG图标美化
         JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
         importBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_TOOLTIP));
@@ -74,7 +133,7 @@ public class ImportAndExportComponent {
         return importBtn;
     }
 
-    private static JPopupMenu getImportMenu() {
+    private JPopupMenu getImportMenu() {
         JPopupMenu importMenu = new JPopupMenu();
         JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_EASY),
                 new FlatSVGIcon("icons/easy.svg", 20, 20));
@@ -93,7 +152,7 @@ public class ImportAndExportComponent {
 
 
     // 导入请求集合JSON文件
-    private static void importRequestCollection() {
+    private void importRequestCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = new JFileChooser();
@@ -132,7 +191,7 @@ public class ImportAndExportComponent {
     }
 
     // 导入Postman集合
-    private static void importPostmanCollection() {
+    private void importPostmanCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = new JFileChooser();
@@ -173,7 +232,7 @@ public class ImportAndExportComponent {
         }
     }
 
-    private static void importCurlToCollection(String defaultCurl) {
+    private void importCurlToCollection(String defaultCurl) {
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
         String curlText = LargeInputDialog.show(mainFrame,
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
@@ -212,7 +271,7 @@ public class ImportAndExportComponent {
 
 
     // 递归解析Postman集合为树结构，返回标准分组/请求节点列表
-    private static java.util.List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
+    private java.util.List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
         java.util.List<DefaultMutableTreeNode> nodeList = new ArrayList<>();
         for (Object obj : items) {
             JSONObject item = (JSONObject) obj;
@@ -239,5 +298,93 @@ public class ImportAndExportComponent {
             }
         }
         return nodeList;
+    }
+
+    // 导出请求集合到JSON文件
+    private void exportRequestCollection() {
+        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
+        fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
+        int userSelection = fileChooser.showSaveDialog(mainFrame);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try {
+                leftPanel.getPersistence().exportRequestCollection(fileToSave);
+                JOptionPane.showMessageDialog(mainFrame,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                log.error("Export error", ex);
+                JOptionPane.showMessageDialog(mainFrame,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+
+    // 递归过滤节点
+    private boolean filterNodes(DefaultMutableTreeNode src, DefaultMutableTreeNode dest, String keyword) {
+        boolean matched = false;
+        Object userObj = src.getUserObject();
+        if (userObj instanceof Object[] obj) {
+            String type = String.valueOf(obj[0]);
+            if (GROUP.equals(type)) {
+                String groupName = String.valueOf(obj[1]);
+                DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(obj.clone());
+                boolean childMatched = false;
+                for (int i = 0; i < src.getChildCount(); i++) {
+                    DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
+                    if (filterNodes(child, groupNode, keyword)) {
+                        childMatched = true;
+                    }
+                }
+                if (groupName.toLowerCase().contains(keyword) || childMatched) {
+                    dest.add(groupNode);
+                    matched = true;
+                }
+            } else if (REQUEST.equals(type)) {
+                HttpRequestItem item = (HttpRequestItem) obj[1];
+                if (item.getName() != null && item.getName().toLowerCase().contains(keyword)) {
+                    dest.add(new DefaultMutableTreeNode(obj.clone()));
+                    matched = true;
+                }
+            }
+        } else {
+            // 处理 root 节点
+            boolean childMatched = false;
+            for (int i = 0; i < src.getChildCount(); i++) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
+                if (filterNodes(child, dest, keyword)) {
+                    childMatched = true;
+                }
+            }
+            matched = childMatched;
+        }
+        return matched;
+    }
+
+    // 展开/收起所有节点
+    private void expandAll(JTree tree, boolean expand) {
+        TreeNode root = (TreeNode) tree.getModel().getRoot();
+        expandAll(tree, new TreePath(root), expand);
+    }
+
+    private void expandAll(JTree tree, TreePath parent, boolean expand) {
+        TreeNode node = (TreeNode) parent.getLastPathComponent();
+        if (node.getChildCount() >= 0) {
+            for (int i = 0; i < node.getChildCount(); i++) {
+                TreeNode n = node.getChildAt(i);
+                TreePath path = parent.pathByAddingChild(n);
+                expandAll(tree, path, expand);
+            }
+        }
+        if (expand) {
+            tree.expandPath(parent);
+        } else {
+            tree.collapsePath(parent);
+        }
     }
 }

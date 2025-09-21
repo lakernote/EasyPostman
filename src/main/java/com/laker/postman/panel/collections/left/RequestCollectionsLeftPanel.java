@@ -4,9 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.tab.ClosableTabComponent;
@@ -32,8 +30,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -71,8 +67,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     // 树模型，用于管理树节点
     @Getter
     private DefaultTreeModel treeModel;
-
-    private FlatTextField searchField;
     @Getter
     private transient RequestsPersistence persistence;
 
@@ -127,27 +121,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private JPanel getTopPanel() {
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
-        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置上下左右边距
-
-        JButton importBtn = ImportAndExportComponent.getImportBtn();
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
-        exportBtn.setFocusPainted(false);
-        exportBtn.setBackground(Color.WHITE);
-        exportBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_TOOLTIP));
-        exportBtn.addActionListener(e -> exportRequestCollection());
-
-        getSearchField();
-
-        topPanel.add(importBtn);
-        topPanel.add(exportBtn);
-        topPanel.add(searchField);
-        return topPanel;
-    }
-
-    private void getSearchField() {
-        searchField = new SearchTextField();
+        return SingletonFactory.getInstance(LeftTopPanel.class);
     }
 
 
@@ -406,39 +380,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             }
         });
 
-        // 搜索过滤逻辑
-        searchField.getDocument().addDocumentListener(new DocumentListener() {
-            private void filterTree() {
-                String text = searchField.getText().trim();
-                if (text.isEmpty()) {
-                    // 展开所有一级分组，显示全部
-                    expandAll(requestTree, false);
-                    treeModel.setRoot(rootTreeNode);
-                    treeModel.reload();
-                    return;
-                }
-                DefaultMutableTreeNode filteredRoot = new DefaultMutableTreeNode(ROOT);
-                filterNodes(rootTreeNode, filteredRoot, text.toLowerCase());
-                treeModel.setRoot(filteredRoot);
-                treeModel.reload();
-                expandAll(requestTree, true);
-            }
-
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                filterTree();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                filterTree();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                filterTree();
-            }
-        });
 
         SwingUtilities.invokeLater(() -> {  // 异步加载请求组
             persistence.initRequestGroupsFromFile(); // 从文件加载请求集合
@@ -473,29 +414,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             treeModel.reload(rootTreeNode);
             requestTree.expandPath(new TreePath(rootTreeNode.getPath()));
             persistence.saveRequestGroups();
-        }
-    }
-
-    // 导出请求集合到JSON文件
-    private void exportRequestCollection() {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
-        fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
-        int userSelection = fileChooser.showSaveDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File fileToSave = fileChooser.getSelectedFile();
-            try {
-                persistence.exportRequestCollection(fileToSave);
-                JOptionPane.showMessageDialog(mainFrame,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                log.error("Export error", ex);
-                JOptionPane.showMessageDialog(mainFrame,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
-            }
         }
     }
 
@@ -688,69 +606,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             }
         }
         return copy;
-    }
-
-    // 递归过滤节点
-    private boolean filterNodes(DefaultMutableTreeNode src, DefaultMutableTreeNode dest, String keyword) {
-        boolean matched = false;
-        Object userObj = src.getUserObject();
-        if (userObj instanceof Object[] obj) {
-            String type = String.valueOf(obj[0]);
-            if (GROUP.equals(type)) {
-                String groupName = String.valueOf(obj[1]);
-                DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(obj.clone());
-                boolean childMatched = false;
-                for (int i = 0; i < src.getChildCount(); i++) {
-                    DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
-                    if (filterNodes(child, groupNode, keyword)) {
-                        childMatched = true;
-                    }
-                }
-                if (groupName.toLowerCase().contains(keyword) || childMatched) {
-                    dest.add(groupNode);
-                    matched = true;
-                }
-            } else if (REQUEST.equals(type)) {
-                HttpRequestItem item = (HttpRequestItem) obj[1];
-                if (item.getName() != null && item.getName().toLowerCase().contains(keyword)) {
-                    dest.add(new DefaultMutableTreeNode(obj.clone()));
-                    matched = true;
-                }
-            }
-        } else {
-            // 处理 root 节点
-            boolean childMatched = false;
-            for (int i = 0; i < src.getChildCount(); i++) {
-                DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
-                if (filterNodes(child, dest, keyword)) {
-                    childMatched = true;
-                }
-            }
-            matched = childMatched;
-        }
-        return matched;
-    }
-
-    // 展开/收起所有节点
-    private void expandAll(JTree tree, boolean expand) {
-        javax.swing.tree.TreeNode root = (javax.swing.tree.TreeNode) tree.getModel().getRoot();
-        expandAll(tree, new TreePath(root), expand);
-    }
-
-    private void expandAll(JTree tree, TreePath parent, boolean expand) {
-        javax.swing.tree.TreeNode node = (javax.swing.tree.TreeNode) parent.getLastPathComponent();
-        if (node.getChildCount() >= 0) {
-            for (int i = 0; i < node.getChildCount(); i++) {
-                javax.swing.tree.TreeNode n = node.getChildAt(i);
-                TreePath path = parent.pathByAddingChild(n);
-                expandAll(tree, path, expand);
-            }
-        }
-        if (expand) {
-            tree.expandPath(parent);
-        } else {
-            tree.collapsePath(parent);
-        }
     }
 
 

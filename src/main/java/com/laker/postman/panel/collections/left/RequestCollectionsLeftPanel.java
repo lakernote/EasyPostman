@@ -516,20 +516,21 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     // 导出请求集合到JSON文件
     private void exportRequestCollection() {
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
-        int userSelection = fileChooser.showSaveDialog(this);
+        int userSelection = fileChooser.showSaveDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 persistence.exportRequestCollection(fileToSave);
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(mainFrame,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
                         I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 log.error("Export error", ex);
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(mainFrame,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
@@ -538,9 +539,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     // 导入请求集合JSON文件
     private void importRequestCollection() {
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_DIALOG_TITLE));
-        int userSelection = fileChooser.showOpenDialog(this);
+        int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
@@ -561,23 +563,24 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 treeModel.reload();
                 persistence.saveRequestGroups();
                 requestTree.expandPath(new TreePath(easyPostmanGroup.getPath()));
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(mainFrame,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS),
                         I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 log.error("Import error", ex);
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(mainFrame,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    // 新增：导入Postman集合
+    // 导入Postman集合
     private void importPostmanCollection() {
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_DIALOG_TITLE));
-        int userSelection = fileChooser.showOpenDialog(this);
+        int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
@@ -596,17 +599,17 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     treeModel.reload();
                     persistence.saveRequestGroups();
                     requestTree.expandPath(new TreePath(collectionNode.getPath()));
-                    JOptionPane.showMessageDialog(this,
+                    JOptionPane.showMessageDialog(mainFrame,
                             I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS),
                             I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    JOptionPane.showMessageDialog(this,
+                    JOptionPane.showMessageDialog(mainFrame,
                             I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_INVALID),
                             I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 }
             } catch (Exception ex) {
                 log.error("Import error", ex);
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(mainFrame,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
@@ -614,14 +617,15 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private void importCurlToCollection(String defaultCurl) {
-        String curlText = LargeInputDialog.show(this,
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        String curlText = LargeInputDialog.show(mainFrame,
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), defaultCurl);
         if (curlText == null || curlText.trim().isEmpty()) return;
         try {
             CurlRequest curlRequest = CurlParser.parse(curlText);
             if (curlRequest.url == null) {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(mainFrame,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
                 return;
@@ -643,7 +647,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(mainFrame,
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()),
                     I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }

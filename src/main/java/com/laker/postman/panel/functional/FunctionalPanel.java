@@ -6,12 +6,12 @@ import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
 import com.laker.postman.panel.functional.table.RunnerTableModel;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -540,7 +540,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     // 弹出选择请求/分组对话框
     private void showLoadRequestsDialog() {
-        RequestCollectionsLeftPanel.showMultiSelectRequestDialog(
+        RequestCollectionsService.showMultiSelectRequestDialog(
                 selected -> {
                     if (selected == null || selected.isEmpty()) return;
                     loadRequests(selected);

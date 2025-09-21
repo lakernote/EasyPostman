@@ -9,7 +9,6 @@ import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
@@ -27,6 +26,7 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -1214,7 +1214,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 return;
             }
             // 多选请求弹窗
-            RequestCollectionsLeftPanel.showMultiSelectRequestDialog(selectedList -> {
+            RequestCollectionsService.showMultiSelectRequestDialog(selectedList -> {
                 if (selectedList == null || selectedList.isEmpty()) return;
                 List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
                 for (com.laker.postman.model.HttpRequestItem reqItem : selectedList) {

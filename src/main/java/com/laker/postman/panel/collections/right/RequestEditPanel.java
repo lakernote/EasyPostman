@@ -151,10 +151,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         actionMap.put(ACTION_NEW_REQUEST_TAB, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Component comp = tabbedPane.getSelectedComponent();
-                if (comp instanceof com.laker.postman.common.tab.PlusPanel) {
-                    addNewTab(null);
-                }
+                addNewTab(null);
             }
         });
     }
@@ -165,6 +162,7 @@ public class RequestEditPanel extends SingletonBasePanel {
     public void saveCurrentRequest() {
         HttpRequestItem currentItem = getCurrentRequest();
         if (currentItem == null) {
+            log.error("没有可保存的请求");
             return;
         }
 

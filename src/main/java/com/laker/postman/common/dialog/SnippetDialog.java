@@ -2,9 +2,12 @@ package com.laker.postman.common.dialog;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.model.SnippetType;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -19,6 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * 代码片段弹窗，基于 ListModel
@@ -38,12 +43,12 @@ public class SnippetDialog extends JDialog {
     private static List<Snippet> getI18nSnippets() {
         return Arrays.stream(SnippetType.values())
                 .map(Snippet::new)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
 
     public SnippetDialog() {
-        super(SingletonFactory.getInstance(MainFrame.class), "Snippets", true);
+        super(SingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_TITLE), true);
         Frame owner = SingletonFactory.getInstance(MainFrame.class);
         setLayout(new BorderLayout(10, 10));
 
@@ -58,13 +63,9 @@ public class SnippetDialog extends JDialog {
 
         // 搜索框带图标和提示
         JPanel searchPanel = new JPanel(new BorderLayout());
-        searchField = new JTextField();
-        searchField.setToolTipText("搜索片段...");
+        searchField = new SearchTextField();
 
         // 添加搜索图标
-        JLabel searchIcon = new JLabel(new FlatSVGIcon("icons/search.svg"));
-        searchIcon.setBorder(new EmptyBorder(0, 5, 0, 5));
-        searchPanel.add(searchIcon, BorderLayout.WEST);
         searchPanel.add(searchField, BorderLayout.CENTER);
 
         // 下拉分类选择器
@@ -124,7 +125,7 @@ public class SnippetDialog extends JDialog {
 
         // 预览区域
         JPanel previewPanel = new JPanel(new BorderLayout(5, 5));
-        previewPanel.setBorder(BorderFactory.createTitledBorder("代码预览"));
+        previewPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_PREVIEW_TITLE)));
 
         previewArea = new JTextArea(8, 40);
         previewArea.setEditable(false);
@@ -141,10 +142,10 @@ public class SnippetDialog extends JDialog {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton insertBtn = new JButton("插入");
+        JButton insertBtn = new JButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_INSERT));
         insertBtn.setPreferredSize(new Dimension(100, 30));
 
-        JButton closeBtn = new JButton("关闭");
+        JButton closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CLOSE));
         closeBtn.setPreferredSize(new Dimension(100, 30));
 
         buttonPanel.add(insertBtn);
@@ -272,7 +273,7 @@ public class SnippetDialog extends JDialog {
             if (selectedSnippet != null) {
                 dispose();
             } else {
-                JOptionPane.showMessageDialog(this, "请先选择一个代码片段", "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_SELECT_SNIPPET_FIRST), I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_TIP), JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
@@ -291,31 +292,43 @@ public class SnippetDialog extends JDialog {
 
     // 初始化代码片段分类
     private void initCategories() {
-        snippetCategories.put("全部分类", this.snippets);
+        snippetCategories.put(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ALL), this.snippets);
         Map<String, List<Snippet>> categorized = this.snippets.stream()
                 .collect(Collectors.groupingBy(snippet -> switch (snippet.type.type) {
-                    case PRE_SCRIPT -> "前置脚本";
-                    case ASSERT -> "断言脚本";
-                    case EXTRACT -> "提取脚本";
-                    case LOCAL_VAR -> "局部变量";
-                    case ENV_VAR -> "环境变量";
-                    case ENCRYPT -> "加密与安全";
-                    case ENCODE -> "编码与解码";
-                    case STRING -> "字符串操作";
-                    case ARRAY -> "数组操作";
-                    case JSON -> "JSON处理";
-                    case DATE -> "日期时间";
-                    case REGEX -> "正则表达式";
-                    case LOG -> "日志调试";
-                    case CONTROL -> "流程控制";
-                    case TOKEN -> "令牌处理";
-                    default -> "其他工具";
+                    case PRE_SCRIPT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_PRE_SCRIPT);
+                    case ASSERT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ASSERT);
+                    case EXTRACT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_EXTRACT);
+                    case LOCAL_VAR -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOCAL_VAR);
+                    case ENV_VAR -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENV_VAR);
+                    case ENCRYPT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCRYPT);
+                    case ENCODE -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCODE);
+                    case STRING -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_STRING);
+                    case ARRAY -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ARRAY);
+                    case JSON -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_JSON);
+                    case DATE -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_DATE);
+                    case REGEX -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_REGEX);
+                    case LOG -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOG);
+                    case CONTROL -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_CONTROL);
+                    case TOKEN -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_TOKEN);
+                    default -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_OTHER);
                 }));
         String[] orderedCategories = {
-                "前置脚本", "断言脚本", "提取脚本", "局部变量", "环境变量",
-                "加密与安全", "编码与解码", "字符串操作", "数组操作",
-                "JSON处理", "日期时间", "正则表达式", "流程控制",
-                "日志调试", "令牌处理", "其他工具"
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_PRE_SCRIPT),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ASSERT),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_EXTRACT),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOCAL_VAR),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENV_VAR),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCRYPT),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCODE),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_STRING),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ARRAY),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_JSON),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_DATE),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_REGEX),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_CONTROL),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOG),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_TOKEN),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_OTHER)
         };
         for (String category : orderedCategories) {
             List<Snippet> categorySnippets = categorized.get(category);
@@ -338,7 +351,7 @@ public class SnippetDialog extends JDialog {
         String query = searchField.getText().trim().toLowerCase();
         String currentCategory = (String) categoryCombo.getSelectedItem();
         List<Snippet> searchSource;
-        if (currentCategory != null && !currentCategory.equals("全部分类")) {
+        if (currentCategory != null && !currentCategory.equals(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ALL))) {
             searchSource = snippetCategories.get(currentCategory);
         } else {
             searchSource = this.snippets;
@@ -377,7 +390,7 @@ public class SnippetDialog extends JDialog {
         } else {
             // 没有结果时清空预览
             previewArea.setText("");
-            descriptionLabel.setText("未找到匹配的代码片段");
+            descriptionLabel.setText(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_NOT_FOUND));
         }
     }
 }

@@ -773,4 +773,31 @@ public final class MessageKeys {
     public static final String EXIT_SHORTCUT = "exit.shortcut";
     public static final String EXIT_SHORTCUT_DESC = "exit.shortcut.desc";
 
+    // ============ 代码片段弹窗（SnippetDialog）相关 ============
+    public static final String SNIPPET_DIALOG_TITLE = "snippet.dialog.title";
+    public static final String SNIPPET_DIALOG_SEARCH_TOOLTIP = "snippet.dialog.search.tooltip";
+    public static final String SNIPPET_DIALOG_PREVIEW_TITLE = "snippet.dialog.preview.title";
+    public static final String SNIPPET_DIALOG_INSERT = "snippet.dialog.insert";
+    public static final String SNIPPET_DIALOG_CLOSE = "snippet.dialog.close";
+    public static final String SNIPPET_DIALOG_SELECT_SNIPPET_FIRST = "snippet.dialog.select_snippet_first";
+    public static final String SNIPPET_DIALOG_TIP = "snippet.dialog.tip";
+    public static final String SNIPPET_DIALOG_CATEGORY_ALL = "snippet.dialog.category.all";
+    public static final String SNIPPET_DIALOG_CATEGORY_PRE_SCRIPT = "snippet.dialog.category.pre_script";
+    public static final String SNIPPET_DIALOG_CATEGORY_ASSERT = "snippet.dialog.category.assert";
+    public static final String SNIPPET_DIALOG_CATEGORY_EXTRACT = "snippet.dialog.category.extract";
+    public static final String SNIPPET_DIALOG_CATEGORY_LOCAL_VAR = "snippet.dialog.category.local_var";
+    public static final String SNIPPET_DIALOG_CATEGORY_ENV_VAR = "snippet.dialog.category.env_var";
+    public static final String SNIPPET_DIALOG_CATEGORY_ENCRYPT = "snippet.dialog.category.encrypt";
+    public static final String SNIPPET_DIALOG_CATEGORY_ENCODE = "snippet.dialog.category.encode";
+    public static final String SNIPPET_DIALOG_CATEGORY_STRING = "snippet.dialog.category.string";
+    public static final String SNIPPET_DIALOG_CATEGORY_ARRAY = "snippet.dialog.category.array";
+    public static final String SNIPPET_DIALOG_CATEGORY_JSON = "snippet.dialog.category.json";
+    public static final String SNIPPET_DIALOG_CATEGORY_DATE = "snippet.dialog.category.date";
+    public static final String SNIPPET_DIALOG_CATEGORY_REGEX = "snippet.dialog.category.regex";
+    public static final String SNIPPET_DIALOG_CATEGORY_LOG = "snippet.dialog.category.log";
+    public static final String SNIPPET_DIALOG_CATEGORY_CONTROL = "snippet.dialog.category.control";
+    public static final String SNIPPET_DIALOG_CATEGORY_TOKEN = "snippet.dialog.category.token";
+    public static final String SNIPPET_DIALOG_CATEGORY_OTHER = "snippet.dialog.category.other";
+    public static final String SNIPPET_DIALOG_NOT_FOUND = "snippet.dialog.not_found";
+
 }

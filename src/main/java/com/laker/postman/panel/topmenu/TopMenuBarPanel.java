@@ -76,8 +76,8 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem logMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG));
         logMenuItem.addActionListener(e -> openLogDirectory());
         JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
+        // 快捷键绑定为 Command+Q（macOS）或 Ctrl+Q（Windows/Linux
         exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
-        exitMenuItem.setMnemonic('X');
         exitMenuItem.addActionListener(e -> ExitService.exit());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);

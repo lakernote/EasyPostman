@@ -766,7 +766,11 @@ public final class MessageKeys {
 
     // ============ PLUS_PANEL_HINT ============
     public static final String PLUS_PANEL_HINT = "plus.panel.hint";
-
+    public static final String PLUS_PANEL_SHORTCUT = "plus.panel.shortcut";
+    public static final String PLUS_PANEL_SHORTCUT_DESC = "plus.panel.shortcut.desc";
+    public static final String SAVE_SHORTCUT = "save.shortcut";
     public static final String SAVE_SHORTCUT_DESC = "save.shortcut.desc";
+    public static final String EXIT_SHORTCUT = "exit.shortcut";
+    public static final String EXIT_SHORTCUT_DESC = "exit.shortcut.desc";
 
 }

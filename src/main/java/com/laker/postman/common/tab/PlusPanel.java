@@ -77,8 +77,8 @@ public class PlusPanel extends JPanel {
         hintLabel.setFont(hintLabel.getFont().deriveFont(13f));
         contentPanel.add(hintLabel);
 
-        // 添加快捷键提示
-        JLabel shortcutLabel = new JLabel("⌘N");
+        // 添加新建请求快捷键符号
+        JLabel shortcutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_SHORTCUT));
         shortcutLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         shortcutLabel.setHorizontalAlignment(SwingConstants.CENTER);
         shortcutLabel.setForeground(new Color(180, 180, 180));
@@ -86,13 +86,47 @@ public class PlusPanel extends JPanel {
         contentPanel.add(Box.createVerticalStrut(4));
         contentPanel.add(shortcutLabel);
 
-        // 添加快捷键描述
-        JLabel shortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT_DESC));
+        // 添加新建请求快捷键描述
+        JLabel shortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_SHORTCUT_DESC));
         shortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         shortcutDescLabel.setFont(shortcutDescLabel.getFont().deriveFont(Font.PLAIN, 14f));
         shortcutDescLabel.setForeground(new Color(120, 120, 120));
-        contentPanel.add(Box.createVerticalStrut(16));
+        contentPanel.add(Box.createVerticalStrut(8));
         contentPanel.add(shortcutDescLabel);
+
+        // 添加保存快捷键符号
+        JLabel saveShortcutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT));
+        saveShortcutLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        saveShortcutLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        saveShortcutLabel.setForeground(new Color(180, 180, 180));
+        saveShortcutLabel.setFont(saveShortcutLabel.getFont().deriveFont(Font.BOLD, 12f));
+        contentPanel.add(Box.createVerticalStrut(4));
+        contentPanel.add(saveShortcutLabel);
+
+        // 添加保存快捷键描述
+        JLabel saveShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT_DESC));
+        saveShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        saveShortcutDescLabel.setFont(saveShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 14f));
+        saveShortcutDescLabel.setForeground(new Color(120, 120, 120));
+        contentPanel.add(Box.createVerticalStrut(8));
+        contentPanel.add(saveShortcutDescLabel);
+
+        // 添加退出快捷键符号
+        JLabel exitShortcutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.EXIT_SHORTCUT));
+        exitShortcutLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitShortcutLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        exitShortcutLabel.setForeground(new Color(180, 180, 180));
+        exitShortcutLabel.setFont(exitShortcutLabel.getFont().deriveFont(Font.BOLD, 12f));
+        contentPanel.add(Box.createVerticalStrut(4));
+        contentPanel.add(exitShortcutLabel);
+
+        // 添加退出快捷键描述
+        JLabel exitShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.EXIT_SHORTCUT_DESC));
+        exitShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitShortcutDescLabel.setFont(exitShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 14f));
+        exitShortcutDescLabel.setForeground(new Color(120, 120, 120));
+        contentPanel.add(Box.createVerticalStrut(8));
+        contentPanel.add(exitShortcutDescLabel);
 
         // 添加垂直弹性空间，使内容在垂直方向居中
         contentPanel.add(Box.createVerticalGlue());

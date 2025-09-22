@@ -1,11 +1,10 @@
 package com.laker.postman.common.tab;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.constants.Icons;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 
 import javax.swing.*;
 import java.awt.*;
@@ -46,9 +45,10 @@ public class PlusPanel extends JPanel {
         // 添加垂直弹性空间，使内容在垂直方向居中
         contentPanel.add(Box.createVerticalGlue());
 
-        // 添加加号图标
         plusIcon = new JLabel();
-        plusIcon.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS_CIRCLE, 40, ICON_COLOR));
+        // Adjust the size of the icon
+        ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
+        plusIcon.setIcon(logoIcon);
         plusIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
         plusIcon.setHorizontalAlignment(SwingConstants.CENTER);
         plusIcon.setForeground(ICON_COLOR);

@@ -764,4 +764,9 @@ public final class MessageKeys {
     public static final String BUTTON_RAW = "button.raw";
     public static final String WEBSOCKET_DIALOG_TITLE = "websocket.dialog.title";
 
+    // ============ PLUS_PANEL_HINT ============
+    public static final String PLUS_PANEL_HINT = "plus.panel.hint";
+
+    public static final String SAVE_SHORTCUT_DESC = "save.shortcut.desc";
+
 }

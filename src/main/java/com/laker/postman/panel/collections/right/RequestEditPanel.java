@@ -124,26 +124,39 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.setSelectedIndex(plusTabIdx);
     }
 
+    // 快捷键 action 名称常量
+    private static final String ACTION_SAVE_REQUEST = "saveRequest";
+    private static final String ACTION_NEW_REQUEST_TAB = "newRequestTab";
+
     /**
-     * 设置保存快捷键 (Ctrl+S)
+     * 统一注册所有快捷键
      */
-    private void setupSaveShortcut() {
-        // 创建保存动作
-        Action saveAction = new AbstractAction() {
+    private void registerShortcuts() {
+        InputMap inputMap = this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = this.getActionMap();
+
+        // 保存快捷键 Ctrl+S / Cmd+S
+        KeyStroke saveKey = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        inputMap.put(saveKey, ACTION_SAVE_REQUEST);
+        actionMap.put(ACTION_SAVE_REQUEST, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 saveCurrentRequest();
             }
-        };
+        });
 
-        // 注册快捷键
-        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap actionMap = getActionMap();
-
-        // Ctrl+S 快捷键
-        KeyStroke ctrlS = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
-        inputMap.put(ctrlS, "saveRequest");
-        actionMap.put("saveRequest", saveAction);
+        // 新建标签页快捷键 Ctrl+N / Cmd+N
+        KeyStroke newTabKey = KeyStroke.getKeyStroke('N', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        inputMap.put(newTabKey, ACTION_NEW_REQUEST_TAB);
+        actionMap.put(ACTION_NEW_REQUEST_TAB, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Component comp = tabbedPane.getSelectedComponent();
+                if (comp instanceof com.laker.postman.common.tab.PlusPanel) {
+                    addNewTab(null);
+                }
+            }
+        });
     }
 
     /**
@@ -384,11 +397,12 @@ public class RequestEditPanel extends SingletonBasePanel {
         // 设置tabbedPane为单行滚动模式，防止多行tab顺序混乱
         tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         add(tabbedPane, BorderLayout.CENTER);
-        setupSaveShortcut();
     }
 
     @Override
     protected void registerListeners() {
+        // 统一注册所有快捷键
+        registerShortcuts();
         // 添加鼠标监听，只在左键点击"+"Tab时新增
         tabbedPane.addMouseListener(new MouseAdapter() {
             @Override

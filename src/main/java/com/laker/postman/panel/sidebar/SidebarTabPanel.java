@@ -3,7 +3,6 @@ package com.laker.postman.panel.sidebar;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.common.tab.ConfirmableTabSelectionModel;
 import com.laker.postman.model.TabInfo;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -67,8 +66,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
         setLayout(new BorderLayout());
         // 1. 创建标签页
         tabbedPane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
-        // 替换 selectionModel，支持切换前拦截
-        tabbedPane.setModel(new ConfirmableTabSelectionModel(this));
         tabInfos = new ArrayList<>();
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_COLLECTIONS), new FlatSVGIcon("icons/collections.svg", 20, 20),
                 () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));

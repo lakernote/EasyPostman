@@ -154,8 +154,19 @@ public class PlusPanel extends JPanel {
                 }
             }
         };
-        addMouseListener(clickAdapter);
-        contentPanel.addMouseListener(clickAdapter);
-        plusIcon.addMouseListener(clickAdapter);
+        // 递归为所有子组件添加监听器
+        addMouseListenerRecursively(this, clickAdapter);
+    }
+
+    /**
+     * 递归为所有子组件添加 MouseListener
+     */
+    private void addMouseListenerRecursively(Component comp, MouseAdapter adapter) {
+        comp.addMouseListener(adapter);
+        if (comp instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                addMouseListenerRecursively(child, adapter);
+            }
+        }
     }
 }

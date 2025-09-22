@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * 代码片段弹窗，基于 ListModel
  */
@@ -43,7 +41,7 @@ public class SnippetDialog extends JDialog {
     private static List<Snippet> getI18nSnippets() {
         return Arrays.stream(SnippetType.values())
                 .map(Snippet::new)
-                .collect(toList());
+                .toList();
     }
 
 

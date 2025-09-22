@@ -27,10 +27,10 @@ if not defined VERSION (
     exit /b 1
 )
 
-echo Building EasyTools version: %VERSION%
+echo Building EasyPostman version: %VERSION%
 
 set APP_NAME=EasyPostman
-set JAR_NAME=easy-tools-%VERSION%.jar
+set JAR_NAME=easy-postman-%VERSION%.jar
 set MAIN_CLASS=com.laker.postman.App
 set ICON_DIR=assets\win\EasyPostman.ico
 set OUTPUT_DIR=dist

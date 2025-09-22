@@ -23,9 +23,9 @@ PROJECT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
 cd "$PROJECT_ROOT" || exit 1
 # 直接从 pom.xml 解析版本号
 VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
-echo "🔧 开始打包 EasyTools 版本: $VERSION"
+echo "🔧 开始打包 EasyPostman 版本: $VERSION"
 APP_NAME="EasyPostman"
-JAR_NAME="easy-tools-$VERSION.jar"
+JAR_NAME="easy-postman-$VERSION.jar"
 MAIN_CLASS="com.laker.postman.App"
 ICON_DIR="assets/mac/EasyPostman.icns"
 OUTPUT_DIR="dist"

@@ -78,7 +78,12 @@ public class WaterfallChartPanel extends JPanel {
         for (int i = 0; i < n; i++) {
             long duration = Math.max(0, stages.get(i).end - stages.get(i).start);
             double ratio = (double) duration / totalDuration;
-            barWidths[i] = MIN_BAR_WIDTH + (int)Math.round(ratio * (availableBarSum - minBarSum));
+            // 0ms时也显示一条极细的线（如2px）
+            if (duration == 0) {
+                barWidths[i] = 2;
+            } else {
+                barWidths[i] = MIN_BAR_WIDTH + (int)Math.round(ratio * (availableBarSum - minBarSum));
+            }
             totalBarSum += barWidths[i];
         }
         // 如果总宽度超出可用宽度，则按比例缩小
@@ -103,9 +108,15 @@ public class WaterfallChartPanel extends JPanel {
             Stage s = stages.get(i);
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
-            GradientPaint gp = new GradientPaint(x, y, color.brighter(), x + barW, y + BAR_HEIGHT, color.darker());
-            g2.setPaint(gp);
-            g2.fillRoundRect(x, y, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+            // 0ms时画极细竖线（有高度）
+            if (barW == 2) {
+                g2.setColor(color.darker());
+                g2.fillRect(x, y, 2, BAR_HEIGHT);
+            } else {
+                GradientPaint gp = new GradientPaint(x, y, color.brighter(), x + barW, y + BAR_HEIGHT, color.darker());
+                g2.setPaint(gp);
+                g2.fillRoundRect(x, y, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+            }
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
             g2.setColor(new Color(40, 40, 40));
             g2.drawString(s.label, leftPad - labelMaxWidth - 30 + 18, y + BAR_HEIGHT - 7);

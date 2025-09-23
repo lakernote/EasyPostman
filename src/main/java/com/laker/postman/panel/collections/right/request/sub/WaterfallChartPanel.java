@@ -42,7 +42,7 @@ public class WaterfallChartPanel extends JPanel {
             labelMaxWidth = 80; // fallback
         }
         int leftPad = labelMaxWidth + 30;
-        int w = leftPad + 200 + reserveDesc + RIGHT_PAD; // 200为最小bar宽度
+        int w = leftPad + 150 + reserveDesc + RIGHT_PAD; // 200为最小bar宽度
         int h = TOP_PAD + BOTTOM_PAD + stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
         return new Dimension(w, Math.max(h, 100));
     }

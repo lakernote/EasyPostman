@@ -4,7 +4,6 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -27,7 +26,7 @@ public class ResponsePanel extends JPanel {
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final NetworkLogPanel networkLogPanel;
-    private final JTextPane timingPane;
+    private final WaterfallChartPanel timingChartPanel;
     private final JEditorPane testsPane;
     private final JButton[] tabButtons;
     private int selectedTabIndex = 0;
@@ -71,7 +70,7 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
             networkLogPanel = null;
-            timingPane = null;
+            timingChartPanel = null;
             responseBodyPanel = null;
             add(cardPanel, BorderLayout.CENTER);
         } else {
@@ -110,15 +109,12 @@ public class ResponsePanel extends JPanel {
             JScrollPane testsScrollPane = new JScrollPane(testsPane);
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
-            timingPane = new JTextPane();
-            timingPane.setEditable(false);
-            timingPane.setContentType("text/html");
-            timingPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+            timingChartPanel = new WaterfallChartPanel(new java.util.ArrayList<>());
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
             cardPanel.add(networkLogPanel, tabNames[3]);
-            cardPanel.add(new JScrollPane(timingPane), tabNames[4]);
+            cardPanel.add(new JScrollPane(timingChartPanel), tabNames[4]);
             webSocketResponsePanel = null;
             add(cardPanel, BorderLayout.CENTER);
         }
@@ -156,8 +152,12 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setTiming(HttpResponse resp) {
-        timingPane.setText(HttpHtmlRenderer.renderTimingInfo(resp));
-        timingPane.setCaretPosition(0);
+        if (timingChartPanel == null) return;
+        List<WaterfallChartPanel.Stage> stages = new ArrayList<>();
+        if (resp != null && resp.httpEventInfo != null) {
+            stages = WaterfallChartPanel.buildStandardStages(resp.httpEventInfo);
+        }
+        timingChartPanel.setStages(stages);
     }
 
     public void setStatus(String statusText, Color color) {
@@ -201,7 +201,9 @@ public class ResponsePanel extends JPanel {
             if (webSocketResponsePanel != null) webSocketResponsePanel.clearMessages();
         } else {
             responseBodyPanel.setBodyText(null);
-            timingPane.setText("");
+            timingChartPanel.removeAll();
+            timingChartPanel.revalidate();
+            timingChartPanel.repaint();
             networkLogPanel.clearLog();
         }
         setTestResults(new ArrayList<>());

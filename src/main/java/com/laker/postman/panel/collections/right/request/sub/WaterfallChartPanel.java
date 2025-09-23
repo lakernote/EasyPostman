@@ -104,18 +104,18 @@ public class WaterfallChartPanel extends JPanel {
             g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, 22);
         }
         // 绘制
-        for (int i = 0, y = TOP_PAD, x = leftPad; i < n; i++, y += BAR_HEIGHT + BAR_GAP) {
+        for (int i = 0, y = TOP_PAD, currentX = leftPad; i < n; i++, y += BAR_HEIGHT + BAR_GAP) {
             Stage s = stages.get(i);
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
-            // 0ms时画极细竖线（有高度）
+            // 0ms时画极细竖线（有高度），x为currentX
             if (barW == 2) {
                 g2.setColor(color.darker());
-                g2.fillRect(x, y, 2, BAR_HEIGHT);
+                g2.fillRect(currentX, y, 2, BAR_HEIGHT);
             } else {
-                GradientPaint gp = new GradientPaint(x, y, color.brighter(), x + barW, y + BAR_HEIGHT, color.darker());
+                GradientPaint gp = new GradientPaint(currentX, y, color.brighter(), currentX + barW, y + BAR_HEIGHT, color.darker());
                 g2.setPaint(gp);
-                g2.fillRoundRect(x, y, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+                g2.fillRoundRect(currentX, y, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
             }
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
             g2.setColor(new Color(40, 40, 40));
@@ -126,13 +126,13 @@ public class WaterfallChartPanel extends JPanel {
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 12) {
                 g2.setColor(Color.WHITE);
-                g2.drawString(ms, x + barW - strW - 6, y + BAR_HEIGHT - 7);
+                g2.drawString(ms, currentX + barW - strW - 6, y + BAR_HEIGHT - 7);
             }
             // 描述始终在bar右侧gap后，且不超出面板宽度
             if (s.desc != null && !s.desc.isEmpty()) {
                 g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
                 g2.setColor(new Color(140, 140, 140));
-                int descX = x + barW + gapBetweenBarAndDesc;
+                int descX = currentX + barW + gapBetweenBarAndDesc;
                 int maxDescW = panelW - descX - RIGHT_PAD;
                 String desc = s.desc;
                 int descW = g2.getFontMetrics().stringWidth(desc);
@@ -147,7 +147,10 @@ public class WaterfallChartPanel extends JPanel {
                 }
                 g2.drawString(desc, descX, y + BAR_HEIGHT - 7);
             }
-            x += barW;
+            // 只有非0ms阶段才递增currentX
+            if (barW != 2) {
+                currentX += barW;
+            }
         }
         g2.dispose();
     }

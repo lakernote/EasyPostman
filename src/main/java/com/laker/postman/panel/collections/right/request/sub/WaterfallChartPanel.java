@@ -8,25 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WaterfallChartPanel extends JPanel {
-    private List<Stage> stages;
+    private List<Stage> stages = new ArrayList<>();
     private long total;
-    private int hoveredIndex = -1;
-    private static final int BAR_HEIGHT = 22;
-    private static final int BAR_GAP = 8;
-    private static final int LEFT_PAD = 90;
-    private static final int RIGHT_PAD = 30;
-    private static final int TOP_PAD = 18;
-    private static final int BOTTOM_PAD = 28;
-    private static final int BAR_RADIUS = 7;
-    private static final int MAX_BAR_WIDTH = 420;
-    private static final int MIN_BAR_WIDTH = 8;
+    private static final int BAR_HEIGHT = 20, BAR_GAP = 10, LEFT_PAD = 130, RIGHT_PAD = 40, TOP_PAD = 28, BOTTOM_PAD = 36, BAR_RADIUS = 10, MIN_BAR_WIDTH = 12;
     private static final Color[] COLORS = {
-            new Color(0xFBC02D), // DNS
-            new Color(0x43A047), // TCP
-            new Color(0x00897B), // SSL
-            new Color(0x1976D2), // Request
-            new Color(0xE64A19), // Waiting
-            new Color(0x7E57C2)  // Download
+            new Color(0x4F8EF7), new Color(0x34C759), new Color(0xAF52DE), new Color(0xFF9500), new Color(0xFF375F), new Color(0x32D1C6)
     };
 
     public WaterfallChartPanel(List<Stage> stages) {
@@ -35,35 +21,29 @@ public class WaterfallChartPanel extends JPanel {
 
     public void setStages(List<Stage> stages) {
         this.stages = stages != null ? stages : new ArrayList<>();
-        this.total = 0;
-        if (!this.stages.isEmpty()) {
-            long sum = 0;
-            for (Stage s : this.stages) {
-                sum += Math.max(0, s.end - s.start);
-            }
-            this.total = sum;
-        }
+        total = this.stages.stream().mapToLong(s -> Math.max(0, s.end - s.start)).sum();
         revalidate();
         repaint();
     }
 
-    private int getBarWidthPx(int idx) {
-        if (stages == null || stages.isEmpty() || total <= 0) return MIN_BAR_WIDTH;
-        Stage s = stages.get(idx);
-        long duration = Math.max(0, s.end - s.start);
-        int minWidthSum = MIN_BAR_WIDTH * stages.size();
-        int remainWidth = MAX_BAR_WIDTH - minWidthSum;
-        if (remainWidth < 0) remainWidth = 0;
-        if (duration == 0) return MIN_BAR_WIDTH;
-        // 按比例分配剩余宽度
-        double ratio = (double) duration / total;
-        return MIN_BAR_WIDTH + (int) Math.round(ratio * remainWidth);
-    }
-
     @Override
     public Dimension getPreferredSize() {
+        int reserveDesc = 120;
+        int labelMaxWidth = 0;
+        Graphics g = getGraphics();
+        if (g != null) {
+            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+            for (Stage s : stages) {
+                int w = g.getFontMetrics().stringWidth(s.label);
+                if (w > labelMaxWidth) labelMaxWidth = w;
+            }
+        } else {
+            labelMaxWidth = 80; // fallback
+        }
+        int leftPad = labelMaxWidth + 30;
+        int w = leftPad + 200 + reserveDesc + RIGHT_PAD; // 200为最小bar宽度
         int h = TOP_PAD + BOTTOM_PAD + stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
-        return new Dimension(LEFT_PAD + MAX_BAR_WIDTH + RIGHT_PAD, Math.max(h, 80));
+        return new Dimension(w, Math.max(h, 100));
     }
 
     @Override
@@ -71,56 +51,99 @@ public class WaterfallChartPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // 顶部居中显示 total
+        int gapBetweenBarAndDesc = 20;
+        int labelMaxWidth = 0;
+        int descMaxWidth = 0;
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+        for (Stage s : stages) {
+            int w = g2.getFontMetrics().stringWidth(s.label);
+            if (w > labelMaxWidth) labelMaxWidth = w;
+        }
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        for (Stage s : stages) {
+            if (s.desc != null && !s.desc.isEmpty()) {
+                int w = g2.getFontMetrics().stringWidth(s.desc);
+                if (w > descMaxWidth) descMaxWidth = w;
+            }
+        }
+        int leftPad = labelMaxWidth + 30;
+        int panelW = getWidth();
+        int n = stages.size();
+        int minBarSum = MIN_BAR_WIDTH * n;
+        int availableBarSum = panelW - leftPad - gapBetweenBarAndDesc - descMaxWidth - RIGHT_PAD;
+        int totalBarSum = 0;
+        long totalDuration = total > 0 ? total : 1;
+        int[] barWidths = new int[n];
+        // 先按比例分配理论宽度
+        for (int i = 0; i < n; i++) {
+            long duration = Math.max(0, stages.get(i).end - stages.get(i).start);
+            double ratio = (double) duration / totalDuration;
+            barWidths[i] = MIN_BAR_WIDTH + (int)Math.round(ratio * (availableBarSum - minBarSum));
+            totalBarSum += barWidths[i];
+        }
+        // 如果总宽度超出可用宽度，则按比例缩小
+        if (totalBarSum > availableBarSum) {
+            double scale = (double)availableBarSum / totalBarSum;
+            totalBarSum = 0;
+            for (int i = 0; i < n; i++) {
+                barWidths[i] = Math.max(MIN_BAR_WIDTH, (int)Math.round(barWidths[i] * scale));
+                totalBarSum += barWidths[i];
+            }
+        }
+        // 顶部total
         if (total > 0) {
             String totalStr = "Total: " + total + " ms";
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
             int strW = g2.getFontMetrics().stringWidth(totalStr);
-            int x = LEFT_PAD + (MAX_BAR_WIDTH - strW) / 2;
-            g2.setColor(new Color(40, 40, 40));
-            g2.drawString(totalStr, x, 14);
+            g2.setColor(new Color(30, 30, 30));
+            g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, 22);
         }
-        int y0 = TOP_PAD;
-        for (int i = 0; i < stages.size(); i++) {
+        // 绘制
+        for (int i = 0, y = TOP_PAD, x = leftPad; i < n; i++, y += BAR_HEIGHT + BAR_GAP) {
             Stage s = stages.get(i);
-            int barY = y0 + i * (BAR_HEIGHT + BAR_GAP);
-            int barX = LEFT_PAD;
-            for (int j = 0; j < i; j++) {
-                barX += getBarWidthPx(j);
-            }
-            int barW = getBarWidthPx(i);
+            int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
-            if (i == hoveredIndex) {
-                color = color.darker();
-            }
-            g2.setColor(color);
-            g2.fillRoundRect(barX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
-            // 阶段名
-            g2.setColor(new Color(60, 60, 60));
-            g2.drawString(s.label, 10, barY + BAR_HEIGHT - 6);
-            // 耗时
+            GradientPaint gp = new GradientPaint(x, y, color.brighter(), x + barW, y + BAR_HEIGHT, color.darker());
+            g2.setPaint(gp);
+            g2.fillRoundRect(x, y, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+            g2.setColor(new Color(40, 40, 40));
+            g2.drawString(s.label, leftPad - labelMaxWidth - 30 + 18, y + BAR_HEIGHT - 7);
+            // 耗时始终在bar内右侧，bar太窄则不显示
             String ms = (s.end - s.start) + " ms";
-            g2.setColor(Color.WHITE);
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 12) {
-                g2.drawString(ms, barX + barW - strW - 6, barY + BAR_HEIGHT - 6);
-            } else {
-                g2.setColor(new Color(60, 60, 60));
-                g2.drawString(ms, barX + barW + 8, barY + BAR_HEIGHT - 6);
+                g2.setColor(Color.WHITE);
+                g2.drawString(ms, x + barW - strW - 6, y + BAR_HEIGHT - 7);
             }
-            // 说明
+            // 描述始终在bar右侧gap后，且不超出面板宽度
             if (s.desc != null && !s.desc.isEmpty()) {
-                g2.setColor(new Color(120, 120, 120));
-                g2.drawString(s.desc, barX + barW + 60, barY + BAR_HEIGHT - 6);
+                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+                g2.setColor(new Color(140, 140, 140));
+                int descX = x + barW + gapBetweenBarAndDesc;
+                int maxDescW = panelW - descX - RIGHT_PAD;
+                String desc = s.desc;
+                int descW = g2.getFontMetrics().stringWidth(desc);
+                if (descW > maxDescW && maxDescW > 10) {
+                    for (int cut = desc.length(); cut > 0; cut--) {
+                        String sub = desc.substring(0, cut) + "...";
+                        if (g2.getFontMetrics().stringWidth(sub) <= maxDescW) {
+                            desc = sub;
+                            break;
+                        }
+                    }
+                }
+                g2.drawString(desc, descX, y + BAR_HEIGHT - 7);
             }
+            x += barW;
         }
         g2.dispose();
     }
 
     public static class Stage {
         public final String label;
-        public final long start;
-        public final long end;
+        public final long start, end;
         public final String desc;
 
         public Stage(String label, long start, long end, String desc) {

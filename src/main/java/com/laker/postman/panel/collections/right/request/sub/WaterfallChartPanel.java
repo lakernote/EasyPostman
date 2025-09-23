@@ -122,10 +122,10 @@ public class WaterfallChartPanel extends JPanel {
             g2.setColor(new Color(40, 40, 40));
             g2.drawString(s.label, leftPad - labelMaxWidth - 30 + 18, y + BAR_HEIGHT - 7);
             // 耗时始终在bar内右侧，bar太窄则不显示
-            String ms = (s.end - s.start) + " ms";
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            String ms = (s.end - s.start) + "ms";
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
             int strW = g2.getFontMetrics().stringWidth(ms);
-            if (barW > strW + 12) {
+            if (barW > strW + 8) {
                 g2.setColor(Color.WHITE);
                 g2.drawString(ms, currentX + barW - strW - 6, y + BAR_HEIGHT - 7);
             }

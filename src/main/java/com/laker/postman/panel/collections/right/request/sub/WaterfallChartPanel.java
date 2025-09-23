@@ -135,7 +135,14 @@ public class WaterfallChartPanel extends JPanel {
     // 工具方法：根据 HttpEventInfo 生成六大阶段（即使为0也显示）
     public static List<Stage> buildStandardStages(com.laker.postman.model.HttpEventInfo info) {
         String[] labels = {"DNS", "Socket", "SSL", "Request Send", "Waiting (TTFB)", "Content Download"};
-        String[] descs = {" (DnsStart→DnsEnd)", " (ConnectStart→ConnectEnd)", " (SecureConnectStart→SecureConnectEnd)", " (Headers/Body)", " (RequestEnd→RespHeadStart)", " (RespBodyStart→RespBodyEnd)"};
+        String[] descs = {
+                " (DnsStart→DnsEnd)",
+                " (ConnectStart→ConnectEnd)",
+                " (SecureConnectStart→SecureConnectEnd)",
+                " (RequestHeadersStart→RequestBodyEnd)",
+                " (RequestBodyEnd→ResponseHeadersStart)",
+                " (ResponseBodyStart→ResponseBodyEnd)"
+        };
         long[] starts = new long[6];
         long[] ends = new long[6];
         for (int i = 0; i < 6; i++) {

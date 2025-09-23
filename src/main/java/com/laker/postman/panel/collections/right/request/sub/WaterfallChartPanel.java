@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.util.EasyPostManFontUtil;
 
 import javax.swing.*;
@@ -10,7 +11,7 @@ import java.util.List;
 public class WaterfallChartPanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
-    private static final int BAR_HEIGHT = 20, BAR_GAP = 10, LEFT_PAD = 130, RIGHT_PAD = 40, TOP_PAD = 28, BOTTOM_PAD = 36, BAR_RADIUS = 10, MIN_BAR_WIDTH = 12;
+    private static final int BAR_HEIGHT = 20, BAR_GAP = 10, RIGHT_PAD = 30, TOP_PAD = 28, BOTTOM_PAD = 36, BAR_RADIUS = 10, MIN_BAR_WIDTH = 12;
     private static final Color[] COLORS = {
             new Color(0x4F8EF7), new Color(0x34C759), new Color(0xAF52DE), new Color(0xFF9500), new Color(0xFF375F), new Color(0x32D1C6)
     };
@@ -28,7 +29,7 @@ public class WaterfallChartPanel extends JPanel {
 
     @Override
     public Dimension getPreferredSize() {
-        int reserveDesc = 120;
+        int reserveDesc = 80; //
         int labelMaxWidth = 0;
         Graphics g = getGraphics();
         if (g != null) {
@@ -82,16 +83,16 @@ public class WaterfallChartPanel extends JPanel {
             if (duration == 0) {
                 barWidths[i] = 2;
             } else {
-                barWidths[i] = MIN_BAR_WIDTH + (int)Math.round(ratio * (availableBarSum - minBarSum));
+                barWidths[i] = MIN_BAR_WIDTH + (int) Math.round(ratio * (availableBarSum - minBarSum));
             }
             totalBarSum += barWidths[i];
         }
         // 如果总宽度超出可用宽度，则按比例缩小
         if (totalBarSum > availableBarSum) {
-            double scale = (double)availableBarSum / totalBarSum;
+            double scale = (double) availableBarSum / totalBarSum;
             totalBarSum = 0;
             for (int i = 0; i < n; i++) {
-                barWidths[i] = Math.max(MIN_BAR_WIDTH, (int)Math.round(barWidths[i] * scale));
+                barWidths[i] = Math.max(MIN_BAR_WIDTH, (int) Math.round(barWidths[i] * scale));
                 totalBarSum += barWidths[i];
             }
         }
@@ -170,7 +171,7 @@ public class WaterfallChartPanel extends JPanel {
     }
 
     // 工具方法：根据 HttpEventInfo 生成六大阶段（即使为0也显示）
-    public static List<Stage> buildStandardStages(com.laker.postman.model.HttpEventInfo info) {
+    public static List<Stage> buildStandardStages(HttpEventInfo info) {
         String[] labels = {"DNS", "Socket", "SSL", "Request Send", "Waiting (TTFB)", "Content Download"};
         String[] descs = {
                 " (DnsStart→DnsEnd)",
@@ -207,12 +208,9 @@ public class WaterfallChartPanel extends JPanel {
             }
             // Socket
             if (connS > 0 && connE > connS) {
-                long socketStart = connS;
                 long socketEnd = (sslS > connS && sslE > sslS && sslE <= connE) ? sslS : connE;
-                if (socketEnd > socketStart) {
-                    starts[1] = socketStart;
-                    ends[1] = socketEnd;
-                }
+                starts[1] = connS;
+                ends[1] = socketEnd;
             }
             // SSL
             if (sslS > 0 && sslE > sslS) {
@@ -222,12 +220,12 @@ public class WaterfallChartPanel extends JPanel {
             // Request Send
             long reqStart = Math.min(reqHS > 0 ? reqHS : Long.MAX_VALUE, reqBS > 0 ? reqBS : Long.MAX_VALUE);
             long reqEnd = Math.max(reqHE, reqBE);
-            if (reqStart < Long.MAX_VALUE && reqEnd > reqStart) {
+            if (reqEnd > reqStart) {
                 starts[3] = reqStart;
                 ends[3] = reqEnd;
             }
             // Waiting (TTFB)
-            if (respHS > 0 && reqEnd > 0 && respHS > reqEnd) {
+            if (reqEnd > 0 && respHS > reqEnd) {
                 starts[4] = reqEnd;
                 ends[4] = respHS;
             }

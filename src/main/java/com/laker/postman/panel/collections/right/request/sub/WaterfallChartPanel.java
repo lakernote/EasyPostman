@@ -15,7 +15,7 @@ public class WaterfallChartPanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
     // 布局参数集中管理
-    private static final int BAR_HEIGHT = 20, BAR_GAP = 10, RIGHT_PAD = 30, TOP_PAD = 28, BOTTOM_PAD = 36, BAR_RADIUS = 10, MIN_BAR_WIDTH = 12;
+    private static final int BAR_HEIGHT = 18, BAR_GAP = 10, RIGHT_PAD = 30, TOP_PAD = 28, BOTTOM_PAD = 25, BAR_RADIUS = 10, MIN_BAR_WIDTH = 12;
     private static final int LABEL_LEFT_PAD = 24, LABEL_RIGHT_PAD = 12, DESC_LEFT_PAD = 18;
     private static final int INFO_BLOCK_H_GAP = 16, INFO_BLOCK_V_GAP = 10;
     private static final Color[] COLORS = {
@@ -24,6 +24,7 @@ public class WaterfallChartPanel extends JPanel {
     private HttpEventInfo httpEventInfo;
 
     private static final int INFO_TEXT_LINE_HEIGHT = 18;
+    private static final int INFO_TEXT_EXTRA_GAP = 6; // 信息区每项之间额外空白
     private static final int INFO_TEXT_BOTTOM_PAD = 10;  // 信息区底部内边距
     private static final int INFO_TEXT_LEFT_PAD = 20;
     private static final Color INFO_BG_COLOR = new Color(245, 247, 250);
@@ -53,7 +54,7 @@ public class WaterfallChartPanel extends JPanel {
         int labelMaxWidth = 80, descMaxWidth = 80;
         Graphics g = getGraphics();
         if (g != null) {
-            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
             for (Stage s : stages) {
                 int w = g.getFontMetrics().stringWidth(s.label);
                 if (w > labelMaxWidth) labelMaxWidth = w;
@@ -77,9 +78,9 @@ public class WaterfallChartPanel extends JPanel {
     // 信息区高度自适应（去除标题高度和分隔线高度）
     private int getInfoBlockHeight() {
         int infoLines = getInfoLinesCount();
-        // 保证信息区至少有7行（所有label都显示时的行数），避免内容为空时高度过小导致重叠
         int minLines = 7;
-        return INFO_BLOCK_V_GAP + Math.max(infoLines, minLines) * INFO_TEXT_LINE_HEIGHT + INFO_TEXT_BOTTOM_PAD;
+        // 每行高度加上额外空白
+        return INFO_BLOCK_V_GAP + Math.max(infoLines, minLines) * (INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP) + INFO_TEXT_BOTTOM_PAD;
     }
 
     @Override
@@ -87,7 +88,7 @@ public class WaterfallChartPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // 1. 绘制信息区（去除标题和分隔线）
+        // 1. 绘制信息区
         int infoTextBlockHeight = getInfoBlockHeight();
         g2.setColor(INFO_BG_COLOR);
         g2.fillRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 8, 8);
@@ -124,20 +125,20 @@ public class WaterfallChartPanel extends JPanel {
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Local Address
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Remote Address
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (remoteLineY > 0) {
             g2.setColor(new Color(230, 230, 230));
             g2.drawLine(lineStartX, remoteLineY, lineEndX, remoteLineY);
@@ -148,14 +149,14 @@ public class WaterfallChartPanel extends JPanel {
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Cipher Name
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (cipherLineY > 0) {
             g2.setColor(new Color(230, 230, 230));
             g2.drawLine(lineStartX, cipherLineY, lineEndX, cipherLineY);
@@ -166,24 +167,24 @@ public class WaterfallChartPanel extends JPanel {
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Issuer CN
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Valid Until
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT;
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // 2. 绘制瀑布条区
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
         int descMaxWidth = 0;
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         for (Stage s : stages) {
             int w = g2.getFontMetrics().stringWidth(s.label);
             if (w > labelMaxWidth) labelMaxWidth = w;
@@ -239,7 +240,7 @@ public class WaterfallChartPanel extends JPanel {
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
             // label 区域
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
             g2.setColor(new Color(40, 40, 40));
             int labelW = labelMaxWidth;
             String label = s.label;

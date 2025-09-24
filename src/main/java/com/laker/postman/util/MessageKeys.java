@@ -115,7 +115,6 @@ public final class MessageKeys {
     public static final String PLEASE_ENTER_REQUEST_NAME = "please.enter.request.name";
     public static final String PLEASE_SELECT_GROUP = "please.select.group";
     public static final String PLEASE_SELECT_VALID_GROUP = "please.select.valid.group";
-    public static final String REQUEST_SAVED = "request.saved";
     public static final String SUCCESS = "success";
     public static final String UPDATE_REQUEST_FAILED = "update.request.failed";
     public static final String ERROR = "error";
@@ -164,15 +163,6 @@ public final class MessageKeys {
     public static final String OPERATION_TIP = "operation.tip";
     public static final String SSE_FAILED = "sse.failed";
     public static final String SSE_ERROR = "sse.error";
-
-    // ============ WebSocket图标 ============
-    public static final String WS_ICON_CONNECTED = "ws.icon.connected";
-    public static final String WS_ICON_RECEIVED = "ws.icon.received";
-    public static final String WS_ICON_BINARY = "ws.icon.binary";
-    public static final String WS_ICON_SENT = "ws.icon.sent";
-    public static final String WS_ICON_CLOSED = "ws.icon.closed";
-    public static final String WS_ICON_WARNING = "ws.icon.warning";
-    public static final String WS_ICON_INFO = "ws.icon.info";
 
     // ============ 脚本相关 ============
     public static final String SCRIPT_TAB_PRESCRIPT = "script.tab.prescript";
@@ -228,7 +218,6 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_ADD_PROMPT = "env.dialog.add.prompt";
     public static final String ENV_DIALOG_RENAME_TITLE = "env.dialog.rename.title";
     public static final String ENV_DIALOG_RENAME_PROMPT = "env.dialog.rename.prompt";
-    public static final String ENV_DIALOG_RENAME_SUCCESS = "env.dialog.rename.success";
     public static final String ENV_DIALOG_RENAME_FAIL = "env.dialog.rename.fail";
     public static final String ENV_DIALOG_DELETE_TITLE = "env.dialog.delete.title";
     public static final String ENV_DIALOG_DELETE_PROMPT = "env.dialog.delete.prompt";
@@ -361,7 +350,6 @@ public final class MessageKeys {
     public static final String HISTORY_EMPTY_BODY = "history.empty_body";
     public static final String HISTORY_TODAY = "history.today";
     public static final String HISTORY_YESTERDAY = "history.yesterday";
-    public static final String HISTORY_REQUEST_TIME = "history.request_time";
 
     // ============ Tab标签页相关 ============
     public static final String TAB_REQUEST = "tab.request";
@@ -602,7 +590,6 @@ public final class MessageKeys {
     public static final String REQUEST_BODY_TYPE = "request.body.type";
     public static final String REQUEST_BODY_FORMAT = "request.body.format";
     public static final String REQUEST_BODY_NONE = "request.body.none";
-    public static final String REQUEST_BODY_SEND_MESSAGE = "request.body.send_message";
     public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";
     public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
     public static final String REQUEST_BODY_FORMAT_INVALID_JSON = "request.body.format.invalid_json";
@@ -780,7 +767,6 @@ public final class MessageKeys {
 
     // ============ 代码片段弹窗（SnippetDialog）相关 ============
     public static final String SNIPPET_DIALOG_TITLE = "snippet.dialog.title";
-    public static final String SNIPPET_DIALOG_SEARCH_TOOLTIP = "snippet.dialog.search.tooltip";
     public static final String SNIPPET_DIALOG_PREVIEW_TITLE = "snippet.dialog.preview.title";
     public static final String SNIPPET_DIALOG_INSERT = "snippet.dialog.insert";
     public static final String SNIPPET_DIALOG_CLOSE = "snippet.dialog.close";

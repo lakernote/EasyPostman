@@ -75,8 +75,9 @@ public class WaterfallChartPanel extends JPanel {
     // 信息区高度自适应（去除标题高度和分隔线高度）
     private int getInfoBlockHeight() {
         int infoLines = getInfoLinesCount();
-        // 去除标题和分隔线
-        return INFO_BLOCK_V_GAP + infoLines * INFO_TEXT_LINE_HEIGHT + INFO_TEXT_BOTTOM_PAD;
+        // 保证信息区至少有7行（所有label都显示时的行数），避免内容为空时高度过小导致重叠
+        int minLines = 7;
+        return INFO_BLOCK_V_GAP + Math.max(infoLines, minLines) * INFO_TEXT_LINE_HEIGHT + INFO_TEXT_BOTTOM_PAD;
     }
 
     @Override
@@ -94,13 +95,13 @@ public class WaterfallChartPanel extends JPanel {
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.setColor(Color.DARK_GRAY);
         // 动态渲染字段并在remote address/cipher name下方画线
+        String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
         if (httpEventInfo != null) {
-            String protocol = httpEventInfo.getProtocol() != null ? httpEventInfo.getProtocol().toString() : null;
-            String localAddr = httpEventInfo.getLocalAddress();
-            String remoteAddr = httpEventInfo.getRemoteAddress();
-            String tls = httpEventInfo.getTlsVersion();
-            String cipher = httpEventInfo.getCipherName();
-            String certCN = null, issuerCN = null, validUntil = null;
+            protocol = httpEventInfo.getProtocol() != null ? httpEventInfo.getProtocol().toString() : null;
+            localAddr = httpEventInfo.getLocalAddress();
+            remoteAddr = httpEventInfo.getRemoteAddress();
+            tls = httpEventInfo.getTlsVersion();
+            cipher = httpEventInfo.getCipherName();
             if (httpEventInfo.getPeerCertificates() != null && !httpEventInfo.getPeerCertificates().isEmpty()) {
                 var cert = httpEventInfo.getPeerCertificates().get(0);
                 if (cert instanceof X509Certificate x509) {
@@ -109,96 +110,73 @@ public class WaterfallChartPanel extends JPanel {
                     validUntil = x509.getNotAfter().toString();
                 }
             }
-            int labelX = INFO_TEXT_LEFT_PAD;
-            int valueXOffset = 110; // value 与 label 间距
-            int lineStartX = INFO_TEXT_LEFT_PAD;
-            int lineEndX = getWidth() - INFO_TEXT_LEFT_PAD;
-            int remoteLineY = -1, cipherLineY = -1;
-            if (notEmpty(protocol)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("HTTP Version:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(protocol, labelX + valueXOffset, infoY);
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (notEmpty(localAddr)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("Local Address:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(localAddr, labelX + valueXOffset, infoY);
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (notEmpty(remoteAddr)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("Remote Address:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(remoteAddr, labelX + valueXOffset, infoY);
-                remoteLineY = infoY + 5;
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (remoteLineY > 0) {
-                g2.setColor(new Color(230,230,230));
-                g2.drawLine(lineStartX, remoteLineY, lineEndX, remoteLineY);
-                g2.setColor(Color.DARK_GRAY);
-            }
-            if (notEmpty(tls)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("TLS Protocol:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(tls, labelX + valueXOffset, infoY);
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (notEmpty(cipher)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("Cipher Name:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(cipher, labelX + valueXOffset, infoY);
-                cipherLineY = infoY + 5;
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (cipherLineY > 0) {
-                g2.setColor(new Color(230,230,230));
-                g2.drawLine(lineStartX, cipherLineY, lineEndX, cipherLineY);
-                g2.setColor(Color.DARK_GRAY);
-            }
-            if (notEmpty(certCN)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("Certificate CN:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(certCN, labelX + valueXOffset, infoY);
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (notEmpty(issuerCN)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("Issuer CN:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(issuerCN, labelX + valueXOffset, infoY);
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
-            if (notEmpty(validUntil)) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString("Valid Until:", labelX, infoY);
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawString(validUntil, labelX + valueXOffset, infoY);
-                infoY += INFO_TEXT_LINE_HEIGHT;
-            }
         }
+        int labelX = INFO_TEXT_LEFT_PAD;
+        int valueXOffset = 110;
+        int lineStartX = INFO_TEXT_LEFT_PAD;
+        int lineEndX = getWidth() - INFO_TEXT_LEFT_PAD;
+        int remoteLineY = -1, cipherLineY = -1;
+        // HTTP Version
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setColor(Color.DARK_GRAY);
+        g2.drawString("HTTP Version:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        // Local Address
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("Local Address:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        // Remote Address
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("Remote Address:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
+        if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        if (remoteLineY > 0) {
+            g2.setColor(new Color(230, 230, 230));
+            g2.drawLine(lineStartX, remoteLineY, lineEndX, remoteLineY);
+            g2.setColor(Color.DARK_GRAY);
+        }
+        // TLS Protocol
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("TLS Protocol:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        // Cipher Name
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("Cipher Name:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
+        if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        if (cipherLineY > 0) {
+            g2.setColor(new Color(230, 230, 230));
+            g2.drawLine(lineStartX, cipherLineY, lineEndX, cipherLineY);
+            g2.setColor(Color.DARK_GRAY);
+        }
+        // Certificate CN
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("Certificate CN:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        // Issuer CN
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("Issuer CN:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT;
+        // Valid Until
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.drawString("Valid Until:", labelX, infoY);
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT;
         // 2. 绘制瀑布条区
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
@@ -261,7 +239,6 @@ public class WaterfallChartPanel extends JPanel {
             // label 区域
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
             g2.setColor(new Color(40, 40, 40));
-            int labelX = LABEL_LEFT_PAD;
             int labelW = labelMaxWidth;
             String label = s.label;
             int labelStrW = g2.getFontMetrics().stringWidth(label);
@@ -333,31 +310,8 @@ public class WaterfallChartPanel extends JPanel {
 
     // 计算实际显示的info行数（用于动态布局）
     private int getInfoLinesCount() {
-        int count = 0;
-        if (httpEventInfo != null) {
-            if (notEmpty(httpEventInfo.getProtocol() != null ? httpEventInfo.getProtocol().toString() : null)) count++;
-            if (notEmpty(httpEventInfo.getLocalAddress())) count++;
-            if (notEmpty(httpEventInfo.getRemoteAddress())) count++;
-            if (notEmpty(httpEventInfo.getTlsVersion())) count++;
-            if (notEmpty(httpEventInfo.getCipherName())) count++;
-            String certCN = null, issuerCN = null, validUntil = null;
-            if (httpEventInfo.getPeerCertificates() != null && !httpEventInfo.getPeerCertificates().isEmpty()) {
-                var cert = httpEventInfo.getPeerCertificates().get(0);
-                if (cert instanceof X509Certificate x509) {
-                    certCN = x509.getSubjectX500Principal().getName();
-                    issuerCN = x509.getIssuerX500Principal().getName();
-                    validUntil = x509.getNotAfter().toString();
-                }
-            }
-            if (notEmpty(certCN)) count++;
-            if (notEmpty(issuerCN)) count++;
-            if (notEmpty(validUntil)) count++;
-        }
-        return Math.max(count, 1); // 至少1行，避免高度为0
-    }
-
-    private boolean notEmpty(String s) {
-        return s != null && !s.isEmpty();
+        // 始终返回所有label的数量，保证信息区高度
+        return 7;
     }
 
     public static class Stage {

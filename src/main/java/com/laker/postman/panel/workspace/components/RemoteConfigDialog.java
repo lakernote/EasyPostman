@@ -61,11 +61,6 @@ public class RemoteConfigDialog extends JDialog {
         // 进度相关组件
         progressPanel = new ProgressPanel(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS));
         progressPanel.setVisible(false);
-
-        // 设置默认字体
-        Font defaultFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
-        remoteUrlField.setFont(defaultFont);
-        remoteBranchField.setFont(defaultFont);
     }
 
     private void initDialog() {

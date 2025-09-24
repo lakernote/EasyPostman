@@ -28,9 +28,9 @@ public class PlusPanel extends JPanel {
 
     public PlusPanel() {
         setLayout(new BorderLayout());
-        setOpaque(false);
+        setOpaque(false); // 使背景透明，以显示自定义渐变
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        setBorder(BorderFactory.createEmptyBorder(32, 32, 32, 32));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 创建主要内容面板，使用垂直居中的布局
         contentPanel = new JPanel() {

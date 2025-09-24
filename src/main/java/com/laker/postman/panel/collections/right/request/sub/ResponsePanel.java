@@ -149,6 +149,22 @@ public class ResponsePanel extends JPanel {
 
     public void setResponseHeaders(HttpResponse resp) {
         responseHeadersPanel.setHeaders(resp.headers);
+        // 动态设置Headers按钮文本和颜色
+        int headersTabIndex = 1;
+        if (tabButtons.length > headersTabIndex) {
+            JButton headersBtn = tabButtons[headersTabIndex];
+            int count = (resp.headers != null) ? resp.headers.size() : 0;
+            if (count > 0) {
+                String countText = " (" + count + ")";
+                String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
+                        "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+                headersBtn.setText("<html>" + countHtml + "</html>");
+                headersBtn.setForeground(Color.BLACK);
+            } else {
+                headersBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
+                headersBtn.setForeground(Color.BLACK);
+            }
+        }
     }
 
     public void setTiming(HttpResponse resp) {
@@ -183,7 +199,7 @@ public class ResponsePanel extends JPanel {
             JButton testsBtn = tabButtons[testsTabIndex];
             if (testResults != null && !testResults.isEmpty()) {
                 boolean allPassed = testResults.stream().allMatch(r -> r.passed);
-                String countText = "(" + testResults.size() + ")";
+                String countText = " (" + testResults.size() + ")";
                 String color = allPassed ? "#009900" : "#d32f2f";
                 String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) + "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
                 testsBtn.setText("<html>" + countHtml + "</html>");

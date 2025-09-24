@@ -2,10 +2,8 @@ package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.js.JsScriptExecutor;
@@ -219,7 +217,6 @@ public class HttpUtil {
                 Environment activeEnv = EnvironmentService.getActiveEnvironment();
                 if (activeEnv != null) {
                     EnvironmentService.saveEnvironment(activeEnv);
-                    SingletonFactory.getInstance(EnvironmentPanel.class).refreshUI();
                 }
             } catch (Exception ex) {
                 log.error("PostScript Error", ex);

@@ -210,7 +210,17 @@ public class SidebarTabPanel extends SingletonBasePanel {
     // Tab切换时才加载真正的面板内容
     private void handleTabChange() {
         int selectedIndex = tabbedPane.getSelectedIndex();
-        ensureTabComponentLoaded(selectedIndex);
+        ensureTabComponentLoaded(selectedIndex); // 懒加载当前选中的tab内容
+        // Check if the selected tab is the environment tab
+        if (selectedIndex >= 0 && selectedIndex < tabInfos.size()) {
+            TabInfo info = tabInfos.get(selectedIndex);
+            if (info.title.equals(I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS))) {
+                Component comp = tabbedPane.getComponentAt(selectedIndex);
+                if (comp instanceof EnvironmentPanel environmentPanel) {
+                    environmentPanel.refreshUI();
+                }
+            }
+        }
     }
 
     private void ensureTabComponentLoaded(int index) {

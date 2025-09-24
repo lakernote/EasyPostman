@@ -53,6 +53,11 @@ public final class MessageKeys {
     public static final String UPDATE_OPEN_INSTALLER_FAILED = "update.open_installer_failed";
     public static final String UPDATE_NO_INSTALLER_FOUND = "update.no_installer_found";
 
+    // ============ 版本检查器相关 ============
+    public static final String UPDATE_FETCH_RELEASE_FAILED = "update.fetch_release_failed";
+    public static final String UPDATE_NO_VERSION_INFO = "update.no_version_info";
+    public static final String UPDATE_ALREADY_LATEST = "update.already_latest";
+
     // ============ 错误消息 ============
     public static final String ERROR_UPDATE_FAILED = "error.update_failed";
     public static final String ERROR_OPEN_LOG_MESSAGE = "error.open_log_message";

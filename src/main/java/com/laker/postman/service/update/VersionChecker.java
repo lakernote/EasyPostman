@@ -3,6 +3,8 @@ package com.laker.postman.service.update;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,18 +31,18 @@ public class VersionChecker {
             JSONObject releaseInfo = fetchLatestReleaseInfo();
 
             if (releaseInfo == null) {
-                return UpdateInfo.noUpdateAvailable("Failed to fetch release information");
+                return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_FETCH_RELEASE_FAILED));
             }
 
             String latestVersion = releaseInfo.getStr("tag_name");
             if (latestVersion == null) {
-                return UpdateInfo.noUpdateAvailable("No version information found");
+                return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_NO_VERSION_INFO));
             }
 
             if (compareVersion(latestVersion, currentVersion) > 0 && CharSequenceUtil.isNotBlank(getDownloadUrl(releaseInfo))) {
                 return UpdateInfo.updateAvailable(currentVersion, latestVersion, releaseInfo);
             } else {
-                return UpdateInfo.noUpdateAvailable("Already the latest version " + currentVersion);
+                return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_ALREADY_LATEST, currentVersion));
             }
 
         } catch (Exception e) {

@@ -29,7 +29,6 @@ public class PlusPanel extends JPanel {
     public PlusPanel() {
         setLayout(new BorderLayout());
         setOpaque(false); // 使背景透明，以显示自定义渐变
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 创建主要内容面板，使用垂直居中的布局
@@ -82,12 +81,24 @@ public class PlusPanel extends JPanel {
         // 主标题与提示间距
         contentPanel.add(Box.createVerticalStrut(10));
 
-        // 提示文本（国际化）
+        // 提示文本（国际化） 点击此处或使用快捷键创建新请求
         JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_HINT));
         hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         hintLabel.setHorizontalAlignment(SwingConstants.CENTER);
         hintLabel.setForeground(new Color(120, 120, 120));
         hintLabel.setFont(hintLabel.getFont().deriveFont(14f));
+        hintLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // 点击触发
+        MouseAdapter adapter = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    SingletonFactory.getInstance(RequestEditPanel.class).addNewTab(I18nUtil.getMessage(MessageKeys.NEW_REQUEST));
+                }
+            }
+        };
+        hintLabel.addMouseListener(adapter);
+        hintLabel.setFocusable(true);
         contentPanel.add(hintLabel);
 
         // 快捷键信息分组显示，提升可读性
@@ -144,29 +155,5 @@ public class PlusPanel extends JPanel {
 
         // 将内容面板添加到中心位置
         add(contentPanel, BorderLayout.CENTER);
-
-        // 点击事件，点击任意区域都可新建请求
-        MouseAdapter clickAdapter = new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
-                    SingletonFactory.getInstance(RequestEditPanel.class).addNewTab(I18nUtil.getMessage(MessageKeys.NEW_REQUEST));
-                }
-            }
-        };
-        // 递归为所有子组件添加监听器
-        addMouseListenerRecursively(this, clickAdapter);
-    }
-
-    /**
-     * 递归为所有子组件添加 MouseListener
-     */
-    private void addMouseListenerRecursively(Component comp, MouseAdapter adapter) {
-        comp.addMouseListener(adapter);
-        if (comp instanceof Container container) {
-            for (Component child : container.getComponents()) {
-                addMouseListenerRecursively(child, adapter);
-            }
-        }
     }
 }

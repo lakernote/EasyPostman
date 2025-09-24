@@ -59,8 +59,8 @@ public class EasyPostManFontUtil {
             Font font = findAvailableFont(style, size, macFonts);
             if (font != null) return font;
         } else if (SystemInfo.isWindows) {
-            // 优先 Microsoft YaHei UI，找不到则降级
-            String[] winFonts = {"微软雅黑", "Microsoft YaHei UI", "宋体", DEFAULT_FONT_NAME};
+            // 优先 Microsoft YaHei UI，其次微软雅黑、Segoe UI，找不到则降级
+            String[] winFonts = {"Microsoft YaHei UI", "微软雅黑", "Segoe UI", "宋体", DEFAULT_FONT_NAME};
             Font font = findAvailableFont(style, size, winFonts);
             if (font != null) return font;
         } else if (SystemInfo.isLinux) {

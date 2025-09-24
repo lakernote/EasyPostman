@@ -11,6 +11,7 @@ import lombok.Getter;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.List;
 
 import static com.laker.postman.util.MessageKeys.*;
 
@@ -45,7 +46,8 @@ public class RemoteConfigDialog extends JDialog {
     private final transient Workspace workspace;
 
     public RemoteConfigDialog(Window parent, Workspace workspace) {
-        super(parent, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE) + " - " + workspace.getName(), ModalityType.APPLICATION_MODAL);
+        super(parent, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE) + " - " + workspace.getName(),
+                ModalityType.APPLICATION_MODAL);
         this.workspace = workspace;
         initComponents();
         initDialog();
@@ -161,21 +163,20 @@ public class RemoteConfigDialog extends JDialog {
             progressPanel.setVisible(true);
             SwingWorker<Void, String> worker = createWorkerTask();
             worker.addPropertyChangeListener(evt -> {
-                switch (evt.getPropertyName()) {
-                    case "progress":
-                        progressPanel.getProgressBar().setValue((Integer) evt.getNewValue());
-                        break;
-                    case "state":
-                        if (SwingWorker.StateValue.DONE == evt.getNewValue()) {
-                            try {
-                                worker.get();
-                                onOperationSuccess();
-                            } catch (Exception ex) {
-                                onOperationFailure(ex);
+                if (evt.getPropertyName().equals("progress")) {
+                    progressPanel.getProgressBar().setValue((Integer) evt.getNewValue());
+                } else if (evt.getPropertyName().equals("state") && SwingWorker.StateValue.DONE == evt.getNewValue()) {
+                        try {
+                            worker.get();
+                            onOperationSuccess();
+                        } catch (Exception ex) {
+                            if (ex instanceof InterruptedException) {
+                                Thread.currentThread().interrupt();
                             }
+                            onOperationFailure(ex);
                         }
-                        break;
-                }
+                    }
+
             });
             worker.execute();
         } catch (IllegalArgumentException ex) {
@@ -279,7 +280,7 @@ public class RemoteConfigDialog extends JDialog {
             }
 
             @Override
-            protected void process(java.util.List<String> chunks) {
+            protected void process(List<String> chunks) {
                 if (!chunks.isEmpty()) {
                     progressPanel.getStatusLabel().setText(chunks.get(chunks.size() - 1));
                 }

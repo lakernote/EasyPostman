@@ -198,9 +198,9 @@ public class RemoteConfigDialog extends JDialog {
         token = gitAuthPanel.getToken();
 
         confirmed = true;
-        progressPanel.setProgressText("Operation successful!");
-        progressPanel.getStatusLabel().setText("Operation completed, closing dialog...");
-        Timer timer = new Timer(500, e -> dispose());
+        progressPanel.setProgressText(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_SUCCESS));
+        progressPanel.getStatusLabel().setText(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_COMPLETED_CLOSING));
+        Timer timer = new Timer(1000, e -> dispose());
         timer.setRepeats(false);
         timer.start();
     }
@@ -211,9 +211,9 @@ public class RemoteConfigDialog extends JDialog {
         progressPanel.setVisible(false);
         pack();
         progressPanel.reset();
-        progressPanel.setProgressText("Operation failed");
-        progressPanel.getStatusLabel().setText("Please check your input and try again");
-        showError("Operation failed: " + e.getMessage());
+        progressPanel.setProgressText(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_FAILED));
+        progressPanel.getStatusLabel().setText(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_FAILED_TIP));
+        showError(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_FAILED_DETAIL, e.getMessage()));
     }
 
     private void showError(String message) {

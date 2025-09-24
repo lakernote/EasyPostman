@@ -822,4 +822,11 @@ public final class MessageKeys {
     public static final String WATERFALL_STAGE_DESC_REQUEST_SEND = "waterfall.stage.desc.request_send";
     public static final String WATERFALL_STAGE_DESC_WAITING = "waterfall.stage.desc.waiting";
     public static final String WATERFALL_STAGE_DESC_CONTENT_DOWNLOAD = "waterfall.stage.desc.content_download";
+
+    // ============ 操作相关 ============
+    public static final String WORKSPACE_OPERATION_SUCCESS = "workspace.operation.success";
+    public static final String WORKSPACE_OPERATION_COMPLETED_CLOSING = "workspace.operation.completed_closing";
+    public static final String WORKSPACE_OPERATION_FAILED = "workspace.operation.failed";
+    public static final String WORKSPACE_OPERATION_FAILED_TIP = "workspace.operation.failed_tip";
+    public static final String WORKSPACE_OPERATION_FAILED_DETAIL = "workspace.operation.failed_detail";
 }

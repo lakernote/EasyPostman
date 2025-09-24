@@ -22,8 +22,8 @@ public class StreamTestPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    public void setStreamTestResults(List<StreamTestResult> results) {
-        tableModel.setData(results);
+    public void addStreamTestResult(StreamTestResult result) {
+        tableModel.addResult(result);
     }
 
     static class StreamTestTableModel extends AbstractTableModel {
@@ -34,6 +34,15 @@ public class StreamTestPanel extends JPanel {
         public void setData(List<StreamTestResult> data) {
             this.data = data;
             fireTableDataChanged();
+        }
+
+        public void addResult(StreamTestResult result) {
+            if (data == null) {
+                data = new java.util.ArrayList<>();
+            }
+            int row = data.size();
+            data.add(result);
+            fireTableRowsInserted(row, row);
         }
 
         @Override
@@ -85,4 +94,3 @@ public class StreamTestPanel extends JPanel {
         }
     }
 }
-

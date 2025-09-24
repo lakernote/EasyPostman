@@ -88,9 +88,6 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private final ResponsePanel responsePanel;
 
-    // 流式断言历史
-    private final List<StreamTestResult> streamTestHistory = new ArrayList<>();
-
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
         this.id = id;
         this.protocol = protocol;
@@ -418,8 +415,7 @@ public class RequestEditSubPanel extends JPanel {
                                 responsePanel.getResponseSizeLabel().setText("ResponseSize: " + getSizeText(r.bodySize));
                                 // 处理流式断言
                                 StreamTestResult result = handleStreamMessage(item, bindings, r.body);
-                                streamTestHistory.add(result);
-                                responsePanel.setStreamTestResults(new ArrayList<>(streamTestHistory));
+                                responsePanel.addStreamTestResult(result);
                             });
                         }
 
@@ -525,8 +521,7 @@ public class RequestEditSubPanel extends JPanel {
                             appendWebSocketMessage(MessageType.RECEIVED, text);
                             // 处理流式断言
                             StreamTestResult result = handleStreamMessage(item, bindings, text);
-                            streamTestHistory.add(result);
-                            responsePanel.setStreamTestResults(new ArrayList<>(streamTestHistory));
+                            responsePanel.addStreamTestResult(result);
                         }
 
                         @Override

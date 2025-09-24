@@ -251,10 +251,9 @@ public class ResponsePanel extends JPanel {
         }
     }
 
-    public void setStreamTestResults(List<StreamTestResult> results) {
-        this.streamTestResults = results;
-        if (streamTestPanel != null) {
-            streamTestPanel.setStreamTestResults(results);
+    public void addStreamTestResult(StreamTestResult result) {
+        if (result != null && result.getTestResults() != null && !result.getTestResults().isEmpty()) {
+            streamTestPanel.addStreamTestResult(result);
         }
     }
 

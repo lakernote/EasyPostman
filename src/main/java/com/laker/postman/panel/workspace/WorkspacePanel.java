@@ -3,10 +3,10 @@ package com.laker.postman.panel.workspace;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
+import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.panel.workspace.components.*;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.*;
@@ -164,7 +164,7 @@ public class WorkspacePanel extends SingletonBasePanel {
      */
     private JPanel createLogPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        TitledBorder border = BorderFactory.createTitledBorder("日志");
+        TitledBorder border = BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG));
         panel.setBorder(border);
         panel.setPreferredSize(new Dimension(0, 150));
 
@@ -201,9 +201,6 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             refreshWorkspaceList();
-            logMessage("工作区创建成功");
-        } else {
-            logMessage("取消创建工作区");
         }
     }
 
@@ -341,11 +338,8 @@ public class WorkspacePanel extends SingletonBasePanel {
             // 更新顶部菜单栏工作区显示
             SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
             refreshWorkspaceList();
-            logMessage("成功切换到工作区: " + workspace.getName());
         } catch (Exception e) {
             log.error("Failed to switch workspace", e);
-            logError("切换工作区失败: " + e.getMessage());
-            showError("Failed to switch workspace: " + e.getMessage());
         }
     }
 
@@ -361,15 +355,12 @@ public class WorkspacePanel extends SingletonBasePanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            logMessage("Git拉取操作完成: " + workspace.getName());
             // 刷新 requests 和 env 面板
             SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
-                .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
             SingletonFactory.getInstance(EnvironmentPanel.class)
-                .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             refreshWorkspaceList();
-        } else {
-            logMessage("取消Git拉取操作");
         }
     }
 
@@ -387,8 +378,6 @@ public class WorkspacePanel extends SingletonBasePanel {
         if (dialog.isConfirmed()) {
             logMessage("Git提交操作完成: " + workspace.getName() + " - " + dialog.getCommitMessage());
             refreshWorkspaceList();
-        } else {
-            logMessage("取消Git提交操作");
         }
     }
 
@@ -404,15 +393,12 @@ public class WorkspacePanel extends SingletonBasePanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            logMessage("Git推送操作完成: " + workspace.getName());
             // 刷新 requests 和 env 面板
             SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
-                .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
             SingletonFactory.getInstance(EnvironmentPanel.class)
-                .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             refreshWorkspaceList();
-        } else {
-            logMessage("取消Git推送操作");
         }
     }
 
@@ -435,14 +421,9 @@ public class WorkspacePanel extends SingletonBasePanel {
                 if (current != null && current.getId().equals(workspace.getId())) {
                     SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
                 }
-                logMessage("工作区重命名成功: " + newName);
             } catch (Exception e) {
                 log.error("Failed to rename workspace", e);
-                logError("重命名工作区失败: " + e.getMessage());
-                showError("Failed to rename workspace: " + e.getMessage());
             }
-        } else {
-            logMessage("取消重命名工作区操作");
         }
     }
 
@@ -485,20 +466,14 @@ public class WorkspacePanel extends SingletonBasePanel {
                         SingletonFactory.getInstance(RequestCollectionsLeftPanel.class).switchWorkspaceAndRefreshUI(
                                 SystemUtil.getCollectionPathForWorkspace(newCurrentWorkspace));
 
-                        logMessage("已自动切换到工作区: " + newCurrentWorkspace.getName());
                     }
                 }
 
                 refreshWorkspaceList();
                 SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
-                logMessage("工作区删除成功: " + workspace.getName());
             } catch (Exception e) {
                 log.error("Failed to delete workspace", e);
-                logError("删除工作区失败: " + e.getMessage());
-                showError("Failed to delete workspace: " + e.getMessage());
             }
-        } else {
-            logMessage("取消删除工作区操作");
         }
     }
 
@@ -506,14 +481,13 @@ public class WorkspacePanel extends SingletonBasePanel {
      * 配置远程仓库
      */
     private void configureRemoteRepository(Workspace workspace) {
-        logMessage("配置远程仓库: " + workspace.getName());
         RemoteConfigDialog dialog = new RemoteConfigDialog(
                 SwingUtilities.getWindowAncestor(this), workspace);
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
             try {
-                logMessage("正在配置远程仓库...");
+                logMessage("doing...");
                 workspaceService.addRemoteRepository(
                         workspace.getId(),
                         dialog.getRemoteUrl(),
@@ -524,14 +498,11 @@ public class WorkspacePanel extends SingletonBasePanel {
                         dialog.getToken()
                 );
                 refreshWorkspaceList();
-                logMessage("远程仓库配置成功");
             } catch (Exception e) {
                 log.error("Failed to configure remote repository", e);
-                logError("配置远程仓库失败: " + e.getMessage());
-                showError("配置远程仓库失败: " + e.getMessage());
+                logError("Error: " + e.getMessage());
+                showError(e.getMessage());
             }
-        } else {
-            logMessage("取消配置远程仓库");
         }
     }
 
@@ -560,7 +531,6 @@ public class WorkspacePanel extends SingletonBasePanel {
             updateInfoPanel();
         } catch (Exception e) {
             log.error("Failed to refresh workspace list", e);
-            logError("刷新工作区列表失败: " + e.getMessage());
         }
     }
 

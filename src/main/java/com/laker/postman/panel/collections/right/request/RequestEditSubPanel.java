@@ -164,7 +164,7 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel = new ResponsePanel(protocol);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(2); // 设置分割条的宽度
-        splitPane.setResizeWeight(0.5); // 设置分割线位置，表示请求部分占50%
+        splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占30%
         add(splitPane, BorderLayout.CENTER);
 
         if (protocol.isWebSocketProtocol()) {

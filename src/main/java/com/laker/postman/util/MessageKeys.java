@@ -800,4 +800,26 @@ public final class MessageKeys {
     public static final String SNIPPET_DIALOG_CATEGORY_OTHER = "snippet.dialog.category.other";
     public static final String SNIPPET_DIALOG_NOT_FOUND = "snippet.dialog.not_found";
 
+    // ============ WaterfallChartPanel 国际化 ============
+    public static final String WATERFALL_HTTP_VERSION = "waterfall.http_version";
+    public static final String WATERFALL_LOCAL_ADDRESS = "waterfall.local_address";
+    public static final String WATERFALL_REMOTE_ADDRESS = "waterfall.remote_address";
+    public static final String WATERFALL_TLS_PROTOCOL = "waterfall.tls_protocol";
+    public static final String WATERFALL_CIPHER_NAME = "waterfall.cipher_name";
+    public static final String WATERFALL_CERTIFICATE_CN = "waterfall.certificate_cn";
+    public static final String WATERFALL_ISSUER_CN = "waterfall.issuer_cn";
+    public static final String WATERFALL_VALID_UNTIL = "waterfall.valid_until";
+    public static final String WATERFALL_TOTAL = "waterfall.total";
+    public static final String WATERFALL_STAGE_DNS = "waterfall.stage.dns";
+    public static final String WATERFALL_STAGE_SOCKET = "waterfall.stage.socket";
+    public static final String WATERFALL_STAGE_SSL = "waterfall.stage.ssl";
+    public static final String WATERFALL_STAGE_REQUEST_SEND = "waterfall.stage.request_send";
+    public static final String WATERFALL_STAGE_WAITING = "waterfall.stage.waiting";
+    public static final String WATERFALL_STAGE_CONTENT_DOWNLOAD = "waterfall.stage.content_download";
+    public static final String WATERFALL_STAGE_DESC_DNS = "waterfall.stage.desc.dns";
+    public static final String WATERFALL_STAGE_DESC_SOCKET = "waterfall.stage.desc.socket";
+    public static final String WATERFALL_STAGE_DESC_SSL = "waterfall.stage.desc.ssl";
+    public static final String WATERFALL_STAGE_DESC_REQUEST_SEND = "waterfall.stage.desc.request_send";
+    public static final String WATERFALL_STAGE_DESC_WAITING = "waterfall.stage.desc.waiting";
+    public static final String WATERFALL_STAGE_DESC_CONTENT_DOWNLOAD = "waterfall.stage.desc.content_download";
 }

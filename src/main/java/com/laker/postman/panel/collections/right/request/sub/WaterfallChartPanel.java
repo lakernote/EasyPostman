@@ -2,6 +2,8 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -119,19 +121,19 @@ public class WaterfallChartPanel extends JPanel {
         // HTTP Version
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.setColor(Color.DARK_GRAY);
-        g2.drawString("HTTP Version:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT;
         // Local Address
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("Local Address:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT;
         // Remote Address
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("Remote Address:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
@@ -143,13 +145,13 @@ public class WaterfallChartPanel extends JPanel {
         }
         // TLS Protocol
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("TLS Protocol:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT;
         // Cipher Name
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("Cipher Name:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
@@ -161,19 +163,19 @@ public class WaterfallChartPanel extends JPanel {
         }
         // Certificate CN
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("Certificate CN:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT;
         // Issuer CN
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("Issuer CN:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT;
         // Valid Until
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        g2.drawString("Valid Until:", labelX, infoY);
+        g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT;
@@ -223,7 +225,7 @@ public class WaterfallChartPanel extends JPanel {
         }
         // 顶部total
         if (total > 0) {
-            String totalStr = "Total: " + total + " ms";
+            String totalStr = I18nUtil.getMessage(MessageKeys.WATERFALL_TOTAL, total);
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
             int strW = g2.getFontMetrics().stringWidth(totalStr);
             g2.setColor(new Color(30, 30, 30));
@@ -330,14 +332,21 @@ public class WaterfallChartPanel extends JPanel {
 
     // 工具方法：根据 HttpEventInfo 生成六大阶段（即使为0也显示）
     public static List<Stage> buildStandardStages(HttpEventInfo info) {
-        String[] labels = {"DNS", "Socket", "SSL", "Request Send", "Waiting (TTFB)", "Content Download"};
+        String[] labels = {
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DNS),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_SOCKET),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_SSL),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_REQUEST_SEND),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_WAITING),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_CONTENT_DOWNLOAD)
+        };
         String[] descs = {
-                " (DnsStart→DnsEnd)",
-                " (ConnectStart→ConnectEnd)",
-                " (SecureConnectStart→SecureConnectEnd)",
-                " (RequestHeadersStart→RequestBodyEnd)",
-                " (RequestBodyEnd→ResponseHeadersStart)",
-                " (ResponseBodyStart→ResponseBodyEnd)"
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DESC_DNS),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DESC_SOCKET),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DESC_SSL),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DESC_REQUEST_SEND),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DESC_WAITING),
+                I18nUtil.getMessage(MessageKeys.WATERFALL_STAGE_DESC_CONTENT_DOWNLOAD),
         };
         long[] starts = new long[6];
         long[] ends = new long[6];

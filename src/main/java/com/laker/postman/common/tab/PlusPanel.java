@@ -107,13 +107,7 @@ public class PlusPanel extends JPanel {
         shortcutPanel.setOpaque(false);
         shortcutPanel.setLayout(new BoxLayout(shortcutPanel, BoxLayout.Y_AXIS));
 
-        // 新建请求快捷键
-        JLabel shortcutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_SHORTCUT));
-        shortcutLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        shortcutLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        shortcutLabel.setForeground(new Color(100, 100, 200));
-        shortcutLabel.setFont(shortcutLabel.getFont().deriveFont(Font.BOLD, 13f));
-        shortcutPanel.add(shortcutLabel);
+        // 新建请求快捷键描述
         JLabel shortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_SHORTCUT_DESC));
         shortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         shortcutDescLabel.setFont(shortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
@@ -121,13 +115,7 @@ public class PlusPanel extends JPanel {
         shortcutPanel.add(shortcutDescLabel);
         shortcutPanel.add(Box.createVerticalStrut(8));
 
-        // 保存快捷键
-        JLabel saveShortcutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT));
-        saveShortcutLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        saveShortcutLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        saveShortcutLabel.setForeground(new Color(100, 180, 100));
-        saveShortcutLabel.setFont(saveShortcutLabel.getFont().deriveFont(Font.BOLD, 13f));
-        shortcutPanel.add(saveShortcutLabel);
+        // 保存快捷键描述
         JLabel saveShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT_DESC));
         saveShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         saveShortcutDescLabel.setFont(saveShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
@@ -135,13 +123,7 @@ public class PlusPanel extends JPanel {
         shortcutPanel.add(saveShortcutDescLabel);
         shortcutPanel.add(Box.createVerticalStrut(8));
 
-        // 退出快捷键
-        JLabel exitShortcutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.EXIT_SHORTCUT));
-        exitShortcutLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        exitShortcutLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        exitShortcutLabel.setForeground(new Color(180, 100, 100));
-        exitShortcutLabel.setFont(exitShortcutLabel.getFont().deriveFont(Font.BOLD, 13f));
-        shortcutPanel.add(exitShortcutLabel);
+        // 退出快捷键描述
         JLabel exitShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.EXIT_SHORTCUT_DESC));
         exitShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         exitShortcutDescLabel.setFont(exitShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));

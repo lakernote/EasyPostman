@@ -18,7 +18,7 @@ import static com.laker.postman.util.MessageKeys.*;
  * 远程仓库配置对话框
  * 用于为 INITIALIZED 工作区配置远程仓库
  */
-public class RemoteConfigDialog extends ProgressDialog {
+public class RemoteConfigDialog extends JDialog {
 
     @Getter
     private String remoteUrl;
@@ -37,11 +37,15 @@ public class RemoteConfigDialog extends ProgressDialog {
     private JTextField remoteUrlField;
     private JTextField remoteBranchField;
     private GitAuthPanel gitAuthPanel;
-
+    private ProgressPanel progressPanel;
+    private JButton confirmButton;
+    private JButton cancelButton;
+    @Getter
+    private boolean confirmed = false;
     private final transient Workspace workspace;
 
     public RemoteConfigDialog(Window parent, Workspace workspace) {
-        super(parent, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE) + " - " + workspace.getName());
+        super(parent, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE) + " - " + workspace.getName(), ModalityType.APPLICATION_MODAL);
         this.workspace = workspace;
         initComponents();
         initDialog();
@@ -64,8 +68,14 @@ public class RemoteConfigDialog extends ProgressDialog {
         remoteBranchField.setFont(defaultFont);
     }
 
-    @Override
-    protected void setupLayout() {
+    private void initDialog() {
+        setupLayout();
+        setupEventHandlers();
+        pack();
+        setLocationRelativeTo(getParent());
+    }
+
+    private void setupLayout() {
         setLayout(new BorderLayout());
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -134,12 +144,82 @@ public class RemoteConfigDialog extends ProgressDialog {
         return panel;
     }
 
-    @Override
-    protected void setupEventHandlers() {
-        // 基础事件处理已在父类处理
+    private JPanel createStandardButtonPanel(String okText) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        confirmButton = new JButton(okText);
+        cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
+        panel.add(confirmButton);
+        panel.add(cancelButton);
+        return panel;
     }
 
-    @Override
+    private void setupEventHandlers() {
+        confirmButton.addActionListener(e -> onConfirm());
+        cancelButton.addActionListener(e -> dispose());
+    }
+
+    private void onConfirm() {
+        try {
+            validateInput();
+            setInputComponentsEnabled(false);
+            confirmButton.setEnabled(false);
+            progressPanel.setVisible(true);
+            SwingWorker<Void, String> worker = createWorkerTask();
+            worker.addPropertyChangeListener(evt -> {
+                switch (evt.getPropertyName()) {
+                    case "progress":
+                        progressPanel.getProgressBar().setValue((Integer) evt.getNewValue());
+                        break;
+                    case "state":
+                        if (SwingWorker.StateValue.DONE == evt.getNewValue()) {
+                            try {
+                                worker.get();
+                                onOperationSuccess();
+                            } catch (Exception ex) {
+                                onOperationFailure(ex);
+                            }
+                        }
+                        break;
+                }
+            });
+            worker.execute();
+        } catch (IllegalArgumentException ex) {
+            showError(ex.getMessage());
+        }
+    }
+
+    protected void onOperationSuccess() {
+        // Get input values
+        remoteUrl = remoteUrlField.getText().trim();
+        remoteBranch = remoteBranchField.getText().trim();
+        authType = (GitAuthType) gitAuthPanel.getAuthTypeCombo().getSelectedItem();
+        username = gitAuthPanel.getUsername();
+        password = gitAuthPanel.getPassword();
+        token = gitAuthPanel.getToken();
+
+        confirmed = true;
+        progressPanel.setProgressText("Operation successful!");
+        progressPanel.getStatusLabel().setText("Operation completed, closing dialog...");
+        Timer timer = new Timer(500, e -> dispose());
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    protected void onOperationFailure(Exception e) {
+        confirmButton.setEnabled(true);
+        setInputComponentsEnabled(true);
+        progressPanel.setVisible(false);
+        pack();
+        progressPanel.reset();
+        progressPanel.setProgressText("Operation failed");
+        progressPanel.getStatusLabel().setText("Please check your input and try again");
+        showError("Operation failed: " + e.getMessage());
+    }
+
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+    }
+
     protected void validateInput() throws IllegalArgumentException {
         String url = remoteUrlField.getText().trim();
         if (url.isEmpty()) {
@@ -160,7 +240,6 @@ public class RemoteConfigDialog extends ProgressDialog {
         gitAuthPanel.validateAuth();
     }
 
-    @Override
     protected SwingWorker<Void, String> createWorkerTask() {
         return new SwingWorker<>() {
             @Override
@@ -213,23 +292,10 @@ public class RemoteConfigDialog extends ProgressDialog {
         };
     }
 
-    @Override
-    protected void onOperationSuccess() {
-        // 获取输入值
-        remoteUrl = remoteUrlField.getText().trim();
-        remoteBranch = remoteBranchField.getText().trim();
-        authType = (GitAuthType) gitAuthPanel.getAuthTypeCombo().getSelectedItem();
-        username = gitAuthPanel.getUsername();
-        password = gitAuthPanel.getPassword();
-        token = gitAuthPanel.getToken();
-
-        super.onOperationSuccess();
-    }
-
-    @Override
     protected void setInputComponentsEnabled(boolean enabled) {
         remoteUrlField.setEnabled(enabled);
         remoteBranchField.setEnabled(enabled);
         gitAuthPanel.setComponentsEnabled(enabled);
     }
+
 }

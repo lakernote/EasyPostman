@@ -376,7 +376,6 @@ public class WorkspacePanel extends SingletonBasePanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            logMessage("Git提交操作完成: " + workspace.getName() + " - " + dialog.getCommitMessage());
             refreshWorkspaceList();
         }
     }
@@ -487,7 +486,6 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             try {
-                logMessage("doing...");
                 workspaceService.addRemoteRepository(
                         workspace.getId(),
                         dialog.getRemoteUrl(),
@@ -555,20 +553,6 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         infoPanel.revalidate();
         infoPanel.repaint();
-    }
-
-    /**
-     * 记录日志消息
-     */
-    private void logMessage(String message) {
-        if (logArea != null) {
-            SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
-                String timestamp = sdf.format(new Date());
-                logArea.append("[" + timestamp + "] " + message + "\n");
-                logArea.setCaretPosition(logArea.getDocument().getLength());
-            });
-        }
     }
 
     /**

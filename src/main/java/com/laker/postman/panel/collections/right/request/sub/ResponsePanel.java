@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.TestResult;
@@ -109,7 +110,7 @@ public class ResponsePanel extends JPanel {
             JScrollPane testsScrollPane = new JScrollPane(testsPane);
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
-            timingChartPanel = new WaterfallChartPanel(new java.util.ArrayList<>());
+            timingChartPanel = new WaterfallChartPanel(new ArrayList<>(), null);
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
@@ -170,10 +171,13 @@ public class ResponsePanel extends JPanel {
     public void setTiming(HttpResponse resp) {
         if (timingChartPanel == null) return;
         List<WaterfallChartPanel.Stage> stages = new ArrayList<>();
+        HttpEventInfo info = null;
         if (resp != null && resp.httpEventInfo != null) {
-            stages = WaterfallChartPanel.buildStandardStages(resp.httpEventInfo);
+            info = resp.httpEventInfo;
+            stages = WaterfallChartPanel.buildStandardStages(info);
         }
         timingChartPanel.setStages(stages);
+        timingChartPanel.setHttpEventInfo(info);
     }
 
     public void setStatus(String statusText, Color color) {

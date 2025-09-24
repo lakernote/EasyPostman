@@ -153,6 +153,7 @@ public class EasyConsoleEventListener extends EventListener {
         info.setSecureConnectEnd(System.currentTimeMillis());
         if (handshake != null) {
             info.setTlsVersion(handshake.tlsVersion().javaName());
+            info.setCipherName(handshake.cipherSuite().toString());
             info.setPeerCertificates(handshake.peerCertificates());
             info.setLocalCertificates(handshake.localCertificates());
         }

@@ -5,6 +5,7 @@ import com.laker.postman.util.EasyPostManFontUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,9 +16,16 @@ public class WaterfallChartPanel extends JPanel {
     private static final Color[] COLORS = {
             new Color(0x4F8EF7), new Color(0x34C759), new Color(0xAF52DE), new Color(0xFF9500), new Color(0xFF375F), new Color(0x32D1C6)
     };
+    private HttpEventInfo httpEventInfo;
 
-    public WaterfallChartPanel(List<Stage> stages) {
+    private static final int INFO_TEXT_LINES = 8;
+    private static final int INFO_TEXT_LINE_HEIGHT = 18;
+    private static final int INFO_TEXT_TOP_PAD = 10;
+    private static final int INFO_TEXT_BOTTOM_PAD = 10;
+
+    public WaterfallChartPanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setStages(stages);
+        this.httpEventInfo = httpEventInfo;
     }
 
     public void setStages(List<Stage> stages) {
@@ -27,9 +35,14 @@ public class WaterfallChartPanel extends JPanel {
         repaint();
     }
 
+    public void setHttpEventInfo(HttpEventInfo info) {
+        this.httpEventInfo = info;
+        repaint();
+    }
+
     @Override
     public Dimension getPreferredSize() {
-        int reserveDesc = 80; //
+        int reserveDesc = 80;
         int labelMaxWidth = 0;
         Graphics g = getGraphics();
         if (g != null) {
@@ -39,11 +52,12 @@ public class WaterfallChartPanel extends JPanel {
                 if (w > labelMaxWidth) labelMaxWidth = w;
             }
         } else {
-            labelMaxWidth = 80; // fallback
+            labelMaxWidth = 80;
         }
         int leftPad = labelMaxWidth + 30;
-        int w = leftPad + 150 + reserveDesc + RIGHT_PAD; // 200为最小bar宽度
-        int h = TOP_PAD + BOTTOM_PAD + stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
+        int infoTextBlockHeight = INFO_TEXT_TOP_PAD + INFO_TEXT_LINES * INFO_TEXT_LINE_HEIGHT + INFO_TEXT_BOTTOM_PAD;
+        int w = leftPad + 150 + reserveDesc + RIGHT_PAD;
+        int h = infoTextBlockHeight + TOP_PAD + BOTTOM_PAD + stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
         return new Dimension(w, Math.max(h, 100));
     }
 
@@ -52,6 +66,42 @@ public class WaterfallChartPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int infoY = INFO_TEXT_TOP_PAD + INFO_TEXT_LINE_HEIGHT;
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        if (httpEventInfo != null) {
+            String protocol = httpEventInfo.getProtocol() != null ? httpEventInfo.getProtocol().toString() : "";
+            String localAddr = httpEventInfo.getLocalAddress();
+            String remoteAddr = httpEventInfo.getRemoteAddress();
+            String tls = httpEventInfo.getTlsVersion();
+            String cipher = httpEventInfo.getCipherName();
+            String certCN = "", issuerCN = "", validUntil = "";
+            if (httpEventInfo.getPeerCertificates() != null && !httpEventInfo.getPeerCertificates().isEmpty()) {
+                var cert = httpEventInfo.getPeerCertificates().get(0);
+                if (cert instanceof X509Certificate x509) {
+                    certCN = x509.getSubjectX500Principal().getName();
+                    issuerCN = x509.getIssuerX500Principal().getName();
+                    validUntil = x509.getNotAfter().toString();
+                }
+            }
+            g2.setColor(Color.DARK_GRAY);
+            g2.drawString("HTTP Version: " + protocol, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("Local Address: " + localAddr, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("Remote Address: " + remoteAddr, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("TLS Protocol: " + tls, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("Cipher Name: " + cipher, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("Certificate CN: " + certCN, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("Issuer CN: " + issuerCN, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+            g2.drawString("Valid Until: " + validUntil, 20, infoY);
+            infoY += INFO_TEXT_LINE_HEIGHT;
+        }
+        int infoTextBlockHeight = INFO_TEXT_TOP_PAD + INFO_TEXT_LINES * INFO_TEXT_LINE_HEIGHT + INFO_TEXT_BOTTOM_PAD;
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
         int descMaxWidth = 0;
@@ -102,32 +152,34 @@ public class WaterfallChartPanel extends JPanel {
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
             int strW = g2.getFontMetrics().stringWidth(totalStr);
             g2.setColor(new Color(30, 30, 30));
-            g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, 22);
+            g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, infoTextBlockHeight + 22);
         }
         // 绘制
-        for (int i = 0, y = TOP_PAD, currentX = leftPad; i < n; i++, y += BAR_HEIGHT + BAR_GAP) {
+        int barY = infoTextBlockHeight + TOP_PAD;
+        int currentX = leftPad;
+        for (int i = 0; i < n; i++, barY += BAR_HEIGHT + BAR_GAP) {
             Stage s = stages.get(i);
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
             // 0ms时画极细竖线（有高度），x为currentX
             if (barW == 2) {
                 g2.setColor(color.darker());
-                g2.fillRect(currentX, y, 2, BAR_HEIGHT);
+                g2.fillRect(currentX, barY, 2, BAR_HEIGHT);
             } else {
-                GradientPaint gp = new GradientPaint(currentX, y, color.brighter(), currentX + barW, y + BAR_HEIGHT, color.darker());
+                GradientPaint gp = new GradientPaint(currentX, barY, color.brighter(), currentX + barW, barY + BAR_HEIGHT, color.darker());
                 g2.setPaint(gp);
-                g2.fillRoundRect(currentX, y, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+                g2.fillRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
             }
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
             g2.setColor(new Color(40, 40, 40));
-            g2.drawString(s.label, leftPad - labelMaxWidth - 30 + 18, y + BAR_HEIGHT - 7);
+            g2.drawString(s.label, leftPad - labelMaxWidth - 30 + 18, barY + BAR_HEIGHT - 7);
             // 耗时始终在bar内右侧，bar太窄则不显示
             String ms = (s.end - s.start) + "ms";
             g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 8) {
                 g2.setColor(Color.WHITE);
-                g2.drawString(ms, currentX + barW - strW - 6, y + BAR_HEIGHT - 7);
+                g2.drawString(ms, currentX + barW - strW - 6, barY + BAR_HEIGHT - 7);
             }
             // 描述始终在bar右侧gap后，且不超出面板宽度
             if (s.desc != null && !s.desc.isEmpty()) {
@@ -146,7 +198,7 @@ public class WaterfallChartPanel extends JPanel {
                         }
                     }
                 }
-                g2.drawString(desc, descX, y + BAR_HEIGHT - 7);
+                g2.drawString(desc, descX, barY + BAR_HEIGHT - 7);
             }
             // 只有非0ms阶段才递增currentX
             if (barW != 2) {

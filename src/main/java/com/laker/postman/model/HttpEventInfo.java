@@ -49,6 +49,8 @@ public class HttpEventInfo {
     private List<Certificate> peerCertificates = new ArrayList<>();
     private List<Certificate> localCertificates = new ArrayList<>();
     private String tlsVersion;
+    // 加密套件
+    private String cipherName;
     // 异常
     private String errorMessage;
     private Throwable error;

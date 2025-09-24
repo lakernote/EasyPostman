@@ -1,9 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.model.*;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -35,12 +32,15 @@ public class ResponsePanel extends JPanel {
     private final String[] tabNames;
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
+    private final StreamTestPanel streamTestPanel;
+    private List<StreamTestResult> streamTestResults = new ArrayList<>();
 
     public ResponsePanel(RequestItemProtocolEnum protocol) {
         this.protocol = protocol;
         setLayout(new BorderLayout());
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         if (protocol.isWebSocketProtocol()) {
+            // WebSocket 专用布局
             tabNames = new String[]{I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG), I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS), I18nUtil.getMessage(MessageKeys.TAB_TESTS)};
             tabButtons = new JButton[tabNames.length];
             for (int i = 0; i < tabNames.length; i++) {
@@ -61,20 +61,54 @@ public class ResponsePanel extends JPanel {
             cardPanel = new JPanel(new CardLayout());
             webSocketResponsePanel = new WebSocketResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
-            JPanel testsPanel = new JPanel(new BorderLayout());
-            testsPane = new JEditorPane();
-            testsPane.setContentType("text/html");
-            testsPane.setEditable(false);
-            JScrollPane testsScrollPane = new JScrollPane(testsPane);
-            testsPanel.add(testsScrollPane, BorderLayout.CENTER);
+            streamTestPanel = new StreamTestPanel();
             cardPanel.add(webSocketResponsePanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
-            cardPanel.add(testsPanel, tabNames[2]);
+            cardPanel.add(streamTestPanel, tabNames[2]);
             networkLogPanel = null;
             timingChartPanel = null;
             responseBodyPanel = null;
+            testsPane = null;
+            add(cardPanel, BorderLayout.CENTER);
+        } else if (protocol == RequestItemProtocolEnum.SSE) {
+            // SSE: 只有 tests 用 streamTestPanel，其他都用 HTTP 的，且不显示网络日志和耗时
+            tabNames = new String[]{
+                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
+                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
+                    I18nUtil.getMessage(MessageKeys.TAB_TESTS)
+            };
+            tabButtons = new JButton[tabNames.length];
+            for (int i = 0; i < tabNames.length; i++) {
+                tabButtons[i] = new TabButton(tabNames[i], i);
+                tabBar.add(tabButtons[i]);
+            }
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            statusCodeLabel = new JLabel();
+            responseTimeLabel = new JLabel();
+            responseSizeLabel = new JLabel();
+            statusBar.add(statusCodeLabel);
+            statusBar.add(responseTimeLabel);
+            statusBar.add(responseSizeLabel);
+            JPanel topResponseBar = new JPanel(new BorderLayout());
+            topResponseBar.add(tabBar, BorderLayout.WEST);
+            topResponseBar.add(statusBar, BorderLayout.EAST);
+            add(topResponseBar, BorderLayout.NORTH);
+            cardPanel = new JPanel(new CardLayout());
+            responseBodyPanel = new ResponseBodyPanel();
+            responseBodyPanel.setEnabled(false);
+            responseBodyPanel.setBodyText(null);
+            responseHeadersPanel = new ResponseHeadersPanel();
+            streamTestPanel = new StreamTestPanel();
+            networkLogPanel = null;
+            timingChartPanel = null;
+            cardPanel.add(responseBodyPanel, tabNames[0]);
+            cardPanel.add(responseHeadersPanel, tabNames[1]);
+            cardPanel.add(streamTestPanel, tabNames[2]);
+            webSocketResponsePanel = null;
+            testsPane = null;
             add(cardPanel, BorderLayout.CENTER);
         } else {
+            // HTTP 普通请求
             tabNames = new String[]{
                     I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
                     I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
@@ -117,6 +151,7 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(networkLogPanel, tabNames[3]);
             cardPanel.add(new JScrollPane(timingChartPanel), tabNames[4]);
             webSocketResponsePanel = null;
+            streamTestPanel = null;
             add(cardPanel, BorderLayout.CENTER);
         }
         for (int i = 0; i < tabButtons.length; i++) {
@@ -194,6 +229,7 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setTestResults(List<TestResult> testResults) {
+        if (testsPane == null) return; // 防止 NPE
         String html = HttpHtmlRenderer.renderTestResults(testResults);
         testsPane.setText(html);
         testsPane.setCaretPosition(0);
@@ -215,18 +251,33 @@ public class ResponsePanel extends JPanel {
         }
     }
 
+    public void setStreamTestResults(List<StreamTestResult> results) {
+        this.streamTestResults = results;
+        if (streamTestPanel != null) {
+            streamTestPanel.setStreamTestResults(results);
+        }
+    }
+
     public void clearAll() {
         responseHeadersPanel.setHeaders(new LinkedHashMap<>());
         if (protocol.isWebSocketProtocol()) {
-            if (webSocketResponsePanel != null) webSocketResponsePanel.clearMessages();
-        } else {
+            webSocketResponsePanel.clearMessages();
+        }
+
+        if (protocol.isSseProtocol()) {
+            responseBodyPanel.setBodyText(null);
+        }
+        if (protocol.isHttpProtocol()) {
             responseBodyPanel.setBodyText(null);
             timingChartPanel.removeAll();
             timingChartPanel.revalidate();
             timingChartPanel.repaint();
             networkLogPanel.clearLog();
         }
-        setTestResults(new ArrayList<>());
+
+        if (testsPane != null) {
+            setTestResults(new ArrayList<>());
+        }
     }
 
     private String getSizeText(int bytes) {

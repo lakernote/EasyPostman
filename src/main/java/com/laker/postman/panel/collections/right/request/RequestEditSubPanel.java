@@ -41,10 +41,8 @@ import java.awt.event.FocusEvent;
 import java.io.InterruptedIOException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static com.laker.postman.service.http.HttpUtil.*;
 
@@ -89,6 +87,9 @@ public class RequestEditSubPanel extends JPanel {
     private boolean isUpdatingFromParams = false;
     @Getter
     private final ResponsePanel responsePanel;
+
+    // 流式断言历史
+    private final List<StreamTestResult> streamTestHistory = new ArrayList<>();
 
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
         this.id = id;
@@ -415,6 +416,10 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 setResponseBody(r);
                                 responsePanel.getResponseSizeLabel().setText("ResponseSize: " + getSizeText(r.bodySize));
+                                // 处理流式断言
+                                StreamTestResult result = handleStreamMessage(item, bindings, r.body);
+                                streamTestHistory.add(result);
+                                responsePanel.setStreamTestResults(new ArrayList<>(streamTestHistory));
                             });
                         }
 
@@ -518,6 +523,10 @@ public class RequestEditSubPanel extends JPanel {
                                 return;
                             }
                             appendWebSocketMessage(MessageType.RECEIVED, text);
+                            // 处理流式断言
+                            StreamTestResult result = handleStreamMessage(item, bindings, text);
+                            streamTestHistory.add(result);
+                            responsePanel.setStreamTestResults(new ArrayList<>(streamTestHistory));
                         }
 
                         @Override
@@ -855,7 +864,7 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.setResponseTime(0);
         responsePanel.setResponseSize(0);
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
-        if (!protocol.isWebSocketProtocol()) {
+        if (protocol.isHttpProtocol()) {
             responsePanel.getNetworkLogPanel().clearLog();
             responsePanel.setResponseTabButtonsEnable(false);
             responsePanel.getResponseBodyPanel().setEnabled(false);
@@ -922,4 +931,22 @@ public class RequestEditSubPanel extends JPanel {
             urlField.setText(url);
         }
     }
+
+    private StreamTestResult handleStreamMessage(HttpRequestItem item, Map<String, Object> bindings, String message) {
+        try {
+            HttpResponse resp = new HttpResponse();
+            resp.body = message;
+            resp.bodySize = message != null ? message.length() : 0;
+            HttpUtil.postBindings(bindings, resp);
+            executePostscript(item.getPostscript(), bindings);
+            Postman pm = (Postman) bindings.get("pm");
+            List<TestResult> testResults = pm != null ? pm.testResults : new ArrayList<>();
+            return new StreamTestResult(message, testResults, System.currentTimeMillis());
+        } catch (Exception ex) {
+            log.error("Error handling stream message: {}", ex.getMessage(), ex);
+            ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
+            return new StreamTestResult(message, List.of(new TestResult("断言异常", false, ex.getMessage())), System.currentTimeMillis());
+        }
+    }
 }
+

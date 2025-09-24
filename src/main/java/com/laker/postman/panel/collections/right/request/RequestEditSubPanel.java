@@ -898,9 +898,13 @@ public class RequestEditSubPanel extends JPanel {
         }
         try {
             HttpUtil.postBindings(bindings, resp);
-            executePostscript(item.getPostscript(), bindings);
+            // 清空 pm.testResults，防止断言结果累加
             Postman pm = (Postman) bindings.get("pm");
-            setTestResults(pm.testResults);
+            if (pm != null) {
+                pm.testResults.clear();
+            }
+            executePostscript(item.getPostscript(), bindings);
+            setTestResults(pm != null ? pm.testResults : new ArrayList<>());
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
             log.error("Error handling response: {}", ex.getMessage(), ex);
@@ -933,8 +937,12 @@ public class RequestEditSubPanel extends JPanel {
             resp.body = message;
             resp.bodySize = message != null ? message.length() : 0;
             HttpUtil.postBindings(bindings, resp);
-            executePostscript(item.getPostscript(), bindings);
+            // 清空 pm.testResults，防止累加
             Postman pm = (Postman) bindings.get("pm");
+            if (pm != null) {
+                pm.testResults.clear();
+            }
+            executePostscript(item.getPostscript(), bindings);
             List<TestResult> testResults = pm != null ? pm.testResults : new ArrayList<>();
             return new StreamTestResult(message, testResults, System.currentTimeMillis());
         } catch (Exception ex) {

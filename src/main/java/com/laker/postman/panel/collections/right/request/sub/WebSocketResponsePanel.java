@@ -4,9 +4,13 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.table.TableUIConstants;
 import com.laker.postman.model.MessageType;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -35,7 +39,8 @@ public class WebSocketResponsePanel extends JPanel {
     private static final String[] COLUMN_NAMES = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME),
-            I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT)
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT),
+            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION)
     };
     private static final String[] TYPE_FILTERS = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL),
@@ -79,6 +84,8 @@ public class WebSocketResponsePanel extends JPanel {
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(2).setPreferredWidth(400);
+        table.getColumnModel().getColumn(3).setMaxWidth(60);
+        table.getColumnModel().getColumn(3).setCellRenderer(new IconCellRenderer());
         table.setCellSelectionEnabled(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         // 鼠标监听，右键第三列弹出菜单
@@ -175,14 +182,35 @@ public class WebSocketResponsePanel extends JPanel {
         typeFilterBox.addActionListener(e -> filterAndShow());
     }
 
-    public void addMessage(MessageType type, String time, String content) {
-        allRows.add(new MessageRow(type, time, content));
+    public void addMessage(MessageType type, String time, String content, List<TestResult> testResults) {
+        allRows.add(new MessageRow(type, time, content, testResults));
         SwingUtilities.invokeLater(this::filterAndShow);
     }
 
     public void clearMessages() {
         allRows.clear();
         SwingUtilities.invokeLater(this::filterAndShow);
+    }
+
+    private static Icon getSummaryIcon(List<TestResult> testResults) {
+        if (testResults == null || testResults.isEmpty()) {
+            // 没有断言执行，返回空
+            return null;
+        }
+        boolean hasFail = false;
+        for (TestResult tr : testResults) {
+            if (!tr.passed) {
+                hasFail = true;
+                break;
+            }
+        }
+        if (hasFail) {
+            // 有失败，红色叉
+            return IconFontSwing.buildIcon(FontAwesome.TIMES, TableUIConstants.ICON_SIZE, Color.RED);
+        } else {
+            // 全部成功，绿色对勾
+            return IconFontSwing.buildIcon(FontAwesome.CHECK, TableUIConstants.ICON_SIZE, Color.GREEN);
+        }
     }
 
     private void filterAndShow() {
@@ -200,7 +228,8 @@ public class WebSocketResponsePanel extends JPanel {
                 .toList();
         tableModel.setRowCount(0);
         for (MessageRow row : filtered) {
-            tableModel.addRow(new Object[]{row.type.icon, row.time, row.content});
+            Icon summaryIcon = getSummaryIcon(row.testResults);
+            tableModel.addRow(new Object[]{row.type.icon, row.time, row.content, summaryIcon});
         }
     }
 
@@ -210,11 +239,13 @@ public class WebSocketResponsePanel extends JPanel {
         public final MessageType type;
         public final String time;
         public final String content;
+        public final List<TestResult> testResults;
 
-        public MessageRow(MessageType type, String time, String content) {
+        public MessageRow(MessageType type, String time, String content, List<TestResult> testResults) {
             this.type = type;
             this.time = time;
             this.content = content;
+            this.testResults = testResults;
         }
     }
 

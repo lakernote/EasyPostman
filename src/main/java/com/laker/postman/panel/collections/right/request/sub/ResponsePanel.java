@@ -32,8 +32,6 @@ public class ResponsePanel extends JPanel {
     private final String[] tabNames;
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
-    private final StreamTestPanel streamTestPanel;
-    private List<StreamTestResult> streamTestResults = new ArrayList<>();
 
     public ResponsePanel(RequestItemProtocolEnum protocol) {
         this.protocol = protocol;
@@ -41,7 +39,7 @@ public class ResponsePanel extends JPanel {
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         if (protocol.isWebSocketProtocol()) {
             // WebSocket 专用布局
-            tabNames = new String[]{I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG), I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS), I18nUtil.getMessage(MessageKeys.TAB_TESTS)};
+            tabNames = new String[]{I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG), I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)};
             tabButtons = new JButton[tabNames.length];
             for (int i = 0; i < tabNames.length; i++) {
                 tabButtons[i] = new TabButton(tabNames[i], i);
@@ -61,21 +59,18 @@ public class ResponsePanel extends JPanel {
             cardPanel = new JPanel(new CardLayout());
             webSocketResponsePanel = new WebSocketResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
-            streamTestPanel = new StreamTestPanel();
             cardPanel.add(webSocketResponsePanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
-            cardPanel.add(streamTestPanel, tabNames[2]);
             networkLogPanel = null;
             timingChartPanel = null;
             responseBodyPanel = null;
             testsPane = null;
             add(cardPanel, BorderLayout.CENTER);
         } else if (protocol == RequestItemProtocolEnum.SSE) {
-            // SSE: 只有 tests 用 streamTestPanel，其他都用 HTTP 的，且不显示网络日志和耗时
+            // SSE: 只用 HTTP 的响应体和响应头，不再用 StreamTestPanel
             tabNames = new String[]{
                     I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
-                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
-                    I18nUtil.getMessage(MessageKeys.TAB_TESTS)
+                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)
             };
             tabButtons = new JButton[tabNames.length];
             for (int i = 0; i < tabNames.length; i++) {
@@ -98,12 +93,10 @@ public class ResponsePanel extends JPanel {
             responseBodyPanel.setEnabled(false);
             responseBodyPanel.setBodyText(null);
             responseHeadersPanel = new ResponseHeadersPanel();
-            streamTestPanel = new StreamTestPanel();
             networkLogPanel = null;
             timingChartPanel = null;
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
-            cardPanel.add(streamTestPanel, tabNames[2]);
             webSocketResponsePanel = null;
             testsPane = null;
             add(cardPanel, BorderLayout.CENTER);
@@ -151,7 +144,6 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(networkLogPanel, tabNames[3]);
             cardPanel.add(new JScrollPane(timingChartPanel), tabNames[4]);
             webSocketResponsePanel = null;
-            streamTestPanel = null;
             add(cardPanel, BorderLayout.CENTER);
         }
         for (int i = 0; i < tabButtons.length; i++) {
@@ -248,12 +240,6 @@ public class ResponsePanel extends JPanel {
                 testsBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_TESTS));
                 testsBtn.setForeground(Color.BLACK);
             }
-        }
-    }
-
-    public void addStreamTestResult(StreamTestResult result) {
-        if (result != null && result.getTestResults() != null && !result.getTestResults().isEmpty()) {
-            streamTestPanel.addStreamTestResult(result);
         }
     }
 

@@ -413,9 +413,6 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 setResponseBody(r);
                                 responsePanel.getResponseSizeLabel().setText("ResponseSize: " + getSizeText(r.bodySize));
-                                // 处理流式断言
-                                StreamTestResult result = handleStreamMessage(item, bindings, r.body);
-                                responsePanel.addStreamTestResult(result);
                             });
                         }
 
@@ -518,10 +515,7 @@ public class RequestEditSubPanel extends JPanel {
                                 log.debug("Ignoring onMessage callback for expired connection ID: {}", connectionId);
                                 return;
                             }
-                            appendWebSocketMessage(MessageType.RECEIVED, text);
-                            // 处理流式断言
-                            StreamTestResult result = handleStreamMessage(item, bindings, text);
-                            responsePanel.addStreamTestResult(result);
+                            appendWebSocketMessage(MessageType.RECEIVED, text, handleStreamMessage(item, bindings, text));
                         }
 
                         @Override
@@ -628,9 +622,14 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void appendWebSocketMessage(MessageType type, String text) {
+        appendWebSocketMessage(type, text, null);
+    }
+
+
+    private void appendWebSocketMessage(MessageType type, String text, List<TestResult> testResults) {
         if (responsePanel.getProtocol().isWebSocketProtocol() && responsePanel.getWebSocketResponsePanel() != null) {
             String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-            responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text);
+            responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text, testResults);
         }
     }
 
@@ -931,7 +930,7 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-    private StreamTestResult handleStreamMessage(HttpRequestItem item, Map<String, Object> bindings, String message) {
+    private List<TestResult> handleStreamMessage(HttpRequestItem item, Map<String, Object> bindings, String message) {
         try {
             HttpResponse resp = new HttpResponse();
             resp.body = message;
@@ -943,13 +942,15 @@ public class RequestEditSubPanel extends JPanel {
                 pm.testResults.clear();
             }
             executePostscript(item.getPostscript(), bindings);
-            List<TestResult> testResults = pm != null ? pm.testResults : new ArrayList<>();
-            return new StreamTestResult(message, testResults, System.currentTimeMillis());
+            if (pm != null) {
+                return pm.testResults;
+            }
         } catch (Exception ex) {
             log.error("Error handling stream message: {}", ex.getMessage(), ex);
             ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-            return new StreamTestResult(message, List.of(new TestResult("断言异常", false, ex.getMessage())), System.currentTimeMillis());
+            return List.of();
         }
+        return List.of();
     }
 }
 

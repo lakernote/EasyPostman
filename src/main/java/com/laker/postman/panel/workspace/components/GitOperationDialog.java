@@ -87,7 +87,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void setupDialog() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(800, 650);
+        setSize(750, 550);
         setLocationRelativeTo(getParent());
         setLayout(new BorderLayout());
 
@@ -101,8 +101,6 @@ public class GitOperationDialog extends JDialog {
     private void initializeUI() {
         // 创建主面板
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(Color.WHITE);
-
         // 创建各个区域
         JPanel headerPanel = createHeaderPanel();
         JPanel stepPanel = createStepPanel();
@@ -130,7 +128,7 @@ public class GitOperationDialog extends JDialog {
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(getOperationColor());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         // 左侧：操作图标和名称
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -143,12 +141,12 @@ public class GitOperationDialog extends JDialog {
         textPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(operation.getDisplayName());
-        titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 18));
+        titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
 
         JLabel subtitleLabel = new JLabel("工作区: " + workspace.getName());
         subtitleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        subtitleLabel.setForeground(new Color(255, 255, 255, 180));
+        subtitleLabel.setForeground(Color.WHITE);
 
         textPanel.add(titleLabel);
         textPanel.add(subtitleLabel);
@@ -181,7 +179,7 @@ public class GitOperationDialog extends JDialog {
         JLabel remoteBranchLabel = new JLabel("远程分支: " +
                 (workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : "未设置"));
         remoteBranchLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        remoteBranchLabel.setForeground(new Color(255, 255, 255, 180));
+        remoteBranchLabel.setForeground(Color.WHITE);
         remoteBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         panel.add(currentBranchLabel);
@@ -206,8 +204,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createStepPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 10, 20));
+        panel.setBorder(new EmptyBorder(5, 10, 5, 10));
 
         stepIndicator = new StepIndicator(operation);
         panel.add(stepIndicator);
@@ -220,8 +217,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createSummaryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(10, 20, 10, 20));
+        panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         // 状态显示区域
         JPanel statusPanel = createStatusPanel();
@@ -233,8 +229,7 @@ public class GitOperationDialog extends JDialog {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, statusPanel, filesPanel);
         splitPane.setResizeWeight(0.5); // 左右各占50%
         splitPane.setBorder(null);
-        splitPane.setDividerSize(8);
-        splitPane.setDividerLocation(380); // 设置初始分割位置
+        splitPane.setDividerSize(0);
 
         panel.add(splitPane, BorderLayout.CENTER);
 
@@ -268,8 +263,7 @@ public class GitOperationDialog extends JDialog {
         // 添加详细信息区域 - 调整高度适应左右布局
         JTextArea detailsArea = new JTextArea();
         detailsArea.setEditable(false);
-        detailsArea.setBackground(new Color(248, 248, 248));
-        detailsArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 10));
+        detailsArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 10));
         detailsArea.setBorder(new EmptyBorder(5, 5, 5, 5));
         detailsArea.setLineWrap(true);
         detailsArea.setWrapStyleWord(true);
@@ -302,8 +296,7 @@ public class GitOperationDialog extends JDialog {
 
         fileChangesArea = new JTextArea();
         fileChangesArea.setEditable(false);
-        fileChangesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-        fileChangesArea.setBackground(new Color(248, 248, 248));
+        fileChangesArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         fileChangesArea.setText("正在加载文件变更信息...");
         fileChangesArea.setLineWrap(true);
         fileChangesArea.setWrapStyleWord(true);
@@ -361,8 +354,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createActionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(10, 20, 10, 20));
+        panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         optionsPanel = new JPanel();
         optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
@@ -378,8 +370,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createFooterPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(248, 248, 248));
-        panel.setBorder(new EmptyBorder(15, 20, 15, 20));
+        panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         // 进度条
         progressBar = new JProgressBar();
@@ -498,7 +489,7 @@ public class GitOperationDialog extends JDialog {
 
         // 显示警告
         if (!check.warnings.isEmpty()) {
-            details.append("\n⚠️ 警告:\n");
+            details.append("\n❗ 警告:\n");
             for (String warning : check.warnings) {
                 details.append("  • ").append(warning).append("\n");
             }
@@ -538,7 +529,7 @@ public class GitOperationDialog extends JDialog {
 
         if (operation == GitOperation.COMMIT && check.canCommit) {
             showOptions = true;
-            addOptionTitle("请选择提交方式：");
+            addOptionTitle("💡 请选择提交方式：");
             addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
             addOption(OPTION_COMMIT_AND_PUSH, "提交并推送", "提交后自动推送到远程仓库（适合多人协作）", false);
 
@@ -546,19 +537,19 @@ public class GitOperationDialog extends JDialog {
             showOptions = true;
             // 如果可以自动合并，优先推荐提交后拉取
             if (check.canAutoMerge) {
-                addOptionTitle("💡 检测到可以自动合并，建议直接提交后拉取");
-                addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取（推荐）", "无冲突，可安全自动合并", true);
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 将永久丢失未提交的变更", false, Color.RED);
+                addOptionTitle("💡 无冲突，可安全自动合并");
+                addOption(OPTION_COMMIT_FIRST, "提交本地变更，并拉取（推荐）", "本地变更可自动合并，推荐先提交后拉取", true);
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗此操作会丢弃所有未提交的本地变更，请谨慎使用", false, Color.RED);
             } else if (check.hasActualConflicts) {
-                addOptionTitle("⚠️ 检测到存在文件冲突，推荐以下处理方式");
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 避免冲突但会永久丢失本地变更", true, Color.RED);
+                addOptionTitle("❗检测到存在文件冲突，推荐以下处理方式");
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗避免冲突但会永久丢失本地变更", true, Color.RED);
                 addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", false);
             } else {
                 // 无法确定冲突情况，提供所有选项
                 addOptionTitle("检测到未提交变更，请选择处理方式：");
                 addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "推荐选项，保留所有变更", true);
                 addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "适用于临时变更", false);
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "⚠️ 将永久丢失未提交的变更", false, Color.RED);
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗将永久丢失未提交的变更", false, Color.RED);
             }
 
         } else if (operation == GitOperation.PUSH && check.hasRemoteCommits) {
@@ -567,16 +558,16 @@ public class GitOperationDialog extends JDialog {
             if (check.canAutoMerge && !check.hasActualConflicts) {
                 addOptionTitle("💡 可以自动合并，建议先拉取");
                 addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送（推荐）", "无冲突，可安全自动合并", true);
-                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程仓库的变更", false, Color.RED);
+                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
             } else if (check.hasActualConflicts) {
-                addOptionTitle("⚠️ 检测到文件冲突，推荐以下处理方式");
-                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程的 " + check.remoteCommitsBehind + " 个提交", false, Color.RED);
+                addOptionTitle("❗检测到文件冲突，推荐以下处理方式");
+                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程的 " + check.remoteCommitsBehind + " 个提交", false, Color.RED);
                 addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", false);
             } else {
                 // 传统处理方式
                 addOptionTitle("远程仓库有新提交，请选择处理方式：");
                 addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
-                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "⚠️ 将覆盖远程仓库的变更", false, Color.RED);
+                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
             }
         }
 
@@ -599,7 +590,7 @@ public class GitOperationDialog extends JDialog {
     private void addOptionTitle(String title) {
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        titleLabel.setBorder(new EmptyBorder(10, 0, 10, 0));
+        titleLabel.setBorder(new EmptyBorder(5, 0, 5, 0));
         optionsPanel.add(titleLabel);
     }
 
@@ -736,7 +727,7 @@ public class GitOperationDialog extends JDialog {
             appendFileList(sb, "📦 暂存文件", status.changed);
             appendFileList(sb, "❓ 未跟踪文件", status.untracked);
             appendFileList(sb, "❌ 删除文件", status.removed);
-            appendFileList(sb, "⚠️ 缺失文件", status.missing);
+            appendFileList(sb, "❗缺失文件", status.missing);
             appendFileList(sb, "🔄 未提交变更", status.uncommitted);
         }
 

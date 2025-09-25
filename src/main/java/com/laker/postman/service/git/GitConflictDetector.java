@@ -16,9 +16,7 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Git冲突检测工具类

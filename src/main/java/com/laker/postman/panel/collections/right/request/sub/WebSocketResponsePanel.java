@@ -106,6 +106,19 @@ public class WebSocketResponsePanel extends JPanel {
                     if (col == 2) {
                         String content = (String) table.getValueAt(row, 2);
                         showContentDialog(content);
+                    } else if (col == 3) {
+                        // 双击第4列弹窗，显示断言结果
+                        if (row >= 0 && row < allRows.size()) {
+                            java.util.List<TestResult> testResults = allRows.get(row).testResults;
+                            String html = com.laker.postman.service.render.HttpHtmlRenderer.renderTestResults(testResults);
+                            JEditorPane editorPane = new JEditorPane();
+                            editorPane.setContentType("text/html");
+                            editorPane.setText(html);
+                            editorPane.setEditable(false);
+                            JScrollPane scrollPane = new JScrollPane(editorPane);
+                            scrollPane.setPreferredSize(new java.awt.Dimension(600, 400));
+                            JOptionPane.showMessageDialog(table, scrollPane, I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION), JOptionPane.PLAIN_MESSAGE);
+                        }
                     }
                 }
             }

@@ -535,8 +535,9 @@ public class GitOperationDialog extends JDialog {
             showOptions = true;
             addOptionTitle("💡 请选择提交方式：");
             addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
-            addOption(OPTION_COMMIT_AND_PUSH, "提交并推送", "提交后自动推送到远程仓库（适合多人协作）", false);
-
+            if (!check.hasActualConflicts) {
+                addOption(OPTION_COMMIT_AND_PUSH, "提交并推送", "提交后自动推送到远程仓库（适合多人协作）", false);
+            }
         } else if (operation == GitOperation.PULL) {
             // 优先处理实际冲突（无论是否有未提交变更）
             if (check.hasActualConflicts) {

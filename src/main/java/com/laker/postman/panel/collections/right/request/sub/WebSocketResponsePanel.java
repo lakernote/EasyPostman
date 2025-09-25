@@ -16,6 +16,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,8 +70,8 @@ public class WebSocketResponsePanel extends JPanel {
             }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(22);
-        table.getColumnModel().getColumn(0).setMaxWidth(32);
+        table.setRowHeight(26);
+        table.getColumnModel().getColumn(0).setMaxWidth(36);
         table.getColumnModel().getColumn(0).setCellRenderer(new IconCellRenderer());
         table.getColumnModel().getColumn(1).setMaxWidth(60);
         // 设置第2列（时间列）居中
@@ -80,18 +82,31 @@ public class WebSocketResponsePanel extends JPanel {
         table.setCellSelectionEnabled(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         // 鼠标监听，右键第三列弹出菜单
-        table.addMouseListener(new java.awt.event.MouseAdapter() {
+        table.addMouseListener(new MouseAdapter() {
             @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
+            public void mousePressed(MouseEvent e) {
                 maybeShowPopup(e);
             }
 
             @Override
-            public void mouseReleased(java.awt.event.MouseEvent e) {
+            public void mouseReleased(MouseEvent e) {
                 maybeShowPopup(e);
             }
 
-            private void maybeShowPopup(java.awt.event.MouseEvent e) {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // 双击第3列弹窗
+                if (e.getClickCount() == 2) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    int col = table.columnAtPoint(e.getPoint());
+                    if (col == 2) {
+                        String content = (String) table.getValueAt(row, 2);
+                        showContentDialog(content);
+                    }
+                }
+            }
+
+            private void maybeShowPopup(MouseEvent e) {
                 if (e.isPopupTrigger()) {
                     int row = table.rowAtPoint(e.getPoint());
                     int col = table.columnAtPoint(e.getPoint());

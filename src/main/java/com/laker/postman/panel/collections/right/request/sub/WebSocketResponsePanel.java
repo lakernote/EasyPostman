@@ -4,13 +4,10 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.table.TableUIConstants;
 import com.laker.postman.model.MessageType;
 import com.laker.postman.model.TestResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -205,11 +202,11 @@ public class WebSocketResponsePanel extends JPanel {
             }
         }
         if (hasFail) {
-            // 有失败，红色叉
-            return IconFontSwing.buildIcon(FontAwesome.TIMES, TableUIConstants.ICON_SIZE, Color.RED);
+            // 有失败，柔和红色叉
+            return new FlatSVGIcon("icons/fail.svg", 16, 16);
         } else {
-            // 全部成功，绿色对勾
-            return IconFontSwing.buildIcon(FontAwesome.CHECK, TableUIConstants.ICON_SIZE, Color.GREEN);
+            // 全部成功，柔和绿色对勾
+            return new FlatSVGIcon("icons/pass.svg", 16, 16);
         }
     }
 

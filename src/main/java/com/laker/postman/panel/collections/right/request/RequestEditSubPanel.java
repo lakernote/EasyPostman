@@ -943,7 +943,7 @@ public class RequestEditSubPanel extends JPanel {
             }
             executePostscript(item.getPostscript(), bindings);
             if (pm != null) {
-                return pm.testResults;
+                return new ArrayList<>(pm.testResults); // 返回副本，避免后续修改影响
             }
         } catch (Exception ex) {
             log.error("Error handling stream message: {}", ex.getMessage(), ex);

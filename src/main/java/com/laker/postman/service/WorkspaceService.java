@@ -987,22 +987,18 @@ public class WorkspaceService {
             }
             result.details += "\n";
 
-            // 强制重置到远程分支状态
-            git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
-            git.clean().setCleanDirectories(true).setForce(true).call();
-
-            // 拉取远程变更
-            var pullCommand = git.pull();
+            // 获取当前分支名
+            String branchName = git.getRepository().getBranch();
+            // 拉取远程内容
             UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
+            var fetchCmd = git.fetch();
             if (credentialsProvider != null) {
-                pullCommand.setCredentialsProvider(credentialsProvider);
+                fetchCmd.setCredentialsProvider(credentialsProvider);
             }
-
-            var pullResult = pullCommand.call();
-
-            if (!pullResult.isSuccessful()) {
-                throw new RuntimeException("强制拉取失败: " + pullResult);
-            }
+            fetchCmd.call();
+            // 强制重置到远程分支状态
+            git.reset().setRef("origin/" + branchName).setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
+            git.clean().setCleanDirectories(true).setForce(true).call();
 
             String commitIdAfter = getLastCommitId(git);
 

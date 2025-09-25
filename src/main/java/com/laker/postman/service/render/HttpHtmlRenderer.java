@@ -74,7 +74,7 @@ public class HttpHtmlRenderer {
         if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Headers</b></div>");
             sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Name</th>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
             sb.append("</tr>");
@@ -89,7 +89,7 @@ public class HttpHtmlRenderer {
         if (req.formData != null && !req.formData.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Data</b></div>");
             sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
             sb.append("</tr>");
@@ -104,7 +104,7 @@ public class HttpHtmlRenderer {
         if (req.formFiles != null && !req.formFiles.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Files</b></div>");
             sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>File Name</th>");
             sb.append("</tr>");
@@ -119,7 +119,7 @@ public class HttpHtmlRenderer {
         if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>x-www-form-urlencoded</b></div>");
             sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
             sb.append("</tr>");
@@ -157,7 +157,7 @@ public class HttpHtmlRenderer {
         if (resp.headers != null && !resp.headers.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Headers</b></div>");
             sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
+            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Name</th>");
             sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
             sb.append("</tr>");
@@ -184,7 +184,7 @@ public class HttpHtmlRenderer {
         }
         StringBuilder table = new StringBuilder()
                 .append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;'>")
-                .append("<tr style='background:#f7f7f7;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>")
+                .append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>")
                 .append("<th style='padding:8px 12px;text-align:left;'>Name</th>")
                 .append("<th style='padding:8px 12px;text-align:center;'>Result</th>") // 修改为居中对齐
                 .append("<th style='padding:8px 12px;text-align:left;'>Error Message</th>")

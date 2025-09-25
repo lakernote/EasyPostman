@@ -1,20 +1,34 @@
 package com.laker.postman.service.git;
 
+import com.laker.postman.model.ConflictBlock;
 import com.laker.postman.model.GitStatusCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.RawText;
+import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeAlgorithm;
+import org.eclipse.jgit.merge.MergeChunk;
+import org.eclipse.jgit.merge.MergeResult;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -713,7 +727,7 @@ public class GitConflictDetector {
             List<String> newFiles = new ArrayList<>();
 
             // 收集本地变更的文件
-            for (var diff : localDiffs) {
+            for (DiffEntry diff : localDiffs) {
                 String filePath = diff.getNewPath();
                 localChangedFiles.add(filePath);
                 if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
@@ -722,17 +736,61 @@ public class GitConflictDetector {
             }
 
             // 收集远程变更的文件并检查冲突
-            for (var diff : remoteDiffs) {
+            for (DiffEntry diff : remoteDiffs) {
                 String filePath = diff.getNewPath();
                 remoteChangedFiles.add(filePath);
-
-                // 如果本地也修改了同一个文件，可能存在冲突
-                if (localChangedFiles.contains(filePath)) {
-                    conflictFiles.add(filePath);
-                }
-
                 if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
                     newFiles.add(filePath);
+                }
+            }
+
+            // 内容级冲突检测
+            Set<String> intersectFiles = new HashSet<>(localChangedFiles);
+            intersectFiles.retainAll(remoteChangedFiles);
+            Repository repo = git.getRepository();
+            for (String filePath : intersectFiles) {
+                String baseContent = getFileContent(repo, mergeBase, filePath);
+                String localContent = getFileContent(repo, localId, filePath);
+                String remoteContent = getFileContent(repo, remoteId, filePath);
+                RawText baseText = new RawText(baseContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                RawText localText = new RawText(localContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                RawText remoteText = new RawText(remoteContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
+                MergeResult<RawText> mergeResult = mergeAlgorithm.merge(RawTextComparator.DEFAULT, baseText, localText, remoteText);
+                boolean hasConflict = false;
+                List<ConflictBlock> conflictBlocks = new ArrayList<>();
+                // 遍历所有chunk，按冲突区块分组
+                List<MergeChunk> conflictChunkGroup = new ArrayList<>();
+                for (MergeChunk chunk : mergeResult) {
+                    if (chunk.getConflictState() != MergeChunk.ConflictState.NO_CONFLICT) {
+                        hasConflict = true;
+                        conflictChunkGroup.add(chunk);
+                        // 冲突区块通常连续3个chunk（base/local/remote），但有时可能不是，需按sourceIndex分组
+                        if (conflictChunkGroup.size() == 3) {
+                            int begin = conflictChunkGroup.get(0).getBegin();
+                            int end = conflictChunkGroup.get(2).getEnd();
+                            List<String> baseLines = new ArrayList<>();
+                            List<String> localLines = new ArrayList<>();
+                            List<String> remoteLines = new ArrayList<>();
+                            for (MergeChunk c : conflictChunkGroup) {
+                                int srcIdx = c.getSequenceIndex();
+                                for (int line = c.getBegin(); line < c.getEnd(); line++) {
+                                    if (srcIdx == 0) baseLines.add(baseText.getString(line));
+                                    else if (srcIdx == 1) localLines.add(localText.getString(line));
+                                    else if (srcIdx == 2) remoteLines.add(remoteText.getString(line));
+                                }
+                            }
+                            conflictBlocks.add(new ConflictBlock(begin, end, baseLines, localLines, remoteLines));
+                            conflictChunkGroup.clear();
+                        }
+                    } else {
+                        // 非冲突chunk，清空分组
+                        conflictChunkGroup.clear();
+                    }
+                }
+                if (hasConflict) {
+                    conflictFiles.add(filePath);
+                    result.conflictDetails.put(filePath, conflictBlocks);
                 }
             }
 
@@ -745,11 +803,26 @@ public class GitConflictDetector {
             uncommittedFiles.addAll(status.getAdded());
             uncommittedFiles.addAll(status.getRemoved());
             uncommittedFiles.addAll(status.getMissing());
-
-            // 检查本地未提交文件与远程变更文件是否冲突
             for (String filePath : uncommittedFiles) {
                 if (remoteChangedFiles.contains(filePath) && !conflictFiles.contains(filePath)) {
-                    conflictFiles.add(filePath);
+                    String baseContent = getFileContent(repo, mergeBase, filePath);
+                    String localContent = getFileContent(repo, localId, filePath);
+                    String remoteContent = getFileContent(repo, remoteId, filePath);
+                    RawText baseText = new RawText(baseContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    RawText localText = new RawText(localContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    RawText remoteText = new RawText(remoteContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
+                    MergeResult<RawText> mergeResult = mergeAlgorithm.merge(RawTextComparator.DEFAULT, baseText, localText, remoteText);
+                    boolean hasConflict = false;
+                    for (MergeChunk chunk : mergeResult) {
+                        if (chunk.getConflictState() != MergeChunk.ConflictState.NO_CONFLICT) {
+                            hasConflict = true;
+                            break;
+                        }
+                    }
+                    if (hasConflict) {
+                        conflictFiles.add(filePath);
+                    }
                 }
             }
 
@@ -766,7 +839,7 @@ public class GitConflictDetector {
                     (!localChangedFiles.isEmpty() || !remoteChangedFiles.isEmpty());
 
             // 判断是否可以自动合并
-            result.canAutoMerge = conflictFiles.isEmpty() || result.hasOnlyNewFiles;
+            result.canAutoMerge = conflictFiles.isEmpty();
 
             // 添加详细建议
             if (result.hasActualConflicts) {
@@ -779,14 +852,41 @@ public class GitConflictDetector {
                 result.canAutoMerge = false;
             } else if (result.hasNonOverlappingChanges) {
                 result.suggestions.add("✅ 检测到非重叠变更，可以安全自动合并");
+                result.canAutoMerge = true;
             } else if (result.hasOnlyNewFiles) {
                 result.suggestions.add("✅ 只包含新文件，可以安全合并");
+                result.canAutoMerge = true;
             }
 
         } catch (Exception e) {
             log.debug("文件冲突分析失败", e);
             result.hasActualConflicts = true;
             result.canAutoMerge = false;
+        }
+    }
+
+    // 获取指定commit下文件内容
+    private static String getFileContent(Repository repo, ObjectId commitId, String filePath) throws IOException {
+        try (RevWalk revWalk = new RevWalk(repo)) {
+            RevCommit commit = revWalk.parseCommit(commitId);
+            RevTree tree = commit.getTree();
+            try (TreeWalk treeWalk = new TreeWalk(repo)) {
+                treeWalk.addTree(tree);
+                treeWalk.setRecursive(true);
+                treeWalk.setFilter(PathFilter.create(filePath));
+                if (!treeWalk.next()) {
+                    return "";
+                }
+                ObjectId objectId = treeWalk.getObjectId(0);
+                ObjectLoader loader = repo.open(objectId);
+                return new String(loader.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (IncorrectObjectTypeException e) {
+            throw new RuntimeException(e);
+        } catch (MissingObjectException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

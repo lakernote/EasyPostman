@@ -2,6 +2,7 @@ package com.laker.postman.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Git状态检查结果
@@ -25,7 +26,6 @@ public class GitStatusCheck {
     public boolean isFirstPush = false; // 是否是第一次推送
 
     // 冲突和问题检测
-    public boolean hasConflicts = false; // 是否存在冲突
     public boolean hasFileConflicts = false; // 是否有文件冲突
     public boolean needsForcePush = false; // 是否需要强制推送
     public boolean needsForcePull = false; // 是否需要强制拉取
@@ -64,4 +64,6 @@ public class GitStatusCheck {
     public String currentBranch;
     public String remoteBranch;
     public String remoteUrl;
+
+    public Map<String, List<ConflictBlock>> conflictDetails = new java.util.HashMap<>();
 }

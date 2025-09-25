@@ -11,6 +11,8 @@ import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -370,7 +372,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createFooterPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(5, 20, 5, 20));
+        panel.setBorder(new EmptyBorder(5, 20, 10, 20));
 
         // 进度条
         progressBar = new JProgressBar();
@@ -382,7 +384,7 @@ public class GitOperationDialog extends JDialog {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
-        JButton cancelButton = new JButton("取消");
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
         cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         cancelButton.setPreferredSize(new Dimension(80, 32));
         cancelButton.addActionListener(e -> dispose());
@@ -715,38 +717,62 @@ public class GitOperationDialog extends JDialog {
         });
     }
 
-    private void displayGitStatus(GitStatusResult status) {
+    /**
+     * 展示文件变更信息，并在有冲突的文件下展示冲突详情
+     */
+    private void displayGitStatus(GitStatusResult gitStatus) {
+        if (gitStatus == null) {
+            fileChangesArea.setText("未获取到文件变更信息。");
+            return;
+        }
         StringBuilder sb = new StringBuilder();
-
-        int totalChanges = status.added.size() + status.modified.size() + status.removed.size() +
-                status.untracked.size() + status.changed.size() + status.missing.size();
-
-        if (totalChanges == 0) {
-            sb.append("🎉 没有检测到文件变更\n");
+        // 合并所有本地变更相关字段
+        java.util.Set<String> changedFiles = new java.util.LinkedHashSet<>();
+        if (gitStatus.added != null) changedFiles.addAll(gitStatus.added);
+        if (gitStatus.changed != null) changedFiles.addAll(gitStatus.changed);
+        if (gitStatus.modified != null) changedFiles.addAll(gitStatus.modified);
+        if (gitStatus.removed != null) changedFiles.addAll(gitStatus.removed);
+        if (gitStatus.missing != null) changedFiles.addAll(gitStatus.missing);
+        if (gitStatus.untracked != null) changedFiles.addAll(gitStatus.untracked);
+        if (gitStatus.uncommitted != null) changedFiles.addAll(gitStatus.uncommitted);
+        // 合并冲突文件（无论本地是否有变更）
+        if (statusCheck != null && statusCheck.conflictDetails != null) {
+            changedFiles.addAll(statusCheck.conflictDetails.keySet());
+        }
+        if (changedFiles.isEmpty()) {
+            sb.append("无文件变更。");
         } else {
-            sb.append(String.format("📋 总变更文件: %d 个\n\n", totalChanges));
-
-            appendFileList(sb, "📝 新增文件", status.added);
-            appendFileList(sb, "✏️ 修改文件", status.modified);
-            appendFileList(sb, "📦 暂存文件", status.changed);
-            appendFileList(sb, "❓ 未跟踪文件", status.untracked);
-            appendFileList(sb, "❌ 删除文件", status.removed);
-            appendFileList(sb, "❗缺失文件", status.missing);
-            appendFileList(sb, "🔄 未提交变更", status.uncommitted);
+            sb.append("文件变更列表：\n");
+            for (String file : changedFiles) {
+                sb.append("• ").append(file).append("\n");
+                // 展示冲突详情
+                if (statusCheck != null && statusCheck.conflictDetails != null && statusCheck.conflictDetails.containsKey(file)) {
+                    List<com.laker.postman.model.ConflictBlock> blocks = statusCheck.conflictDetails.get(file);
+                    if (blocks != null && !blocks.isEmpty()) {
+                        sb.append("  ❗ 冲突详情：\n");
+                        for (com.laker.postman.model.ConflictBlock block : blocks) {
+                            sb.append(String.format("    行 %d-%d\n", block.begin, block.end));
+                            // 展示三方内容摘要
+                            sb.append("      【基线】: ");
+                            String baseSummary = block.baseLines != null && !block.baseLines.isEmpty() ? String.join(" ", block.baseLines) : "(无)";
+                            if (baseSummary.length() > 80) baseSummary = baseSummary.substring(0, 80) + "...";
+                            sb.append(baseSummary.replaceAll("\n", " ")).append("\n");
+                            sb.append("      【本地】: ");
+                            String localSummary = block.localLines != null && !block.localLines.isEmpty() ? String.join(" ", block.localLines) : "(无)";
+                            if (localSummary.length() > 80) localSummary = localSummary.substring(0, 80) + "...";
+                            sb.append(localSummary.replaceAll("\n", " ")).append("\n");
+                            sb.append("      【远程】: ");
+                            String remoteSummary = block.remoteLines != null && !block.remoteLines.isEmpty() ? String.join(" ", block.remoteLines) : "(无)";
+                            if (remoteSummary.length() > 80) remoteSummary = remoteSummary.substring(0, 80) + "...";
+                            sb.append(remoteSummary.replaceAll("\n", " ")).append("\n");
+                        }
+                    }
+                }
+            }
         }
 
         fileChangesArea.setText(sb.toString());
         fileChangesArea.setCaretPosition(0);
-    }
-
-    private void appendFileList(StringBuilder sb, String title, List<String> files) {
-        if (!files.isEmpty()) {
-            sb.append(title).append(" (").append(files.size()).append("):\n");
-            for (String file : files) {
-                sb.append("  • ").append(file).append("\n");
-            }
-            sb.append("\n");
-        }
     }
 
     private class ExecuteActionListener implements ActionListener {

@@ -16,7 +16,9 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Git冲突检测工具类
@@ -757,6 +759,7 @@ public class GitConflictDetector {
                 if (conflictFiles.size() > 3) {
                     result.suggestions.add("还有 " + (conflictFiles.size() - 3) + " 个文件存在冲突");
                 }
+                result.canAutoMerge = false;
             } else if (result.hasNonOverlappingChanges) {
                 result.suggestions.add("✅ 检测到非重叠变更，可以安全自动合并");
             } else if (result.hasOnlyNewFiles) {

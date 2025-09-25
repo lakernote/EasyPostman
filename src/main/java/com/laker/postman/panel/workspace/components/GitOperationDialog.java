@@ -533,41 +533,45 @@ public class GitOperationDialog extends JDialog {
             addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
             addOption(OPTION_COMMIT_AND_PUSH, "提交并推送", "提交后自动推送到远程仓库（适合多人协作）", false);
 
-        } else if (operation == GitOperation.PULL && check.hasUncommittedChanges) {
-            showOptions = true;
-            // 如果可以自动合并，优先推荐提交后拉取
-            if (check.canAutoMerge) {
-                addOptionTitle("💡 无冲突，可安全自动合并");
-                addOption(OPTION_COMMIT_FIRST, "提交本地变更，并拉取（推荐）", "本地变更可自动合并，推荐先提交后拉取", true);
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗此操作会丢弃所有未提交的本地变更，请谨慎使用", false, Color.RED);
-            } else if (check.hasActualConflicts) {
-                addOptionTitle("❗检测到存在文件冲突，推荐以下处理方式");
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗避免冲突但会永久丢失本地变更", true, Color.RED);
-                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", false);
-            } else {
-                // 无法确定冲突情况，提供所有选项
-                addOptionTitle("检测到未提交变更，请选择处理方式：");
-                addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "推荐选项，保留所有变更", true);
-                addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "适用于临时变更", false);
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗将永久丢失未提交的变更", false, Color.RED);
+        } else if (operation == GitOperation.PULL) {
+            // 优先处理实际冲突（无论是否有未提交变更）
+            if (check.hasActualConflicts) {
+                showOptions = true;
+                addOptionTitle("❗检测到文件冲突，请选择处理方式");
+                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", true);
+                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗避免冲突但会丢失本地变更", false, Color.RED);
+            } else if (check.hasUncommittedChanges) {
+                showOptions = true;
+                // 如果可以自动合并，优先推荐提交后拉取
+                if (check.canAutoMerge) {
+                    addOptionTitle("💡 检测到未提交变更，可自动合并");
+                    addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "本地变更可自动合并", true);
+                    addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗此操作会丢弃所有未提交的本地变更，请谨慎使用", false, Color.RED);
+                } else {
+                    addOptionTitle("💡 检测到未提交变更，请选择处理方式：");
+                    addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "保留所有变更", true);
+                    addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "适用于临时变更", false);
+                    addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗将丢失未提交的变更", false, Color.RED);
+                }
             }
-
-        } else if (operation == GitOperation.PUSH && check.hasRemoteCommits) {
-            showOptions = true;
-
-            if (check.canAutoMerge && !check.hasActualConflicts) {
-                addOptionTitle("💡 可以自动合并，建议先拉取");
-                addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送（推荐）", "无冲突，可安全自动合并", true);
-                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
-            } else if (check.hasActualConflicts) {
-                addOptionTitle("❗检测到文件冲突，推荐以下处理方式");
+        } else if (operation == GitOperation.PUSH) {
+            // 优先处理实际冲突
+            if (check.hasActualConflicts) {
+                showOptions = true;
+                addOptionTitle("❗检测到文件冲突，请选择处理方式");
+                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", true);
                 addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程的 " + check.remoteCommitsBehind + " 个提交", false, Color.RED);
-                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", false);
-            } else {
-                // 传统处理方式
-                addOptionTitle("远程仓库有新提交，请选择处理方式：");
-                addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
-                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
+            } else if (check.hasRemoteCommits) {
+                showOptions = true;
+                if (check.canAutoMerge) {
+                    addOptionTitle("💡 远程仓库有新提交，可自动合并");
+                    addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "无冲突，可安全自动合并", true);
+                    addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
+                } else {
+                    addOptionTitle("💡 远程仓库有新提交，请选择处理方式：");
+                    addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
+                    addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
+                }
             }
         }
 

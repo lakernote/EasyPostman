@@ -98,6 +98,16 @@ public class EasyPostManStyleUtils {
 
         setUIProperties(selectionColors);
 
+
+        // Dialog 样式增强
+        // 统一设置 JDialog/JOptionPane 保证弹窗与主界面风格一致
+        Map<String, Object> dialogProperties = new HashMap<>();
+        dialogProperties.put("Dialog.background", EasyPostManColors.PANEL_BACKGROUND); // Dialog 主体背景色
+        dialogProperties.put("OptionPane.background", EasyPostManColors.PANEL_BACKGROUND); // OptionPane 背景色
+        dialogProperties.put("OptionPane.buttonArea.background", EasyPostManColors.PANEL_BACKGROUND); // 按钮区域背景色
+        dialogProperties.put("OptionPane.messageArea.background", EasyPostManColors.PANEL_BACKGROUND); // 消息区域背景色
+        setUIProperties(dialogProperties);
+
         // 前景色设置
         Map<String, Color> foregroundColors = new HashMap<>();
         foregroundColors.put("TabbedPane.selectedForeground", EasyPostManColors.ACCENT_COLOR);

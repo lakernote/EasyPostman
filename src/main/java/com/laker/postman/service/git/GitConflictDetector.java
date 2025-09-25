@@ -658,7 +658,7 @@ public class GitConflictDetector {
             if (mergeBase.equals(remoteId)) {
                 result.hasActualConflicts = false;
                 result.canAutoMerge = true;
-                result.suggestions.add("✅ 可以安全推送（快进合并）");
+                log.info("本地分支是远程的子集，可以快进推送");
                 return;
             }
 
@@ -666,7 +666,7 @@ public class GitConflictDetector {
             if (mergeBase.equals(localId) && !result.hasUncommittedChanges) {
                 result.hasActualConflicts = false;
                 result.canAutoMerge = true;
-                result.suggestions.add("✅ 可以安全拉取（快进合并）");
+                log.info("远程分支是本地的子集，可以快进拉取");
                 return;
             }
 

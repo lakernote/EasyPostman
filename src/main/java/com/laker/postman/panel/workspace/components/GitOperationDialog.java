@@ -26,7 +26,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.laker.postman.service.git.GitConflictDetector.checkGitStatus;
 
@@ -727,7 +729,7 @@ public class GitOperationDialog extends JDialog {
         }
         StringBuilder sb = new StringBuilder();
         // 合并所有本地变更相关字段
-        java.util.Set<String> changedFiles = new java.util.LinkedHashSet<>();
+        Set<String> changedFiles = new LinkedHashSet<>();
         if (gitStatus.added != null) changedFiles.addAll(gitStatus.added);
         if (gitStatus.changed != null) changedFiles.addAll(gitStatus.changed);
         if (gitStatus.modified != null) changedFiles.addAll(gitStatus.modified);
@@ -744,7 +746,37 @@ public class GitOperationDialog extends JDialog {
         } else {
             sb.append("文件变更列表：\n");
             for (String file : changedFiles) {
-                sb.append("• ").append(file).append("\n");
+                // 构建标签
+                StringBuilder tags = new StringBuilder();
+                if (statusCheck != null && statusCheck.conflictDetails != null && statusCheck.conflictDetails.containsKey(file)) {
+                    tags.append("【冲突】");
+                }
+                if (gitStatus.added != null && gitStatus.added.contains(file)) {
+                    tags.append("【新增】");
+                }
+                if (gitStatus.modified != null && gitStatus.modified.contains(file)) {
+                    tags.append("【修改】");
+                }
+                if (gitStatus.removed != null && gitStatus.removed.contains(file)) {
+                    tags.append("【删除】");
+                }
+                if (gitStatus.untracked != null && gitStatus.untracked.contains(file)) {
+                    tags.append("【未跟踪】");
+                }
+                if (gitStatus.missing != null && gitStatus.missing.contains(file)) {
+                    tags.append("【丢失】");
+                }
+                if (gitStatus.changed != null && gitStatus.changed.contains(file)) {
+                    tags.append("【变更】");
+                }
+                if (gitStatus.uncommitted != null && gitStatus.uncommitted.contains(file)) {
+                    tags.append("【未提交】");
+                }
+                // 默认都为本地变更，冲突文件也可加【本地】标签
+                if (tags.length() == 0) {
+                    tags.append("【本地】");
+                }
+                sb.append("• ").append(file).append(" ").append(tags).append("\n");
                 // 展示冲突详情
                 if (statusCheck != null && statusCheck.conflictDetails != null && statusCheck.conflictDetails.containsKey(file)) {
                     List<com.laker.postman.model.ConflictBlock> blocks = statusCheck.conflictDetails.get(file);

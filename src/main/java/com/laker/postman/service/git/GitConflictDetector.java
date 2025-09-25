@@ -16,7 +16,9 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Git冲突检测工具类
@@ -731,6 +733,23 @@ public class GitConflictDetector {
 
                 if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
                     newFiles.add(filePath);
+                }
+            }
+
+            // 检查本地未提交的更改
+            var status = git.status().call();
+            Set<String> uncommittedFiles = new HashSet<>();
+            uncommittedFiles.addAll(status.getModified());
+            uncommittedFiles.addAll(status.getUntracked());
+            uncommittedFiles.addAll(status.getChanged());
+            uncommittedFiles.addAll(status.getAdded());
+            uncommittedFiles.addAll(status.getRemoved());
+            uncommittedFiles.addAll(status.getMissing());
+
+            // 检查本地未提交文件与远程变更文件是否冲突
+            for (String filePath : uncommittedFiles) {
+                if (remoteChangedFiles.contains(filePath) && !conflictFiles.contains(filePath)) {
+                    conflictFiles.add(filePath);
                 }
             }
 

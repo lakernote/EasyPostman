@@ -3,6 +3,8 @@ package com.laker.postman.service.git;
 import cn.hutool.core.io.FileUtil;
 import com.laker.postman.model.ConflictBlock;
 import com.laker.postman.model.GitStatusCheck;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
@@ -69,7 +71,7 @@ public class GitConflictDetector {
 
         } catch (Exception e) {
             log.error("Failed to check git status", e);
-            result.warnings.add("无法检查Git状态: " + e.getMessage());
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CHECK_FAILED, e.getMessage()));
             result.hasAuthenticationIssue = true;
         }
 
@@ -106,7 +108,7 @@ public class GitConflictDetector {
             result.hasRemoteRepository = !remotes.isEmpty();
 
             if (!result.hasRemoteRepository) {
-                result.warnings.add("当前分支没有设置远程仓库");
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_NO_REMOTE_REPO));
                 result.canPull = false;
                 result.canPush = false;
                 return;
@@ -120,7 +122,7 @@ public class GitConflictDetector {
             if (!result.hasUpstreamBranch) {
                 // 有远程仓库但没有设置跟踪分支（典型的 init 类型工作区情况）
                 result.isInitTypeWorkspace = true;
-                result.warnings.add("当前分支没有设置远程跟踪分支");
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_NO_UPSTREAM_BRANCH));
                 result.canPull = false;
 
                 // 对于 init 类型，需要检查潜在的冲突
@@ -252,7 +254,7 @@ public class GitConflictDetector {
                         }
                     } catch (Exception e) {
                         log.warn("Failed to diff remote and local branch", e);
-                        result.warnings.add("无法检测远程分支变更类型: " + e.getMessage());
+                        result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CANNOT_DETECT_REMOTE_CHANGES, e.getMessage()));
                     }
                 }
             } catch (RefNotAdvertisedException e) {
@@ -265,7 +267,7 @@ public class GitConflictDetector {
                 result.canConnectToRemote = false;
                 // 只有在真正需要远程状态时才添加警告
                 if (credentialsProvider != null || sshCredentialsProvider != null) {
-                    result.warnings.add("无法获取最新远程状态: " + fetchEx.getMessage());
+                    result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CANNOT_GET_LATEST_REMOTE, fetchEx.getMessage()));
                     result.hasAuthenticationIssue = true;
                 } else {
                     log.debug("No credentials provided for fetch, skipping remote status update");
@@ -280,7 +282,7 @@ public class GitConflictDetector {
 
         } catch (Exception e) {
             log.warn("Failed to check remote status", e);
-            result.warnings.add("无法检查远程状态: " + e.getMessage());
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CANNOT_CHECK_REMOTE, e.getMessage()));
             result.hasAuthenticationIssue = true;
             // 发生错误时，保守设置操作能力
             result.canPull = false;
@@ -341,7 +343,7 @@ public class GitConflictDetector {
                 result.isEmptyLocalRepository = true;
             } catch (Exception e) {
                 log.warn("Failed to count commits", e);
-                result.warnings.add("无法统计提交信息: " + e.getMessage());
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CANNOT_COUNT_COMMITS, e.getMessage()));
             }
         }
     }
@@ -361,9 +363,9 @@ public class GitConflictDetector {
         if (remoteId == null) {
             // 远程分支不存在，说明远程仓库为空
             result.isRemoteRepositoryEmpty = true;
-            result.suggestions.add("远程仓库为空");
-            result.suggestions.add("远程仓库没有同名分支");
-            result.suggestions.add("等待首次推送内容");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_REPO_EMPTY));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_NO_SAME_BRANCH));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_WAITING_FIRST_PUSH));
         }
 
         // Push 操作判断：
@@ -384,7 +386,7 @@ public class GitConflictDetector {
 
         // 如果远程有新提交，推送可能会失败
         if (result.hasRemoteCommits && result.canPush) {
-            result.warnings.add("远程仓库有新提交，推送可能失败，建议先拉取");
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_HAS_NEW_COMMITS));
         }
 
         // 如果本地仓库为空，则无法进行任何操作
@@ -480,25 +482,25 @@ public class GitConflictDetector {
 
                 if (remoteId != null) {
                     // 远程已有同名分支，可能存在冲突
-                    result.warnings.add("检测到远程仓库已存在同名分支，可能存在文件冲突");
-                    result.suggestions.add("建议先备份本地文件，然后谨慎处理合并");
+                    result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_INIT_REMOTE_BRANCH_EXISTS));
+                    result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_INIT_BACKUP_SUGGESTION));
 
                     // 检查具体的文件冲突
                     checkFileConflicts(git, result, remoteId);
                 } else {
                     // 远程没有同名分支，相对安全
-                    result.suggestions.add("远程仓库没有同名分支，首次推送相对安全");
+                    result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_INIT_SAFE_FIRST_PUSH));
                 }
 
             } catch (org.eclipse.jgit.api.errors.RefNotAdvertisedException e) {
                 // 远程分支不存在，这是正常情况
                 log.debug("Remote branch does not exist: {}", e.getMessage());
-                result.suggestions.add("远程仓库没有同名分支，首次推送相对安全");
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_INIT_SAFE_FIRST_PUSH));
             } catch (Exception fetchEx) {
                 // fetch 失败可能是网络问题或认证问题
                 log.debug("Cannot fetch remote info for conflict check", fetchEx);
-                result.warnings.add("无法获取远程分支信息进行冲突检测");
-                result.suggestions.add("建议检查网络连接和认证信息");
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_INIT_CANNOT_GET_REMOTE_INFO));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_INIT_CHECK_NETWORK_AUTH));
             }
 
             // 设置推送能力：有本地提交且没有未提交变更时可以推送
@@ -507,7 +509,7 @@ public class GitConflictDetector {
 
         } catch (Exception e) {
             log.warn("Failed to check init type conflicts", e);
-            result.warnings.add("检查 init 类型冲突失败: " + e.getMessage());
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CHECK_INIT_CONFLICTS_FAILED, e.getMessage()));
             result.canPush = false;
         }
     }
@@ -542,12 +544,12 @@ public class GitConflictDetector {
             result.conflictingFiles.addAll(conflictFiles);
 
             if (result.hasFileConflicts) {
-                result.warnings.add("检测到 " + conflictFiles.size() + " 个文件可能存在内容冲突");
-                result.suggestions.add("冲突文件: " + String.join(", ", conflictFiles.subList(0, Math.min(5, conflictFiles.size()))));
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FILE_CONFLICTS_DETECTED, conflictFiles.size()));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CONFLICT_FILES, String.join(", ", conflictFiles.subList(0, Math.min(5, conflictFiles.size())))));
                 if (conflictFiles.size() > 5) {
-                    result.suggestions.add("还有 " + (conflictFiles.size() - 5) + " 个文件可能冲突");
+                    result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_MORE_FILES_CONFLICT, (conflictFiles.size() - 5)));
                 }
-                result.suggestions.add("建议使用 'git merge' 或手动解决冲突");
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_GIT_MERGE_SUGGESTION));
             }
 
         } catch (Exception e) {
@@ -588,26 +590,26 @@ public class GitConflictDetector {
                 generatePullSuggestions(result);
                 break;
             default:
-                result.suggestions.add("未知的操作类型: " + operationType);
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_UNKNOWN_OPERATION_TYPE, operationType));
         }
     }
 
     private static void generateCommitSuggestions(GitStatusCheck result) {
         if (result.canCommit) {
-            result.suggestions.add("可以提交变更");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CAN_COMMIT_CHANGES));
             if (result.hasUncommittedChanges) {
-                result.suggestions.add("已修改的文件将被提交");
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_MODIFIED_FILES_WILL_BE_COMMITTED));
             }
         } else {
-            result.suggestions.add("没有要提交的变更");
-            result.suggestions.add("所有文件都已是最新状态且已提交");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_NO_CHANGES_TO_COMMIT));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_ALL_FILES_UP_TO_DATE));
         }
     }
 
     private static void generatePushSuggestions(GitStatusCheck result) {
         if (result.hasUncommittedChanges) {
-            result.warnings.add("有未提交的变更，无法推送");
-            result.suggestions.add("请先提交所有变更，然后再推送");
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_UNCOMMITTED_CHANGES_CANNOT_PUSH));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_COMMIT_FIRST_THEN_PUSH));
             return;
         }
 
@@ -617,21 +619,21 @@ public class GitConflictDetector {
             handleFirstPushSuggestions(result);
         } else if (result.needsForcePush) {
             // 需要强制推送的情况（有分歧历史）
-            result.warnings.add("⚠️ 本地和远程有分歧的提交历史");
-            result.suggestions.add("本地领先 " + result.localCommitsAhead + " 个提交");
-            result.suggestions.add("远程领先 " + result.remoteCommitsBehind + " 个提交");
-            result.suggestions.add("建议先拉取远程变更进行合并，或使用强制推送");
-            result.suggestions.add("强制推送将覆盖远程的 " + result.remoteCommitsBehind + " 个提交");
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_DIVERGED_HISTORY));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_LOCAL_AHEAD_COMMITS, result.localCommitsAhead));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_AHEAD_COMMITS, result.remoteCommitsBehind));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_PULL_FIRST_OR_FORCE_PUSH));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FORCE_PUSH_OVERWRITE_COMMITS, result.remoteCommitsBehind));
         } else if (result.hasRemoteCommits) {
             // 远程有新提交，但可以快进合并
-            result.warnings.add("远程仓库有新的提交");
-            result.suggestions.add("远程领先 " + result.remoteCommitsBehind + " 个提交");
-            result.suggestions.add("建议先拉取远程变更，然后再推送");
-            result.suggestions.add("这样可以避免推送冲突");
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_HAS_NEW_COMMITS_WARN));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_AHEAD_COMMITS_COUNT, result.remoteCommitsBehind));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_PULL_FIRST_THEN_PUSH));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_AVOID_PUSH_CONFLICTS));
         } else {
             // 正常推送情况
-            result.suggestions.add("可以安全推送 " + result.localCommitsAhead + " 个本地提交");
-            result.suggestions.add("推送后远程仓库将与本地同步");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_SAFE_PUSH_LOCAL_COMMITS, result.localCommitsAhead));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_SYNC_AFTER_PUSH));
         }
     }
 
@@ -640,19 +642,19 @@ public class GitConflictDetector {
      */
     private static void handleFirstPushSuggestions(GitStatusCheck result) {
         if (result.hasFileConflicts) {
-            result.warnings.add("⚠️ 首次推送可能覆盖远程分支已有内容");
-            result.suggestions.add("检测到 " + result.conflictingFiles.size() + " 个文件可能冲突");
-            result.suggestions.add("建议使用 --force-with-lease 进行安全的强制推送");
-            result.suggestions.add("或者先拉取远程分支内容进行手动合并");
-            result.suggestions.add("推送前请确认要覆盖的远程文件");
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FIRST_PUSH_OVERWRITE_WARNING));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FILES_MAY_CONFLICT, result.conflictingFiles.size()));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_USE_FORCE_WITH_LEASE));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_PULL_REMOTE_FIRST));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CONFIRM_OVERWRITE_FILES));
         } else if (result.isRemoteRepositoryEmpty) {
-            result.suggestions.add("✅ 远程仓库为空，首次推送安全");
-            result.suggestions.add("将推送 " + result.localCommitsAhead + " 个本地提交到远程仓库");
-            result.suggestions.add("推送后将自动设置上游分支跟踪");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_EMPTY_SAFE_PUSH));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_PUSH_COMMITS_TO_REMOTE, result.localCommitsAhead));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_AUTO_SET_UPSTREAM));
         } else {
-            result.suggestions.add("检测到首次推送情况");
-            result.suggestions.add("将推送 " + result.localCommitsAhead + " 个本地提交");
-            result.suggestions.add("推送后将设置上游分支跟踪");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FIRST_PUSH_DETECTED));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_PUSH_COMMITS_COUNT, result.localCommitsAhead));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_SET_UPSTREAM_TRACKING));
         }
     }
 
@@ -661,35 +663,35 @@ public class GitConflictDetector {
         if (!result.hasUpstreamBranch) {
             // 检查是否是 init 类型且可能有冲突的情况
             if (result.hasFileConflicts) {
-                result.warnings.add("⚠️ 无法直接拉取：检测到潜在的文件冲突");
-                result.suggestions.add("建议先手动处理文件冲突：");
-                result.suggestions.add("1. 备份当前本地文件");
-                result.suggestions.add("2. 使用 git fetch origin 获取远程分支");
-                result.suggestions.add("3. 手动合并冲突文件");
-                result.suggestions.add("4. 创建合并提交");
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CANNOT_PULL_FILE_CONFLICTS));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_MANUAL_HANDLE_CONFLICTS));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_BACKUP_LOCAL_FILES));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_GIT_FETCH_ORIGIN));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_MANUAL_MERGE_FILES));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CREATE_MERGE_COMMIT));
             } else {
-                result.warnings.add("无法拉取：当前分支没有设置远程跟踪分支");
-                result.suggestions.add("请先配置远程仓库并设置上游分支");
-                result.suggestions.add("或者先进行首次推送以建立跟踪关系");
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CANNOT_PULL_NO_UPSTREAM));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CONFIG_REMOTE_FIRST));
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FIRST_PUSH_ESTABLISH_TRACKING));
             }
             return;
         }
 
         // 直接使用布尔属性检查空仓库状态
         if (result.isRemoteRepositoryEmpty) {
-            result.suggestions.add("📍 远程仓库状态：远程仓库当前为空");
-            result.suggestions.add("虽然可以尝试拉取，但远程仓库没有内容可拉取");
-            result.suggestions.add("建议先向远程仓库推送本地内容");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_REMOTE_REPO_STATUS_EMPTY));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CAN_TRY_PULL_NO_CONTENT));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_PUSH_LOCAL_CONTENT_FIRST));
         }
 
         if (result.hasUncommittedChanges) {
-            result.warnings.add("有未提交的变更，拉取可能导致冲突");
-            result.suggestions.add("建议先提交或暂存本地变更");
-            result.suggestions.add("或者选择强制拉取（将丢弃本地未提交变更）");
+            result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_UNCOMMITTED_PULL_CONFLICTS));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_COMMIT_OR_STASH_FIRST));
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_FORCE_PULL_LOSE_CHANGES));
         } else if (!result.hasRemoteCommits && !result.isRemoteRepositoryEmpty) {
-            result.suggestions.add("本地仓库已是最新状态");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_LOCAL_IS_UP_TO_DATE));
         } else if (result.hasRemoteCommits) {
-            result.suggestions.add("可以安全拉取 " + result.remoteCommitsBehind + " 个远程提交");
+            result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_SAFE_PULL_REMOTE_COMMITS, result.remoteCommitsBehind));
         }
     }
 
@@ -713,7 +715,7 @@ public class GitConflictDetector {
                 // 没有共同基础，可能是完全不同的历史
                 result.hasActualConflicts = true;
                 result.canAutoMerge = false;
-                result.warnings.add("本地和远程分支没有共同的提交历史");
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_NO_COMMON_HISTORY));
                 return;
             }
 
@@ -925,18 +927,18 @@ public class GitConflictDetector {
 
             // 添加详细建议
             if (result.hasActualConflicts) {
-                result.warnings.add("检测到 " + conflictFiles.size() + " 个文件存在实际冲突");
-                result.warnings.add("冲突文件: " + String.join(", ",
-                        conflictFiles.subList(0, Math.min(3, conflictFiles.size()))));
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_ACTUAL_FILE_CONFLICTS, conflictFiles.size()));
+                result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_CONFLICT_FILES_LIST,
+                        String.join(", ", conflictFiles.subList(0, Math.min(3, conflictFiles.size())))));
                 if (conflictFiles.size() > 3) {
-                    result.warnings.add("还有 " + (conflictFiles.size() - 3) + " 个文件存在冲突");
+                    result.warnings.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_MORE_CONFLICT_FILES, (conflictFiles.size() - 3)));
                 }
                 result.canAutoMerge = false;
             } else if (result.hasNonOverlappingChanges) {
-                result.suggestions.add("✅ 检测到非重叠变更，可以安全自动合并");
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_NON_OVERLAPPING_CHANGES));
                 result.canAutoMerge = true;
             } else if (result.hasOnlyNewFiles) {
-                result.suggestions.add("✅ 只包含新文件，可以安全合并");
+                result.suggestions.add(I18nUtil.getMessage(MessageKeys.GIT_CONFLICT_DETECTOR_ONLY_NEW_FILES_SAFE));
                 result.canAutoMerge = true;
             }
 

@@ -955,4 +955,100 @@ public final class MessageKeys {
     // 验证相关
     public static final String GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY = "git.dialog.validation.commitMessage.empty";
     public static final String GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_TITLE = "git.dialog.validation.commitMessage.title";
+
+    // ============ GitConflictDetector 国际化 ============
+    // 基本检查错误消息
+    public static final String GIT_CONFLICT_DETECTOR_CHECK_FAILED = "git.conflictDetector.checkFailed";
+    public static final String GIT_CONFLICT_DETECTOR_NO_REMOTE_REPO = "git.conflictDetector.noRemoteRepo";
+    public static final String GIT_CONFLICT_DETECTOR_NO_UPSTREAM_BRANCH = "git.conflictDetector.noUpstreamBranch";
+    public static final String GIT_CONFLICT_DETECTOR_CANNOT_DETECT_REMOTE_CHANGES = "git.conflictDetector.cannotDetectRemoteChanges";
+    public static final String GIT_CONFLICT_DETECTOR_CANNOT_GET_LATEST_REMOTE = "git.conflictDetector.cannotGetLatestRemote";
+    public static final String GIT_CONFLICT_DETECTOR_CANNOT_CHECK_REMOTE = "git.conflictDetector.cannotCheckRemote";
+    public static final String GIT_CONFLICT_DETECTOR_CANNOT_COUNT_COMMITS = "git.conflictDetector.cannotCountCommits";
+
+    // 远程仓库状态建议
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_REPO_EMPTY = "git.conflictDetector.remoteRepoEmpty";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_NO_SAME_BRANCH = "git.conflictDetector.remoteNoSameBranch";
+    public static final String GIT_CONFLICT_DETECTOR_WAITING_FIRST_PUSH = "git.conflictDetector.waitingFirstPush";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_HAS_NEW_COMMITS = "git.conflictDetector.remoteHasNewCommits";
+
+    // Init 类型工作区检测
+    public static final String GIT_CONFLICT_DETECTOR_INIT_REMOTE_BRANCH_EXISTS = "git.conflictDetector.initRemoteBranchExists";
+    public static final String GIT_CONFLICT_DETECTOR_INIT_BACKUP_SUGGESTION = "git.conflictDetector.initBackupSuggestion";
+    public static final String GIT_CONFLICT_DETECTOR_INIT_SAFE_FIRST_PUSH = "git.conflictDetector.initSafeFirstPush";
+    public static final String GIT_CONFLICT_DETECTOR_INIT_CANNOT_GET_REMOTE_INFO = "git.conflictDetector.initCannotGetRemoteInfo";
+    public static final String GIT_CONFLICT_DETECTOR_INIT_CHECK_NETWORK_AUTH = "git.conflictDetector.initCheckNetworkAuth";
+
+    // 日志消息（这些是 log.info 的消息，也可以考虑国际化）
+    public static final String GIT_CONFLICT_DETECTOR_LOG_LOCAL_COMMITS_AHEAD = "git.conflictDetector.log.localCommitsAhead";
+    public static final String GIT_CONFLICT_DETECTOR_LOG_REMOTE_BRANCH_NOT_EXISTS = "git.conflictDetector.log.remoteBranchNotExists";
+
+    // 文件冲突检查相关
+    public static final String GIT_CONFLICT_DETECTOR_CHECK_INIT_CONFLICTS_FAILED = "git.conflictDetector.checkInitConflictsFailed";
+    public static final String GIT_CONFLICT_DETECTOR_FILE_CONFLICTS_DETECTED = "git.conflictDetector.fileConflictsDetected";
+    public static final String GIT_CONFLICT_DETECTOR_CONFLICT_FILES = "git.conflictDetector.conflictFiles";
+    public static final String GIT_CONFLICT_DETECTOR_MORE_FILES_CONFLICT = "git.conflictDetector.moreFilesConflict";
+    public static final String GIT_CONFLICT_DETECTOR_GIT_MERGE_SUGGESTION = "git.conflictDetector.gitMergeSuggestion";
+
+    // 建议生成相关
+    public static final String GIT_CONFLICT_DETECTOR_UNKNOWN_OPERATION_TYPE = "git.conflictDetector.unknownOperationType";
+    public static final String GIT_CONFLICT_DETECTOR_CAN_COMMIT_CHANGES = "git.conflictDetector.canCommitChanges";
+    public static final String GIT_CONFLICT_DETECTOR_MODIFIED_FILES_WILL_BE_COMMITTED = "git.conflictDetector.modifiedFilesWillBeCommitted";
+    public static final String GIT_CONFLICT_DETECTOR_NO_CHANGES_TO_COMMIT = "git.conflictDetector.noChangesToCommit";
+    public static final String GIT_CONFLICT_DETECTOR_ALL_FILES_UP_TO_DATE = "git.conflictDetector.allFilesUpToDate";
+    public static final String GIT_CONFLICT_DETECTOR_UNCOMMITTED_CHANGES_CANNOT_PUSH = "git.conflictDetector.uncommittedChangesCannotPush";
+    public static final String GIT_CONFLICT_DETECTOR_COMMIT_FIRST_THEN_PUSH = "git.conflictDetector.commitFirstThenPush";
+
+    // Push 建议相关
+    public static final String GIT_CONFLICT_DETECTOR_DIVERGED_HISTORY = "git.conflictDetector.divergedHistory";
+    public static final String GIT_CONFLICT_DETECTOR_LOCAL_AHEAD_COMMITS = "git.conflictDetector.localAheadCommits";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_AHEAD_COMMITS = "git.conflictDetector.remoteAheadCommits";
+    public static final String GIT_CONFLICT_DETECTOR_PULL_FIRST_OR_FORCE_PUSH = "git.conflictDetector.pullFirstOrForcePush";
+    public static final String GIT_CONFLICT_DETECTOR_FORCE_PUSH_OVERWRITE_COMMITS = "git.conflictDetector.forcePushOverwriteCommits";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_HAS_NEW_COMMITS_WARN = "git.conflictDetector.remoteHasNewCommitsWarn";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_AHEAD_COMMITS_COUNT = "git.conflictDetector.remoteAheadCommitsCount";
+    public static final String GIT_CONFLICT_DETECTOR_PULL_FIRST_THEN_PUSH = "git.conflictDetector.pullFirstThenPush";
+    public static final String GIT_CONFLICT_DETECTOR_AVOID_PUSH_CONFLICTS = "git.conflictDetector.avoidPushConflicts";
+    public static final String GIT_CONFLICT_DETECTOR_SAFE_PUSH_LOCAL_COMMITS = "git.conflictDetector.safePushLocalCommits";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_SYNC_AFTER_PUSH = "git.conflictDetector.remoteSyncAfterPush";
+
+    // 首次推送建议相关
+    public static final String GIT_CONFLICT_DETECTOR_FIRST_PUSH_OVERWRITE_WARNING = "git.conflictDetector.firstPushOverwriteWarning";
+    public static final String GIT_CONFLICT_DETECTOR_FILES_MAY_CONFLICT = "git.conflictDetector.filesMayConflict";
+    public static final String GIT_CONFLICT_DETECTOR_USE_FORCE_WITH_LEASE = "git.conflictDetector.useForceWithLease";
+    public static final String GIT_CONFLICT_DETECTOR_PULL_REMOTE_FIRST = "git.conflictDetector.pullRemoteFirst";
+    public static final String GIT_CONFLICT_DETECTOR_CONFIRM_OVERWRITE_FILES = "git.conflictDetector.confirmOverwriteFiles";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_EMPTY_SAFE_PUSH = "git.conflictDetector.remoteEmptySafePush";
+    public static final String GIT_CONFLICT_DETECTOR_PUSH_COMMITS_TO_REMOTE = "git.conflictDetector.pushCommitsToRemote";
+    public static final String GIT_CONFLICT_DETECTOR_AUTO_SET_UPSTREAM = "git.conflictDetector.autoSetUpstream";
+    public static final String GIT_CONFLICT_DETECTOR_FIRST_PUSH_DETECTED = "git.conflictDetector.firstPushDetected";
+    public static final String GIT_CONFLICT_DETECTOR_PUSH_COMMITS_COUNT = "git.conflictDetector.pushCommitsCount";
+    public static final String GIT_CONFLICT_DETECTOR_SET_UPSTREAM_TRACKING = "git.conflictDetector.setUpstreamTracking";
+
+    // Pull 建议相关
+    public static final String GIT_CONFLICT_DETECTOR_CANNOT_PULL_FILE_CONFLICTS = "git.conflictDetector.cannotPullFileConflicts";
+    public static final String GIT_CONFLICT_DETECTOR_MANUAL_HANDLE_CONFLICTS = "git.conflictDetector.manualHandleConflicts";
+    public static final String GIT_CONFLICT_DETECTOR_BACKUP_LOCAL_FILES = "git.conflictDetector.backupLocalFiles";
+    public static final String GIT_CONFLICT_DETECTOR_GIT_FETCH_ORIGIN = "git.conflictDetector.gitFetchOrigin";
+    public static final String GIT_CONFLICT_DETECTOR_MANUAL_MERGE_FILES = "git.conflictDetector.manualMergeFiles";
+    public static final String GIT_CONFLICT_DETECTOR_CREATE_MERGE_COMMIT = "git.conflictDetector.createMergeCommit";
+    public static final String GIT_CONFLICT_DETECTOR_CANNOT_PULL_NO_UPSTREAM = "git.conflictDetector.cannotPullNoUpstream";
+    public static final String GIT_CONFLICT_DETECTOR_CONFIG_REMOTE_FIRST = "git.conflictDetector.configRemoteFirst";
+    public static final String GIT_CONFLICT_DETECTOR_FIRST_PUSH_ESTABLISH_TRACKING = "git.conflictDetector.firstPushEstablishTracking";
+    public static final String GIT_CONFLICT_DETECTOR_REMOTE_REPO_STATUS_EMPTY = "git.conflictDetector.remoteRepoStatusEmpty";
+    public static final String GIT_CONFLICT_DETECTOR_CAN_TRY_PULL_NO_CONTENT = "git.conflictDetector.canTryPullNoContent";
+    public static final String GIT_CONFLICT_DETECTOR_PUSH_LOCAL_CONTENT_FIRST = "git.conflictDetector.pushLocalContentFirst";
+    public static final String GIT_CONFLICT_DETECTOR_UNCOMMITTED_PULL_CONFLICTS = "git.conflictDetector.uncommittedPullConflicts";
+    public static final String GIT_CONFLICT_DETECTOR_COMMIT_OR_STASH_FIRST = "git.conflictDetector.commitOrStashFirst";
+    public static final String GIT_CONFLICT_DETECTOR_FORCE_PULL_LOSE_CHANGES = "git.conflictDetector.forcePullLoseChanges";
+    public static final String GIT_CONFLICT_DETECTOR_LOCAL_IS_UP_TO_DATE = "git.conflictDetector.localIsUpToDate";
+    public static final String GIT_CONFLICT_DETECTOR_SAFE_PULL_REMOTE_COMMITS = "git.conflictDetector.safePullRemoteCommits";
+
+    // 冲突检测相关
+    public static final String GIT_CONFLICT_DETECTOR_NO_COMMON_HISTORY = "git.conflictDetector.noCommonHistory";
+    public static final String GIT_CONFLICT_DETECTOR_ACTUAL_FILE_CONFLICTS = "git.conflictDetector.actualFileConflicts";
+    public static final String GIT_CONFLICT_DETECTOR_CONFLICT_FILES_LIST = "git.conflictDetector.conflictFilesList";
+    public static final String GIT_CONFLICT_DETECTOR_MORE_CONFLICT_FILES = "git.conflictDetector.moreConflictFiles";
+    public static final String GIT_CONFLICT_DETECTOR_NON_OVERLAPPING_CHANGES = "git.conflictDetector.nonOverlappingChanges";
+    public static final String GIT_CONFLICT_DETECTOR_ONLY_NEW_FILES_SAFE = "git.conflictDetector.onlyNewFilesSafe";
 }

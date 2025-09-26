@@ -723,11 +723,9 @@ public class GitConflictDetector {
                 return;
             }
 
-            // 如果merge base等于本地ID，说明本地是远程的子集，可以快进拉取 （前提是没有未提交变更）
             if (mergeBase.equals(localId) && !result.hasUncommittedChanges) {
                 result.hasActualConflicts = false;
                 result.canAutoMerge = true;
-                log.info("远程分支是本地的子集，可以快进拉取");
                 return;
             }
 

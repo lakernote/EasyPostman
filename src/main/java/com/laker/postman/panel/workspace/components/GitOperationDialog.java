@@ -552,15 +552,15 @@ public class GitOperationDialog extends JDialog {
                 addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", true);
                 addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程的 " + check.remoteCommitsBehind + " 个提交", false, Color.RED);
             } else if (check.hasRemoteCommits) {
+                // 远程有新提交
                 showOptions = true;
-                if (check.canAutoMerge) {
+                if (check.canAutoMerge && check.localCommitsAhead > 0) {
                     addOptionTitle("💡 远程仓库有新提交，可自动合并");
                     addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "无冲突，可安全自动合并", true);
                     addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
                 } else {
                     addOptionTitle("💡 远程仓库有新提交，请选择处理方式：");
-                    addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "推荐选项，避免冲突", true);
-                    addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
+                    addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", true, Color.RED);
                 }
             }
         }

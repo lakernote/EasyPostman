@@ -847,4 +847,21 @@ public final class MessageKeys {
     public static final String GIT_DIALOG_BULLET = "git.dialog.bullet";
     public static final String GIT_DIALOG_YES = "git.dialog.yes";
     public static final String GIT_DIALOG_NO = "git.dialog.no";
+
+    // ============ GitOperation 名称国际化 ============
+    public static final String GIT_OPERATION_COMMIT = "git.operation.commit";
+    public static final String GIT_OPERATION_PUSH = "git.operation.push";
+    public static final String GIT_OPERATION_PULL = "git.operation.pull";
+
+    // ============ GitOperationDialog 选项相关国际化 ============
+    public static final String GIT_DIALOG_OPTION_COMMIT_TITLE = "git.dialog.option.commit.title";
+    public static final String GIT_DIALOG_OPTION_COMMIT_FIRST = "git.dialog.option.commit_first";
+    public static final String GIT_DIALOG_OPTION_COMMIT_FIRST_DESC = "git.dialog.option.commit_first.desc";
+    public static final String GIT_DIALOG_OPTION_COMMIT_AND_PUSH = "git.dialog.option.commit_and_push";
+    public static final String GIT_DIALOG_OPTION_COMMIT_AND_PUSH_DESC = "git.dialog.option.commit_and_push.desc";
+    public static final String GIT_DIALOG_OPTION_PULL_CONFLICT_TITLE = "git.dialog.option.pull.conflict_title";
+    public static final String GIT_DIALOG_OPTION_CANCEL = "git.dialog.option.cancel";
+    public static final String GIT_DIALOG_OPTION_CANCEL_DESC = "git.dialog.option.cancel.desc";
+    public static final String GIT_DIALOG_OPTION_FORCE_PULL = "git.dialog.option.force_pull";
+    public static final String GIT_DIALOG_OPTION_FORCE_PULL_DESC = "git.dialog.option.force_pull.desc";
 }

@@ -507,18 +507,25 @@ public class GitOperationDialog extends JDialog {
 
         if (operation == GitOperation.COMMIT && check.canCommit) {
             showOptions = true;
-            addOptionTitle("💡 请选择提交方式：");
-            addOption(OPTION_COMMIT_FIRST, "仅提交本地变更", "只执行提交操作", true);
+            addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_TITLE));
+            addOption(OPTION_COMMIT_FIRST,
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST),
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_DESC), true);
             if (!check.hasActualConflicts) {
-                addOption(OPTION_COMMIT_AND_PUSH, "提交并推送", "提交后自动推送到远程仓库（适合多人协作）", false);
+                addOption(OPTION_COMMIT_AND_PUSH,
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_AND_PUSH),
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_AND_PUSH_DESC), false);
             }
         } else if (operation == GitOperation.PULL) {
-            // 优先处理实际冲突（无论是否有未提交变更）
             if (check.hasActualConflicts) {
                 showOptions = true;
-                addOptionTitle("❗检测到文件冲突，请选择处理方式");
-                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", true);
-                addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗避免冲突但会丢失本地变更", false, Color.RED);
+                addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_CONFLICT_TITLE));
+                addOption(OPTION_CANCEL,
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL),
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_DESC), true);
+                addOption(OPTION_FORCE,
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL),
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, Color.RED);
             } else if (check.hasUncommittedChanges) {
                 showOptions = true;
                 // 如果可以自动合并，优先推荐提交后拉取
@@ -554,15 +561,7 @@ public class GitOperationDialog extends JDialog {
             }
         }
 
-        if (showOptions) {
-            optionsPanel.setVisible(true);
-            stepIndicator.setCurrentStep(2);
-            updateExecuteButtonStateByChoice();
-        } else {
-            optionsPanel.setVisible(false);
-            stepIndicator.setCurrentStep(3);
-        }
-
+        optionsPanel.setVisible(showOptions);
         optionsPanel.revalidate();
         optionsPanel.repaint();
     }

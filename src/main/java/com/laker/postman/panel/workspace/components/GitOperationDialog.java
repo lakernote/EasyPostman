@@ -530,33 +530,33 @@ public class GitOperationDialog extends JDialog {
                 showOptions = true;
                 // 如果可以自动合并，优先推荐提交后拉取
                 if (check.canAutoMerge) {
-                    addOptionTitle("💡 检测到未提交变更，可自动合并");
-                    addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "本地变更可自动合并", true);
-                    addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗此操作会丢弃所有未提交的本地变更，请谨慎使用", false, Color.RED);
+                    addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_UNCOMMITTED_AUTO_MERGE_TITLE));
+                    addOption(OPTION_COMMIT_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_AUTO_MERGE_DESC), true);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD_WARNING_DESC), false, Color.RED);
                 } else {
-                    addOptionTitle("💡 检测到未提交变更，请选择处理方式：");
-                    addOption(OPTION_COMMIT_FIRST, "先提交本地变更，再拉取", "保留所有变更", true);
-                    addOption(OPTION_STASH, "暂存本地变更，拉取后恢复", "适用于临时变更", false);
-                    addOption(OPTION_FORCE, "强制拉取（丢弃本地变更）", "❗将丢失未提交的变更", false, Color.RED);
+                    addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_UNCOMMITTED_CHOOSE_TITLE));
+                    addOption(OPTION_COMMIT_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_KEEP_DESC), true);
+                    addOption(OPTION_STASH, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_STASH_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_STASH_PULL_DESC), false);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_LOSE_DESC), false, Color.RED);
                 }
             }
         } else if (operation == GitOperation.PUSH) {
             // 优先处理实际冲突
             if (check.hasActualConflicts) {
                 showOptions = true;
-                addOptionTitle("❗检测到文件冲突，请选择处理方式");
-                addOption(OPTION_CANCEL, "取消操作，在外部工具处理", "推荐在Git客户端或IDE中手动处理冲突", true);
-                addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程的 " + check.remoteCommitsBehind + " 个提交", false, Color.RED);
+                addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_CONFLICT_TITLE));
+                addOption(OPTION_CANCEL, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL_DESC), true);
+                addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_COMMITS_DESC, check.remoteCommitsBehind), false, Color.RED);
             } else if (check.hasRemoteCommits) {
                 // 远程有新提交
                 showOptions = true;
                 if (check.canAutoMerge && check.localCommitsAhead > 0) {
-                    addOptionTitle("💡 远程仓库有新提交，可自动合并");
-                    addOption(OPTION_PULL_FIRST, "先拉取远程变更，再推送", "无冲突，可安全自动合并", true);
-                    addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", false, Color.RED);
+                    addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_REMOTE_AUTO_MERGE_TITLE));
+                    addOption(OPTION_PULL_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_FIRST_PUSH), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_FIRST_PUSH_DESC), true);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), false, Color.RED);
                 } else {
-                    addOptionTitle("💡 远程仓库有新提交，请选择处理方式：");
-                    addOption(OPTION_FORCE, "强制推送（覆盖远程变更）", "❗将覆盖远程仓库的变更", true, Color.RED);
+                    addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_REMOTE_CHOOSE_TITLE));
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), true, Color.RED);
                 }
             }
         }
@@ -698,50 +698,50 @@ public class GitOperationDialog extends JDialog {
      */
     private void displayFileChangesStatus() {
         if (statusCheck == null) {
-            fileChangesArea.setText("📁 未获取到文件变更信息。");
+            fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES_NOT_AVAILABLE));
             return;
         }
         StringBuilder details = new StringBuilder();
         // 展示详细变更类型
-        details.append("📁 本地变更文件:\n");
+        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_CHANGES_TITLE)).append("\n");
         if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
-            details.append("  • 新增文件: ").append(statusCheck.added.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_ADDED_FILES)).append(statusCheck.added.size()).append("\n");
             for (String file : statusCheck.added) {
                 details.append("    + ").append(file).append("\n");
             }
         }
         if (statusCheck.changed != null && !statusCheck.changed.isEmpty()) {
-            details.append("  • 变更文件: ").append(statusCheck.changed.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHANGED_FILES)).append(statusCheck.changed.size()).append("\n");
             for (String file : statusCheck.changed) {
                 details.append("    ~ ").append(file).append("\n");
             }
         }
         if (statusCheck.modified != null && !statusCheck.modified.isEmpty()) {
-            details.append("  • 修改文件: ").append(statusCheck.modified.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MODIFIED_FILES)).append(statusCheck.modified.size()).append("\n");
             for (String file : statusCheck.modified) {
                 details.append("    * ").append(file).append("\n");
             }
         }
         if (statusCheck.removed != null && !statusCheck.removed.isEmpty()) {
-            details.append("  • 删除文件: ").append(statusCheck.removed.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOVED_FILES)).append(statusCheck.removed.size()).append("\n");
             for (String file : statusCheck.removed) {
                 details.append("    - ").append(file).append("\n");
             }
         }
         if (statusCheck.missing != null && !statusCheck.missing.isEmpty()) {
-            details.append("  • 丢失文件: ").append(statusCheck.missing.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MISSING_FILES)).append(statusCheck.missing.size()).append("\n");
             for (String file : statusCheck.missing) {
                 details.append("    ! ").append(file).append("\n");
             }
         }
         if (statusCheck.untracked != null && !statusCheck.untracked.isEmpty()) {
-            details.append("  • 未跟踪文件: ").append(statusCheck.untracked.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNTRACKED_FILES)).append(statusCheck.untracked.size()).append("\n");
             for (String file : statusCheck.untracked) {
                 details.append("    ? ").append(file).append("\n");
             }
         }
         if (statusCheck.conflicting != null && !statusCheck.conflicting.isEmpty()) {
-            details.append("  • 冲突文件: ").append(statusCheck.conflicting.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICTING_FILES)).append(statusCheck.conflicting.size()).append("\n");
             for (String file : statusCheck.conflicting) {
                 details.append("    # ").append(file).append("\n");
             }
@@ -754,38 +754,38 @@ public class GitOperationDialog extends JDialog {
                 (statusCheck.missing == null || statusCheck.missing.isEmpty()) &&
                 (statusCheck.untracked == null || statusCheck.untracked.isEmpty()) &&
                 (statusCheck.conflicting == null || statusCheck.conflicting.isEmpty())) {
-            details.append("  • 无本地变更\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_LOCAL_CHANGES)).append("\n");
         }
 
 
         // 远程变更分组展示
-        details.append("\n🌐 远程变更文件:\n");
+        details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE)).append("\n");
         if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
-            details.append("  • 远程新增文件: ").append(statusCheck.remoteAdded.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES)).append(statusCheck.remoteAdded.size()).append("\n");
             for (String file : statusCheck.remoteAdded) {
                 details.append("    [+] ").append(file).append("\n");
             }
         }
         if (statusCheck.remoteModified != null && !statusCheck.remoteModified.isEmpty()) {
-            details.append("  • 远程修改文件: ").append(statusCheck.remoteModified.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_MODIFIED_FILES)).append(statusCheck.remoteModified.size()).append("\n");
             for (String file : statusCheck.remoteModified) {
                 details.append("    [~] ").append(file).append("\n");
             }
         }
         if (statusCheck.remoteRemoved != null && !statusCheck.remoteRemoved.isEmpty()) {
-            details.append("  • 远程删除文件: ").append(statusCheck.remoteRemoved.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_REMOVED_FILES)).append(statusCheck.remoteRemoved.size()).append("\n");
             for (String file : statusCheck.remoteRemoved) {
                 details.append("    [-] ").append(file).append("\n");
             }
         }
         if (statusCheck.remoteRenamed != null && !statusCheck.remoteRenamed.isEmpty()) {
-            details.append("  • 远程重命名文件: ").append(statusCheck.remoteRenamed.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_RENAMED_FILES)).append(statusCheck.remoteRenamed.size()).append("\n");
             for (String file : statusCheck.remoteRenamed) {
                 details.append("    [R] ").append(file).append("\n");
             }
         }
         if (statusCheck.remoteCopied != null && !statusCheck.remoteCopied.isEmpty()) {
-            details.append("  • 远程复制文件: ").append(statusCheck.remoteCopied.size()).append("\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_COPIED_FILES)).append(statusCheck.remoteCopied.size()).append("\n");
             for (String file : statusCheck.remoteCopied) {
                 details.append("    [C] ").append(file).append("\n");
             }
@@ -796,7 +796,7 @@ public class GitOperationDialog extends JDialog {
                 (statusCheck.remoteRemoved == null || statusCheck.remoteRemoved.isEmpty()) &&
                 (statusCheck.remoteRenamed == null || statusCheck.remoteRenamed.isEmpty()) &&
                 (statusCheck.remoteCopied == null || statusCheck.remoteCopied.isEmpty())) {
-            details.append("  • 无远程变更\n");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_REMOTE_CHANGES)).append("\n");
         }
 
         // 冲突文件详情展示

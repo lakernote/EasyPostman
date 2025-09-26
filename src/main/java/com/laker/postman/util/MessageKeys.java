@@ -869,4 +869,48 @@ public final class MessageKeys {
     public static final String STEP_CONFIRM_CHANGE = "step.confirmChange";
     public static final String STEP_SELECT_STRATEGY = "step.selectStrategy";
     public static final String STEP_EXECUTE_OPERATION = "step.executeOperation";
+
+    // ============ GitOperationDialog 缺失的国际化键 ============
+    // Pull 操作相关选项
+    public static final String GIT_DIALOG_OPTION_PULL_UNCOMMITTED_AUTO_MERGE_TITLE = "git.dialog.option.pull.uncommittedAutoMerge.title";
+    public static final String GIT_DIALOG_OPTION_PULL_UNCOMMITTED_CHOOSE_TITLE = "git.dialog.option.pull.uncommittedChoose.title";
+    public static final String GIT_DIALOG_OPTION_COMMIT_FIRST_PULL = "git.dialog.option.commitFirstPull";
+    public static final String GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_AUTO_MERGE_DESC = "git.dialog.option.commitFirstPull.autoMergeDesc";
+    public static final String GIT_DIALOG_OPTION_FORCE_PULL_DISCARD = "git.dialog.option.forcePullDiscard";
+    public static final String GIT_DIALOG_OPTION_FORCE_PULL_DISCARD_WARNING_DESC = "git.dialog.option.forcePullDiscard.warningDesc";
+    public static final String GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_KEEP_DESC = "git.dialog.option.commitFirstPull.keepDesc";
+    public static final String GIT_DIALOG_OPTION_STASH_PULL = "git.dialog.option.stashPull";
+    public static final String GIT_DIALOG_OPTION_STASH_PULL_DESC = "git.dialog.option.stashPull.desc";
+    public static final String GIT_DIALOG_OPTION_FORCE_PULL_LOSE_DESC = "git.dialog.option.forcePull.loseDesc";
+
+    // Push 操作相关选项
+    public static final String GIT_DIALOG_OPTION_PUSH_CONFLICT_TITLE = "git.dialog.option.push.conflictTitle";
+    public static final String GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL = "git.dialog.option.cancelExternalTool";
+    public static final String GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL_DESC = "git.dialog.option.cancelExternalTool.desc";
+    public static final String GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE = "git.dialog.option.forcePushOverwrite";
+    public static final String GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_COMMITS_DESC = "git.dialog.option.forcePushOverwrite.commitsDesc";
+    public static final String GIT_DIALOG_OPTION_PUSH_REMOTE_AUTO_MERGE_TITLE = "git.dialog.option.push.remoteAutoMerge.title";
+    public static final String GIT_DIALOG_OPTION_PULL_FIRST_PUSH = "git.dialog.option.pullFirstPush";
+    public static final String GIT_DIALOG_OPTION_PULL_FIRST_PUSH_DESC = "git.dialog.option.pullFirstPush.desc";
+    public static final String GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC = "git.dialog.option.forcePushOverwrite.remoteDesc";
+    public static final String GIT_DIALOG_OPTION_PUSH_REMOTE_CHOOSE_TITLE = "git.dialog.option.push.remoteChoose.title";
+
+    // 文件变更相关
+    public static final String GIT_DIALOG_FILE_CHANGES_NOT_AVAILABLE = "git.dialog.fileChanges.notAvailable";
+    public static final String GIT_DIALOG_LOCAL_CHANGES_TITLE = "git.dialog.localChanges.title";
+    public static final String GIT_DIALOG_REMOTE_CHANGES_TITLE = "git.dialog.remoteChanges.title";
+    public static final String GIT_DIALOG_ADDED_FILES = "git.dialog.addedFiles";
+    public static final String GIT_DIALOG_CHANGED_FILES = "git.dialog.changedFiles";
+    public static final String GIT_DIALOG_MODIFIED_FILES = "git.dialog.modifiedFiles";
+    public static final String GIT_DIALOG_REMOVED_FILES = "git.dialog.removedFiles";
+    public static final String GIT_DIALOG_MISSING_FILES = "git.dialog.missingFiles";
+    public static final String GIT_DIALOG_UNTRACKED_FILES = "git.dialog.untrackedFiles";
+    public static final String GIT_DIALOG_CONFLICTING_FILES = "git.dialog.conflictingFiles";
+    public static final String GIT_DIALOG_NO_LOCAL_CHANGES = "git.dialog.noLocalChanges";
+    public static final String GIT_DIALOG_REMOTE_ADDED_FILES = "git.dialog.remoteAddedFiles";
+    public static final String GIT_DIALOG_REMOTE_MODIFIED_FILES = "git.dialog.remoteModifiedFiles";
+    public static final String GIT_DIALOG_REMOTE_REMOVED_FILES = "git.dialog.remoteRemovedFiles";
+    public static final String GIT_DIALOG_REMOTE_RENAMED_FILES = "git.dialog.remoteRenamedFiles";
+    public static final String GIT_DIALOG_REMOTE_COPIED_FILES = "git.dialog.remoteCopiedFiles";
+    public static final String GIT_DIALOG_NO_REMOTE_CHANGES = "git.dialog.noRemoteChanges";
 }

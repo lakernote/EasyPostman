@@ -864,4 +864,9 @@ public final class MessageKeys {
     public static final String GIT_DIALOG_OPTION_CANCEL_DESC = "git.dialog.option.cancel.desc";
     public static final String GIT_DIALOG_OPTION_FORCE_PULL = "git.dialog.option.force_pull";
     public static final String GIT_DIALOG_OPTION_FORCE_PULL_DESC = "git.dialog.option.force_pull.desc";
+    // 步骤指示器相关
+    public static final String STEP_CHECK_STATUS = "step.checkStatus";
+    public static final String STEP_CONFIRM_CHANGE = "step.confirmChange";
+    public static final String STEP_SELECT_STRATEGY = "step.selectStrategy";
+    public static final String STEP_EXECUTE_OPERATION = "step.executeOperation";
 }

@@ -2,6 +2,8 @@ package com.laker.postman.common.component;
 
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,11 +27,10 @@ public class StepIndicator extends JPanel {
     }
 
     private String[] getStepsForOperation(GitOperation operation) {
-        return switch (operation) {
-            case COMMIT -> new String[]{"检查状态", "选择文件", "输入信息", "执行提交"};
-            case PUSH -> new String[]{"检查状态", "确认变更", "选择策略", "执行推送"};
-            case PULL -> new String[]{"检查状态", "确认变更", "选择策略", "执行拉取"};
-        };
+        return new String[]{I18nUtil.getMessage(MessageKeys.STEP_CHECK_STATUS),
+                I18nUtil.getMessage(MessageKeys.STEP_CONFIRM_CHANGE),
+                I18nUtil.getMessage(MessageKeys.STEP_SELECT_STRATEGY),
+                I18nUtil.getMessage(MessageKeys.STEP_EXECUTE_OPERATION)};
     }
 
     private void initSteps() {

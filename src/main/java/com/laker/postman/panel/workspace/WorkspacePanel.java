@@ -579,7 +579,6 @@ public class WorkspacePanel extends SingletonBasePanel {
                 String timestamp = sdf.format(new Date());
 
                 // 操作标题
-                logArea.append("=== " + result.operationType + "操作结果 ===\n");
                 logArea.append("[" + timestamp + "] " + result.message + "\n");
 
                 // 详细信息

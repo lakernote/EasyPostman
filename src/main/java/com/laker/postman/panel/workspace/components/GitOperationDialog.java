@@ -714,7 +714,7 @@ public class GitOperationDialog extends JDialog {
         }
         StringBuilder details = new StringBuilder();
         // 展示详细变更类型
-        details.append("📁 文件变更详情:\n");
+        details.append("📁 本地变更文件:\n");
         if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
             details.append("  • 新增文件: ").append(statusCheck.added.size()).append("\n");
             for (String file : statusCheck.added) {
@@ -757,8 +757,17 @@ public class GitOperationDialog extends JDialog {
                 details.append("    # ").append(file).append("\n");
             }
         }
+        // 如无本地变更，提示
+        if ((statusCheck.added == null || statusCheck.added.isEmpty()) &&
+                (statusCheck.changed == null || statusCheck.changed.isEmpty()) &&
+                (statusCheck.modified == null || statusCheck.modified.isEmpty()) &&
+                (statusCheck.removed == null || statusCheck.removed.isEmpty()) &&
+                (statusCheck.missing == null || statusCheck.missing.isEmpty()) &&
+                (statusCheck.untracked == null || statusCheck.untracked.isEmpty()) &&
+                (statusCheck.conflicting == null || statusCheck.conflicting.isEmpty())) {
+            details.append("  • 无本地变更\n");
+        }
 
-        // 合并所有本地变更相关字段
 
         // 远程变更分组展示
         details.append("\n🌐 远程变更文件:\n");

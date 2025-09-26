@@ -151,62 +151,8 @@ public class GitConflictDetector {
 
             result.isEmptyLocalRepository = localId == null;
 
-            // 检查本地提交情况
-            if (localId != null) {
-                try {
-                    // 检查仓库是否为空
-                    Iterable<RevCommit> localCommits = git.log().setMaxCount(1).call();
-                    result.hasLocalCommits = localCommits.iterator().hasNext();
-
-                    int localCommitsAhead = 0;
-                    if (result.hasLocalCommits && remoteId != null) {
-                        // 计算本地领先于远程的提交数
-                        Iterable<RevCommit> aheadCommits = git.log()
-                                .addRange(remoteId, localId)
-                                .call();
-                        for (RevCommit ignored : aheadCommits) {
-                            localCommitsAhead++;
-                        }
-                        result.localCommitsAhead = localCommitsAhead;
-                        log.info("[GitStatusCheck] 当前分支: {}，本地未推送 commit 数量: {}", currentBranch, localCommitsAhead);
-
-                        // 计算远程领先于本地的提交数
-                        int remoteCommitsBehind = 0;
-                        Iterable<RevCommit> behindCommits = git.log()
-                                .addRange(localId, remoteId)
-                                .call();
-                        for (RevCommit ignored : behindCommits) {
-                            remoteCommitsBehind++;
-                        }
-                        result.remoteCommitsBehind = remoteCommitsBehind;
-                        result.hasRemoteCommits = remoteCommitsBehind > 0;
-
-                        // 设置需要强制操作的标志
-                        result.needsForcePush = result.hasRemoteCommits && result.localCommitsAhead > 0;
-                        result.needsForcePull = result.hasUncommittedChanges && result.hasRemoteCommits;
-
-                    } else if (result.hasLocalCommits) {
-                        // 本地有提交但远程分支不存在（首次推送情况）
-                        result.isFirstPush = true;
-                        result.isRemoteRepositoryEmpty = true;
-                        Iterable<RevCommit> allCommits = git.log().call();
-                        for (RevCommit ignored : allCommits) {
-                            localCommitsAhead++;
-                        }
-                        result.localCommitsAhead = localCommitsAhead;
-                        log.info("[GitStatusCheck] 当前分支: {}，远程分支不存在，全部本地 commit 未推送，数量: {}", currentBranch, localCommitsAhead);
-                    }
-                } catch (org.eclipse.jgit.api.errors.NoHeadException e) {
-                    // 空仓库，没有提交
-                    log.debug("Repository has no HEAD (empty repository): {}", e.getMessage());
-                    result.hasLocalCommits = false;
-                    result.localCommitsAhead = 0;
-                    result.isEmptyLocalRepository = true;
-                } catch (Exception e) {
-                    log.warn("Failed to count commits", e);
-                    result.warnings.add("无法统计提交信息: " + e.getMessage());
-                }
-            }
+            // 检查本地和远程提交情况
+            checkLocalAndRemoteCommit(git, result, localId, remoteId, currentBranch);
 
             // 尝试 fetch 最新的远程状态（用于更准确的检测）
             boolean fetchSuccess = false;
@@ -239,14 +185,11 @@ public class GitConflictDetector {
                         CanonicalTreeParser remoteTreeIter = new CanonicalTreeParser();
                         remoteTreeIter.reset(git.getRepository().newObjectReader(), remoteTree);
 
-                        List<org.eclipse.jgit.diff.DiffEntry> diffEntries = git.diff()
+                        List<DiffEntry> diffEntries = git.diff()
                                 .setOldTree(remoteTreeIter)
                                 .setNewTree(localTreeIter)
                                 .call();
-                        result.remoteAdded.clear();
-                        result.remoteModified.clear();
-                        result.remoteRemoved.clear();
-                        for (org.eclipse.jgit.diff.DiffEntry entry : diffEntries) {
+                        for (DiffEntry entry : diffEntries) {
                             switch (entry.getChangeType()) {
                                 case ADD:
                                     result.remoteAdded.add(entry.getNewPath());
@@ -302,6 +245,64 @@ public class GitConflictDetector {
             // 发生错误时，保守设置操作能力
             result.canPull = false;
             result.canPush = false;
+        }
+    }
+
+    private static void checkLocalAndRemoteCommit(Git git, GitStatusCheck result, ObjectId localId, ObjectId remoteId, String currentBranch) {
+        if (localId != null) {
+            try {
+                // 检查仓库是否为空
+                Iterable<RevCommit> localCommits = git.log().setMaxCount(1).call();
+                result.hasLocalCommits = localCommits.iterator().hasNext();
+
+                int localCommitsAhead = 0;
+                if (result.hasLocalCommits && remoteId != null) {
+                    // 计算本地领先于远程的提交数
+                    Iterable<RevCommit> aheadCommits = git.log()
+                            .addRange(remoteId, localId)
+                            .call();
+                    for (RevCommit ignored : aheadCommits) {
+                        localCommitsAhead++;
+                    }
+                    result.localCommitsAhead = localCommitsAhead;
+                    log.info("[GitStatusCheck] 当前分支: {}，本地未推送 commit 数量: {}", currentBranch, localCommitsAhead);
+
+                    // 计算远程领先于本地的提交数
+                    int remoteCommitsBehind = 0;
+                    Iterable<RevCommit> behindCommits = git.log()
+                            .addRange(localId, remoteId)
+                            .call();
+                    for (RevCommit ignored : behindCommits) {
+                        remoteCommitsBehind++;
+                    }
+                    result.remoteCommitsBehind = remoteCommitsBehind;
+                    result.hasRemoteCommits = remoteCommitsBehind > 0;
+
+                    // 设置需要强制操作的标志
+                    result.needsForcePush = result.hasRemoteCommits && result.localCommitsAhead > 0;
+                    result.needsForcePull = result.hasUncommittedChanges && result.hasRemoteCommits;
+
+                } else if (result.hasLocalCommits) {
+                    // 本地有提交但远程分支不存在（首次推送情况）
+                    result.isFirstPush = true;
+                    result.isRemoteRepositoryEmpty = true;
+                    Iterable<RevCommit> allCommits = git.log().call();
+                    for (RevCommit ignored : allCommits) {
+                        localCommitsAhead++;
+                    }
+                    result.localCommitsAhead = localCommitsAhead;
+                    log.info("[GitStatusCheck] 当前分支: {}，远程分支不存在，全部本地 commit 未推送，数量: {}", currentBranch, localCommitsAhead);
+                }
+            } catch (org.eclipse.jgit.api.errors.NoHeadException e) {
+                // 空仓库，没有提交
+                log.debug("Repository has no HEAD (empty repository): {}", e.getMessage());
+                result.hasLocalCommits = false;
+                result.localCommitsAhead = 0;
+                result.isEmptyLocalRepository = true;
+            } catch (Exception e) {
+                log.warn("Failed to count commits", e);
+                result.warnings.add("无法统计提交信息: " + e.getMessage());
+            }
         }
     }
 

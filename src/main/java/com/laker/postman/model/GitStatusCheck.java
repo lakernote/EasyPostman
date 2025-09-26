@@ -68,4 +68,20 @@ public class GitStatusCheck {
 
     // 冲突详情（文件名 -> 冲突块列表）
     public Map<String, List<ConflictBlock>> conflictDetails = new HashMap<>();
+
+    // 本地变更文件列表
+    public List<String> added = new ArrayList<>();
+    public List<String> changed = new ArrayList<>();
+    public List<String> modified = new ArrayList<>();
+    public List<String> missing = new ArrayList<>();
+    public List<String> removed = new ArrayList<>();
+    public List<String> untracked = new ArrayList<>();
+    public List<String> uncommitted = new ArrayList<>();
+
+    // 远程变更文件列表
+    public List<String> remoteAdded = new ArrayList<>();
+    public List<String> remoteModified = new ArrayList<>();
+    public List<String> remoteRemoved = new ArrayList<>();
+    public List<String> remoteRenamed = new ArrayList<>();
+    public List<String> remoteCopied = new ArrayList<>();
 }

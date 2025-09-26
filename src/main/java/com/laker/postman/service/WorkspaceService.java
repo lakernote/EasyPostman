@@ -1101,32 +1101,6 @@ public class WorkspaceService {
     }
 
     /**
-     * 获取工作区的Git状态（变更文件列表）
-     */
-    public GitStatusResult getGitStatus(String workspaceId) throws Exception {
-        Workspace workspace = getWorkspaceById(workspaceId);
-        if (workspace.getType() != WorkspaceType.GIT) {
-            throw new IllegalArgumentException("Not a Git workspace");
-        }
-        File repoDir = new File(workspace.getPath());
-        try (Git git = Git.open(repoDir)) {
-            var status = git.status().call();
-            GitStatusResult result = new GitStatusResult();
-            result.added.addAll(status.getAdded());
-            result.changed.addAll(status.getChanged());
-            result.modified.addAll(status.getModified());
-            result.missing.addAll(status.getMissing());
-            result.removed.addAll(status.getRemoved());
-            result.untracked.addAll(status.getUntracked());
-            result.uncommitted.addAll(status.getUncommittedChanges());
-            return result;
-        } catch (Exception e) {
-            log.error("Failed to get Git status for workspace: {}", workspace.getName(), e);
-            throw e;
-        }
-    }
-
-    /**
      * 获取两个 commit 之间的变更文件列表
      */
     public List<String> getChangedFilesBetweenCommits(String workspaceId, String oldCommitId, String newCommitId) throws Exception {

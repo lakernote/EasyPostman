@@ -1,7 +1,10 @@
 package com.laker.postman.model;
 
+import lombok.Getter;
+
 import java.util.List;
 
+@Getter
 public class ConflictBlock {
     public int begin;
     public int end;
@@ -16,4 +19,5 @@ public class ConflictBlock {
         this.localLines = localLines;
         this.remoteLines = remoteLines;
     }
+
 }

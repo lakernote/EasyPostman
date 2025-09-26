@@ -5,7 +5,6 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitStatusCheck;
-import com.laker.postman.model.GitStatusResult;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
@@ -26,9 +25,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import static com.laker.postman.service.git.GitConflictDetector.checkGitStatus;
 
@@ -91,7 +88,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void setupDialog() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(750, 550);
+        setSize(750, 650);
         setLocationRelativeTo(getParent());
         setLayout(new BorderLayout());
 
@@ -419,12 +416,11 @@ public class GitOperationDialog extends JDialog {
                 // 执行冲突检测，传递认证信息
                 statusCheck = checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider, sshCredentialsProvider);
 
-                // 显示检测结果
+                // 显示检测结果（包含所有详细变更信息）
                 displayStatusCheck(statusCheck);
 
-                // 加载文件变更信息
-                GitStatusResult gitStatus = workspaceService.getGitStatus(workspace.getId());
-                displayGitStatus(gitStatus);
+                // 显示文件变更信息
+                displayFileChangesStatus();
 
                 stepIndicator.setCurrentStep(1);
                 updateStatus("Git状态检查完成", "icons/check.svg", new Color(34, 139, 34));
@@ -712,88 +708,123 @@ public class GitOperationDialog extends JDialog {
     /**
      * 展示文件变更信息，并在有冲突的文件下展示冲突详情
      */
-    private void displayGitStatus(GitStatusResult gitStatus) {
-        if (gitStatus == null) {
-            fileChangesArea.setText("未获取到文件变更信息。");
+    private void displayFileChangesStatus() {
+        if (statusCheck == null) {
+            fileChangesArea.setText("📁 未获取到文件变更信息。");
             return;
         }
-        StringBuilder sb = new StringBuilder();
-        // 合并所有本地变更相关字段
-        Set<String> changedFiles = new LinkedHashSet<>();
-        if (gitStatus.added != null) changedFiles.addAll(gitStatus.added);
-        if (gitStatus.changed != null) changedFiles.addAll(gitStatus.changed);
-        if (gitStatus.modified != null) changedFiles.addAll(gitStatus.modified);
-        if (gitStatus.removed != null) changedFiles.addAll(gitStatus.removed);
-        if (gitStatus.missing != null) changedFiles.addAll(gitStatus.missing);
-        if (gitStatus.untracked != null) changedFiles.addAll(gitStatus.untracked);
-        if (gitStatus.uncommitted != null) changedFiles.addAll(gitStatus.uncommitted);
-        // 合并冲突文件（无论本地是否有变更）
-        if (statusCheck != null && statusCheck.conflictDetails != null) {
-            changedFiles.addAll(statusCheck.conflictDetails.keySet());
+        StringBuilder details = new StringBuilder();
+        // 展示详细变更类型
+        details.append("\n📁 文件变更详情:\n");
+        if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
+            details.append("  • 新增文件: ").append(statusCheck.added.size()).append("\n");
+            for (String file : statusCheck.added) {
+                details.append("    + ").append(file).append("\n");
+            }
         }
-        if (changedFiles.isEmpty()) {
-            sb.append("无文件变更。");
-        } else {
-            sb.append("文件变更列表：\n");
-            for (String file : changedFiles) {
-                // 构建标签
-                StringBuilder tags = new StringBuilder();
-                if (statusCheck != null && statusCheck.conflictDetails != null && statusCheck.conflictDetails.containsKey(file)) {
-                    tags.append("【冲突】");
-                }
-                if (gitStatus.added != null && gitStatus.added.contains(file)) {
-                    tags.append("【新增】");
-                }
-                if (gitStatus.modified != null && gitStatus.modified.contains(file)) {
-                    tags.append("【修改】");
-                }
-                if (gitStatus.removed != null && gitStatus.removed.contains(file)) {
-                    tags.append("【删除】");
-                }
-                if (gitStatus.untracked != null && gitStatus.untracked.contains(file)) {
-                    tags.append("【未跟踪】");
-                }
-                if (gitStatus.missing != null && gitStatus.missing.contains(file)) {
-                    tags.append("【丢失】");
-                }
-                if (gitStatus.changed != null && gitStatus.changed.contains(file)) {
-                    tags.append("【变更】");
-                }
-                if (gitStatus.uncommitted != null && gitStatus.uncommitted.contains(file)) {
-                    tags.append("【未提交】");
-                }
-                // 默认都为本地变更，冲突文件也可加【本地】标签
-                if (tags.length() == 0) {
-                    tags.append("【本地】");
-                }
-                sb.append("• ").append(file).append(" ").append(tags).append("\n");
-                // 展示冲突详情
-                if (statusCheck != null && statusCheck.conflictDetails != null && statusCheck.conflictDetails.containsKey(file)) {
-                    List<com.laker.postman.model.ConflictBlock> blocks = statusCheck.conflictDetails.get(file);
-                    if (blocks != null && !blocks.isEmpty()) {
-                        sb.append("  ❗ 冲突详情：\n");
-                        for (com.laker.postman.model.ConflictBlock block : blocks) {
-                            sb.append(String.format("    行 %d-%d\n", block.begin, block.end));
-                            // 展示三方内容摘要
-                            sb.append("      【基线】: ");
-                            String baseSummary = block.baseLines != null && !block.baseLines.isEmpty() ? String.join(" ", block.baseLines) : "(无)";
-                            if (baseSummary.length() > 80) baseSummary = baseSummary.substring(0, 80) + "...";
-                            sb.append(baseSummary.replaceAll("\n", " ")).append("\n");
-                            sb.append("      【本地】: ");
-                            String localSummary = block.localLines != null && !block.localLines.isEmpty() ? String.join(" ", block.localLines) : "(无)";
-                            if (localSummary.length() > 80) localSummary = localSummary.substring(0, 80) + "...";
-                            sb.append(localSummary.replaceAll("\n", " ")).append("\n");
-                            sb.append("      【远程】: ");
-                            String remoteSummary = block.remoteLines != null && !block.remoteLines.isEmpty() ? String.join(" ", block.remoteLines) : "(无)";
-                            if (remoteSummary.length() > 80) remoteSummary = remoteSummary.substring(0, 80) + "...";
-                            sb.append(remoteSummary.replaceAll("\n", " ")).append("\n");
-                        }
-                    }
-                }
+        if (statusCheck.changed != null && !statusCheck.changed.isEmpty()) {
+            details.append("  • 变更文件: ").append(statusCheck.changed.size()).append("\n");
+            for (String file : statusCheck.changed) {
+                details.append("    ~ ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.modified != null && !statusCheck.modified.isEmpty()) {
+            details.append("  • 修改文件: ").append(statusCheck.modified.size()).append("\n");
+            for (String file : statusCheck.modified) {
+                details.append("    * ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.removed != null && !statusCheck.removed.isEmpty()) {
+            details.append("  • 删除文件: ").append(statusCheck.removed.size()).append("\n");
+            for (String file : statusCheck.removed) {
+                details.append("    - ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.missing != null && !statusCheck.missing.isEmpty()) {
+            details.append("  • 丢失文件: ").append(statusCheck.missing.size()).append("\n");
+            for (String file : statusCheck.missing) {
+                details.append("    ! ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.untracked != null && !statusCheck.untracked.isEmpty()) {
+            details.append("  • 未跟踪文件: ").append(statusCheck.untracked.size()).append("\n");
+            for (String file : statusCheck.untracked) {
+                details.append("    ? ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.uncommitted != null && !statusCheck.uncommitted.isEmpty()) {
+            details.append("  • 未提交文件: ").append(statusCheck.uncommitted.size()).append("\n");
+            for (String file : statusCheck.uncommitted) {
+                details.append("    # ").append(file).append("\n");
             }
         }
 
-        fileChangesArea.setText(sb.toString());
+        // 合并所有本地变更相关字段
+
+        // 远程变更分组展示
+        details.append("\n🌐 远程变更文件:\n");
+        if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
+            details.append("  • 远程新增文件: ").append(statusCheck.remoteAdded.size()).append("\n");
+            for (String file : statusCheck.remoteAdded) {
+                details.append("    [+] ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.remoteModified != null && !statusCheck.remoteModified.isEmpty()) {
+            details.append("  • 远程修改文件: ").append(statusCheck.remoteModified.size()).append("\n");
+            for (String file : statusCheck.remoteModified) {
+                details.append("    [~] ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.remoteRemoved != null && !statusCheck.remoteRemoved.isEmpty()) {
+            details.append("  • 远程删除文件: ").append(statusCheck.remoteRemoved.size()).append("\n");
+            for (String file : statusCheck.remoteRemoved) {
+                details.append("    [-] ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.remoteRenamed != null && !statusCheck.remoteRenamed.isEmpty()) {
+            details.append("  • 远程重命名文件: ").append(statusCheck.remoteRenamed.size()).append("\n");
+            for (String file : statusCheck.remoteRenamed) {
+                details.append("    [R] ").append(file).append("\n");
+            }
+        }
+        if (statusCheck.remoteCopied != null && !statusCheck.remoteCopied.isEmpty()) {
+            details.append("  • 远程复制文件: ").append(statusCheck.remoteCopied.size()).append("\n");
+            for (String file : statusCheck.remoteCopied) {
+                details.append("    [C] ").append(file).append("\n");
+            }
+        }
+        // 如无远程变更，提示
+        if ((statusCheck.remoteAdded == null || statusCheck.remoteAdded.isEmpty()) &&
+                (statusCheck.remoteModified == null || statusCheck.remoteModified.isEmpty()) &&
+                (statusCheck.remoteRemoved == null || statusCheck.remoteRemoved.isEmpty()) &&
+                (statusCheck.remoteRenamed == null || statusCheck.remoteRenamed.isEmpty()) &&
+                (statusCheck.remoteCopied == null || statusCheck.remoteCopied.isEmpty())) {
+            details.append("  • 无远程变更\n");
+        }
+
+        // 冲突文件详情展示
+        details.append("\n❗ 冲突文件详情:\n");
+        if (statusCheck.conflictingFiles != null && !statusCheck.conflictingFiles.isEmpty()) {
+            for (String file : statusCheck.conflictingFiles) {
+                details.append("  • 文件: ").append(file).append("\n");
+                List<com.laker.postman.model.ConflictBlock> blocks = statusCheck.conflictDetails.get(file);
+                if (blocks != null && !blocks.isEmpty()) {
+                    for (int i = 0; i < blocks.size(); i++) {
+                        com.laker.postman.model.ConflictBlock block = blocks.get(i);
+                        details.append("    冲突块 ").append(i + 1).append(": 行[")
+                                .append(block.getBegin()).append("-").append(block.getEnd()).append("]\n");
+                        details.append("      Base: ").append(String.join(" | ", block.getBaseLines())).append("\n");
+                        details.append("      Local: ").append(String.join(" | ", block.getLocalLines())).append("\n");
+                        details.append("      Remote: ").append(String.join(" | ", block.getRemoteLines())).append("\n");
+                    }
+                } else {
+                    details.append("    (无详细冲突块信息)\n");
+                }
+            }
+        } else {
+            details.append("  • 无文件冲突\n");
+        }
+        fileChangesArea.setText(details.toString());
         fileChangesArea.setCaretPosition(0);
     }
 

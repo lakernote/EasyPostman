@@ -84,24 +84,48 @@ public class GitConflictDetector {
         result.hasUncommittedChanges = !status.getModified().isEmpty() ||
                 !status.getChanged().isEmpty() ||
                 !status.getRemoved().isEmpty() ||
-                !status.getMissing().isEmpty();
+                !status.getMissing().isEmpty() ||
+                !status.getAdded().isEmpty() ||
+                !status.getUncommittedChanges().isEmpty();
+
+        // 详细变更类型赋值
+        result.added.clear();
+        result.added.addAll(status.getAdded());
+        result.changed.clear();
+        result.changed.addAll(status.getChanged());
+        result.modified.clear();
+        result.modified.addAll(status.getModified());
+        result.missing.clear();
+        result.missing.addAll(status.getMissing());
+        result.removed.clear();
+        result.removed.addAll(status.getRemoved());
+        result.untracked.clear();
+        result.untracked.addAll(status.getUntracked());
+        result.uncommitted.clear();
+        result.uncommitted.addAll(status.getUncommittedChanges());
 
         if (result.hasUncommittedChanges) {
             // 计算未提交变更的数量和文件列表
             result.uncommittedCount = status.getModified().size() +
                     status.getChanged().size() +
                     status.getRemoved().size() +
-                    status.getMissing().size();
+                    status.getMissing().size() +
+                    status.getAdded().size() +
+                    status.getUncommittedChanges().size();
+            result.uncommittedFiles.clear();
             result.uncommittedFiles.addAll(status.getModified()); // 修改的文件
             result.uncommittedFiles.addAll(status.getChanged()); // 新增的文件
             result.uncommittedFiles.addAll(status.getRemoved()); // 删除的文件
             result.uncommittedFiles.addAll(status.getMissing()); // 丢失的文件
+            result.uncommittedFiles.addAll(status.getAdded()); // 新增的文件
+            result.uncommittedFiles.addAll(status.getUncommittedChanges()); // 未提交的文件
         }
 
         // 检查未跟踪的文件
         result.hasUntrackedFiles = !status.getUntracked().isEmpty();
         if (result.hasUntrackedFiles) {
             result.untrackedCount = status.getUntracked().size();
+            result.untrackedFilesList.clear();
             result.untrackedFilesList.addAll(status.getUntracked()); // 未跟踪的文件
         }
 
@@ -235,6 +259,53 @@ public class GitConflictDetector {
 
                 // fetch 成功后重新解析远程分支ID
                 remoteId = git.getRepository().resolve(remoteRef);
+
+                // 检查远程分支与本地分支的文件变更类型
+                if (localId != null && remoteId != null) {
+                    try (RevWalk revWalk = new RevWalk(git.getRepository())) {
+                        RevCommit localCommit = revWalk.parseCommit(localId);
+                        RevCommit remoteCommit = revWalk.parseCommit(remoteId);
+                        RevTree localTree = localCommit.getTree();
+                        RevTree remoteTree = remoteCommit.getTree();
+
+                        CanonicalTreeParser localTreeIter = new CanonicalTreeParser();
+                        localTreeIter.reset(git.getRepository().newObjectReader(), localTree);
+                        CanonicalTreeParser remoteTreeIter = new CanonicalTreeParser();
+                        remoteTreeIter.reset(git.getRepository().newObjectReader(), remoteTree);
+
+                        List<org.eclipse.jgit.diff.DiffEntry> diffEntries = git.diff()
+                                .setOldTree(remoteTreeIter)
+                                .setNewTree(localTreeIter)
+                                .call();
+                        result.remoteAdded.clear();
+                        result.remoteModified.clear();
+                        result.remoteRemoved.clear();
+                        for (org.eclipse.jgit.diff.DiffEntry entry : diffEntries) {
+                            switch (entry.getChangeType()) {
+                                case ADD:
+                                    result.remoteAdded.add(entry.getNewPath());
+                                    break;
+                                case MODIFY:
+                                    result.remoteModified.add(entry.getNewPath());
+                                    break;
+                                case DELETE:
+                                    result.remoteRemoved.add(entry.getOldPath());
+                                    break;
+                                case RENAME:
+                                    result.remoteRenamed.add(entry.getOldPath() + " -> " + entry.getNewPath());
+                                    break;
+                                case COPY:
+                                    result.remoteCopied.add(entry.getNewPath());
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to diff remote and local branch", e);
+                        result.warnings.add("无法检测远程分支变更类型: " + e.getMessage());
+                    }
+                }
             } catch (RefNotAdvertisedException e) {
                 log.debug("Remote branch does not exist: {}", e.getMessage());
                 result.isRemoteRepositoryEmpty = true;

@@ -1,6 +1,7 @@
 package com.laker.postman.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -65,5 +66,6 @@ public class GitStatusCheck {
     public String remoteBranch;
     public String remoteUrl;
 
-    public Map<String, List<ConflictBlock>> conflictDetails = new java.util.HashMap<>();
+    // 冲突详情（文件名 -> 冲突块列表）
+    public Map<String, List<ConflictBlock>> conflictDetails = new HashMap<>();
 }

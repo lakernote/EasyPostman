@@ -12,6 +12,11 @@ public class SettingManager {
     private static final String CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "easy_postman_settings.properties";
     private static final Properties props = new Properties();
 
+    // 私有构造函数，防止实例化
+    private SettingManager() {
+        throw new AssertionError("Utility class should not be instantiated");
+    }
+
     static {
         load();
     }
@@ -252,6 +257,108 @@ public class SettingManager {
 
     public static void setAutoUpdateStartupDelaySeconds(long seconds) {
         props.setProperty("auto_update_startup_delay_seconds", String.valueOf(seconds));
+        save();
+    }
+
+    // ===== 网络代理设置 =====
+
+    /**
+     * 是否启用网络代理
+     */
+    public static boolean isProxyEnabled() {
+        String val = props.getProperty("proxy_enabled");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false; // 默认不启用
+    }
+
+    public static void setProxyEnabled(boolean enabled) {
+        props.setProperty("proxy_enabled", String.valueOf(enabled));
+        save();
+    }
+
+    /**
+     * 代理类型：HTTP 或 SOCKS
+     */
+    public static String getProxyType() {
+        String val = props.getProperty("proxy_type");
+        if (val != null) {
+            return val;
+        }
+        return "HTTP"; // 默认HTTP代理
+    }
+
+    public static void setProxyType(String type) {
+        props.setProperty("proxy_type", type);
+        save();
+    }
+
+    /**
+     * 代理服务器地址
+     */
+    public static String getProxyHost() {
+        String val = props.getProperty("proxy_host");
+        if (val != null) {
+            return val;
+        }
+        return ""; // 默认为空
+    }
+
+    public static void setProxyHost(String host) {
+        props.setProperty("proxy_host", host);
+        save();
+    }
+
+    /**
+     * 代理服务器端口
+     */
+    public static int getProxyPort() {
+        String val = props.getProperty("proxy_port");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 8080;
+            }
+        }
+        return 8080; // 默认8080端口
+    }
+
+    public static void setProxyPort(int port) {
+        props.setProperty("proxy_port", String.valueOf(port));
+        save();
+    }
+
+    /**
+     * 代理用户名
+     */
+    public static String getProxyUsername() {
+        String val = props.getProperty("proxy_username");
+        if (val != null) {
+            return val;
+        }
+        return ""; // 默认为空
+    }
+
+    public static void setProxyUsername(String username) {
+        props.setProperty("proxy_username", username);
+        save();
+    }
+
+    /**
+     * 代理密码
+     */
+    public static String getProxyPassword() {
+        String val = props.getProperty("proxy_password");
+        if (val != null) {
+            return val;
+        }
+        return ""; // 默认为空
+    }
+
+    public static void setProxyPassword(String password) {
+        props.setProperty("proxy_password", password);
         save();
     }
 }

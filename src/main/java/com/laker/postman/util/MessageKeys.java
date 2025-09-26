@@ -1073,4 +1073,23 @@ public final class MessageKeys {
     public static final String GIT_CONFLICT_DETECTOR_MORE_CONFLICT_FILES = "git.conflictDetector.moreConflictFiles";
     public static final String GIT_CONFLICT_DETECTOR_NON_OVERLAPPING_CHANGES = "git.conflictDetector.nonOverlappingChanges";
     public static final String GIT_CONFLICT_DETECTOR_ONLY_NEW_FILES_SAFE = "git.conflictDetector.onlyNewFilesSafe";
+
+    // 网络代理设置
+    public static final String SETTINGS_PROXY_TITLE = "settings.proxy.title";
+    public static final String SETTINGS_PROXY_ENABLED = "settings.proxy.enabled";
+    public static final String SETTINGS_PROXY_ENABLED_TOOLTIP = "settings.proxy.enabled.tooltip";
+    public static final String SETTINGS_PROXY_ENABLED_CHECKBOX = "settings.proxy.enabled.checkbox";
+    public static final String SETTINGS_PROXY_TYPE = "settings.proxy.type";
+    public static final String SETTINGS_PROXY_TYPE_TOOLTIP = "settings.proxy.type.tooltip";
+    public static final String SETTINGS_PROXY_TYPE_HTTP = "settings.proxy.type.http";
+    public static final String SETTINGS_PROXY_TYPE_SOCKS = "settings.proxy.type.socks";
+    public static final String SETTINGS_PROXY_HOST = "settings.proxy.host";
+    public static final String SETTINGS_PROXY_HOST_TOOLTIP = "settings.proxy.host.tooltip";
+    public static final String SETTINGS_PROXY_PORT = "settings.proxy.port";
+    public static final String SETTINGS_PROXY_PORT_TOOLTIP = "settings.proxy.port.tooltip";
+    public static final String SETTINGS_PROXY_USERNAME = "settings.proxy.username";
+    public static final String SETTINGS_PROXY_USERNAME_TOOLTIP = "settings.proxy.username.tooltip";
+    public static final String SETTINGS_PROXY_PASSWORD = "settings.proxy.password";
+    public static final String SETTINGS_PROXY_PASSWORD_TOOLTIP = "settings.proxy.password.tooltip";
+    public static final String SETTINGS_VALIDATION_PROXY_PORT_ERROR = "settings.validation.proxy_port.error";
 }

@@ -6,10 +6,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.combobox.EnvironmentComboBox;
 import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.panel.SingletonBasePanel;
-import com.laker.postman.common.setting.PerformanceSettingsDialog;
-import com.laker.postman.common.setting.RequestSettingsDialog;
-import com.laker.postman.common.setting.SystemSettingsDialog;
-import com.laker.postman.common.setting.UISettingsDialog;
+import com.laker.postman.common.setting.*;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
@@ -153,6 +150,11 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         uiSettingMenuItem.addActionListener(e -> showUISettingDialog());
         settingMenu.add(uiSettingMenuItem);
 
+        // 网络代理设置
+        JMenuItem proxySettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TITLE));
+        proxySettingMenuItem.addActionListener(e -> showProxySettingDialog());
+        settingMenu.add(proxySettingMenuItem);
+
         // 系统设置
         JMenuItem systemSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE));
         systemSettingMenuItem.addActionListener(e -> showSystemSettingDialog());
@@ -183,6 +185,12 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     private void showSystemSettingDialog() {
         Window window = SwingUtilities.getWindowAncestor(this);
         SystemSettingsDialog dialog = new SystemSettingsDialog(window);
+        dialog.setVisible(true);
+    }
+
+    private void showProxySettingDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        ProxySettingsDialog dialog = new ProxySettingsDialog(window);
         dialog.setVisible(true);
     }
 

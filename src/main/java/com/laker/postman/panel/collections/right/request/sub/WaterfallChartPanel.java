@@ -225,13 +225,13 @@ public class WaterfallChartPanel extends JPanel {
             }
         }
         // 顶部total
-        if (total > 0) {
-            String totalStr = I18nUtil.getMessage(MessageKeys.WATERFALL_TOTAL, total);
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
-            int strW = g2.getFontMetrics().stringWidth(totalStr);
-            g2.setColor(new Color(30, 30, 30));
-            g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, getInfoBlockHeight() + 22);
-        }
+//        if (total > 0) {
+//            String totalStr = I18nUtil.getMessage(MessageKeys.WATERFALL_TOTAL, total);
+//            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
+//            int strW = g2.getFontMetrics().stringWidth(totalStr);
+//            g2.setColor(new Color(30, 30, 30));
+//            g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, getInfoBlockHeight() + 22);
+//        }
         // 绘制
         int barY = getInfoBlockHeight() + TOP_PAD;
         int currentX = leftPad;

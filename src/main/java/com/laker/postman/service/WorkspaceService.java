@@ -67,7 +67,7 @@ public class WorkspaceService {
      */
     public void createWorkspace(Workspace workspace) throws Exception {
         if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
-            throw new IllegalArgumentException("不能创建默认工作区");
+            throw new IllegalArgumentException("Cannot create the default workspace");
         }
         validateWorkspace(workspace);
 
@@ -356,7 +356,7 @@ public class WorkspaceService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
         if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
-            throw new IllegalArgumentException("默认工作区不可删除");
+            throw new IllegalArgumentException("Default workspace cannot be deleted");
         }
         // 删除工作区文件
         Path workspacePath = Paths.get(workspace.getPath());
@@ -410,7 +410,7 @@ public class WorkspaceService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(WORKSPACE_NOT_FOUND_MSG + workspaceId));
         if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
-            throw new IllegalArgumentException("默认工作区不可重命名");
+            throw new IllegalArgumentException("Default workspace cannot be renamed");
         }
         if (newName == null || newName.trim().isEmpty()) {
             throw new IllegalArgumentException("Workspace name cannot be empty");
@@ -558,7 +558,7 @@ public class WorkspaceService {
                 log.info("Pull result: {}", pullResult.isSuccessful());
 
                 if (!pullResult.isSuccessful()) {
-                    throw new RuntimeException("Git pull failed: " + pullResult.toString());
+                    throw new RuntimeException("Git pull failed: " + pullResult);
                 }
 
                 String commitIdAfter = getLastCommitId(git);
@@ -1197,7 +1197,7 @@ public class WorkspaceService {
                                     GitAuthType authType, String username, String password, String token) throws Exception {
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT || workspace.getGitRepoSource() != GitRepoSource.INITIALIZED) {
-            throw new IllegalStateException("只有 INITIALIZED 类型的 Git 工作区才能添加远程仓库");
+            throw new IllegalStateException("Only Git workspaces of type INITIALIZED can add a remote repository");
         }
 
         try (Git git = Git.open(new File(workspace.getPath()))) {

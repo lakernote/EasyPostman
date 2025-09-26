@@ -752,6 +752,12 @@ public class GitOperationDialog extends JDialog {
                 details.append("    ? ").append(file).append("\n");
             }
         }
+        if (statusCheck.conflicting != null && !statusCheck.conflicting.isEmpty()) {
+            details.append("  • 冲突文件: ").append(statusCheck.conflicting.size()).append("\n");
+            for (String file : statusCheck.conflicting) {
+                details.append("    # ").append(file).append("\n");
+            }
+        }
 
         // 合并所有本地变更相关字段
 

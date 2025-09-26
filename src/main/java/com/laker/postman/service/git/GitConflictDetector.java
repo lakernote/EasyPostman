@@ -84,19 +84,12 @@ public class GitConflictDetector {
         result.hasUncommittedChanges = status.hasUncommittedChanges();
 
         // 详细变更类型赋值
-        result.added.clear();
         result.added.addAll(status.getAdded());
-        result.changed.clear();
         result.changed.addAll(status.getChanged());
-        result.modified.clear();
         result.modified.addAll(status.getModified());
-        result.missing.clear();
         result.missing.addAll(status.getMissing());
-        result.removed.clear();
         result.removed.addAll(status.getRemoved());
-        result.untracked.clear();
         result.untracked.addAll(status.getUntracked());
-        result.conflicting.clear();
         result.conflicting.addAll(status.getConflicting());
 
         if (result.hasUncommittedChanges) {

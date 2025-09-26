@@ -11,8 +11,6 @@ import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
@@ -29,7 +27,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -462,7 +460,7 @@ public class GitConflictDetector {
             for (var diff : diffs) {
                 String fileName = diff.getNewPath();
                 // 检查是否是同一文件的不同版本（潜在冲突）
-                if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY) {
+                if (diff.getChangeType() == DiffEntry.ChangeType.MODIFY) {
                     conflictFiles.add(fileName);
                 }
             }
@@ -723,7 +721,7 @@ public class GitConflictDetector {
             for (DiffEntry diff : localDiffs) {
                 String filePath = diff.getNewPath();
                 localChangedFiles.add(filePath);
-                if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
+                if (diff.getChangeType() == DiffEntry.ChangeType.ADD) {
                     newFiles.add(filePath);
                 }
             }
@@ -732,7 +730,7 @@ public class GitConflictDetector {
             for (DiffEntry diff : remoteDiffs) {
                 String filePath = diff.getNewPath();
                 remoteChangedFiles.add(filePath);
-                if (diff.getChangeType() == org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD) {
+                if (diff.getChangeType() == DiffEntry.ChangeType.ADD) {
                     newFiles.add(filePath);
                 }
             }
@@ -745,9 +743,9 @@ public class GitConflictDetector {
                 String baseContent = getFileContent(repo, mergeBase, filePath);
                 String localContent = getFileContent(repo, localId, filePath);
                 String remoteContent = getFileContent(repo, remoteId, filePath);
-                RawText baseText = new RawText(baseContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                RawText localText = new RawText(localContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                RawText remoteText = new RawText(remoteContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                RawText baseText = new RawText(baseContent.getBytes(StandardCharsets.UTF_8));
+                RawText localText = new RawText(localContent.getBytes(StandardCharsets.UTF_8));
+                RawText remoteText = new RawText(remoteContent.getBytes(StandardCharsets.UTF_8));
                 MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
                 MergeResult<RawText> mergeResult = mergeAlgorithm.merge(RawTextComparator.DEFAULT, baseText, localText, remoteText);
                 boolean hasConflict = false;
@@ -799,12 +797,11 @@ public class GitConflictDetector {
             for (String filePath : uncommittedFiles) {
                 if (remoteChangedFiles.contains(filePath) && !conflictFiles.contains(filePath)) {
                     String baseContent = getFileContent(repo, mergeBase, filePath);
-                    String localContent = FileUtil.readString(workspacePath + "/" + filePath,
-                            java.nio.charset.StandardCharsets.UTF_8);
+                    String localContent = FileUtil.readString(workspacePath + "/" + filePath, StandardCharsets.UTF_8);
                     String remoteContent = getFileContent(repo, remoteId, filePath);
-                    RawText baseText = new RawText(baseContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                    RawText localText = new RawText(localContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                    RawText remoteText = new RawText(remoteContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    RawText baseText = new RawText(baseContent.getBytes(StandardCharsets.UTF_8));
+                    RawText localText = new RawText(localContent.getBytes(StandardCharsets.UTF_8));
+                    RawText remoteText = new RawText(remoteContent.getBytes(StandardCharsets.UTF_8));
                     MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
                     MergeResult<RawText> mergeResult = mergeAlgorithm.merge(RawTextComparator.DEFAULT, baseText, localText, remoteText);
                     boolean hasConflict = false;
@@ -881,7 +878,7 @@ public class GitConflictDetector {
     }
 
     // 获取指定commit下文件内容
-    private static String getFileContent(Repository repo, ObjectId commitId, String filePath) throws IOException {
+    private static String getFileContent(Repository repo, ObjectId commitId, String filePath) {
         try (RevWalk revWalk = new RevWalk(repo)) {
             RevCommit commit = revWalk.parseCommit(commitId);
             RevTree tree = commit.getTree();
@@ -896,11 +893,8 @@ public class GitConflictDetector {
                 ObjectLoader loader = repo.open(objectId);
                 return new String(loader.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
             }
-        } catch (IncorrectObjectTypeException e) {
-            throw new RuntimeException(e);
-        } catch (MissingObjectException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.error("Failed to get file content for {} at {}", filePath, commitId.name(), e);
             throw new RuntimeException(e);
         }
     }

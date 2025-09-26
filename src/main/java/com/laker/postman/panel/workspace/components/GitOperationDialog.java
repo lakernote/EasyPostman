@@ -147,7 +147,7 @@ public class GitOperationDialog extends JDialog {
         titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
 
-        JLabel subtitleLabel = new JLabel("工作区: " + workspace.getName());
+        JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WORKSPACE, workspace.getName()));
         subtitleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         subtitleLabel.setForeground(Color.WHITE);
 
@@ -173,14 +173,14 @@ public class GitOperationDialog extends JDialog {
         JPanel panel = new JPanel(new GridLayout(2, 1, 0, 5));
         panel.setOpaque(false);
 
-        JLabel currentBranchLabel = new JLabel("当前分支: " +
-                (workspace.getCurrentBranch() != null ? workspace.getCurrentBranch() : "未知"));
+        JLabel currentBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CURRENT_BRANCH,
+                workspace.getCurrentBranch() != null ? workspace.getCurrentBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNKNOWN)));
         currentBranchLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         currentBranchLabel.setForeground(Color.WHITE);
         currentBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        JLabel remoteBranchLabel = new JLabel("远程分支: " +
-                (workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : "未设置"));
+        JLabel remoteBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_BRANCH,
+                workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NOT_SET)));
         remoteBranchLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         remoteBranchLabel.setForeground(Color.WHITE);
         remoteBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -235,16 +235,15 @@ public class GitOperationDialog extends JDialog {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                "状态检查",
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
         ));
 
-        // 状态图标和消息
         JPanel statusInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         statusIcon = new JLabel(new FlatSVGIcon("icons/refresh.svg", 16, 16));
-        statusMessage = new JLabel("正在检查Git状态...");
+        statusMessage = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS));
         statusMessage.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
 
         statusInfoPanel.add(statusIcon);
@@ -252,7 +251,6 @@ public class GitOperationDialog extends JDialog {
 
         panel.add(statusInfoPanel, BorderLayout.NORTH);
 
-        // 添加详细信息区域 - 调整高度适应左右布局
         JTextArea detailsArea = new JTextArea();
         detailsArea.setEditable(false);
         detailsArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 10));
@@ -277,19 +275,18 @@ public class GitOperationDialog extends JDialog {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                "文件变更",
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
         ));
 
-        // 文件变更显示区域
         JPanel fileChangesPanel = new JPanel(new BorderLayout());
 
         fileChangesArea = new JTextArea();
         fileChangesArea.setEditable(false);
         fileChangesArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        fileChangesArea.setText("正在加载文件变更信息...");
+        fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOADING_FILE_CHANGES));
         fileChangesArea.setLineWrap(true);
         fileChangesArea.setWrapStyleWord(true);
 
@@ -318,7 +315,7 @@ public class GitOperationDialog extends JDialog {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                "提交信息 *",
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_COMMIT_MESSAGE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
                 EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
@@ -329,7 +326,8 @@ public class GitOperationDialog extends JDialog {
         commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         commitMessageArea.setLineWrap(true);
         commitMessageArea.setWrapStyleWord(true);
-        commitMessageArea.setText("Update at " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        commitMessageArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_DEFAULT_COMMIT_MESSAGE,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
 
         JScrollPane scrollPane = new JScrollPane(commitMessageArea);
         scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
@@ -405,30 +403,21 @@ public class GitOperationDialog extends JDialog {
 
         SwingUtilities.invokeLater(() -> {
             try {
-                updateStatus("正在检查Git状态和潜在冲突...", "icons/refresh.svg", Color.BLUE);
-
-                // 获取认证信息
+                updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", Color.BLUE);
                 CredentialsProvider credentialsProvider = null;
                 SshCredentialsProvider sshCredentialsProvider = null;
                 if (workspace.getGitAuthType() != null) {
                     credentialsProvider = workspaceService.getCredentialsProvider(workspace);
                     sshCredentialsProvider = workspaceService.getSshCredentialsProvider(workspace);
                 }
-
-                // 执行冲突检测，传递认证信息
                 statusCheck = checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider, sshCredentialsProvider);
-
-                // 显示检测结果（包含所有详细变更信息）
                 displayStatusCheck(statusCheck);
-
-                // 显示文件变更信息
                 displayFileChangesStatus();
-
                 stepIndicator.setCurrentStep(1);
-                updateStatus("Git状态检查完成", "icons/check.svg", new Color(34, 139, 34));
+                updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", new Color(34, 139, 34));
             } catch (Exception e) {
                 log.error("Failed to perform pre-operation check", e);
-                updateStatus("状态检查失败: " + e.getMessage(), "icons/warning.svg", Color.RED);
+                updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", Color.RED);
             }
         });
     }
@@ -463,33 +452,32 @@ public class GitOperationDialog extends JDialog {
      */
     private void displayStatusDetails(GitStatusCheck check) {
         StringBuilder details = new StringBuilder();
-
-        // 显示基本状态
-        details.append("📊 Git 状态摘要:\n");
-        details.append(String.format("  📝 有未提交变更: %s\n", check.hasUncommittedChanges ? "✅" : "❌"));
-        details.append(String.format("  📦 有本地提交: %s\n", check.hasLocalCommits ? "✅" : "❌"));
-        details.append(String.format("  🌐 有远程新提交: %s\n", check.hasRemoteCommits ? "✅" : "❌"));
-
+        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_SUMMARY)).append("\n");
+        details.append(String.format("  %s %s\n",
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_UNCOMMITTED_CHANGES),
+                check.hasUncommittedChanges ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
+        details.append(String.format("  %s %s\n",
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_LOCAL_COMMITS),
+                check.hasLocalCommits ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
+        details.append(String.format("  %s %s\n",
+                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_REMOTE_COMMITS),
+                check.hasRemoteCommits ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
         if (check.localCommitsAhead > 0) {
-            details.append(String.format("  • 本地领先: %d 个提交\n", check.localCommitsAhead));
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_AHEAD, check.localCommitsAhead)).append("\n");
         }
         if (check.remoteCommitsBehind > 0) {
-            details.append(String.format("  • 远程领先: %d 个提交\n", check.remoteCommitsBehind));
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_AHEAD, check.remoteCommitsBehind)).append("\n");
         }
-
-        // 显示警告
         if (!check.warnings.isEmpty()) {
-            details.append("\n❗ 警告:\n");
+            details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WARNINGS)).append("\n");
             for (String warning : check.warnings) {
-                details.append("  • ").append(warning).append("\n");
+                details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_BULLET, warning)).append("\n");
             }
         }
-
-        // 显示建议
         if (!check.suggestions.isEmpty()) {
-            details.append("\n💡 建议:\n");
+            details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_SUGGESTIONS)).append("\n");
             for (String suggestion : check.suggestions) {
-                details.append("  • ").append(suggestion).append("\n");
+                details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_BULLET, suggestion)).append("\n");
             }
         }
 

@@ -820,4 +820,31 @@ public final class MessageKeys {
     public static final String WORKSPACE_OPERATION_FAILED = "workspace.operation.failed";
     public static final String WORKSPACE_OPERATION_FAILED_TIP = "workspace.operation.failed_tip";
     public static final String WORKSPACE_OPERATION_FAILED_DETAIL = "workspace.operation.failed_detail";
+
+    // ============ GitOperationDialog 国际化 ============
+    public static final String GIT_DIALOG_WORKSPACE = "git.dialog.workspace";
+    public static final String GIT_DIALOG_CURRENT_BRANCH = "git.dialog.currentBranch";
+    public static final String GIT_DIALOG_UNKNOWN = "git.dialog.unknown";
+    public static final String GIT_DIALOG_REMOTE_BRANCH = "git.dialog.remoteBranch";
+    public static final String GIT_DIALOG_NOT_SET = "git.dialog.notSet";
+    public static final String GIT_DIALOG_STATUS_CHECK = "git.dialog.statusCheck";
+    public static final String GIT_DIALOG_CHECKING_STATUS = "git.dialog.checkingStatus";
+    public static final String GIT_DIALOG_FILE_CHANGES = "git.dialog.fileChanges";
+    public static final String GIT_DIALOG_LOADING_FILE_CHANGES = "git.dialog.loadingFileChanges";
+    public static final String GIT_DIALOG_COMMIT_MESSAGE = "git.dialog.commitMessage";
+    public static final String GIT_DIALOG_DEFAULT_COMMIT_MESSAGE = "git.dialog.defaultCommitMessage";
+    public static final String GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT = "git.dialog.checkingStatusAndConflict";
+    public static final String GIT_DIALOG_STATUS_CHECK_DONE = "git.dialog.statusCheckDone";
+    public static final String GIT_DIALOG_STATUS_CHECK_FAILED = "git.dialog.statusCheckFailed";
+    public static final String GIT_DIALOG_STATUS_SUMMARY = "git.dialog.statusSummary";
+    public static final String GIT_DIALOG_HAS_UNCOMMITTED_CHANGES = "git.dialog.hasUncommittedChanges";
+    public static final String GIT_DIALOG_HAS_LOCAL_COMMITS = "git.dialog.hasLocalCommits";
+    public static final String GIT_DIALOG_HAS_REMOTE_COMMITS = "git.dialog.hasRemoteCommits";
+    public static final String GIT_DIALOG_LOCAL_AHEAD = "git.dialog.localAhead";
+    public static final String GIT_DIALOG_REMOTE_AHEAD = "git.dialog.remoteAhead";
+    public static final String GIT_DIALOG_WARNINGS = "git.dialog.warnings";
+    public static final String GIT_DIALOG_SUGGESTIONS = "git.dialog.suggestions";
+    public static final String GIT_DIALOG_BULLET = "git.dialog.bullet";
+    public static final String GIT_DIALOG_YES = "git.dialog.yes";
+    public static final String GIT_DIALOG_NO = "git.dialog.no";
 }

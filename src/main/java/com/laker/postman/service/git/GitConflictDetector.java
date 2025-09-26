@@ -92,24 +92,8 @@ public class GitConflictDetector {
         result.untracked.addAll(status.getUntracked());
         result.conflicting.addAll(status.getConflicting());
 
-        if (result.hasUncommittedChanges) {
-            // 计算未提交变更的数量和文件列表
-            result.uncommittedCount = status.getModified().size() +
-                    status.getChanged().size() +
-                    status.getRemoved().size() +
-                    status.getMissing().size() +
-                    status.getAdded().size() +
-                    status.getUncommittedChanges().size();
-        }
-
-        // 检查未跟踪的文件
-        result.hasUntrackedFiles = !status.getUntracked().isEmpty();
-        if (result.hasUntrackedFiles) {
-            result.untrackedCount = status.getUntracked().size();
-        }
-
         // 检查是否可以提交
-        result.canCommit = result.hasUncommittedChanges || result.hasUntrackedFiles;
+        result.canCommit = result.hasUncommittedChanges;
     }
 
     private static void checkRemoteStatus(Git git, String workspacePath, GitStatusCheck result,
@@ -485,11 +469,10 @@ public class GitConflictDetector {
 
             // 设置冲突状态
             result.hasFileConflicts = !conflictFiles.isEmpty();
-            result.conflictingFilesCount = conflictFiles.size();
             result.conflictingFiles.addAll(conflictFiles);
 
             if (result.hasFileConflicts) {
-                result.warnings.add("检测到 " + result.conflictingFilesCount + " 个文件可能存在内容冲突");
+                result.warnings.add("检测到 " + conflictFiles.size() + " 个文件可能存在内容冲突");
                 result.suggestions.add("冲突文件: " + String.join(", ", conflictFiles.subList(0, Math.min(5, conflictFiles.size()))));
                 if (conflictFiles.size() > 5) {
                     result.suggestions.add("还有 " + (conflictFiles.size() - 5) + " 个文件可能冲突");
@@ -541,33 +524,7 @@ public class GitConflictDetector {
 
     private static void generateCommitSuggestions(GitStatusCheck result) {
         if (result.canCommit) {
-            StringBuilder suggestion = new StringBuilder();
-            suggestion.append("可以提交变更");
-
-            int totalChanges = 0;
-            List<String> changeTypes = new ArrayList<>();
-
-            if (result.hasUncommittedChanges && result.uncommittedCount > 0) {
-                totalChanges += result.uncommittedCount;
-                changeTypes.add(result.uncommittedCount + " 个文件变更");
-            }
-
-            if (result.hasUntrackedFiles && result.untrackedCount > 0) {
-                totalChanges += result.untrackedCount;
-                changeTypes.add(result.untrackedCount + " 个未跟踪文件");
-            }
-
-            if (totalChanges > 0) {
-                suggestion.append("：").append(String.join("、", changeTypes));
-                suggestion.append("（共 ").append(totalChanges).append(" 个文件）");
-            }
-
-            result.suggestions.add(suggestion.toString());
-
-            // 添加具体的操作建议
-            if (result.hasUntrackedFiles) {
-                result.suggestions.add("未跟踪文件将被添加到版本控制中");
-            }
+            result.suggestions.add("可以提交变更");
             if (result.hasUncommittedChanges) {
                 result.suggestions.add("已修改的文件将被提交");
             }
@@ -581,17 +538,6 @@ public class GitConflictDetector {
         if (result.hasUncommittedChanges) {
             result.warnings.add("有未提交的变更，无法推送");
             result.suggestions.add("请先提交所有变更，然后再推送");
-            return;
-        }
-
-        if (!result.hasLocalCommits) {
-            if (result.hasUntrackedFiles) {
-                result.warnings.add("有未跟踪文件但没有提交");
-                result.suggestions.add("请先提交未跟踪文件，然后再推送");
-            } else {
-                result.warnings.add("没有本地提交需要推送");
-                result.suggestions.add("本地仓库已与远程仓库同步");
-            }
             return;
         }
 
@@ -625,7 +571,7 @@ public class GitConflictDetector {
     private static void handleFirstPushSuggestions(GitStatusCheck result) {
         if (result.hasFileConflicts) {
             result.warnings.add("⚠️ 首次推送可能覆盖远程分支已有内容");
-            result.suggestions.add("检测到 " + result.conflictingFilesCount + " 个文件可能冲突");
+            result.suggestions.add("检测到 " + result.conflictingFiles.size() + " 个文件可能冲突");
             result.suggestions.add("建议使用 --force-with-lease 进行安全的强制推送");
             result.suggestions.add("或者先拉取远程分支内容进行手动合并");
             result.suggestions.add("推送前请确认要覆盖的远程文件");
@@ -674,10 +620,6 @@ public class GitConflictDetector {
             result.suggestions.add("本地仓库已是最新状态");
         } else if (result.hasRemoteCommits) {
             result.suggestions.add("可以安全拉取 " + result.remoteCommitsBehind + " 个远程提交");
-        }
-
-        if (result.hasUntrackedFiles) {
-            result.suggestions.add("注意：有 " + result.untrackedCount + " 个未跟踪文件可能与远程变更冲突");
         }
     }
 
@@ -902,7 +844,6 @@ public class GitConflictDetector {
 
             // 设置检测结果
             result.hasActualConflicts = !conflictFiles.isEmpty();
-            result.conflictingFilesCount = conflictFiles.size();
             result.conflictingFiles.addAll(conflictFiles);
 
             // 判断是否只有新文件

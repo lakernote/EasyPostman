@@ -11,7 +11,6 @@ import java.util.Map;
 public class GitStatusCheck {
     // 基本状态
     public boolean hasUncommittedChanges = false; // 是否有未提交的更改
-    public boolean hasUntrackedFiles = false; // 是否有未跟踪的文件
     public boolean hasLocalCommits = false; // 是否有本地提交
     public boolean hasRemoteCommits = false; // 是否有远程提交
 
@@ -46,11 +45,8 @@ public class GitStatusCheck {
     public boolean isEmptyLocalRepository = false; // 本地仓库是否为空
 
     // 详细数量信息
-    public int uncommittedCount = 0;
-    public int untrackedCount = 0;
     public int localCommitsAhead = 0;
     public int remoteCommitsBehind = 0;
-    public int conflictingFilesCount = 0;
 
     // 消息列表（保留用于详细说明）
     public final List<String> warnings = new ArrayList<>();

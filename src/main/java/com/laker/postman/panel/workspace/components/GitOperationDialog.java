@@ -88,7 +88,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void setupDialog() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(750, 650);
+        setSize(750, 600);
         setLocationRelativeTo(getParent());
         setLayout(new BorderLayout());
 
@@ -465,7 +465,6 @@ public class GitOperationDialog extends JDialog {
         // 显示基本状态
         details.append("📊 Git 状态摘要:\n");
         details.append(String.format("  • 未提交变更: %s\n", check.hasUncommittedChanges ? "是" : "否"));
-        details.append(String.format("  • 未跟踪文件: %s\n", check.hasUntrackedFiles ? "是" : "否"));
         details.append(String.format("  • 本地提交: %s\n", check.hasLocalCommits ? "是" : "否"));
         details.append(String.format("  • 远程新提交: %s\n", check.hasRemoteCommits ? "是" : "否"));
 
@@ -715,7 +714,7 @@ public class GitOperationDialog extends JDialog {
         }
         StringBuilder details = new StringBuilder();
         // 展示详细变更类型
-        details.append("\n📁 文件变更详情:\n");
+        details.append("📁 文件变更详情:\n");
         if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
             details.append("  • 新增文件: ").append(statusCheck.added.size()).append("\n");
             for (String file : statusCheck.added) {
@@ -818,11 +817,11 @@ public class GitOperationDialog extends JDialog {
                         details.append("      Remote: ").append(String.join(" | ", block.getRemoteLines())).append("\n");
                     }
                 } else {
-                    details.append("    (无详细冲突块信息)\n");
+                    details.append("    (无详细冲突块信息)");
                 }
             }
         } else {
-            details.append("  • 无文件冲突\n");
+            details.append("  • 无文件冲突");
         }
         fileChangesArea.setText(details.toString());
         fileChangesArea.setCaretPosition(0);

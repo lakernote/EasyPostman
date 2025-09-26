@@ -32,6 +32,7 @@ import static com.laker.postman.service.git.GitConflictDetector.checkGitStatus;
 /**
  * Git 操作对话框
  * 场景1：提交 推送 拉取
+ * 场景2：本地提交和远程提交不冲突
  */
 @Slf4j
 public class GitOperationDialog extends JDialog {
@@ -912,6 +913,11 @@ public class GitOperationDialog extends JDialog {
                                 publish("正在提交变更...");
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), commitMessage);
                                 notifyWorkspacePanel(commitResult);
+                                if (statusCheck.remoteCommitsBehind > 0) {
+                                    publish("检测到远程有新提交，先拉取远程变更...");
+                                    var pullResult = workspaceService.pullUpdates(workspace.getId());
+                                    notifyWorkspacePanel(pullResult);
+                                }
                                 publish("提交完成，正在推送到远程仓库...");
                                 var pushResult = workspaceService.pushChanges(workspace.getId());
                                 notifyWorkspacePanel(pushResult);

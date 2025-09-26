@@ -31,6 +31,7 @@ import static com.laker.postman.service.git.GitConflictDetector.checkGitStatus;
 
 /**
  * Git 操作对话框
+ * 场景1：提交 推送 拉取
  */
 @Slf4j
 public class GitOperationDialog extends JDialog {

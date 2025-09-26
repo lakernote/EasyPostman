@@ -185,29 +185,69 @@ public class GitConflictDetector {
                         CanonicalTreeParser remoteTreeIter = new CanonicalTreeParser();
                         remoteTreeIter.reset(git.getRepository().newObjectReader(), remoteTree);
 
-                        List<DiffEntry> diffEntries = git.diff()
-                                .setOldTree(remoteTreeIter)
-                                .setNewTree(localTreeIter)
-                                .call();
-                        for (DiffEntry entry : diffEntries) {
-                            switch (entry.getChangeType()) {
-                                case ADD:
-                                    result.remoteAdded.add(entry.getNewPath());
-                                    break;
-                                case MODIFY:
-                                    result.remoteModified.add(entry.getNewPath());
-                                    break;
-                                case DELETE:
-                                    result.remoteRemoved.add(entry.getOldPath());
-                                    break;
-                                case RENAME:
-                                    result.remoteRenamed.add(entry.getOldPath() + " -> " + entry.getNewPath());
-                                    break;
-                                case COPY:
-                                    result.remoteCopied.add(entry.getNewPath());
-                                    break;
-                                default:
-                                    break;
+                        // 获取 merge base
+                        ObjectId mergeBaseId = findMergeBase(git, localId, remoteId);
+                        if (mergeBaseId != null) {
+                            RevCommit mergeBaseCommit = revWalk.parseCommit(mergeBaseId);
+                            RevTree baseTree = mergeBaseCommit.getTree();
+                            CanonicalTreeParser baseTreeIter = new CanonicalTreeParser();
+                            baseTreeIter.reset(git.getRepository().newObjectReader(), baseTree);
+
+                            // 用 merge base 和 remote 做 diff，获取 remote 的新增/修改/删除
+                            List<DiffEntry> diffEntries = git.diff()
+                                    .setOldTree(baseTreeIter)
+                                    .setNewTree(remoteTreeIter)
+                                    .call();
+                            result.remoteAdded.clear();
+                            result.remoteModified.clear();
+                            result.remoteRemoved.clear();
+                            for (DiffEntry entry : diffEntries) {
+                                switch (entry.getChangeType()) {
+                                    case ADD:
+                                        result.remoteAdded.add(entry.getNewPath());
+                                        break;
+                                    case MODIFY:
+                                        result.remoteModified.add(entry.getNewPath());
+                                        break;
+                                    case DELETE:
+                                        result.remoteRemoved.add(entry.getOldPath());
+                                        break;
+                                    case RENAME:
+                                        result.remoteRenamed.add(entry.getOldPath() + " -> " + entry.getNewPath());
+                                        break;
+                                    case COPY:
+                                        result.remoteCopied.add(entry.getNewPath());
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        } else {
+                            // 没有 merge base，保持原逻辑（直接 diff remote 和 local）
+                            List<DiffEntry> diffEntries = git.diff()
+                                    .setOldTree(remoteTreeIter)
+                                    .setNewTree(localTreeIter)
+                                    .call();
+                            for (DiffEntry entry : diffEntries) {
+                                switch (entry.getChangeType()) {
+                                    case ADD:
+                                        result.remoteAdded.add(entry.getNewPath());
+                                        break;
+                                    case MODIFY:
+                                        result.remoteModified.add(entry.getNewPath());
+                                        break;
+                                    case DELETE:
+                                        result.remoteRemoved.add(entry.getOldPath());
+                                        break;
+                                    case RENAME:
+                                        result.remoteRenamed.add(entry.getOldPath() + " -> " + entry.getNewPath());
+                                        break;
+                                    case COPY:
+                                        result.remoteCopied.add(entry.getNewPath());
+                                        break;
+                                    default:
+                                        break;
+                                }
                             }
                         }
                     } catch (Exception e) {

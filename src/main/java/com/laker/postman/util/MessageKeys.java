@@ -913,4 +913,46 @@ public final class MessageKeys {
     public static final String GIT_DIALOG_REMOTE_RENAMED_FILES = "git.dialog.remoteRenamedFiles";
     public static final String GIT_DIALOG_REMOTE_COPIED_FILES = "git.dialog.remoteCopiedFiles";
     public static final String GIT_DIALOG_NO_REMOTE_CHANGES = "git.dialog.noRemoteChanges";
+
+    // 冲突详情相关
+    public static final String GIT_DIALOG_CONFLICT_DETAILS_TITLE = "git.dialog.conflictDetails.title";
+    public static final String GIT_DIALOG_CONFLICT_FILE = "git.dialog.conflictFile";
+    public static final String GIT_DIALOG_CONFLICT_BLOCK = "git.dialog.conflictBlock";
+    public static final String GIT_DIALOG_CONFLICT_BLOCK_LINES = "git.dialog.conflictBlock.lines";
+    public static final String GIT_DIALOG_CONFLICT_BASE = "git.dialog.conflictBase";
+    public static final String GIT_DIALOG_CONFLICT_LOCAL = "git.dialog.conflictLocal";
+    public static final String GIT_DIALOG_CONFLICT_REMOTE = "git.dialog.conflictRemote";
+    public static final String GIT_DIALOG_NO_CONFLICT_DETAILS = "git.dialog.noConflictDetails";
+    public static final String GIT_DIALOG_NO_FILE_CONFLICTS = "git.dialog.noFileConflicts";
+
+    // 操作执行相关
+    public static final String GIT_DIALOG_OPERATION_COMPLETED = "git.dialog.operation.completed";
+    public static final String GIT_DIALOG_OPERATION_SUCCESS_MESSAGE = "git.dialog.operation.successMessage";
+    public static final String GIT_DIALOG_OPERATION_SUCCESS_TITLE = "git.dialog.operation.successTitle";
+    public static final String GIT_DIALOG_OPERATION_FAILED = "git.dialog.operation.failed";
+    public static final String GIT_DIALOG_OPERATION_FAILED_MESSAGE = "git.dialog.operation.failedMessage";
+    public static final String GIT_DIALOG_OPERATION_FAILED_TITLE = "git.dialog.operation.failedTitle";
+    public static final String GIT_DIALOG_OPERATION_EXECUTING = "git.dialog.operation.executing";
+    public static final String GIT_DIALOG_OPERATION_EXECUTING_PROGRESS = "git.dialog.operation.executingProgress";
+
+    // 各种操作进度消息
+    public static final String GIT_DIALOG_PROGRESS_COMMITTING = "git.dialog.progress.committing";
+    public static final String GIT_DIALOG_PROGRESS_REMOTE_COMMITS_PULL_FIRST = "git.dialog.progress.remoteCommitsPullFirst";
+    public static final String GIT_DIALOG_PROGRESS_COMMIT_DONE_PUSHING = "git.dialog.progress.commitDonePushing";
+    public static final String GIT_DIALOG_PROGRESS_FORCE_PUSHING = "git.dialog.progress.forcePushing";
+    public static final String GIT_DIALOG_PROGRESS_PULL_FIRST = "git.dialog.progress.pullFirst";
+    public static final String GIT_DIALOG_PROGRESS_THEN_PUSH = "git.dialog.progress.thenPush";
+    public static final String GIT_DIALOG_PROGRESS_PUSHING = "git.dialog.progress.pushing";
+    public static final String GIT_DIALOG_PROGRESS_COMMIT_LOCAL_FIRST = "git.dialog.progress.commitLocalFirst";
+    public static final String GIT_DIALOG_PROGRESS_THEN_PULL = "git.dialog.progress.thenPull";
+    public static final String GIT_DIALOG_PROGRESS_STASHING = "git.dialog.progress.stashing";
+    public static final String GIT_DIALOG_PROGRESS_PULLING_REMOTE = "git.dialog.progress.pullingRemote";
+    public static final String GIT_DIALOG_PROGRESS_RESTORING_STASH = "git.dialog.progress.restoringStash";
+    public static final String GIT_DIALOG_PROGRESS_FORCE_PULL_DISCARD = "git.dialog.progress.forcePullDiscard";
+    public static final String GIT_DIALOG_PROGRESS_PULLING_FROM_REMOTE = "git.dialog.progress.pullingFromRemote";
+    public static final String GIT_DIALOG_USER_CANCELLED = "git.dialog.userCancelled";
+
+    // 验证相关
+    public static final String GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY = "git.dialog.validation.commitMessage.empty";
+    public static final String GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_TITLE = "git.dialog.validation.commitMessage.title";
 }

@@ -800,26 +800,26 @@ public class GitOperationDialog extends JDialog {
         }
 
         // 冲突文件详情展示
-        details.append("\n❗ 冲突文件详情:\n");
+        details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_DETAILS_TITLE)).append("\n");
         if (statusCheck.conflictingFiles != null && !statusCheck.conflictingFiles.isEmpty()) {
             for (String file : statusCheck.conflictingFiles) {
-                details.append("  • 文件: ").append(file).append("\n");
+                details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_FILE)).append(file).append("\n");
                 List<com.laker.postman.model.ConflictBlock> blocks = statusCheck.conflictDetails.get(file);
                 if (blocks != null && !blocks.isEmpty()) {
                     for (int i = 0; i < blocks.size(); i++) {
                         com.laker.postman.model.ConflictBlock block = blocks.get(i);
-                        details.append("    冲突块 ").append(i + 1).append(": 行[")
+                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK)).append(i + 1).append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK_LINES))
                                 .append(block.getBegin()).append("-").append(block.getEnd()).append("]\n");
-                        details.append("      Base: ").append(String.join(" | ", block.getBaseLines())).append("\n");
-                        details.append("      Local: ").append(String.join(" | ", block.getLocalLines())).append("\n");
-                        details.append("      Remote: ").append(String.join(" | ", block.getRemoteLines())).append("\n");
+                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BASE)).append(String.join(" | ", block.getBaseLines())).append("\n");
+                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_LOCAL)).append(String.join(" | ", block.getLocalLines())).append("\n");
+                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_REMOTE)).append(String.join(" | ", block.getRemoteLines())).append("\n");
                     }
                 } else {
-                    details.append("    (无详细冲突块信息)");
+                    details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_CONFLICT_DETAILS));
                 }
             }
         } else {
-            details.append("  • 无文件冲突");
+            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_FILE_CONFLICTS));
         }
         fileChangesArea.setText(details.toString());
         fileChangesArea.setCaretPosition(0);
@@ -862,12 +862,12 @@ public class GitOperationDialog extends JDialog {
                     hideProgress();
                     try {
                         get();
-                        updateStatus("操作完成", "icons/check.svg", new Color(34, 139, 34));
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", new Color(34, 139, 34));
 
                         JOptionPane.showMessageDialog(
                                 GitOperationDialog.this,
-                                operation.getDisplayName() + " 操作执行成功！",
-                                "操作成功",
+                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_MESSAGE, operation.getDisplayName()),
+                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_TITLE),
                                 JOptionPane.INFORMATION_MESSAGE
                         );
 
@@ -875,7 +875,7 @@ public class GitOperationDialog extends JDialog {
 
                     } catch (Exception ex) {
                         log.error("Git operation failed", ex);
-                        updateStatus("操作失败: " + ex.getMessage(), "icons/warning.svg", Color.RED);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED, ex.getMessage()), "icons/warning.svg", Color.RED);
 
                         String errorMessage = ex.getMessage();
                         if (ex.getCause() != null && ex.getCause().getMessage() != null) {
@@ -884,86 +884,86 @@ public class GitOperationDialog extends JDialog {
 
                         JOptionPane.showMessageDialog(
                                 GitOperationDialog.this,
-                                "操作失败: " + errorMessage,
-                                "操作失败",
+                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED_MESSAGE, errorMessage),
+                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED_TITLE),
                                 JOptionPane.ERROR_MESSAGE
                         );
                     }
                 }
 
                 private void executeGitOperationWithChoice(String choice) throws Exception {
-                    publish("正在执行 " + operation.getDisplayName() + " 操作...");
+                    publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_EXECUTING_PROGRESS, operation.getDisplayName()));
 
                     switch (operation) {
                         case COMMIT -> {
                             if (OPTION_COMMIT_AND_PUSH.equals(choice)) {
-                                publish("正在提交变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMITTING));
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), commitMessage);
                                 notifyWorkspacePanel(commitResult);
                                 if (statusCheck.remoteCommitsBehind > 0) {
-                                    publish("检测到远程有新提交，先拉取远程变更...");
+                                    publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_REMOTE_COMMITS_PULL_FIRST));
                                     var pullResult = workspaceService.pullUpdates(workspace.getId());
                                     notifyWorkspacePanel(pullResult);
                                 }
-                                publish("提交完成，正在推送到远程仓库...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMIT_DONE_PUSHING));
                                 var pushResult = workspaceService.pushChanges(workspace.getId());
                                 notifyWorkspacePanel(pushResult);
                             } else {
-                                publish("正在提交变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMITTING));
                                 var result = workspaceService.commitChanges(workspace.getId(), commitMessage);
                                 notifyWorkspacePanel(result);
                             }
                         }
                         case PUSH -> {
                             if (OPTION_FORCE.equals(choice)) {
-                                publish("正在强制推送到远程仓库...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_FORCE_PUSHING));
                                 var result = workspaceService.forcePushChanges(workspace.getId());
                                 notifyWorkspacePanel(result);
                             } else if (OPTION_PULL_FIRST.equals(choice)) {
-                                publish("先拉取远程变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PULL_FIRST));
                                 var pullResult = workspaceService.pullUpdates(workspace.getId());
                                 notifyWorkspacePanel(pullResult);
 
-                                publish("然后推送本地变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_THEN_PUSH));
                                 var pushResult = workspaceService.pushChanges(workspace.getId());
                                 notifyWorkspacePanel(pushResult);
                             } else {
-                                publish("正在推送到远程仓库...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PUSHING));
                                 var result = workspaceService.pushChanges(workspace.getId());
                                 notifyWorkspacePanel(result);
                             }
                         }
                         case PULL -> {
                             if (OPTION_COMMIT_FIRST.equals(choice)) {
-                                publish("先提交本地变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMIT_LOCAL_FIRST));
                                 String autoCommitMsg = "Auto commit before pull - " +
                                         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), autoCommitMsg);
                                 notifyWorkspacePanel(commitResult);
 
-                                publish("然后拉取远程变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_THEN_PULL));
                                 var pullResult = workspaceService.pullUpdates(workspace.getId());
                                 notifyWorkspacePanel(pullResult);
                             } else if (OPTION_STASH.equals(choice)) {
-                                publish("暂存本地变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_STASHING));
                                 var stashResult = workspaceService.stashChanges(workspace.getId());
                                 notifyWorkspacePanel(stashResult);
 
-                                publish("拉取远程变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PULLING_REMOTE));
                                 var pullResult = workspaceService.pullUpdates(workspace.getId());
                                 notifyWorkspacePanel(pullResult);
 
-                                publish("恢复暂存的变更...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_RESTORING_STASH));
                                 var popResult = workspaceService.popStashChanges(workspace.getId());
                                 notifyWorkspacePanel(popResult);
                             } else if (OPTION_FORCE.equals(choice)) {
-                                publish("强制拉取（丢弃本地变更）...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_FORCE_PULL_DISCARD));
                                 var result = workspaceService.forcePullUpdates(workspace.getId());
                                 notifyWorkspacePanel(result);
                             } else if (OPTION_CANCEL.equals(choice)) {
-                                throw new RuntimeException("用户取消操作");
+                                throw new RuntimeException(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_USER_CANCELLED));
                             } else {
-                                publish("正在从远程仓库拉取...");
+                                publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PULLING_FROM_REMOTE));
                                 var result = workspaceService.pullUpdates(workspace.getId());
                                 notifyWorkspacePanel(result);
                             }
@@ -982,8 +982,8 @@ public class GitOperationDialog extends JDialog {
                 if (message.isEmpty()) {
                     JOptionPane.showMessageDialog(
                             GitOperationDialog.this,
-                            "请输入提交信息",
-                            "提交信息不能为空",
+                            I18nUtil.getMessage(MessageKeys.GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY),
+                            I18nUtil.getMessage(MessageKeys.GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_TITLE),
                             JOptionPane.WARNING_MESSAGE
                     );
                     return false;
@@ -1002,7 +1002,7 @@ public class GitOperationDialog extends JDialog {
         private void showProgress() {
             progressBar.setVisible(true);
             progressBar.setIndeterminate(true);
-            progressBar.setString("正在执行操作...");
+            progressBar.setString(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_EXECUTING));
             executeButton.setEnabled(false);
         }
 

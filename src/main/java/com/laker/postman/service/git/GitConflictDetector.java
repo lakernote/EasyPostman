@@ -3,7 +3,6 @@ package com.laker.postman.service.git;
 import cn.hutool.core.io.FileUtil;
 import com.laker.postman.model.ConflictBlock;
 import com.laker.postman.model.GitStatusCheck;
-import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
@@ -50,7 +49,7 @@ public class GitConflictDetector {
     }
 
     /**
-     * 检查Git仓库状态，判断是否可以执行指定操作（完整版本，支持所有认证方式）
+     * 检查Git仓库状态，判断是否可以执行指定操作
      */
     public static GitStatusCheck checkGitStatus(String workspacePath, String operationType,
                                                 CredentialsProvider credentialsProvider,
@@ -257,7 +256,7 @@ public class GitConflictDetector {
             determineOperationCapabilities(result, localId, remoteId, fetchSuccess);
 
             // 执行冲突检测
-            performIntelligentConflictDetection(git, workspacePath,result, localId, remoteId);
+            performIntelligentConflictDetection(git, workspacePath, result, localId, remoteId);
 
         } catch (Exception e) {
             log.warn("Failed to check remote status", e);
@@ -636,7 +635,7 @@ public class GitConflictDetector {
      * 执行冲突检测
      * 通过分析本地和远程的变更，判断是否存在实际冲突以及是否可以自动合并
      */
-    private static void performIntelligentConflictDetection(Git git,String workspacePath, GitStatusCheck result, ObjectId localId, ObjectId remoteId) {
+    private static void performIntelligentConflictDetection(Git git, String workspacePath, GitStatusCheck result, ObjectId localId, ObjectId remoteId) {
         try {
             // 如果本地或远程仓库为空，则无法进行智能冲突检测
             if (localId == null || remoteId == null) {
@@ -673,7 +672,7 @@ public class GitConflictDetector {
             }
 
             // 分析文件级别的冲突
-            analyzeFileConflicts(git,workspacePath, result, mergeBase, localId, remoteId);
+            analyzeFileConflicts(git, workspacePath, result, mergeBase, localId, remoteId);
 
         } catch (Exception e) {
             log.debug("智能冲突检测失败", e);
@@ -707,7 +706,7 @@ public class GitConflictDetector {
     /**
      * 分析文件级别的冲突
      */
-    private static void analyzeFileConflicts(Git git,String workspacePath, GitStatusCheck result, ObjectId mergeBase,
+    private static void analyzeFileConflicts(Git git, String workspacePath, GitStatusCheck result, ObjectId mergeBase,
                                              ObjectId localId, ObjectId remoteId) {
         try {
             // 获取从merge base到本地的变更

@@ -131,7 +131,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(getOperationColor());
+        panel.setBackground(operation.getColor());
         panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         // 左侧：操作图标和名称
@@ -190,17 +190,6 @@ public class GitOperationDialog extends JDialog {
         panel.add(remoteBranchLabel);
 
         return panel;
-    }
-
-    /**
-     * 获取操作对应的主题色
-     */
-    private Color getOperationColor() {
-        return switch (operation) {
-            case COMMIT -> new Color(34, 139, 34);   // 绿色
-            case PUSH -> new Color(30, 144, 255);    // 蓝色
-            case PULL -> new Color(216, 209, 160);     // 橙色
-        };
     }
 
     /**
@@ -394,7 +383,7 @@ public class GitOperationDialog extends JDialog {
         executeButton = new JButton(operation.getDisplayName());
         executeButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         executeButton.setPreferredSize(new Dimension(100, 32));
-        executeButton.setBackground(getOperationColor());
+        executeButton.setBackground(operation.getColor());
         executeButton.setForeground(Color.WHITE);
         executeButton.setFocusPainted(false);
         executeButton.addActionListener(new ExecuteActionListener());

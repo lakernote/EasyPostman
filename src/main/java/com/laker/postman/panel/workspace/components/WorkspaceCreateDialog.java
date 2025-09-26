@@ -370,7 +370,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         gbc.gridy = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
-        branchLabel = new JLabel("分支:");
+        branchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_BRANCH_LABEL));
         gitConfigPanel.add(branchLabel, gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -496,17 +496,17 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         return new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
-                publish("正在创建工作区...");
+                publish(I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_CREATING));
                 setProgress(10);
                 try {
                     // 使用 WorkspaceService 创建工作区，它会处理所有的 Git 操作
                     WorkspaceService.getInstance().createWorkspace(workspace);
-                    publish("工作区创建完成！");
+                    publish(I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_CREATION_COMPLETED));
                     setProgress(100);
                 } catch (Exception e) {
                     // 重新抛出异常，让 SwingWorker 的错误处理机制处理
-                    log.error("创建工作区失败", e);
-                    throw new WorkspaceCreateException("创建工作区失败: " + e.getMessage(), e);
+                    log.error(I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_CREATION_FAILED), e);
+                    throw new WorkspaceCreateException(I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_CREATION_FAILED_WITH_MESSAGE, e.getMessage()), e);
                 }
 
                 return null;

@@ -1,6 +1,8 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -26,9 +28,9 @@ public class ProgressPanel extends JPanel {
     private void initComponents() {
         progressBar = new JProgressBar();
         progressBar.setStringPainted(true);
-        progressBar.setString("准备就绪");
+        progressBar.setString(I18nUtil.getMessage(MessageKeys.PROGRESS_PANEL_READY));
 
-        statusLabel = new JLabel("请填写配置信息");
+        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PROGRESS_PANEL_FILL_CONFIG));
         statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 11));
     }
 
@@ -62,18 +64,18 @@ public class ProgressPanel extends JPanel {
     }
 
     /**
-     * 设置进度条文本
+     * 设置进度文本
      */
     public void setProgressText(String text) {
         progressBar.setString(text);
     }
 
     /**
-     * 重置进度
+     * 重置进度面板状态
      */
     public void reset() {
         progressBar.setValue(0);
-        progressBar.setString("准备就绪");
-        statusLabel.setText("请填写配置信息");
+        progressBar.setString(I18nUtil.getMessage(MessageKeys.PROGRESS_PANEL_READY));
+        statusLabel.setText(I18nUtil.getMessage(MessageKeys.PROGRESS_PANEL_FILL_CONFIG));
     }
 }

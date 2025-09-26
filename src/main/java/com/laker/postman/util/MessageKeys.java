@@ -288,6 +288,28 @@ public final class MessageKeys {
     public static final String WORKSPACE_VALIDATION_AUTH_REQUIRED = "workspace.validation.auth.required";
     public static final String WORKSPACE_AUTO_GENERATE_PATH = "workspace.auto_generate_path";
 
+    // WorkspaceCreateDialog specific keys
+    public static final String WORKSPACE_CREATE_DIALOG_BRANCH_LABEL = "workspace.create.dialog.branch.label";
+    public static final String WORKSPACE_CREATE_DIALOG_CREATING = "workspace.create.dialog.creating";
+    public static final String WORKSPACE_CREATE_DIALOG_CREATION_COMPLETED = "workspace.create.dialog.creation.completed";
+    public static final String WORKSPACE_CREATE_DIALOG_CREATION_FAILED = "workspace.create.dialog.creation.failed";
+    public static final String WORKSPACE_CREATE_DIALOG_CREATION_FAILED_WITH_MESSAGE = "workspace.create.dialog.creation.failed.with.message";
+    public static final String WORKSPACE_CREATE_DIALOG_GIT_INFO_TITLE = "workspace.create.dialog.git.info.title";
+
+    // ProgressDialog keys
+    public static final String PROGRESS_DIALOG_OPERATION_SUCCESS = "progress.dialog.operation.success";
+    public static final String PROGRESS_DIALOG_OPERATION_COMPLETED_CLOSING = "progress.dialog.operation.completed.closing";
+    public static final String PROGRESS_DIALOG_OPERATION_FAILED = "progress.dialog.operation.failed";
+    public static final String PROGRESS_DIALOG_CHECK_INPUT_RETRY = "progress.dialog.check.input.retry";
+    public static final String PROGRESS_DIALOG_OPERATION_FAILED_WITH_MESSAGE = "progress.dialog.operation.failed.with.message";
+    public static final String PROGRESS_DIALOG_CONFIRM_CANCEL_OPERATION = "progress.dialog.confirm.cancel.operation";
+    public static final String PROGRESS_DIALOG_CONFIRM_CANCEL_TITLE = "progress.dialog.confirm.cancel.title";
+    public static final String PROGRESS_DIALOG_PROGRESS_LABEL = "progress.dialog.progress.label";
+
+    // ProgressPanel keys
+    public static final String PROGRESS_PANEL_READY = "progress.panel.ready";
+    public static final String PROGRESS_PANEL_FILL_CONFIG = "progress.panel.fill_config";
+
     // ============ 工作区详情面板相关 ============
     public static final String WORKSPACE_DETAIL_BASIC_INFO = "workspace.detail.basic_info";
     public static final String WORKSPACE_DETAIL_CREATED_TIME = "workspace.detail.created_time";

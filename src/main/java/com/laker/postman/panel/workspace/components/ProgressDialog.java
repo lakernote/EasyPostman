@@ -8,6 +8,7 @@ import lombok.Getter;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 带进度显示的对话框基类
@@ -23,8 +24,9 @@ public abstract class ProgressDialog extends JDialog {
     protected ProgressPanel progressPanel;
     protected JButton confirmButton;
     protected JButton cancelButton;
+    private SwingWorker<Void, String> currentWorker;
 
-    ProgressDialog(Window parent, String title) {
+    protected ProgressDialog(Window parent, String title) {
         super(parent, title, ModalityType.APPLICATION_MODAL);
     }
 
@@ -65,8 +67,8 @@ public abstract class ProgressDialog extends JDialog {
      */
     protected void onOperationSuccess() {
         confirmed = true;
-        progressPanel.setProgressText("操作成功！");
-        progressPanel.getStatusLabel().setText("操作完成，正在关闭对话框...");
+        progressPanel.setProgressText(I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_OPERATION_SUCCESS));
+        progressPanel.getStatusLabel().setText(I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_OPERATION_COMPLETED_CLOSING));
 
         // 延迟关闭对话框
         Timer timer = new Timer(1000, e -> dispose());
@@ -85,10 +87,10 @@ public abstract class ProgressDialog extends JDialog {
         pack();
 
         progressPanel.reset();
-        progressPanel.setProgressText("操作失败");
-        progressPanel.getStatusLabel().setText("请检查输入信息后重试");
+        progressPanel.setProgressText(I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_OPERATION_FAILED));
+        progressPanel.getStatusLabel().setText(I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_CHECK_INPUT_RETRY));
 
-        showError("操作失败: " + e.getMessage());
+        showError(I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_OPERATION_FAILED_WITH_MESSAGE, e.getMessage()));
     }
 
     /**
@@ -127,16 +129,26 @@ public abstract class ProgressDialog extends JDialog {
         if (operationInProgress) {
             int choice = JOptionPane.showConfirmDialog(
                     this,
-                    "操作正在进行中，确定要取消吗？",
-                    "确认取消",
+                    I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_CONFIRM_CANCEL_OPERATION),
+                    I18nUtil.getMessage(MessageKeys.PROGRESS_DIALOG_CONFIRM_CANCEL_TITLE),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE
             );
             if (choice == JOptionPane.YES_OPTION) {
+                cancelCurrentOperation();
                 dispose();
             }
         } else {
             dispose();
+        }
+    }
+
+    /**
+     * 取消当前操作
+     */
+    private void cancelCurrentOperation() {
+        if (currentWorker != null && !currentWorker.isDone()) {
+            currentWorker.cancel(true);
         }
     }
 
@@ -168,29 +180,46 @@ public abstract class ProgressDialog extends JDialog {
         pack();
 
         // 创建并执行后台任务
-        SwingWorker<Void, String> worker = createWorkerTask();
+        currentWorker = createWorkerTask();
 
         // 监听进度变化
-        worker.addPropertyChangeListener(evt -> {
+        currentWorker.addPropertyChangeListener(evt -> {
             if ("progress".equals(evt.getPropertyName())) {
                 progressPanel.getProgressBar().setValue((Integer) evt.getNewValue());
             }
         });
 
         // 设置进度更新处理器
-        worker.addPropertyChangeListener(evt -> {
+        currentWorker.addPropertyChangeListener(evt -> {
             if ("state".equals(evt.getPropertyName()) &&
                     SwingWorker.StateValue.DONE == evt.getNewValue()) {
-                try {
-                    worker.get(); // 检查是否有异常
-                    onOperationSuccess();
-                } catch (Exception ex) {
-                    onOperationFailure(ex);
-                }
+                handleWorkerCompletion();
             }
         });
 
-        worker.execute();
+        currentWorker.execute();
+    }
+
+    /**
+     * 处理Worker完成事件
+     */
+    private void handleWorkerCompletion() {
+        try {
+            currentWorker.get(); // 检查是否有异常
+            onOperationSuccess();
+        } catch (ExecutionException ex) {
+            // ExecutionException包装了实际的异常
+            Throwable cause = ex.getCause();
+            if (cause instanceof RuntimeException) {
+                onOperationFailure((RuntimeException) cause);
+            } else {
+                onOperationFailure(new RuntimeException(cause));
+            }
+        } catch (InterruptedException ex) {
+            // 处理中断异常
+            Thread.currentThread().interrupt(); // 重新设置中断状态
+            onOperationFailure(new RuntimeException(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_USER_CANCELLED), ex));
+        }
     }
 
     /**
@@ -200,8 +229,29 @@ public abstract class ProgressDialog extends JDialog {
         JOptionPane.showMessageDialog(
                 this,
                 message,
-                I18nUtil.getMessage(MessageKeys.ERROR),
+                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
                 JOptionPane.ERROR_MESSAGE
         );
+    }
+
+    /**
+     * 获取当前操作的Worker
+     */
+    protected SwingWorker<Void, String> getCurrentWorker() {
+        return currentWorker;
+    }
+
+    /**
+     * 检查操作是否被取消
+     */
+    protected boolean isOperationCancelled() {
+        return currentWorker != null && currentWorker.isCancelled();
+    }
+
+    @Override
+    public void dispose() {
+        // 确保清理资源
+        cancelCurrentOperation();
+        super.dispose();
     }
 }

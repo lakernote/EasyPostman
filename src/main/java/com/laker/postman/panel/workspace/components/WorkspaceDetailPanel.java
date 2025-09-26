@@ -130,7 +130,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel urlLabel = new JLabel(workspace.getGitRemoteUrl());
-        urlLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        urlLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         panel.add(urlLabel, gbc);
         row++;
 
@@ -174,7 +174,7 @@ public class WorkspaceDetailPanel extends JPanel {
                     : workspace.getLastCommitId();
         }
         JLabel commitLabel = new JLabel(shortCommitId);
-        commitLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        commitLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         panel.add(commitLabel, gbc);
 
         return panel;

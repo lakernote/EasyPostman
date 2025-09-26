@@ -752,12 +752,6 @@ public class GitOperationDialog extends JDialog {
                 details.append("    ? ").append(file).append("\n");
             }
         }
-        if (statusCheck.uncommitted != null && !statusCheck.uncommitted.isEmpty()) {
-            details.append("  • 未提交文件: ").append(statusCheck.uncommitted.size()).append("\n");
-            for (String file : statusCheck.uncommitted) {
-                details.append("    # ").append(file).append("\n");
-            }
-        }
 
         // 合并所有本地变更相关字段
 

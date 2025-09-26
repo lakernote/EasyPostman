@@ -52,11 +52,6 @@ public class GitStatusCheck {
     public int remoteCommitsBehind = 0;
     public int conflictingFilesCount = 0;
 
-    // 文件列表
-    public final List<String> uncommittedFiles = new ArrayList<>();
-    public final List<String> untrackedFilesList = new ArrayList<>();
-    public final List<String> conflictingFiles = new ArrayList<>();
-
     // 消息列表（保留用于详细说明）
     public final List<String> warnings = new ArrayList<>();
     public final List<String> suggestions = new ArrayList<>();
@@ -66,17 +61,20 @@ public class GitStatusCheck {
     public String remoteBranch;
     public String remoteUrl;
 
+    // 文件列表
+    public final List<String> conflictingFiles = new ArrayList<>();
+
     // 冲突详情（文件名 -> 冲突块列表）
     public Map<String, List<ConflictBlock>> conflictDetails = new HashMap<>();
 
     // 本地变更文件列表
-    public List<String> added = new ArrayList<>();
-    public List<String> changed = new ArrayList<>();
-    public List<String> modified = new ArrayList<>();
-    public List<String> missing = new ArrayList<>();
-    public List<String> removed = new ArrayList<>();
-    public List<String> untracked = new ArrayList<>();
-    public List<String> uncommitted = new ArrayList<>();
+    public final List<String> added = new ArrayList<>();
+    public final List<String> changed = new ArrayList<>();
+    public final List<String> removed = new ArrayList<>();
+    public final List<String> missing = new ArrayList<>();
+    public final List<String> modified = new ArrayList<>();
+    public final List<String> untracked = new ArrayList<>();
+    public final List<String> conflicting = new ArrayList<>();
 
     // 远程变更文件列表
     public List<String> remoteAdded = new ArrayList<>();

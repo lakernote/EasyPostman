@@ -19,5 +19,4 @@ public class ConflictBlock {
         this.localLines = localLines;
         this.remoteLines = remoteLines;
     }
-
 }

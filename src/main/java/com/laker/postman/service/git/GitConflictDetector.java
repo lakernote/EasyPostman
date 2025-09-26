@@ -81,12 +81,7 @@ public class GitConflictDetector {
 
     private static void checkLocalStatus(Status status, GitStatusCheck result) {
         // 检查未提交的变更
-        result.hasUncommittedChanges = !status.getModified().isEmpty() ||
-                !status.getChanged().isEmpty() ||
-                !status.getRemoved().isEmpty() ||
-                !status.getMissing().isEmpty() ||
-                !status.getAdded().isEmpty() ||
-                !status.getUncommittedChanges().isEmpty();
+        result.hasUncommittedChanges = status.hasUncommittedChanges();
 
         // 详细变更类型赋值
         result.added.clear();
@@ -101,8 +96,8 @@ public class GitConflictDetector {
         result.removed.addAll(status.getRemoved());
         result.untracked.clear();
         result.untracked.addAll(status.getUntracked());
-        result.uncommitted.clear();
-        result.uncommitted.addAll(status.getUncommittedChanges());
+        result.conflicting.clear();
+        result.conflicting.addAll(status.getConflicting());
 
         if (result.hasUncommittedChanges) {
             // 计算未提交变更的数量和文件列表
@@ -112,21 +107,12 @@ public class GitConflictDetector {
                     status.getMissing().size() +
                     status.getAdded().size() +
                     status.getUncommittedChanges().size();
-            result.uncommittedFiles.clear();
-            result.uncommittedFiles.addAll(status.getModified()); // 修改的文件
-            result.uncommittedFiles.addAll(status.getChanged()); // 新增的文件
-            result.uncommittedFiles.addAll(status.getRemoved()); // 删除的文件
-            result.uncommittedFiles.addAll(status.getMissing()); // 丢失的文件
-            result.uncommittedFiles.addAll(status.getAdded()); // 新增的文件
-            result.uncommittedFiles.addAll(status.getUncommittedChanges()); // 未提交的文件
         }
 
         // 检查未跟踪的文件
         result.hasUntrackedFiles = !status.getUntracked().isEmpty();
         if (result.hasUntrackedFiles) {
             result.untrackedCount = status.getUntracked().size();
-            result.untrackedFilesList.clear();
-            result.untrackedFilesList.addAll(status.getUntracked()); // 未跟踪的文件
         }
 
         // 检查是否可以提交

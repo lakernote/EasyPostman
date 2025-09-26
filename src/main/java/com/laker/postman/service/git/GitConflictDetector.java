@@ -353,7 +353,9 @@ public class GitConflictDetector {
         // Pull 操作判断：
         // 1. 远程分支必须存在
         // 2. 如果 fetch 失败，则不建议拉取
-        result.canPull = remoteId != null && fetchSuccess;
+        // 3. 必须有上游分支
+        // 4. 远程有新提交
+        result.canPull = remoteId != null && fetchSuccess && result.hasUpstreamBranch && result.remoteCommitsBehind > 0;
 
         // 检查远程仓库状态并添加相应建议
         if (remoteId == null) {

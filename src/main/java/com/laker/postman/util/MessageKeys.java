@@ -1091,5 +1091,8 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_USERNAME_TOOLTIP = "settings.proxy.username.tooltip";
     public static final String SETTINGS_PROXY_PASSWORD = "settings.proxy.password";
     public static final String SETTINGS_PROXY_PASSWORD_TOOLTIP = "settings.proxy.password.tooltip";
+    public static final String SETTINGS_PROXY_SSL_VERIFICATION = "settings.proxy.ssl.verification";
+    public static final String SETTINGS_PROXY_SSL_VERIFICATION_TOOLTIP = "settings.proxy.ssl.verification.tooltip";
+    public static final String SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX = "settings.proxy.ssl.verification.checkbox";
     public static final String SETTINGS_VALIDATION_PROXY_PORT_ERROR = "settings.validation.proxy_port.error";
 }

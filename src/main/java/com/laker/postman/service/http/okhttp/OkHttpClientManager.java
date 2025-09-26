@@ -1,6 +1,7 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.setting.SettingManager;
+import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -155,9 +156,40 @@ public class OkHttpClientManager {
                 builder.proxyAuthenticator(proxyAuthenticator);
             }
 
+            // SSL 配置，解决 SOCKS 代理下证书验证问题
+            if ("SOCKS".equalsIgnoreCase(proxyType)) {
+                configureSSLForProxy(builder);
+            }
+
         } catch (Exception e) {
             // 代理配置失败时记录错误，但不影响客户端创建
             log.error("Failed to configure proxy: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 为代理环境配置SSL设置，解决SOCKS代理下的SSL证书验证问题
+     */
+    private static void configureSSLForProxy(OkHttpClient.Builder builder) {
+        try {
+            if (SettingManager.isSSLVerificationDisabled()) {
+                // 如果用户显式禁用了SSL验证，使用完全信任的配置
+                SSLConfigurationUtil.configureSSL(builder, true);
+                log.warn("SSL verification disabled for proxy environment. This may pose security risks.");
+            } else {
+                // 使用代理友好的SSL配置，在保证安全性的同时允许代理环境下的连接
+                SSLConfigurationUtil.configureProxyFriendlySSL(builder);
+                log.info("Applied proxy-friendly SSL configuration");
+            }
+        } catch (Exception e) {
+            log.error("Failed to configure SSL for proxy environment: {}", e.getMessage(), e);
+            // 如果配置失败，尝试使用信任所有证书的配置作为后备方案
+            try {
+                SSLConfigurationUtil.configureSSL(builder, true);
+                log.warn("Fallback to trust-all SSL configuration due to proxy SSL configuration failure");
+            } catch (Exception fallbackException) {
+                log.error("Even fallback SSL configuration failed: {}", fallbackException.getMessage(), fallbackException);
+            }
         }
     }
 

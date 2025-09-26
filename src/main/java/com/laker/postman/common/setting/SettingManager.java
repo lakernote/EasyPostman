@@ -361,4 +361,22 @@ public class SettingManager {
         props.setProperty("proxy_password", password);
         save();
     }
+
+    // ===== SSL设置 =====
+
+    /**
+     * 是否禁用SSL证书验证（用于解决代理环境下的SSL证书问题）
+     */
+    public static boolean isSSLVerificationDisabled() {
+        String val = props.getProperty("ssl_verification_disabled");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false; // 默认启用SSL验证
+    }
+
+    public static void setSSLVerificationDisabled(boolean disabled) {
+        props.setProperty("ssl_verification_disabled", String.valueOf(disabled));
+        save();
+    }
 }

@@ -14,6 +14,11 @@ public class GitStatusCheck {
     public boolean hasLocalCommits = false; // 是否有本地提交
     public boolean hasRemoteCommits = false; // 是否有远程提交
 
+    // 本地提交数量信息
+    public int localCommitsAhead = 0;
+    // 远程提交数量信息
+    public int remoteCommitsBehind = 0;
+
     // 操作能力
     public boolean canCommit = false; // 是否可以提交
     public boolean canPush = false; // 是否可以推送
@@ -43,10 +48,6 @@ public class GitStatusCheck {
     // 操作类型判断
     public boolean isInitTypeWorkspace = false; // 是否是初始化类型的工作区
     public boolean isEmptyLocalRepository = false; // 本地仓库是否为空
-
-    // 详细数量信息
-    public int localCommitsAhead = 0;
-    public int remoteCommitsBehind = 0;
 
     // 消息列表（保留用于详细说明）
     public final List<String> warnings = new ArrayList<>();

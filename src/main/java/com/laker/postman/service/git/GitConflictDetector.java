@@ -6,7 +6,6 @@ import com.laker.postman.model.GitStatusCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
-import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.RawText;
@@ -159,23 +158,28 @@ public class GitConflictDetector {
                     Iterable<RevCommit> localCommits = git.log().setMaxCount(1).call();
                     result.hasLocalCommits = localCommits.iterator().hasNext();
 
+                    int localCommitsAhead = 0;
                     if (result.hasLocalCommits && remoteId != null) {
                         // 计算本地领先于远程的提交数
                         Iterable<RevCommit> aheadCommits = git.log()
                                 .addRange(remoteId, localId)
                                 .call();
                         for (RevCommit ignored : aheadCommits) {
-                            result.localCommitsAhead++;
+                            localCommitsAhead++;
                         }
+                        result.localCommitsAhead = localCommitsAhead;
+                        log.info("[GitStatusCheck] 当前分支: {}，本地未推送 commit 数量: {}", currentBranch, localCommitsAhead);
 
                         // 计算远程领先于本地的提交数
+                        int remoteCommitsBehind = 0;
                         Iterable<RevCommit> behindCommits = git.log()
                                 .addRange(localId, remoteId)
                                 .call();
                         for (RevCommit ignored : behindCommits) {
-                            result.remoteCommitsBehind++;
+                            remoteCommitsBehind++;
                         }
-                        result.hasRemoteCommits = result.remoteCommitsBehind > 0;
+                        result.remoteCommitsBehind = remoteCommitsBehind;
+                        result.hasRemoteCommits = remoteCommitsBehind > 0;
 
                         // 设置需要强制操作的标志
                         result.needsForcePush = result.hasRemoteCommits && result.localCommitsAhead > 0;
@@ -187,9 +191,10 @@ public class GitConflictDetector {
                         result.isRemoteRepositoryEmpty = true;
                         Iterable<RevCommit> allCommits = git.log().call();
                         for (RevCommit ignored : allCommits) {
-                            result.localCommitsAhead++;
+                            localCommitsAhead++;
                         }
-                        log.debug("Local branch exists but remote branch not found, commits to push: {}", result.localCommitsAhead);
+                        result.localCommitsAhead = localCommitsAhead;
+                        log.info("[GitStatusCheck] 当前分支: {}，远程分支不存在，全部本地 commit 未推送，数量: {}", currentBranch, localCommitsAhead);
                     }
                 } catch (org.eclipse.jgit.api.errors.NoHeadException e) {
                     // 空仓库，没有提交
@@ -326,8 +331,7 @@ public class GitConflictDetector {
         } else if (result.hasUncommittedChanges) {
             // 有未提交变更时，只有在特殊情况下才能推送
             result.canPush = result.isInitTypeWorkspace; // init 类型的首次推送可能允许
-        } else {
-            // 没有未提交变更，可以推送
+        } else if (result.localCommitsAhead > 0) { // 有本地未推送的提交
             result.canPush = true;
         }
 
@@ -358,80 +362,105 @@ public class GitConflictDetector {
                                                CredentialsProvider credentialsProvider,
                                                SshCredentialsProvider sshCredentialsProvider) {
         try {
-            // 检查是否有本地提交
+            // 检查本地是否有提交
             boolean hasLocalCommits = false;
+            ObjectId localId = null;
             try {
-                Iterable<RevCommit> localCommits = git.log().setMaxCount(1).call();
-                hasLocalCommits = localCommits.iterator().hasNext();
-            } catch (NoHeadException e) {
-                // 空仓库，没有提交
+                localId = git.getRepository().resolve("HEAD");
+                hasLocalCommits = localId != null;
+            } catch (Exception e) {
                 log.debug("Repository has no HEAD (empty repository): {}", e.getMessage());
             }
+            result.hasLocalCommits = hasLocalCommits;
 
+            int localCommitsAhead = 0;
             if (hasLocalCommits) {
-                result.hasLocalCommits = true;
-                // 计算本地提交数（最多检查前100个）
+                // fetch 远程分支信息
+                ObjectId remoteId = null;
                 try {
-                    Iterable<RevCommit> allCommits = git.log().setMaxCount(100).call();
-                    for (RevCommit ignored : allCommits) {
-                        result.localCommitsAhead++;
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to count local commits", e);
-                    result.localCommitsAhead = 1; // 保守估计
-                }
-
-                // 尝试 fetch 远程分支信息来检查冲突
-                try {
-                    // 尝试获取远程分支信息（不会修改工作区）
                     var fetchCommand = git.fetch().setDryRun(true);
-
-                    // 设置认证信息 - 支持SSH和其他认证方式
                     if (sshCredentialsProvider != null) {
                         fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
                     } else if (credentialsProvider != null) {
                         fetchCommand.setCredentialsProvider(credentialsProvider);
                     }
-
                     fetchCommand.call();
-
-                    // 检查远程是否有同名分支
                     String remoteRef = "refs/remotes/origin/" + currentBranch;
-                    ObjectId remoteId = git.getRepository().resolve(remoteRef);
-
-                    if (remoteId != null) {
-                        // 远程已有同名分支，可能存在冲突
-                        result.warnings.add("检测到远程仓库已存在同名分支，可能存在文件冲突");
-                        result.suggestions.add("建议先备份本地文件，然后谨慎处理合并");
-
-                        // 检查具体的文件冲突
-                        checkFileConflicts(git, result, remoteId);
-                    } else {
-                        // 远程没有同名分支，相对安全
-                        result.suggestions.add("远程仓库没有同名分支，首次推送相对安全");
-                    }
-
-                } catch (org.eclipse.jgit.api.errors.RefNotAdvertisedException e) {
-                    // 远程分支不存在，这是正常情况
-                    log.debug("Remote branch does not exist: {}", e.getMessage());
-                    result.suggestions.add("远程仓库没有同名分支，首次推送相对安全");
-                } catch (Exception fetchEx) {
-                    // fetch 失败可能是网络问题或认证问题
-                    log.debug("Cannot fetch remote info for conflict check", fetchEx);
-                    result.warnings.add("无法获取远程分支信息进行冲突检测");
-                    result.suggestions.add("建议检查网络连接和认证信息");
+                    remoteId = git.getRepository().resolve(remoteRef);
+                } catch (Exception e) {
+                    log.debug("Cannot fetch remote info for conflict check", e);
                 }
 
-                // 设置推送能力：有本地提交且没有未提交变更时可以推送
-                result.canPush = !result.hasUncommittedChanges;
-
-            } else {
-                // 没有本地提交，无法推送
-                result.hasLocalCommits = false;
-                result.localCommitsAhead = 0;
-                result.canPush = false;
-                result.suggestions.add("请先创建本地提交，然后进行首次推送");
+                if (remoteId != null) {
+                    // 统计本地领先于远程的 commit 数
+                    try {
+                        Iterable<RevCommit> aheadCommits = git.log().addRange(remoteId, localId).call();
+                        for (RevCommit ignored : aheadCommits) {
+                            localCommitsAhead++;
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to count ahead commits", e);
+                    }
+                    log.info("[GitStatusCheck] 当前分支: {}，本地未推送 commit 数量: {}", currentBranch, localCommitsAhead);
+                } else {
+                    // 远程分支不存在，全部本地 commit 都未推送
+                    try {
+                        Iterable<RevCommit> allCommits = git.log().call();
+                        for (RevCommit ignored : allCommits) {
+                            localCommitsAhead++;
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to count local commits", e);
+                    }
+                    log.info("[GitStatusCheck] 当前分支: {}，远程分支不存在，全部本地 commit 未推送，数量: {}", currentBranch, localCommitsAhead);
+                }
             }
+            result.localCommitsAhead = localCommitsAhead;
+
+            // 尝试 fetch 远程分支信息来检查冲突
+            try {
+                // 尝试获取远程分支信息（不会修改工作区）
+                var fetchCommand = git.fetch().setDryRun(true);
+
+                // 设置认证信息 - 支持SSH和其他认证方式
+                if (sshCredentialsProvider != null) {
+                    fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
+                } else if (credentialsProvider != null) {
+                    fetchCommand.setCredentialsProvider(credentialsProvider);
+                }
+
+                fetchCommand.call();
+
+                // 检查远程是否有同名分支
+                String remoteRef = "refs/remotes/origin/" + currentBranch;
+                ObjectId remoteId = git.getRepository().resolve(remoteRef);
+
+                if (remoteId != null) {
+                    // 远程已有同名分支，可能存在冲突
+                    result.warnings.add("检测到远程仓库已存在同名分支，可能存在文件冲突");
+                    result.suggestions.add("建议先备份本地文件，然后谨慎处理合并");
+
+                    // 检查具体的文件冲突
+                    checkFileConflicts(git, result, remoteId);
+                } else {
+                    // 远程没有同名分支，相对安全
+                    result.suggestions.add("远程仓库没有同名分支，首次推送相对安全");
+                }
+
+            } catch (org.eclipse.jgit.api.errors.RefNotAdvertisedException e) {
+                // 远程分支不存在，这是正常情况
+                log.debug("Remote branch does not exist: {}", e.getMessage());
+                result.suggestions.add("远程仓库没有同名分支，首次推送相对安全");
+            } catch (Exception fetchEx) {
+                // fetch 失败可能是网络问题或认证问题
+                log.debug("Cannot fetch remote info for conflict check", fetchEx);
+                result.warnings.add("无法获取远程分支信息进行冲突检测");
+                result.suggestions.add("建议检查网络连接和认证信息");
+            }
+
+            // 设置推送能力：有本地提交且没有未提交变更时可以推送
+            result.canPush = !result.hasUncommittedChanges;
+
 
         } catch (Exception e) {
             log.warn("Failed to check init type conflicts", e);

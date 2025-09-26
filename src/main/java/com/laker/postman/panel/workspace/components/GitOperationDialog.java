@@ -464,9 +464,9 @@ public class GitOperationDialog extends JDialog {
 
         // 显示基本状态
         details.append("📊 Git 状态摘要:\n");
-        details.append(String.format("  • 未提交变更: %s\n", check.hasUncommittedChanges ? "是" : "否"));
-        details.append(String.format("  • 本地提交: %s\n", check.hasLocalCommits ? "是" : "否"));
-        details.append(String.format("  • 远程新提交: %s\n", check.hasRemoteCommits ? "是" : "否"));
+        details.append(String.format("  📝 有未提交变更: %s\n", check.hasUncommittedChanges ? "✅" : "❌"));
+        details.append(String.format("  📦 有本地提交: %s\n", check.hasLocalCommits ? "✅" : "❌"));
+        details.append(String.format("  🌐 有远程新提交: %s\n", check.hasRemoteCommits ? "✅" : "❌"));
 
         if (check.localCommitsAhead > 0) {
             details.append(String.format("  • 本地领先: %d 个提交\n", check.localCommitsAhead));

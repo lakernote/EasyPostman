@@ -586,16 +586,11 @@ public class WorkspacePanel extends SingletonBasePanel {
                     logArea.append(result.details);
                 }
 
-                // 受影响的文件总结
-                if (!result.affectedFiles.isEmpty()) {
-                    logArea.append("受影响的文件总数: " + result.affectedFiles.size() + "\n");
-                }
-
                 // 操作状态
                 if (result.success) {
-                    logArea.append("[" + timestamp + "] ✅ " + result.operationType + "操作成功完成\n");
+                    logArea.append("[" + timestamp + "] " + result.operationType + " ✅ \n");
                 } else {
-                    logArea.append("[" + timestamp + "] ❌ " + result.operationType + "操作失败\n");
+                    logArea.append("[" + timestamp + "] " + result.operationType + " ❌ \n");
                 }
 
                 logArea.append("\n"); // 添加空行分隔

@@ -439,7 +439,7 @@ public class WorkspaceService {
      */
     public GitOperationResult pullUpdates(String workspaceId) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "拉取";
+        result.operationType = "Pull";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -452,7 +452,7 @@ public class WorkspaceService {
             log.info("Current branch: {}, tracking: {}", branch, tracking);
 
             if (tracking == null) {
-                throw new IllegalStateException("本地分支未跟踪远程分支，无法拉取。请先设置 tracking 分支，例如：git branch --set-upstream-to=origin/" + branch);
+                throw new IllegalStateException("Local branch is not tracking a remote branch, unable to pull. Please set up tracking branch first, e.g.: git branch --set-upstream-to=origin/" + branch);
             }
 
             // 记录拉取前的状态
@@ -462,8 +462,8 @@ public class WorkspaceService {
             // 检查是否是空仓库的情况
             if (commitIdBefore == null) {
                 // 本地仓库为空，尝试从远程拉取
-                log.info("本地仓库为空，尝试从远程拉取初始内容");
-                result.details += "检测到本地仓库为空，尝试从远程拉取初始内容\n";
+                log.info("Local repository is empty, attempting to pull initial content from remote");
+                result.details += "Detected empty local repository, attempting to pull initial content from remote\n";
 
                 try {
                     // 先尝试 fetch 来检查远程是否有内容
@@ -495,8 +495,8 @@ public class WorkspaceService {
                     if (remoteId == null) {
                         // 远程分支不存在，说明远程仓库也是空的
                         result.success = true;
-                        result.message = "远程仓库为空，无内容可拉取";
-                        result.details += "远程仓库目前为空，等待首次推送内容\n";
+                        result.message = "Remote repository is empty, nothing to pull";
+                        result.details += "Remote repository is currently empty, waiting for initial push\n";
                         log.info("Remote repository is empty, nothing to pull");
                         return result;
                     }
@@ -504,28 +504,28 @@ public class WorkspaceService {
                 } catch (RefNotAdvertisedException e) {
                     // 远程分支不存在的错误
                     result.success = true;
-                    result.message = "远程仓库为空或远程分支不存在，无内容可拉取";
-                    result.details += "远程仓库为空或分支 '" + tracking + "' 不存在\n";
-                    result.details += "这通常发生在远程仓库刚创建且未推送任何内容时\n";
+                    result.message = "Remote repository is empty or remote branch does not exist, nothing to pull";
+                    result.details += "Remote repository is empty or branch '" + tracking + "' does not exist\n";
+                    result.details += "This usually happens when the remote repository was just created and no content has been pushed yet\n";
                     log.info("Remote branch does not exist: {}", e.getMessage());
                     return result;
                 } catch (Exception e) {
                     log.warn("Failed to fetch from remote repository", e);
                     // 如果 fetch 失败，可能是网络问题或认证问题
-                    throw new RuntimeException("无法连接到远程仓库: " + e.getMessage(), e);
+                    throw new RuntimeException("Unable to connect to remote repository: " + e.getMessage(), e);
                 }
             }
 
             if (!statusBefore.isClean()) {
-                log.warn("本地有未提交内容或冲突，自动执行 git reset --hard 和 git clean -fd");
-                result.details += "检测到本地未提交内容，自动清理:\n";
+                log.warn("Local has uncommitted content or conflicts, automatically executing git reset --hard and git clean -fd");
+                result.details += "Detected local uncommitted content, automatically cleaning:\n";
 
                 // 记录被清理的文件
                 if (!statusBefore.getModified().isEmpty()) {
-                    result.details += "  重置修改文件: " + String.join(", ", statusBefore.getModified()) + "\n";
+                    result.details += "  Reset modified files: " + String.join(", ", statusBefore.getModified()) + "\n";
                 }
                 if (!statusBefore.getUntracked().isEmpty()) {
-                    result.details += "  清理未跟踪文件: " + String.join(", ", statusBefore.getUntracked()) + "\n";
+                    result.details += "  Clean untracked files: " + String.join(", ", statusBefore.getUntracked()) + "\n";
                 }
 
                 // 强制丢弃本地所有未提交内容和未跟踪文件
@@ -535,7 +535,7 @@ public class WorkspaceService {
                 // 再次检查
                 var statusAfterClean = git.status().call();
                 if (!statusAfterClean.isClean()) {
-                    throw new IllegalStateException("自动清理后仍有未提交内容或冲突，请手动处理。");
+                    throw new IllegalStateException("Still have uncommitted content or conflicts after automatic cleanup, please handle manually.");
                 }
             }
 
@@ -570,22 +570,22 @@ public class WorkspaceService {
                         if (commitIdBefore != null && commitIdAfter != null) {
                             List<String> changedFiles = getChangedFilesBetweenCommits(workspaceId, commitIdBefore, commitIdAfter);
                             result.affectedFiles.addAll(changedFiles);
-                            result.details += "拉取到新的提交，影响文件:\n";
+                            result.details += "Pulled new commits, affected files:\n";
                             for (String file : changedFiles) {
                                 result.details += "  " + file + "\n";
                             }
                         } else if (commitIdAfter != null) {
                             // 从空仓库拉取到了内容
-                            result.details += "从远程仓库拉取到初始内容\n";
+                            result.details += "Pulled initial content from remote repository\n";
                         }
                     } catch (Exception e) {
                         log.warn("Failed to get changed files", e);
-                        result.details += "无法获取详细的文件变更信息\n";
+                        result.details += "Unable to get detailed file change information\n";
                     }
-                    result.message = "成功拉取更新，共 " + result.affectedFiles.size() + " 个文件受影响";
+                    result.message = "Successfully pulled updates, " + result.affectedFiles.size() + " files affected";
                 } else {
-                    result.message = "已是最新版本，无需更新";
-                    result.details += "本地仓库已是最新状态\n";
+                    result.message = "Already up to date, no updates needed";
+                    result.details += "Local repository is already up to date\n";
                 }
 
                 workspace.setLastCommitId(commitIdAfter);
@@ -598,9 +598,9 @@ public class WorkspaceService {
             } catch (RefNotAdvertisedException e) {
                 // 处理远程分支不存在的情况
                 result.success = true;
-                result.message = "远程分支不存在，无内容可拉取";
-                result.details += "远程分支 '" + tracking + "' 不存在或为空\n";
-                result.details += "这通常发生在远程仓库刚创建且未推送任何内容时\n";
+                result.message = "Remote branch does not exist, nothing to pull";
+                result.details += "Remote branch '" + tracking + "' does not exist or is empty\n";
+                result.details += "This usually happens when the remote repository was just created and no content has been pushed yet\n";
                 log.info("Remote branch does not exist during pull: {}", e.getMessage());
             }
         }
@@ -613,7 +613,7 @@ public class WorkspaceService {
      */
     public GitOperationResult pushChanges(String workspaceId) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "推送";
+        result.operationType = "Push";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -624,14 +624,14 @@ public class WorkspaceService {
             // 检查是否有远程仓库
             var remotes = git.remoteList().call();
             if (remotes.isEmpty()) {
-                throw new IllegalStateException("没有配置远程仓库，无法推送");
+                throw new IllegalStateException("No remote repository configured, unable to push");
             }
 
             // 检查当前分支是否有上游分支
             String currentBranch = git.getRepository().getBranch();
             String tracking = git.getRepository().getConfig().getString("branch", currentBranch, "merge");
             if (tracking == null) {
-                throw new IllegalStateException("当前分支没有设置上游分支，请先进行首次推送或设置上游分支");
+                throw new IllegalStateException("Current branch has no upstream branch set, please perform initial push or set upstream branch first");
             }
 
             // 获取远程分支名称 (去掉 refs/heads/ 前缀)
@@ -673,7 +673,7 @@ public class WorkspaceService {
                 ObjectId remoteId = git.getRepository().resolve(remoteRef);
 
                 if (localId == null) {
-                    throw new IllegalStateException("无法找到本地分支: " + currentBranch);
+                    throw new IllegalStateException("Unable to find local branch: " + currentBranch);
                 }
 
                 if (remoteId != null) {
@@ -707,7 +707,7 @@ public class WorkspaceService {
                     }
                 } else {
                     // 远程分支不存在，说明是首次推送
-                    log.info("远程分支不存在，将推送所有本地提交");
+                    log.info("Remote branch does not exist, will push all local commits");
                     Iterable<RevCommit> commits = git.log().call();
                     for (RevCommit commit : commits) {
                         unpushedCommitsCount++;
@@ -738,8 +738,8 @@ public class WorkspaceService {
 
                 if (unpushedCommitsCount == 0) {
                     result.success = true;
-                    result.message = "没有需要推送的提交，本地分支已是最新";
-                    result.details = "本地分支 " + currentBranch + " 与远程分支 " + remoteName + "/" + remoteBranchName + " 保持同步\n";
+                    result.message = "No commits to push, local branch is up to date";
+                    result.details = "Local branch " + currentBranch + " is in sync with remote branch " + remoteName + "/" + remoteBranchName + "\n";
                     return result;
                 }
             } catch (Exception e) {
@@ -761,13 +761,13 @@ public class WorkspaceService {
 
             var pushResults = pushCommand.call();
 
-            result.details += "推送详情:\n";
-            result.details += "  本地分支: " + currentBranch + "\n";
-            result.details += "  远程分支: " + remoteName + "/" + remoteBranchName + "\n";
-            result.details += "  推送提交数: " + unpushedCommitsCount + "\n";
+            result.details += "Push details:\n";
+            result.details += "  Local branch: " + currentBranch + "\n";
+            result.details += "  Remote branch: " + remoteName + "/" + remoteBranchName + "\n";
+            result.details += "  Pushed commits: " + unpushedCommitsCount + "\n";
 
             if (!result.affectedFiles.isEmpty()) {
-                result.details += "  涉及文件 (" + result.affectedFiles.size() + "):\n";
+                result.details += "  Affected files (" + result.affectedFiles.size() + "):\n";
                 for (String file : result.affectedFiles) {
                     result.details += "    " + file + "\n";
                 }
@@ -779,30 +779,30 @@ public class WorkspaceService {
                 // 只在有错误或警告时输出推送消息
                 String msg = pushResult.getMessages();
                 if (msg != null && !msg.isEmpty() && (msg.toLowerCase().contains("error") || msg.toLowerCase().contains("fail"))) {
-                    result.details += "  推送消息: " + msg + "\n";
+                    result.details += "  Push message: " + msg + "\n";
                 }
                 // 输出每个 ref 的推送状态
                 for (var remoteRefUpdate : pushResult.getRemoteUpdates()) {
-                    result.details += "  分支更新: " + remoteRefUpdate.getSrcRef() + " -> " +
+                    result.details += "  Branch update: " + remoteRefUpdate.getSrcRef() + " -> " +
                             remoteRefUpdate.getRemoteName() + " (" + remoteRefUpdate.getStatus() + ")\n";
                     if (remoteRefUpdate.getMessage() != null && !remoteRefUpdate.getMessage().isEmpty()) {
-                        result.details += "    详细信息: " + remoteRefUpdate.getMessage() + "\n";
+                        result.details += "    Details: " + remoteRefUpdate.getMessage() + "\n";
                     }
                     if (remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK ||
                             remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
                         pushSuccess = true;
                     } else {
-                        result.details += "    错误信息: " + remoteRefUpdate.getMessage() + "\n";
+                        result.details += "    Error: " + remoteRefUpdate.getMessage() + "\n";
                     }
                 }
             }
 
             if (!pushSuccess) {
-                throw new RuntimeException("推送失败，请检查推送详情中的错误信息");
+                throw new RuntimeException("Push failed, please check error details in push result");
             }
 
             result.success = true;
-            result.message = "成功推送 " + unpushedCommitsCount + " 个提交，涉及 " + result.affectedFiles.size() + " 个文件";
+            result.message = "Successfully pushed " + unpushedCommitsCount + " commits, " + result.affectedFiles.size() + " files affected";
 
             log.info("Successfully pushed changes for workspace: {} to {}/{}",
                     workspace.getName(), remoteName, remoteBranchName);
@@ -816,7 +816,7 @@ public class WorkspaceService {
      */
     public GitOperationResult forcePushChanges(String workspaceId) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "强制推送";
+        result.operationType = "Force Push";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -839,15 +839,15 @@ public class WorkspaceService {
 
             var pushResults = pushCommand.call();
 
-            result.details += "强制推送详情:\n";
-            result.details += "  本地分支: " + currentBranch + "\n";
-            result.details += "  ⚠️ 警告: 强制推送已覆盖远程变更\n";
+            result.details += "Force push details:\n";
+            result.details += "  Local branch: " + currentBranch + "\n";
+            result.details += "  ❗ Warning: Force push has overwritten remote changes\n";
 
             // 检查推送结果
             boolean pushSuccess = false;
             for (var pushResult : pushResults) {
                 for (var remoteRefUpdate : pushResult.getRemoteUpdates()) {
-                    result.details += "  分支更新: " + remoteRefUpdate.getSrcRef() + " -> " +
+                    result.details += "  Branch update: " + remoteRefUpdate.getSrcRef() + " -> " +
                             remoteRefUpdate.getRemoteName() + " (" + remoteRefUpdate.getStatus() + ")\n";
 
                     if (remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK ||
@@ -858,11 +858,11 @@ public class WorkspaceService {
             }
 
             if (!pushSuccess) {
-                throw new RuntimeException("强制推送失败");
+                throw new RuntimeException("Force push failed");
             }
 
             result.success = true;
-            result.message = "强制推送成功，已覆盖远程变更";
+            result.message = "Force push successful, remote changes have been overwritten";
 
             log.info("Force pushed changes for workspace: {}", workspace.getName());
         }
@@ -875,7 +875,7 @@ public class WorkspaceService {
      */
     public GitOperationResult stashChanges(String workspaceId) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "暂存";
+        result.operationType = "Stash";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -897,16 +897,16 @@ public class WorkspaceService {
                     .call();
 
             if (stashResult == null) {
-                throw new RuntimeException("暂存失败，可能没有变更需要暂存");
+                throw new RuntimeException("Stash failed, no changes to stash");
             }
 
             result.success = true;
-            result.message = "成功暂存 " + result.affectedFiles.size() + " 个文件的变更";
-            result.details = "暂存ID: " + stashResult.getName().substring(0, 8) + "\n";
-            result.details += "暂存时间: " +
+            result.message = "Successfully stashed " + result.affectedFiles.size() + " file changes";
+            result.details = "Stash ID: " + stashResult.getName().substring(0, 8) + "\n";
+            result.details += "Stash time: " +
                     java.time.LocalDateTime.now().format(
                             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n";
-            result.details += "暂存的文件:\n";
+            result.details += "Stashed files:\n";
             for (String file : result.affectedFiles) {
                 result.details += "  " + file + "\n";
             }
@@ -922,7 +922,7 @@ public class WorkspaceService {
      */
     public GitOperationResult popStashChanges(String workspaceId) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "恢复暂存";
+        result.operationType = "Pop Stash";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -933,7 +933,7 @@ public class WorkspaceService {
             // 检查是否有暂存
             var stashList = git.stashList().call();
             if (!stashList.iterator().hasNext()) {
-                throw new RuntimeException("没有找到暂存的变更");
+                throw new RuntimeException("No stashed changes found");
             }
 
             // 恢复最新的暂存
@@ -947,8 +947,8 @@ public class WorkspaceService {
             result.affectedFiles.addAll(status.getAdded());
 
             result.success = true;
-            result.message = "成功恢复暂存的变更";
-            result.details = "恢复的文件:\n";
+            result.message = "Successfully restored stashed changes";
+            result.details = "Restored files:\n";
             for (String file : result.affectedFiles) {
                 result.details += "  " + file + "\n";
             }
@@ -964,7 +964,7 @@ public class WorkspaceService {
      */
     public GitOperationResult forcePullUpdates(String workspaceId) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "强制拉取";
+        result.operationType = "Force Pull";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -981,7 +981,7 @@ public class WorkspaceService {
 
             String commitIdBefore = getLastCommitId(git);
 
-            result.details += "⚠️ 强制拉取将丢弃以下本地变更:\n";
+            result.details += "❗ Force pull will discard the following local changes:\n";
             for (String file : result.affectedFiles) {
                 result.details += "  " + file + "\n";
             }
@@ -1008,12 +1008,12 @@ public class WorkspaceService {
             saveWorkspaces();
 
             result.success = true;
-            result.message = "强制拉取成功，本地变更已被丢弃";
+            result.message = "Force pull successful, local changes have been discarded";
 
             if (!commitIdBefore.equals(commitIdAfter)) {
-                result.details += "拉取到新的提交\n";
+                result.details += "Pulled new commits\n";
             } else {
-                result.details += "已是最新版本\n";
+                result.details += "Already up to date\n";
             }
 
             log.info("Force pulled updates for workspace: {}", workspace.getName());
@@ -1027,7 +1027,7 @@ public class WorkspaceService {
      */
     public GitOperationResult commitChanges(String workspaceId, String message) throws Exception {
         GitOperationResult result = new GitOperationResult();
-        result.operationType = "提交";
+        result.operationType = "Commit";
 
         Workspace workspace = getWorkspaceById(workspaceId);
         if (workspace.getType() != WorkspaceType.GIT) {
@@ -1044,16 +1044,16 @@ public class WorkspaceService {
                     !status.getMissing().isEmpty();
 
             if (!hasChanges) {
-                throw new IllegalStateException("没有文件变更需要提交");
+                throw new IllegalStateException("No file changes to commit");
             }
 
             // 记录要提交的文件
-            result.details += "提交详情:\n";
-            result.details += "  提交信息: " + message + "\n";
+            result.details += "Commit details:\n";
+            result.details += "  Commit message: " + message + "\n";
 
             if (!status.getAdded().isEmpty()) {
                 result.affectedFiles.addAll(status.getAdded());
-                result.details += "  新增文件 (" + status.getAdded().size() + "):\n";
+                result.details += "  Added files (" + status.getAdded().size() + "):\n";
                 for (String file : status.getAdded()) {
                     result.details += "    + " + file + "\n";
                 }
@@ -1061,7 +1061,7 @@ public class WorkspaceService {
 
             if (!status.getModified().isEmpty()) {
                 result.affectedFiles.addAll(status.getModified());
-                result.details += "  修改文件 (" + status.getModified().size() + "):\n";
+                result.details += "  Modified files (" + status.getModified().size() + "):\n";
                 for (String file : status.getModified()) {
                     result.details += "    M " + file + "\n";
                 }
@@ -1069,7 +1069,7 @@ public class WorkspaceService {
 
             if (!status.getRemoved().isEmpty()) {
                 result.affectedFiles.addAll(status.getRemoved());
-                result.details += "  删除文件 (" + status.getRemoved().size() + "):\n";
+                result.details += "  Deleted files (" + status.getRemoved().size() + "):\n";
                 for (String file : status.getRemoved()) {
                     result.details += "    - " + file + "\n";
                 }
@@ -1077,7 +1077,7 @@ public class WorkspaceService {
 
             if (!status.getUntracked().isEmpty()) {
                 result.affectedFiles.addAll(status.getUntracked());
-                result.details += "  未跟踪文件 (" + status.getUntracked().size() + "):\n";
+                result.details += "  Untracked files (" + status.getUntracked().size() + "):\n";
                 for (String file : status.getUntracked()) {
                     result.details += "    ? " + file + "\n";
                 }
@@ -1091,8 +1091,8 @@ public class WorkspaceService {
             saveWorkspaces();
 
             result.success = true;
-            result.message = "成功提交 " + result.affectedFiles.size() + " 个文件变更";
-            result.details += "  提交ID: " + commitResult.getName().substring(0, 8) + "\n";
+            result.message = "Successfully committed " + result.affectedFiles.size() + " file changes";
+            result.details += "  Commit ID: " + commitResult.getName().substring(0, 8) + "\n";
 
             log.info("Committed changes for workspace: {}", workspace.getName());
         }

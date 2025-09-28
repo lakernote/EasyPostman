@@ -59,6 +59,16 @@ public class EasyTablePanel extends JPanel {
      * 控制自动补空行的标志，防止批量操作时触发自动补空行
      */
     private boolean suppressAutoAppendRow = false;
+    // 行高
+    private final int rowHeight;
+    // 是否启用右键菜单
+    private final boolean popupMenuEnabled;
+    // 是否启用自动补空行功能
+    private final boolean autoAppendRowEnabled;
+
+    public EasyTablePanel(String[] columns) {
+        this(columns, 28, true, true);
+    }
 
     /**
      * 构造方法，初始化表格和右键菜单。
@@ -66,8 +76,12 @@ public class EasyTablePanel extends JPanel {
      * @param columns 表头列名数组
      *                <br>示例：new String[]{"Name", "Age", "Email"}
      */
-    public EasyTablePanel(String[] columns) {
+    public EasyTablePanel(String[] columns, int rowHeight, boolean popupMenuEnabled,
+                          boolean suppressAutoAppendRow) {
         this.columns = columns;
+        this.rowHeight = rowHeight;
+        this.popupMenuEnabled = popupMenuEnabled;
+        this.autoAppendRowEnabled = suppressAutoAppendRow;
         setLayout(new BorderLayout());
         setBackground(new Color(248, 250, 252));
         setBorder(BorderFactory.createCompoundBorder(
@@ -93,10 +107,14 @@ public class EasyTablePanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         // 创建右键菜单
         popupMenu = createPopupMenu();
-        // 添加鼠标监听器
-        addTableListener();
+        // 添加鼠标右键菜单监听器
+        if (popupMenuEnabled) {
+            addTableRightMouseListener();
+        }
         // 确保至少有一行空行
-        addAutoAppendRowFeature();
+        if (autoAppendRowEnabled) {
+            addAutoAppendRowFeature();
+        }
     }
 
     /**
@@ -104,7 +122,7 @@ public class EasyTablePanel extends JPanel {
      */
     private void initTableUI() {
         table.setFillsViewportHeight(true); // 填充视口高度
-        table.setRowHeight(30); // 设置行高
+        table.setRowHeight(rowHeight); // 设置行高
         table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         table.getTableHeader().setBackground(new Color(240, 242, 245));
@@ -157,7 +175,7 @@ public class EasyTablePanel extends JPanel {
         }
     }
 
-    private void addTableListener() {
+    private void addTableRightMouseListener() {
         /*
           添加表格的鼠标监听器，右键弹出菜单
          */

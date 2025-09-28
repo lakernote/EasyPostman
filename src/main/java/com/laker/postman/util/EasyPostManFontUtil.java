@@ -14,6 +14,7 @@ import java.util.Set;
  * 字体工具类，统一根据操作系统选择合适的字体。
  */
 public class EasyPostManFontUtil {
+    public static final int DEFAULT_FONT_SIZE = 11;
 
     // 默认字体名称常量
     private static final String DEFAULT_FONT_NAME = "SansSerif";

@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.table.TextOrFileTableCellEditor;
 import com.laker.postman.common.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
@@ -95,30 +96,40 @@ public class RequestBodyPanel extends JPanel {
      */
     private void initHttpBodyPanel() {
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // 优化：所有控件同排显示
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
         JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
-        leftPanel.add(bodyTypeLabel);
+        topPanel.add(bodyTypeLabel);
         String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
-        leftPanel.add(bodyTypeComboBox);
-        leftPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(bodyTypeComboBox);
         formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
         String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_XML, RAW_TYPE_TEXT};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         boolean showFormatControls = isBodyTypeRAW();
         rawTypeComboBox.setVisible(showFormatControls);
-        formatLabel.setVisible(showFormatControls);
-        leftPanel.add(formatLabel);
-        leftPanel.add(rawTypeComboBox);
+//        formatLabel.setVisible(showFormatControls);
+//        topPanel.add(formatLabel);
+        topPanel.add(rawTypeComboBox);
+
+        // 搜索区控件
+        SearchTextField searchField = new SearchTextField();
+        JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
+        prevButton.setToolTipText("Previous");
+        JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+        nextButton.setToolTipText("Next");
+        topPanel.add(searchField);
+        topPanel.add(prevButton);
+        topPanel.add(nextButton);
         formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 18, 18));
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
-        leftPanel.add(Box.createHorizontalStrut(5));
-        leftPanel.add(formatButton);
-        bodyTypePanel.add(leftPanel, BorderLayout.WEST);
+        topPanel.add(formatButton);
+        bodyTypePanel.add(topPanel, BorderLayout.NORTH);
+
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
         bodyCardPanel = new JPanel(bodyCardLayout);
@@ -128,6 +139,35 @@ public class RequestBodyPanel extends JPanel {
         bodyCardPanel.add(createRawPanel(), BODY_TYPE_RAW);
         add(bodyCardPanel, BorderLayout.CENTER);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
+
+        // 搜索跳转逻辑（只在raw类型时可用）
+        searchField.addActionListener(e -> {
+            if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), true);
+        });
+        prevButton.addActionListener(e -> {
+            if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), false);
+        });
+        nextButton.addActionListener(e -> {
+            if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), true);
+        });
+        // 切换body类型时，控制搜索区显示
+        bodyTypeComboBox.addActionListener(e -> {
+            boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
+            rawTypeComboBox.setVisible(isRaw);
+            formatLabel.setVisible(isRaw);
+            formatButton.setVisible(isRaw);
+            searchField.setVisible(isRaw);
+            prevButton.setVisible(isRaw);
+            nextButton.setVisible(isRaw);
+        });
+        // 初始化显示状态
+        boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
+        rawTypeComboBox.setVisible(isRaw);
+        formatLabel.setVisible(isRaw);
+        formatButton.setVisible(isRaw);
+        searchField.setVisible(isRaw);
+        prevButton.setVisible(isRaw);
+        nextButton.setVisible(isRaw);
     }
 
     /**
@@ -397,6 +437,45 @@ public class RequestBodyPanel extends JPanel {
 
     }
 
+    /**
+     * 在 bodyArea 中搜索关键字并跳转，参考 ResponseBodyPanel 的 search 方法，支持循环查找和选中匹配内容。
+     */
+    private void searchInBodyArea(RSyntaxTextArea area, String keyword, boolean forward) {
+        if (keyword == null || keyword.isEmpty()) return;
+        String text = area.getText();
+        if (text == null || text.isEmpty()) return;
+        int caret = area.getCaretPosition();
+        int pos = -1;
+        if (forward) {
+            // 向后查找
+            int start = caret;
+            if (area.getSelectedText() != null && area.getSelectedText().equals(keyword)) {
+                start = caret + 1;
+            }
+            pos = text.indexOf(keyword, start);
+            if (pos == -1) {
+                // 循环查找
+                pos = text.indexOf(keyword);
+            }
+        } else {
+            // 向前查找
+            int start = caret - 1;
+            if (area.getSelectedText() != null && area.getSelectedText().equals(keyword)) {
+                start = caret - keyword.length() - 1;
+            }
+            if (start < 0) start = text.length() - 1;
+            pos = text.lastIndexOf(keyword, start);
+            if (pos == -1) {
+                pos = text.lastIndexOf(keyword);
+            }
+        }
+        if (pos != -1) {
+            area.setCaretPosition(pos);
+            area.select(pos, pos + keyword.length());
+            area.requestFocusInWindow();
+        }
+    }
+
     // getter方法，供主面板调用
     public String getBodyType() {
         return currentBodyType;
@@ -444,3 +523,4 @@ public class RequestBodyPanel extends JPanel {
     }
 
 }
+

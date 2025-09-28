@@ -32,7 +32,7 @@ public class EasyHttpHeadersPanel extends JPanel {
     private static final String ACCEPT_ENCODING = "Accept-Encoding";
     private static final String CONNECTION = "Connection";
     private static final String USER_AGENT_VALUE = "EasyPostman/" + SystemUtil.getCurrentVersion();
-    private static final String ACCEPT_VALUE = "*";
+    private static final String ACCEPT_VALUE = "*/*";
     private static final String ACCEPT_ENCODING_VALUE = "gzip, deflate, br";
     private static final String CONNECTION_VALUE = "keep-alive";
     private static final Object[][] DEFAULT_HEADERS = {

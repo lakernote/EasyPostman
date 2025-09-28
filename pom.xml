@@ -146,6 +146,13 @@
             <version>7.8.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Brotli 解码支持 -->
+        <dependency>
+            <groupId>org.brotli</groupId>
+            <artifactId>dec</artifactId>
+            <version>0.1.2</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

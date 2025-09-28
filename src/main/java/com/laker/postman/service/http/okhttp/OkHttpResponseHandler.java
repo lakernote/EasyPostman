@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.brotli.dec.BrotliInputStream;
 
 import javax.swing.*;
 import java.io.*;
@@ -17,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
 /**
  * OkHttp 响应处理工具类
@@ -287,25 +290,38 @@ public class OkHttpResponseHandler {
             return;
         }
         if (body != null) {
-            byte[] bytes = body.bytes();
-            if (bytes.length > getMaxBodySize()) { // 如果响应体内容超过设置值，保存为临时文件
-                // 这里也用流写入
+            byte[] originalBytes = body.bytes();
+            response.bodySize = originalBytes.length; // 只赋值一次，始终是网络收到的原始字节数
+            String encoding = okResponse.header("Content-Encoding", "").toLowerCase();
+            byte[] bytes = originalBytes;
+            InputStream is = new ByteArrayInputStream(originalBytes);
+            switch (encoding) {
+                case "gzip" -> {
+                    is = new GZIPInputStream(is);
+                    bytes = is.readAllBytes();
+                }
+                case "deflate" -> {
+                    is = new InflaterInputStream(is);
+                    bytes = is.readAllBytes();
+                }
+                case "br" -> {
+                    is = new BrotliInputStream(is);
+                    bytes = is.readAllBytes();
+                }
+            }
+            if (bytes.length > getMaxBodySize()) { // 如果解压后内容超过设置值，保存为临时文件
                 FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bytes), "easyPostman_text_download_", ext != null ? ext : ".txt", contentLengthHeader);
                 response.filePath = fs.file.getAbsolutePath();
                 response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
                 int maxBodySizeKB = getMaxBodySize() / 1024;
                 response.body = I18nUtil.getMessage(MessageKeys.BODY_TOO_LARGE_SAVED, maxBodySizeKB);
-                response.bodySize = fs.size;
             } else {
-                // 获取内容类型和字符集
                 MediaType mediaType = body.contentType();
                 Charset charset = StandardCharsets.UTF_8; // 默认使用 UTF-8
-
                 if (mediaType != null && mediaType.charset() != null) {
                     charset = mediaType.charset();
                 }
                 response.body = new String(bytes, charset);
-                response.bodySize = bytes.length;
                 response.filePath = null;
             }
         } else {

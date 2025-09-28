@@ -60,7 +60,7 @@ public class HttpRequestFactory {
         // Add some default headers
         testItem.getHeaders().put(USER_AGENT, EASY_POSTMAN_CLIENT);
         testItem.getHeaders().put(ACCEPT, "*/*");
-        testItem.getHeaders().put(ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE);
+        testItem.getHeaders().put(ACCEPT_ENCODING, "identity");
         testItem.getHeaders().put(CONNECTION, CONNECTION_VALUE);
         testItem.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
         testItem.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
@@ -77,7 +77,7 @@ public class HttpRequestFactory {
         testItem.setMethod("GET");
         testItem.getHeaders().put(USER_AGENT, EASY_POSTMAN_CLIENT);
         testItem.getHeaders().put(ACCEPT, TEXT_EVENT_STREAM);
-        testItem.getHeaders().put(ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE);
+        testItem.getHeaders().put(ACCEPT_ENCODING, "identity");
         testItem.getHeaders().put(CONNECTION, CONNECTION_VALUE);
         return testItem;
     }

@@ -1036,11 +1036,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             defaultRequest.setUrl("wss://echo.websocket.org");
             defaultRequest.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
             defaultRequest.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+            defaultRequest.getHeaders().put(ACCEPT_ENCODING, "identity");
         } else if (protocol.isSseProtocol()) {
             // SSE 默认配置
             defaultRequest.setMethod("GET"); // SSE通常使用GET
             defaultRequest.setUrl("https://sse.dev/test");
             defaultRequest.getHeaders().put(ACCEPT, TEXT_EVENT_STREAM);
+            defaultRequest.getHeaders().put(ACCEPT_ENCODING, "identity");
         } else {
             // HTTP 默认配置
             defaultRequest.setMethod("GET");

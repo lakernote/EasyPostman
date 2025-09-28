@@ -105,8 +105,8 @@ public class EasyTablePanel extends JPanel {
     private void initTableUI() {
         table.setFillsViewportHeight(true); // 填充视口高度
         table.setRowHeight(30); // 设置行高
-        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         table.getTableHeader().setBackground(new Color(240, 242, 245));
         table.getTableHeader().setForeground(new Color(33, 33, 33));
         table.setGridColor(new Color(237, 237, 237)); // 设置表格线颜色

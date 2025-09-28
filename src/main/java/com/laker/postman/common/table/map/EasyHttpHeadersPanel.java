@@ -47,7 +47,7 @@ public class EasyHttpHeadersPanel extends JPanel {
 
     public EasyHttpHeadersPanel() {
         setLayout(new BorderLayout());
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
         JLabel label = new JLabel("Headers");
         JButton eyeButton = new JButton(eyeOpenIcon); // Use SVG icon
         eyeButton.setFocusable(false);
@@ -57,9 +57,11 @@ public class EasyHttpHeadersPanel extends JPanel {
             toggleDefaultHeadersVisibility();
             eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
         });
-        countLabel = new JLabel("(4)");
-        countLabel.setFont(label.getFont());
-        countLabel.setForeground(new Color(0, 128, 255)); // 显示时高亮
+        int hiddenCount = DEFAULT_HEADERS.length;
+        String countText = "(" + hiddenCount + ")";
+        String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+        countLabel = new JLabel("<html>" + countHtml + "</html>");
+        countLabel.setVisible(true); // 初始就显示
         headerPanel.add(label);
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel); // 始终显示
@@ -93,21 +95,25 @@ public class EasyHttpHeadersPanel extends JPanel {
     }
 
     private void toggleDefaultHeadersVisibility() {
-        countLabel.setVisible(showDefaultHeaders);
-        if (showDefaultHeaders) {
-            // 隐藏默认请求头
-            rowSorter.setRowFilter(new RowFilter<>() {
-                @Override
-                public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
-                    Object keyObj = entry.getValue(0);
-                    return !isDefaultHeader(keyObj);
-                }
-            });
-        } else {
-            // 显示所有请求头
-            rowSorter.setRowFilter(null);
-        }
         showDefaultHeaders = !showDefaultHeaders;
+        // 只在隐藏默认 header 时显示数量
+        if (!showDefaultHeaders) {
+            int hiddenCount = DEFAULT_HEADERS.length;
+            String countText = "(" + hiddenCount + ")";
+            String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+            countLabel.setText("<html>" + countHtml + "</html>");
+            countLabel.setVisible(true);
+        } else {
+            countLabel.setText(""); // 显示默认 header 时不显示数量
+            countLabel.setVisible(false);
+        }
+        rowSorter.setRowFilter(new RowFilter<>() {
+            @Override
+            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                Object keyObj = entry.getValue(0);
+                return showDefaultHeaders || !isDefaultHeader(keyObj);
+            }
+        });
     }
 
     private boolean isDefaultHeader(Object keyObj) {
@@ -237,4 +243,3 @@ public class EasyHttpHeadersPanel extends JPanel {
         }
     }
 }
-

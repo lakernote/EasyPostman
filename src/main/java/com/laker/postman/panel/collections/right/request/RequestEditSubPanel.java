@@ -677,12 +677,14 @@ public class RequestEditSubPanel extends JPanel {
             if (RequestBodyPanel.BODY_TYPE_RAW.equals(requestBodyPanel.getBodyType())) {
                 String body = item.getBody();
                 JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
-                if (JSONUtil.isTypeJSON(body)) {
-                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
-                } else if (XmlUtil.isXml(body)) {
-                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
-                } else {
-                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
+                if (rawTypeComboBox != null) {
+                    if (JSONUtil.isTypeJSON(body)) {
+                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
+                    } else if (XmlUtil.isXml(body)) {
+                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
+                    } else {
+                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
+                    }
                 }
             }
         }

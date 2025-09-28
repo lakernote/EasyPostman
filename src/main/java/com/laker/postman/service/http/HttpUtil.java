@@ -381,4 +381,14 @@ public class HttpUtil {
 
         return urlBuilder.toString();
     }
+
+    public static String getHeaderIgnoreCase(Map<String, String> headers, String s) {
+        if (headers == null || s == null) return null;
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if (s.equalsIgnoreCase(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
 }

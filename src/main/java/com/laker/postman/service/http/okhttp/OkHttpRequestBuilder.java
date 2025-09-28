@@ -1,6 +1,7 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
 import okhttp3.*;
 
 import java.io.File;
@@ -25,7 +26,8 @@ public class OkHttpRequestBuilder {
         }
         RequestBody requestBody = null;
         if (!"GET".equals(methodUpper) && !"HEAD".equals(methodUpper)) {
-            if (req.body != null && !req.body.isEmpty()) {
+            if (RequestBodyPanel.BODY_TYPE_RAW.equals(req.bodyType) &&
+                    req.body != null && !req.body.isEmpty()) {
                 if (contentType == null) {
                     contentType = "application/json; charset=utf-8";
                 }

@@ -67,7 +67,7 @@ public class RequestBodyPanel extends JPanel {
     private RSyntaxTextArea bodyArea;
     private CardLayout bodyCardLayout;
     private JPanel bodyCardPanel;
-    private String currentBodyType = BODY_TYPE_RAW;
+    private String currentBodyType = BODY_TYPE_NONE;
     @Getter
     private JButton wsSendButton;
     private JButton formatButton;

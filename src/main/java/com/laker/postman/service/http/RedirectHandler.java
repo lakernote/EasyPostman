@@ -27,6 +27,7 @@ public class RedirectHandler {
         boolean isMultipart = req.isMultipart;
         int redirectCount = 0;
         boolean followRedirects = req.followRedirects;
+        String bodyType = req.bodyType;
         URL prevUrl = new URL(url);
         while (redirectCount <= maxRedirects) {
             PreparedRequest currentReq = new PreparedRequest();
@@ -34,6 +35,7 @@ public class RedirectHandler {
             currentReq.url = url;
             currentReq.method = method;
             currentReq.body = body;
+            currentReq.bodyType = bodyType;
             currentReq.headers = headers;
             currentReq.formData = formData;
             currentReq.formFiles = formFiles;

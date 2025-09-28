@@ -15,6 +15,7 @@ public class PreparedRequest {
     public Map<String, String> headers;
     public Headers okHttpHeaders; // OkHttp 特有的 Headers 对象
     public String body;
+    public String bodyType;
     public String okHttpRequestBody; // 真实OkHttp请求体内容
     public Map<String, String> formData;
     public Map<String, String> formFiles;

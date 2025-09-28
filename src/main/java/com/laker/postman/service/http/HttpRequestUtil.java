@@ -73,19 +73,6 @@ public class HttpRequestUtil {
         return sb.toString();
     }
 
-    public static void addContentTypeHeader(Map<String, String> headers, HttpRequestItem item) {
-        boolean hasContentType = headers.keySet().stream().anyMatch("Content-Type"::equalsIgnoreCase);
-        if (!hasContentType) {
-            if (item.getFormData() != null && !item.getFormData().isEmpty()) {
-                headers.put("Content-Type", "multipart/form-data");
-            } else if (item.getUrlencoded() != null && !item.getUrlencoded().isEmpty()) {
-                headers.put("Content-Type", "application/x-www-form-urlencoded");
-            } else if (item.getBody() != null && !item.getBody().isEmpty()) {
-                headers.put("Content-Type", "application/json");
-            }
-        }
-    }
-
     public static void addAuthorization(Map<String, String> headers, HttpRequestItem item) {
         String authType = item.getAuthType();
         if (AUTH_TYPE_BASIC.equals(authType)) {

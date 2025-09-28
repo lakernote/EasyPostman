@@ -16,6 +16,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsPersistence;
@@ -44,6 +45,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.laker.postman.service.collections.RequestsFactory.APPLICATION_JSON;
+import static com.laker.postman.service.collections.RequestsFactory.CONTENT_TYPE;
 import static com.laker.postman.service.http.HttpRequestFactory.*;
 
 /**
@@ -1031,6 +1034,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             // WebSocket 默认配置
             defaultRequest.setMethod("GET"); // WebSocket连接都是GET
             defaultRequest.setUrl("wss://echo.websocket.org");
+            defaultRequest.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
+            defaultRequest.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
         } else if (protocol.isSseProtocol()) {
             // SSE 默认配置
             defaultRequest.setMethod("GET"); // SSE通常使用GET

@@ -3,7 +3,6 @@ package com.laker.postman.common.table.map;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.table.EasyPostmanTextFieldCellRenderer;
-import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.SystemUtil;
 
 import javax.swing.*;
@@ -203,17 +202,6 @@ public class EasyHttpHeadersPanel extends JPanel {
         if (CONNECTION.equals(key)) return CONNECTION_VALUE;
         return "";
     }
-
-    /**
-     * 如果 headers 中不包含指定 Content-Type，则补充，并同步更新 headersPanel
-     */
-    public void ensureContentTypeHeader(Map<String, String> headers, String contentType) {
-        if (!HttpUtil.containsContentType(headers, contentType)) {
-            headers.put("Content-Type", contentType);
-            tablePanel.addRow("Content-Type", contentType);
-        }
-    }
-
 
     public void setOrUpdateHeader(String key, String value) {
         boolean found = false;

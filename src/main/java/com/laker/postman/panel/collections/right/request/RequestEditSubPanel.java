@@ -674,31 +674,38 @@ public class RequestEditSubPanel extends JPanel {
         headersPanel.setHeadersMap(item.getHeaders());
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
-        if (CharSequenceUtil.isBlank(item.getBody())) {
-            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_NONE); // 切换到无 Body 模式
-            // form-data 字段还原
-        } else {
-            // 其他模式（如 raw）
-            // raw: 如果请求头没有设置 application/json，则补充（忽略大小写）
-            headersPanel.ensureContentTypeHeader(item.getHeaders(), "application/json");
-            // 补充 rawTypeComboBox 初始选择
-            if (RequestBodyPanel.BODY_TYPE_RAW.equals(requestBodyPanel.getBodyType())) {
-                String body = item.getBody();
-                JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
-                if (rawTypeComboBox != null) {
-                    if (JSONUtil.isTypeJSON(body)) {
-                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
-                    } else if (XmlUtil.isXml(body)) {
-                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
-                    } else {
-                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
-                    }
+        // 这是兼容性代码，防止旧数据bodyType字段为空
+        if (CharSequenceUtil.isBlank(item.getBodyType())) {
+            item.setBodyType(RequestBodyPanel.BODY_TYPE_NONE);
+            // 根据请求headers尝试推断bodyType
+            String contentType = HttpUtil.getHeaderIgnoreCase(item.getHeaders(), "Content-Type");
+            if (CharSequenceUtil.isNotBlank(contentType)) {
+                if (contentType.contains("application/x-www-form-urlencoded")) {
+                    item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
+                } else if (contentType.contains("multipart/form-data")) {
+                    item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_DATA);
+                } else {
+                    item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+                }
+            }
+        }
+        requestBodyPanel.getBodyTypeComboBox().setSelectedItem(item.getBodyType());
+        // rawTypeComboBox 根据body内容智能设置
+        String body = item.getBody();
+        if (CharSequenceUtil.isNotBlank(body)) {
+            JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
+            if (rawTypeComboBox != null) {
+                if (JSONUtil.isTypeJSON(body)) {
+                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
+                } else if (XmlUtil.isXml(body)) {
+                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
+                } else {
+                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
                 }
             }
         }
 
         if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
-            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_DATA); // 切换到 form-data 模式
             EasyTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             formDataTablePanel.clear();
             if (item.getFormData() != null) {
@@ -711,18 +718,14 @@ public class RequestEditSubPanel extends JPanel {
                     formDataTablePanel.addRow(entry.getKey(), "File", entry.getValue());
                 }
             }
-            // form-data: 如果请求头没有设置 multipart/form-data，则补充（忽略大小写）
-            headersPanel.ensureContentTypeHeader(item.getHeaders(), "multipart/form-data");
-        } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
-            // 处理 POST-x-www-form-urlencoded
-            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
+        }
+
+        if (MapUtil.isNotEmpty(item.getUrlencoded())) {
             EasyTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             urlencodedTablePanel.clear();
             for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
                 urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());
             }
-            // x-www-form-urlencoded: 如果请求头没有设置 application/x-www-form-urlencoded，则补充（忽略大小写）
-            headersPanel.ensureContentTypeHeader(item.getHeaders(), "application/x-www-form-urlencoded");
         }
 
         // 认证Tab
@@ -752,6 +755,7 @@ public class RequestEditSubPanel extends JPanel {
         item.setParams(paramsPanel.getMap()); // 获取Params表格内容
         // 统一通过requestBodyPanel获取body相关内容
         item.setBody(requestBodyPanel.getBodyArea().getText().trim());
+        item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());
         String bodyType = requestBodyPanel.getBodyType();
         if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(bodyType)) {
             item.setFormData(requestBodyPanel.getFormData());
@@ -912,7 +916,8 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // 处理响应、后置脚本、变量提取、历史
-    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, PreparedRequest req, HttpResponse resp) {
+    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, PreparedRequest
+            req, HttpResponse resp) {
         if (resp == null) {
             log.error("Response is null, cannot handle response.");
             return;
@@ -952,7 +957,8 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-    private List<TestResult> handleStreamMessage(HttpRequestItem item, Map<String, Object> bindings, String message) {
+    private List<TestResult> handleStreamMessage(HttpRequestItem item, Map<String, Object> bindings, String
+            message) {
         try {
             HttpResponse resp = new HttpResponse();
             resp.body = message;

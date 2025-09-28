@@ -19,10 +19,10 @@ public class PreparedRequestBuilder {
         // 拼接 params 到 url，但暂不替换变量
         String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), item.getParams());
         req.url = HttpRequestUtil.encodeUrlParams(urlString); // 暂不替换变量
-        HttpRequestUtil.addContentTypeHeader(headers, item);
         HttpRequestUtil.addAuthorization(headers, item);
         req.headers = headers; // 暂不替换变量
         req.body = item.getBody(); // 暂不替换变量
+        req.bodyType = item.getBodyType();
         req.urlencoded = item.getUrlencoded(); // 暂不替换变量
         req.isMultipart = item.getFormData() != null && !item.getFormData().isEmpty();
         if (req.isMultipart) {

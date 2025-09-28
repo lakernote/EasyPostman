@@ -7,9 +7,12 @@ import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.SystemUtil;
 
 import javax.swing.*;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -116,7 +119,7 @@ public class EasyHttpHeadersPanel extends JPanel {
         return false;
     }
 
-    public void addTableModelListener(javax.swing.event.TableModelListener l) {
+    public void addTableModelListener(TableModelListener l) {
         tablePanel.addTableModelListener(l);
     }
 
@@ -128,10 +131,10 @@ public class EasyHttpHeadersPanel extends JPanel {
         tablePanel.scrollRectToVisible();
     }
 
-    public java.util.Map<String, String> getMap() {
-        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
-        java.util.List<java.util.Map<String, Object>> rows = tablePanel.getRows();
-        for (java.util.Map<String, Object> row : rows) {
+    public Map<String, String> getMap() {
+        Map<String, String> map = new LinkedHashMap<>();
+        java.util.List<Map<String, Object>> rows = tablePanel.getRows();
+        for (Map<String, Object> row : rows) {
             Object keyObj = row.get("Key");
             Object valueObj = row.get("Value");
             String key = keyObj == null ? "" : keyObj.toString().trim();
@@ -143,36 +146,47 @@ public class EasyHttpHeadersPanel extends JPanel {
         return map;
     }
 
-    public void setHeadersMap(java.util.Map<String, String> map) {
-        // 自动补充 User-Agent、Accept、Accept-Encoding、Connection
-        boolean hasUserAgent = map != null && map.keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(USER_AGENT));
-        if (map != null && !hasUserAgent) {
+    public void setHeadersMap(Map<String, String> map) {
+        if (map == null) return;
+        java.util.List<Map<String, Object>> rows = new ArrayList<>();
+        // 先补充默认请求头到 rows 最前面
+        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(USER_AGENT))) {
             map.put(USER_AGENT, USER_AGENT_VALUE);
-            tablePanel.addRow(USER_AGENT, USER_AGENT_VALUE);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Key", USER_AGENT);
+            row.put("Value", USER_AGENT_VALUE);
+            rows.add(row);
         }
-        boolean hasAccept = map != null && map.keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT));
-        if (map != null && !hasAccept) {
+        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT))) {
             map.put(ACCEPT, ACCEPT_VALUE);
-            tablePanel.addRow(ACCEPT, ACCEPT_VALUE);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Key", ACCEPT);
+            row.put("Value", ACCEPT_VALUE);
+            rows.add(row);
         }
-        boolean hasAcceptEncoding = map != null && map.keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT_ENCODING));
-        if (map != null && !hasAcceptEncoding) {
+        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT_ENCODING))) {
             map.put(ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE);
-            tablePanel.addRow(ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Key", ACCEPT_ENCODING);
+            row.put("Value", ACCEPT_ENCODING_VALUE);
+            rows.add(row);
         }
-        boolean hasConnection = map != null && map.keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(CONNECTION));
-        if (map != null && !hasConnection) {
+        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(CONNECTION))) {
             map.put(CONNECTION, CONNECTION_VALUE);
-            tablePanel.addRow(CONNECTION, CONNECTION_VALUE);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Key", CONNECTION);
+            row.put("Value", CONNECTION_VALUE);
+            rows.add(row);
         }
-        java.util.List<java.util.Map<String, Object>> rows = new java.util.ArrayList<>();
-        if (map != null) {
-            for (java.util.Map.Entry<String, String> entry : map.entrySet()) {
-                java.util.Map<String, Object> row = new java.util.LinkedHashMap<>();
-                row.put("Key", entry.getKey());
-                row.put("Value", entry.getValue());
-                rows.add(row);
-            }
+        // 再补充 map 里的其他 header
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String key = entry.getKey();
+            // 如果已经在 rows 里了就跳过
+            if (rows.stream().anyMatch(r -> r.get("Key").toString().equalsIgnoreCase(key))) continue;
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Key", key);
+            row.put("Value", entry.getValue());
+            rows.add(row);
         }
         tablePanel.setRows(rows);
     }
@@ -223,3 +237,4 @@ public class EasyHttpHeadersPanel extends JPanel {
         }
     }
 }
+

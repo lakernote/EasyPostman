@@ -164,48 +164,44 @@ public class EasyHttpHeadersPanel extends JPanel {
     }
 
     public void setHeadersMap(Map<String, String> map) {
+        tablePanel.clear();
         if (map == null) return;
         java.util.List<Map<String, Object>> rows = new ArrayList<>();
-        // 先补充默认请求头到 rows 最前面
-        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(USER_AGENT))) {
-            map.put(USER_AGENT, USER_AGENT_VALUE);
+        // 默认头顺序
+        String[] defaultKeys = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
+        for (String key : defaultKeys) {
+            // 优先使用 map 中的值，没有则用默认值
+            String value = map.containsKey(key) ? map.get(key) : getDefaultValue(key);
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Key", USER_AGENT);
-            row.put("Value", USER_AGENT_VALUE);
+            row.put("Key", key);
+            row.put("Value", value);
             rows.add(row);
         }
-        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT))) {
-            map.put(ACCEPT, ACCEPT_VALUE);
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Key", ACCEPT);
-            row.put("Value", ACCEPT_VALUE);
-            rows.add(row);
-        }
-        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT_ENCODING))) {
-            map.put(ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE);
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Key", ACCEPT_ENCODING);
-            row.put("Value", ACCEPT_ENCODING_VALUE);
-            rows.add(row);
-        }
-        if (map.keySet().stream().noneMatch(k -> k != null && k.equalsIgnoreCase(CONNECTION))) {
-            map.put(CONNECTION, CONNECTION_VALUE);
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Key", CONNECTION);
-            row.put("Value", CONNECTION_VALUE);
-            rows.add(row);
-        }
-        // 再补充 map 里的其他 header
+        // 其他 header，跳过默认头
         for (Map.Entry<String, String> entry : map.entrySet()) {
             String key = entry.getKey();
-            // 如果已经在 rows 里了就跳过
-            if (rows.stream().anyMatch(r -> r.get("Key").toString().equalsIgnoreCase(key))) continue;
+            boolean isDefault = false;
+            for (String defKey : defaultKeys) {
+                if (defKey.equalsIgnoreCase(key)) {
+                    isDefault = true;
+                    break;
+                }
+            }
+            if (isDefault) continue;
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("Key", key);
             row.put("Value", entry.getValue());
             rows.add(row);
         }
         tablePanel.setRows(rows);
+    }
+
+    private String getDefaultValue(String key) {
+        if (USER_AGENT.equals(key)) return USER_AGENT_VALUE;
+        if (ACCEPT.equals(key)) return ACCEPT_VALUE;
+        if (ACCEPT_ENCODING.equals(key)) return ACCEPT_ENCODING_VALUE;
+        if (CONNECTION.equals(key)) return CONNECTION_VALUE;
+        return "";
     }
 
     /**

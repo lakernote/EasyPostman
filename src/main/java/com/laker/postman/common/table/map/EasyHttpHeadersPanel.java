@@ -11,6 +11,8 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -53,6 +55,7 @@ public class EasyHttpHeadersPanel extends JPanel {
         eyeButton.setFocusable(false);
         eyeButton.setBorderPainted(false);
         eyeButton.setContentAreaFilled(false);
+        eyeButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 鼠标手型
         eyeButton.addActionListener(e -> {
             toggleDefaultHeadersVisibility();
             eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
@@ -62,6 +65,14 @@ public class EasyHttpHeadersPanel extends JPanel {
         String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
         countLabel = new JLabel("<html>" + countHtml + "</html>");
         countLabel.setVisible(true); // 初始就显示
+        countLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 鼠标手型
+        countLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                toggleDefaultHeadersVisibility();
+                eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
+            }
+        });
         headerPanel.add(label);
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel); // 始终显示

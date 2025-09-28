@@ -186,4 +186,40 @@ public class EasyHttpHeadersPanel extends JPanel {
             tablePanel.addRow("Content-Type", contentType);
         }
     }
+
+
+    public void setOrUpdateHeader(String key, String value) {
+        boolean found = false;
+        int rowCount = tablePanel.getTable().getRowCount();
+        for (int i = 0; i < rowCount; i++) {
+            Object keyObj = tablePanel.getTable().getValueAt(i, 0);
+            if (keyObj != null && keyObj.toString().equalsIgnoreCase(key)) {
+                tablePanel.getTable().setValueAt(value, i, 1);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            tablePanel.addRow(key, value);
+        }
+    }
+
+    public void removeHeader(String key) {
+        JTable table = tablePanel.getTable();
+        int rowCount = table.getRowCount();
+        java.util.List<Integer> modelIndexesToRemove = new java.util.ArrayList<>();
+        for (int i = 0; i < rowCount; i++) {
+            Object keyObj = table.getValueAt(i, 0);
+            if (keyObj != null && keyObj.toString().equalsIgnoreCase(key)) {
+                int modelIndex = table.convertRowIndexToModel(i);
+                modelIndexesToRemove.add(modelIndex);
+            }
+        }
+        // 倒序删除，避免索引错乱
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        modelIndexesToRemove.sort(java.util.Collections.reverseOrder());
+        for (int modelIndex : modelIndexesToRemove) {
+            model.removeRow(modelIndex);
+        }
+    }
 }

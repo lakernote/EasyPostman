@@ -180,6 +180,26 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
+
+        // bodyTypeComboBox 变化时，自动设置 Content-Type
+        requestBodyPanel.getBodyTypeComboBox().addActionListener(e -> {
+            String selectedType = (String) requestBodyPanel.getBodyTypeComboBox().getSelectedItem();
+            if (RequestBodyPanel.BODY_TYPE_NONE.equals(selectedType)) {
+                headersPanel.removeHeader("Content-Type");
+            } else {
+                String contentType = null;
+                if (RequestBodyPanel.BODY_TYPE_RAW.equals(selectedType)) {
+                    contentType = "application/json";
+                } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(selectedType)) {
+                    contentType = "application/x-www-form-urlencoded";
+                } else if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(selectedType)) {
+                    contentType = "multipart/form-data";
+                }
+                if (contentType != null) {
+                    headersPanel.setOrUpdateHeader("Content-Type", contentType);
+                }
+            }
+        });
     }
 
     /**

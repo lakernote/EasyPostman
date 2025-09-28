@@ -54,7 +54,7 @@ public class WaterfallChartPanel extends JPanel {
         int labelMaxWidth = 80, descMaxWidth = 80;
         Graphics g = getGraphics();
         if (g != null) {
-            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
             for (Stage s : stages) {
                 int w = g.getFontMetrics().stringWidth(s.label);
                 if (w > labelMaxWidth) labelMaxWidth = w;
@@ -95,7 +95,7 @@ public class WaterfallChartPanel extends JPanel {
         g2.setColor(INFO_BORDER_COLOR);
         g2.drawRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 8, 8);
         int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_LINE_HEIGHT - 3;
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.setColor(Color.DARK_GRAY);
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
@@ -120,22 +120,22 @@ public class WaterfallChartPanel extends JPanel {
         int lineEndX = getWidth() - INFO_TEXT_LEFT_PAD;
         int remoteLineY = -1, cipherLineY = -1;
         // HTTP Version
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.setColor(Color.DARK_GRAY);
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Local Address
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Remote Address
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
@@ -145,15 +145,15 @@ public class WaterfallChartPanel extends JPanel {
             g2.setColor(Color.DARK_GRAY);
         }
         // TLS Protocol
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Cipher Name
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
@@ -163,28 +163,28 @@ public class WaterfallChartPanel extends JPanel {
             g2.setColor(Color.DARK_GRAY);
         }
         // Certificate CN
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Issuer CN
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Valid Until
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // 2. 绘制瀑布条区
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
         int descMaxWidth = 0;
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         for (Stage s : stages) {
             int w = g2.getFontMetrics().stringWidth(s.label);
             if (w > labelMaxWidth) labelMaxWidth = w;
@@ -240,7 +240,7 @@ public class WaterfallChartPanel extends JPanel {
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
             // label 区域
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
             g2.setColor(new Color(40, 40, 40));
             int labelW = labelMaxWidth;
             String label = s.label;

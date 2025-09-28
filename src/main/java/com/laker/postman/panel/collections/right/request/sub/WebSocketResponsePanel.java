@@ -152,7 +152,7 @@ public class WebSocketResponsePanel extends JPanel {
 
         // 美化表格
         JTableHeader header = table.getTableHeader();
-        header.setFont(header.getFont().deriveFont(Font.BOLD, 12f));
+        header.setFont(header.getFont().deriveFont(Font.BOLD, 11f));
         table.setForeground(new Color(40, 40, 40));
         table.setGridColor(new Color(220, 225, 235));
         table.setShowGrid(true);

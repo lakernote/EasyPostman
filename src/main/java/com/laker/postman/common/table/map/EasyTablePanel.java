@@ -42,6 +42,7 @@ public class EasyTablePanel extends JPanel {
     // 表格的数据模型
     private final DefaultTableModel tableModel;
     // JTable 组件
+    @Getter
     private final JTable table;
     // 右键菜单
     private final JPopupMenu popupMenu;

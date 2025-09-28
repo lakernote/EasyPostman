@@ -5,6 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.setting.SettingManager;
+import com.laker.postman.common.table.map.EasyHttpHeadersPanel;
 import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
@@ -59,7 +60,7 @@ public class RequestEditSubPanel extends JPanel {
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyNameValueTablePanel paramsPanel;
-    private final EasyNameValueTablePanel headersPanel;
+    private final EasyHttpHeadersPanel headersPanel;
     @Getter
     private String id;
     private String name;
@@ -142,7 +143,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION), authTabPanel);
 
         // 2.3 Headers
-        headersPanel = new EasyNameValueTablePanel("Key", "Value");
+        headersPanel = new EasyHttpHeadersPanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS), headersPanel);
 
         // 2.4 Body 面板
@@ -650,20 +651,7 @@ public class RequestEditSubPanel extends JPanel {
         paramsPanel.setMap(mergedParams);
         methodBox.setSelectedItem(item.getMethod());
         // Headers
-        headersPanel.setMap(item.getHeaders());
-        // 自动补充 User-Agent 和 Accept
-        // 判断是否已存在 User-Agent（忽略大小写）
-        boolean hasUserAgent = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(USER_AGENT));
-        if (!hasUserAgent) {
-            item.getHeaders().put(USER_AGENT, EASY_POSTMAN_HTTP_CLIENT);
-            headersPanel.addRow(USER_AGENT, EASY_POSTMAN_HTTP_CLIENT);
-        }
-        // 判断是否已存在 Accept（忽略大小写）
-        boolean hasAccept = item.getHeaders().keySet().stream().anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT));
-        if (!hasAccept) {
-            item.getHeaders().put(ACCEPT, VALUE);
-            headersPanel.addRow(ACCEPT, VALUE);
-        }
+        headersPanel.setHeadersMap(item.getHeaders());
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
         if (CharSequenceUtil.isBlank(item.getBody())) {
@@ -672,7 +660,7 @@ public class RequestEditSubPanel extends JPanel {
         } else {
             // 其他模式（如 raw）
             // raw: 如果请求头没有设置 application/json，则补充（忽略大小写）
-            ensureContentTypeHeader(item.getHeaders(), "application/json", headersPanel);
+            headersPanel.ensureContentTypeHeader(item.getHeaders(), "application/json");
             // 补充 rawTypeComboBox 初始选择
             if (RequestBodyPanel.BODY_TYPE_RAW.equals(requestBodyPanel.getBodyType())) {
                 String body = item.getBody();
@@ -704,7 +692,7 @@ public class RequestEditSubPanel extends JPanel {
                 }
             }
             // form-data: 如果请求头没有设置 multipart/form-data，则补充（忽略大小写）
-            ensureContentTypeHeader(item.getHeaders(), "multipart/form-data", headersPanel);
+            headersPanel.ensureContentTypeHeader(item.getHeaders(), "multipart/form-data");
         } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
             // 处理 POST-x-www-form-urlencoded
             requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
@@ -714,7 +702,7 @@ public class RequestEditSubPanel extends JPanel {
                 urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());
             }
             // x-www-form-urlencoded: 如果请求头没有设置 application/x-www-form-urlencoded，则补充（忽略大小写）
-            ensureContentTypeHeader(item.getHeaders(), "application/x-www-form-urlencoded", headersPanel);
+            headersPanel.ensureContentTypeHeader(item.getHeaders(), "application/x-www-form-urlencoded");
         }
 
         // 认证Tab

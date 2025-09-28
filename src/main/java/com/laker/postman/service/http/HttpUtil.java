@@ -320,16 +320,6 @@ public class HttpUtil {
 
 
     /**
-     * 如果 headers 中不包含指定 Content-Type，则补充，并同步更新 headersPanel
-     */
-    public static void ensureContentTypeHeader(Map<String, String> headers, String contentType, EasyNameValueTablePanel headersPanel) {
-        if (!HttpUtil.containsContentType(headers, contentType)) {
-            headers.put("Content-Type", contentType);
-            headersPanel.addRow("Content-Type", contentType);
-        }
-    }
-
-    /**
      * 获取不带参数的基础URL
      * 例如：https://api.example.com/users?name=john&age=25 -> https://api.example.com/users
      */

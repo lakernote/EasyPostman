@@ -18,16 +18,21 @@ import lombok.Setter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.MouseInputAdapter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.laker.postman.common.table.TableUIConstants.SELECT_FILE_TEXT;
@@ -196,6 +201,9 @@ public class RequestBodyPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         bodyArea = new RSyntaxTextArea(5, 20);
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON); // 默认JSON高亮
+        bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
+        bodyArea.setLineWrap(true); // 自动换行
+        // 设置主题
         try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
             if (in != null) {
                 Theme theme = Theme.load(in);
@@ -203,7 +211,7 @@ public class RequestBodyPanel extends JPanel {
             }
         } catch (Exception ignored) {
         }
-        JScrollPane scrollPane = new JScrollPane(bodyArea);
+        RTextScrollPane scrollPane = new RTextScrollPane(bodyArea); // 使用RSyntaxTextArea的滚动面板 显示行号
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // ====== 变量高亮和悬浮提示 ======
@@ -211,7 +219,7 @@ public class RequestBodyPanel extends JPanel {
         DefaultHighlighter highlighter = (DefaultHighlighter) bodyArea.getHighlighter();
         DefaultHighlighter.DefaultHighlightPainter definedPainter = new DefaultHighlighter.DefaultHighlightPainter(new Color(180, 210, 255, 120));
         DefaultHighlighter.DefaultHighlightPainter undefinedPainter = new DefaultHighlighter.DefaultHighlightPainter(new Color(255, 200, 200, 120));
-        bodyArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        bodyArea.getDocument().addDocumentListener(new DocumentListener() {
             void updateHighlights() {
                 highlighter.removeAllHighlights();
                 String text = bodyArea.getText();
@@ -225,15 +233,15 @@ public class RequestBodyPanel extends JPanel {
                 }
             }
 
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+            public void insertUpdate(DocumentEvent e) {
                 updateHighlights();
             }
 
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 updateHighlights();
             }
 
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 updateHighlights();
             }
         });
@@ -252,7 +260,7 @@ public class RequestBodyPanel extends JPanel {
         // 悬浮提示
         bodyArea.addMouseMotionListener(new MouseInputAdapter() {
             @Override
-            public void mouseMoved(java.awt.event.MouseEvent e) {
+            public void mouseMoved(MouseEvent e) {
                 int pos = bodyArea.viewToModel2D(e.getPoint());
                 String text = bodyArea.getText();
                 java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
@@ -372,8 +380,8 @@ public class RequestBodyPanel extends JPanel {
     public Map<String, String> getFormData() {
         Map<String, String> formData = new LinkedHashMap<>();
         if (formDataTablePanel != null) {
-            java.util.List<java.util.Map<String, Object>> rows = formDataTablePanel.getRows();
-            for (java.util.Map<String, Object> row : rows) {
+            List<Map<String, Object>> rows = formDataTablePanel.getRows();
+            for (Map<String, Object> row : rows) {
                 String key = row.get("Key") == null ? null : row.get("Key").toString();
                 String type = row.get("Type") == null ? null : row.get("Type").toString();
                 String value = row.get("Value") == null ? null : row.get("Value").toString();
@@ -388,8 +396,8 @@ public class RequestBodyPanel extends JPanel {
     public Map<String, String> getFormFiles() {
         Map<String, String> formFiles = new LinkedHashMap<>();
         if (formDataTablePanel != null) {
-            java.util.List<Map<String, Object>> rows = formDataTablePanel.getRows();
-            for (java.util.Map<String, Object> row : rows) {
+            List<Map<String, Object>> rows = formDataTablePanel.getRows();
+            for (Map<String, Object> row : rows) {
                 String key = row.get("Key") == null ? null : row.get("Key").toString();
                 String type = row.get("Type") == null ? null : row.get("Type").toString();
                 String value = row.get("Value") == null ? null : row.get("Value").toString();

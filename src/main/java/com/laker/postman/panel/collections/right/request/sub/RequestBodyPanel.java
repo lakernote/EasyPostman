@@ -13,8 +13,10 @@ import com.laker.postman.model.VariableSegment;
 import com.laker.postman.util.EasyPostmanVariableUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.XmlUtil;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -29,6 +31,7 @@ import javax.swing.text.DefaultHighlighter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.MouseEvent;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
@@ -40,16 +43,20 @@ import static com.laker.postman.common.table.TableUIConstants.SELECT_FILE_TEXT;
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
  */
+@Slf4j
 public class RequestBodyPanel extends JPanel {
     public static final String BODY_TYPE_NONE = "none";
     public static final String BODY_TYPE_FORM_DATA = "form-data";
     public static final String BODY_TYPE_FORM_URLENCODED = "x-www-form-urlencoded";
     public static final String BODY_TYPE_RAW = "raw";
     public static final String RAW_TYPE_JSON = "JSON";
+    public static final String RAW_TYPE_TEXT = "Text";
+    public static final String RAW_TYPE_XML = "XML";
 
     @Getter
     private JComboBox<String> bodyTypeComboBox;
     private JLabel formatLabel;
+    @Getter
     private JComboBox<String> rawTypeComboBox;
     @Getter
     private EasyTablePanel formDataTablePanel;
@@ -98,7 +105,7 @@ public class RequestBodyPanel extends JPanel {
         leftPanel.add(bodyTypeComboBox);
         leftPanel.add(Box.createHorizontalStrut(10));
         formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
-        String[] rawTypes = {RAW_TYPE_JSON};
+        String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_XML, RAW_TYPE_TEXT};
         rawTypeComboBox = new JComboBox<>(rawTypes);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         boolean showFormatControls = isBodyTypeRAW();
@@ -106,7 +113,7 @@ public class RequestBodyPanel extends JPanel {
         formatLabel.setVisible(showFormatControls);
         leftPanel.add(formatLabel);
         leftPanel.add(rawTypeComboBox);
-        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 20, 20));
+        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 18, 18));
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
         leftPanel.add(Box.createHorizontalStrut(5));
@@ -279,7 +286,27 @@ public class RequestBodyPanel extends JPanel {
                 bodyArea.setToolTipText(null);
             }
         });
-
+        // 监听 rawTypeComboBox 选项变化，切换高亮风格
+        if (rawTypeComboBox != null) {
+            rawTypeComboBox.addItemListener(e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    String selected = (String) e.getItem();
+                    switch (selected) {
+                        case RAW_TYPE_JSON:
+                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                            break;
+                        case RAW_TYPE_XML:
+                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                            break;
+                        case RAW_TYPE_TEXT:
+                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+                            break;
+                        default:
+                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+                    }
+                }
+            });
+        }
         return panel;
     }
 
@@ -358,14 +385,16 @@ public class RequestBodyPanel extends JPanel {
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_EMPTY));
             return;
         }
-        if (RAW_TYPE_JSON.equals(RAW_TYPE_JSON)) {
-            if (JSONUtil.isTypeJSON(bodyText)) {
-                JSON json = JSONUtil.parse(bodyText);
-                bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
-            } else {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_INVALID_JSON));
-            }
+        String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
+        if (RAW_TYPE_JSON.equals(selectedFormat) && JSONUtil.isTypeJSON(bodyText)) {
+            JSON json = JSONUtil.parse(bodyText);
+            bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
+        } else if (RAW_TYPE_XML.equals(selectedFormat)) {
+            bodyArea.setText(XmlUtil.formatXml(bodyText));
+        } else {
+            log.debug("Unsupported format type or content is not JSON/XML");
         }
+
     }
 
     // getter方法，供主面板调用
@@ -413,4 +442,5 @@ public class RequestBodyPanel extends JPanel {
         if (formUrlencodedTablePanel == null) return null;
         return formUrlencodedTablePanel.getMap();
     }
+
 }

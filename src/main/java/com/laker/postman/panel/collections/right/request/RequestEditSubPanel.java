@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.right.request;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.setting.SettingManager;
@@ -22,6 +21,7 @@ import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.XmlUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
@@ -666,13 +666,25 @@ public class RequestEditSubPanel extends JPanel {
         }
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
-        if (StrUtil.isBlank(item.getBody())) {
+        if (CharSequenceUtil.isBlank(item.getBody())) {
             requestBodyPanel.getBodyTypeComboBox().setSelectedItem(RequestBodyPanel.BODY_TYPE_NONE); // 切换到无 Body 模式
             // form-data 字段还原
         } else {
             // 其他模式（如 raw）
             // raw: 如果请求头没有设置 application/json，则补充（忽略大小写）
             ensureContentTypeHeader(item.getHeaders(), "application/json", headersPanel);
+            // 补充 rawTypeComboBox 初始选择
+            if (RequestBodyPanel.BODY_TYPE_RAW.equals(requestBodyPanel.getBodyType())) {
+                String body = item.getBody();
+                JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
+                if (JSONUtil.isTypeJSON(body)) {
+                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
+                } else if (XmlUtil.isXml(body)) {
+                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
+                } else {
+                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
+                }
+            }
         }
 
         if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {

@@ -14,19 +14,30 @@ import java.util.List;
 public class WaterfallChartPanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
-    // 布局参数集中管理
-    private static final int BAR_HEIGHT = 18, BAR_GAP = 10, RIGHT_PAD = 30, TOP_PAD = 28, BOTTOM_PAD = 25, BAR_RADIUS = 10, MIN_BAR_WIDTH = 12;
-    private static final int LABEL_LEFT_PAD = 24, LABEL_RIGHT_PAD = 12, DESC_LEFT_PAD = 18;
-    private static final int INFO_BLOCK_H_GAP = 16, INFO_BLOCK_V_GAP = 10;
     private static final Color[] COLORS = {
             new Color(0x4F8EF7), new Color(0x34C759), new Color(0xAF52DE), new Color(0xFF9500), new Color(0xFF375F), new Color(0x32D1C6)
     };
     private HttpEventInfo httpEventInfo;
 
-    private static final int INFO_TEXT_LINE_HEIGHT = 18;
+    // 瀑布图参数
+    private static final int BAR_HEIGHT = 16; // 瀑布条的高度
+    private static final int BAR_GAP = 3; // 瀑布条之间的垂直间距
+    private static final int RIGHT_PAD = 30; // 右侧内边距
+    private static final int TOP_PAD = 15; // 顶部内边距
+    private static final int BOTTOM_PAD = 5; // 底部内边距
+    private static final int BAR_RADIUS = 10; // 瀑布条圆角半径
+    private static final int MIN_BAR_WIDTH = 12; // 瀑布条最小宽度
+    private static final int LABEL_LEFT_PAD = 24; // 标签左侧内边距
+    private static final int LABEL_RIGHT_PAD = 12; // 标签右侧内边距
+    private static final int DESC_LEFT_PAD = 18; // 描述文本左侧内边距
+
+    // 信息区参数
+    private static final int INFO_BLOCK_H_GAP = 16; // 信息区块之间的水平间距
+    private static final int INFO_BLOCK_V_GAP = 3; // 信息区块之间的垂直间距
+    private static final int INFO_TEXT_LINE_HEIGHT = 16; // 信息文本行高
     private static final int INFO_TEXT_EXTRA_GAP = 6; // 信息区每项之间额外空白
-    private static final int INFO_TEXT_BOTTOM_PAD = 10;  // 信息区底部内边距
-    private static final int INFO_TEXT_LEFT_PAD = 20;
+    private static final int INFO_TEXT_BOTTOM_PAD = 15;  // 信息区底部内边距
+    private static final int INFO_TEXT_LEFT_PAD = 20; // 信息区左侧内边距
     private static final Color INFO_BG_COLOR = new Color(245, 247, 250);
     private static final Color INFO_BORDER_COLOR = new Color(220, 220, 220);
 
@@ -179,7 +190,6 @@ public class WaterfallChartPanel extends JPanel {
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
-        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // 2. 绘制瀑布条区
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;

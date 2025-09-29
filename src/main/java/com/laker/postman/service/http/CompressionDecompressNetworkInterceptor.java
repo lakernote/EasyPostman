@@ -36,6 +36,7 @@ public class CompressionDecompressNetworkInterceptor implements Interceptor {
         Request request = chain.request();
         Response response = chain.proceed(request);
         String encoding = response.header("Content-Encoding");
+        String contentLength = response.header("Content-Length");
         MediaType respContentType = response.body() != null ? response.body().contentType() : null;
         // 只在 Content-Encoding 存在且 promisesBody 时处理，避免重复解压和流式响应卡死
         if (encoding != null && response.body() != null && promisesBody(response)) {
@@ -52,12 +53,18 @@ public class CompressionDecompressNetworkInterceptor implements Interceptor {
                 return response;
             }
             // 头部处理参考 BridgeInterceptor，流式解压，长度未知
-            return response.newBuilder()
+            Response.Builder builder = response.newBuilder()
                     .removeHeader("Content-Encoding")
                     .removeHeader("Content-Length")
                     .header("Easy-Content-Encoding", encoding)
-                    .body(ResponseBody.create(respContentType, -1, decompressed))
-                    .build();
+                    .body(ResponseBody.create(respContentType, -1, decompressed));
+
+            // 如果原来有Content-Length，保存到Easy-Content-Length
+            if (contentLength != null) {
+                builder.header("Easy-Content-Length", contentLength);
+            }
+
+            return builder.build();
         }
         // 其他场景（无 body、流式响应、HEAD/204/304等），原样返回
         return response;

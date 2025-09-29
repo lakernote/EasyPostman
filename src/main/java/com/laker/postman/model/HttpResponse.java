@@ -31,6 +31,9 @@ public class HttpResponse {
         if ("Easy-Content-Encoding".equalsIgnoreCase(name)) {
             headers.put("Content-Encoding", value);
             headers.remove("Easy-Content-Encoding");
+        } else if ("Easy-Content-Length".equalsIgnoreCase(name)) {
+            headers.put("Content-Length", value);
+            headers.remove("Easy-Content-Length");
         } else {
             headers.put(name, value);
         }

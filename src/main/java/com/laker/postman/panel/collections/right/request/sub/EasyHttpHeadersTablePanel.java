@@ -24,7 +24,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     private DefaultTableModel tableModel;
     @Getter
     private JTable table;
-    private JPopupMenu popupMenu;
     private final String[] columns;
 
     // Default header keys for consistency
@@ -54,7 +53,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
-        setupPopupMenu();
         setupTableListeners();
         addAutoAppendRowFeature();
     }
@@ -122,10 +120,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         setColumnRenderer(1, new EasyPostmanTextFieldCellRenderer());
     }
 
-    private void setupPopupMenu() {
-        popupMenu = createPopupMenu();
-    }
-
     private void setupTableListeners() {
         addTableRightMouseListener();
     }
@@ -170,24 +164,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     }
 
     /**
-     * Create popup menu for add/remove operations
-     */
-    private JPopupMenu createPopupMenu() {
-        JPopupMenu menu = new JPopupMenu();
-
-        JMenuItem addItem = new JMenuItem("Add");
-        addItem.addActionListener(e -> addRowAndScroll());
-
-        JMenuItem removeItem = new JMenuItem("Remove");
-        removeItem.addActionListener(e -> deleteSelectedRow());
-
-        menu.add(addItem);
-        menu.add(removeItem);
-
-        return menu;
-    }
-
-    /**
      * Add right-click menu listener
      */
     private void addTableRightMouseListener() {
@@ -214,13 +190,58 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                 int viewRow = table.rowAtPoint(e.getPoint());
                 if (viewRow >= 0) {
                     table.setRowSelectionInterval(viewRow, viewRow);
-                }
 
-                popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                    // Convert view row index to model row index if row sorter is used
+                    int modelRow = viewRow;
+                    if (table.getRowSorter() != null) {
+                        modelRow = table.getRowSorter().convertRowIndexToModel(viewRow);
+                    }
+
+                    // Check if the selected row contains a default header
+                    Object keyObj = tableModel.getValueAt(modelRow, 0);
+                    boolean isDefaultHeaderRow = false;
+                    if (keyObj != null) {
+                        String key = keyObj.toString().trim();
+                        isDefaultHeaderRow = DEFAULT_HEADER_KEYS.contains(key);
+                    }
+
+                    // Create appropriate popup menu based on whether it's a default header
+                    JPopupMenu contextMenu = createContextPopupMenu(isDefaultHeaderRow);
+                    contextMenu.show(e.getComponent(), e.getX(), e.getY());
+                } else {
+                    // No row selected, show normal menu for adding new row
+                    JPopupMenu contextMenu = createContextPopupMenu(false);
+                    contextMenu.show(e.getComponent(), e.getX(), e.getY());
+                }
             }
         };
 
         table.addMouseListener(tableMouseListener);
+    }
+
+    /**
+     * Create context menu based on whether it's a default header row
+     */
+    private JPopupMenu createContextPopupMenu(boolean isDefaultHeaderRow) {
+        JPopupMenu menu = new JPopupMenu();
+
+        if (isDefaultHeaderRow) {
+            // For default header rows, show a disabled menu item indicating it's a default header
+            JMenuItem defaultHeaderItem = new JMenuItem("Default Header (Cannot Delete)");
+            defaultHeaderItem.setEnabled(false);
+            menu.add(defaultHeaderItem);
+        } else {
+            // For normal rows, show add/remove options
+            JMenuItem addItem = new JMenuItem("Add");
+            addItem.addActionListener(e -> addRowAndScroll());
+            menu.add(addItem);
+
+            JMenuItem removeItem = new JMenuItem("Remove");
+            removeItem.addActionListener(e -> deleteSelectedRow());
+            menu.add(removeItem);
+        }
+
+        return menu;
     }
 
     /**

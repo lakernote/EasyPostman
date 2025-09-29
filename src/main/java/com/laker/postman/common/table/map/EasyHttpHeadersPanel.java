@@ -159,18 +159,14 @@ public class EasyHttpHeadersPanel extends JPanel {
     public void setHeadersMap(Map<String, String> map) {
         tablePanel.clear();
         if (map == null) return;
-        java.util.List<Map<String, Object>> rows = new ArrayList<>();
-        // 默认头顺序
+        // 优化：先按默认头顺序补全和排序 map
         String[] defaultKeys = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
+        LinkedHashMap<String, String> sortedMap = new LinkedHashMap<>();
         for (String key : defaultKeys) {
-            // 优先使用 map 中的值，没有则用默认值
             String value = map.containsKey(key) ? map.get(key) : getDefaultValue(key);
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Key", key);
-            row.put("Value", value);
-            rows.add(row);
+            sortedMap.put(key, value);
         }
-        // 其他 header，跳过默认头
+        // 追加其他 header，跳过默认头
         for (Map.Entry<String, String> entry : map.entrySet()) {
             String key = entry.getKey();
             boolean isDefault = false;
@@ -181,8 +177,16 @@ public class EasyHttpHeadersPanel extends JPanel {
                 }
             }
             if (isDefault) continue;
+            sortedMap.put(key, entry.getValue());
+        }
+        // 同步 sortedMap 到 map
+        map.clear();
+        map.putAll(sortedMap);
+        // 构造 rows
+        java.util.List<Map<String, Object>> rows = new ArrayList<>();
+        for (Map.Entry<String, String> entry : sortedMap.entrySet()) {
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Key", key);
+            row.put("Key", entry.getKey());
             row.put("Value", entry.getValue());
             rows.add(row);
         }

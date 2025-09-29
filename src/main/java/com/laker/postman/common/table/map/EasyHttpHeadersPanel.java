@@ -24,7 +24,7 @@ import java.util.Map;
  * 4. 中间是表格
  */
 public class EasyHttpHeadersPanel extends JPanel {
-    private final EasyTablePanel tablePanel;
+    private final EasyHttpHeadersTablePanel tablePanel;
     // Default headers
     private static final String USER_AGENT = "User-Agent";
     private static final String ACCEPT = "Accept";
@@ -75,7 +75,7 @@ public class EasyHttpHeadersPanel extends JPanel {
         headerPanel.add(label);
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel); // 始终显示
-        tablePanel = new EasyTablePanel(new String[]{"Key", "Value"}, 24, true, true);
+        tablePanel = new EasyHttpHeadersTablePanel();
         tablePanel.setColumnEditor(0, new EasyPostmanTextFieldCellEditor());
         tablePanel.setColumnEditor(1, new EasyPostmanTextFieldCellEditor());
         tablePanel.setColumnRenderer(0, new EasyPostmanTextFieldCellRenderer());
@@ -94,7 +94,7 @@ public class EasyHttpHeadersPanel extends JPanel {
             }
         });
         add(headerPanel, BorderLayout.NORTH);
-        JScrollPane scrollPane = new JScrollPane(tablePanel.getTable());
+        JScrollPane scrollPane = new JScrollPane(tablePanel);
         add(scrollPane, BorderLayout.CENTER);
     }
 

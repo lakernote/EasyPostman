@@ -20,7 +20,7 @@ public class HttpResponse {
     public int idleConnectionCount; // 空闲连接数
     public int connectionCount; // 连接总数
     public HttpEventInfo httpEventInfo;
-    public int bodySize; // 响应体字节数
-    public int headersSize; // 响应头字节数
+    public long bodySize; // 响应体字节数
+    public long headersSize; // 响应头字节数
     public boolean isSse = false; // 是否为SSE响应
 }

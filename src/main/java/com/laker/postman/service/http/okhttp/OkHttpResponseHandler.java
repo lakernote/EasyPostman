@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.brotli.dec.BrotliInputStream;
 
 import javax.swing.*;
 import java.io.*;
@@ -18,8 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.InflaterInputStream;
+import java.util.Objects;
 
 /**
  * OkHttp 响应处理工具类
@@ -39,16 +37,17 @@ public class OkHttpResponseHandler {
         response.code = okResponse.code();
         response.message = okResponse.message();
         response.headers = new LinkedHashMap<>();
-        int headersSize = 0;
         for (String name : okResponse.headers().names()) {
             String value = okResponse.header(name);
             if (value != null) {
                 response.headers.put(name, List.of(value));
-                headersSize += name.getBytes().length + 2; // key + ': '
-                headersSize += value.getBytes().length + 2; // value + '\r\n'
             }
         }
-        response.headersSize = headersSize;
+        if (okResponse.header("Easy-Content-Encoding") != null) {
+            response.headers.put("Content-Encoding", List.of(Objects.requireNonNull(okResponse.header("Easy-Content-Encoding"))));
+            response.headers.remove("Easy-Content-Encoding");
+        }
+        response.headersSize = response.httpEventInfo.getHeaderBytesReceived();
         response.threadName = Thread.currentThread().getName();
         response.protocol = okResponse.protocol().toString();
         String contentType = okResponse.header("Content-Type", "");
@@ -61,6 +60,7 @@ public class OkHttpResponseHandler {
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
+        response.bodySize = response.httpEventInfo.getBodyBytesReceived();
         if (okResponse.body() != null) {
             okResponse.body().close();
         }
@@ -290,25 +290,8 @@ public class OkHttpResponseHandler {
             return;
         }
         if (body != null) {
-            byte[] originalBytes = body.bytes();
-            response.bodySize = originalBytes.length; // 只赋值一次，始终是网络收到的原始字节数
-            String encoding = okResponse.header("Content-Encoding", "").toLowerCase();
-            byte[] bytes = originalBytes;
-            InputStream is = new ByteArrayInputStream(originalBytes);
-            switch (encoding) {
-                case "gzip" -> {
-                    is = new GZIPInputStream(is);
-                    bytes = is.readAllBytes();
-                }
-                case "deflate" -> {
-                    is = new InflaterInputStream(is);
-                    bytes = is.readAllBytes();
-                }
-                case "br" -> {
-                    is = new BrotliInputStream(is);
-                    bytes = is.readAllBytes();
-                }
-            }
+            byte[] bytes = body.bytes();
+            response.bodySize = bytes.length;
             if (bytes.length > getMaxBodySize()) { // 如果解压后内容超过设置值，保存为临时文件
                 FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bytes), "easyPostman_text_download_", ext != null ? ext : ".txt", contentLengthHeader);
                 response.filePath = fs.file.getAbsolutePath();

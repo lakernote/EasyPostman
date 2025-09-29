@@ -24,9 +24,23 @@ public class HttpService {
 
     /**
      * 构建支持动态 eventListenerFactory 和超时的 OkHttpClient
+     * <p>
+     * 拦截器执行顺序说明：
+     * 1. addNetworkInterceptor(CompressionSizeInterceptor)：网络层，最先执行，记录压缩前体积。
+     * 2. addInterceptor(BrotliInterceptor.INSTANCE)：应用层，自动解压 br 响应。
+     * 3. addInterceptor(DeflateDecompressInterceptor)：应用层，自动解压 deflate 响应。
+     * 4. BridgeInterceptor（OkHttp 内部）：自动解压 gzip 响应。
+     * 5. 其他自定义拦截器（如日志、超时等）。
+     * <p>
+     * 推荐顺序保证：
+     * - 压缩前体积先被记录。
+     * - br/deflate/gzip 都能自动解压。
+     * - 业务逻辑拦截器可安全处理解压后的响应体。
      */
     private static OkHttpClient buildDynamicClient(OkHttpClient baseClient, PreparedRequest preparedRequest, int timeoutMs) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
+        // 添加自动解压拦截器
+        builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
         if (preparedRequest.logEvent) {
             builder.eventListenerFactory(call -> new EasyConsoleEventListener(preparedRequest));
         }

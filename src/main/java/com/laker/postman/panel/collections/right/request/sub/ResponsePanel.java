@@ -216,7 +216,7 @@ public class ResponsePanel extends JPanel {
         responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION), TimeDisplayUtil.formatElapsedTime(ms)));
     }
 
-    public void setResponseSize(int bytes) {
+    public void setResponseSize(long bytes) {
         responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
     }
 
@@ -265,7 +265,7 @@ public class ResponsePanel extends JPanel {
         }
     }
 
-    private String getSizeText(int bytes) {
+    private String getSizeText(long bytes) {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
         return String.format("%.2f MB", bytes / 1024.0 / 1024.0);

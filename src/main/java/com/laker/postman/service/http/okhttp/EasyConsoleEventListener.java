@@ -245,6 +245,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestHeadersEnd(Call call, Request request) {
+        info.setHeaderBytesSent(request.headers().toString().getBytes().length);
         info.setRequestHeadersEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
@@ -320,6 +321,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestBodyEnd(Call call, long byteCount) {
+        info.setBodyBytesSent(byteCount);
         info.setRequestBodyEnd(System.currentTimeMillis());
         log("requestBodyEnd", "bytes=" + byteCount);
     }
@@ -340,6 +342,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseHeadersEnd(Call call, Response response) {
+        info.setHeaderBytesReceived(response.headers().toString().getBytes().length);
         info.setResponseHeadersEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder("\n");
         boolean isRedirect = response.isRedirect();
@@ -393,6 +396,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseBodyEnd(Call call, long byteCount) {
+        info.setBodyBytesReceived(byteCount);
         info.setResponseBodyEnd(System.currentTimeMillis());
         log("responseBodyEnd", "bytes=" + byteCount);
 

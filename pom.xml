@@ -148,10 +148,11 @@
         </dependency>
 
         <!-- Brotli 解码支持 -->
+        <!-- okio-brotli，适用于 Okio -->
         <dependency>
-            <groupId>org.brotli</groupId>
-            <artifactId>dec</artifactId>
-            <version>0.1.2</version>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-brotli</artifactId>
+            <version>4.12.0</version>
         </dependency>
     </dependencies>
     <build>

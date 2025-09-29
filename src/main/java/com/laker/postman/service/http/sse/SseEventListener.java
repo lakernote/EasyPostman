@@ -44,7 +44,11 @@ public class SseEventListener extends EventSourceListener {
 
     @Override
     public void onFailure(EventSource eventSource, Throwable throwable, okhttp3.Response response) {
-        log.error("sse onFailure,response status: {},response headers: {}", response.code(), response.headers(), throwable);
+        if (response != null) {
+            log.error("sse onFailure,response status: {},response headers: {}", response.code(), response.headers(), throwable);
+        } else {
+            log.error("sse onFailure,response is null", throwable);
+        }
         String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
         long cost = System.currentTimeMillis() - startTime;
         resp.body = sseBodyBuilder.toString();

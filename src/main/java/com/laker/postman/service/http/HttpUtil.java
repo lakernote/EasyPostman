@@ -74,7 +74,7 @@ public class HttpUtil {
      * @param bytes 字节数
      * @return 格式化后的字符串，例如 "1.5 MB" 或 "512 KB"
      */
-    public static String getSizeText(int bytes) {
+    public static String getSizeText(long bytes) {
         String sizeText;
         if (bytes < 1024) {
             sizeText = String.format("%d B", bytes);

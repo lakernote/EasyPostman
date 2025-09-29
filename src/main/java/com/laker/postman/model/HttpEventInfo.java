@@ -56,4 +56,9 @@ public class HttpEventInfo {
     private Throwable error;
     // 其他
     private String threadName;
+
+    private long bodyBytesSent;
+    private long bodyBytesReceived;
+    private long headerBytesSent;
+    private long headerBytesReceived;
 }

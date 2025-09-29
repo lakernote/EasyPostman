@@ -310,19 +310,57 @@ public class EasyHttpHeadersPanel extends JPanel {
         // Add default headers first (in order)
         for (Object[] header : DEFAULT_HEADERS) {
             String key = (String) header[0];
-            String value = inputMap.containsKey(key) ? inputMap.get(key) : getDefaultValue(key);
+            String value = findHeaderValue(inputMap, key, getDefaultValue(key));
             sortedMap.put(key, value);
         }
 
         // Add non-default headers
         for (Map.Entry<String, String> entry : inputMap.entrySet()) {
             String key = entry.getKey();
-            if (!DEFAULT_HEADER_KEYS.contains(key)) {
+            if (!isDefaultHeader(key)) {
                 sortedMap.put(key, entry.getValue());
             }
         }
 
         return sortedMap;
+    }
+
+    /**
+     * Find header value ignoring case
+     */
+    private String findHeaderValue(Map<String, String> inputMap, String targetKey, String defaultValue) {
+        // First try exact match
+        if (inputMap.containsKey(targetKey)) {
+            return inputMap.get(targetKey);
+        }
+
+        // Then try case-insensitive match
+        for (Map.Entry<String, String> entry : inputMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(targetKey)) {
+                return entry.getValue();
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /**
+     * Check if header is a default header (case-insensitive)
+     */
+    private boolean isDefaultHeader(String key) {
+        // First try exact match for performance
+        if (DEFAULT_HEADER_KEYS.contains(key)) {
+            return true;
+        }
+
+        // Then try case-insensitive match
+        for (String defaultKey : DEFAULT_HEADER_KEYS) {
+            if (defaultKey.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private String getDefaultValue(String key) {

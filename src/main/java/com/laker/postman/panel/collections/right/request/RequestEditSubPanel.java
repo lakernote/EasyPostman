@@ -433,7 +433,7 @@ public class RequestEditSubPanel extends JPanel {
                         public void onEvent(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
                                 setResponseBody(r);
-                                responsePanel.getResponseSizeLabel().setText("ResponseSize: " + getSizeText(r.bodySize));
+                                responsePanel.setResponseSize(r.bodySize);
                             });
                         }
 
@@ -911,7 +911,7 @@ public class RequestEditSubPanel extends JPanel {
         Color statusColor = getStatusColor(resp.code);
         responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), statusColor);
         responsePanel.setResponseTime(resp.costMs);
-        responsePanel.setResponseSize(resp.bodySize);
+        responsePanel.setResponseSize(resp.bodySize, resp.httpEventInfo);
     }
 
     private void setTestResults(List<TestResult> testResults) {

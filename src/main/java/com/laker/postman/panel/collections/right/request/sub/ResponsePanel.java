@@ -1,6 +1,9 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.laker.postman.model.*;
+import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -218,6 +221,33 @@ public class ResponsePanel extends JPanel {
 
     public void setResponseSize(long bytes) {
         responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
+    }
+
+    public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
+        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
+
+        // Create detailed tooltip with byte information from HttpEventInfo
+        if (httpEventInfo != null) {
+            String tooltip = String.format("<html>" +
+                            "<b>Response Size</b><br/>" +
+                            "&nbsp;&nbsp;Headers: %,d bytes<br/>" +
+                            "&nbsp;&nbsp;Body: %,d bytes<br/>" +
+                            "&nbsp;&nbsp;&nbsp;&nbsp;Uncompressed: %,d bytes<br/>" +
+                            "<hr/>" +
+                            "<b>Request Size</b><br/>" +
+                            "&nbsp;&nbsp;Headers: %,d bytes<br/>" +
+                            "&nbsp;&nbsp;Body: %,d bytes" +
+                            "</html>",
+                    httpEventInfo.getHeaderBytesReceived(),
+                    httpEventInfo.getBodyBytesReceived(),
+                    bytes,
+                    httpEventInfo.getHeaderBytesSent(),
+                    httpEventInfo.getBodyBytesSent()
+            );
+            responseSizeLabel.setToolTipText(tooltip);
+        } else {
+            responseSizeLabel.setToolTipText(null);
+        }
     }
 
     public void setTestResults(List<TestResult> testResults) {

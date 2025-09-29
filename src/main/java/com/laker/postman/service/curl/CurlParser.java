@@ -27,6 +27,13 @@ public class CurlParser {
      */
     public static CurlRequest parse(String curl) {
         CurlRequest req = new CurlRequest();
+
+        // Handle null or empty input
+        if (curl == null || curl.trim().isEmpty()) {
+            req.method = "GET"; // Set default method
+            return req;
+        }
+
         // 去除换行符 和多余空格
         List<String> tokens = tokenize(curl);
 

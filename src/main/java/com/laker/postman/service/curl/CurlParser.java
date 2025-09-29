@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * cURL 命令解析器，支持常见参数格式
+ * cURL 命令解析器，支持 Bash 和 CMD 格式
  */
 @Slf4j
 public class CurlParser {
@@ -21,6 +21,7 @@ public class CurlParser {
 
     /**
      * 解析 cURL 命令字符串为 CurlRequest 对象
+     * 支持 Bash 和 Windows CMD 格式
      *
      * @param curl cURL 命令字符串
      * @return 解析后的 CurlRequest 对象
@@ -33,6 +34,9 @@ public class CurlParser {
             req.method = "GET"; // Set default method
             return req;
         }
+
+        // 检测命令格式并进行预处理
+        curl = preprocessCommand(curl);
 
         // 去除换行符 和多余空格
         List<String> tokens = tokenize(curl);
@@ -183,32 +187,97 @@ public class CurlParser {
 
     /**
      * 解析 cURL 命令行参数为 token 列表，支持引号包裹和普通参数
+     * 支持 Bash 和 Windows CMD 格式
      *
      * @param cmd cURL 命令字符串
      * @return 参数 token 列表
      */
     private static List<String> tokenize(String cmd) {
-        // 1. 先去除所有行末的反斜杠 \ 和换行（cURL 换行续行符），将多行合并为一行
+        // 1. 处理 Bash 格式的反斜杠续行符
         cmd = cmd.replaceAll("\\\\[\\r\\n]+", " ");
+        // 2. 处理 Windows CMD 格式的 ^ 续行符
+        cmd = cmd.replaceAll("\\^[\\r\\n]+", " ");
+
         List<String> tokens = new ArrayList<>();
-        // 正则说明：
-        //  ('([^']*)')      匹配单引号包裹的内容
-        //  "([^"]*)"      匹配双引号包裹的内容
-        //  \$'([^']*)'     匹配 $'...' 形式的内容
-        //  \S+             匹配连续的非空白字符
-        Matcher m = Pattern.compile("('([^']*)'|\"([^\"]*)\"|\\$'([^']*)'|\\S+)").matcher(cmd);
-        while (m.find()) {
-            String t = m.group();
-            // 处理 $'...' 格式（保留内部的引号，但去除外部的 $'...'）
-            if (t.startsWith("$'") && t.endsWith("'")) {
-                t = t.substring(2, t.length() - 1);
+        StringBuilder currentToken = new StringBuilder();
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        boolean inDollarQuote = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < cmd.length(); i++) {
+            char c = cmd.charAt(i);
+
+            if (escaped) {
+                currentToken.append(c);
+                escaped = false;
+                continue;
             }
-            // 去除普通的首尾引号（单引号或双引号）
-            else if ((t.startsWith("'") && t.endsWith("'")) || (t.startsWith("\"") && t.endsWith("\""))) {
-                t = t.substring(1, t.length() - 1);
+
+            if (c == '\\' && (inDoubleQuote || inDollarQuote)) {
+                // 处理转义字符
+                if (i + 1 < cmd.length()) {
+                    char next = cmd.charAt(i + 1);
+                    if (next == '"' || next == '\\' || next == 'n' || next == 't' || next == 'r') {
+                        escaped = true;
+                        continue;
+                    }
+                }
+                currentToken.append(c);
+                continue;
             }
-            tokens.add(t);
+
+            if (c == '\'' && !inDoubleQuote && !inDollarQuote) {
+                if (inSingleQuote) {
+                    // 结束单引号
+                    inSingleQuote = false;
+                } else {
+                    // 开始单引号
+                    inSingleQuote = true;
+                }
+                continue;
+            }
+
+            if (c == '"' && !inSingleQuote && !inDollarQuote) {
+                if (inDoubleQuote) {
+                    // 结束双引号
+                    inDoubleQuote = false;
+                } else {
+                    // 开始双引号
+                    inDoubleQuote = true;
+                }
+                continue;
+            }
+
+            // 处理 $'...' 格式
+            if (c == '$' && i + 1 < cmd.length() && cmd.charAt(i + 1) == '\'' && !inSingleQuote && !inDoubleQuote) {
+                inDollarQuote = true;
+                i++; // 跳过下一个单引号
+                continue;
+            }
+
+            if (c == '\'' && inDollarQuote) {
+                inDollarQuote = false;
+                continue;
+            }
+
+            if (Character.isWhitespace(c) && !inSingleQuote && !inDoubleQuote && !inDollarQuote) {
+                // 空白字符，且不在引号内
+                if (!currentToken.isEmpty()) {
+                    tokens.add(currentToken.toString());
+                    currentToken.setLength(0);
+                }
+                continue;
+            }
+
+            currentToken.append(c);
         }
+
+        // 添加最后一个 token
+        if (!currentToken.isEmpty()) {
+            tokens.add(currentToken.toString());
+        }
+
         return tokens;
     }
 
@@ -311,5 +380,23 @@ public class CurlParser {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * 预处理 cURL 命令字符串，支持 Windows CMD 格式
+     *
+     * @param curl cURL 命令字符串
+     * @return 预处理后的命令字符串
+     */
+    private static String preprocessCommand(String curl) {
+        // 1. 处理行末的 ^ 续行符（Windows CMD 特有）
+        curl = curl.replaceAll("\\s*\\^\\s*[\\r\\n]+", " ");
+        // 2. 处理行末的 \ 续行符（Bash 特有）
+        curl = curl.replaceAll("\\s*\\\\\\s*[\\r\\n]+", " ");
+        // 3. 替换连续的空格为一个空格
+        curl = curl.replaceAll("\\s+", " ");
+        // 4. 去除首尾空格
+        curl = curl.trim();
+        return curl;
     }
 }

@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -383,12 +384,12 @@ public class HistoryPersistenceManager {
         response.isSse = responseJson.getBool("isSse", false);
 
         // 重建响应头
-        response.headers = new java.util.HashMap<>();
+        response.headers = new LinkedHashMap<>();
         JSONObject responseHeaders = responseJson.getJSONObject("headers");
         if (responseHeaders != null) {
             for (String key : responseHeaders.keySet()) {
                 String value = responseHeaders.getStr(key);
-                java.util.List<String> valueList = new java.util.ArrayList<>();
+                List<String> valueList = new ArrayList<>();
                 // 如果值包含逗号，分割为多个值
                 String[] values = value.split(", ");
                 for (String v : values) {

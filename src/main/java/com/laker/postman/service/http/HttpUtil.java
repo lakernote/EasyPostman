@@ -2,7 +2,6 @@ package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
-import com.laker.postman.common.table.map.EasyNameValueTablePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
@@ -11,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -139,7 +137,7 @@ public class HttpUtil {
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
         Postman postman = new Postman(activeEnv);
         postman.setRequest(req);
-        Map<String, Object> bindings = new HashMap<>();
+        Map<String, Object> bindings = new LinkedHashMap<>();
         bindings.put("request", req);
         bindings.put("env", activeEnv);
         bindings.put("postman", postman);
@@ -150,7 +148,7 @@ public class HttpUtil {
             // 创建一个空的HttpResponse对象并设置到pm中
             HttpResponse emptyResponse = new HttpResponse();
             emptyResponse.code = 0;
-            emptyResponse.headers = new HashMap<>();
+            emptyResponse.headers = new LinkedHashMap<>();
             emptyResponse.body = "{}";
             postman.setResponse(emptyResponse);
             // 添加到bindings中

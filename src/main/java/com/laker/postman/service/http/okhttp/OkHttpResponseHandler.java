@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * OkHttp 响应处理工具类
@@ -40,12 +39,8 @@ public class OkHttpResponseHandler {
         for (String name : okResponse.headers().names()) {
             String value = okResponse.header(name);
             if (value != null) {
-                response.headers.put(name, List.of(value));
+                response.addHeader(name, List.of(value));
             }
-        }
-        if (okResponse.header("Easy-Content-Encoding") != null) {
-            response.headers.put("Content-Encoding", List.of(Objects.requireNonNull(okResponse.header("Easy-Content-Encoding"))));
-            response.headers.remove("Easy-Content-Encoding");
         }
         response.headersSize = response.httpEventInfo.getHeaderBytesReceived();
         response.threadName = Thread.currentThread().getName();

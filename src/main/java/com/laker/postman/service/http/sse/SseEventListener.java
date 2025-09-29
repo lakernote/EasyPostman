@@ -26,7 +26,7 @@ public class SseEventListener extends EventSourceListener {
     public void onOpen(EventSource eventSource, okhttp3.Response response) {
         resp.headers = new LinkedHashMap<>();
         for (String name : response.headers().names()) {
-            resp.headers.put(name, response.headers(name));
+            resp.addHeader(name, response.headers(name));
         }
         resp.code = response.code();
         resp.protocol = response.protocol().toString();

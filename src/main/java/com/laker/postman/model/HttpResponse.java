@@ -23,4 +23,16 @@ public class HttpResponse {
     public long bodySize; // 响应体字节数
     public long headersSize; // 响应头字节数
     public boolean isSse = false; // 是否为SSE响应
+
+    public void addHeader(String name, List<String> value) {
+        if (headers == null) {
+            return;
+        }
+        if ("Easy-Content-Encoding".equalsIgnoreCase(name)) {
+            headers.put("Content-Encoding", value);
+            headers.remove("Easy-Content-Encoding");
+        } else {
+            headers.put(name, value);
+        }
+    }
 }

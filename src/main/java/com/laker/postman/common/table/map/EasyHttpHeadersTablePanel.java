@@ -1,15 +1,14 @@
 package com.laker.postman.common.table.map;
 
+import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
+import com.laker.postman.common.table.EasyPostmanTextFieldCellRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -42,6 +41,8 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
+    private TableRowSorter<DefaultTableModel> rowSorter;
+
     public EasyHttpHeadersTablePanel() {
         this.columns = new String[]{"Key", "Value"};
         setLayout(new BorderLayout());
@@ -62,6 +63,11 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         initTableUI();
         // 设置空值渲染器
         setEmptyCellWhiteBackgroundRenderer();
+        // 设置列编辑器和渲染器
+        setColumnEditor(0, new EasyPostmanTextFieldCellEditor());
+        setColumnEditor(1, new EasyPostmanTextFieldCellEditor());
+        setColumnRenderer(0, new EasyPostmanTextFieldCellRenderer());
+        setColumnRenderer(1, new EasyPostmanTextFieldCellRenderer());
         add(table, BorderLayout.CENTER);
         // 创建右键菜单
         popupMenu = createPopupMenu();

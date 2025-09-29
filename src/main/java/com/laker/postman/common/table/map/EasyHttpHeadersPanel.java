@@ -1,8 +1,6 @@
 package com.laker.postman.common.table.map;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
-import com.laker.postman.common.table.EasyPostmanTextFieldCellRenderer;
 import com.laker.postman.util.SystemUtil;
 
 import javax.swing.*;
@@ -76,10 +74,6 @@ public class EasyHttpHeadersPanel extends JPanel {
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel); // 始终显示
         tablePanel = new EasyHttpHeadersTablePanel();
-        tablePanel.setColumnEditor(0, new EasyPostmanTextFieldCellEditor());
-        tablePanel.setColumnEditor(1, new EasyPostmanTextFieldCellEditor());
-        tablePanel.setColumnRenderer(0, new EasyPostmanTextFieldCellRenderer());
-        tablePanel.setColumnRenderer(1, new EasyPostmanTextFieldCellRenderer());
         JTable table = tablePanel.getTable();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         addDefaultHeaders();

@@ -71,73 +71,62 @@ public class HttpHtmlRenderer {
             return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:#888;padding:16px;'>无请求信息</div>");
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;'>");
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>URL</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.url))).append("</span></div>");
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Method</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.method))).append("</span></div>");
+        // 添加强制换行和宽度控制
+        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;width:100%;max-width:100%;overflow-wrap:break-word;word-break:break-all;box-sizing:border-box;'>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>URL</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.url))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Method</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.method))).append("</span></div>");
         if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Headers</b></div>");
-            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Name</th>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
-            sb.append("</tr>");
+            // 改用div块格式，不再使用表格
+            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             for (int i = 0; i < req.okHttpHeaders.size(); i++) {
-                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(req.okHttpHeaders.name(i))).append("</td>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(req.okHttpHeaders.value(i))).append("</td>");
-                sb.append("</tr>");
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(req.okHttpHeaders.name(i))).append(":</strong> ");
+                sb.append("<span style='color:#222;'>").append(escapeHtml(req.okHttpHeaders.value(i))).append("</span>");
+                sb.append("</div>");
             }
-            sb.append("</table>");
+            sb.append("</div>");
         }
         if (req.formData != null && !req.formData.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Data</b></div>");
-            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
-            sb.append("</tr>");
+            // 改用div块格式
+            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             req.formData.forEach((key, value) -> {
-                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(value)).append("</td>");
-                sb.append("</tr>");
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
+                sb.append("<span style='color:#222;'>").append(escapeHtml(value)).append("</span>");
+                sb.append("</div>");
             });
-            sb.append("</table>");
+            sb.append("</div>");
         }
         if (req.formFiles != null && !req.formFiles.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Files</b></div>");
-            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>File Name</th>");
-            sb.append("</tr>");
+            // 改用div块格式
+            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             req.formFiles.forEach((key, value) -> {
-                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(value)).append("</td>");
-                sb.append("</tr>");
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
+                sb.append("<span style='color:#222;'>").append(escapeHtml(value)).append("</span>");
+                sb.append("</div>");
             });
-            sb.append("</table>");
+            sb.append("</div>");
         }
         if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>x-www-form-urlencoded</b></div>");
-            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Key</th>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
-            sb.append("</tr>");
+            // 改用div块格式
+            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             req.urlencoded.forEach((key, value) -> {
-                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(value)).append("</td>");
-                sb.append("</tr>");
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
+                sb.append("<span style='color:#222;'>").append(escapeHtml(value)).append("</span>");
+                sb.append("</div>");
             });
-            sb.append("</table>");
+            sb.append("</div>");
         }
         if (isNotEmpty(req.okHttpRequestBody)) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Body</b></div>");
             String requestBody = safeTruncateContent(req.okHttpRequestBody);
-            sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(requestBody)).append("</pre>");
+            sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(requestBody)).append("</pre>");
         }
         sb.append("</div>");
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
@@ -151,31 +140,31 @@ public class HttpHtmlRenderer {
             return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:#888;padding:16px;'>无响应信息</div>");
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;'>");
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Status</b>: <span style='color:").append(getStatusColor(resp.code)).append(";font-weight:bold;'>").append(escapeHtml(String.valueOf(resp.code))).append("</span></div>");
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Protocol</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.protocol))).append("</span></div>");
-        sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Thread</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.threadName))).append("</span></div>");
+        // 使用更强制的宽度控制和换行策略
+        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;width:100%;max-width:100%;overflow-wrap:break-word;word-break:break-all;box-sizing:border-box;'>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#388e3c;'>Status</b>: <span style='color:").append(getStatusColor(resp.code)).append(";font-weight:bold;'>").append(escapeHtml(String.valueOf(resp.code))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Protocol</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.protocol))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Thread</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.threadName))).append("</span></div>");
         if (resp.httpEventInfo != null) {
-            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Connection</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.httpEventInfo.getLocalAddress()))).append(" → ").append(escapeHtml(safeString(resp.httpEventInfo.getRemoteAddress()))).append("</span></div>");
+            sb.append("<div style='margin-bottom:8px;word-break:break-all;overflow-wrap:break-word;'><b style='color:#1976d2;'>Connection</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.httpEventInfo.getLocalAddress()))).append(" → ").append(escapeHtml(safeString(resp.httpEventInfo.getRemoteAddress()))).append("</span></div>");
         }
         if (resp.headers != null && !resp.headers.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Headers</b></div>");
-            sb.append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;margin-bottom:8px;'>");
-            sb.append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Name</th>");
-            sb.append("<th style='padding:6px 12px;text-align:left;'>Value</th>");
-            sb.append("</tr>");
+            // 简化表格设计，使用更直接的换行控制
+            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             resp.headers.forEach((key, values) -> {
-                sb.append("<tr style='background:rgb(245,247,250);border-bottom:1px solid #e0e0e0;'>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(key)).append("</td>");
-                sb.append("<td style='padding:6px 12px;color:#222;font-size:9px;'>").append(escapeHtml(values != null ? String.join(", ", values) : "")).append("</td>");
-                sb.append("</tr>");
+                String valueStr = values != null ? String.join(", ", values) : "";
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
+                sb.append("<span style='color:#222;'>").append(escapeHtml(valueStr)).append("</span>");
+                sb.append("</div>");
             });
-            sb.append("</table>");
+            sb.append("</div>");
         }
         sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Body</b></div>");
         String responseBody = safeTruncateContent(resp.body);
-        sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(responseBody)).append("</pre>");
+        // 使用更简单但更有效的换行控制
+        sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(responseBody)).append("</pre>");
         sb.append("</div>");
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
     }
@@ -236,11 +225,10 @@ public class HttpHtmlRenderer {
         HttpEventInfo info = response.httpEventInfo;
         TimingCalculator calc = new TimingCalculator(info);
 
-        // 添加时序表格行
-
-        return "<div>" +
-                "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timeline]</b></div>" +
-                "<table style='border-collapse:collapse;margin:4px 0;'>" +
+        // 改回表格格式，但添加强制换行控制
+        return "<div style='width:100%;max-width:100%;overflow-wrap:break-word;box-sizing:border-box;'>" +
+                "<div style='font-size:9px;margin-bottom:8px;'><b style='color:" + COLOR_PRIMARY + ";'>[Timeline]</b></div>" +
+                "<table style='border-collapse:collapse;margin:4px 0;width:100%;table-layout:fixed;'>" +
 
                 // 添加时序表格行
                 createTimingRow("Total", calc.getTotal(), COLOR_ERROR, true, "总耗时（CallStart→CallEnd，整个请求生命周期）") +
@@ -252,7 +240,7 @@ public class HttpHtmlRenderer {
                 createTimingRow("Request Sent", calc.getRequestSent(), null, false, "RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送") +
                 createTimingRow("Waiting (TTFB)", calc.getServerCost(), COLOR_SUCCESS, true, "RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理") +
                 createTimingRow("Content Download", calc.getResponseBody(), null, false, "ResponseBodyStart→ResponseBodyEnd，响应体下载") +
-                createTimingRowString("Connection Reused", calc.getConnectionReused(), null, false, "本次请求是否复用连接") +
+                createTimingRowString("Connection Reused", calc.getConnectionReused() ? "Yes" : "No", null, false, "本次请求是否复用连接") +
                 createTimingRowString("OkHttp Idle Connections", String.valueOf(response.idleConnectionCount), null, false, "OkHttp空闲连接数（快照）") +
                 createTimingRowString("OkHttp Total Connections", String.valueOf(response.connectionCount), null, false, "OkHttp总连接数（快照）") +
                 "</table>" +
@@ -261,7 +249,7 @@ public class HttpHtmlRenderer {
     }
 
     private static String createTimingRow(String name, long value, String color, boolean bold, String description) {
-        return createTimingRowString(name, value >= 0 ? value + " " + "ms" : "-", color, bold, description);
+        return createTimingRowString(name, value >= 0 ? value + " ms" : "-", color, bold, description);
     }
 
     private static String createTimingRowString(String name, String value, String color, boolean bold, String description) {
@@ -274,9 +262,9 @@ public class HttpHtmlRenderer {
         }
 
         return "<tr>" +
-                "<td style='padding:2px 8px 2px 0;" + nameStyle + "'>" + (bold ? "<b>" + name + "</b>" : name) + "</td>" +
-                "<td style='" + valueStyle + "'>" + value + "</td>" +
-                "<td style='color:" + COLOR_GRAY + ";font-size:9px;'>" + description + "</td>" +
+                "<td style='padding:2px 8px 2px 0;" + nameStyle + "width:25%;word-wrap:break-word;overflow-wrap:break-word;'>" + (bold ? "<b>" + name + "</b>" : name) + "</td>" +
+                "<td style='" + valueStyle + "width:15%;word-wrap:break-word;overflow-wrap:break-word;'>" + value + "</td>" +
+                "<td style='color:" + COLOR_GRAY + ";font-size:9px;width:60%;word-wrap:break-word;overflow-wrap:break-word;'>" + description + "</td>" +
                 "</tr>";
     }
 
@@ -291,10 +279,11 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {
-        // 背景色为 rgb(245,247,250)，并加大列间距
-        return "<div style='font-size:9px;'><b style='color:" + COLOR_PRIMARY + ";'>[Event Info]</b></div>" +
-                // 设置背景色和列间距
-                "<table style='border-collapse:collapse;background:rgb(245,247,250);border-radius:4px;padding:3px 4px;color:#444;margin:4px 0;'>" +
+        // 改回表格格式，但添加强制换行控制
+        return "<div style='width:100%;max-width:100%;overflow-wrap:break-word;box-sizing:border-box;'>" +
+                "<div style='font-size:9px;margin-bottom:8px;'><b style='color:" + COLOR_PRIMARY + ";'>[Event Info]</b></div>" +
+                // 设置背景色和列间距，添加强制换行
+                "<table style='border-collapse:collapse;background:rgb(245,247,250);border-radius:4px;padding:3px 4px;color:#444;margin:4px 0;width:100%;table-layout:fixed;'>" +
                 createEventRow("QueueStart", formatMillis(info.getQueueStart())) +
                 createEventRow("Local", escapeHtml(info.getLocalAddress())) +
                 createEventRow("Remote", escapeHtml(info.getRemoteAddress())) +
@@ -304,12 +293,13 @@ public class HttpHtmlRenderer {
                 createEventRow("Error", info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") +
                 "<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>" +
                 createEventTimingRows(info) +
-                "</table>";
+                "</table>" +
+                "</div>";
     }
 
     private static String createEventRow(String label, String value) {
-        // 增加 label 和 value 间距 120px
-        return "<tr><td style='min-width:80px;padding:2px 120px 2px 0;color:" + COLOR_GRAY + ";'>" + label + "</td><td>" + value + "</td></tr>";
+        // 增加换行控制和固定列宽
+        return "<tr><td style='min-width:80px;padding:2px 120px 2px 0;color:" + COLOR_GRAY + ";width:30%;word-wrap:break-word;overflow-wrap:break-word;'>" + label + "</td><td style='width:70%;word-wrap:break-word;overflow-wrap:break-word;'>" + value + "</td></tr>";
     }
 
     private static String createEventTimingRows(HttpEventInfo info) {
@@ -341,7 +331,7 @@ public class HttpHtmlRenderer {
 
     private static String createEventTimingRow(String label, long millis, String color) {
         String style = color != null ? "color:" + color + ";" : "";
-        return "<tr><td style='padding:2px 8px 2px 0;" + style + "'>" + label + "</td><td>" + formatMillis(millis) + "</td></tr>";
+        return "<tr><td style='padding:2px 8px 2px 0;" + style + "width:30%;word-wrap:break-word;overflow-wrap:break-word;'>" + label + "</td><td style='width:70%;word-wrap:break-word;overflow-wrap:break-word;'>" + formatMillis(millis) + "</td></tr>";
     }
 
     private static String formatMillis(long millis) {
@@ -390,11 +380,13 @@ public class HttpHtmlRenderer {
         }
 
         public long getQueueing() {
-            return info.getQueueingCost() > 0 ? info.getQueueingCost() : -1;
+            return info.getQueueingCost() > 0 ? info.getQueueingCost() :
+                    calculateDuration(info.getQueueStart(), info.getCallStart());
         }
 
         public long getStalled() {
-            return info.getStalledCost() > 0 ? info.getStalledCost() : -1;
+            return info.getStalledCost() > 0 ? info.getStalledCost() :
+                    calculateDuration(info.getCallStart(), info.getConnectStart());
         }
 
         public long getDns() {
@@ -412,32 +404,60 @@ public class HttpHtmlRenderer {
         public long getRequestSent() {
             long reqHeaders = calculateDuration(info.getRequestHeadersStart(), info.getRequestHeadersEnd());
             long reqBody = calculateDuration(info.getRequestBodyStart(), info.getRequestBodyEnd());
-            return (reqHeaders >= 0 || reqBody >= 0) ?
-                    (Math.max(reqHeaders, 0) + Math.max(reqBody, 0)) : -1;
+
+            if (reqHeaders >= 0 && reqBody >= 0) {
+                return reqHeaders + reqBody;
+            } else if (reqHeaders >= 0) {
+                return reqHeaders;
+            } else if (reqBody >= 0) {
+                return reqBody;
+            }
+            return -1;
+        }
+
+        public long getServerCost() {
+            if (info.getResponseHeadersStart() <= 0) {
+                return -1;
+            }
+
+            // 优先使用 RequestBodyEnd，如果没有则使用 RequestHeadersEnd
+            long requestEndTime = info.getRequestBodyEnd() > 0 ?
+                    info.getRequestBodyEnd() : info.getRequestHeadersEnd();
+
+            if (requestEndTime <= 0) {
+                return -1;
+            }
+
+            return calculateDuration(requestEndTime, info.getResponseHeadersStart());
         }
 
         public long getResponseBody() {
             return calculateDuration(info.getResponseBodyStart(), info.getResponseBodyEnd());
         }
 
-        public long getServerCost() {
-            if (info.getResponseHeadersStart() <= 0) return -1;
+        public boolean getConnectionReused() {
+            // 如果没有连接获取事件，无法判断
+            if (info.getConnectionAcquired() <= 0) {
+                return false;
+            }
 
-            long endTime = info.getRequestBodyEnd() > 0 ?
-                    info.getRequestBodyEnd() : info.getRequestHeadersEnd();
-
-            return endTime > 0 ? info.getResponseHeadersStart() - endTime : -1;
-        }
-
-        public String getConnectionReused() {
-            if (info.getConnectionAcquired() <= 0) return "-";
-
-            return (info.getConnectStart() == 0 || info.getConnectionAcquired() < info.getConnectStart()) ?
-                    "Yes" : "No";
+            // 如果连接获取时间早于连接开始时间，说明是复用的连接
+            return info.getConnectStart() <= 0 || info.getConnectionAcquired() < info.getConnectStart();
         }
 
         private long calculateDuration(long start, long end) {
-            return (start > 0 && end > 0) ? end - start : -1;
+            if (start <= 0 || end <= 0 || end < start) {
+                return -1;
+            }
+
+            long duration = end - start;
+
+            // 防止异常大的时间差（超过1小时认为异常）
+            if (duration > 3600000) { // 3600000ms = 1小时
+                return -1;
+            }
+
+            return duration;
         }
     }
 }

@@ -55,7 +55,6 @@ public class OkHttpResponseHandler {
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
         }
-        response.bodySize = response.httpEventInfo.getBodyBytesReceived();
         if (okResponse.body() != null) {
             okResponse.body().close();
         }

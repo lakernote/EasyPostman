@@ -15,6 +15,9 @@ import java.util.List;
  */
 public class HttpHtmlRenderer {
 
+    // 内容大小限制常量 - 防止内存溢出
+    private static final int MAX_DISPLAY_SIZE = 20 * 1024;  // 20KB for safe display
+
     // CSS样式常量
     private static final String BASE_STYLE = "font-family:monospace;";
     private static final String DETAIL_FONT_SIZE = "font-size:9px;";
@@ -133,7 +136,8 @@ public class HttpHtmlRenderer {
         }
         if (isNotEmpty(req.okHttpRequestBody)) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Body</b></div>");
-            sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(req.okHttpRequestBody)).append("</pre>");
+            String requestBody = safeTruncateContent(req.okHttpRequestBody);
+            sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(requestBody)).append("</pre>");
         }
         sb.append("</div>");
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
@@ -170,7 +174,8 @@ public class HttpHtmlRenderer {
             sb.append("</table>");
         }
         sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Body</b></div>");
-        sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(resp.body != null ? resp.body : "<无响应体>")).append("</pre>");
+        String responseBody = safeTruncateContent(resp.body);
+        sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;'>").append(escapeHtml(responseBody)).append("</pre>");
         sb.append("</div>");
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
     }
@@ -354,6 +359,22 @@ public class HttpHtmlRenderer {
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
+    }
+
+    /**
+     * Safely truncate content to prevent memory overflow
+     */
+    private static String safeTruncateContent(String content) {
+        if (content == null) {
+            return "";
+        }
+
+        if (content.length() > MAX_DISPLAY_SIZE) {
+            String truncated = content.substring(0, MAX_DISPLAY_SIZE);
+            return truncated + "......\n\n[Content too large, truncated for display. Original length: " + content.length() + " characters, max displayed: " + (MAX_DISPLAY_SIZE / 1024) + "KB]";
+        }
+
+        return content;
     }
 
     // 时序计算辅助类

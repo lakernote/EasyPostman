@@ -57,7 +57,13 @@ public class EasyPostmanTextField extends JTextField {
         if (segments.isEmpty()) return;
 
         try {
-            Rectangle startRect = modelToView2D(0).getBounds();
+            // 添加null检查，防止modelToView2D返回null
+            var view = modelToView2D(0);
+            if (view == null) {
+                return; // 如果view为null，直接返回不绘制变量高亮
+            }
+
+            Rectangle startRect = view.getBounds();
             FontMetrics fm = getFontMetrics(getFont());
             int x = startRect.x;
             int baseY = startRect.y;
@@ -95,12 +101,21 @@ public class EasyPostmanTextField extends JTextField {
         String value = getText();
         List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(value);
         if (segments.isEmpty()) return super.getToolTipText(event);
+
         try {
             int mouseX = event.getX();
-            Rectangle startRect = modelToView2D(0).getBounds();
+
+            // 添加null检查，防止modelToView2D返回null
+            var view = modelToView2D(0);
+            if (view == null) {
+                return super.getToolTipText(event);
+            }
+
+            Rectangle startRect = view.getBounds();
             FontMetrics fm = getFontMetrics(getFont());
             int x = startRect.x;
             int last = 0;
+
             for (VariableSegment seg : segments) {
                 if (seg.start > last) {
                     String before = value.substring(last, seg.start);

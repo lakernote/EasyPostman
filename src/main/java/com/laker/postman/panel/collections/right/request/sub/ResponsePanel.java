@@ -11,7 +11,13 @@ import com.laker.postman.util.TimeDisplayUtil;
 import lombok.Getter;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -226,17 +232,32 @@ public class ResponsePanel extends JPanel {
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
         responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
 
-        // Create detailed tooltip with byte information from HttpEventInfo
+        // Remove default tooltip
+        responseSizeLabel.setToolTipText(null);
+
+        // Remove existing mouse listeners to avoid duplicates
+        MouseListener[] listeners = responseSizeLabel.getMouseListeners();
+        for (MouseListener listener : listeners) {
+            responseSizeLabel.removeMouseListener(listener);
+        }
+
+        // Add custom tooltip behavior
         if (httpEventInfo != null) {
             String tooltip = String.format("<html>" +
-                            "<b>Response Size</b><br/>" +
-                            "&nbsp;&nbsp;Headers: %,d bytes<br/>" +
-                            "&nbsp;&nbsp;Body: %,d bytes<br/>" +
-                            "&nbsp;&nbsp;&nbsp;&nbsp;Uncompressed: %,d bytes<br/>" +
-                            "<hr/>" +
-                            "<b>Request Size</b><br/>" +
-                            "&nbsp;&nbsp;Headers: %,d bytes<br/>" +
-                            "&nbsp;&nbsp;Body: %,d bytes" +
+                            "<div style='font-size: 11px; width: 250px;'>" +
+                            "<div style='color: #2d3748; font-weight: bold; font-size: 14px; margin-bottom: 8px;'>Response Size</div>" +
+                            "<div style='margin-left: 16px; line-height: 1.4;'>" +
+                            "<div style='color: #4a5568; margin-bottom: 3px;'>Headers: <span style='font-weight: 600; color: #2d3748;'>%,d bytes</span></div>" +
+                            "<div style='color: #4a5568; margin-bottom: 3px;'>Body: <span style='font-weight: 600; color: #2d3748;'>%,d bytes</span></div>" +
+                            "<div style='margin-left: 16px; color: #718096; font-size: 11px;'>Uncompressed: <span style='font-weight: 600;'>%,d bytes</span></div>" +
+                            "</div>" +
+                            "<div style='border-top: 1px solid #e2e8f0; margin: 12px 0;'></div>" +
+                            "<div style='color: #2d3748; font-weight: bold; font-size: 14px; margin-bottom: 8px;'>Request Size</div>" +
+                            "<div style='margin-left: 16px; line-height: 1.4;'>" +
+                            "<div style='color: #4a5568; margin-bottom: 3px;'>Headers: <span style='font-weight: 600; color: #2d3748;'>%,d bytes</span></div>" +
+                            "<div style='color: #4a5568;'>Body: <span style='font-weight: 600; color: #2d3748;'>%,d bytes</span></div>" +
+                            "</div>" +
+                            "</div>" +
                             "</html>",
                     httpEventInfo.getHeaderBytesReceived(),
                     httpEventInfo.getBodyBytesReceived(),
@@ -244,9 +265,40 @@ public class ResponsePanel extends JPanel {
                     httpEventInfo.getHeaderBytesSent(),
                     httpEventInfo.getBodyBytesSent()
             );
-            responseSizeLabel.setToolTipText(tooltip);
-        } else {
-            responseSizeLabel.setToolTipText(null);
+
+            responseSizeLabel.addMouseListener(new MouseAdapter() {
+                private Timer showTimer;
+                private Timer hideTimer;
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    // Cancel any pending hide timer
+                    if (hideTimer != null) {
+                        hideTimer.stop();
+                    }
+
+                    // Show tooltip after a short delay (like Postman)
+                    showTimer = new Timer(300, evt -> {
+                        Point labelCenter = new Point(responseSizeLabel.getWidth() / 2, 0);
+                        PostmanStyleTooltip.showTooltip(responseSizeLabel, tooltip, labelCenter);
+                    });
+                    showTimer.setRepeats(false);
+                    showTimer.start();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    // Cancel show timer if mouse exits before tooltip shows
+                    if (showTimer != null) {
+                        showTimer.stop();
+                    }
+
+                    // Hide tooltip with a small delay to prevent flicker
+                    hideTimer = new Timer(150, evt -> PostmanStyleTooltip.hideTooltip());
+                    hideTimer.setRepeats(false);
+                    hideTimer.start();
+                }
+            });
         }
     }
 
@@ -320,6 +372,117 @@ public class ResponsePanel extends JPanel {
             if (selectedTabIndex == tabIndex) {
                 g.setColor(new Color(141, 188, 223));
                 g.fillRect(0, getHeight() - 3, getWidth(), 3);
+            }
+        }
+    }
+
+    // Enhanced tooltip component with Postman-like styling and behavior
+    private static class PostmanStyleTooltip extends JWindow {
+        private static PostmanStyleTooltip instance;
+        private static Timer autoHideTimer;
+
+        private PostmanStyleTooltip(Window parent) {
+            super(parent);
+            setAlwaysOnTop(true);
+            setType(Window.Type.POPUP);
+        }
+
+        public static void showTooltip(Component parent, String html, Point location) {
+            hideTooltip();
+
+            Window parentWindow = SwingUtilities.getWindowAncestor(parent);
+            instance = new PostmanStyleTooltip(parentWindow);
+
+            JLabel content = new JLabel(html);
+            content.setOpaque(true);
+//            content.setBackground(new Color(41, 50, 65)); // Dark background like Postman
+//            content.setForeground(Color.WHITE);
+//            content.setBorder(new CompoundBorder(
+//                    new LineBorder(new Color(60, 70, 85), 1),
+//                    new EmptyBorder(12, 16, 12, 16)
+//            ));
+
+            instance.add(content);
+            instance.pack();
+
+            // Smart positioning - above the component, centered
+            Point screenLocation = parent.getLocationOnScreen();
+            int tooltipWidth = instance.getWidth();
+            int tooltipHeight = instance.getHeight();
+
+            // Center horizontally on the component
+            int x = screenLocation.x + (parent.getWidth() - tooltipWidth) / 2;
+            int y = screenLocation.y - tooltipHeight - 8; // 8px gap above
+
+            // Screen bounds checking
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            Insets screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(
+                    GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
+            );
+
+            int screenWidth = screenSize.width - screenInsets.right;
+            int screenHeight = screenSize.height - screenInsets.bottom;
+
+            // Adjust horizontal position if needed
+            if (x + tooltipWidth > screenWidth) {
+                x = screenWidth - tooltipWidth - 10;
+            }
+            if (x < screenInsets.left) {
+                x = screenInsets.left + 10;
+            }
+
+            // If tooltip doesn't fit above, show below
+            if (y < screenInsets.top) {
+                y = screenLocation.y + parent.getHeight() + 8;
+            }
+
+            instance.setLocation(x, y);
+
+            // Add subtle fade-in effect
+            instance.setOpacity(0.0f);
+            instance.setVisible(true);
+
+            Timer fadeIn = new Timer(20, null);
+            fadeIn.addActionListener(e -> {
+                float opacity = instance.getOpacity() + 0.1f;
+                if (opacity >= 1.0f) {
+                    instance.setOpacity(1.0f);
+                    fadeIn.stop();
+                } else {
+                    instance.setOpacity(opacity);
+                }
+            });
+            fadeIn.start();
+
+            // Auto-hide after 8 seconds (Postman-like behavior)
+            if (autoHideTimer != null) {
+                autoHideTimer.stop();
+            }
+            autoHideTimer = new Timer(8000, e -> hideTooltip());
+            autoHideTimer.setRepeats(false);
+            autoHideTimer.start();
+        }
+
+        public static void hideTooltip() {
+            if (instance != null) {
+                // Add subtle fade-out effect
+                Timer fadeOut = new Timer(20, null);
+                fadeOut.addActionListener(e -> {
+                    float opacity = instance.getOpacity() - 0.15f;
+                    if (opacity <= 0.0f) {
+                        instance.setVisible(false);
+                        instance.dispose();
+                        instance = null;
+                        fadeOut.stop();
+                    } else {
+                        instance.setOpacity(opacity);
+                    }
+                });
+                fadeOut.start();
+            }
+            if (autoHideTimer != null) {
+                autoHideTimer.stop();
+                autoHideTimer = null;
             }
         }
     }

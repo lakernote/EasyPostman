@@ -11,9 +11,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 高仿Postman的Headers面板
@@ -23,8 +21,9 @@ import java.util.Map;
  * 4. 中间是表格
  */
 public class EasyHttpHeadersPanel extends JPanel {
-    private final EasyHttpHeadersTablePanel tablePanel;
-    // Default headers
+    private EasyHttpHeadersTablePanel tablePanel;
+
+    // Default headers constants
     private static final String USER_AGENT = "User-Agent";
     private static final String ACCEPT = "Accept";
     private static final String ACCEPT_ENCODING = "Accept-Encoding";
@@ -33,75 +32,106 @@ public class EasyHttpHeadersPanel extends JPanel {
     private static final String ACCEPT_VALUE = "*/*";
     private static final String ACCEPT_ENCODING_VALUE = "gzip, deflate, br";
     private static final String CONNECTION_VALUE = "keep-alive";
+
     private static final Object[][] DEFAULT_HEADERS = {
             {USER_AGENT, USER_AGENT_VALUE},
             {ACCEPT, ACCEPT_VALUE},
             {ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE},
             {CONNECTION, CONNECTION_VALUE}
     };
-    private boolean showDefaultHeaders = false;
-    private TableRowSorter<DefaultTableModel> rowSorter;
+
+    private static final Set<String> DEFAULT_HEADER_KEYS = new HashSet<>();
+
+    static {
+        for (Object[] header : DEFAULT_HEADERS) {
+            DEFAULT_HEADER_KEYS.add((String) header[0]);
+        }
+    }
+
+    // UI components
     private final ImageIcon eyeOpenIcon = new FlatSVGIcon("icons/eye-open.svg", 16, 16);
     private final ImageIcon eyeCloseIcon = new FlatSVGIcon("icons/eye-close.svg", 16, 16);
-    private JLabel countLabel; // Store as field for toggling
+    private JButton eyeButton;
+    private JLabel countLabel;
+
+    // Table filtering
+    private TableRowSorter<DefaultTableModel> rowSorter;
+    private DefaultHeaderRowFilter defaultHeaderFilter;
+    private boolean showDefaultHeaders = false;
 
     public EasyHttpHeadersPanel() {
+        initializeComponents();
+        setupLayout();
+        initializeTableWithDefaults();
+        setupFiltering();
+    }
+
+    private void initializeComponents() {
         setLayout(new BorderLayout());
+
+        // Create header panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
         JLabel label = new JLabel("Headers");
-        JButton eyeButton = new JButton(eyeOpenIcon); // Use SVG icon
+
+        // Eye button for toggling default headers visibility
+        eyeButton = new JButton(eyeOpenIcon);
         eyeButton.setFocusable(false);
         eyeButton.setBorderPainted(false);
         eyeButton.setContentAreaFilled(false);
-        eyeButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 鼠标手型
-        eyeButton.addActionListener(e -> {
-            toggleDefaultHeadersVisibility();
-            eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
-        });
-        int hiddenCount = DEFAULT_HEADERS.length;
-        String countText = "(" + hiddenCount + ")";
-        String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
-        countLabel = new JLabel("<html>" + countHtml + "</html>");
-        countLabel.setVisible(true); // 初始就显示
-        countLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 鼠标手型
+        eyeButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        eyeButton.addActionListener(e -> toggleDefaultHeadersVisibility());
+
+        // Count label for hidden headers
+        countLabel = new JLabel();
+        updateCountLabel();
+        countLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         countLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 toggleDefaultHeadersVisibility();
-                eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
             }
         });
+
         headerPanel.add(label);
         headerPanel.add(eyeButton);
-        headerPanel.add(countLabel); // 始终显示
+        headerPanel.add(countLabel);
+
+        // Create table panel
         tablePanel = new EasyHttpHeadersTablePanel();
-        JTable table = tablePanel.getTable();
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
-        addDefaultHeaders();
-        rowSorter = new TableRowSorter<>(model);
-        table.setRowSorter(rowSorter);
-        // 默认隐藏默认请求头
-        rowSorter.setRowFilter(new RowFilter<>() {
-            @Override
-            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
-                Object keyObj = entry.getValue(0);
-                return !isDefaultHeader(keyObj);
-            }
-        });
+
         add(headerPanel, BorderLayout.NORTH);
+    }
+
+    private void setupLayout() {
         JScrollPane scrollPane = new JScrollPane(tablePanel);
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void addDefaultHeaders() {
+    private LinkedHashMap<String, String> initializeTableWithDefaults() {
+        LinkedHashMap<String, String> sortedMap = new LinkedHashMap<>();
+        // Add default headers to the table
         for (Object[] header : DEFAULT_HEADERS) {
             tablePanel.addRow(header[0], header[1]);
+            sortedMap.put((String) header[0], (String) header[1]);
         }
+        return sortedMap;
     }
 
-    private void toggleDefaultHeadersVisibility() {
-        showDefaultHeaders = !showDefaultHeaders;
-        // 只在隐藏默认 header 时显示数量
+    private void setupFiltering() {
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // Initialize row sorter and filter
+        rowSorter = new TableRowSorter<>(model);
+        defaultHeaderFilter = new DefaultHeaderRowFilter();
+
+        table.setRowSorter(rowSorter);
+
+        // Apply initial filter (hide default headers by default)
+        applyCurrentFilter();
+    }
+
+    private void updateCountLabel() {
         if (!showDefaultHeaders) {
             int hiddenCount = DEFAULT_HEADERS.length;
             String countText = "(" + hiddenCount + ")";
@@ -109,81 +139,154 @@ public class EasyHttpHeadersPanel extends JPanel {
             countLabel.setText("<html>" + countHtml + "</html>");
             countLabel.setVisible(true);
         } else {
-            countLabel.setText(""); // 显示默认 header 时不显示数量
+            countLabel.setText("");
             countLabel.setVisible(false);
         }
-        rowSorter.setRowFilter(new RowFilter<>() {
-            @Override
-            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
-                Object keyObj = entry.getValue(0);
-                return showDefaultHeaders || !isDefaultHeader(keyObj);
-            }
-        });
     }
 
-    private boolean isDefaultHeader(Object keyObj) {
-        if (keyObj == null) return false;
-        String key = keyObj.toString();
-        for (Object[] header : DEFAULT_HEADERS) {
-            if (header[0].equals(key)) return true;
-        }
-        return false;
+    private void toggleDefaultHeadersVisibility() {
+        showDefaultHeaders = !showDefaultHeaders;
+
+        // Update UI components
+        eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
+        updateCountLabel();
+
+        // Apply filter
+        applyCurrentFilter();
     }
+
+    private void applyCurrentFilter() {
+        if (rowSorter != null && defaultHeaderFilter != null) {
+            defaultHeaderFilter.setShowDefaultHeaders(showDefaultHeaders);
+            rowSorter.setRowFilter(defaultHeaderFilter);
+        }
+    }
+
+    /**
+     * Custom row filter for managing default headers visibility
+     */
+    private static class DefaultHeaderRowFilter extends RowFilter<DefaultTableModel, Integer> {
+        private boolean showDefaultHeaders = false;
+
+        public void setShowDefaultHeaders(boolean showDefaultHeaders) {
+            this.showDefaultHeaders = showDefaultHeaders;
+        }
+
+        @Override
+        public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+            try {
+                Object keyObj = entry.getValue(0);
+                if (keyObj == null) {
+                    return true; // Show empty rows
+                }
+
+                String key = keyObj.toString().trim();
+                if (key.isEmpty()) {
+                    return true; // Show empty key rows
+                }
+
+                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(key);
+                return showDefaultHeaders || !isDefaultHeader;
+            } catch (Exception e) {
+                // In case of any errors, show the row
+                return true;
+            }
+        }
+    }
+
+    // Public API methods
 
     public void addTableModelListener(TableModelListener l) {
-        tablePanel.addTableModelListener(l);
+        if (tablePanel != null) {
+            tablePanel.addTableModelListener(l);
+        }
     }
 
     public void addRow(Object... values) {
-        tablePanel.addRow(values);
+        if (tablePanel != null) {
+            tablePanel.addRow(values);
+        }
     }
 
     public void scrollRectToVisible() {
-        tablePanel.scrollRectToVisible();
+        if (tablePanel != null) {
+            tablePanel.scrollRectToVisible();
+        }
     }
 
+    /**
+     * Get all headers as a map, considering current filter state
+     * This method now properly handles filtered rows
+     */
     public Map<String, String> getMap() {
         Map<String, String> map = new LinkedHashMap<>();
-        java.util.List<Map<String, Object>> rows = tablePanel.getRows();
-        for (Map<String, Object> row : rows) {
+
+        if (tablePanel == null) {
+            return map;
+        }
+
+        // Get all rows from the model (not view) to include both visible and hidden headers
+        java.util.List<Map<String, Object>> allRows = tablePanel.getRows();
+
+        for (Map<String, Object> row : allRows) {
             Object keyObj = row.get("Key");
             Object valueObj = row.get("Value");
+
             String key = keyObj == null ? "" : keyObj.toString().trim();
             String value = valueObj == null ? "" : valueObj.toString().trim();
+
             if (!key.isEmpty()) {
                 map.put(key, value);
             }
         }
+
         return map;
     }
 
-    public void setHeadersMap(Map<String, String> map) {
-        tablePanel.clear();
-        if (map == null) return;
-        // 优化：先按默认头顺序补全和排序 map
-        String[] defaultKeys = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
-        LinkedHashMap<String, String> sortedMap = new LinkedHashMap<>();
-        for (String key : defaultKeys) {
-            String value = map.containsKey(key) ? map.get(key) : getDefaultValue(key);
-            sortedMap.put(key, value);
+    /**
+     * Get only visible headers (respecting current filter)
+     */
+    public Map<String, String> getVisibleHeadersMap() {
+        Map<String, String> map = new LinkedHashMap<>();
+
+        if (tablePanel == null || rowSorter == null) {
+            return map;
         }
-        // 追加其他 header，跳过默认头
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            String key = entry.getKey();
-            boolean isDefault = false;
-            for (String defKey : defaultKeys) {
-                if (defKey.equalsIgnoreCase(key)) {
-                    isDefault = true;
-                    break;
-                }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // Iterate through visible rows only
+        for (int viewRow = 0; viewRow < table.getRowCount(); viewRow++) {
+            int modelRow = rowSorter.convertRowIndexToModel(viewRow);
+
+            Object keyObj = model.getValueAt(modelRow, 0);
+            Object valueObj = model.getValueAt(modelRow, 1);
+
+            String key = keyObj == null ? "" : keyObj.toString().trim();
+            String value = valueObj == null ? "" : valueObj.toString().trim();
+
+            if (!key.isEmpty()) {
+                map.put(key, value);
             }
-            if (isDefault) continue;
-            sortedMap.put(key, entry.getValue());
         }
-        // 同步 sortedMap 到 map
-        map.clear();
-        map.putAll(sortedMap);
-        // 构造 rows
+
+        return map;
+    }
+
+    public Map<String, String> setHeadersMap(Map<String, String> map) {
+
+        tablePanel.clear();
+
+        if (map == null) {
+            // Re-add default headers
+            return initializeTableWithDefaults();
+        }
+
+        // Build sorted map with default headers first
+        LinkedHashMap<String, String> sortedMap = buildSortedHeadersMap(map);
+
+        // Set rows in table
         java.util.List<Map<String, Object>> rows = new ArrayList<>();
         for (Map.Entry<String, String> entry : sortedMap.entrySet()) {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -191,49 +294,173 @@ public class EasyHttpHeadersPanel extends JPanel {
             row.put("Value", entry.getValue());
             rows.add(row);
         }
+
         tablePanel.setRows(rows);
+
+        // Reapply filter after setting new data
+        applyCurrentFilter();
+
+        // Return the map in the exact same order as displayed in table
+        return sortedMap;
+    }
+
+    private LinkedHashMap<String, String> buildSortedHeadersMap(Map<String, String> inputMap) {
+        LinkedHashMap<String, String> sortedMap = new LinkedHashMap<>();
+
+        // Add default headers first (in order)
+        for (Object[] header : DEFAULT_HEADERS) {
+            String key = (String) header[0];
+            String value = inputMap.containsKey(key) ? inputMap.get(key) : getDefaultValue(key);
+            sortedMap.put(key, value);
+        }
+
+        // Add non-default headers
+        for (Map.Entry<String, String> entry : inputMap.entrySet()) {
+            String key = entry.getKey();
+            if (!DEFAULT_HEADER_KEYS.contains(key)) {
+                sortedMap.put(key, entry.getValue());
+            }
+        }
+
+        return sortedMap;
     }
 
     private String getDefaultValue(String key) {
-        if (USER_AGENT.equals(key)) return USER_AGENT_VALUE;
-        if (ACCEPT.equals(key)) return ACCEPT_VALUE;
-        if (ACCEPT_ENCODING.equals(key)) return ACCEPT_ENCODING_VALUE;
-        if (CONNECTION.equals(key)) return CONNECTION_VALUE;
-        return "";
+        return switch (key) {
+            case USER_AGENT -> USER_AGENT_VALUE;
+            case ACCEPT -> ACCEPT_VALUE;
+            case ACCEPT_ENCODING -> ACCEPT_ENCODING_VALUE;
+            case CONNECTION -> CONNECTION_VALUE;
+            default -> "";
+        };
     }
 
+    // Getter methods for testing and external access
+    public boolean isShowingDefaultHeaders() {
+        return showDefaultHeaders;
+    }
+
+    /**
+     * Remove a header by key name
+     */
+    public void removeHeader(String key) {
+        if (tablePanel == null || key == null) {
+            return;
+        }
+
+        key = key.trim();
+        if (key.isEmpty()) {
+            return;
+        }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // Find and remove rows with matching key (case-insensitive)
+        for (int i = model.getRowCount() - 1; i >= 0; i--) {
+            Object keyObj = model.getValueAt(i, 0);
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                model.removeRow(i);
+            }
+        }
+
+        // Reapply filter after removing data
+        applyCurrentFilter();
+    }
+
+    /**
+     * Set or update a header value. If the header exists, update its value; otherwise, add a new header
+     */
     public void setOrUpdateHeader(String key, String value) {
+        if (tablePanel == null || key == null) {
+            return;
+        }
+
+        key = key.trim();
+        value = value == null ? "" : value.trim();
+
+        if (key.isEmpty()) {
+            return;
+        }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // First, try to find existing header (case-insensitive)
         boolean found = false;
-        int rowCount = tablePanel.getTable().getRowCount();
-        for (int i = 0; i < rowCount; i++) {
-            Object keyObj = tablePanel.getTable().getValueAt(i, 0);
-            if (keyObj != null && keyObj.toString().equalsIgnoreCase(key)) {
-                tablePanel.getTable().setValueAt(value, i, 1);
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object keyObj = model.getValueAt(i, 0);
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                // Update existing header value
+                model.setValueAt(value, i, 1);
                 found = true;
                 break;
             }
         }
-        if (!found) {
-            tablePanel.addRow(key, value);
-        }
-    }
 
-    public void removeHeader(String key) {
-        JTable table = tablePanel.getTable();
-        int rowCount = table.getRowCount();
-        java.util.List<Integer> modelIndexesToRemove = new java.util.ArrayList<>();
-        for (int i = 0; i < rowCount; i++) {
-            Object keyObj = table.getValueAt(i, 0);
-            if (keyObj != null && keyObj.toString().equalsIgnoreCase(key)) {
-                int modelIndex = table.convertRowIndexToModel(i);
-                modelIndexesToRemove.add(modelIndex);
+        // If not found, add new header
+        if (!found) {
+            // Check if this is a default header that should be added in the correct position
+            if (DEFAULT_HEADER_KEYS.contains(key)) {
+                addDefaultHeaderInOrder(key, value, model);
+            } else {
+                // Add as regular header
+                tablePanel.addRow(key, value);
             }
         }
-        // 倒序删除，避免索引错乱
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
-        modelIndexesToRemove.sort(java.util.Collections.reverseOrder());
-        for (int modelIndex : modelIndexesToRemove) {
-            model.removeRow(modelIndex);
+
+        // Reapply filter after updating data
+        applyCurrentFilter();
+    }
+
+    /**
+     * Add a default header in the correct position among other default headers
+     */
+    private void addDefaultHeaderInOrder(String key, String value, DefaultTableModel model) {
+        // Find the correct position to insert the default header
+        int insertPosition = -1;
+
+        // Define the order of default headers
+        String[] defaultOrder = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
+        int keyIndex = -1;
+        for (int i = 0; i < defaultOrder.length; i++) {
+            if (defaultOrder[i].equals(key)) {
+                keyIndex = i;
+                break;
+            }
+        }
+
+        if (keyIndex >= 0) {
+            // Find where to insert this header
+            for (int row = 0; row < model.getRowCount(); row++) {
+                Object rowKey = model.getValueAt(row, 0);
+                if (rowKey != null) {
+                    String rowKeyStr = rowKey.toString().trim();
+
+                    // Find the index of this row's key in default order
+                    int rowKeyIndex = -1;
+                    for (int i = 0; i < defaultOrder.length; i++) {
+                        if (defaultOrder[i].equals(rowKeyStr)) {
+                            rowKeyIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (rowKeyIndex > keyIndex || rowKeyIndex == -1) {
+                        // Insert before this row
+                        insertPosition = row;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Insert at the determined position
+        if (insertPosition >= 0) {
+            model.insertRow(insertPosition, new Object[]{key, value});
+        } else {
+            // Add at the end
+            model.addRow(new Object[]{key, value});
         }
     }
 }

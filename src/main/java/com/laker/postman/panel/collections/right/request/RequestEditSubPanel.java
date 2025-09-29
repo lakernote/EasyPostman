@@ -671,7 +671,10 @@ public class RequestEditSubPanel extends JPanel {
         paramsPanel.setMap(mergedParams);
         methodBox.setSelectedItem(item.getMethod());
         // Headers
-        headersPanel.setHeadersMap(item.getHeaders());
+        Map<String, String> sortedMap = headersPanel.setHeadersMap(item.getHeaders());
+        item.getHeaders().clear();
+        item.getHeaders().putAll(sortedMap); // 保持item.headers有序
+
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
         // 这是兼容性代码，防止旧数据bodyType字段为空

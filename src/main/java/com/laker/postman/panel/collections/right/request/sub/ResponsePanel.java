@@ -245,26 +245,26 @@ public class ResponsePanel extends JPanel {
         // Add custom tooltip behavior
         if (httpEventInfo != null) {
             String tooltip = String.format("<html>" +
-                            "<div style='font-family: \"Segoe UI\", Arial, sans-serif; font-size: 9px; width: 160px; padding: 2px;'>" +
-                            "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 4px;'>Response Size</div>" +
-                            "<div style='margin-left: 8px; line-height: 1.2;'>" +
-                            "<div style='color: #555555; margin-bottom: 1px;'>Headers: <span style='font-weight: 500; color: #333333;'>%,d bytes</span></div>" +
-                            "<div style='color: #555555; margin-bottom: 1px;'>Body: <span style='font-weight: 500; color: #333333;'>%,d bytes</span></div>" +
-                            "<div style='margin-left: 8px; color: #777777; font-size: 9px;'>Uncompressed: <span style='font-weight: 500; color: #555555;'>%,d bytes</span></div>" +
+                            "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 9px; width: 160px; padding: 1px;'>" +
+                            "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>🔽 Response Size</div>" +
+                            "<div style='margin-left: 6px; line-height: 1.1;'>" +
+                            "<div style='color: #555555; margin-bottom: 1px;'>🏷️ Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                            "<div style='color: #555555; margin-bottom: 1px;'>📦 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                            "<div style='margin-left: 6px; color: #777777; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: #555555;'>%s</span></div>" +
                             "</div>" +
-                            "<div style='border-top: 1px solid #E3E8F0; margin: 6px 0;'></div>" +
-                            "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 4px;'>Request Size</div>" +
-                            "<div style='margin-left: 8px; line-height: 1.2;'>" +
-                            "<div style='color: #555555; margin-bottom: 1px;'>Headers: <span style='font-weight: 500; color: #333333;'>%,d bytes</span></div>" +
-                            "<div style='color: #555555;'>Body: <span style='font-weight: 500; color: #333333;'>%,d bytes</span></div>" +
+                            "<div style='border-top: 1px solid #E3E8F0; margin: 1px 0;'></div>" +
+                            "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin: 0px; padding: 0px;'>🔼 Request Size</div>" +
+                            "<div style='margin-left: 6px; line-height: 1.1;'>" +
+                            "<div style='color: #555555; margin-bottom: 1px;'>📋 Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                            "<div style='color: #555555;'>📝 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
                             "</div>" +
                             "</div>" +
                             "</html>",
-                    httpEventInfo.getHeaderBytesReceived(),
-                    httpEventInfo.getBodyBytesReceived(),
-                    bytes,
-                    httpEventInfo.getHeaderBytesSent(),
-                    httpEventInfo.getBodyBytesSent()
+                    getSizeText(httpEventInfo.getHeaderBytesReceived()),
+                    getSizeText(httpEventInfo.getBodyBytesReceived()),
+                    getSizeText(bytes),
+                    getSizeText(httpEventInfo.getHeaderBytesSent()),
+                    getSizeText(httpEventInfo.getBodyBytesSent())
             );
 
             responseSizeLabel.addMouseListener(new MouseAdapter() {
@@ -392,7 +392,7 @@ public class ResponsePanel extends JPanel {
             instance = new EasyPostmanStyleTooltip(parentWindow);
 
             JLabel content = new JLabel(html);
-            content.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11)); // 减小字体
+            content.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
             content.setOpaque(true);
             // Use colors matching EasyPostManColors theme
             content.setBackground(new Color(250, 251, 253)); // Very light background
@@ -441,41 +441,49 @@ public class ResponsePanel extends JPanel {
             instance.setOpacity(0.0f);
             instance.setVisible(true);
 
-            // Gentle fade-in animation
+            // Gentle fade-in animation with null check
             Timer fadeIn = new Timer(30, null);
             fadeIn.addActionListener(e -> {
-                float opacity = instance.getOpacity() + 0.08f;
-                if (opacity >= 0.96f) {
-                    instance.setOpacity(0.96f); // Slightly transparent for elegance
-                    fadeIn.stop();
+                if (instance != null) { // 添加null检查
+                    float opacity = instance.getOpacity() + 0.08f;
+                    if (opacity >= 0.96f) {
+                        instance.setOpacity(0.96f); // Slightly transparent for elegance
+                        fadeIn.stop();
+                    } else {
+                        instance.setOpacity(opacity);
+                    }
                 } else {
-                    instance.setOpacity(opacity);
+                    fadeIn.stop(); // 如果instance为null，停止动画
                 }
             });
             fadeIn.start();
 
-            // Auto-hide after 6 seconds (balanced timing)
+            // Auto-hide after 10 seconds (balanced timing)
             if (autoHideTimer != null) {
                 autoHideTimer.stop();
             }
-            autoHideTimer = new Timer(6000, e -> hideTooltip());
+            autoHideTimer = new Timer(10000, e -> hideTooltip());
             autoHideTimer.setRepeats(false);
             autoHideTimer.start();
         }
 
         public static void hideTooltip() {
             if (instance != null) {
-                // Gentle fade-out animation
+                // Gentle fade-out animation with null check
                 Timer fadeOut = new Timer(30, null);
                 fadeOut.addActionListener(e -> {
-                    float opacity = instance.getOpacity() - 0.12f;
-                    if (opacity <= 0.0f) {
-                        instance.setVisible(false);
-                        instance.dispose();
-                        instance = null;
-                        fadeOut.stop();
+                    if (instance != null) { // 添加null检查
+                        float opacity = instance.getOpacity() - 0.12f;
+                        if (opacity <= 0.0f) {
+                            instance.setVisible(false);
+                            instance.dispose();
+                            instance = null;
+                            fadeOut.stop();
+                        } else {
+                            instance.setOpacity(opacity);
+                        }
                     } else {
-                        instance.setOpacity(opacity);
+                        fadeOut.stop(); // 如果instance为null，停止动画
                     }
                 });
                 fadeOut.start();

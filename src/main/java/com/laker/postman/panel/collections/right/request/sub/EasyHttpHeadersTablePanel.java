@@ -1,4 +1,4 @@
-package com.laker.postman.common.table.map;
+package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.table.EasyPostmanTextFieldCellRenderer;
@@ -57,7 +57,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         setBackground(new Color(248, 250, 252));
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(237, 237, 237)),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
         // 初始化表格模型
         tableModel = new DefaultTableModel(columns, 0) {
             @Override

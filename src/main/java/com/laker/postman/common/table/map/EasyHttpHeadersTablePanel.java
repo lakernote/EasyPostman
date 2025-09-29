@@ -8,7 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -29,6 +32,13 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     // 列名数组
     private final String[] columns;
 
+    // Default header keys
+    private static final String USER_AGENT = "User-Agent";
+    private static final String ACCEPT = "Accept";
+    private static final String ACCEPT_ENCODING = "Accept-Encoding";
+    private static final String CONNECTION = "Connection";
+    private static final String[] DEFAULT_KEYS = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
+
     /**
      * -- GETTER --
      * 获取表格是否可编辑
@@ -41,8 +51,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
-    private TableRowSorter<DefaultTableModel> rowSorter;
-
     public EasyHttpHeadersTablePanel() {
         this.columns = new String[]{"Key", "Value"};
         setLayout(new BorderLayout());
@@ -54,7 +62,17 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return editable; // 根据 editable 字段控制
+                Object keyObj = getValueAt(row, 0);
+                if (keyObj != null) {
+                    String key = keyObj.toString();
+                    for (String defaultKey : DEFAULT_KEYS) {
+                        if (defaultKey.equalsIgnoreCase(key)) {
+                            // Key column not editable, value column editable
+                            return column == 1 && editable;
+                        }
+                    }
+                }
+                return editable;
             }
         };
         // 创建表格
@@ -80,7 +98,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     private void initTableUI() {
         table.setFillsViewportHeight(true); // 填充视口高度
-        table.setRowHeight(28); // 设置行高
+        table.setRowHeight(24); // 设置行高
         table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
         table.getTableHeader().setBackground(new Color(240, 242, 245));
@@ -134,9 +152,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     }
 
     private void addTableRightMouseListener() {
-        /*
-          添加表格的鼠标监听器，右键弹出菜单
-         */
         MouseAdapter tableMouseListener = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -148,16 +163,32 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                 if (e.isPopupTrigger()) showMenu(e);
             }
 
-            /**
-             * 显示右键菜单
-             */
             private void showMenu(MouseEvent e) {
-                if (!editable) return; // 如果不可编辑，则不显示右键菜单
-                int row = table.rowAtPoint(e.getPoint());
-                if (row >= 0) {
-                    table.setRowSelectionInterval(row, row);
+                if (!editable) return;
+                int viewRow = table.rowAtPoint(e.getPoint());
+                boolean isDefaultKeyRow = false;
+                if (viewRow >= 0) {
+                    table.setRowSelectionInterval(viewRow, viewRow);
+                    int modelRow = table.convertRowIndexToModel(viewRow);
+                    Object keyObj = tableModel.getValueAt(modelRow, 0);
+                    if (keyObj != null) {
+                        String key = keyObj.toString();
+                        for (String defaultKey : DEFAULT_KEYS) {
+                            if (defaultKey.equalsIgnoreCase(key)) {
+                                isDefaultKeyRow = true;
+                                break;
+                            }
+                        }
+                    }
                 } else {
                     table.clearSelection();
+                }
+                // 设置菜单项可用/禁用
+                for (int i = 0; i < popupMenu.getComponentCount(); i++) {
+                    Component comp = popupMenu.getComponent(i);
+                    if (comp instanceof JMenuItem menuItem) {
+                        menuItem.setEnabled(!isDefaultKeyRow);
+                    }
                 }
                 popupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
@@ -195,13 +226,11 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      * 右键menu: 添加一行并滚动到该行
      */
     private void addRowAndScroll() {
-        int row = tableModel.getRowCount();
-        // 添加空行
         tableModel.addRow(new Object[columns.length]);
-        if (row >= 0) {
-            // 滚动到新行并选中
-            table.scrollRectToVisible(table.getCellRect(row, 0, true)); // 滚动到新行
-            table.setRowSelectionInterval(row, row); // 选中该行
+        int lastRow = tableModel.getRowCount() - 1;
+        if (lastRow >= 0) {
+            table.scrollRectToVisible(table.getCellRect(lastRow, 0, true));
+            table.setRowSelectionInterval(lastRow, lastRow);
         }
     }
 

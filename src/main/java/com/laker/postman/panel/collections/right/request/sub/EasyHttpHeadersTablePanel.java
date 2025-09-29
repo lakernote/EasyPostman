@@ -129,26 +129,9 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         JMenuItem delItem = new JMenuItem("Remove");
         // 删除行事件
         delItem.addActionListener(e -> deleteSelectedRow());
-        JMenuItem copyItem = new JMenuItem("Duplicate");
-        copyItem.addActionListener(e -> copySelectedRow());
         menu.add(addItem);
         menu.add(delItem);
-        menu.add(copyItem);
         return menu;
-    }
-
-    private void copySelectedRow() {
-        int row = table.getSelectedRow();
-        if (row >= 0) {
-            Object[] values = new Object[columns.length];
-            for (int i = 0; i < columns.length; i++) {
-                values[i] = tableModel.getValueAt(row, i);
-            }
-            // 在当前行下方插入新行
-            tableModel.insertRow(row + 1, values);
-            table.scrollRectToVisible(table.getCellRect(row + 1, 0, true));
-            table.setRowSelectionInterval(row + 1, row + 1);
-        }
     }
 
     private void addTableRightMouseListener() {

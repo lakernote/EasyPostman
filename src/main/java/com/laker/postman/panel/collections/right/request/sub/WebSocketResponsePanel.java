@@ -59,8 +59,8 @@ public class WebSocketResponsePanel extends JPanel {
         searchField = new SearchTextField();
         clearButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR_MESSAGES));
         clearButton.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
-        toolBar.add(searchField);
         toolBar.add(typeFilterBox);
+        toolBar.add(searchField);
         toolBar.add(clearButton);
         add(toolBar, BorderLayout.NORTH);
 

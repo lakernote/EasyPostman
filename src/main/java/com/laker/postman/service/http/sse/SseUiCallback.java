@@ -6,7 +6,7 @@ import com.laker.postman.model.HttpResponse;
 public interface SseUiCallback {
     void onOpen(HttpResponse resp, String headersText);
 
-    void onEvent(HttpResponse resp);
+    void onEvent(String id, String type, String data);
 
     void onClosed(HttpResponse resp);
 

@@ -4,6 +4,7 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.model.MessageType;
 import com.laker.postman.model.TestResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -22,19 +23,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * SSE响应体面板，三列：时间、内容、断言结果，支持搜索、清除
+ * SSE响应体面板，四列：类型图标、时间、内容、断言结果，支持搜索、清除、类型过滤
  */
 public class SSEResponsePanel extends JPanel {
     private final JTable table;
     private final DefaultTableModel tableModel;
+    private final JComboBox<String> typeFilterBox;
     private final JTextField searchField;
     private final JButton clearButton;
     private final List<MessageRow> allRows = new ArrayList<>();
 
     private static final String[] COLUMN_NAMES = {
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT),
             I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION)
+    };
+
+    private static final String[] TYPE_FILTERS = {
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CONNECTED),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_RECEIVED),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CLOSED),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_WARNING),
+            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_INFO)
     };
 
     public SSEResponsePanel() {
@@ -42,9 +54,11 @@ public class SSEResponsePanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         // 顶部工具栏
         JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
         clearButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR_MESSAGES));
         clearButton.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        toolBar.add(typeFilterBox);
         toolBar.add(searchField);
         toolBar.add(clearButton);
         add(toolBar, BorderLayout.NORTH);
@@ -58,14 +72,16 @@ public class SSEResponsePanel extends JPanel {
         };
         table = new JTable(tableModel);
         table.setRowHeight(26);
-        table.getColumnModel().getColumn(0).setMaxWidth(60);
-        // 设置第1列（时间列）居中
+        table.getColumnModel().getColumn(0).setMaxWidth(36);
+        table.getColumnModel().getColumn(0).setCellRenderer(new IconCellRenderer());
+        table.getColumnModel().getColumn(1).setMaxWidth(60);
+        // 设置第2列（时间列）居中
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        table.getColumnModel().getColumn(1).setPreferredWidth(400);
-        table.getColumnModel().getColumn(2).setMaxWidth(60);
-        table.getColumnModel().getColumn(2).setCellRenderer(new IconCellRenderer());
+        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(2).setPreferredWidth(400);
+        table.getColumnModel().getColumn(3).setMaxWidth(60);
+        table.getColumnModel().getColumn(3).setCellRenderer(new IconCellRenderer());
         table.setCellSelectionEnabled(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         // 鼠标监听，右键第二列弹出菜单
@@ -82,15 +98,15 @@ public class SSEResponsePanel extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                // 双击第2列弹窗
+                // 双击第3列（内容列）弹窗
                 if (e.getClickCount() == 2) {
                     int row = table.rowAtPoint(e.getPoint());
                     int col = table.columnAtPoint(e.getPoint());
-                    if (col == 1) {
-                        String content = (String) table.getValueAt(row, 1);
+                    if (col == 2) {
+                        String content = (String) table.getValueAt(row, 2);
                         showContentDialog(content);
-                    } else if (col == 2) {
-                        // 双击第3列弹窗，显示断言结果
+                    } else if (col == 3) {
+                        // 双击第4列弹窗，显示断言结果
                         if (row >= 0 && row < allRows.size()) {
                             java.util.List<TestResult> testResults = allRows.get(row).testResults;
                             String html = com.laker.postman.service.render.HttpHtmlRenderer.renderTestResults(testResults);
@@ -110,7 +126,7 @@ public class SSEResponsePanel extends JPanel {
                 if (e.isPopupTrigger()) {
                     int row = table.rowAtPoint(e.getPoint());
                     int col = table.columnAtPoint(e.getPoint());
-                    if (row >= 0 && col == 1) {
+                    if (row >= 0 && col == 2) {
                         table.setRowSelectionInterval(row, row);
                         String content = (String) table.getValueAt(row, col);
                         JPopupMenu popupMenu = new JPopupMenu();
@@ -172,10 +188,12 @@ public class SSEResponsePanel extends JPanel {
                 filterAndShow();
             }
         });
+        typeFilterBox.addActionListener(e -> filterAndShow());
     }
 
-    public void addMessage(String time, String content, List<TestResult> testResults) {
-        allRows.add(new MessageRow(time, content, testResults));
+
+    public void addMessage(MessageType messageType, String time, String content, List<TestResult> testResults) {
+        allRows.add(new MessageRow(messageType, time, content, testResults));
         SwingUtilities.invokeLater(this::filterAndShow);
     }
 
@@ -212,13 +230,16 @@ public class SSEResponsePanel extends JPanel {
             return;
         }
         String search = searchField.getText().trim().toLowerCase();
+        String typeFilter = (String) typeFilterBox.getSelectedItem();
         List<MessageRow> filtered = allRows.stream()
+                .filter(row -> (I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
+                        || row.messageType.display.equals(typeFilter)))
                 .filter(row -> search.isEmpty() || row.content.toLowerCase().contains(search))
                 .toList();
         tableModel.setRowCount(0);
         for (MessageRow row : filtered) {
             Icon summaryIcon = getSummaryIcon(row.testResults);
-            tableModel.addRow(new Object[]{row.time, row.content, summaryIcon});
+            tableModel.addRow(new Object[]{row.messageType.icon, row.time, row.content, summaryIcon});
         }
     }
 
@@ -227,8 +248,10 @@ public class SSEResponsePanel extends JPanel {
         public final String time;
         public final String content;
         public final List<TestResult> testResults;
+        public final MessageType messageType;
 
-        public MessageRow(String time, String content, List<TestResult> testResults) {
+        public MessageRow(MessageType messageType, String time, String content, List<TestResult> testResults) {
+            this.messageType = messageType;
             this.time = time;
             this.content = content;
             this.testResults = testResults;

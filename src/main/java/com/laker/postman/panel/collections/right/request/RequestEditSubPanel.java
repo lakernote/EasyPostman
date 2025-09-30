@@ -426,19 +426,25 @@ public class RequestEditSubPanel extends JPanel {
                     SseUiCallback callback = new SseUiCallback() {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
-                            SwingUtilities.invokeLater(() -> updateUIForResponse(String.valueOf(r.code), r));
+                            SwingUtilities.invokeLater(() -> {
+                                updateUIForResponse(String.valueOf(r.code), r);
+                                // 添加连接成功消息
+                                if (responsePanel.getSseResponsePanel() != null) {
+                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    responsePanel.getSseResponsePanel().addMessage(MessageType.CONNECTED, timestamp, "Connected to SSE stream", null);
+                                }
+                            });
                         }
 
                         @Override
-                        public void onEvent(HttpResponse r) {
+                        public void onEvent(String id, String type, String data) {
                             SwingUtilities.invokeLater(() -> {
                                 // 使用 SSEResponsePanel 来显示 SSE 消息
                                 if (responsePanel.getSseResponsePanel() != null) {
                                     String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                                    List<TestResult> testResults = handleStreamMessage(item, bindings, r.body);
-                                    responsePanel.getSseResponsePanel().addMessage(timestamp, r.body, testResults);
+                                    List<TestResult> testResults = handleStreamMessage(item, bindings, data);
+                                    responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
                                 }
-                                responsePanel.setResponseSize(r.bodySize);
                             });
                         }
 
@@ -447,6 +453,11 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse(String.valueOf(r.code), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                                // 添加连接关闭消息
+                                if (responsePanel.getSseResponsePanel() != null) {
+                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    responsePanel.getSseResponsePanel().addMessage(MessageType.CLOSED, timestamp, "SSE stream closed", null);
+                                }
                             });
                             currentEventSource = null;
                             currentWorker = null;
@@ -459,6 +470,11 @@ public class RequestEditSubPanel extends JPanel {
                                 responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                                 updateUIForResponse(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                                // 添加错误消息
+                                if (responsePanel.getSseResponsePanel() != null) {
+                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    responsePanel.getSseResponsePanel().addMessage(MessageType.WARNING, timestamp, "Error: " + errorMsg, null);
+                                }
                             });
                             currentEventSource = null;
                             currentWorker = null;
@@ -904,7 +920,9 @@ public class RequestEditSubPanel extends JPanel {
     private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
             responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), Color.RED);
-            responsePanel.getResponseBodyPanel().setEnabled(true);
+            if (protocol.isHttpProtocol()) {
+                responsePanel.getResponseBodyPanel().setEnabled(true);
+            }
             return;
         }
         responsePanel.setResponseHeaders(resp);

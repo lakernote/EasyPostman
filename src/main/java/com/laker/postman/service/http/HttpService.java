@@ -103,7 +103,7 @@ public class HttpService {
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
         OkHttpClient customClient = buildDynamicClient(baseClient, req, timeoutMs);
         Request request = OkHttpRequestBuilder.buildRequest(req);
-        return EventSources.createFactory(customClient).newEventSource(request, new LogEventSourceListener(listener));
+        return EventSources.createFactory(customClient).newEventSource(request, listener);
     }
 
     /**

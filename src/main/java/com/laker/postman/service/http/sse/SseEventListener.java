@@ -60,10 +60,9 @@ public class SseEventListener extends EventSourceListener {
     @Override
     public void onEvent(EventSource eventSource, String id, String type, String data) {
         if (data != null && !data.isBlank()) {
+            // 累积到 builder 用于最终的完整响应体
             sseBodyBuilder.append(data).append("\n");
-            resp.body = sseBodyBuilder.toString();
-            resp.bodySize = resp.body.getBytes().length;
-            callback.onEvent(resp);
+            callback.onEvent(id, type, data);
         }
     }
 

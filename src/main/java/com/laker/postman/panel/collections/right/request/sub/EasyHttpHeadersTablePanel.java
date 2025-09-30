@@ -48,6 +48,13 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
+    /**
+     * Set whether to suppress auto-append row feature
+     */
+    public void setAutoAppendRowSuppressed(boolean suppressed) {
+        this.suppressAutoAppendRow = suppressed;
+    }
+
     public EasyHttpHeadersTablePanel() {
         this.columns = new String[]{"Key", "Value"};
         initializeComponents();

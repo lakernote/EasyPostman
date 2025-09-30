@@ -442,8 +442,8 @@ public class EasyHttpHeadersPanel extends JPanel {
             if (DEFAULT_HEADER_KEYS.contains(key)) {
                 addDefaultHeaderInOrder(key, value, model);
             } else {
-                // Add as regular header
-                tablePanel.addRow(key, value);
+                // Add as regular header using direct model manipulation to avoid triggering auto-append
+                addNonDefaultHeader(key, value, model);
             }
         }
 
@@ -500,5 +500,31 @@ public class EasyHttpHeadersPanel extends JPanel {
             // Add at the end
             model.addRow(new Object[]{key, value});
         }
+    }
+
+    /**
+     * Add a non-default header intelligently to avoid creating extra blank rows
+     */
+    private void addNonDefaultHeader(String key, String value, DefaultTableModel model) {
+        // Check if the last row is empty
+        int rowCount = model.getRowCount();
+        if (rowCount > 0) {
+            int lastRow = rowCount - 1;
+            Object lastKey = model.getValueAt(lastRow, 0);
+            Object lastValue = model.getValueAt(lastRow, 1);
+
+            boolean lastRowIsEmpty = (lastKey == null || lastKey.toString().trim().isEmpty()) &&
+                    (lastValue == null || lastValue.toString().trim().isEmpty());
+
+            if (lastRowIsEmpty) {
+                // Replace the empty row with the new header
+                model.setValueAt(key, lastRow, 0);
+                model.setValueAt(value, lastRow, 1);
+                return;
+            }
+        }
+
+        // If no empty row at the end, add new row directly
+        model.addRow(new Object[]{key, value});
     }
 }

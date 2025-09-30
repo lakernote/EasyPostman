@@ -58,6 +58,7 @@ EasyPostman aims to provide developers with a local API debugging experience com
 |                                Preview                                |                                  Preview                                   |
 |:----------------------------------------------------------------:|:---------------------------------------------------------------------:|
 |                     ![icon](docs/icon.png)                      |                     ![welcome](docs/welcome.png)                     |
+|                      ![home](docs/home.png)                      |                   ![workspaces](docs/workspaces.png)                   |
 |              ![collections](docs/collections.png)              |             ![collections-import](docs/collections-import.png)             |
 |            ![environments](docs/environments.png)            |                  ![functional](docs/functional.png)                  |
 |              ![functional_1](docs/functional_1.png)              |                ![functional_2](docs/functional_2.png)                |
@@ -68,7 +69,7 @@ EasyPostman aims to provide developers with a local API debugging experience com
 | ![performance-threadgroup-fixed](docs/performance-threadgroup-fixed.png) | ![performance-threadgroup-rampup](docs/performance-threadgroup-rampup.png) |
 | ![performance-threadgroup-spike](docs/performance-threadgroup-spike.png) | ![performance-threadgroup-stairs](docs/performance-threadgroup-stairs.png) |
 |              ![script-pre](docs/script-pre.png)              |                ![script-post](docs/script-post.png)                |
-|            ![script-snippets](docs/script-snippets.png)            |                                                                       |
+|            ![script-snippets](docs/script-snippets.png)            |            ![workspaces-gitcommit](docs/workspaces-gitcommit.png)            |
 
 ---
 

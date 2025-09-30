@@ -42,11 +42,19 @@ public class ResponsePanel extends JPanel {
     private final String[] tabNames;
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
+    private final SSEResponsePanel sseResponsePanel;
 
     public ResponsePanel(RequestItemProtocolEnum protocol) {
         this.protocol = protocol;
         setLayout(new BorderLayout());
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+
+        // 初始化状态栏组件
+        statusCodeLabel = new JLabel();
+        responseTimeLabel = new JLabel();
+        responseSizeLabel = new JLabel();
+
+        // 根据协议类型初始化相应的面板
         if (protocol.isWebSocketProtocol()) {
             // WebSocket 专用布局
             tabNames = new String[]{I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG), I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)};
@@ -56,9 +64,6 @@ public class ResponsePanel extends JPanel {
                 tabBar.add(tabButtons[i]);
             }
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
-            statusCodeLabel = new JLabel();
-            responseTimeLabel = new JLabel();
-            responseSizeLabel = new JLabel();
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -75,11 +80,11 @@ public class ResponsePanel extends JPanel {
             timingChartPanel = null;
             responseBodyPanel = null;
             testsPane = null;
-            add(cardPanel, BorderLayout.CENTER);
+            sseResponsePanel = null;
         } else if (protocol == RequestItemProtocolEnum.SSE) {
-            // SSE: 只用 HTTP 的响应体和响应头，不再用 StreamTestPanel
+            // SSE: 使用 SSEResponsePanel 和 ResponseHeadersPanel
             tabNames = new String[]{
-                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
+                    I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG),
                     I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)
             };
             tabButtons = new JButton[tabNames.length];
@@ -88,9 +93,6 @@ public class ResponsePanel extends JPanel {
                 tabBar.add(tabButtons[i]);
             }
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
-            statusCodeLabel = new JLabel();
-            responseTimeLabel = new JLabel();
-            responseSizeLabel = new JLabel();
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -99,17 +101,15 @@ public class ResponsePanel extends JPanel {
             topResponseBar.add(statusBar, BorderLayout.EAST);
             add(topResponseBar, BorderLayout.NORTH);
             cardPanel = new JPanel(new CardLayout());
-            responseBodyPanel = new ResponseBodyPanel();
-            responseBodyPanel.setEnabled(false);
-            responseBodyPanel.setBodyText(null);
+            sseResponsePanel = new SSEResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
+            cardPanel.add(sseResponsePanel, tabNames[0]);
+            cardPanel.add(responseHeadersPanel, tabNames[1]);
             networkLogPanel = null;
             timingChartPanel = null;
-            cardPanel.add(responseBodyPanel, tabNames[0]);
-            cardPanel.add(responseHeadersPanel, tabNames[1]);
+            responseBodyPanel = null;
             webSocketResponsePanel = null;
             testsPane = null;
-            add(cardPanel, BorderLayout.CENTER);
         } else {
             // HTTP 普通请求
             tabNames = new String[]{
@@ -125,9 +125,6 @@ public class ResponsePanel extends JPanel {
                 tabBar.add(tabButtons[i]);
             }
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
-            statusCodeLabel = new JLabel();
-            responseTimeLabel = new JLabel();
-            responseSizeLabel = new JLabel();
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -154,8 +151,10 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(networkLogPanel, tabNames[3]);
             cardPanel.add(new JScrollPane(timingChartPanel), tabNames[4]);
             webSocketResponsePanel = null;
-            add(cardPanel, BorderLayout.CENTER);
+            sseResponsePanel = null;
         }
+        add(cardPanel, BorderLayout.CENTER);
+
         for (int i = 0; i < tabButtons.length; i++) {
             final int idx = i;
             tabButtons[i].addActionListener(e -> {
@@ -178,8 +177,8 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setResponseBody(HttpResponse resp) {
-        if (protocol.isWebSocketProtocol()) {
-            // WebSocket响应体由 WebSocketResponsePanel 维护，不做处理
+        if (protocol.isWebSocketProtocol() || protocol.isSseProtocol()) {
+            // WebSocket 和 SSE 响应体由专门的面板维护，不做处理
             return;
         }
         responseBodyPanel.setBodyText(resp);
@@ -330,7 +329,7 @@ public class ResponsePanel extends JPanel {
         }
 
         if (protocol.isSseProtocol()) {
-            responseBodyPanel.setBodyText(null);
+            sseResponsePanel.clearMessages();
         }
         if (protocol.isHttpProtocol()) {
             responseBodyPanel.setBodyText(null);

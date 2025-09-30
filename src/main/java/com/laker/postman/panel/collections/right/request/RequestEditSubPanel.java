@@ -432,7 +432,12 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onEvent(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                setResponseBody(r);
+                                // 使用 SSEResponsePanel 来显示 SSE 消息
+                                if (responsePanel.getSseResponsePanel() != null) {
+                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    List<TestResult> testResults = handleStreamMessage(item, bindings, r.body);
+                                    responsePanel.getSseResponsePanel().addMessage(timestamp, r.body, testResults);
+                                }
                                 responsePanel.setResponseSize(r.bodySize);
                             });
                         }
@@ -903,7 +908,7 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
         responsePanel.setResponseHeaders(resp);
-        if (!protocol.isWebSocketProtocol()) {
+        if (!protocol.isWebSocketProtocol() && !protocol.isSseProtocol()) {
             responsePanel.setTiming(resp);
             responsePanel.setResponseBody(resp);
             responsePanel.getResponseBodyPanel().setEnabled(true);

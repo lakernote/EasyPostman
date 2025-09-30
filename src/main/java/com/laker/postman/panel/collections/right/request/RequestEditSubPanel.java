@@ -163,7 +163,7 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel = new ResponsePanel(protocol);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(2); // 设置分割条的宽度
-        splitPane.setResizeWeight(0.4); // 设置分割线位置，表示请求部分占40%
+        splitPane.setResizeWeight(0.3); // 设置分割线位置，表示请求部分占40%
         add(splitPane, BorderLayout.CENTER);
 
         if (protocol.isWebSocketProtocol()) {
@@ -177,6 +177,12 @@ public class RequestEditSubPanel extends JPanel {
             reqTabs.remove(cookiePanel);
             // 初始时禁用发送和定时按钮，只有连接后才可用
             requestBodyPanel.setWebSocketConnected(false);
+        }
+        if (protocol.isSseProtocol()){
+            splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占20%
+            // 隐藏认证tab和cookie tab
+            reqTabs.remove(authTabPanel);
+            reqTabs.remove(cookiePanel);
         }
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();

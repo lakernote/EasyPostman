@@ -661,4 +661,89 @@ public class CurlParserTest {
         // 验证查询参数
         assertEquals(result.params.get("timestamp"), "1640995200");
     }
+
+    @Test(description = "解析WebSocket连接的curl命令")
+    public void testParseWebSocketCurlCommand() {
+        String curl = "curl 'wss://echo-websocket.hoppscotch.io/' " +
+                "-H 'Upgrade: websocket' " +
+                "-H 'Origin: https://hoppscotch.io' " +
+                "-H 'Cache-Control: no-cache' " +
+                "-H 'Accept-Language: zh-CN,zh;q=0.9' " +
+                "-H 'Pragma: no-cache' " +
+                "-H 'Connection: Upgrade' " +
+                "-H 'Sec-WebSocket-Key: ISD3FRCDNdAPiU+0dTuSXg==' " +
+                "-H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36' " +
+                "-H 'Sec-WebSocket-Version: 13' " +
+                "-H 'Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits'";
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        // 验证URL和基本信息解析正确
+        assertEquals(result.url, "wss://echo-websocket.hoppscotch.io/");
+        assertEquals(result.method, "GET"); // WebSocket握手使用GET方法
+
+        // 验证受限制的WebSocket头部已被过滤掉
+        assertNull(result.headers.get("Upgrade"));
+        assertNull(result.headers.get("Connection"));
+        assertNull(result.headers.get("Sec-WebSocket-Key"));
+        assertNull(result.headers.get("Sec-WebSocket-Version"));
+        assertNull(result.headers.get("Sec-WebSocket-Extensions"));
+
+        // 验证非受限制的头部正常保留
+        assertEquals(result.headers.get("Origin"), "https://hoppscotch.io");
+        assertEquals(result.headers.get("Cache-Control"), "no-cache");
+        assertEquals(result.headers.get("Accept-Language"), "zh-CN,zh;q=0.9");
+        assertEquals(result.headers.get("Pragma"), "no-cache");
+        assertEquals(result.headers.get("User-Agent"), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
+    }
+
+    @Test(description = "测试WebSocket请求的受限头部过滤")
+    public void testWebSocketRestrictedHeaderFiltering() {
+        String curl = "curl 'wss://echo-websocket.hoppscotch.io/' " +
+                "-H 'Upgrade: websocket' " +
+                "-H 'Origin: https://hoppscotch.io' " +
+                "-H 'Connection: Upgrade' " +
+                "-H 'Sec-WebSocket-Key: ISD3FRCDNdAPiU+0dTuSXg==' " +
+                "-H 'User-Agent: Mozilla/5.0' " +
+                "-H 'Sec-WebSocket-Version: 13' " +
+                "-H 'Sec-WebSocket-Extensions: permessage-deflate' " +
+                "-H 'Accept-Language: zh-CN,zh;q=0.9'";
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        // 验证URL和基本信息解析正确
+        assertEquals(result.url, "wss://echo-websocket.hoppscotch.io/");
+        assertEquals(result.method, "GET");
+
+        // 验证受限制的WebSocket头部已被过滤掉
+        assertNull(result.headers.get("Upgrade"));
+        assertNull(result.headers.get("Connection"));
+        assertNull(result.headers.get("Sec-WebSocket-Key"));
+        assertNull(result.headers.get("Sec-WebSocket-Version"));
+        assertNull(result.headers.get("Sec-WebSocket-Extensions"));
+
+        // 验证非受限制的头部正常保留
+        assertEquals(result.headers.get("Origin"), "https://hoppscotch.io");
+        assertEquals(result.headers.get("User-Agent"), "Mozilla/5.0");
+        assertEquals(result.headers.get("Accept-Language"), "zh-CN,zh;q=0.9");
+    }
+
+    @Test(description = "测试普通HTTP请求不受WebSocket头部过滤影响")
+    public void testHttpRequestWithWebSocketHeaders() {
+        String curl = "curl 'https://api.example.com/test' " +
+                "-H 'Sec-WebSocket-Key: test-key' " +
+                "-H 'Sec-WebSocket-Version: 13' " +
+                "-H 'Connection: keep-alive' " +
+                "-H 'User-Agent: TestAgent'";
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        // 验证普通HTTP请求允许设置这些头部
+        assertEquals(result.url, "https://api.example.com/test");
+        assertEquals(result.method, "GET");
+        assertEquals(result.headers.get("Sec-WebSocket-Key"), "test-key");
+        assertEquals(result.headers.get("Sec-WebSocket-Version"), "13");
+        assertEquals(result.headers.get("Connection"), "keep-alive");
+        assertEquals(result.headers.get("User-Agent"), "TestAgent");
+    }
 }

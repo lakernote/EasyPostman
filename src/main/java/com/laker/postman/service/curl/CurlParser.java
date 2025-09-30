@@ -55,7 +55,7 @@ public class CurlParser {
             // 1. URL 处理
             if (token.equals("--url") && i + 1 < tokens.size()) {
                 req.url = tokens.get(++i);
-            } else if (token.startsWith("http")) {
+            } else if (token.startsWith("http") || token.startsWith("ws://") || token.startsWith("wss://")) {
                 req.url = token;
             }
 
@@ -68,7 +68,18 @@ public class CurlParser {
             else if (token.equals("-H") || token.equals("--header")) {
                 if (i + 1 < tokens.size()) {
                     String[] kv = tokens.get(++i).split(":", 2);
-                    if (kv.length == 2) req.headers.put(kv[0].trim(), kv[1].trim());
+                    if (kv.length == 2) {
+                        String headerName = kv[0].trim();
+                        String headerValue = kv[1].trim();
+
+                        // 如果是 WebSocket 请求，过滤掉 OkHttp 自动管理的头部
+                        if (isWebSocketUrl(req.url) && isRestrictedWebSocketHeader(headerName)) {
+                            // 跳过受限制的 WebSocket 头部，不添加到 headers 中
+                            continue;
+                        }
+
+                        req.headers.put(headerName, headerValue);
+                    }
                 }
             }
 
@@ -398,5 +409,34 @@ public class CurlParser {
         // 4. 去除首尾空格
         curl = curl.trim();
         return curl;
+    }
+
+    /**
+     * 判断给定的 URL 是否为 WebSocket URL
+     *
+     * @param url 待判断的 URL
+     * @return 如果是 WebSocket URL，返回 true；否则返回 false
+     */
+    private static boolean isWebSocketUrl(String url) {
+        return url != null && (url.startsWith("ws://") || url.startsWith("wss://"));
+    }
+
+    /**
+     * 判断给定的头部名称是否为受限制的 WebSocket 头部
+     *
+     * @param headerName 待判断的头部名称
+     * @return 如果是受限制的头部，返回 true；否则返回 false
+     */
+    private static boolean isRestrictedWebSocketHeader(String headerName) {
+        // 受限制的 WebSocket 头部列表
+        List<String> restrictedHeaders = List.of(
+                "Connection",
+                "Host",
+                "Upgrade",
+                "Sec-WebSocket-Key",
+                "Sec-WebSocket-Version",
+                "Sec-WebSocket-Extensions"
+        );
+        return restrictedHeaders.contains(headerName);
     }
 }

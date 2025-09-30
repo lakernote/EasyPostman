@@ -54,9 +54,6 @@ import static com.laker.postman.service.http.HttpUtil.*;
 public class RequestEditSubPanel extends JPanel {
     public static final String TEXT_EVENT_STREAM = "text/event-stream";
     public static final String ACCEPT = "Accept";
-    public static final String USER_AGENT = "User-Agent";
-    public static final String EASY_POSTMAN_HTTP_CLIENT = "EasyPostman HTTP Client";
-    public static final String VALUE = "*/*";
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyNameValueTablePanel paramsPanel;
@@ -178,7 +175,7 @@ public class RequestEditSubPanel extends JPanel {
             // 初始时禁用发送和定时按钮，只有连接后才可用
             requestBodyPanel.setWebSocketConnected(false);
         }
-        if (protocol.isSseProtocol()){
+        if (protocol.isSseProtocol()) {
             splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占20%
             // 隐藏认证tab和cookie tab
             reqTabs.remove(authTabPanel);
@@ -295,11 +292,6 @@ public class RequestEditSubPanel extends JPanel {
             SingletonFactory.getInstance(RequestEditPanel.class).updateTabDirty(this, dirty);
         });
     }
-
-    private void setResponseBody(HttpResponse resp) {
-        responsePanel.getResponseBodyPanel().setBodyText(resp);
-    }
-
 
     private void sendRequest(ActionEvent e) {
         if (currentWorker != null) {

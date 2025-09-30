@@ -100,6 +100,21 @@ public class HttpUtil {
         return false;
     }
 
+    public static boolean isSSERequest(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return false;
+        }
+        // 判断Accept头是否包含text/event-stream
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if ("Accept".equalsIgnoreCase(entry.getKey()) &&
+                    entry.getValue() != null &&
+                    entry.getValue().toLowerCase().contains("text/event-stream")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // 状态颜色
     public static Color getStatusColor(int statusCode) {
         if (statusCode == 101) {
@@ -388,5 +403,9 @@ public class HttpUtil {
             }
         }
         return null;
+    }
+
+    public static boolean isWebSocketRequest(String url) {
+        return url != null && (url.startsWith("ws://") || url.startsWith("wss://"));
     }
 }

@@ -14,8 +14,10 @@ import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.common.panel.SingletonBasePanel;
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.curl.CurlParser;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -258,6 +260,13 @@ public class LeftTopPanel extends SingletonBasePanel {
             item.setParams(curlRequest.params);
             item.setFormData(curlRequest.formData);
             item.setFormFiles(curlRequest.formFiles);
+            if (HttpUtil.isSSERequest(item.getHeaders())) {
+                item.setProtocol(RequestItemProtocolEnum.SSE);
+            } else if (HttpUtil.isWebSocketRequest(item.getUrl())) {
+                item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            } else {
+                item.setProtocol(RequestItemProtocolEnum.HTTP);
+            }
             // 统一用RequestEditPanel弹窗选择分组和命名
             boolean saved = saveRequestWithGroupDialog(item);
             // 导入成功后清空剪贴板

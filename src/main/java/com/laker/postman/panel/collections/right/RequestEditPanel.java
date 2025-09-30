@@ -14,6 +14,7 @@ import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.RequestsTabsService;
 import com.laker.postman.service.curl.CurlParser;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -48,20 +49,25 @@ public class RequestEditPanel extends SingletonBasePanel {
 
 
     // 新建Tab，可指定标题
-    public RequestEditSubPanel addNewTab(String title) {
+    public RequestEditSubPanel addNewTab(String title, RequestItemProtocolEnum protocol) {
         // 先移除+Tab
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
         }
         String tabTitle = title != null ? title : REQUEST_STRING;
-        RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID(), RequestItemProtocolEnum.HTTP);
+        RequestEditSubPanel subPanel = new RequestEditSubPanel(IdUtil.simpleUUID(), protocol);
         tabbedPane.addTab(tabTitle, subPanel);
-        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(tabTitle, RequestItemProtocolEnum.HTTP));
+        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(tabTitle, protocol));
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
         RequestsTabsService.updateTabNew(subPanel, true); // 设置新建状态
         return subPanel;
+    }
+
+    // 新建Tab，可指定标题
+    public RequestEditSubPanel addNewTab(String title) {
+        return addNewTab(title, RequestItemProtocolEnum.HTTP);
     }
 
     // 添加"+"Tab
@@ -434,8 +440,15 @@ public class RequestEditPanel extends SingletonBasePanel {
                                     item.setParams(curlRequest.params);
                                     item.setFormData(curlRequest.formData);
                                     item.setFormFiles(curlRequest.formFiles);
+                                    if (HttpUtil.isSSERequest(item.getHeaders())) {
+                                        item.setProtocol(RequestItemProtocolEnum.SSE);
+                                    } else if (HttpUtil.isWebSocketRequest(item.getUrl())) {
+                                        item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+                                    } else {
+                                        item.setProtocol(RequestItemProtocolEnum.HTTP);
+                                    }
                                     // 新建Tab并填充内容
-                                    RequestEditSubPanel tab = addNewTab(null);
+                                    RequestEditSubPanel tab = addNewTab(null, item.getProtocol());
                                     item.setId(tab.getId());
                                     tab.updateRequestForm(item);
                                     // 清空剪贴板内容

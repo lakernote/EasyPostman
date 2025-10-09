@@ -36,7 +36,7 @@ public class WaterfallChartPanel extends JPanel {
     private static final int INFO_BLOCK_V_GAP = 3; // 信息区块之间的垂直间距
     private static final int INFO_TEXT_LINE_HEIGHT = 16; // 信息文本行高
     private static final int INFO_TEXT_EXTRA_GAP = 6; // 信息区每项之间额外空白
-    private static final int INFO_TEXT_BOTTOM_PAD = 15;  // 信息区底部内边距
+    private static final int INFO_TEXT_BOTTOM_PAD = 20;  // 信息区底部内边距
     private static final int INFO_TEXT_LEFT_PAD = 20; // 信息区左侧内边距
     private static final Color INFO_BG_COLOR = new Color(245, 247, 250);
     private static final Color INFO_BORDER_COLOR = new Color(220, 220, 220);
@@ -190,6 +190,33 @@ public class WaterfallChartPanel extends JPanel {
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
         g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
+        infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
+
+        // SSL Certificate Warning - 如果有警告则显示
+        if (httpEventInfo != null && httpEventInfo.getSslCertWarning() != null && !httpEventInfo.getSslCertWarning().isEmpty()) {
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+            g2.setColor(new Color(220, 53, 69)); // 红色警告
+            g2.drawString("Cert Warning:", labelX, infoY);
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+
+            // 处理过长的警告文本，可能需要换行或截断
+            String warning = httpEventInfo.getSslCertWarning();
+            int maxWarningWidth = getWidth() - INFO_TEXT_LEFT_PAD - valueXOffset - 30;
+            FontMetrics fm = g2.getFontMetrics();
+
+            if (fm.stringWidth(warning) > maxWarningWidth) {
+                // 截断文本并添加省略号
+                String truncated = warning;
+                while (fm.stringWidth(truncated + "...") > maxWarningWidth && !truncated.isEmpty()) {
+                    truncated = truncated.substring(0, truncated.length() - 1);
+                }
+                g2.drawString(truncated + "...", labelX + valueXOffset, infoY);
+            } else {
+                g2.drawString(warning, labelX + valueXOffset, infoY);
+            }
+            g2.setColor(Color.DARK_GRAY); // 恢复默认颜色
+        }
+
         // 2. 绘制瀑布条区
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
@@ -323,8 +350,15 @@ public class WaterfallChartPanel extends JPanel {
 
     // 计算实际显示的info行数（用于动态布局）
     private int getInfoLinesCount() {
-        // 始终返回所有label的数量，保证信息区高度
-        return 7;
+        // 基础行数：HTTP Version, Local Address, Remote Address, TLS Protocol, Cipher Name, Certificate CN, Issuer CN, Valid Until
+        int lines = 7;
+
+        // 如果有 SSL 证书警告，添加一行
+        if (httpEventInfo != null && httpEventInfo.getSslCertWarning() != null && !httpEventInfo.getSslCertWarning().isEmpty()) {
+            lines += 1;
+        }
+
+        return lines;
     }
 
     public static class Stage {
@@ -420,4 +454,3 @@ public class WaterfallChartPanel extends JPanel {
         return stages;
     }
 }
-

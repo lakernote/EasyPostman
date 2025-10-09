@@ -42,7 +42,7 @@ public class OkHttpResponseHandler {
                 response.addHeader(name, List.of(value));
             }
         }
-        response.headersSize = response.httpEventInfo.getHeaderBytesReceived();
+        response.headersSize = response.httpEventInfo != null ? response.httpEventInfo.getHeaderBytesReceived() : 0;
         response.threadName = Thread.currentThread().getName();
         response.protocol = okResponse.protocol().toString();
         String contentType = okResponse.header("Content-Type", "");

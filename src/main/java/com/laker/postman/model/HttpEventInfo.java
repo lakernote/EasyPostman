@@ -51,6 +51,8 @@ public class HttpEventInfo {
     private String tlsVersion;
     // 加密套件
     private String cipherName;
+    // SSL 证书验证警告信息（如过期、域名不匹配、自签名等）
+    private String sslCertWarning;
     // 异常
     private String errorMessage;
     private Throwable error;

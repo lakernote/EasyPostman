@@ -1,5 +1,6 @@
 package com.laker.postman.common.setting;
 
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.SystemUtil;
 
 import java.io.File;
@@ -166,6 +167,25 @@ public class SettingManager {
     public static void setFollowRedirects(boolean follow) {
         props.setProperty("follow_redirects", String.valueOf(follow));
         save();
+    }
+
+    /**
+     * 是否禁用 SSL 证书验证（通用请求设置）
+     * 此设置应用于所有 HTTPS 请求，用于开发测试环境
+     */
+    public static boolean isRequestSslVerificationDisabled() {
+        String val = props.getProperty("ssl_verification_enabled");
+        if (val != null) {
+            return !Boolean.parseBoolean(val);
+        }
+        return true;
+    }
+
+    public static void setRequestSslVerificationDisabled(boolean disabled) {
+        props.setProperty("ssl_verification_enabled", String.valueOf(!disabled));
+        save();
+        // 清除客户端缓存以应用新的 SSL 设置
+        OkHttpClientManager.clearClientCache();
     }
 
     public static int getMaxHistoryCount() {
@@ -362,21 +382,23 @@ public class SettingManager {
         save();
     }
 
-    // ===== SSL设置 =====
 
     /**
-     * 是否禁用SSL证书验证（用于解决代理环境下的SSL证书问题）
+     * 是否禁用 SSL 证书验证（代理环境专用设置）
+     * 此设置专门用于解决代理环境下的 SSL 证书验证问题
      */
-    public static boolean isSSLVerificationDisabled() {
-        String val = props.getProperty("ssl_verification_disabled");
+    public static boolean isProxySslVerificationDisabled() {
+        String val = props.getProperty("proxy_ssl_verification_disabled");
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
-        return false; // 默认启用SSL验证
+        return false; // 默认启用 SSL 验证
     }
 
-    public static void setSSLVerificationDisabled(boolean disabled) {
-        props.setProperty("ssl_verification_disabled", String.valueOf(disabled));
+    public static void setProxySslVerificationDisabled(boolean disabled) {
+        props.setProperty("proxy_ssl_verification_disabled", String.valueOf(disabled));
         save();
+        // 清除客户端缓存以应用新的 SSL 设置
+        OkHttpClientManager.clearClientCache();
     }
 }

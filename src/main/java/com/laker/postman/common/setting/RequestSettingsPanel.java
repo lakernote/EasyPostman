@@ -22,6 +22,7 @@ public class RequestSettingsPanel extends JPanel {
     private JTextField requestTimeoutField;
     private JTextField maxDownloadSizeField;
     private JCheckBox followRedirectsCheckBox;
+    private JCheckBox sslVerificationDisabledCheckBox;
     private JButton saveBtn;
     private JButton cancelBtn;
 
@@ -99,6 +100,17 @@ public class RequestSettingsPanel extends JPanel {
         followRedirectsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_FOLLOW_REDIRECTS_CHECKBOX), SettingManager.isFollowRedirects());
         requestPanel.add(followRedirectsCheckBox, gbc);
 
+        // SSL 验证设置
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        JLabel sslVerificationLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SSL_VERIFICATION));
+        sslVerificationLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SSL_VERIFICATION_TOOLTIP));
+        requestPanel.add(sslVerificationLabel, gbc);
+
+        gbc.gridx = 1;
+        sslVerificationDisabledCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SSL_VERIFICATION_CHECKBOX), SettingManager.isRequestSslVerificationDisabled());
+        requestPanel.add(sslVerificationDisabledCheckBox, gbc);
+
         mainPanel.add(requestPanel);
         mainPanel.add(Box.createVerticalGlue());
 
@@ -119,7 +131,7 @@ public class RequestSettingsPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(500, 300));
+        setPreferredSize(new Dimension(500, 350));
 
         setupValidators();
         setupKeyboardNavigation();
@@ -202,6 +214,7 @@ public class RequestSettingsPanel extends JPanel {
         requestTimeoutField.addKeyListener(keyAdapter);
         maxDownloadSizeField.addKeyListener(keyAdapter);
         followRedirectsCheckBox.addKeyListener(keyAdapter);
+        sslVerificationDisabledCheckBox.addKeyListener(keyAdapter);
     }
 
     private void registerListeners() {
@@ -238,6 +251,7 @@ public class RequestSettingsPanel extends JPanel {
             SettingManager.setRequestTimeout(timeout);
             SettingManager.setMaxDownloadSize(maxDownloadMB * 1024 * 1024);
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
+            SettingManager.setRequestSslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
 
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);

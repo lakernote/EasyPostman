@@ -137,7 +137,7 @@ public class ProxySettingsPanel extends JPanel {
         proxyPanel.add(sslVerificationLabel, gbc);
 
         gbc.gridx = 1;
-        sslVerificationDisabledCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX), SettingManager.isSSLVerificationDisabled());
+        sslVerificationDisabledCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX), SettingManager.isProxySslVerificationDisabled());
         proxyPanel.add(sslVerificationDisabledCheckBox, gbc);
 
         mainPanel.add(proxyPanel);
@@ -285,7 +285,7 @@ public class ProxySettingsPanel extends JPanel {
             int oldProxyPort = SettingManager.getProxyPort();
             String oldProxyUsername = SettingManager.getProxyUsername();
             String oldProxyPassword = SettingManager.getProxyPassword();
-            boolean oldSslVerificationDisabled = SettingManager.isSSLVerificationDisabled();
+            boolean oldSslVerificationDisabled = SettingManager.isProxySslVerificationDisabled();
 
             SettingManager.setProxyEnabled(proxyEnabledCheckBox.isSelected());
             SettingManager.setProxyType((String) proxyTypeComboBox.getSelectedItem());
@@ -293,7 +293,7 @@ public class ProxySettingsPanel extends JPanel {
             SettingManager.setProxyPort(proxyPort);
             SettingManager.setProxyUsername(proxyUsernameField.getText().trim());
             SettingManager.setProxyPassword(new String(proxyPasswordField.getPassword()));
-            SettingManager.setSSLVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
+            SettingManager.setProxySslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
 
             // 检查代理设置是否有变更，如果有变更则清理HTTP客户端缓存
             boolean proxySettingsChanged = proxyEnabledChanged ||

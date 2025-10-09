@@ -39,11 +39,7 @@ public class OkHttpClientManager {
     public static void setConnectionPoolConfig(int maxIdle, long keepAliveSeconds) {
         maxIdleConnections = maxIdle;
         keepAliveDuration = keepAliveSeconds;
-        // 主动关闭所有旧连接，避免资源泄漏
-        for (OkHttpClient client : clientMap.values()) {
-            client.connectionPool().evictAll(); // 清空旧连接池
-        }
-        clientMap.clear(); // 清空，确保新参数生效
+        clearClientCache();
     }
 
     /**
@@ -52,11 +48,7 @@ public class OkHttpClientManager {
     public static void setDefaultConnectionPoolConfig() {
         maxIdleConnections = MAX_IDLE_CONNECTIONS;
         keepAliveDuration = KEEP_ALIVE_DURATION;
-        // 主动关闭所有旧连接，避免资源泄漏
-        for (OkHttpClient client : clientMap.values()) {
-            client.connectionPool().evictAll(); // 清空旧连接池
-        }
-        clientMap.clear(); // 清空，确保新参数生效
+        clearClientCache();
     }
 
     /**
@@ -70,16 +62,7 @@ public class OkHttpClientManager {
     }
 
     /**
-     * 获取或创建指定 baseUri 的 OkHttpClient 实例。
-     * <p>
-     * 1. 按 baseUri（协议+host+port）分配连接池，最大空闲连接数和保活时间参考 Chrome。
-     * 2. 支持 followRedirects 配置。
-     * 3. 支持企业级常用配置，如连接池、超时、重试、代理、拦截器、SSL、DNS、CookieJar 等扩展点。
-     * 4. 支持网络代理配置。
-     * </p>
-     *
-     * @param baseUri 协议+host+port
-     * @return OkHttpClient
+     * 获取或创建指定 baseUri 的 OkHttpClient 实例
      */
     public static OkHttpClient getClient(String baseUri, boolean followRedirects) {
         // 将代理配置也作为客户端缓存key的一部分，确保代理设置变更时重新创建客户端
@@ -89,11 +72,11 @@ public class OkHttpClientManager {
         return clientMap.computeIfAbsent(key, k -> {
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     // 连接超时
-                    .connectTimeout(0, TimeUnit.MILLISECONDS) // 设置为 0 表示不超时
+                    .connectTimeout(0, TimeUnit.MILLISECONDS)
                     // 读超时
-                    .readTimeout(0, TimeUnit.MILLISECONDS) // 设置为 0 表示不超时
+                    .readTimeout(0, TimeUnit.MILLISECONDS)
                     // 写超时
-                    .writeTimeout(0, TimeUnit.MILLISECONDS) // 设置为 0 表示不超时
+                    .writeTimeout(0, TimeUnit.MILLISECONDS)
                     // 连接池配置
                     .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
                     // 失败自动重试
@@ -103,11 +86,14 @@ public class OkHttpClientManager {
                     .cache(null)
                     .pingInterval(30, TimeUnit.SECONDS);
 
-            // 使用全局 JavaNetCookieJar，支持完整 Cookie 规范
+            // 使用全局 JavaNetCookieJar
             builder.cookieJar(GLOBAL_COOKIE_JAR);
 
             // 配置网络代理
             configureProxy(builder);
+
+            // 配置SSL设置
+            configureSSLSettings(builder);
 
             return builder.build();
         });
@@ -118,7 +104,7 @@ public class OkHttpClientManager {
      */
     private static void configureProxy(OkHttpClient.Builder builder) {
         if (!SettingManager.isProxyEnabled()) {
-            return; // 代理未启用，使用默认配置
+            return;
         }
 
         String proxyHost = SettingManager.getProxyHost();
@@ -128,7 +114,7 @@ public class OkHttpClientManager {
         String proxyPassword = SettingManager.getProxyPassword();
 
         if (proxyHost.trim().isEmpty()) {
-            return; // 代理主机地址为空，跳过代理配置
+            return;
         }
 
         try {
@@ -137,60 +123,55 @@ public class OkHttpClientManager {
             if ("SOCKS".equalsIgnoreCase(proxyType)) {
                 proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHost.trim(), proxyPort));
             } else {
-                // 默认使用HTTP代理
                 proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost.trim(), proxyPort));
             }
 
             builder.proxy(proxy);
 
-            // 配置代理认证（如果提供了用户名和密码）
+            // 配置代理认证
             if (!proxyUsername.trim().isEmpty() && !proxyPassword.trim().isEmpty()) {
-
                 Authenticator proxyAuthenticator = (route, response) -> {
                     String credential = Credentials.basic(proxyUsername.trim(), proxyPassword);
                     return response.request().newBuilder()
                             .header("Proxy-Authorization", credential)
                             .build();
                 };
-
                 builder.proxyAuthenticator(proxyAuthenticator);
             }
 
-            // SSL 配置，解决 SOCKS 代理下证书验证问题
-            if ("SOCKS".equalsIgnoreCase(proxyType)) {
-                configureSSLForProxy(builder);
-            }
-
         } catch (Exception e) {
-            // 代理配置失败时记录错误，但不影响客户端创建
             log.error("Failed to configure proxy: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * 为代理环境配置SSL设置，解决SOCKS代理下的SSL证书验证问题
+     * 配置SSL设置（统一处理所有HTTPS连接的SSL配置）
      */
-    private static void configureSSLForProxy(OkHttpClient.Builder builder) {
-        try {
-            if (SettingManager.isSSLVerificationDisabled()) {
-                // 如果用户显式禁用了SSL验证，使用完全信任的配置
-                SSLConfigurationUtil.configureSSL(builder, true);
-                log.warn("SSL verification disabled for proxy environment. This may pose security risks.");
-            } else {
-                // 使用代理友好的SSL配置，在保证安全性的同时允许代理环境下的连接
-                SSLConfigurationUtil.configureProxyFriendlySSL(builder);
-                log.info("Applied proxy-friendly SSL configuration");
-            }
-        } catch (Exception e) {
-            log.error("Failed to configure SSL for proxy environment: {}", e.getMessage(), e);
-            // 如果配置失败，尝试使用信任所有证书的配置作为后备方案
-            try {
-                SSLConfigurationUtil.configureSSL(builder, true);
-                log.warn("Fallback to trust-all SSL configuration due to proxy SSL configuration failure");
-            } catch (Exception fallbackException) {
-                log.error("Even fallback SSL configuration failed: {}", fallbackException.getMessage(), fallbackException);
-            }
+    private static void configureSSLSettings(OkHttpClient.Builder builder) {
+        // 检查是否启用了代理
+        boolean isProxyEnabled = SettingManager.isProxyEnabled();
+        // 检查用户是否在请求设置中禁用了SSL验证
+        boolean isRequestSslDisabled = SettingManager.isRequestSslVerificationDisabled();
+        // 检查是否在代理设置中禁用了SSL验证
+        boolean isProxySslDisabled = SettingManager.isProxySslVerificationDisabled();
+
+        // 决定SSL验证模式
+        SSLConfigurationUtil.SSLVerificationMode mode;
+
+        if (isRequestSslDisabled || (isProxyEnabled && isProxySslDisabled)) {
+            // 用户明确禁用SSL验证，使用宽松模式
+            mode = SSLConfigurationUtil.SSLVerificationMode.LENIENT;
+            log.warn("SSL verification disabled by user settings");
+        } else if (isProxyEnabled) {
+            // 代理已启用但未禁用SSL验证，使用宽松模式以兼容代理环境
+            mode = SSLConfigurationUtil.SSLVerificationMode.LENIENT;
+            log.info("Using lenient SSL mode for proxy environment");
+        } else {
+            // 默认使用严格模式
+            mode = SSLConfigurationUtil.SSLVerificationMode.STRICT;
         }
+
+        SSLConfigurationUtil.configureSSL(builder, mode);
     }
 
     /**
@@ -201,11 +182,13 @@ public class OkHttpClientManager {
             return "no-proxy";
         }
 
-        return String.format("proxy:%s:%s:%d:%s",
+        return String.format("proxy:%s:%s:%d:%s:%b:%b",
                 SettingManager.getProxyType(),
                 SettingManager.getProxyHost(),
                 SettingManager.getProxyPort(),
-                SettingManager.getProxyUsername());
+                SettingManager.getProxyUsername(),
+                SettingManager.isProxySslVerificationDisabled(),
+                SettingManager.isRequestSslVerificationDisabled());
     }
 
     public static CookieManager getGlobalCookieManager() {

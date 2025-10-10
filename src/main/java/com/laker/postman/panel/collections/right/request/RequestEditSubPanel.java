@@ -6,7 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.common.table.map.EasyHttpHeadersPanel;
-import com.laker.postman.common.table.map.EasyNameValueTablePanel;
+import com.laker.postman.common.table.map.EasyParamsTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -56,7 +56,7 @@ public class RequestEditSubPanel extends JPanel {
     public static final String ACCEPT = "Accept";
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
-    private final EasyNameValueTablePanel paramsPanel;
+    private final EasyParamsTablePanel paramsPanel;
     private final EasyHttpHeadersPanel headersPanel;
     @Getter
     private String id;
@@ -125,7 +125,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.setMinimumSize(new Dimension(400, 120));
 
         // 2.1 Params
-        paramsPanel = new EasyNameValueTablePanel("Key", "Value");
+        paramsPanel = new EasyParamsTablePanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel); // 2.1 添加参数选项卡
 
         // 添加Params面板的监听器，实现从Params到URL的联动
@@ -685,9 +685,25 @@ public class RequestEditSubPanel extends JPanel {
         urlField.setCaretPosition(0); // 设置光标到开头
 
         // 如果URL中有参数，解析到paramsPanel
-        Map<String, String> mergedParams = HttpUtil.getMergedParams(item.getParams(), url);
-        // 更新参数面板
-        paramsPanel.setMap(mergedParams);
+        // Params - 优先使用新格式（包含 enabled 状态）
+        if (item.getParamsList() != null && !item.getParamsList().isEmpty()) {
+            // 使用新格式加载（包含 enabled 状态）
+            paramsPanel.setParamsList(item.getParamsList());
+        } else if (item.getParams() != null && !item.getParams().isEmpty()) {
+            // 兼容旧格式（从 Map 加载，合并 URL 中的参数）
+            Map<String, String> mergedParams = HttpUtil.getMergedParams(item.getParams(), url);
+            paramsPanel.setMap(mergedParams);
+            // 迁移到新格式
+            item.setParamsList(paramsPanel.getParamsList());
+        } else {
+            // 没有数据，尝试从 URL 解析参数
+            Map<String, String> urlParams = HttpUtil.getParamsMapFromUrl(url);
+            if (urlParams != null && !urlParams.isEmpty()) {
+                paramsPanel.setMap(urlParams);
+            } else {
+                paramsPanel.clear();
+            }
+        }
         methodBox.setSelectedItem(item.getMethod());
 
         // Headers - 优先使用新格式（包含 enabled 状态）
@@ -791,7 +807,10 @@ public class RequestEditSubPanel extends JPanel {
         // 同时保存旧格式用于兼容（只包含启用的 headers）
         item.setHeaders(headersPanel.getMap());
 
-        item.setParams(paramsPanel.getMap()); // 获取Params表格内容
+        // 使用新格式保存 params（包含 enabled 状态）
+        item.setParamsList(paramsPanel.getParamsList());
+        // 同时保存旧格式用于兼容（只包含启用的 params）
+        item.setParams(paramsPanel.getMap());
         // 统一通过requestBodyPanel获取body相关内容
         item.setBody(requestBodyPanel.getBodyArea().getText().trim());
         item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());

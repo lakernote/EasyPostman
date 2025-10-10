@@ -31,6 +31,12 @@ public class HttpRequestItem implements Serializable {
     private Map<String, String> headers = new LinkedHashMap<>(); // 请求头
     private String bodyType = ""; // 请求体类型
     private String body = ""; // 请求体内容（如JSON、表单数据等）
+
+    // 新版本：带启用状态的 params（优先使用）
+    private List<HttpParam> paramsList = new ArrayList<>();
+
+    // 旧版本：仅保留用于向后兼容（从旧数据迁移）
+    @Deprecated
     private Map<String, String> params = new LinkedHashMap<>(); // 请求参数（查询字符串）
     // form-data 普通字段
     private Map<String, String> formData = new LinkedHashMap<>();

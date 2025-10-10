@@ -109,7 +109,8 @@ jpackage ^
     --win-help-url "https://gitee.com/lakernote/easy-postman" ^
     --java-options "-Xms256m" ^
     --java-options "-Xmx512m" ^
-    --java-options "-Dfile.encoding=UTF-8"
+    --java-options "-Dfile.encoding=UTF-8" ^
+    --java-options "-Djavax.accessibility.assistive_technologies="
 
 if errorlevel 1 (
     echo ERROR: jpackage failed

@@ -594,6 +594,8 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP = "settings.general.max_history.tooltip";
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS = "settings.general.max_opened_requests";
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP = "settings.general.max_opened_requests.tooltip";
+    public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE = "settings.general.auto_format_response";
+    public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
 
     // Validation messages
     public static final String SETTINGS_VALIDATION_ERROR_TITLE = "settings.validation.error.title";

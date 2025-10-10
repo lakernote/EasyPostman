@@ -222,6 +222,22 @@ public class SettingManager {
         save();
     }
 
+    /**
+     * 是否根据响应类型自动格式化响应体
+     */
+    public static boolean isAutoFormatResponse() {
+        String val = props.getProperty("auto_format_response");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false; // 默认不自动格式化
+    }
+
+    public static void setAutoFormatResponse(boolean autoFormat) {
+        props.setProperty("auto_format_response", String.valueOf(autoFormat));
+        save();
+    }
+
     // ===== 自动更新设置 =====
 
     /**

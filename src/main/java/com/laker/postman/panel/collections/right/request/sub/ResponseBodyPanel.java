@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -247,6 +248,12 @@ public class ResponseBodyPanel extends JPanel {
         }
         syntaxComboBox.setSelectedIndex(syntaxIndex);
         responseBodyPane.setSyntaxEditingStyle(syntax);
+
+        // 根据设置决定是否自动格式化
+        if (SettingManager.isAutoFormatResponse()) {
+            autoFormatIfPossible(text, contentType);
+        }
+
         if (filePath != null && !filePath.isEmpty()) {
             downloadButton.setVisible(true);
         } else {
@@ -277,6 +284,25 @@ public class ResponseBodyPanel extends JPanel {
             if (t.toLowerCase().contains("<?xml")) return SyntaxConstants.SYNTAX_STYLE_XML;
         }
         return SyntaxConstants.SYNTAX_STYLE_NONE;
+    }
+
+    // 自动格式化（如果可能）
+    private void autoFormatIfPossible(String text, String contentType) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        try {
+            if (contentType != null && contentType.toLowerCase().contains("json")) {
+                JSON json = JSONUtil.parse(text);
+                String pretty = JSONUtil.toJsonPrettyStr(json);
+                responseBodyPane.setText(pretty);
+            } else if (contentType != null && contentType.toLowerCase().contains("xml")) {
+                String pretty = XmlUtil.format(text);
+                responseBodyPane.setText(pretty);
+            }
+        } catch (Exception ex) {
+            // 格式化失败时静默忽略，保持原始内容
+        }
     }
 
     public void setEnabled(boolean enabled) {

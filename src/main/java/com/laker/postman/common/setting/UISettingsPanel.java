@@ -24,6 +24,7 @@ public class UISettingsPanel extends JPanel {
     private JTextField maxOpenedRequestsCountField;
     private JButton saveBtn;
     private JButton cancelBtn;
+    private JCheckBox autoFormatResponseCheckBox;
 
     private final Map<JTextField, Predicate<String>> validators = new HashMap<>();
     private final Map<JTextField, String> errorMessages = new HashMap<>();
@@ -111,6 +112,14 @@ public class UISettingsPanel extends JPanel {
         maxOpenedRequestsCountField.setText(String.valueOf(SettingManager.getMaxOpenedRequestsCount()));
         generalPanel.add(maxOpenedRequestsCountField, gbc);
 
+        // 自动格式化响应体
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        autoFormatResponseCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE), SettingManager.isAutoFormatResponse());
+        autoFormatResponseCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP));
+        generalPanel.add(autoFormatResponseCheckBox, gbc);
+
         mainPanel.add(downloadPanel);
         mainPanel.add(Box.createVerticalStrut(10));
         mainPanel.add(generalPanel);
@@ -133,7 +142,7 @@ public class UISettingsPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(500, 300));
+        setPreferredSize(new Dimension(500, 350));
 
         setupValidators();
         setupKeyboardNavigation();
@@ -265,6 +274,7 @@ public class UISettingsPanel extends JPanel {
             SettingManager.setDownloadProgressDialogThreshold(thresholdMB * 1024 * 1024);
             SettingManager.setMaxHistoryCount(maxHistoryCount);
             SettingManager.setMaxOpenedRequestsCount(maxOpenedRequestsCount);
+            SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
 
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS),
                     I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);

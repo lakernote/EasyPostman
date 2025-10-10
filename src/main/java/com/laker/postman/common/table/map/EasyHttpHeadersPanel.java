@@ -175,7 +175,7 @@ public class EasyHttpHeadersPanel extends JPanel {
         @Override
         public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
             try {
-                Object keyObj = entry.getValue(0);
+                Object keyObj = entry.getValue(1);
                 if (keyObj == null) {
                     return true; // Show empty rows
                 }
@@ -216,7 +216,7 @@ public class EasyHttpHeadersPanel extends JPanel {
 
     /**
      * Get all headers as a map, considering current filter state
-     * This method now properly handles filtered rows
+     * This method now properly handles filtered rows and only includes enabled headers
      */
     public Map<String, String> getMap() {
         Map<String, String> map = new LinkedHashMap<>();
@@ -229,13 +229,16 @@ public class EasyHttpHeadersPanel extends JPanel {
         java.util.List<Map<String, Object>> allRows = tablePanel.getRows();
 
         for (Map<String, Object> row : allRows) {
+            Object enabledObj = row.get("Enabled");
             Object keyObj = row.get("Key");
             Object valueObj = row.get("Value");
 
+            // Only include enabled headers
+            boolean enabled = enabledObj == null ? true : (Boolean) enabledObj;
             String key = keyObj == null ? "" : keyObj.toString().trim();
             String value = valueObj == null ? "" : valueObj.toString().trim();
 
-            if (!key.isEmpty()) {
+            if (enabled && !key.isEmpty()) {
                 map.put(key, value);
             }
         }
@@ -244,7 +247,7 @@ public class EasyHttpHeadersPanel extends JPanel {
     }
 
     /**
-     * Get only visible headers (respecting current filter)
+     * Get only visible headers (respecting current filter) and only enabled ones
      */
     public Map<String, String> getVisibleHeadersMap() {
         Map<String, String> map = new LinkedHashMap<>();
@@ -260,13 +263,15 @@ public class EasyHttpHeadersPanel extends JPanel {
         for (int viewRow = 0; viewRow < table.getRowCount(); viewRow++) {
             int modelRow = rowSorter.convertRowIndexToModel(viewRow);
 
-            Object keyObj = model.getValueAt(modelRow, 0);
-            Object valueObj = model.getValueAt(modelRow, 1);
+            Object enabledObj = model.getValueAt(modelRow, 0);
+            Object keyObj = model.getValueAt(modelRow, 1);
+            Object valueObj = model.getValueAt(modelRow, 2);
 
+            boolean enabled = enabledObj == null ? true : (Boolean) enabledObj;
             String key = keyObj == null ? "" : keyObj.toString().trim();
             String value = valueObj == null ? "" : valueObj.toString().trim();
 
-            if (!key.isEmpty()) {
+            if (enabled && !key.isEmpty()) {
                 map.put(key, value);
             }
         }
@@ -290,6 +295,7 @@ public class EasyHttpHeadersPanel extends JPanel {
         java.util.List<Map<String, Object>> rows = new ArrayList<>();
         for (Map.Entry<String, String> entry : sortedMap.entrySet()) {
             Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Enabled", true); // Default to enabled
             row.put("Key", entry.getKey());
             row.put("Value", entry.getValue());
             rows.add(row);
@@ -395,8 +401,9 @@ public class EasyHttpHeadersPanel extends JPanel {
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
         // Find and remove rows with matching key (case-insensitive)
+        // Note: Column index 1 is now the Key column (0 is Enabled checkbox)
         for (int i = model.getRowCount() - 1; i >= 0; i--) {
-            Object keyObj = model.getValueAt(i, 0);
+            Object keyObj = model.getValueAt(i, 1);
             if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
                 model.removeRow(i);
             }
@@ -425,12 +432,14 @@ public class EasyHttpHeadersPanel extends JPanel {
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
         // First, try to find existing header (case-insensitive)
+        // Note: Column index 1 is now the Key column (0 is Enabled checkbox)
         boolean found = false;
         for (int i = 0; i < model.getRowCount(); i++) {
-            Object keyObj = model.getValueAt(i, 0);
+            Object keyObj = model.getValueAt(i, 1);
             if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
                 // Update existing header value
-                model.setValueAt(value, i, 1);
+                model.setValueAt(value, i, 2); // Column 2 is Value
+                model.setValueAt(true, i, 0); // Ensure it's enabled
                 found = true;
                 break;
             }
@@ -471,7 +480,7 @@ public class EasyHttpHeadersPanel extends JPanel {
         if (keyIndex >= 0) {
             // Find where to insert this header
             for (int row = 0; row < model.getRowCount(); row++) {
-                Object rowKey = model.getValueAt(row, 0);
+                Object rowKey = model.getValueAt(row, 1); // Column 1 is Key
                 if (rowKey != null) {
                     String rowKeyStr = rowKey.toString().trim();
 
@@ -495,10 +504,10 @@ public class EasyHttpHeadersPanel extends JPanel {
 
         // Insert at the determined position
         if (insertPosition >= 0) {
-            model.insertRow(insertPosition, new Object[]{key, value});
+            model.insertRow(insertPosition, new Object[]{true, key, value, ""});
         } else {
             // Add at the end
-            model.addRow(new Object[]{key, value});
+            model.addRow(new Object[]{true, key, value, ""});
         }
     }
 
@@ -510,21 +519,22 @@ public class EasyHttpHeadersPanel extends JPanel {
         int rowCount = model.getRowCount();
         if (rowCount > 0) {
             int lastRow = rowCount - 1;
-            Object lastKey = model.getValueAt(lastRow, 0);
-            Object lastValue = model.getValueAt(lastRow, 1);
+            Object lastKey = model.getValueAt(lastRow, 1); // Column 1 is Key
+            Object lastValue = model.getValueAt(lastRow, 2); // Column 2 is Value
 
             boolean lastRowIsEmpty = (lastKey == null || lastKey.toString().trim().isEmpty()) &&
                     (lastValue == null || lastValue.toString().trim().isEmpty());
 
             if (lastRowIsEmpty) {
                 // Replace the empty row with the new header
-                model.setValueAt(key, lastRow, 0);
-                model.setValueAt(value, lastRow, 1);
+                model.setValueAt(true, lastRow, 0); // Enabled
+                model.setValueAt(key, lastRow, 1); // Key
+                model.setValueAt(value, lastRow, 2); // Value
                 return;
             }
         }
 
         // If no empty row at the end, add new row directly
-        model.addRow(new Object[]{key, value});
+        model.addRow(new Object[]{true, key, value, ""});
     }
 }

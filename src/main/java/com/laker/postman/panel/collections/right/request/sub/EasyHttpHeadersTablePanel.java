@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.table.EasyPostmanTextFieldCellRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
@@ -48,6 +49,12 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
+    // Column indices
+    private static final int COL_ENABLED = 0;
+    private static final int COL_KEY = 1;
+    private static final int COL_VALUE = 2;
+    private static final int COL_DELETE = 3;
+
     /**
      * Set whether to suppress auto-append row feature
      */
@@ -56,7 +63,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     }
 
     public EasyHttpHeadersTablePanel() {
-        this.columns = new String[]{"Key", "Value"};
+        this.columns = new String[]{"", "Key", "Value", ""};
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -74,23 +81,41 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         // Initialize table model with custom cell editing logic
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == COL_ENABLED) {
+                    return Boolean.class;
+                }
+                return Object.class;
+            }
+
+            @Override
             public boolean isCellEditable(int row, int column) {
                 if (!editable) {
                     return false;
                 }
 
+                // Checkbox column is always editable
+                if (column == COL_ENABLED) {
+                    return true;
+                }
+
+                // Delete column is not editable (uses custom renderer)
+                if (column == COL_DELETE) {
+                    return false;
+                }
+
                 // Check if this is a default header
-                Object keyObj = getValueAt(row, 0);
+                Object keyObj = getValueAt(row, COL_KEY);
                 if (keyObj != null) {
                     String key = keyObj.toString().trim();
                     if (DEFAULT_HEADER_KEYS.contains(key)) {
                         // For default headers: Key column not editable, Value column editable
-                        return column == 1;
+                        return column == COL_VALUE;
                     }
                 }
 
-                // For non-default headers: both columns editable
-                return true;
+                // For non-default headers: Key and Value columns editable
+                return column == COL_KEY || column == COL_VALUE;
             }
         };
 
@@ -117,18 +142,143 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         table.setOpaque(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+
+        // Set column widths
+        table.getColumnModel().getColumn(COL_ENABLED).setPreferredWidth(40);
+        table.getColumnModel().getColumn(COL_ENABLED).setMaxWidth(40);
+        table.getColumnModel().getColumn(COL_ENABLED).setMinWidth(40);
+
+        table.getColumnModel().getColumn(COL_DELETE).setPreferredWidth(40);
+        table.getColumnModel().getColumn(COL_DELETE).setMaxWidth(40);
+        table.getColumnModel().getColumn(COL_DELETE).setMinWidth(40);
     }
 
     private void setupCellRenderersAndEditors() {
         setEmptyCellWhiteBackgroundRenderer();
-        setColumnEditor(0, new EasyPostmanTextFieldCellEditor());
-        setColumnEditor(1, new EasyPostmanTextFieldCellEditor());
-        setColumnRenderer(0, new EasyPostmanTextFieldCellRenderer());
-        setColumnRenderer(1, new EasyPostmanTextFieldCellRenderer());
+
+        // Set editors for Key and Value columns
+        setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
+        setColumnEditor(COL_VALUE, new EasyPostmanTextFieldCellEditor());
+        setColumnRenderer(COL_KEY, new EasyPostmanTextFieldCellRenderer());
+        setColumnRenderer(COL_VALUE, new EasyPostmanTextFieldCellRenderer());
+
+        // Set custom renderer for delete column
+        setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
     }
 
     private void setupTableListeners() {
         addTableRightMouseListener();
+        addDeleteButtonListener();
+    }
+
+    /**
+     * Add mouse listener for delete button clicks
+     */
+    private void addDeleteButtonListener() {
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (!editable) {
+                    return;
+                }
+
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+
+                if (column == COL_DELETE && row >= 0) {
+                    // Convert view row to model row
+                    int modelRow = row;
+                    if (table.getRowSorter() != null) {
+                        modelRow = table.getRowSorter().convertRowIndexToModel(row);
+                    }
+
+                    // Check if row is valid
+                    if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
+                        return;
+                    }
+
+                    // Get row data
+                    Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
+                    Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
+
+                    String keyStr = keyObj == null ? "" : keyObj.toString().trim();
+                    String valueStr = valueObj == null ? "" : valueObj.toString().trim();
+
+                    // Check if it's a default header
+                    boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
+                    boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
+
+                    // Only allow deletion if it's not a default header and not empty
+                    // (same logic as the renderer - only delete if icon is shown)
+                    if (isDefaultHeader) {
+                        return;
+                    }
+
+                    if (isEmpty) {
+                        // Don't delete empty rows
+                        return;
+                    }
+
+                    // Delete the row (only if icon would be shown)
+                    tableModel.removeRow(modelRow);
+                }
+            }
+        });
+    }
+
+    /**
+     * Custom renderer for delete button column
+     */
+    private class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
+        private final Icon deleteIcon;
+
+        public DeleteButtonRenderer() {
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setOpaque(true);
+            deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            // Set background
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+
+            // Clear icon by default
+            setIcon(null);
+            setCursor(Cursor.getDefaultCursor());
+
+            // Convert view row to model row
+            int modelRow = row;
+            if (table.getRowSorter() != null) {
+                modelRow = table.getRowSorter().convertRowIndexToModel(row);
+            }
+
+            // Check if this is a default header or empty row
+            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
+                Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
+
+                String keyStr = keyObj == null ? "" : keyObj.toString().trim();
+                String valueStr = valueObj == null ? "" : valueObj.toString().trim();
+
+                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
+                boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
+
+                if (!isDefaultHeader && !isEmpty && editable) {
+                    setIcon(deleteIcon);
+                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                }
+            }
+
+            return this;
+        }
     }
 
     /**
@@ -205,7 +355,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                     }
 
                     // Check if the selected row contains a default header
-                    Object keyObj = tableModel.getValueAt(modelRow, 0);
+                    Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
                     boolean isDefaultHeaderRow = false;
                     if (keyObj != null) {
                         String key = keyObj.toString().trim();
@@ -271,7 +421,8 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                     int lastRow = rowCount - 1;
                     boolean lastRowHasContent = false;
 
-                    for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                    // Check Key and Value columns only
+                    for (int col = COL_KEY; col <= COL_VALUE; col++) {
                         Object value = tableModel.getValueAt(lastRow, col);
                         if (value != null && !value.toString().trim().isEmpty()) {
                             lastRowHasContent = true;
@@ -283,7 +434,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                     if (lastRowHasContent) {
                         suppressAutoAppendRow = true;
                         try {
-                            tableModel.addRow(new Object[]{"", ""});
+                            tableModel.addRow(new Object[]{true, "", "", ""});
                         } finally {
                             suppressAutoAppendRow = false;
                         }
@@ -302,17 +453,22 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     public void addRow(Object... values) {
         if (values == null || values.length == 0) {
-            tableModel.addRow(new Object[]{"", ""});
+            tableModel.addRow(new Object[]{true, "", "", ""});
+        } else if (values.length == 2) {
+            // Legacy support: if 2 values provided, treat as Key, Value
+            tableModel.addRow(new Object[]{true, values[0], values[1], ""});
         } else {
-            // Ensure we have exactly 2 columns
-            Object[] row = new Object[2];
+            // Ensure we have exactly 4 columns
+            Object[] row = new Object[4];
+            row[0] = true; // Default enabled
             for (int i = 0; i < Math.min(values.length, 2); i++) {
-                row[i] = values[i];
+                row[i + 1] = values[i];
             }
             // Fill remaining columns with empty strings
-            for (int i = values.length; i < 2; i++) {
-                row[i] = "";
+            for (int i = values.length; i < 3; i++) {
+                row[i + 1] = "";
             }
+            row[3] = ""; // Delete column
             tableModel.addRow(row);
         }
     }
@@ -380,11 +536,11 @@ public class EasyHttpHeadersTablePanel extends JPanel {
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Map<String, Object> row = new LinkedHashMap<>();
-            for (int j = 0; j < tableModel.getColumnCount(); j++) {
-                String columnName = tableModel.getColumnName(j);
-                Object value = tableModel.getValueAt(i, j);
-                row.put(columnName, value);
-            }
+            // Store enabled state
+            row.put("Enabled", tableModel.getValueAt(i, COL_ENABLED));
+            // Store Key and Value
+            row.put("Key", tableModel.getValueAt(i, COL_KEY));
+            row.put("Value", tableModel.getValueAt(i, COL_VALUE));
             rows.add(row);
         }
 
@@ -403,12 +559,14 @@ public class EasyHttpHeadersTablePanel extends JPanel {
             // Add new rows
             if (rows != null) {
                 for (Map<String, Object> row : rows) {
-                    Object[] rowData = new Object[columns.length];
-                    for (int i = 0; i < columns.length; i++) {
-                        String columnName = columns[i];
-                        rowData[i] = row.get(columnName);
+                    Object enabled = row.get("Enabled");
+                    if (enabled == null) {
+                        enabled = true; // Default to enabled
                     }
-                    tableModel.addRow(rowData);
+                    Object key = row.get("Key");
+                    Object value = row.get("Value");
+
+                    tableModel.addRow(new Object[]{enabled, key, value, ""});
                 }
             }
         } finally {

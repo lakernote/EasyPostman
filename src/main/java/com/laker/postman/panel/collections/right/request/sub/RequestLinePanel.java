@@ -42,7 +42,7 @@ public class RequestLinePanel extends JPanel {
         add(methodBox);
         add(Box.createHorizontalStrut(2));
 
-        urlField = new EasyPostmanTextField("", 25);
+        urlField = new EasyPostmanTextField("https://www.baidu.com", 25);
         add(urlField);
         add(Box.createHorizontalStrut(10));
         sendButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));

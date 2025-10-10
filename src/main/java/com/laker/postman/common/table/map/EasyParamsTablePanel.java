@@ -60,6 +60,9 @@ public class EasyParamsTablePanel extends JPanel {
         setupCellRenderersAndEditors();
         setupTableListeners();
         addAutoAppendRowFeature();
+
+        // Add initial empty row
+        addRow();
     }
 
     private void initializeComponents() {
@@ -102,7 +105,11 @@ public class EasyParamsTablePanel extends JPanel {
 
         // Create table
         table = new JTable(tableModel);
-        add(table, BorderLayout.CENTER);
+
+        // Wrap table in JScrollPane to show headers
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        add(scrollPane, BorderLayout.CENTER);
     }
 
     private void initializeTableUI() {
@@ -451,18 +458,16 @@ public class EasyParamsTablePanel extends JPanel {
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
+            // Add an empty row after clearing
+            tableModel.addRow(new Object[]{true, "", "", ""});
         } finally {
             suppressAutoAppendRow = false;
         }
     }
 
     /**
-     * Scroll to make the rectangle visible
+     * Scroll to last row
      */
-    public void scrollRectToVisible() {
-        scrollToLastRow();
-    }
-
     private void scrollToLastRow() {
         SwingUtilities.invokeLater(() -> {
             int rowCount = table.getRowCount();
@@ -514,6 +519,33 @@ public class EasyParamsTablePanel extends JPanel {
                     tableModel.addRow(new Object[]{enabled, key, value, ""});
                 }
             }
+
+            // Ensure there's always an empty row at the end
+            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
+                tableModel.addRow(new Object[]{true, "", "", ""});
+            }
+        } finally {
+            suppressAutoAppendRow = false;
+        }
+    }
+
+    /**
+     * Set data from Map (legacy compatibility - all enabled by default)
+     */
+    public void setMap(Map<String, String> map) {
+        suppressAutoAppendRow = true;
+        try {
+            tableModel.setRowCount(0);
+            if (map != null) {
+                for (Map.Entry<String, String> entry : map.entrySet()) {
+                    tableModel.addRow(new Object[]{true, entry.getKey(), entry.getValue(), ""});
+                }
+            }
+
+            // Ensure there's always an empty row at the end
+            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
+                tableModel.addRow(new Object[]{true, "", "", ""});
+            }
         } finally {
             suppressAutoAppendRow = false;
         }
@@ -538,23 +570,6 @@ public class EasyParamsTablePanel extends JPanel {
             }
         }
         return map;
-    }
-
-    /**
-     * Set data from Map (legacy compatibility - all enabled by default)
-     */
-    public void setMap(Map<String, String> map) {
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-            if (map != null) {
-                for (Map.Entry<String, String> entry : map.entrySet()) {
-                    tableModel.addRow(new Object[]{true, entry.getKey(), entry.getValue(), ""});
-                }
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
     }
 
     /**
@@ -591,9 +606,33 @@ public class EasyParamsTablePanel extends JPanel {
                     tableModel.addRow(new Object[]{param.isEnabled(), param.getKey(), param.getValue(), ""});
                 }
             }
+
+            // Ensure there's always an empty row at the end
+            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
+                tableModel.addRow(new Object[]{true, "", "", ""});
+            }
         } finally {
             suppressAutoAppendRow = false;
         }
+    }
+
+    /**
+     * Check if the last row has any content
+     */
+    private boolean hasContentInLastRow() {
+        int rowCount = tableModel.getRowCount();
+        if (rowCount == 0) {
+            return false;
+        }
+
+        int lastRow = rowCount - 1;
+        Object keyObj = tableModel.getValueAt(lastRow, COL_KEY);
+        Object valueObj = tableModel.getValueAt(lastRow, COL_VALUE);
+
+        String key = keyObj == null ? "" : keyObj.toString().trim();
+        String value = valueObj == null ? "" : valueObj.toString().trim();
+
+        return !key.isEmpty() || !value.isEmpty();
     }
 
     /**

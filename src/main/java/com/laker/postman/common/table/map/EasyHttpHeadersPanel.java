@@ -1,6 +1,7 @@
 package com.laker.postman.common.table.map;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.panel.collections.right.request.sub.EasyHttpHeadersTablePanel;
 import com.laker.postman.util.SystemUtil;
 
@@ -212,6 +213,123 @@ public class EasyHttpHeadersPanel extends JPanel {
         if (tablePanel != null) {
             tablePanel.scrollRectToVisible();
         }
+    }
+
+    /**
+     * Get all headers as a list (including enabled state) for persistence
+     */
+    public java.util.List<HttpHeader> getHeadersList() {
+        java.util.List<HttpHeader> headersList = new ArrayList<>();
+
+        if (tablePanel == null) {
+            return headersList;
+        }
+
+        // Get all rows from the model (not view) to include both visible and hidden headers
+        java.util.List<Map<String, Object>> allRows = tablePanel.getRows();
+
+        for (Map<String, Object> row : allRows) {
+            Object enabledObj = row.get("Enabled");
+            Object keyObj = row.get("Key");
+            Object valueObj = row.get("Value");
+
+            boolean enabled = enabledObj == null || (Boolean) enabledObj;
+            String key = keyObj == null ? "" : keyObj.toString().trim();
+            String value = valueObj == null ? "" : valueObj.toString().trim();
+
+            // Only add non-empty headers
+            if (!key.isEmpty()) {
+                headersList.add(new HttpHeader(enabled, key, value));
+            }
+        }
+
+        return headersList;
+    }
+
+    /**
+     * Set headers from list (including enabled state) for loading from persistence
+     */
+    public void setHeadersList(java.util.List<HttpHeader> headersList) {
+        tablePanel.clear();
+
+        if (headersList == null || headersList.isEmpty()) {
+            // Re-add default headers
+            initializeTableWithDefaults();
+            return;
+        }
+
+        // Build sorted list with default headers first
+        java.util.List<HttpHeader> sortedList = buildSortedHeadersList(headersList);
+
+        // Set rows in table
+        java.util.List<Map<String, Object>> rows = new ArrayList<>();
+        for (HttpHeader header : sortedList) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Enabled", header.isEnabled());
+            row.put("Key", header.getKey());
+            row.put("Value", header.getValue());
+            rows.add(row);
+        }
+
+        tablePanel.setRows(rows);
+
+        // Reapply filter after setting new data
+        applyCurrentFilter();
+    }
+
+    /**
+     * Build sorted headers list with default headers first
+     */
+    private java.util.List<HttpHeader> buildSortedHeadersList(java.util.List<HttpHeader> inputList) {
+        java.util.List<HttpHeader> sortedList = new ArrayList<>();
+        Map<String, HttpHeader> inputMap = new LinkedHashMap<>();
+
+        // Convert list to map for easy lookup
+        for (HttpHeader header : inputList) {
+            inputMap.put(header.getKey(), header);
+        }
+
+        // Add default headers first (in order)
+        for (Object[] defaultHeader : DEFAULT_HEADERS) {
+            String key = (String) defaultHeader[0];
+            HttpHeader header = findHeaderIgnoreCase(inputMap, key);
+
+            if (header != null) {
+                sortedList.add(header);
+            } else {
+                // Add default header with default value
+                String defaultValue = (String) defaultHeader[1];
+                sortedList.add(new HttpHeader(true, key, defaultValue));
+            }
+        }
+
+        // Add non-default headers
+        for (HttpHeader header : inputList) {
+            if (!isDefaultHeader(header.getKey())) {
+                sortedList.add(header);
+            }
+        }
+
+        return sortedList;
+    }
+
+    /**
+     * Find header ignoring case
+     */
+    private HttpHeader findHeaderIgnoreCase(Map<String, HttpHeader> map, String targetKey) {
+        // First try exact match
+        if (map.containsKey(targetKey)) {
+            return map.get(targetKey);
+        }
+
+        // Then try case-insensitive match
+        for (Map.Entry<String, HttpHeader> entry : map.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(targetKey)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
     }
 
     /**

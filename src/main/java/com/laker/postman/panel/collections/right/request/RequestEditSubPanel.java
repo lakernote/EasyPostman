@@ -689,10 +689,22 @@ public class RequestEditSubPanel extends JPanel {
         // 更新参数面板
         paramsPanel.setMap(mergedParams);
         methodBox.setSelectedItem(item.getMethod());
-        // Headers
-        Map<String, String> sortedMap = headersPanel.setHeadersMap(item.getHeaders());
-        item.getHeaders().clear();
-        item.getHeaders().putAll(sortedMap); // 保持item.headers有序
+
+        // Headers - 优先使用新格式（包含 enabled 状态）
+        if (item.getHeadersList() != null && !item.getHeadersList().isEmpty()) {
+            // 使用新格式加载（包含 enabled 状态）
+            headersPanel.setHeadersList(item.getHeadersList());
+        } else if (item.getHeaders() != null && !item.getHeaders().isEmpty()) {
+            // 兼容旧格式（从 Map 加载）
+            Map<String, String> sortedMap = headersPanel.setHeadersMap(item.getHeaders());
+            item.getHeaders().clear();
+            item.getHeaders().putAll(sortedMap); // 保持item.headers有序
+            // 迁移到新格式
+            item.setHeadersList(headersPanel.getHeadersList());
+        } else {
+            // 没有数据，使用默认 headers
+            headersPanel.setHeadersMap(null);
+        }
 
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
@@ -773,7 +785,12 @@ public class RequestEditSubPanel extends JPanel {
         item.setUrl(urlField.getText().trim());
         item.setMethod((String) methodBox.getSelectedItem());
         item.setProtocol(protocol);
-        item.setHeaders(headersPanel.getMap()); // 获取Headers表格内容
+
+        // 使用新格式保存 headers（包含 enabled 状态）
+        item.setHeadersList(headersPanel.getHeadersList());
+        // 同时保存旧格式用于兼容（只包含启用的 headers）
+        item.setHeaders(headersPanel.getMap());
+
         item.setParams(paramsPanel.getMap()); // 获取Params表格内容
         // 统一通过requestBodyPanel获取body相关内容
         item.setBody(requestBodyPanel.getBodyArea().getText().trim());

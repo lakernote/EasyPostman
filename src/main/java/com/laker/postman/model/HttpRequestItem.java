@@ -3,7 +3,9 @@ package com.laker.postman.model;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_NONE;
@@ -20,6 +22,12 @@ public class HttpRequestItem implements Serializable {
     private String url = ""; // 请求URL
     private String method = "GET"; // 请求方法（GET, POST, PUT, DELETE等）
     private RequestItemProtocolEnum protocol = RequestItemProtocolEnum.HTTP; // 协议类型，默认HTTP
+
+    // 新版本：带启用状态的 headers（优先使用）
+    private List<HttpHeader> headersList = new ArrayList<>();
+
+    // 旧版本：仅保留用于向后兼容（从旧数据迁移）
+    @Deprecated
     private Map<String, String> headers = new LinkedHashMap<>(); // 请求头
     private String bodyType = ""; // 请求体类型
     private String body = ""; // 请求体内容（如JSON、表单数据等）

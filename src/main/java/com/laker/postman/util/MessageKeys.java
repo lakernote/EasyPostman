@@ -111,6 +111,7 @@ public final class MessageKeys {
     public static final String CREATE_NEW_REQUEST = "create.new.request";
     public static final String SAVE_REQUEST = "save.request";
     public static final String REQUEST_NAME = "request.name";
+    public static final String REQUEST_URL_PLACEHOLDER = "request.url.placeholder";
     public static final String SELECT_GROUP = "select.group";
     public static final String PLEASE_ENTER_REQUEST_NAME = "please.enter.request.name";
     public static final String PLEASE_SELECT_GROUP = "please.select.group";

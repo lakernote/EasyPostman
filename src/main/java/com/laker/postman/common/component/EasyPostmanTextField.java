@@ -1,5 +1,6 @@
 package com.laker.postman.common.component;
 
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.util.EasyPostmanVariableUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ import java.util.List;
  * mac：Cmd+Z 撤回，Cmd+Shift+Z 重做
  */
 @Slf4j
-public class EasyPostmanTextField extends JTextField {
+public class EasyPostmanTextField extends FlatTextField {
     // Postman 风格颜色
     private static final Color DEFINED_VAR_BG = new Color(180, 210, 255, 120); // 半透明淡蓝
     private static final Color DEFINED_VAR_BORDER = new Color(80, 150, 255); // 蓝色边框
@@ -32,7 +33,8 @@ public class EasyPostmanTextField extends JTextField {
     private final UndoManager undoManager = new UndoManager();
 
     public EasyPostmanTextField(int columns) {
-        super(columns);
+        super();
+        setColumns(columns);
         // 启用 ToolTip 支持，必须设置（即使内容为空）
         setToolTipText("");
         initUndoRedo();
@@ -40,7 +42,19 @@ public class EasyPostmanTextField extends JTextField {
     }
 
     public EasyPostmanTextField(String text, int columns) {
-        super(text, columns);
+        super();
+        setText(text);
+        setColumns(columns);
+        // 启用 ToolTip 支持，必须设置（即使内容为空）
+        setToolTipText("");
+        initUndoRedo();
+    }
+
+    public EasyPostmanTextField(String text, int columns, String placeholderText) {
+        super();
+        setText(text);
+        setColumns(columns);
+        setPlaceholderText(placeholderText);
         // 启用 ToolTip 支持，必须设置（即使内容为空）
         setToolTipText("");
         initUndoRedo();

@@ -143,6 +143,9 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 
+        // Configure Tab key behavior to move between columns
+        table.setSurrendersFocusOnKeystroke(true);
+
         // Set column widths
         table.getColumnModel().getColumn(COL_ENABLED).setPreferredWidth(40);
         table.getColumnModel().getColumn(COL_ENABLED).setMaxWidth(40);
@@ -151,6 +154,119 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         table.getColumnModel().getColumn(COL_DELETE).setPreferredWidth(40);
         table.getColumnModel().getColumn(COL_DELETE).setMaxWidth(40);
         table.getColumnModel().getColumn(COL_DELETE).setMinWidth(40);
+
+        // Setup Tab key navigation to move between columns in the same row
+        setupTabKeyNavigation();
+    }
+
+    /**
+     * Setup Tab key navigation to move between columns instead of rows
+     */
+    private void setupTabKeyNavigation() {
+        // Override Tab and Shift+Tab behavior for proper column-by-column navigation
+        InputMap inputMap = table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap actionMap = table.getActionMap();
+
+        // Tab key - move to next editable cell in the same row
+        inputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_TAB, 0), "nextCell");
+        actionMap.put("nextCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                moveToNextEditableCell(false);
+            }
+        });
+
+        // Shift+Tab - move to previous editable cell in the same row
+        inputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_TAB, java.awt.event.InputEvent.SHIFT_DOWN_MASK), "previousCell");
+        actionMap.put("previousCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                moveToNextEditableCell(true);
+            }
+        });
+    }
+
+    /**
+     * Move to the next (or previous) editable cell in the current row
+     *
+     * @param reverse true to move backwards (Shift+Tab), false to move forwards (Tab)
+     */
+    private void moveToNextEditableCell(boolean reverse) {
+        int currentRow = table.getSelectedRow();
+        int currentColumn = table.getSelectedColumn();
+
+        if (currentRow < 0 || currentColumn < 0) {
+            // No cell selected, select the first editable cell
+            table.changeSelection(0, COL_KEY, false, false);
+            table.editCellAt(0, COL_KEY);
+            return;
+        }
+
+        // Stop editing current cell
+        if (table.isEditing()) {
+            table.getCellEditor().stopCellEditing();
+        }
+
+        // Find next editable column in the current row
+        int nextColumn = currentColumn;
+        int columnCount = table.getColumnCount();
+
+        if (reverse) {
+            // Move backwards
+            do {
+                nextColumn--;
+                if (nextColumn < 0) {
+                    // Move to previous row, last editable column
+                    if (currentRow > 0) {
+                        currentRow--;
+                        nextColumn = COL_VALUE; // Last editable column
+                    } else {
+                        nextColumn = 0; // Stay at first position
+                    }
+                    break;
+                }
+            } while (nextColumn >= 0 && !isCellEditableForNavigation(currentRow, nextColumn));
+        } else {
+            // Move forwards
+            do {
+                nextColumn++;
+                if (nextColumn >= columnCount) {
+                    // Move to next row, first editable column
+                    if (currentRow < table.getRowCount() - 1) {
+                        currentRow++;
+                        nextColumn = COL_KEY; // First editable column
+                    } else {
+                        nextColumn = columnCount - 1; // Stay at last position
+                    }
+                    break;
+                }
+            } while (nextColumn < columnCount && !isCellEditableForNavigation(currentRow, nextColumn));
+        }
+
+        // Select and start editing the next cell
+        if (nextColumn >= 0 && nextColumn < columnCount && currentRow >= 0 && currentRow < table.getRowCount()) {
+            table.changeSelection(currentRow, nextColumn, false, false);
+            if (isCellEditableForNavigation(currentRow, nextColumn)) {
+                table.editCellAt(currentRow, nextColumn);
+                Component editor = table.getEditorComponent();
+                if (editor instanceof JTextField) {
+                    editor.requestFocusInWindow();
+                    ((JTextField) editor).selectAll();
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if a cell is editable for Tab navigation
+     */
+    private boolean isCellEditableForNavigation(int row, int column) {
+        if (!editable) {
+            return false;
+        }
+        // Only Key and Value columns are editable via Tab navigation
+        // (Checkbox is editable but we skip it in Tab navigation)
+        return column == COL_KEY || column == COL_VALUE;
     }
 
     private void setupCellRenderersAndEditors() {

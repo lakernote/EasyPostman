@@ -199,28 +199,31 @@ public class EasyHttpHeadersTablePanel extends JPanel {
 
                     // Get row data
                     Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                    Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
-
                     String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-                    String valueStr = valueObj == null ? "" : valueObj.toString().trim();
 
                     // Check if it's a default header
                     boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
-                    boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
 
-                    // Only allow deletion if it's not a default header and not empty
-                    // (same logic as the renderer - only delete if icon is shown)
+                    // Don't delete default headers
                     if (isDefaultHeader) {
                         return;
                     }
 
-                    if (isEmpty) {
-                        // Don't delete empty rows
+                    // Prevent deleting the last row (keep at least one empty row like Postman)
+                    int rowCount = tableModel.getRowCount();
+                    if (modelRow == rowCount - 1 && rowCount == 1) {
+                        // Don't delete if it's the only row
                         return;
                     }
 
-                    // Delete the row (only if icon would be shown)
+                    // Stop cell editing before deleting
+                    stopCellEditing();
+
+                    // Delete the row
                     tableModel.removeRow(modelRow);
+
+                    // Ensure there's always an empty row at the end
+                    ensureEmptyLastRow();
                 }
             }
         });
@@ -260,8 +263,11 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                 modelRow = table.getRowSorter().convertRowIndexToModel(row);
             }
 
-            // Check if this is a default header or empty row
+            // Show delete icon for all rows except default headers and the last empty row
             if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                int rowCount = tableModel.getRowCount();
+                boolean isLastRow = (modelRow == rowCount - 1);
+
                 Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
                 Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
 
@@ -271,7 +277,18 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                 boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
                 boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
 
-                if (!isDefaultHeader && !isEmpty && editable) {
+                boolean shouldShowIcon = false;
+                if (!isDefaultHeader) {
+                    if (!isLastRow) {
+                        // Not the last row - always show delete icon (including empty rows)
+                        shouldShowIcon = true;
+                    } else {
+                        // Last row - only show if it has content and there are multiple rows
+                        shouldShowIcon = !isEmpty && rowCount > 1;
+                    }
+                }
+
+                if (shouldShowIcon && editable) {
                     setIcon(deleteIcon);
                     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 }
@@ -485,6 +502,9 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      * Delete the currently selected row
      */
     public void deleteSelectedRow() {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         int selectedRow = table.getSelectedRow();
         if (selectedRow >= 0) {
             // Convert view index to model index if using row sorter
@@ -494,7 +514,26 @@ public class EasyHttpHeadersTablePanel extends JPanel {
             }
 
             if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                int rowCount = tableModel.getRowCount();
+
+                // Don't delete if it's the only row (keep at least one empty row like Postman)
+                if (rowCount <= 1) {
+                    return;
+                }
+
+                // Check if it's a default header
+                Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
+                String keyStr = keyObj == null ? "" : keyObj.toString().trim();
+                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
+
+                // Don't delete default headers
+                if (isDefaultHeader) {
+                    return;
+                }
+
+                // Delete the row
                 tableModel.removeRow(modelRow);
+                ensureEmptyLastRow();
             }
         }
     }
@@ -503,9 +542,14 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      * Clear all rows in the table
      */
     public void clear() {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
+            // Add an empty row after clearing
+            tableModel.addRow(new Object[]{true, "", "", ""});
         } finally {
             suppressAutoAppendRow = false;
         }
@@ -605,5 +649,48 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     public boolean isDefaultHeader(String key) {
         return key != null && DEFAULT_HEADER_KEYS.contains(key.trim());
+    }
+
+    /**
+     * Stop cell editing for the current row
+     */
+    private void stopCellEditing() {
+        int editingRow = table.getEditingRow();
+        if (editingRow >= 0) {
+            TableCellEditor editor = table.getCellEditor();
+            if (editor != null) {
+                editor.stopCellEditing();
+            }
+        }
+    }
+
+    /**
+     * Ensure there is always an empty last row
+     */
+    private void ensureEmptyLastRow() {
+        suppressAutoAppendRow = true;
+        try {
+            int rowCount = tableModel.getRowCount();
+            if (rowCount == 0) {
+                // No rows at all, add an empty row
+                tableModel.addRow(new Object[]{true, "", "", ""});
+                return;
+            }
+
+            // Check if the last row has any content
+            int lastRow = rowCount - 1;
+            Object keyObj = tableModel.getValueAt(lastRow, COL_KEY);
+            Object valueObj = tableModel.getValueAt(lastRow, COL_VALUE);
+
+            String key = keyObj == null ? "" : keyObj.toString().trim();
+            String value = valueObj == null ? "" : valueObj.toString().trim();
+
+            // Only add a new row if the last row has content
+            if (!key.isEmpty() || !value.isEmpty()) {
+                tableModel.addRow(new Object[]{true, "", "", ""});
+            }
+        } finally {
+            suppressAutoAppendRow = false;
+        }
     }
 }

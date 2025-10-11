@@ -185,22 +185,22 @@ public class EasyParamsTablePanel extends JPanel {
                         return;
                     }
 
-                    // Get row data
-                    Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                    Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
-
-                    String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-                    String valueStr = valueObj == null ? "" : valueObj.toString().trim();
-
-                    boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
-
-                    // Don't delete empty rows
-                    if (isEmpty) {
+                    // Prevent deleting the last row (keep at least one empty row like Postman)
+                    // The last row is always the empty template row
+                    int rowCount = tableModel.getRowCount();
+                    if (modelRow == rowCount - 1 && rowCount == 1) {
+                        // Don't delete if it's the only row
                         return;
                     }
 
+                    // Stop cell editing before deleting
+                    stopCellEditing();
+
                     // Delete the row
                     tableModel.removeRow(modelRow);
+
+                    // Ensure there's always an empty row at the end
+                    ensureEmptyLastRow();
                 }
             }
         });
@@ -240,17 +240,30 @@ public class EasyParamsTablePanel extends JPanel {
                 modelRow = table.getRowSorter().convertRowIndexToModel(row);
             }
 
-            // Check if this is an empty row
+            // Show delete icon for all rows except the last empty row
             if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                int rowCount = tableModel.getRowCount();
+                boolean isLastRow = (modelRow == rowCount - 1);
+
+                // Show delete icon if:
+                // 1. It's not the last row (OR)
+                // 2. It's the last row but there are multiple rows and it has content
                 Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
                 Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
-
                 String keyStr = keyObj == null ? "" : keyObj.toString().trim();
                 String valueStr = valueObj == null ? "" : valueObj.toString().trim();
-
                 boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
 
-                if (!isEmpty && editable) {
+                boolean shouldShowIcon = false;
+                if (!isLastRow) {
+                    // Not the last row - always show delete icon
+                    shouldShowIcon = true;
+                } else {
+                    // Last row - only show if it has content and there are multiple rows
+                    shouldShowIcon = !isEmpty && rowCount > 1;
+                }
+
+                if (shouldShowIcon && editable) {
                     setIcon(deleteIcon);
                     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 }
@@ -437,6 +450,9 @@ public class EasyParamsTablePanel extends JPanel {
      * Delete the currently selected row
      */
     public void deleteSelectedRow() {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         int selectedRow = table.getSelectedRow();
         if (selectedRow >= 0) {
             // Convert view index to model index if using row sorter
@@ -446,7 +462,16 @@ public class EasyParamsTablePanel extends JPanel {
             }
 
             if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                int rowCount = tableModel.getRowCount();
+
+                // Don't delete if it's the only row (keep at least one empty row like Postman)
+                if (rowCount <= 1) {
+                    return;
+                }
+
+                // Delete the row
                 tableModel.removeRow(modelRow);
+                ensureEmptyLastRow();
             }
         }
     }
@@ -455,6 +480,9 @@ public class EasyParamsTablePanel extends JPanel {
      * Clear all rows in the table
      */
     public void clear() {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
@@ -501,6 +529,9 @@ public class EasyParamsTablePanel extends JPanel {
      * Set all rows from a list of maps
      */
     public void setRows(List<Map<String, Object>> rows) {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         suppressAutoAppendRow = true;
         try {
             // Clear existing data
@@ -533,6 +564,9 @@ public class EasyParamsTablePanel extends JPanel {
      * Set data from Map (legacy compatibility - all enabled by default)
      */
     public void setMap(Map<String, String> map) {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
@@ -598,6 +632,9 @@ public class EasyParamsTablePanel extends JPanel {
      * Set params list with enabled state (new format)
      */
     public void setParamsList(List<HttpParam> paramsList) {
+        // Stop cell editing before modifying table structure
+        stopCellEditing();
+
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
@@ -633,6 +670,34 @@ public class EasyParamsTablePanel extends JPanel {
         String value = valueObj == null ? "" : valueObj.toString().trim();
 
         return !key.isEmpty() || !value.isEmpty();
+    }
+
+    /**
+     * Ensure there's always an empty row at the end of the table, like Postman
+     * This method should be called after row deletions to maintain consistency
+     */
+    private void ensureEmptyLastRow() {
+        suppressAutoAppendRow = true;
+        try {
+            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
+                tableModel.addRow(new Object[]{true, "", "", ""});
+            }
+        } finally {
+            suppressAutoAppendRow = false;
+        }
+    }
+
+    /**
+     * Safely stop cell editing to prevent ArrayIndexOutOfBoundsException
+     * when modifying table data while editing is in progress
+     */
+    private void stopCellEditing() {
+        if (table.isEditing()) {
+            TableCellEditor editor = table.getCellEditor();
+            if (editor != null) {
+                editor.stopCellEditing();
+            }
+        }
     }
 
     /**

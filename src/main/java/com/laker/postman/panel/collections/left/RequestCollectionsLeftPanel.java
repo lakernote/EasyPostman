@@ -407,11 +407,18 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private void showAddGroupDialog(DefaultMutableTreeNode rootTreeNode) {
+        if (rootTreeNode == null) return; // safety guard
         String groupName = JOptionPane.showInputDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT));
         if (groupName != null && !groupName.trim().isEmpty()) {
             DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, groupName});
-            rootTreeNode.add(groupNode);
+            // Insert group before the first request child so that groups are always above requests (like Postman)
+            int insertIdx = getGroupInsertIndex(rootTreeNode);
+            if (insertIdx >= 0 && insertIdx <= rootTreeNode.getChildCount()) {
+                rootTreeNode.insert(groupNode, insertIdx);
+            } else {
+                rootTreeNode.add(groupNode);
+            }
             treeModel.reload(rootTreeNode);
             requestTree.expandPath(new TreePath(rootTreeNode.getPath()));
             persistence.saveRequestGroups();
@@ -427,6 +434,20 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private void saveRequestGroups() {
         persistence.saveRequestGroups();
+    }
+
+    // 返回在 parent 下插入新分组的索引：分组应排在所有请求之上，因此插入到第一个请求位置前
+    private int getGroupInsertIndex(DefaultMutableTreeNode parent) {
+        if (parent == null) return -1;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
+                return i;
+            }
+        }
+        // 没有请求，追加到末尾
+        return parent.getChildCount();
     }
 
     /**
@@ -1022,6 +1043,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
      * 创建新请求并添加到指定分组
      */
     private void createNewRequest(DefaultMutableTreeNode groupNode, RequestItemProtocolEnum protocol, String requestName) {
+        if (groupNode == null) return; // safety guard
         // 创建默认请求
         HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
         defaultRequest.setProtocol(protocol);

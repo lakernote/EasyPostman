@@ -407,7 +407,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private void showAddGroupDialog(DefaultMutableTreeNode rootTreeNode) {
-        String groupName = JOptionPane.showInputDialog(this,
+        String groupName = JOptionPane.showInputDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT));
         if (groupName != null && !groupName.trim().isEmpty()) {
             DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, groupName});
@@ -530,7 +530,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             // 深拷贝请求项（假设HttpRequestItem有clone或可用JSON序列化实现深拷贝）
             HttpRequestItem copy = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
             copy.setId(java.util.UUID.randomUUID().toString());
-            copy.setName(item.getName() + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
+            copy.setName(item.getName() + " " + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
             DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
             DefaultMutableTreeNode copyNode = new DefaultMutableTreeNode(new Object[]{REQUEST, copy});
             int idx = parent.getIndex(selectedNode) + 1;
@@ -554,11 +554,11 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
                 String curl = CurlParser.toCurl(req);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(curl), null); // 将cUrl命令复制到剪贴板
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS),
                         I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }

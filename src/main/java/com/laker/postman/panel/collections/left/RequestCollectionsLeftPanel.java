@@ -51,7 +51,6 @@ import static com.laker.postman.service.http.HttpRequestFactory.*;
 
 /**
  * 请求集合面板，展示所有请求分组和请求项
- * 文件路径：用户目录下的 easy-tools/requestCollection.json
  * 支持请求的增删改查、分组管理、拖拽排序等功能
  */
 @Slf4j

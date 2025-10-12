@@ -509,23 +509,23 @@ public class GitOperationDialog extends JDialog {
             showOptions = true;
             addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_TITLE));
             addOption(OPTION_COMMIT_FIRST,
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST),
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_DESC), true);
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST),
+                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_DESC), true);
             if (!check.hasActualConflicts) {
                 addOption(OPTION_COMMIT_AND_PUSH,
-                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_AND_PUSH),
-                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_AND_PUSH_DESC), false);
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_AND_PUSH),
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_AND_PUSH_DESC), false);
             }
         } else if (operation == GitOperation.PULL) {
             if (check.hasActualConflicts) {
                 showOptions = true;
                 addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_CONFLICT_TITLE));
                 addOption(OPTION_CANCEL,
-                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL),
-                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_DESC), true);
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL),
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_DESC), true);
                 addOption(OPTION_FORCE,
-                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL),
-                    I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, Color.RED);
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL),
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, Color.RED);
             } else if (check.hasUncommittedChanges) {
                 showOptions = true;
                 // 如果可以自动合并，优先推荐提交后拉取
@@ -759,7 +759,7 @@ public class GitOperationDialog extends JDialog {
 
 
         // 远程变更分组展示
-        details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE)).append("\n");
+        details.append("\n").append("📡").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE)).append("\n");
         if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
             details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES)).append(statusCheck.remoteAdded.size()).append("\n");
             for (String file : statusCheck.remoteAdded) {

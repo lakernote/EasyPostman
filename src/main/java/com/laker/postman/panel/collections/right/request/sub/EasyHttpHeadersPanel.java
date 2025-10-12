@@ -1,8 +1,7 @@
-package com.laker.postman.common.table.map;
+package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpHeader;
-import com.laker.postman.panel.collections.right.request.sub.EasyHttpHeadersTablePanel;
 import com.laker.postman.util.SystemUtil;
 
 import javax.swing.*;

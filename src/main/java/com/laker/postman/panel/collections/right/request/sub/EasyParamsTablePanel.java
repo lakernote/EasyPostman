@@ -1,4 +1,4 @@
-package com.laker.postman.common.table.map;
+package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
@@ -17,8 +17,10 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Params table panel with checkbox and delete button columns
@@ -45,13 +47,6 @@ public class EasyParamsTablePanel extends JPanel {
     private static final int COL_KEY = 1;
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
-
-    /**
-     * Set whether to suppress auto-append row feature
-     */
-    public void setAutoAppendRowSuppressed(boolean suppressed) {
-        this.suppressAutoAppendRow = suppressed;
-    }
 
     public EasyParamsTablePanel() {
         this.columns = new String[]{"", "Key", "Value", ""};
@@ -824,22 +819,4 @@ public class EasyParamsTablePanel extends JPanel {
             tableModel.addTableModelListener(l);
         }
     }
-
-    /**
-     * Remove table model listener
-     */
-    public void removeTableModelListener(TableModelListener l) {
-        if (tableModel != null) {
-            tableModel.removeTableModelListener(l);
-        }
-    }
-
-    /**
-     * Set whether the table is editable
-     */
-    public void setEditable(boolean editable) {
-        this.editable = editable;
-        table.repaint(); // Refresh to update cell editability
-    }
 }
-

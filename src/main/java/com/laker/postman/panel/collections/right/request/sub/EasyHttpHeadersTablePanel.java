@@ -55,13 +55,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
-    /**
-     * Set whether to suppress auto-append row feature
-     */
-    public void setAutoAppendRowSuppressed(boolean suppressed) {
-        this.suppressAutoAppendRow = suppressed;
-    }
-
     public EasyHttpHeadersTablePanel() {
         this.columns = new String[]{"", "Key", "Value", ""};
         initializeComponents();
@@ -744,27 +737,11 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     }
 
     /**
-     * Remove table model listener
-     */
-    public void removeTableModelListener(TableModelListener l) {
-        if (tableModel != null) {
-            tableModel.removeTableModelListener(l);
-        }
-    }
-
-    /**
      * Set whether the table is editable
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
         table.repaint(); // Refresh to update cell editability
-    }
-
-    /**
-     * Check if a header key is a default header
-     */
-    public boolean isDefaultHeader(String key) {
-        return key != null && DEFAULT_HEADER_KEYS.contains(key.trim());
     }
 
     /**

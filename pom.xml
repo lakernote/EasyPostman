@@ -6,7 +6,7 @@
 
     <groupId>com.laker.tools</groupId>
     <artifactId>easy-postman</artifactId>
-    <version>2.1.7</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
+    <version>2.1.8</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
 
     <properties>
         <!-- 编译配置 -->
@@ -16,11 +16,11 @@
         <!-- 主类，用于构建可执行 JAR -->
         <mainClass>com.laker.postman.App</mainClass>
         <!-- 依赖版本号 -->
-        <flatlaf.version>3.6</flatlaf.version>
-        <hutool.version>5.8.29</hutool.version>
+        <flatlaf.version>3.6.2</flatlaf.version>
+        <hutool.version>5.8.40</hutool.version>
         <jiconfont-swing.version>1.0.1</jiconfont-swing.version>
         <jiconfont-font_awesome.version>4.7.0.1</jiconfont-font_awesome.version>
-        <logback-classic.version>1.5.13</logback-classic.version>
+        <logback-classic.version>1.5.19</logback-classic.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <okhttp.version>4.12.0</okhttp.version>
         <polyglot.version>24.2.1</polyglot.version>

@@ -56,8 +56,7 @@ public class GitOperationDialog extends JDialog {
 
     // 步骤指示器
     private StepIndicator stepIndicator;
-
-    // 状态和文件信息
+    private JTextArea detailsArea;
     private JTextArea fileChangesArea;
     private JTextArea commitMessageArea;
     private JLabel statusIcon;
@@ -251,9 +250,9 @@ public class GitOperationDialog extends JDialog {
 
         panel.add(statusInfoPanel, BorderLayout.NORTH);
 
-        JTextArea detailsArea = new JTextArea();
+        detailsArea = new JTextArea();
         detailsArea.setEditable(false);
-        detailsArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 10));
+        detailsArea.setFont(detailsArea.getFont().deriveFont(10f)); // 设置较小字体
         detailsArea.setBorder(new EmptyBorder(5, 5, 5, 5));
         detailsArea.setLineWrap(true);
         detailsArea.setWrapStyleWord(true);
@@ -285,7 +284,7 @@ public class GitOperationDialog extends JDialog {
 
         fileChangesArea = new JTextArea();
         fileChangesArea.setEditable(false);
-        fileChangesArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        fileChangesArea.setFont(fileChangesArea.getFont().deriveFont(10f)); // 设置较小字体
         fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOADING_FILE_CHANGES));
         fileChangesArea.setLineWrap(true);
         fileChangesArea.setWrapStyleWord(true);
@@ -460,7 +459,7 @@ public class GitOperationDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_LOCAL_COMMITS),
                 check.hasLocalCommits ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
         details.append(String.format("  %s %s\n",
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_REMOTE_COMMITS),
+                "📡 " + I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_REMOTE_COMMITS),
                 check.hasRemoteCommits ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
         if (check.localCommitsAhead > 0) {
             details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_AHEAD, check.localCommitsAhead)).append("\n");
@@ -480,20 +479,8 @@ public class GitOperationDialog extends JDialog {
                 details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_BULLET, suggestion)).append("\n");
             }
         }
-
-        // 查找状态面板中的详细信息区域并更新
-        Container parent = statusIcon.getParent().getParent();
-        if (parent instanceof JPanel statusPanel) {
-            Component[] components = statusPanel.getComponents();
-            for (Component comp : components) {
-                if (comp instanceof JScrollPane scrollPane &&
-                        scrollPane.getViewport().getView() instanceof JTextArea detailsArea) {
-                    detailsArea.setText(details.toString());
-                    detailsArea.setCaretPosition(0);
-                    break;
-                }
-            }
-        }
+        detailsArea.setText(details.toString());
+        detailsArea.setCaretPosition(0);
     }
 
     /**
@@ -759,7 +746,7 @@ public class GitOperationDialog extends JDialog {
 
 
         // 远程变更分组展示
-        details.append("\n").append("📡").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE)).append("\n");
+        details.append("\n").append("📡 ").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE)).append("\n");
         if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
             details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES)).append(statusCheck.remoteAdded.size()).append("\n");
             for (String file : statusCheck.remoteAdded) {

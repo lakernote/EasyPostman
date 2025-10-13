@@ -281,6 +281,11 @@ public class EasyParamsTablePanel extends JPanel {
                     return;
                 }
 
+                // Only react to left mouse button clicks for delete action
+                if (!SwingUtilities.isLeftMouseButton(e)) {
+                    return;
+                }
+
                 int column = table.columnAtPoint(e.getPoint());
                 int row = table.rowAtPoint(e.getPoint());
 

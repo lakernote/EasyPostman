@@ -193,12 +193,16 @@ public class WebSocketResponsePanel extends JPanel {
     }
 
     public void addMessage(MessageType type, String time, String content, List<TestResult> testResults) {
-        allRows.add(new MessageRow(type, time, content, testResults));
+        synchronized (allRows) {
+            allRows.add(new MessageRow(type, time, content, testResults));
+        }
         SwingUtilities.invokeLater(this::filterAndShow);
     }
 
     public void clearMessages() {
-        allRows.clear();
+        synchronized (allRows) {
+            allRows.clear();
+        }
         SwingUtilities.invokeLater(this::filterAndShow);
     }
 
@@ -231,7 +235,12 @@ public class WebSocketResponsePanel extends JPanel {
         }
         String search = searchField.getText().trim().toLowerCase();
         String typeFilter = (String) typeFilterBox.getSelectedItem();
-        List<MessageRow> filtered = allRows.stream()
+        // 创建副本以避免 ConcurrentModificationException
+        List<MessageRow> rowsCopy;
+        synchronized (allRows) {
+            rowsCopy = new ArrayList<>(allRows);
+        }
+        List<MessageRow> filtered = rowsCopy.stream()
                 .filter(row -> (I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
                         || row.type.display.equals(typeFilter)))
                 .filter(row -> search.isEmpty() || row.content.toLowerCase().contains(search))

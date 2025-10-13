@@ -22,6 +22,12 @@ if ! command -v jpackage &> /dev/null; then
     echo "❌ 未检测到 jpackage，请确认 JDK 17+ 已正确安装。"
     exit 1
 fi
+# 检查 objcopy 是否可用（jlink 需要）
+if ! command -v objcopy &> /dev/null; then
+    echo "❌ 未检测到 objcopy，请先安装 binutils："
+    echo "   sudo apt-get install binutils"
+    exit 1
+fi
 
 # 获取项目根目录路径（包含 pom.xml）
 PROJECT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
@@ -112,4 +118,3 @@ fi
 echo "🎉 DEB 包打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"
 echo "📝 安装命令: sudo dpkg -i ${OUTPUT_DIR}/easypostman_${VERSION}_amd64.deb"
 echo "📝 卸载命令: sudo dpkg -r easypostman"
-

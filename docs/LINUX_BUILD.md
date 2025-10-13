@@ -14,16 +14,18 @@
 ```bash
 # 安装必需的工具
 sudo apt-get update
-sudo apt-get install -y openjdk-17-jdk maven fakeroot
+sudo apt-get install -y openjdk-17-jdk maven fakeroot binutils
+
+# 注意：生成的 DEB 包安装时需要 xdg-utils，但打包时不需要
 ```
 
 #### CentOS/RedHat 系统（打包 RPM）
 ```bash
 # CentOS 7/8
-sudo yum install -y java-17-openjdk java-17-openjdk-devel maven rpm-build
+sudo yum install -y java-17-openjdk java-17-openjdk-devel maven rpm-build binutils
 
 # 或者使用 dnf (CentOS 8+/Fedora)
-sudo dnf install -y java-17-openjdk java-17-openjdk-devel maven rpm-build
+sudo dnf install -y java-17-openjdk java-17-openjdk-devel maven rpm-build binutils
 ```
 
 ### 2. 验证环境
@@ -61,10 +63,11 @@ jpackage --version
 
 4. **安装 DEB 包**
    ```bash
-   # 安装
-   sudo dpkg -i dist/easypostman_2.1.8_amd64.deb
+   # 推荐方式：使用 apt 安装（自动处理依赖）
+   sudo apt install ./dist/easypostman_2.1.8_amd64.deb
    
-   # 如果有依赖问题，运行：
+   # 或者先用 dpkg 安装，再修复依赖
+   sudo dpkg -i dist/easypostman_2.1.8_amd64.deb
    sudo apt-get install -f
    
    # 卸载
@@ -204,33 +207,42 @@ rm -rf ~/.m2/repository
 ./build/linux-deb.sh  # 或 ./build/linux-rpm.sh
 ```
 
-## 跨平台打包总结
+### 5. jlink 失败：找不到 objcopy
 
-| 平台 | 脚本 | 输出格式 | 包管理器 |
-|------|------|----------|----------|
-| macOS | `build/mac.sh` | DMG | 手动安装 |
-| Windows | `build/win.bat` | MSI | 双击安装 |
-| Ubuntu/Debian | `build/linux-deb.sh` | DEB | dpkg/apt |
-| CentOS/RedHat | `build/linux-rpm.sh` | RPM | rpm/yum/dnf |
+**问题**: `Error: java.io.IOException: Cannot run program "objcopy": error=2, No such file or directory`
 
-## 技术细节
+**原因**: jlink 在创建运行时镜像时需要 `objcopy` 工具来优化和压缩模块
 
-### 包含的 Java 模块
-```
-java.base, java.desktop, java.logging, jdk.unsupported, 
-java.naming, java.net.http, java.prefs, java.sql,
-java.security.sasl, java.security.jgss, jdk.crypto.ec,
-java.management, java.management.rmi, jdk.crypto.cryptoki
-```
+**解决方案**:
+```bash
+# Ubuntu/Debian 系统
+sudo apt-get install binutils
 
-### JVM 参数
-```
--Xms256m          # 初始堆内存
--Xmx512m          # 最大堆内存
--Dfile.encoding=UTF-8  # 文件编码
+# CentOS/RedHat 系统
+sudo yum install binutils
+# 或
+sudo dnf install binutils
+
+# 验证安装
+objcopy --version
 ```
 
-### 安装路径
+### 6. DEB 包安装失败：缺少 xdg-utils
 
-- **DEB**: `/opt/easypostman/`
-- **RPM**: `/opt/easypostman/`
+**问题**: `easypostman depends on xdg-utils; however: Package xdg-utils is not installed.`
+
+**原因**: DEB 包依赖 `xdg-utils` 来处理桌面集成（快捷方式、文件关联等）
+
+**解决方案**:
+```bash
+# 方式 1：先安装依赖，再安装 DEB 包
+sudo apt-get install xdg-utils
+sudo dpkg -i dist/easypostman_2.1.8_amd64.deb
+
+# 方式 2：使用 apt-get 自动处理依赖（推荐）
+sudo apt-get install -f
+# 这会自动安装缺失的依赖并完成 easypostman 的配置
+
+# 方式 3：使用 apt 直接安装（会自动处理依赖）
+sudo apt install ./dist/easypostman_2.1.8_amd64.deb
+```

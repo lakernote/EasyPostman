@@ -1,219 +1,235 @@
-[English](README_EN.md) | 中文
+[中文](README_CN.md) | English
 
 # EasyPostman
 
-> 🚀 一款高仿 Postman + 简易版 JMeter 的开源接口调试与压测工具，专为开发者优化，界面简洁、功能强大，内置 Git 集成，支持团队协作与版本控制。
+> 🚀 An open-source API debugging and stress testing tool inspired by Postman and a simplified JMeter, optimized for
+> developers with a clean UI and powerful features. Built-in Git integration for team collaboration and version control.
 
 ![GitHub license](https://img.shields.io/github/license/lakernote/easy-postman)
 ![Java](https://img.shields.io/badge/Java-17+-orange)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20|%20macOS%20|%20Linux-blue)
 
-## 💡 项目介绍
+## 💡 Project Introduction
 
-EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，并集成简易版 JMeter 的批量请求与压力测试能力。项目采用 Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护您的接口数据隐私。同时，内置 Git 工作区功能，支持接口数据的版本管理与团队协作，轻松实现多端同步与协作开发。
+EasyPostman aims to provide developers with a local API debugging experience comparable to Postman, and integrates batch
+requests and stress testing capabilities similar to a simplified JMeter. Built with Java Swing, it runs cross-platform,
+works offline, and protects your API data privacy. With built-in Git workspace support, you can manage API data versions
+and collaborate with your team, enabling seamless multi-device sync and teamwork.
 
-### 🔥 开发理念
-- **🎯 专注核心功能** - 简洁而不简单，功能丰富而不臃肿
-- **🔒 隐私优先** - 本地存储，数据不上云，保护开发者隐私
-- **🚀 性能至上** - 原生 Java 应用，启动快速，运行流畅
+### 🔥 Philosophy
+
+- **🎯 Focus on Core Features** - Simple yet powerful, rich features without bloat
+- **🔒 Privacy First** - Local storage, no cloud sync, your data stays private
+- **🚀 Performance Oriented** - Native Java app, fast startup, smooth experience
 
 ---
 
-## 🔗 相关链接
+## 🔗 Links
 
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
-- 📦 **安装包下载地址**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍏 Mac(M芯): EasyPostman-最新版本.dmg
-    - 🪟 Windows: EasyPostman-最新版本.msi
-- 💬 微信：**lakernote**
+- 📦 **Download**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+    - 🍏 Mac (Apple Silicon): EasyPostman-latest.dmg
+    - 🪟 Windows: EasyPostman-latest.msi
+- 💬 WeChat: **lakernote**
 
 ---
 
-## ✨ 功能特性
+## ✨ Features
 
-- 🚦 支持常用 HTTP 方法（GET/POST/PUT/DELETE 等）
-- 📡 支持 SSE（Server-Sent Events）和 WebSocket 协议
-- 🌏 多环境变量管理，轻松切换测试环境
-- 🕑 请求历史自动保存，便于回溯与复用
-- 📦 批量请求与压力测试（简易版 JMeter），满足多场景需求，支持报告、结果树、趋势图可视化
-- 📝 语法高亮请求编辑器
-- 🌐 多语言支持（简体中文、英文）
-- 💾 本地数据存储，隐私安全
-- 📂 支持导入导出 Postman v2.1、curl格式
-- 📊 响应结果可视化，支持 JSON/XML 格式
-- 🔍 支持请求参数、头部、Cookie 等配置
-- 📂 支持文件上传下载
-- 📑 支持请求脚本（Pre-request Script、Tests）
-- 🔗 支持请求链路（Chaining）
-- 🧪 支持网络请求详细事件监控与分析
-- 🏢 工作区管理 - 支持本地工作区和Git工作区，实现项目级别的数据隔离与版本控制
-- 🔄 Git 集成 - 支持 commit、push、pull 等版本控制操作
-- 👥 团队协作 - 通过 Git 工作区实现团队间的接口数据共享
+- 🚦 Supports common HTTP methods (GET/POST/PUT/DELETE, etc.)
+- 📡 Supports SSE (Server-Sent Events) and WebSocket protocols
+- 🌏 Environment variable management for easy switching
+- 🕑 Auto-saved request history for review and reuse
+- 📦 Batch requests & stress testing (simplified JMeter), supports report, result tree, and trend chart visualization
+- 📝 Syntax highlighting request editor
+- 🌐 Multi-language support (Simplified Chinese, English)
+- 💾 Local data storage for privacy and security
+- 📂 Import/Export Postman v2.1, curl format
+- 📊 Visualized response results, supports JSON/XML
+- 🔍 Configurable request parameters, headers, cookies, etc.
+- 📂 File upload and download support
+- 📑 Request scripts (Pre-request Script, Tests)
+- 🔗 Request chaining support
+- 🧪 Detailed network request event monitoring and analysis
+- 🏢 Workspace management - supports local and Git workspaces for project-level data isolation and version control
+- 🔄 Git integration - supports commit, push, pull, and other version control operations
+- 👥 Team collaboration - share API data via Git workspace
 
 ---
 
-## 🖼️ 截图预览
+## 🖼️ Screenshots
 
-|                                预览                                |                                  预览                                   |
-|:----------------------------------------------------------------:|:---------------------------------------------------------------------:|
-|                     ![icon](docs/icon.png)                      |                     ![welcome](docs/welcome.png)                     |
-|                      ![home](docs/home.png)                      |                   ![workspaces](docs/workspaces.png)                   |
-|              ![collections](docs/collections.png)              |             ![collections-import](docs/collections-import.png)             |
-|            ![environments](docs/environments.png)            |                  ![functional](docs/functional.png)                  |
-|              ![functional_1](docs/functional_1.png)              |                ![functional_2](docs/functional_2.png)                |
-|                 ![history](docs/history.png)                 |              ![history-timeline](docs/history-timeline.png)              |
-|            ![history-events](docs/history-events.png)            |                  ![networklog](docs/networklog.png)                  |
-|              ![performance](docs/performance.png)              |            ![performance-report](docs/performance-report.png)            |
-|    ![performance-resultTree](docs/performance-resultTree.png)    |              ![performance-trend](docs/performance-trend.png)              |
+|                                 Preview                                  |                                  Preview                                   |
+|:------------------------------------------------------------------------:|:--------------------------------------------------------------------------:|
+|                          ![icon](docs/icon.png)                          |                        ![welcome](docs/welcome.png)                        |
+|                          ![home](docs/home.png)                          |                     ![workspaces](docs/workspaces.png)                     |
+|                   ![collections](docs/collections.png)                   |             ![collections-import](docs/collections-import.png)             |
+|                  ![environments](docs/environments.png)                  |                     ![functional](docs/functional.png)                     |
+|                  ![functional_1](docs/functional_1.png)                  |                   ![functional_2](docs/functional_2.png)                   |
+|                       ![history](docs/history.png)                       |               ![history-timeline](docs/history-timeline.png)               |
+|                ![history-events](docs/history-events.png)                |                     ![networklog](docs/networklog.png)                     |
+|                   ![performance](docs/performance.png)                   |             ![performance-report](docs/performance-report.png)             |
+|        ![performance-resultTree](docs/performance-resultTree.png)        |              ![performance-trend](docs/performance-trend.png)              |
 | ![performance-threadgroup-fixed](docs/performance-threadgroup-fixed.png) | ![performance-threadgroup-rampup](docs/performance-threadgroup-rampup.png) |
 | ![performance-threadgroup-spike](docs/performance-threadgroup-spike.png) | ![performance-threadgroup-stairs](docs/performance-threadgroup-stairs.png) |
-|              ![script-pre](docs/script-pre.png)              |                ![script-post](docs/script-post.png)                |
-|            ![script-snippets](docs/script-snippets.png)            |            ![workspaces-gitcommit](docs/workspaces-gitcommit.png)            |
+|                    ![script-pre](docs/script-pre.png)                    |                    ![script-post](docs/script-post.png)                    |
+|               ![script-snippets](docs/script-snippets.png)               |           ![workspaces-gitcommit](docs/workspaces-gitcommit.png)           |
 
 ---
 
-## 🏗️ 系统架构
+## 🏗️ Architecture
 
 ```
 EasyPostman
-├── 🎨 用户界面层 (UI Layer)
-│   ├── Workspace 工作区管理
-│   ├── Collections 接口集合管理
-│   ├── Environments 环境变量配置
-│   ├── History 请求历史记录
-│   ├── Performance 性能测试模块
-│   └── NetworkLog 网络请求监控
-├── 🔧 业务逻辑层 (Business Layer)
-│   ├── HTTP 请求处理引擎
-│   ├── 工作区切换与隔离引擎
-│   ├── Git 版本控制引擎
-│   ├── 环境变量解析器
-│   ├── 脚本执行引擎
-│   ├── 数据导入导出模块
-│   └── 性能测试执行器
-├── 💾 数据访问层 (Data Layer)
-│   ├── 工作区存储管理
-│   ├── 本地文件存储
-│   ├── Git 仓库管理
-│   ├── 配置管理
-│   └── 历史记录管理
-└── 🌐 网络通信层 (Network Layer)
-    ├── HTTP/HTTPS 客户端
-    ├── WebSocket 客户端
-    ├── SSE 客户端
-    └── Git 远程仓库通信
+├── 🎨 UI Layer
+│   ├── Workspace management
+│   ├── Collections management
+│   ├── Environments configuration
+│   ├── History records
+│   ├── Performance testing module
+│   └── NetworkLog monitoring
+├── 🔧 Business Layer
+│   ├── HTTP request engine
+│   ├── Workspace switching and isolation
+│   ├── Git version control engine
+│   ├── Environment variable resolver
+│   ├── Script execution engine
+│   ├── Data import/export module
+│   └── Performance test executor
+├── 💾 Data Layer
+│   ├── Workspace storage management
+│   ├── Local file storage
+│   ├── Git repository management
+│   ├── Configuration management
+│   └── History management
+└── 🌐 Network Layer
+    ├── HTTP/HTTPS client
+    ├── WebSocket client
+    ├── SSE client
+    └── Git remote communication
 ```
 
 ---
 
-## 🛠️ 技术选型说明
+## 🛠️ Technology Stack
 
-### 核心技术栈
-- **Java 17**: 使用最新 LTS 版本，享受现代 Java 特性
-- **JavaSwing**: 原生桌面 GUI 框架，跨平台兼容性好
-- **jlink & jpackage**: 官方打包工具，生成原生安装包
+### Core
 
-### UI 组件库
-- **FlatLaf**: 现代化 UI 主题，支持暗色模式和高分辨率显示
-- **RSyntaxTextArea**: 语法高亮文本编辑器，支持 JSON/XML/JavaScript 等
-- **jIconFont-Swing**: 矢量图标字体支持
-- **SwingX**: 扩展 Swing 组件库
-- **MigLayout**: 强大的布局管理器
+- **Java 17**: Modern LTS version for latest Java features
+- **JavaSwing**: Native desktop GUI, cross-platform
+- **jlink & jpackage**: Official packaging tools for native installers
 
-### 网络与工具库
-- **OkHttp**: 高性能 HTTP 客户端
-- **Nashorn/GraalVM**: JavaScript 脚本引擎支持
-- **SLF4J + Logback**: 日志框架
+### UI Libraries
 
----
+- **FlatLaf**: Modern UI theme, dark mode, HiDPI support
+- **RSyntaxTextArea**: Syntax highlighting editor for JSON/XML/JavaScript
+- **jIconFont-Swing**: Vector icon font support
+- **SwingX**: Extended Swing components
+- **MigLayout**: Powerful layout manager
 
-## 🎯 核心特性详解
+### Network & Utilities
 
-### 🏢 工作区管理 - 重大功能更新！
-- ✅ 本地工作区：适合个人项目，数据完全本地存储，隐私安全
-- ✅ Git工作区：支持版本控制和团队协作的工作区类型
-  - 从远程仓库克隆：直接从 GitHub/Gitee 等平台克隆项目
-  - 本地初始化：在本地创建 Git 仓库，后续推送到远程
-- ✅ 项目级别数据隔离：每个工作区独立管理接口集合、环境变量
-- ✅ 工作区快速切换：一键切换不同项目，互不干扰
-- ✅ Git操作集成：
-  - 提交（Commit）：保存本地变更到版本控制
-  - 推送（Push）：将本地提交推送到远程仓库
-  - 拉取（Pull）：从远程仓库获取最新变更
-  - 冲突检测与智能处理
-- ✅ 团队协作支持：通过 Git 工作区实现接口数据的团队共享
-- ✅ 多种认证方式：支持用户名密码、Personal Access Token、SSH Key
-
-### 🔌 接口调试功能
-- ✅ 支持 HTTP/1.1 和 HTTP/2 协议
-- ✅ 完整的 REST API 方法支持（GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS）
-- ✅ 多种请求体格式：Form Data、x-www-form-urlencoded、JSON、XML、Binary
-- ✅ 文件上传下载支持（支持拖拽）
-- ✅ Cookie 自动管理和手动编辑
-- ✅ 请求头、查询参数可视化编辑
-- ✅ 响应数据格式化显示（JSON、XML、HTML）
-- ✅ 响应时间、状态码、大小统计
-
-### 🌍 环境管理
-- ✅ 多环境快速切换（开发/测试/生产）
-- ✅ 全局变量和环境变量支持
-- ✅ 变量嵌套引用：`{{baseUrl}}/api/{{version}}`
-- ✅ 动态变量：`{{$timestamp}}`、`{{$randomInt}}`
-- ✅ 环境变量导入导出
-
-### 📝 脚本支持
-- ✅ Pre-request Script：请求前执行脚本
-- ✅ Tests Script：响应后测试脚本
-- ✅ 内置代码片段库
-- ✅ JavaScript 运行时环境
-- ✅ 断言测试支持
-
-### ⚡ 性能测试
-- ✅ 多种线程组模式：
-  - 固定线程数：稳定负载测试
-  - 递增式：逐步增加负载
-  - 阶梯式：分阶段负载测试
-  - 尖刺式：突发流量测试
-- ✅ 实时性能监控
-- ✅ 详细测试报告（响应时间、TPS、错误率）
-- ✅ 结果树分析
-- ✅ 性能趋势图表
-
-### 📊 数据分析
-- ✅ 请求历史时间线
-- ✅ 网络事件详细日志
-- ✅ 响应数据统计分析
-- ✅ 错误请求自动分类
-
-### 🔄 数据迁移
-- ✅ Postman Collection v2.1 导入
-- ✅ cURL 命令导入
-- ✅ HAR 文件导入（开发中）
-- ✅ OpenAPI/Swagger 导入（开发中）
+- **OkHttp**: High-performance HTTP client
+- **Nashorn/GraalVM**: JavaScript engine support
+- **SLF4J + Logback**: Logging framework
 
 ---
 
-## 🚀 快速开始
+## 🎯 Key Features in Detail
 
-### 环境要求
-- Java 17 或更高版本
-- 内存：至少 512MB 可用内存
-- 磁盘：至少 100MB 可用空间
+### 🏢 Workspace Management - Major Update!
 
-### 从源码构建
+- ✅ Local workspace: for personal projects, data stored locally, privacy guaranteed
+- ✅ Git workspace: version control and team collaboration
+    - Clone from remote: directly clone from GitHub/Gitee, etc.
+    - Local init: create a local Git repo, push to remote later
+- ✅ Project-level data isolation: each workspace manages its own collections and environments
+- ✅ Quick workspace switching: one-click switch, no interference
+- ✅ Git operations:
+    - Commit: save local changes to version control
+    - Push: push local commits to remote
+    - Pull: fetch latest changes from remote
+    - Conflict detection and smart handling
+- ✅ Team collaboration: share API data via Git workspace
+- ✅ Multiple authentication: username/password, Personal Access Token, SSH Key
+
+### 🔌 API Debugging
+
+- ✅ Supports HTTP/1.1 and HTTP/2
+- ✅ Full REST API methods (GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS)
+- ✅ Multiple request body formats: Form Data, x-www-form-urlencoded, JSON, XML, Binary
+- ✅ File upload/download (drag & drop supported)
+- ✅ Cookie auto-management and manual editing
+- ✅ Visual editing for headers and query params
+- ✅ Formatted response display (JSON, XML, HTML)
+- ✅ Response time, status code, size statistics
+
+### 🌍 Environment Management
+
+- ✅ Quick environment switching (dev/test/prod)
+- ✅ Global and environment variables
+- ✅ Nested variable reference: `{{baseUrl}}/api/{{version}}`
+- ✅ Dynamic variables: `{{$timestamp}}`, `{{$randomInt}}`
+- ✅ Import/export environments
+
+### 📝 Script Support
+
+- ✅ Pre-request Script: run before request
+- ✅ Tests Script: run after response
+- ✅ Built-in code snippets
+- ✅ JavaScript runtime
+- ✅ Assertion support
+
+### ⚡ Performance Testing
+
+- ✅ Multiple thread group modes:
+    - Fixed: stable load
+    - Ramp-up: gradually increasing load
+    - Stair-step: staged load
+    - Spike: burst load
+- ✅ Real-time performance monitoring
+- ✅ Detailed test reports (response time, TPS, error rate)
+- ✅ Result tree analysis
+- ✅ Performance trend charts
+
+### 📊 Data Analysis
+
+- ✅ Request history timeline
+- ✅ Detailed network event logs
+- ✅ Response data statistics
+- ✅ Auto-categorized error requests
+
+### 🔄 Data Migration
+
+- ✅ Import Postman Collection v2.1
+- ✅ Import cURL commands
+- ✅ Import HAR files (in development)
+- ✅ Import OpenAPI/Swagger (in development)
+
+---
+
+## 🚀 Quick Start
+
+### Requirements
+
+- Java 17 or above
+- Memory: at least 512MB available
+- Disk: at least 100MB available
+
+### Build from Source
 
 ```bash
-# 克隆项目
+# Clone the repo
 git clone https://gitee.com/lakernote/easy-postman.git
 cd easy-postman
 
-# 或者打包后运行
+# Or build and run
 mvn clean package
 java -jar target/easy-postman-*.jar
 ```
 
-### 生成安装包
+### Generate Installer
 
 ```bash
 # macOS
@@ -226,127 +242,147 @@ build/win.bat
 
 ---
 
-## 📖 使用指南
+## 📖 User Guide
 
-### 0️⃣ 工作区管理（新功能！）
-#### 创建工作区
-1. 点击左侧 **Workspace** 选项卡
-2. 点击 **+ 新建** 按钮
-3. 选择工作区类型：
-   - **本地工作区**：适合个人项目，数据仅存储在本地
-   - **Git 工作区**：支持版本控制和团队协作
-4. 填写工作区名称、描述和存储路径
-5. 如果选择 Git 工作区，配置 Git 相关信息：
-   - **从远程克隆**：输入 Git 仓库 URL 和认证信息
-   - **本地初始化**：创建本地 Git 仓库，后续可配置远程仓库
+### 0️⃣ Workspace Management (New!)
 
-#### 工作区协作流程
-1. **团队领导者**：
-   - 创建 Git 工作区（从远程克隆或本地初始化）
-   - 配置接口集合和环境变量
-   - 提交并推送到远程仓库
-2. **团队成员**：
-   - 创建 Git 工作区（从远程克隆）
-   - 获取最新的接口数据和环境配置
-   - 本地修改后提交并推送更新
-3. **日常协作**：
-   - 开始工作前：先执行 **Pull** 拉取最新变更
-   - 完成修改后：执行 **Commit** 提交本地变更
-   - 分享更新：执行 **Push** 推送到远程仓库
+#### Create Workspace
 
-### 1️⃣ 创建第一个请求
-1. 点击 **Collections** 选项卡
-2. 右键创建新的集合和请求
-3. 输入 URL 和选择 HTTP 方法
-4. 配置请求参数、头部信息
-5. 点击 **Send** 发送请求
+1. Click the **Workspace** tab on the left
+2. Click **+ New**
+3. Choose workspace type:
+    - **Local workspace**: for personal use, data stored locally
+    - **Git workspace**: for version control and team collaboration
+4. Enter workspace name, description, and path
+5. If Git workspace, configure Git info:
+    - **Clone from remote**: enter Git repo URL and credentials
+    - **Local init**: create local Git repo, configure remote later
 
-### 2️⃣ 环境变量配置
-1. 点击 **Environments** 选项卡
-2. 创建新环境（如：dev、test、prod）
-3. 添加变量：如 `baseUrl = https://api.example.com`
-4. 在请求中使用：`{{baseUrl}}/users`
+#### Team Collaboration Workflow
 
-### 3️⃣ 性能测试
-1. 点击 **Performance** 选项卡
-2. 配置线程组参数
-3. 添加要测试的接口
-4. 启动测试并查看实时报告
+1. **Team Leader**:
+    - Create Git workspace (clone or local init)
+    - Configure API collections and environments
+    - Commit and push to remote
+2. **Team Members**:
+    - Create Git workspace (clone from remote)
+    - Get latest API data and environments
+    - Commit and push updates after local changes
+3. **Daily Collaboration**:
+    - Before work: **Pull** to get latest changes
+    - After changes: **Commit** local changes
+    - Share updates: **Push** to remote
 
----
+### 1️⃣ Create Your First Request
 
-## 🤝 贡献指南
+1. Click **Collections** tab
+2. Right-click to create new collection and request
+3. Enter URL and select HTTP method
+4. Configure request params and headers
+5. Click **Send**
 
-我们欢迎任何形式的贡献！
+### 2️⃣ Environment Configuration
 
-### 贡献方式
-1. 🐛 **Bug 报告**: [提交 Issue](https://gitee.com/lakernote/easy-postman/issues)
-2. 💡 **功能建议**: [功能请求](https://gitee.com/lakernote/easy-postman/issues)
-3. 📝 **代码贡献**: Fork -> 修改 -> Pull Request
-4. 📚 **文档改进**: 完善 README、Wiki 等文档
+1. Click **Environments** tab
+2. Create new environment (e.g. dev, test, prod)
+3. Add variables: e.g. `baseUrl = https://api.example.com`
+4. Use in requests: `{{baseUrl}}/users`
 
-### 开发规范
-- 遵循 Java 编码规范
-- 提交前请运行测试：`mvn test`
-- 提交信息，格式：`feat: 添加新功能` 或 `fix: 修复bug`
+### 3️⃣ Performance Testing
+
+1. Click **Performance** tab
+2. Configure thread group params
+3. Add APIs to test
+4. Start test and view real-time report
 
 ---
 
+## 🤝 Contribution Guide
 
-## ❓ 常见问题
+All contributions are welcome!
 
-### Q: 为什么选择本地存储而不是云同步？
-A: 我们重视开发者的隐私安全，本地存储可以确保您的接口数据不会泄露给第三方。
+### How to Contribute
 
-### Q: 如何导入 Postman 数据？
-A: 在 Collections 界面点击导入按钮，选择 Postman v2.1 格式的 JSON 文件即可。
+1. 🐛 **Bug Report**: [Submit Issue](https://gitee.com/lakernote/easy-postman/issues)
+2. 💡 **Feature Request**: [Request Feature](https://gitee.com/lakernote/easy-postman/issues)
+3. 📝 **Code Contribution**: Fork -> Edit -> Pull Request
+4. 📚 **Docs Improvement**: Improve README, Wiki, etc.
 
-### Q: 性能测试结果准确吗？
-A: 基于 Java 多线程实现，测试结果具有一定参考价值，但建议与专业压测工具结果进行对比验证。
+### Development Guidelines
 
-### Q: 支持团队协作吗？
-A: ✅ **现已支持！** 通过 Git 工作区功能，团队可以共享接口集合、环境变量等数据，实现真正的团队协作。
-
-### Q: 工作区之间的数据会相互影响吗？
-A: 不会。每个工作区都是完全独立的，拥有自己的接口集合、环境变量等，切换工作区时数据完全隔离。
-
-### Q: Git 工作区支持哪些平台？
-A: 支持所有标准的 Git 平台，包括 GitHub、Gitee、GitLab、自建 Git 服务器等，只要提供标准的 Git URL 即可。
-
-### Q: 如何解决 Git 操作冲突？
-A: 系统内置了冲突检测机制，在执行 Git 操作前会检查潜在冲突并提供解决方案，如自动提交本地变更、暂存变更等。
-
-### Q: 可以在不同设备间同步工作区吗？
-A: 可以！通过 Git 工作区功能，你可以在不同设备上克隆同一个远程仓库，实现跨设备的数据同步。
+- Follow Java coding standards
+- Run tests before commit: `mvn test`
+- Commit message format: `feat: add new feature` or `fix: bug fix`
 
 ---
 
+## ❓ FAQ
 
+### Q: Why local storage instead of cloud sync?
 
+A: We value developer privacy. Local storage ensures your API data is never leaked to third parties.
 
+### Q: How to import Postman data?
 
-## 🙏 致谢
+A: In the Collections view, click Import and select a Postman v2.1 JSON file.
 
-感谢以下开源项目的支持：
-- [FlatLaf](https://github.com/JFormDesigner/FlatLaf) - 现代化 Swing 主题
-- [RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea) - 语法高亮编辑器
-- [OkHttp](https://github.com/square/okhttp) - HTTP 客户端
+### Q: Are performance test results accurate?
+
+A: Based on Java multithreading, results are for reference. For critical scenarios, compare with professional tools.
+
+### Q: Does it support team collaboration?
+
+A: ✅ **Now supported!** Use Git workspace to share API collections, environments, and more for real team collaboration.
+
+### Q: Is data isolated between workspaces?
+
+A: Yes. Each workspace is fully independent with its own collections and environments.
+
+### Q: Which Git platforms are supported?
+
+A: All standard Git platforms: GitHub, Gitee, GitLab, self-hosted, etc. Just provide a standard Git URL.
+
+### Q: How to resolve Git conflicts?
+
+A: Built-in conflict detection. Before Git operations, the system checks for conflicts and provides solutions like
+auto-commit or stash.
+
+### Q: Can I sync workspaces across devices?
+
+A: Yes! With Git workspace, you can clone the same repo on different devices for cross-device sync.
 
 ---
 
-## 💖 支持项目
+## 💖 Support the Project
 
-如果这个项目对您有帮助，欢迎：
-- ⭐ 给项目点个 Star
-- 🍴 Fork 项目参与贡献
-- 📢 向朋友推荐本项目
-- ☕ 请作者喝杯咖啡
+If you find this project helpful, please:
+
+- ⭐ Star the project
+- 🍴 Fork and contribute
+- 📢 Recommend to friends
+- ☕ Buy the author a coffee
+
+---
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=Date)](https://star-history.com/#lakernote/easy-postman&Date)
+
+---
+
+## 🙏 Acknowledgements
+
+Thanks to the following open-source projects:
+
+- [FlatLaf](https://github.com/JFormDesigner/FlatLaf) - Modern Swing theme
+- [RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea) - Syntax highlighting editor
+- [OkHttp](https://github.com/square/okhttp) - HTTP client
 
 ---
 
 <div align="center">
 
-**让 API 调试更简单，让性能测试更直观**
+**Make API debugging easier, make performance testing more intuitive**
 
 Made with ❤️ by [laker](https://github.com/lakernote)
 

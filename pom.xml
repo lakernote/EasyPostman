@@ -97,6 +97,19 @@
             <version>${polyglot.version}</version>
             <type>pom</type>
         </dependency>
+        <!-- GraalVM JS Community 版本（包含完整的 JS 引擎）-->
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js-community</artifactId>
+            <version>${polyglot.version}</version>
+            <type>pom</type>
+        </dependency>
+        <!-- GraalVM Regex 语言支持 -->
+        <dependency>
+            <groupId>org.graalvm.regex</groupId>
+            <artifactId>regex</artifactId>
+            <version>${polyglot.version}</version>
+        </dependency>
 
         <!-- RSyntaxTextArea 代码编辑器 -->
         <dependency>
@@ -213,6 +226,15 @@
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>${mainClass}</mainClass>
+                                </transformer>
+                                <!-- 合并 GraalVM 的语言注册文件 -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- 合并 META-INF/truffle 目录下的资源 -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/truffle/language</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/truffle/instrument</resource>
                                 </transformer>
                             </transformers>
                             <!-- 排除签名文件  -->

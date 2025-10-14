@@ -28,6 +28,30 @@ jobs:
         run: |
           choco install wixtoolset -y
           # ensure wix bin is on PATH (choco normally sets it)
+          # Refresh environment so PATH updates are visible in the same job
+          if (Get-Command refreshenv -ErrorAction SilentlyContinue) { refreshenv } else {
+            # refreshenv may not be available as a cmdlet; source the refresh script if present
+            $refreshScript = "$env:ChocolateyInstall\lib\refreshenv\tools\RefreshEnv.ps1"
+            if (Test-Path $refreshScript) { & $refreshScript } else { Write-Host "refreshenv not found; proceeding anyway" }
+          }
+          # Verify WiX installation
+          Write-Host "Looking for WiX executables..."
+          Get-Command candle.exe, light.exe -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found: $($_.Source)" }
+          # Also attempt to list common install path
+          Get-ChildItem 'C:\Program Files (x86)\WiX*' -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "WiX dir: $($_.FullName)" }
+
+      - name: Show Java and jpackage info
+        shell: pwsh
+        run: |
+          Write-Host "JAVA_HOME: $env:JAVA_HOME"
+          java -version
+          $jpackage = Join-Path $env:JAVA_HOME "bin\jpackage.exe"
+          if (Test-Path $jpackage) {
+            Write-Host "jpackage found at: $jpackage"
+            & $jpackage --version
+          } else {
+            Write-Host "jpackage not found at $jpackage"
+          }
 
       - name: Build with Maven (skip tests)
         shell: pwsh
@@ -47,30 +71,99 @@ jobs:
           # find the shaded/fat jar (exclude original-*)
           $jarFile = Get-ChildItem -Path "$PWD\target" -Filter "*.jar" | Where-Object { $_.Name -notlike "original-*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if (-not $jarFile) { throw "No jar found in target/" }
-          Write-Host "Using jar: $($jarFile.Name)"
+          Write-Host "Found jar in target: $($jarFile.Name)"
+
+          # Determine expected jar name used by existing win.bat: easy-postman-<version>.jar
+          $expectedJarName = "easy-postman-$version.jar"
+          Write-Host "Expected jar name: $expectedJarName"
 
           # ensure output dir exists
           $outDir = "$PWD\dist"
           if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+
+          # Build runtime image with jlink (follow build/win.bat module list)
+          $runtimeDir = "$PWD\target\runtime"
+          if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
+          $jlink = Join-Path $env:JAVA_HOME "bin\jlink.exe"
+          if (-not (Test-Path $jlink)) { throw "jlink not found at $jlink; ensure Java 17 with jlink is installed." }
+
+          $jlinkArgs = @(
+            '--add-modules', 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki',
+            '--strip-debug',
+            '--no-header-files',
+            '--no-man-pages',
+            '--compress', '2',
+            '--output', $runtimeDir
+          )
+          Write-Host "Running jlink: $jlink $($jlinkArgs -join ' ')"
+          & $jlink @jlinkArgs
+          if ($LASTEXITCODE -ne 0) { throw "jlink failed with exit code $LASTEXITCODE" }
+
+          # Prepare dist-input directory (same as win.bat's target\dist-input)
+          $distInputDir = "$PWD\target\dist-input"
+          if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
+          New-Item -ItemType Directory -Path $distInputDir | Out-Null
+
+          # Copy jar into dist-input. If a jar matching expected name exists, use it; otherwise copy latest jar and rename to expected name
+          $sourceExpected = Join-Path "$PWD\target" $expectedJarName
+          if (Test-Path $sourceExpected) {
+            Copy-Item $sourceExpected -Destination $distInputDir
+            $mainJarName = $expectedJarName
+          } else {
+            # fallback: use the found jar and copy it as expected jar name
+            Copy-Item $jarFile.FullName -Destination (Join-Path $distInputDir $expectedJarName)
+            $mainJarName = $expectedJarName
+          }
+          Write-Host "Copied main jar to dist-input as: $mainJarName"
 
           # jpackage requires the input folder to contain the jar
           # We pass --input target and --main-jar <jarfile>
           $jpackage = Join-Path $env:JAVA_HOME "bin\jpackage.exe"
           if (-not (Test-Path $jpackage)) { throw "jpackage not found at $jpackage; ensure Java 17 with jpackage is installed." }
 
-          & $jpackage \
-            --type msi \
-            --input "$PWD\target" \
-            --main-jar "$($jarFile.Name)" \
-            --main-class $env:MAIN_CLASS \
-            --name "EasyPostman" \
-            --app-version $version \
-            --vendor "com.laker.tools" \
-            --win-per-user-install \
-            --win-dir-chooser \
-            --win-shortcut \
-            --icon "$env:ICON_PATH" \
-            --output "$outDir"
+          # Build argument array following build/win.bat options
+          $args = @(
+            '--type', 'msi',
+            '--verbose',
+            '--input', $distInputDir,
+            '--main-jar', $mainJarName,
+            '--main-class', $env:MAIN_CLASS,
+            '--runtime-image', $runtimeDir,
+            '--dest', $outDir,
+            '--icon', "$env:ICON_PATH",
+            '--name', 'EasyPostman',
+            '--app-version', $version,
+            '--vendor', 'Laker',
+            '--copyright', '© 2025 Laker',
+            '--win-shortcut',
+            '--win-menu',
+            '--win-upgrade-uuid', '28607609-97b7-4212-9285-04ef64a4946c',
+            '--win-dir-chooser',
+            '--win-per-user-install',
+            '--win-menu-group', 'EasyTools',
+            '--win-help-url', 'https://gitee.com/lakernote/easy-postman',
+            '--java-options', '-Xms256m',
+            '--java-options', '-Xmx512m',
+            '--java-options', '-Dfile.encoding=UTF-8',
+            '--java-options', '-Djavax.accessibility.assistive_technologies='
+          )
+
+          Write-Host "Running jpackage: $jpackage $($args -join ' ')"
+          & $jpackage @args
+
+      - name: Verify dist contains MSI
+        shell: pwsh
+        run: |
+          $outDir = "$PWD\dist"
+          Write-Host "Listing dist directory: $outDir"
+          if (Test-Path $outDir) {
+            Get-ChildItem -Path $outDir | ForEach-Object { Write-Host $_.FullName $_.Length }
+          } else {
+            Write-Host "dist directory does not exist"
+          }
+          # Fail the step early if no .msi was created (helps surface jpackage problems)
+          $msi = Get-ChildItem -Path $outDir -Filter "*.msi" -ErrorAction SilentlyContinue
+          if (-not $msi) { throw "No MSI found in $outDir - jpackage likely failed or produced a file in a different location." }
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4

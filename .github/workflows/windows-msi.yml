@@ -1,0 +1,79 @@
+name: Build Windows MSI
+
+on:
+  # Trigger when a new tag is pushed (e.g. git tag v2.1.9 && git push origin --tags)
+  push:
+    tags: [ '*' ]
+  # Allow manual runs from the Actions tab
+  workflow_dispatch: {}
+
+jobs:
+  build-msi:
+    name: Build MSI on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Install WiX (for jpackage -> MSI)
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y
+          # ensure wix bin is on PATH (choco normally sets it)
+
+      - name: Build with Maven (skip tests)
+        shell: pwsh
+        run: |
+          mvn -B -DskipTests package
+
+      - name: Create MSI with jpackage
+        shell: pwsh
+        env:
+          MAIN_CLASS: com.laker.postman.App
+          ICON_PATH: ${{ github.workspace }}\assets\win\EasyPostman.ico
+        run: |
+          # get project version
+          $version = mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+          Write-Host "Project version: $version"
+
+          # find the shaded/fat jar (exclude original-*)
+          $jarFile = Get-ChildItem -Path "$PWD\target" -Filter "*.jar" | Where-Object { $_.Name -notlike "original-*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $jarFile) { throw "No jar found in target/" }
+          Write-Host "Using jar: $($jarFile.Name)"
+
+          # ensure output dir exists
+          $outDir = "$PWD\dist"
+          if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+
+          # jpackage requires the input folder to contain the jar
+          # We pass --input target and --main-jar <jarfile>
+          $jpackage = Join-Path $env:JAVA_HOME "bin\jpackage.exe"
+          if (-not (Test-Path $jpackage)) { throw "jpackage not found at $jpackage; ensure Java 17 with jpackage is installed." }
+
+          & $jpackage \
+            --type msi \
+            --input "$PWD\target" \
+            --main-jar "$($jarFile.Name)" \
+            --main-class $env:MAIN_CLASS \
+            --name "EasyPostman" \
+            --app-version $version \
+            --vendor "com.laker.tools" \
+            --win-per-user-install \
+            --win-dir-chooser \
+            --win-shortcut \
+            --icon "$env:ICON_PATH" \
+            --output "$outDir"
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: easy-postman-msi
+          path: dist/*.msi

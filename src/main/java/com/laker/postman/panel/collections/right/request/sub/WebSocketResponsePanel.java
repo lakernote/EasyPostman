@@ -1,11 +1,15 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.frame.MainFrame;
 import com.laker.postman.model.MessageType;
 import com.laker.postman.model.TestResult;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -32,6 +36,7 @@ public class WebSocketResponsePanel extends JPanel {
     private final JTextField searchField;
     private final JButton clearButton;
     private final List<MessageRow> allRows = new ArrayList<>();
+    private final JScrollPane tableScrollPane;
 
     private static final String[] COLUMN_NAMES = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
@@ -106,19 +111,21 @@ public class WebSocketResponsePanel extends JPanel {
                     if (col == 2) {
                         String content = (String) table.getValueAt(row, 2);
                         showContentDialog(content);
-                    } else if (col == 3) {
+                    } else if (col == 3 && row >= 0 && row < allRows.size()) {
                         // 双击第4列弹窗，显示断言结果
-                        if (row >= 0 && row < allRows.size()) {
-                            java.util.List<TestResult> testResults = allRows.get(row).testResults;
-                            String html = com.laker.postman.service.render.HttpHtmlRenderer.renderTestResults(testResults);
-                            JEditorPane editorPane = new JEditorPane();
-                            editorPane.setContentType("text/html");
-                            editorPane.setText(html);
-                            editorPane.setEditable(false);
-                            JScrollPane scrollPane = new JScrollPane(editorPane);
-                            scrollPane.setPreferredSize(new java.awt.Dimension(600, 400));
-                            JOptionPane.showMessageDialog(table, scrollPane, I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION), JOptionPane.PLAIN_MESSAGE);
+                        List<TestResult> testResults = allRows.get(row).testResults;
+                        if (CollUtil.isEmpty(testResults)) {
+                            return;
                         }
+                        String html = HttpHtmlRenderer.renderTestResults(testResults);
+                        JEditorPane editorPane = new JEditorPane();
+                        editorPane.setContentType("text/html");
+                        editorPane.setText(html);
+                        editorPane.setEditable(false);
+                        JScrollPane scrollPane = new JScrollPane(editorPane);
+                        scrollPane.setPreferredSize(new Dimension(600, 400));
+                        JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
+                                scrollPane, I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION), JOptionPane.PLAIN_MESSAGE);
                     }
                 }
             }
@@ -146,9 +153,9 @@ public class WebSocketResponsePanel extends JPanel {
                 }
             }
         });
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        add(scrollPane, BorderLayout.CENTER);
+        tableScrollPane = new JScrollPane(table);
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        add(tableScrollPane, BorderLayout.CENTER);
 
         // 美化表格
         JTableHeader header = table.getTableHeader();
@@ -250,6 +257,16 @@ public class WebSocketResponsePanel extends JPanel {
             Icon summaryIcon = getSummaryIcon(row.testResults);
             tableModel.addRow(new Object[]{row.type.icon, row.time, row.content, summaryIcon});
         }
+        // 始终滚动到底部（如果有行）
+        if (tableModel.getRowCount() > 0) {
+            int lastRow = tableModel.getRowCount() - 1;
+            // 不改变选中行，直接滚动到最后一行以避免抢走焦点
+            Rectangle rect = table.getCellRect(lastRow, 0, true);
+            table.scrollRectToVisible(rect);
+            // 也把滚动条设到最大，确保绝对到底
+            Adjustable vert = tableScrollPane.getVerticalScrollBar();
+            vert.setValue(vert.getMaximum());
+        }
     }
 
 
@@ -273,7 +290,11 @@ public class WebSocketResponsePanel extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
-            setIcon(value instanceof Icon ? (Icon) value : null);
+            if (value instanceof Icon icon) {
+                setIcon(icon);
+            } else {
+                setIcon(null);
+            }
             setText("");
             setHorizontalAlignment(CENTER);
             return this;

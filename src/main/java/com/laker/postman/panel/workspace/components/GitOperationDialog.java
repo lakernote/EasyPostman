@@ -645,7 +645,7 @@ public class GitOperationDialog extends JDialog {
                 canExecute = check.canCommit;
             }
             case PUSH -> {
-                if (check.isFirstPush || check.isRemoteRepositoryEmpty) {
+                if (check.isFirstPush) {
                     canExecute = true;
                 } else {
                     canExecute = check.canPush;

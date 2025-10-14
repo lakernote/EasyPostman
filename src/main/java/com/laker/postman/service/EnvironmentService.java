@@ -7,6 +7,7 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.EasyPostmanVariableUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -264,7 +265,7 @@ public class EnvironmentService {
     /**
      * 替换文本中的环境变量占位符
      * 例如: {{baseUrl}}/api/users -> https://api.example.com/api/users
-     * 优先级: 临时变量 > 环境变量
+     * 优先级: 临时变量 > 环境变量 > 内置函数
      */
     public static String replaceVariables(String text) {
         if (text == null || text.isEmpty()) {
@@ -280,11 +281,16 @@ public class EnvironmentService {
             if (value == null && activeEnvironment != null) {
                 value = activeEnvironment.getVariable(varName);
             }
+            // 检查是否是内置函数
+            if (value == null && EasyPostmanVariableUtil.isBuiltInFunction(varName)) {
+                value = EasyPostmanVariableUtil.generateBuiltInFunctionValue(varName);
+            }
             // 如果变量不存在，保留原样
             if (value == null) {
-                matcher.appendReplacement(result, matcher.group(0));
+                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(0)));
             } else {
-                matcher.appendReplacement(result, value.replace("$", "\\$"));
+                // 使用 Matcher.quoteReplacement 来避免 $ 和 \ 被当作特殊字符处理
+                matcher.appendReplacement(result, Matcher.quoteReplacement(value));
             }
         }
 

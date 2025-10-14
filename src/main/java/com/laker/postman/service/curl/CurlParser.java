@@ -214,23 +214,46 @@ public class CurlParser {
         boolean inSingleQuote = false;
         boolean inDoubleQuote = false;
         boolean inDollarQuote = false;
-        boolean escaped = false;
 
         for (int i = 0; i < cmd.length(); i++) {
             char c = cmd.charAt(i);
 
-            if (escaped) {
-                currentToken.append(c);
-                escaped = false;
-                continue;
-            }
-
+            // 处理转义字符（在双引号或 $'...' 中）
             if (c == '\\' && (inDoubleQuote || inDollarQuote)) {
-                // 处理转义字符
                 if (i + 1 < cmd.length()) {
                     char next = cmd.charAt(i + 1);
-                    if (next == '"' || next == '\\' || next == 'n' || next == 't' || next == 'r') {
-                        escaped = true;
+                    // 在 $'...' 或双引号中处理转义序列
+                    if (next == '"') {
+                        currentToken.append('"');
+                        i++;
+                        continue;
+                    } else if (next == '\\') {
+                        currentToken.append('\\');
+                        i++;
+                        continue;
+                    } else if (next == 'n') {
+                        currentToken.append('\n');
+                        i++;
+                        continue;
+                    } else if (next == 't') {
+                        currentToken.append('\t');
+                        i++;
+                        continue;
+                    } else if (next == 'r') {
+                        currentToken.append('\r');
+                        i++;
+                        continue;
+                    } else if (next == 'b') {
+                        currentToken.append('\b');
+                        i++;
+                        continue;
+                    } else if (next == 'f') {
+                        currentToken.append('\f');
+                        i++;
+                        continue;
+                    } else if (next == '\'') {
+                        currentToken.append('\'');
+                        i++;
                         continue;
                     }
                 }

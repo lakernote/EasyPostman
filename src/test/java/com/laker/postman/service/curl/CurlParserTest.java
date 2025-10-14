@@ -746,4 +746,91 @@ public class CurlParserTest {
         assertEquals(result.headers.get("Connection"), "keep-alive");
         assertEquals(result.headers.get("User-Agent"), "TestAgent");
     }
+
+    @Test(description = "解析用户提供的复杂 curl 示例")
+    public void testParseProvidedCurlExample() {
+        // Use Java 17 text block for the multi-line curl command
+        var curl = """
+                curl 'http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList' \
+                  -H 'Accept: */*' \
+                  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+                  -H 'Authorization: bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIxNTMyNjUyMjY1MyIsInNjb3BlIjpbImFsbCJdLCJleHAiOjE4MjA5MjMxMTcsImp0aSI6IlAwenZRQk5yT05RUF9zeU85ZFFjeU9qLU1icyIsImNsaWVudF9pZCI6Im1hbGwtd2VhcHAiLCJtZW1iZXJJZCI6IjdxNXIxajN6eGU4YTMzYjE5OHh2em15NSIsInVzZXJuYW1lIjoiMTUzMjY1MjI2NTMifQ.i12RSQz59sA9kjEcuXE0ljH11SJDSljaMHThzEnAdBTkUw3lt629f7bzBeD5P00xXBib8TrT2YI_Y0XLK36EMcQ3MUXhQlr_osKQgYpEWlypF4xOTnda_9fPPbjMWZvGUeDul86hX_S0Lxw1Fr9HhSbrL71pHmRtrh2KGYysbWIrXLoGxQKKg4-TuTSm-HNSLk_eX_Ob4aP1HXEhIiCEdG37b92BI5HBwmsMLl1Ir4IRmyjaos277wbL4NAr7ufBmvtduA6QeoK_PtoE5_iMRUe89WyCoCgMFa4PY2NEJteehuQ-stUyoDE9Y3g5nuJESi0xrg-WQjDbfUe2xNPZ_w' \
+                  -H 'Cache-Control: no-cache' \
+                  -H 'Connection: keep-alive' \
+                  -H 'Content-Type: application/json' \
+                  -H 'Origin: http://127.0.0.1:8801' \
+                  -H 'Pragma: no-cache' \
+                  -H 'Referer: http://127.0.0.1:8801/doc.html' \
+                  -H 'Request-Origion: Knife4j' \
+                  -H 'Sec-Fetch-Dest: empty' \
+                  -H 'Sec-Fetch-Mode: cors' \
+                  -H 'Sec-Fetch-Site: same-origin' \
+                  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36' \
+                  -H 'knife4j-gateway-code: ROOT' \
+                  -H 'sec-ch-ua: "Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"' \
+                  -H 'sec-ch-ua-mobile: ?0' \
+                  -H 'sec-ch-ua-platform: "Windows"' \
+                  --data-raw $'{\\n  "id": "",\\n  "memberId": "",\\n  "pageNum": 1,\\n  "pageSize": 10\\n}'
+                """;
+
+        var req = CurlParser.parse(curl);
+
+        assertNotNull(req);
+        assertEquals(req.url, "http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList");
+        // 有 body 的请求默认应为 POST
+        assertEquals(req.method, "POST");
+        // 常见头部检查
+        assertEquals(req.headers.get("Content-Type"), "application/json");
+        assertTrue(req.headers.containsKey("Authorization"));
+        assertEquals(req.headers.get("Request-Origion"), "Knife4j");
+
+        // 请求体应包含关键字段（unescape 后）
+        assertNotNull(req.body);
+        assertTrue(!req.body.contains("n"));
+        assertTrue(req.body.contains("\"pageNum\": 1"));
+        assertTrue(req.body.contains("\"pageSize\": 10"));
+        assertTrue(req.body.contains("\"id\": \"\""));
+        assertTrue(req.body.contains("\"memberId\": \"\""));
+    }
+
+    @Test(description = "测试真实的 $'...' 格式的 cURL 命令")
+    public void testParseRealCurlWithDollarQuote() {
+        String curl = "curl 'http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList' \\\n" +
+                "  -H 'Accept: */*' \\\n" +
+                "  -H 'Accept-Language: zh-CN,zh;q=0.9' \\\n" +
+                "  -H 'Authorization: bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \\\n" +
+                "  -H 'Cache-Control: no-cache' \\\n" +
+                "  -H 'Connection: keep-alive' \\\n" +
+                "  -H 'Content-Type: application/json' \\\n" +
+                "  -H 'Origin: http://127.0.0.1:8801' \\\n" +
+                "  -H 'Pragma: no-cache' \\\n" +
+                "  -H 'Referer: http://127.0.0.1:8801/doc.html' \\\n" +
+                "  -H 'Request-Origion: Knife4j' \\\n" +
+                "  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' \\\n" +
+                "  --data-raw $'{\\n  \"id\": \"\",\\n  \"memberId\": \"\",\\n  \"pageNum\": 1,\\n  \"pageSize\": 10\\n}'";
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        // 验证 URL
+        assertEquals(result.url, "http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList");
+
+        // 验证方法
+        assertEquals(result.method, "POST");
+
+        // 验证 headers
+        assertEquals(result.headers.get("Accept"), "*/*");
+        assertEquals(result.headers.get("Content-Type"), "application/json");
+        assertEquals(result.headers.get("Authorization"), "bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9");
+
+        // 验证 body - 应该包含真正的换行符
+        assertNotNull(result.body);
+        assertTrue(result.body.contains("\n"), "Body should contain newline characters");
+        assertTrue(result.body.contains("\"id\":"), "Body should contain id field");
+        assertTrue(result.body.contains("\"memberId\":"), "Body should contain memberId field");
+        assertTrue(result.body.contains("\"pageNum\": 1"), "Body should contain pageNum field");
+        assertTrue(result.body.contains("\"pageSize\": 10"), "Body should contain pageSize field");
+
+        // 验证 body 不包含字面的 \n
+        assertTrue(!result.body.contains("\\n"), "Body should not contain literal \\n");
+    }
 }

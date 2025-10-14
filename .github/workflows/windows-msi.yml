@@ -243,27 +243,29 @@ jobs:
           "msi_name=$($msi.Name)" | Out-File -Encoding utf8 -FilePath $env:GITHUB_OUTPUT -Append
           "msi_path=$($msi.FullName)" | Out-File -Encoding utf8 -FilePath $env:GITHUB_OUTPUT -Append
 
-      - name: Create GitHub Release (only for tag events)
-        # 仅在由 tag 触发的运行中才创建 Release；手动或其它触发不会执行这一步
+      - name: Create GitHub Release and Upload MSI (only for tag events)
+        # 使用更现代的 action 来创建 Release 并上传资产，仅在 tag 触发时运行
+        # 这个 action 会自动处理认证，避免 "Bad credentials" 错误
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/create-release@v1
-        id: create_release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          body: "自动生成的 Release：${{ github.ref_name }}（由 CI 构建）"
+          name: ${{ github.ref_name }}
+          body: |
+            ## Easy Postman ${{ github.ref_name }}
+            
+            自动构建的 Windows MSI 安装包
+            
+            ### 安装说明
+            1. 下载 EasyPostman-*.msi 文件
+            2. 双击运行安装程序
+            3. 按照向导完成安装
+            
+            构建时间: ${{ github.event.head_commit.timestamp }}
+          files: |
+            dist/*.msi
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload MSI to GitHub Release
-        # 将检测到的 MSI 上传为 Release 的资产；仅在 tag 触发时运行
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.detect_msi.outputs.msi_path }}
-          asset_name: ${{ steps.detect_msi.outputs.msi_name }}
-          asset_content_type: application/x-msi
-

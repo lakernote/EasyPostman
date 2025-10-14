@@ -92,7 +92,9 @@ public class GitConflictDetector {
         result.conflicting.addAll(status.getConflicting());
 
         // 检查是否可以提交
-        result.canCommit = result.hasUncommittedChanges;
+        int totalChanges = result.added.size() + result.changed.size() + result.modified.size()
+                + result.missing.size() + result.removed.size() + result.untracked.size();
+        result.canCommit = totalChanges > 0 && result.conflicting.isEmpty();
     }
 
     private static void checkRemoteStatus(Git git, String workspacePath, GitStatusCheck result,

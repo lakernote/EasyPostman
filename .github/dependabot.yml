@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # 限制同时打开的 PR 数量，避免刷屏
+    open-pull-requests-limit: 5
+    # 自动将 security updates 也作为普通更新处理（Dependabot 会为CVE创建安全PR）
+    allow:
+      - dependency-type: "all"
+    # 可选：忽略某些依赖（示例）
+    # ignore:
+    #   - dependency-name: "org.example:unwanted"
+    #     update-types: ["version-update:semver-major"]
+
+# Dependabot 还会自动处理 GitHub Advisory 的安全修复 PR（仓库启用 Dependabot alerts 时）
+

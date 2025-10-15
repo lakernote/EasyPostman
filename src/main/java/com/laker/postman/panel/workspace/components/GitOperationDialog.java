@@ -9,6 +9,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.git.SshCredentialsProvider;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -56,8 +57,8 @@ public class GitOperationDialog extends JDialog {
 
     // 步骤指示器
     private StepIndicator stepIndicator;
-    private JTextArea detailsArea;
-    private JTextArea fileChangesArea;
+    private JEditorPane detailsArea;
+    private JEditorPane fileChangesArea;
     private JTextArea commitMessageArea;
     private JLabel statusIcon;
     private JLabel statusMessage;
@@ -250,12 +251,11 @@ public class GitOperationDialog extends JDialog {
 
         panel.add(statusInfoPanel, BorderLayout.NORTH);
 
-        detailsArea = new JTextArea();
+        detailsArea = new JEditorPane();
         detailsArea.setEditable(false);
         detailsArea.setFont(detailsArea.getFont().deriveFont(10f)); // 设置较小字体
         detailsArea.setBorder(new EmptyBorder(5, 5, 5, 5));
-        detailsArea.setLineWrap(true);
-        detailsArea.setWrapStyleWord(true);
+        detailsArea.setContentType("text/html"); // 支持HTML渲染
 
         JScrollPane detailsScrollPane = new JScrollPane(detailsArea);
         detailsScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -282,12 +282,11 @@ public class GitOperationDialog extends JDialog {
 
         JPanel fileChangesPanel = new JPanel(new BorderLayout());
 
-        fileChangesArea = new JTextArea();
+        fileChangesArea = new JEditorPane();
         fileChangesArea.setEditable(false);
         fileChangesArea.setFont(fileChangesArea.getFont().deriveFont(10f)); // 设置较小字体
         fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOADING_FILE_CHANGES));
-        fileChangesArea.setLineWrap(true);
-        fileChangesArea.setWrapStyleWord(true);
+        fileChangesArea.setContentType("text/html"); // 支持HTML渲染
 
         JScrollPane scrollPane = new JScrollPane(fileChangesArea);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -450,36 +449,48 @@ public class GitOperationDialog extends JDialog {
      * 显示详细的状态检查信息
      */
     private void displayStatusDetails(GitStatusCheck check) {
-        StringBuilder details = new StringBuilder();
-        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_SUMMARY)).append("\n");
-        details.append(String.format("  %s %s\n",
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_UNCOMMITTED_CHANGES),
-                check.hasUncommittedChanges ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
-        details.append(String.format("  %s %s\n",
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_LOCAL_COMMITS),
-                check.hasLocalCommits ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
-        details.append(String.format("  %s %s\n",
-                "📡 " + I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_REMOTE_COMMITS),
-                check.hasRemoteCommits ? I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES) : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO)));
+        StringBuilder html = new StringBuilder();
+        html.append("<html><body style='font-family: sans-serif; font-size: 8px;'>");
+
+        html.append("<div style='margin-bottom: 10px;'>");
+        html.append("<b>").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_SUMMARY))).append("</b><br/>");
+        html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_UNCOMMITTED_CHANGES)))
+                .append(" ").append(check.hasUncommittedChanges ? escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES)) : escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO))).append("<br/>");
+        html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_LOCAL_COMMITS)))
+                .append(" ").append(check.hasLocalCommits ? escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES)) : escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO))).append("<br/>");
+        html.append("&nbsp;&nbsp;📡 ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_HAS_REMOTE_COMMITS)))
+                .append(" ").append(check.hasRemoteCommits ? escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_YES)) : escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO))).append("<br/>");
+
         if (check.localCommitsAhead > 0) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_AHEAD, check.localCommitsAhead)).append("\n");
+            String msg = I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_AHEAD, check.localCommitsAhead);
+            html.append("&bull; ").append(escapeHtml(msg)).append("<br/>");
         }
         if (check.remoteCommitsBehind > 0) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_AHEAD, check.remoteCommitsBehind)).append("\n");
+            String msg = I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_AHEAD, check.remoteCommitsBehind);
+            html.append("&bull; ").append(escapeHtml(msg)).append("<br/>");
         }
+        html.append("</div>");
+
         if (!check.warnings.isEmpty()) {
-            details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WARNINGS)).append("\n");
+            html.append("<div style='margin-bottom: 10px;'>");
+            html.append("<b>").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WARNINGS))).append("</b><br/>");
             for (String warning : check.warnings) {
-                details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_BULLET, warning)).append("\n");
+                html.append("&bull; ").append(escapeHtml(warning)).append("<br/>");
             }
+            html.append("</div>");
         }
+
         if (!check.suggestions.isEmpty()) {
-            details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_SUGGESTIONS)).append("\n");
+            html.append("<div style='margin-bottom: 10px;'>");
+            html.append("<b>").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_SUGGESTIONS))).append("</b><br/>");
             for (String suggestion : check.suggestions) {
-                details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_BULLET, suggestion)).append("\n");
+                html.append("&bull; ").append(escapeHtml(suggestion)).append("<br/>");
             }
+            html.append("</div>");
         }
-        detailsArea.setText(details.toString());
+
+        html.append("</body></html>");
+        detailsArea.setText(html.toString());
         detailsArea.setCaretPosition(0);
     }
 
@@ -685,54 +696,66 @@ public class GitOperationDialog extends JDialog {
      */
     private void displayFileChangesStatus() {
         if (statusCheck == null) {
-            fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES_NOT_AVAILABLE));
+            fileChangesArea.setText("<html><body>" + escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES_NOT_AVAILABLE)) + "</body></html>");
             return;
         }
-        StringBuilder details = new StringBuilder();
-        // 展示详细变更类型
-        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_CHANGES_TITLE)).append("\n");
+
+        StringBuilder html = new StringBuilder();
+        html.append("<html><body style='font-family: monospace; font-size: 8px;'>");
+
+        // 本地变更
+        html.append("<div style='margin-bottom: 10px;'>");
+        html.append("<b>").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOCAL_CHANGES_TITLE))).append("</b><br/>");
+
         if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_ADDED_FILES)).append(statusCheck.added.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_ADDED_FILES))).append(statusCheck.added.size()).append("<br/>");
             for (String file : statusCheck.added) {
-                details.append("    + ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: green;'>+</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.changed != null && !statusCheck.changed.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHANGED_FILES)).append(statusCheck.changed.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHANGED_FILES))).append(statusCheck.changed.size()).append("<br/>");
             for (String file : statusCheck.changed) {
-                details.append("    ~ ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: orange;'>~</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.modified != null && !statusCheck.modified.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MODIFIED_FILES)).append(statusCheck.modified.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MODIFIED_FILES))).append(statusCheck.modified.size()).append("<br/>");
             for (String file : statusCheck.modified) {
-                details.append("    * ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>*</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.removed != null && !statusCheck.removed.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOVED_FILES)).append(statusCheck.removed.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOVED_FILES))).append(statusCheck.removed.size()).append("<br/>");
             for (String file : statusCheck.removed) {
-                details.append("    - ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>-</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.missing != null && !statusCheck.missing.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MISSING_FILES)).append(statusCheck.missing.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MISSING_FILES))).append(statusCheck.missing.size()).append("<br/>");
             for (String file : statusCheck.missing) {
-                details.append("    ! ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>!</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.untracked != null && !statusCheck.untracked.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNTRACKED_FILES)).append(statusCheck.untracked.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNTRACKED_FILES))).append(statusCheck.untracked.size()).append("<br/>");
             for (String file : statusCheck.untracked) {
-                details.append("    ? ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: gray;'>?</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.conflicting != null && !statusCheck.conflicting.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICTING_FILES)).append(statusCheck.conflicting.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICTING_FILES))).append(statusCheck.conflicting.size()).append("<br/>");
             for (String file : statusCheck.conflicting) {
-                details.append("    # ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>#</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         // 如无本地变更，提示
         if ((statusCheck.added == null || statusCheck.added.isEmpty()) &&
                 (statusCheck.changed == null || statusCheck.changed.isEmpty()) &&
@@ -741,75 +764,104 @@ public class GitOperationDialog extends JDialog {
                 (statusCheck.missing == null || statusCheck.missing.isEmpty()) &&
                 (statusCheck.untracked == null || statusCheck.untracked.isEmpty()) &&
                 (statusCheck.conflicting == null || statusCheck.conflicting.isEmpty())) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_LOCAL_CHANGES)).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_LOCAL_CHANGES))).append("<br/>");
         }
-
+        html.append("</div>");
 
         // 远程变更分组展示
-        details.append("\n").append("📡 ").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE)).append("\n");
+        html.append("<div style='margin-bottom: 10px;'>");
+        html.append("<b>📡 ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_CHANGES_TITLE))).append("</b><br/>");
+
         if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES)).append(statusCheck.remoteAdded.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES))).append(statusCheck.remoteAdded.size()).append("<br/>");
             for (String file : statusCheck.remoteAdded) {
-                details.append("    [+] ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: green;'>[+]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.remoteModified != null && !statusCheck.remoteModified.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_MODIFIED_FILES)).append(statusCheck.remoteModified.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_MODIFIED_FILES))).append(statusCheck.remoteModified.size()).append("<br/>");
             for (String file : statusCheck.remoteModified) {
-                details.append("    [~] ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: orange;'>[~]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.remoteRemoved != null && !statusCheck.remoteRemoved.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_REMOVED_FILES)).append(statusCheck.remoteRemoved.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_REMOVED_FILES))).append(statusCheck.remoteRemoved.size()).append("<br/>");
             for (String file : statusCheck.remoteRemoved) {
-                details.append("    [-] ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>[-]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.remoteRenamed != null && !statusCheck.remoteRenamed.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_RENAMED_FILES)).append(statusCheck.remoteRenamed.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_RENAMED_FILES))).append(statusCheck.remoteRenamed.size()).append("<br/>");
             for (String file : statusCheck.remoteRenamed) {
-                details.append("    [R] ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>[R]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         if (statusCheck.remoteCopied != null && !statusCheck.remoteCopied.isEmpty()) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_COPIED_FILES)).append(statusCheck.remoteCopied.size()).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_COPIED_FILES))).append(statusCheck.remoteCopied.size()).append("<br/>");
             for (String file : statusCheck.remoteCopied) {
-                details.append("    [C] ").append(file).append("\n");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>[C]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
+
         // 如无远程变更，提示
         if ((statusCheck.remoteAdded == null || statusCheck.remoteAdded.isEmpty()) &&
                 (statusCheck.remoteModified == null || statusCheck.remoteModified.isEmpty()) &&
                 (statusCheck.remoteRemoved == null || statusCheck.remoteRemoved.isEmpty()) &&
                 (statusCheck.remoteRenamed == null || statusCheck.remoteRenamed.isEmpty()) &&
                 (statusCheck.remoteCopied == null || statusCheck.remoteCopied.isEmpty())) {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_REMOTE_CHANGES)).append("\n");
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_REMOTE_CHANGES))).append("<br/>");
         }
+        html.append("</div>");
 
         // 冲突文件详情展示
-        details.append("\n").append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_DETAILS_TITLE)).append("\n");
+        html.append("<div style='margin-bottom: 10px;'>");
+        html.append("<b>").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_DETAILS_TITLE))).append("</b><br/>");
+
         if (statusCheck.conflictingFiles != null && !statusCheck.conflictingFiles.isEmpty()) {
             for (String file : statusCheck.conflictingFiles) {
-                details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_FILE)).append(file).append("\n");
+                html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_FILE))).append(escapeHtml(file)).append("<br/>");
                 List<com.laker.postman.model.ConflictBlock> blocks = statusCheck.conflictDetails.get(file);
                 if (blocks != null && !blocks.isEmpty()) {
                     for (int i = 0; i < blocks.size(); i++) {
                         com.laker.postman.model.ConflictBlock block = blocks.get(i);
-                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK)).append(i + 1).append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK_LINES))
-                                .append(block.getBegin()).append("-").append(block.getEnd()).append("]\n");
-                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BASE)).append(String.join(" | ", block.getBaseLines())).append("\n");
-                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_LOCAL)).append(String.join(" | ", block.getLocalLines())).append("\n");
-                        details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_REMOTE)).append(String.join(" | ", block.getRemoteLines())).append("\n");
+                        html.append("&nbsp;&nbsp;&nbsp;&nbsp;")
+                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK)))
+                                .append(i + 1)
+                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK_LINES)))
+                                .append(block.getBegin()).append("-").append(block.getEnd()).append("]<br/>");
+                        html.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BASE)))
+                                .append(escapeHtml(String.join(" | ", block.getBaseLines()))).append("<br/>");
+                        html.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_LOCAL)))
+                                .append(escapeHtml(String.join(" | ", block.getLocalLines()))).append("<br/>");
+                        html.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_REMOTE)))
+                                .append(escapeHtml(String.join(" | ", block.getRemoteLines()))).append("<br/>");
                     }
                 } else {
-                    details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_CONFLICT_DETAILS));
+                    html.append("&nbsp;&nbsp;&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_CONFLICT_DETAILS))).append("<br/>");
                 }
             }
         } else {
-            details.append(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_FILE_CONFLICTS));
+            html.append("&bull; ").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_FILE_CONFLICTS))).append("<br/>");
         }
-        fileChangesArea.setText(details.toString());
+        html.append("</div>");
+
+        html.append("</body></html>");
+        fileChangesArea.setText(html.toString());
         fileChangesArea.setCaretPosition(0);
+    }
+
+    /**
+     * HTML转义帮助方法，防止HTML注入
+     */
+    private String escapeHtml(String text) {
+        return HttpHtmlRenderer.escapeHtml(text);
     }
 
     private class ExecuteActionListener implements ActionListener {

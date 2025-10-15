@@ -31,7 +31,6 @@ public class UpdateService {
      * 启动时异步检查更新
      */
     public void checkUpdateOnStartup() {
-        log.info("Initializing auto-update system");
         // 启动后台更新检查
         autoUpdateManager.startBackgroundCheck();
     }

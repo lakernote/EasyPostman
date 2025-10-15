@@ -1,8 +1,10 @@
 package com.laker.postman.service.update;
 
+import cn.hutool.system.OsInfo;
 import com.laker.postman.common.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -55,7 +57,10 @@ public class AutoUpdateManager {
         boolean autoCheckEnabled = SettingManager.isAutoUpdateCheckEnabled();
         long startupDelaySeconds = SettingManager.getAutoUpdateStartupDelaySeconds();
         long checkIntervalHours = SettingManager.getAutoUpdateCheckIntervalHours();
-
+        String currentVersion = SystemUtil.getCurrentVersion();
+        log.info("Current application version: {}", currentVersion);
+        OsInfo osInfo = cn.hutool.system.SystemUtil.getOsInfo();
+        log.info("Detected operating system: {} ", osInfo);
         if (!autoCheckEnabled) {
             log.info("Auto-update check is disabled");
             return;

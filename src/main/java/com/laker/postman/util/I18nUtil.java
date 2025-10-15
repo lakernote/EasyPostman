@@ -50,7 +50,7 @@ public class I18nUtil {
     private static Locale getSystemDefaultLocale() {
         Locale systemLocale = Locale.getDefault();
         String language = systemLocale.getLanguage();
-
+        log.info("Detected system locale: {} ", language);
         // 支持中文和英文，其他语言默认使用英文
         if ("zh".equals(language)) {
             return Locale.CHINESE;

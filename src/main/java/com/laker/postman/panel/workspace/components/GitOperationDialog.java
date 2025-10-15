@@ -710,49 +710,49 @@ public class GitOperationDialog extends JDialog {
         if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_ADDED_FILES))).append(statusCheck.added.size()).append("<br/>");
             for (String file : statusCheck.added) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: green;'>+</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #00AA00;'>+</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.changed != null && !statusCheck.changed.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHANGED_FILES))).append(statusCheck.changed.size()).append("<br/>");
             for (String file : statusCheck.changed) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: orange;'>~</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #FF8800;'>~</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.modified != null && !statusCheck.modified.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MODIFIED_FILES))).append(statusCheck.modified.size()).append("<br/>");
             for (String file : statusCheck.modified) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>*</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #0066CC;'>*</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.removed != null && !statusCheck.removed.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOVED_FILES))).append(statusCheck.removed.size()).append("<br/>");
             for (String file : statusCheck.removed) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>-</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #CC0000;'>-</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.missing != null && !statusCheck.missing.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MISSING_FILES))).append(statusCheck.missing.size()).append("<br/>");
             for (String file : statusCheck.missing) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>!</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #CC0000;'>!</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.untracked != null && !statusCheck.untracked.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNTRACKED_FILES))).append(statusCheck.untracked.size()).append("<br/>");
             for (String file : statusCheck.untracked) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: gray;'>?</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #888888;'>?</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.conflicting != null && !statusCheck.conflicting.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICTING_FILES))).append(statusCheck.conflicting.size()).append("<br/>");
             for (String file : statusCheck.conflicting) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>#</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #CC0000;'>#</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
@@ -775,35 +775,35 @@ public class GitOperationDialog extends JDialog {
         if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES))).append(statusCheck.remoteAdded.size()).append("<br/>");
             for (String file : statusCheck.remoteAdded) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: green;'>[+]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #00AA00;'>[+]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteModified != null && !statusCheck.remoteModified.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_MODIFIED_FILES))).append(statusCheck.remoteModified.size()).append("<br/>");
             for (String file : statusCheck.remoteModified) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: orange;'>[~]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #FF8800;'>[~]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteRemoved != null && !statusCheck.remoteRemoved.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_REMOVED_FILES))).append(statusCheck.remoteRemoved.size()).append("<br/>");
             for (String file : statusCheck.remoteRemoved) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>[-]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #CC0000;'>[-]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteRenamed != null && !statusCheck.remoteRenamed.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_RENAMED_FILES))).append(statusCheck.remoteRenamed.size()).append("<br/>");
             for (String file : statusCheck.remoteRenamed) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>[R]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #0066CC;'>[R]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteCopied != null && !statusCheck.remoteCopied.isEmpty()) {
             html.append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_COPIED_FILES))).append(statusCheck.remoteCopied.size()).append("<br/>");
             for (String file : statusCheck.remoteCopied) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>[C]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: #0066CC;'>[C]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
@@ -829,19 +829,19 @@ public class GitOperationDialog extends JDialog {
                     for (int i = 0; i < blocks.size(); i++) {
                         com.laker.postman.model.ConflictBlock block = blocks.get(i);
                         html.append("&nbsp;&nbsp;&nbsp;&nbsp;")
-                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK)))
-                                .append(i + 1)
-                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK_LINES)))
-                                .append(block.getBegin()).append("-").append(block.getEnd()).append("]<br/>");
+                            .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK)))
+                            .append(i + 1)
+                            .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BLOCK_LINES)))
+                            .append(block.getBegin()).append("-").append(block.getEnd()).append("]<br/>");
                         html.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
-                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BASE)))
-                                .append(escapeHtml(String.join(" | ", block.getBaseLines()))).append("<br/>");
+                            .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_BASE)))
+                            .append(escapeHtml(String.join(" | ", block.getBaseLines()))).append("<br/>");
                         html.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
-                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_LOCAL)))
-                                .append(escapeHtml(String.join(" | ", block.getLocalLines()))).append("<br/>");
+                            .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_LOCAL)))
+                            .append(escapeHtml(String.join(" | ", block.getLocalLines()))).append("<br/>");
                         html.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
-                                .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_REMOTE)))
-                                .append(escapeHtml(String.join(" | ", block.getRemoteLines()))).append("<br/>");
+                            .append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICT_REMOTE)))
+                            .append(escapeHtml(String.join(" | ", block.getRemoteLines()))).append("<br/>");
                     }
                 } else {
                     html.append("&nbsp;&nbsp;&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NO_CONFLICT_DETAILS))).append("<br/>");

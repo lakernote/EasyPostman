@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
+import java.util.List;
 
 /**
  * 高仿Postman的Headers面板
@@ -217,15 +218,15 @@ public class EasyHttpHeadersPanel extends JPanel {
     /**
      * Get all headers as a list (including enabled state) for persistence
      */
-    public java.util.List<HttpHeader> getHeadersList() {
-        java.util.List<HttpHeader> headersList = new ArrayList<>();
+    public List<HttpHeader> getHeadersList() {
+        List<HttpHeader> headersList = new ArrayList<>();
 
         if (tablePanel == null) {
             return headersList;
         }
 
         // Get all rows from the model (not view) to include both visible and hidden headers
-        java.util.List<Map<String, Object>> allRows = tablePanel.getRows();
+        List<Map<String, Object>> allRows = tablePanel.getRows();
 
         for (Map<String, Object> row : allRows) {
             Object enabledObj = row.get("Enabled");
@@ -248,7 +249,7 @@ public class EasyHttpHeadersPanel extends JPanel {
     /**
      * Set headers from list (including enabled state) for loading from persistence
      */
-    public void setHeadersList(java.util.List<HttpHeader> headersList) {
+    public void setHeadersList(List<HttpHeader> headersList) {
         tablePanel.clear();
 
         if (headersList == null || headersList.isEmpty()) {
@@ -258,10 +259,10 @@ public class EasyHttpHeadersPanel extends JPanel {
         }
 
         // Build sorted list with default headers first
-        java.util.List<HttpHeader> sortedList = buildSortedHeadersList(headersList);
+        List<HttpHeader> sortedList = buildSortedHeadersList(headersList);
 
         // Set rows in table
-        java.util.List<Map<String, Object>> rows = new ArrayList<>();
+        List<Map<String, Object>> rows = new ArrayList<>();
         for (HttpHeader header : sortedList) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("Enabled", header.isEnabled());
@@ -279,8 +280,8 @@ public class EasyHttpHeadersPanel extends JPanel {
     /**
      * Build sorted headers list with default headers first
      */
-    private java.util.List<HttpHeader> buildSortedHeadersList(java.util.List<HttpHeader> inputList) {
-        java.util.List<HttpHeader> sortedList = new ArrayList<>();
+    private List<HttpHeader> buildSortedHeadersList(List<HttpHeader> inputList) {
+        List<HttpHeader> sortedList = new ArrayList<>();
         Map<String, HttpHeader> inputMap = new LinkedHashMap<>();
 
         // Convert list to map for easy lookup

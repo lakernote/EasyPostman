@@ -636,22 +636,22 @@ public class EasyPostmanTextField extends FlatTextField {
         tooltip.append("</span></div>");
 
         // 变量名 - 粗体显示
-        tooltip.append("<div style='margin-bottom: 8px;'>");
+        tooltip.append("<div style='margin-bottom: 1px;'>");
         tooltip.append("<b style='font-size: 10px; color: ").append(titleColor).append(";'>");
         tooltip.append(escapeHtml(varName));
         tooltip.append("</b></div>");
 
         // 分隔线
-        tooltip.append("<hr style='border: none; border-top: 1px solid #E0E0E0; margin: 4px 0;'/>");
+        tooltip.append("<hr style='border: none; border-top: 1px solid #E0E0E0; margin: 1px 0;'/>");
 
         // 内容部分 - 变量值或描述
-        tooltip.append("<div style='margin-top: 2px; color: #424242; font-size: 10px;'>");
+        tooltip.append("<div style='margin-top: 1px; color: #424242; font-size: 10px;'>");
 
         if (isDefined && !isBuiltIn) {
             // 环境变量值
             tooltip.append("<span style='color: #757575;'>Value:</span><br/>");
             tooltip.append("<span style='font-family: Consolas, monospace; background-color: #F5F5F5; ");
-            tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 2px;'>");
+            tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
 
             // 限制显示长度，超过150字符截断
             String displayContent = content.length() > 150 ? content.substring(0, 150) + "..." : content;

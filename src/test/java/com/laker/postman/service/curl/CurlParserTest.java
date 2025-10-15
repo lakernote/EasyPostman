@@ -109,13 +109,16 @@ public class CurlParserTest {
 
     @Test(description = "解析带转义字符的数据")
     public void testParseDataWithEscapeCharacters() {
+        // 使用双引号来支持转义字符处理
         String curl = "curl -X POST https://api.example.com/data " +
-                "-d '{\"message\":\"Hello\\nWorld\\t!\",\"path\":\"C:\\\\Users\"}'";
+                "-d \"{\\\"message\\\":\\\"Hello\\nWorld\\t!\\\",\\\"path\\\":\\\"C:\\\\\\\\Users\\\"}\"";
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "POST");
+        // 在JSON字符串中，\n和\t会被处理为实际的换行和制表符
         assertTrue(result.body.contains("Hello\nWorld\t!"));
-        assertTrue(result.body.contains("C:\\Users"));
+        // 在JSON字符串中，\\\\ 会被处理为 \\（两个反斜杠变成一个）
+        assertTrue(result.body.contains("C:\\\\Users"));
     }
 
     @Test(description = "解析多行cURL命令")
@@ -395,7 +398,8 @@ public class CurlParserTest {
 
     @Test(description = "测试转义字符处理")
     public void testEscapeCharacterHandling() {
-        String curl = "curl -d 'line1\\nline2\\tindented\\\\backslash\\\"quote' https://api.example.com";
+        // 使用 $'...' 格式来支持转义字符（ANSI-C quoting）
+        String curl = "curl -d $'line1\\nline2\\tindented\\\\backslash\\\"quote' https://api.example.com";
         CurlRequest result = CurlParser.parse(curl);
 
         String expectedBody = "line1\nline2\tindented\\backslash\"quote";
@@ -560,7 +564,8 @@ public class CurlParserTest {
 
         assertEquals(result.method, "POST");
         assertTrue(result.body.contains("Hello World!"));
-        assertTrue(result.body.contains("C:\\Users"));
+        // 在JSON字符串中，\\\\ 会被处理为 \\（两个反斜杠变成一个）
+        assertTrue(result.body.contains("C:\\\\Users"));
     }
 
     @Test(description = "测试Windows CMD格式的路径处理")
@@ -754,7 +759,7 @@ public class CurlParserTest {
                 curl 'http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList' \
                   -H 'Accept: */*' \
                   -H 'Accept-Language: zh-CN,zh;q=0.9' \
-                  -H 'Authorization: bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIxNTMyNjUyMjY1MyIsInNjb3BlIjpbImFsbCJdLCJleHAiOjE4MjA5MjMxMTcsImp0aSI6IlAwenZRQk5yT05RUF9zeU85ZFFjeU9qLU1icyIsImNsaWVudF9pZCI6Im1hbGwtd2VhcHAiLCJtZW1iZXJJZCI6IjdxNXIxajN6eGU4YTMzYjE5OHh2em15NSIsInVzZXJuYW1lIjoiMTUzMjY1MjI2NTMifQ.i12RSQz59sA9kjEcuXE0ljH11SJDSljaMHThzEnAdBTkUw3lt629f7bzBeD5P00xXBib8TrT2YI_Y0XLK36EMcQ3MUXhQlr_osKQgYpEWlypF4xOTnda_9fPPbjMWZvGUeDul86hX_S0Lxw1Fr9HhSbrL71pHmRtrh2KGYysbWIrXLoGxQKKg4-TuTSm-HNSLk_eX_Ob4aP1HXEhIiCEdG37b92BI5HBwmsMLl1Ir4IRmyjaos277wbL4NAr7ufBmvtduA6QeoK_PtoE5_iMRUe89WyCoCgMFa4PY2NEJteehuQ-stUyoDE9Y3g5nuJESi0xrg-WQjDbfUe2xNPZ_w' \
+                  -H 'Authorization: bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
                   -H 'Cache-Control: no-cache' \
                   -H 'Connection: keep-alive' \
                   -H 'Content-Type: application/json' \
@@ -832,5 +837,15 @@ public class CurlParserTest {
 
         // 验证 body 不包含字面的 \n
         assertTrue(!result.body.contains("\\n"), "Body should not contain literal \\n");
+    }
+
+    @Test
+    public void testActualUserCurl() {
+        // Actual curl from user (simplified version)
+        String curl = "curl 'https://www.doubao.com/samantha/chat/completion?aid=497858' \\\n" +
+                "  -H 'content-type: application/json' \\\n" +
+                "  --data-raw '{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}'";
+        CurlRequest result = CurlParser.parse(curl);
+        assertTrue(result.body.equals("{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}"));
     }
 }

@@ -5,8 +5,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.setting.SettingManager;
-import com.laker.postman.panel.collections.right.request.sub.EasyHttpHeadersPanel;
-import com.laker.postman.panel.collections.right.request.sub.EasyParamsTablePanel;
 import com.laker.postman.common.table.map.EasyTablePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -380,13 +378,7 @@ public class RequestEditSubPanel extends JPanel {
                                 JOptionPane.YES_NO_OPTION,
                                 JOptionPane.QUESTION_MESSAGE);
                         if (result == JOptionPane.YES_OPTION) {
-                            // 检查 header 区域是否已存在 Accept: text/event-stream（忽略大小写）
-                            boolean hasSseAccept = headersPanel.getMap().keySet().stream()
-                                    .anyMatch(k -> k != null && k.equalsIgnoreCase(ACCEPT) &&
-                                            TEXT_EVENT_STREAM.equalsIgnoreCase(headersPanel.getMap().get(k)));
-                            if (!hasSseAccept) {
-                                headersPanel.addRow(ACCEPT, TEXT_EVENT_STREAM);
-                            }
+                            headersPanel.setOrUpdateHeader(ACCEPT, TEXT_EVENT_STREAM);
                             reqTabs.setSelectedComponent(headersPanel);
                             // 定位到headerpanel table的最后一行
                             headersPanel.scrollRectToVisible();

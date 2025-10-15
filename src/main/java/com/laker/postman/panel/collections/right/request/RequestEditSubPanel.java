@@ -330,7 +330,7 @@ public class RequestEditSubPanel extends JPanel {
         // 协议分发 - 根据HttpRequestItem的protocol字段分发
         if (protocol.isWebSocketProtocol()) {
             handleWebSocketRequest(item, req, bindings);
-        } else if (isSSERequest(req)) {
+        } else if (protocol.isSseProtocol()) {
             handleSseRequest(item, req, bindings);
         } else {
             handleHttpRequest(item, req, bindings);
@@ -369,26 +369,10 @@ public class RequestEditSubPanel extends JPanel {
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
 
-                if (resp != null && resp.isSse) {
+                // 只有当前协议是 HTTP 且响应是 SSE 类型时，才提示切换到 SSE 协议
+                if (resp != null && resp.isSse && protocol == RequestItemProtocolEnum.HTTP) {
                     // 弹窗提示用户是否切换到SSE监听模式
-                    SwingUtilities.invokeLater(() -> {
-                        int result = JOptionPane.showConfirmDialog(RequestEditSubPanel.this,
-                                I18nUtil.getMessage(MessageKeys.SSE_SWITCH_TIP),
-                                I18nUtil.getMessage(MessageKeys.SSE_SWITCH_TITLE),
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.QUESTION_MESSAGE);
-                        if (result == JOptionPane.YES_OPTION) {
-                            headersPanel.setOrUpdateHeader(ACCEPT, TEXT_EVENT_STREAM);
-                            reqTabs.setSelectedComponent(headersPanel);
-                            // 定位到headerpanel table的最后一行
-                            headersPanel.scrollRectToVisible();
-                            JOptionPane.showMessageDialog(RequestEditSubPanel.this,
-                                    I18nUtil.getMessage(MessageKeys.SSE_HEADER_ADDED),
-                                    I18nUtil.getMessage(MessageKeys.OPERATION_TIP),
-                                    JOptionPane.INFORMATION_MESSAGE);
-                            sendRequest(null);
-                        }
-                    });
+                    SwingUtilities.invokeLater(() -> SingletonFactory.getInstance(RequestEditPanel.class).switchCurrentTabToSseProtocol());
                 }
             }
         };
@@ -405,11 +389,11 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    if (!isSSERequest(req)) {
-                        req.headers.remove("accept"); // 如果不是SSE请求，移除Accept头
-                        req.headers.remove(ACCEPT);
-                        req.headers.put(ACCEPT, TEXT_EVENT_STREAM); // 确保设置为SSE类型
-                    }
+//                    if (!isSSERequest(req)) {
+//                        req.headers.remove("accept"); // 如果不是SSE请求，移除Accept头
+//                        req.headers.remove(ACCEPT);
+//                        req.headers.put(ACCEPT, TEXT_EVENT_STREAM); // 确保设置为SSE类型
+//                    }
                     startTime = System.currentTimeMillis();
                     resp = new HttpResponse();
                     sseBodyBuilder = new StringBuilder();
@@ -1031,6 +1015,13 @@ public class RequestEditSubPanel extends JPanel {
             return List.of();
         }
         return List.of();
+    }
+
+    /**
+     * 程序化点击发送按钮
+     */
+    public void clickSendButton() {
+        SwingUtilities.invokeLater(() -> requestLinePanel.getSendButton().doClick());
     }
 }
 

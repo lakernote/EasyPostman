@@ -478,4 +478,54 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
         return null;
     }
+
+    /**
+     * 将当前 HTTP 协议的 tab 切换为 SSE 协议
+     * 这会重新创建一个 SSE 类型的 RequestEditSubPanel，保留原有的请求数据
+     */
+    public void switchCurrentTabToSseProtocol() {
+        int currentIndex = tabbedPane.getSelectedIndex();
+        if (currentIndex < 0 || isPlusTab(currentIndex)) {
+            return;
+        }
+
+        Component comp = tabbedPane.getComponentAt(currentIndex);
+        if (!(comp instanceof RequestEditSubPanel oldPanel)) {
+            return;
+        }
+
+        // 获取当前的请求数据
+        HttpRequestItem currentItem = oldPanel.getCurrentRequest();
+        if (currentItem == null) {
+            return;
+        }
+
+        // 如果已经是 SSE 协议，不需要切换
+        if (currentItem.getProtocol() == RequestItemProtocolEnum.SSE) {
+            return;
+        }
+
+        // 修改协议为 SSE
+        currentItem.setProtocol(RequestItemProtocolEnum.SSE);
+
+        // 获取当前 tab 的标题
+        String tabTitle = tabbedPane.getTitleAt(currentIndex);
+
+        // 创建新的 SSE 协议的 RequestEditSubPanel
+        RequestEditSubPanel newPanel = new RequestEditSubPanel(currentItem.getId(), RequestItemProtocolEnum.SSE);
+
+        // 将请求数据填充到新面板
+        newPanel.updateRequestForm(currentItem);
+
+        // 替换 tab
+        tabbedPane.setComponentAt(currentIndex, newPanel);
+        ClosableTabComponent newTabComponent = new ClosableTabComponent(tabTitle, RequestItemProtocolEnum.SSE);
+        newTabComponent.setNewRequest(true);
+        tabbedPane.setTabComponentAt(currentIndex, newTabComponent);
+
+        // 保持选中状态
+        tabbedPane.setSelectedIndex(currentIndex);
+        // click send button
+        newPanel.clickSendButton();
+    }
 }

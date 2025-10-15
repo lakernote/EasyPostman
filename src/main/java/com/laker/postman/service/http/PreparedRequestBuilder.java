@@ -11,6 +11,10 @@ import java.util.Map;
  * 负责构建 PreparedRequest
  */
 public class PreparedRequestBuilder {
+    private PreparedRequestBuilder() {
+        // 私有构造函数，防止实例化
+    }
+
     public static PreparedRequest build(HttpRequestItem item) {
         PreparedRequest req = new PreparedRequest();
         req.id = item.getId();
@@ -24,7 +28,9 @@ public class PreparedRequestBuilder {
         req.body = item.getBody(); // 暂不替换变量
         req.bodyType = item.getBodyType();
         req.urlencoded = item.getUrlencoded(); // 暂不替换变量
-        req.isMultipart = item.getFormData() != null && !item.getFormData().isEmpty();
+        boolean hasFormData = item.getFormData() != null && !item.getFormData().isEmpty();
+        boolean hasFormFiles = item.getFormFiles() != null && !item.getFormFiles().isEmpty();
+        req.isMultipart = hasFormData || hasFormFiles;
         if (req.isMultipart) {
             req.formData = item.getFormData(); // 暂不替换变量
             req.formFiles = item.getFormFiles(); // 暂不替换变量
@@ -57,7 +63,7 @@ public class PreparedRequestBuilder {
     }
 
     private static Map<String, String> replaceVariables(Map<String, String> headers) {
-        if (headers == null) return null;
+        if (headers == null) return new LinkedHashMap<>();
         Map<String, String> processedHeaders = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             String key = entry.getKey();

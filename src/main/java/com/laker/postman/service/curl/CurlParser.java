@@ -10,7 +10,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * cURL 命令解析器，支持 Bash 和 CMD 格式
+ * cURL 命令解析器，支持 Bash 格式
+ *
  */
 @Slf4j
 public class CurlParser {
@@ -21,7 +22,7 @@ public class CurlParser {
 
     /**
      * 解析 cURL 命令字符串为 CurlRequest 对象
-     * 支持 Bash 和 Windows CMD 格式
+     * 支持 Bash 格式
      *
      * @param curl cURL 命令字符串
      * @return 解析后的 CurlRequest 对象
@@ -35,10 +36,10 @@ public class CurlParser {
             return req;
         }
 
-        // 检测命令格式并进行预处理
+        // 预处理命令
         curl = preprocessCommand(curl);
 
-        // 去除换行符 和多余空格
+        // 去除换行符和多余空格
         List<String> tokens = tokenize(curl);
 
         for (int i = 0; i < tokens.size(); i++) {
@@ -90,7 +91,7 @@ public class CurlParser {
 
             // 5. Body
             else if (token.equals("-d") || token.equals("--data")
-                    || token.equals("--data-raw") || token.equals("--data-binary")) {
+                     || token.equals("--data-raw") || token.equals("--data-binary")) {
                 if (i + 1 < tokens.size()) {
                     String rawBody = tokens.get(++i);
                     // tokenize 方法已经处理了 shell 层面的转义，不需要再次 unescape
@@ -198,16 +199,14 @@ public class CurlParser {
 
     /**
      * 解析 cURL 命令行参数为 token 列表，支持引号包裹和普通参数
-     * 支持 Bash 和 Windows CMD 格式
+     * 支持 Bash 格式的单引号、双引号和 $'...' 格式
      *
      * @param cmd cURL 命令字符串
      * @return 参数 token 列表
      */
     private static List<String> tokenize(String cmd) {
-        // 1. 处理 Bash 格式的反斜杠续行符
+        // 处理 Bash 格式的反斜杠续行符
         cmd = cmd.replaceAll("\\\\[\\r\\n]+", " ");
-        // 2. 处理 Windows CMD 格式的 ^ 续行符
-        cmd = cmd.replaceAll("\\^[\\r\\n]+", " ");
 
         List<String> tokens = new ArrayList<>();
         StringBuilder currentToken = new StringBuilder();
@@ -316,7 +315,7 @@ public class CurlParser {
     }
 
     /**
-     * 将 PreparedRequest 转换为 cURL 命令字符串
+     * 将 PreparedRequest 转换为 cURL 命令字符串（Bash 格式）
      */
     public static String toCurl(PreparedRequest preparedRequest) {
         StringBuilder sb = new StringBuilder();
@@ -354,7 +353,7 @@ public class CurlParser {
         return sb.toString();
     }
 
-    // shell参数转义
+    // Bash shell参数转义
     private static String escapeShellArg(String s) {
         if (s == null) return "''";
         if (s.contains("'")) {
@@ -366,19 +365,17 @@ public class CurlParser {
 
 
     /**
-     * 预处理 cURL 命令字符串，支持 Windows CMD 格式
+     * 预处理 cURL 命令字符串
      *
      * @param curl cURL 命令字符串
      * @return 预处理后的命令字符串
      */
     private static String preprocessCommand(String curl) {
-        // 1. 处理行末的 ^ 续行符（Windows CMD 特有）
-        curl = curl.replaceAll("\\s*\\^\\s*[\\r\\n]+", " ");
-        // 2. 处理行末的 \ 续行符（Bash 特有）
+        // 处理 Bash 行末的 \ 续行符
         curl = curl.replaceAll("\\s*\\\\\\s*[\\r\\n]+", " ");
-        // 3. 替换连续的空格为一个空格
+        // 替换连续的空格为一个空格
         curl = curl.replaceAll("\\s+", " ");
-        // 4. 去除首尾空格
+        // 去除首尾空格
         curl = curl.trim();
         return curl;
     }

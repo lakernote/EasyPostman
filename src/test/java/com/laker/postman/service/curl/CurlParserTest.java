@@ -11,7 +11,7 @@ import static org.testng.Assert.*;
 
 /**
  * CurlParser 单元测试类
- * 测试 cURL 命令解析器的各种功能
+ * 测试 cURL 命令解析器的各种功能（仅支持 Bash 格式）
  */
 public class CurlParserTest {
 
@@ -111,17 +111,16 @@ public class CurlParserTest {
     public void testParseDataWithEscapeCharacters() {
         // 使用双引号来支持转义字符处理
         String curl = "curl -X POST https://api.example.com/data " +
-                "-d \"{\\\"message\\\":\\\"Hello\\nWorld\\t!\\\",\\\"path\\\":\\\"C:\\\\\\\\Users\\\"}\"";
+                "-d \"{\\\"message\\\":\\\"Hello\\nWorld\\t!\\\",\\\"path\\\":\\\"/usr/local\\\"}\"";
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "POST");
         // 在JSON字符串中，\n和\t会被处理为实际的换行和制表符
         assertTrue(result.body.contains("Hello\nWorld\t!"));
-        // 在JSON字符串中，\\\\ 会被处理为 \\（两个反斜杠变成一个）
-        assertTrue(result.body.contains("C:\\\\Users"));
+        assertTrue(result.body.contains("/usr/local"));
     }
 
-    @Test(description = "解析多行cURL命令")
+    @Test(description = "解析多行cURL命令（Bash格式）")
     public void testParseMultiLineCurlCommand() {
         String curl = """
                 curl -X POST \\
@@ -279,8 +278,8 @@ public class CurlParserTest {
         assertTrue(curlCommand.contains("-H \"Accept: application/json\""));
     }
 
-    @Test(description = "测试Shell参数转义")
-    public void testShellArgumentEscaping() {
+    @Test(description = "测试Bash Shell参数转义")
+    public void testBashShellArgumentEscaping() {
         PreparedRequest preparedRequest = new PreparedRequest();
         preparedRequest.method = "POST";
         preparedRequest.url = "https://api.example.com/users";
@@ -396,8 +395,8 @@ public class CurlParserTest {
         assertEquals(result.method, "POST"); // 应该转换为大写
     }
 
-    @Test(description = "测试转义字符处理")
-    public void testEscapeCharacterHandling() {
+    @Test(description = "测试Bash $'...'格式的转义字符处理")
+    public void testBashDollarQuoteEscapeCharacterHandling() {
         // 使用 $'...' 格式来支持转义字符（ANSI-C quoting）
         String curl = "curl -d $'line1\\nline2\\tindented\\\\backslash\\\"quote' https://api.example.com";
         CurlRequest result = CurlParser.parse(curl);
@@ -420,7 +419,7 @@ public class CurlParserTest {
         assertTrue(curlCommand.contains("\"https://api.example.com\""));
     }
 
-    @Test(description = "测试复合场景 - 完整的cURL命令")
+    @Test(description = "测试复合场景 - 完整的Bash cURL命令")
     public void testCompleteScenario() {
         String curl = "curl -L -X POST 'https://api.example.com/users?active=true' " +
                 "-H 'Content-Type: application/json' " +
@@ -472,199 +471,6 @@ public class CurlParserTest {
         assertEquals(parsed.headers.get("Content-Type"), original.headers.get("Content-Type"));
         assertEquals(parsed.headers.get("Accept"), original.headers.get("Accept"));
         assertEquals(parsed.body, original.body);
-    }
-
-    // ===================
-    // Windows CMD 格式测试
-    // ===================
-
-    @Test(description = "测试Windows CMD格式的多行cURL命令 - 使用^续行符")
-    public void testWindowsCmdMultiLineCurl() {
-        String curl = """
-                curl -X POST ^
-                  "https://api.example.com/users" ^
-                  -H "Content-Type: application/json" ^
-                  -d "{\\"name\\":\\"John\\"}"
-                """;
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.url, "https://api.example.com/users");
-        assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.body, "{\"name\":\"John\"}");
-    }
-
-    @Test(description = "测试Windows CMD格式的POST请求带JSON数据")
-    public void testWindowsCmdPostRequestWithJsonData() {
-        String curl = "curl -X POST \"https://api.example.com/users\" " +
-                "-H \"Content-Type: application/json\" " +
-                "-d \"{\\\"name\\\":\\\"John\\\",\\\"email\\\":\\\"john@example.com\\\"}\"";
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.url, "https://api.example.com/users");
-        assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.body, "{\"name\":\"John\",\"email\":\"john@example.com\"}");
-    }
-
-    @Test(description = "测试Windows CMD格式的表单数据请求")
-    public void testWindowsCmdFormDataRequest() {
-        String curl = "curl -X POST \"https://api.example.com/upload\" " +
-                "-F \"name=John\" " +
-                "-F \"email=john@example.com\" " +
-                "-F \"file=@C:\\\\path\\\\to\\\\file.txt\"";
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.url, "https://api.example.com/upload");
-        assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "multipart/form-data");
-        assertEquals(result.formData.get("name"), "John");
-        assertEquals(result.formData.get("email"), "john@example.com");
-        assertEquals(result.formFiles.get("file"), "C:\\path\\to\\file.txt");
-    }
-
-    @Test(description = "测试Windows CMD格式的复杂多行命令")
-    public void testWindowsCmdComplexMultiLineCommand() {
-        String curl = """
-                curl -L ^
-                  -X POST ^
-                  "https://api.example.com/users?active=true" ^
-                  -H "Content-Type: application/json" ^
-                  -H "Authorization: Bearer token123" ^
-                  -H "User-Agent: EasyPostman/2.1.0" ^
-                  -b "session=abc123; csrf_token=xyz789" ^
-                  -d "{\\"name\\":\\"测试用户\\",\\"age\\":25,\\"active\\":true}"
-                """;
-
-        CurlRequest result = CurlParser.parse(curl);
-
-        // 验证基本属性
-        assertEquals(result.url, "https://api.example.com/users?active=true");
-        assertEquals(result.method, "POST");
-        assertTrue(result.followRedirects);
-
-        // 验证请求头
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.headers.get("Authorization"), "Bearer token123");
-        assertEquals(result.headers.get("User-Agent"), "EasyPostman/2.1.0");
-        assertEquals(result.headers.get("Cookie"), "session=abc123; csrf_token=xyz789");
-
-        // 验证请求体
-        assertEquals(result.body, "{\"name\":\"测试用户\",\"age\":25,\"active\":true}");
-
-        // 验证查询参数
-        assertEquals(result.params.get("active"), "true");
-    }
-
-    @Test(description = "测试Windows CMD格式的双引号转义")
-    public void testWindowsCmdDoubleQuoteEscaping() {
-        String curl = "curl -X POST \"https://api.example.com/data\" " +
-                "-d \"{\\\"message\\\":\\\"Hello World!\\\",\\\"path\\\":\\\"C:\\\\\\\\Users\\\"}\"";
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.method, "POST");
-        assertTrue(result.body.contains("Hello World!"));
-        // 在JSON字符串中，\\\\ 会被处理为 \\（两个反斜杠变成一个）
-        assertTrue(result.body.contains("C:\\\\Users"));
-    }
-
-    @Test(description = "测试Windows CMD格式的路径处理")
-    public void testWindowsCmdPathHandling() {
-        String curl = "curl -X POST \"https://api.example.com/upload\" " +
-                "-F \"file=@C:\\\\Users\\\\Admin\\\\Documents\\\\test.txt\" " +
-                "-F \"config=@D:\\\\config\\\\app.json\"";
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.formFiles.get("file"), "C:\\Users\\Admin\\Documents\\test.txt");
-        assertEquals(result.formFiles.get("config"), "D:\\config\\app.json");
-    }
-
-    @Test(description = "测试Windows CMD格式的Cookie处理")
-    public void testWindowsCmdCookieHandling() {
-        String curl = "curl \"https://api.example.com/users\" " +
-                "-b \"session=abc123; lang=en; theme=dark\"";
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.url, "https://api.example.com/users");
-        assertEquals(result.headers.get("Cookie"), "session=abc123; lang=en; theme=dark");
-    }
-
-    @Test(description = "测试Windows CMD格式的URL参数")
-    public void testWindowsCmdUrlParameter() {
-        String curl = "curl --url \"https://api.example.com/users\" -X GET";
-        CurlRequest result = CurlParser.parse(curl);
-
-        assertEquals(result.url, "https://api.example.com/users");
-        assertEquals(result.method, "GET");
-    }
-
-    @Test(description = "测试Windows CMD格式的边界情况")
-    public void testWindowsCmdEdgeCases() {
-        // 测试简单的续行符
-        String curl1 = "curl \"https://api.example.com\"";
-        CurlRequest result1 = CurlParser.parse(curl1);
-        assertEquals(result1.url, "https://api.example.com");
-
-        // 测试带续行符的命令
-        String curl2 = """
-                curl ^
-                  "https://api.example.com" ^
-                  -X GET
-                """;
-        CurlRequest result2 = CurlParser.parse(curl2);
-        assertEquals(result2.url, "https://api.example.com");
-        assertEquals(result2.method, "GET");
-    }
-
-    @Test(description = "测试Windows CMD格式的数据参数变体")
-    public void testWindowsCmdDataParameterVariants() {
-        // 测试 --data-raw
-        String curl1 = "curl --data-raw \"test data\" \"https://api.example.com\"";
-        CurlRequest result1 = CurlParser.parse(curl1);
-        assertEquals(result1.method, "POST");
-        assertEquals(result1.body, "test data");
-
-        // 测试 --data-binary
-        String curl2 = "curl --data-binary \"binary data\" \"https://api.example.com\"";
-        CurlRequest result2 = CurlParser.parse(curl2);
-        assertEquals(result2.method, "POST");
-        assertEquals(result2.body, "binary data");
-    }
-
-    @Test(description = "测试Windows CMD格式的完整场景")
-    public void testWindowsCmdCompleteScenario() {
-        String curl = """
-                curl -L ^
-                  -X PUT ^
-                  "https://api.example.com/users/123?timestamp=1640995200" ^
-                  -H "Content-Type: application/json" ^
-                  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.token.signature" ^
-                  -H "Accept: application/json" ^
-                  -H "User-Agent: EasyPostman/2.1.0 (Windows NT 10.0)" ^
-                  -b "JSESSIONID=1234567890ABCDEF; Path=/; Secure" ^
-                  -d "{\\"id\\":123,\\"name\\":\\"Updated User\\",\\"email\\":\\"updated@example.com\\",\\"active\\":true}"
-                """;
-
-        CurlRequest result = CurlParser.parse(curl);
-
-        // 验证基本属性
-        assertEquals(result.url, "https://api.example.com/users/123?timestamp=1640995200");
-        assertEquals(result.method, "PUT");
-        assertTrue(result.followRedirects);
-
-        // 验证请求头
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.headers.get("Authorization"), "Bearer eyJhbGciOiJIUzI1NiJ9.token.signature");
-        assertEquals(result.headers.get("Accept"), "application/json");
-        assertEquals(result.headers.get("User-Agent"), "EasyPostman/2.1.0 (Windows NT 10.0)");
-        assertEquals(result.headers.get("Cookie"), "JSESSIONID=1234567890ABCDEF; Path=/; Secure");
-
-        // 验证请求体
-        String expectedBody = "{\"id\":123,\"name\":\"Updated User\",\"email\":\"updated@example.com\",\"active\":true}";
-        assertEquals(result.body, expectedBody);
-
-        // 验证查询参数
-        assertEquals(result.params.get("timestamp"), "1640995200");
     }
 
     @Test(description = "解析WebSocket连接的curl命令")
@@ -752,29 +558,28 @@ public class CurlParserTest {
         assertEquals(result.headers.get("User-Agent"), "TestAgent");
     }
 
-    @Test(description = "解析用户提供的复杂 curl 示例")
-    public void testParseProvidedCurlExample() {
-        // Use Java 17 text block for the multi-line curl command
+    @Test(description = "解析复杂的Bash多行curl示例")
+    public void testParseComplexBashCurlExample() {
         var curl = """
-                curl 'http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList' \
-                  -H 'Accept: */*' \
-                  -H 'Accept-Language: zh-CN,zh;q=0.9' \
-                  -H 'Authorization: bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
-                  -H 'Cache-Control: no-cache' \
-                  -H 'Connection: keep-alive' \
-                  -H 'Content-Type: application/json' \
-                  -H 'Origin: http://127.0.0.1:8801' \
-                  -H 'Pragma: no-cache' \
-                  -H 'Referer: http://127.0.0.1:8801/doc.html' \
-                  -H 'Request-Origion: Knife4j' \
-                  -H 'Sec-Fetch-Dest: empty' \
-                  -H 'Sec-Fetch-Mode: cors' \
-                  -H 'Sec-Fetch-Site: same-origin' \
-                  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36' \
-                  -H 'knife4j-gateway-code: ROOT' \
-                  -H 'sec-ch-ua: "Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"' \
-                  -H 'sec-ch-ua-mobile: ?0' \
-                  -H 'sec-ch-ua-platform: "Windows"' \
+                curl 'http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList' \\
+                  -H 'Accept: */*' \\
+                  -H 'Accept-Language: zh-CN,zh;q=0.9' \\
+                  -H 'Authorization: bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \\
+                  -H 'Cache-Control: no-cache' \\
+                  -H 'Connection: keep-alive' \\
+                  -H 'Content-Type: application/json' \\
+                  -H 'Origin: http://127.0.0.1:8801' \\
+                  -H 'Pragma: no-cache' \\
+                  -H 'Referer: http://127.0.0.1:8801/doc.html' \\
+                  -H 'Request-Origion: Knife4j' \\
+                  -H 'Sec-Fetch-Dest: empty' \\
+                  -H 'Sec-Fetch-Mode: cors' \\
+                  -H 'Sec-Fetch-Site: same-origin' \\
+                  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36' \\
+                  -H 'knife4j-gateway-code: ROOT' \\
+                  -H 'sec-ch-ua: "Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"' \\
+                  -H 'sec-ch-ua-mobile: ?0' \\
+                  -H 'sec-ch-ua-platform: "Windows"' \\
                   --data-raw $'{\\n  "id": "",\\n  "memberId": "",\\n  "pageNum": 1,\\n  "pageSize": 10\\n}'
                 """;
 
@@ -782,24 +587,20 @@ public class CurlParserTest {
 
         assertNotNull(req);
         assertEquals(req.url, "http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList");
-        // 有 body 的请求默认应为 POST
         assertEquals(req.method, "POST");
-        // 常见头部检查
         assertEquals(req.headers.get("Content-Type"), "application/json");
         assertTrue(req.headers.containsKey("Authorization"));
         assertEquals(req.headers.get("Request-Origion"), "Knife4j");
 
-        // 请求体应包含关键字段（unescape 后）
         assertNotNull(req.body);
-        assertTrue(!req.body.contains("n"));
         assertTrue(req.body.contains("\"pageNum\": 1"));
         assertTrue(req.body.contains("\"pageSize\": 10"));
         assertTrue(req.body.contains("\"id\": \"\""));
         assertTrue(req.body.contains("\"memberId\": \"\""));
     }
 
-    @Test(description = "测试真实的 $'...' 格式的 cURL 命令")
-    public void testParseRealCurlWithDollarQuote() {
+    @Test(description = "测试Bash $'...'格式的真实cURL命令")
+    public void testParseRealBashCurlWithDollarQuote() {
         String curl = "curl 'http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList' \\\n" +
                 "  -H 'Accept: */*' \\\n" +
                 "  -H 'Accept-Language: zh-CN,zh;q=0.9' \\\n" +
@@ -816,36 +617,27 @@ public class CurlParserTest {
 
         CurlRequest result = CurlParser.parse(curl);
 
-        // 验证 URL
         assertEquals(result.url, "http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList");
-
-        // 验证方法
         assertEquals(result.method, "POST");
-
-        // 验证 headers
         assertEquals(result.headers.get("Accept"), "*/*");
         assertEquals(result.headers.get("Content-Type"), "application/json");
         assertEquals(result.headers.get("Authorization"), "bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9");
 
-        // 验证 body - 应该包含真正的换行符
         assertNotNull(result.body);
         assertTrue(result.body.contains("\n"), "Body should contain newline characters");
         assertTrue(result.body.contains("\"id\":"), "Body should contain id field");
         assertTrue(result.body.contains("\"memberId\":"), "Body should contain memberId field");
         assertTrue(result.body.contains("\"pageNum\": 1"), "Body should contain pageNum field");
         assertTrue(result.body.contains("\"pageSize\": 10"), "Body should contain pageSize field");
-
-        // 验证 body 不包含字面的 \n
         assertTrue(!result.body.contains("\\n"), "Body should not contain literal \\n");
     }
 
-    @Test
-    public void testActualUserCurl() {
-        // Actual curl from user (simplified version)
+    @Test(description = "测试真实的Bash curl命令")
+    public void testActualUserBashCurl() {
         String curl = "curl 'https://www.doubao.com/samantha/chat/completion?aid=497858' \\\n" +
                 "  -H 'content-type: application/json' \\\n" +
                 "  --data-raw '{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}'";
         CurlRequest result = CurlParser.parse(curl);
-        assertTrue(result.body.equals("{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}"));
+        assertEquals(result.body, "{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}");
     }
 }

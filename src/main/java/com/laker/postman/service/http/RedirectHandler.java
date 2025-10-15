@@ -43,7 +43,7 @@ public class RedirectHandler {
             currentReq.followRedirects = followRedirects;
             currentReq.urlencoded = urlencoded;
             currentReq.logEvent = true; // 记录事件日志
-            HttpResponse resp = HttpSingleRequestExecutor.execute(currentReq);
+            HttpResponse resp = HttpSingleRequestExecutor.executeHttp(currentReq);
             req.okHttpHeaders = currentReq.okHttpHeaders; // 更新请求头
             req.okHttpRequestBody = currentReq.okHttpRequestBody; // 更新真实请求体内容
             // 记录本次响应

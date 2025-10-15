@@ -59,37 +59,38 @@ public class HttpService {
      * @throws Exception 发送请求异常
      */
     public static HttpResponse sendRequest(PreparedRequest req) throws Exception {
-        String baseUri = extractBaseUri(req.url);
-        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient client = buildDynamicClient(baseClient, req, timeoutMs);
-        Request request = OkHttpRequestBuilder.buildRequest(req);
-        Call call = client.newCall(request);
-        return callWithRequest(call, client);
+        Request request = buildRequestByType(req);
+        return executeRequest(req, request);
     }
 
     /**
-     * 发送 form-urlencoded 请求
+     * 根据请求类型构建 Request
      */
-    public static HttpResponse sendRequestWithForm(PreparedRequest req) throws Exception {
-        String baseUri = extractBaseUri(req.url);
-        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient client = buildDynamicClient(baseClient, req, timeoutMs);
-        Request request = OkHttpRequestBuilder.buildFormRequest(req);
-        Call call = client.newCall(request);
-        return callWithRequest(call, client);
+    private static Request buildRequestByType(PreparedRequest req) {
+        if (req.isMultipart) {
+            return OkHttpRequestBuilder.buildMultipartRequest(req);
+        } else if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+            return OkHttpRequestBuilder.buildFormRequest(req);
+        } else {
+            return OkHttpRequestBuilder.buildRequest(req);
+        }
     }
 
     /**
-     * 发送 multipart请求，支持文本字段和文件字段（OkHttp 实现）
+     * 构建自定义 OkHttpClient
      */
-    public static HttpResponse sendRequestWithMultipart(PreparedRequest req) throws Exception {
+    private static OkHttpClient buildCustomClient(PreparedRequest req) {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
         int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient client = buildDynamicClient(baseClient, req, timeoutMs);
-        Request request = OkHttpRequestBuilder.buildMultipartRequest(req);
+        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        return buildDynamicClient(baseClient, req, timeoutMs);
+    }
+
+    /**
+     * 执行 HTTP 请求的通用方法
+     */
+    private static HttpResponse executeRequest(PreparedRequest req, Request request) throws Exception {
+        OkHttpClient client = buildCustomClient(req);
         Call call = client.newCall(request);
         return callWithRequest(call, client);
     }
@@ -98,11 +99,8 @@ public class HttpService {
      * 发送 SSE 请求，支持动态 eventListenerFactory 和超时配置
      */
     public static EventSource sendSseRequest(PreparedRequest req, EventSourceListener listener) {
-        String baseUri = extractBaseUri(req.url);
-        int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        OkHttpClient customClient = buildDynamicClient(baseClient, req, timeoutMs);
-        Request request = OkHttpRequestBuilder.buildRequest(req);
+        OkHttpClient customClient = buildCustomClient(req);
+        Request request = buildRequestByType(req);
         return EventSources.createFactory(customClient).newEventSource(request, listener);
     }
 
@@ -110,11 +108,8 @@ public class HttpService {
      * 发送 WebSocket 请求，支持动态 eventListenerFactory 和超时配置
      */
     public static WebSocket sendWebSocket(PreparedRequest req, WebSocketListener listener) {
-        String baseUri = extractBaseUri(req.url);
-        int timeoutMs = SettingManager.getRequestTimeout();
-        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        OkHttpClient customClient = buildDynamicClient(baseClient, req, timeoutMs);
-        Request request = OkHttpRequestBuilder.buildRequest(req);
+        OkHttpClient customClient = buildCustomClient(req);
+        Request request = buildRequestByType(req);
         return customClient.newWebSocket(request, new LogWebSocketListener(listener));
     }
 

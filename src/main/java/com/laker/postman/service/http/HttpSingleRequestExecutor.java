@@ -10,8 +10,8 @@ import okhttp3.sse.EventSourceListener;
 @Slf4j
 public class HttpSingleRequestExecutor {
 
-    public static HttpResponse execute(PreparedRequest req) throws Exception {
-        return sendRequestByType(req);
+    public static HttpResponse executeHttp(PreparedRequest req) throws Exception {
+        return HttpService.sendRequest(req);
     }
 
     public static EventSource executeSSE(PreparedRequest req, EventSourceListener listener) {
@@ -20,15 +20,5 @@ public class HttpSingleRequestExecutor {
 
     public static okhttp3.WebSocket executeWebSocket(PreparedRequest req, WebSocketListener listener) {
         return HttpService.sendWebSocket(req, listener);
-    }
-
-    private static HttpResponse sendRequestByType(PreparedRequest req) throws Exception {
-        if (req.isMultipart) {
-            return HttpService.sendRequestWithMultipart(req);
-        } else if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
-            return HttpService.sendRequestWithForm(req);
-        } else {
-            return HttpService.sendRequest(req);
-        }
     }
 }

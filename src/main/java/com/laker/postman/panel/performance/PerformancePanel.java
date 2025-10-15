@@ -1016,7 +1016,7 @@ public class PerformancePanel extends SingletonBasePanel {
             if (preOk) {
                 try {
                     req.logEvent = !efficientMode; // 记录事件日志
-                    resp = HttpSingleRequestExecutor.execute(req);
+                    resp = HttpSingleRequestExecutor.executeHttp(req);
                 } catch (Exception ex) {
                     log.error("请求执行失败: {}", ex.getMessage(), ex);
                     errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_FAILED, ex.getMessage());

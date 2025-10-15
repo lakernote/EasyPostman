@@ -387,7 +387,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
-                resp = HttpSingleRequestExecutor.execute(req);
+                resp = HttpSingleRequestExecutor.executeHttp(req);
                 status = String.valueOf(resp.code);
                 assertion = runPostScriptAndAssertWithCsv(item, bindings, resp, row, pm);
             } catch (Exception ex) {

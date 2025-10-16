@@ -5,13 +5,13 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.combobox.EnvironmentComboBox;
-import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.frame.MainFrame;
-import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.component.table.EasyNameValueTablePanel;
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.combobox.EnvironmentComboBox;
+import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
+import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.model.Workspace;
@@ -52,7 +52,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     public static final String COLUMN_NAME = "Name";
     public static final String COLUMN_VALUE = "Value";
     public static final String EXPORT_FILE_NAME = "EasyPostman-Environments.json";
-    private EasyNameValueTablePanel variablesTablePanel;
+    private EasyPostmanEnvironmentTablePanel variablesTablePanel;
     private transient Environment currentEnvironment;
     private JList<EnvironmentItem> environmentList;
     private DefaultListModel<EnvironmentItem> environmentListModel;
@@ -88,7 +88,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
         // 变量表格
-        variablesTablePanel = new EasyNameValueTablePanel();
+        variablesTablePanel = new EasyPostmanEnvironmentTablePanel();
         rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
 
         add(rightPanel, BorderLayout.CENTER);

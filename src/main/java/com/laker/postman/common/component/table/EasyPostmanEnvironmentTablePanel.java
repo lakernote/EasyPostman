@@ -6,19 +6,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 专用于Name-Value/Key-Value两列表格的面板，简化Map操作。
+ * Postman 环境变量表格面板
+ * 专门用于处理 Postman 环境变量数据
+ * 支持 Key、Value 两列结构
  */
-public class EasyNameValueTablePanel extends EasyTablePanel {
+public class EasyPostmanEnvironmentTablePanel extends EasyTablePanel {
     private final String nameCol;
     private final String valueCol;
 
 
-    public EasyNameValueTablePanel() {
+    public EasyPostmanEnvironmentTablePanel() {
         this("Name", "Value");
     }
 
 
-    public EasyNameValueTablePanel(String nameCol, String valueCol) {
+    public EasyPostmanEnvironmentTablePanel(String nameCol, String valueCol) {
         super(new String[]{nameCol, valueCol});
         this.nameCol = nameCol;
         this.valueCol = valueCol;

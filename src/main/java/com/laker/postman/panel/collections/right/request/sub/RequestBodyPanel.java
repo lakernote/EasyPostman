@@ -5,10 +5,8 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.table.TextOrFileTableCellEditor;
-import com.laker.postman.common.component.table.TextOrFileTableCellRenderer;
 import com.laker.postman.common.component.table.EasyNameValueTablePanel;
-import com.laker.postman.common.component.table.EasyTablePanel;
+import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.util.EasyPostmanVariableUtil;
@@ -36,10 +34,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.MouseEvent;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-
-import static com.laker.postman.common.component.table.TableUIConstants.SELECT_FILE_TEXT;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
@@ -60,7 +55,7 @@ public class RequestBodyPanel extends JPanel {
     @Getter
     private JComboBox<String> rawTypeComboBox;
     @Getter
-    private EasyTablePanel formDataTablePanel;
+    private EasyPostmanFormDataTablePanel formDataTablePanel;
     @Getter
     private EasyNameValueTablePanel formUrlencodedTablePanel;
     @Getter
@@ -224,17 +219,8 @@ public class RequestBodyPanel extends JPanel {
     }
 
     private JPanel createFormDataPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        String[] columns = {"Key", "Type", "Value"};
-        formDataTablePanel = new EasyTablePanel(columns);
-        // 设置Type列为下拉框
-        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"Text", "File"});
-        formDataTablePanel.setColumnEditor(1, new DefaultCellEditor(typeCombo));
-        // 设置Value列根据Type动态切换编辑器和渲染器
-        formDataTablePanel.setColumnEditor(2, new TextOrFileTableCellEditor());
-        formDataTablePanel.setColumnRenderer(2, new TextOrFileTableCellRenderer());
-        panel.add(formDataTablePanel, BorderLayout.CENTER);
-        return panel;
+        formDataTablePanel = new EasyPostmanFormDataTablePanel();
+        return formDataTablePanel;
     }
 
     private JPanel createFormUrlencodedPanel() {
@@ -486,35 +472,11 @@ public class RequestBodyPanel extends JPanel {
     }
 
     public Map<String, String> getFormData() {
-        Map<String, String> formData = new LinkedHashMap<>();
-        if (formDataTablePanel != null) {
-            List<Map<String, Object>> rows = formDataTablePanel.getRows();
-            for (Map<String, Object> row : rows) {
-                String key = row.get("Key") == null ? null : row.get("Key").toString();
-                String type = row.get("Type") == null ? null : row.get("Type").toString();
-                String value = row.get("Value") == null ? null : row.get("Value").toString();
-                if (key != null && !key.trim().isEmpty() && "Text".equals(type)) {
-                    formData.put(key.trim(), value);
-                }
-            }
-        }
-        return formData;
+        return formDataTablePanel != null ? formDataTablePanel.getFormData() : new LinkedHashMap<>();
     }
 
     public Map<String, String> getFormFiles() {
-        Map<String, String> formFiles = new LinkedHashMap<>();
-        if (formDataTablePanel != null) {
-            List<Map<String, Object>> rows = formDataTablePanel.getRows();
-            for (Map<String, Object> row : rows) {
-                String key = row.get("Key") == null ? null : row.get("Key").toString();
-                String type = row.get("Type") == null ? null : row.get("Type").toString();
-                String value = row.get("Value") == null ? null : row.get("Value").toString();
-                if (key != null && !key.trim().isEmpty() && "File".equals(type) && value != null && !value.equals(SELECT_FILE_TEXT)) {
-                    formFiles.put(key.trim(), value);
-                }
-            }
-        }
-        return formFiles;
+        return formDataTablePanel != null ? formDataTablePanel.getFormFiles() : new LinkedHashMap<>();
     }
 
     public Map<String, String> getUrlencoded() {
@@ -523,4 +485,3 @@ public class RequestBodyPanel extends JPanel {
     }
 
 }
-

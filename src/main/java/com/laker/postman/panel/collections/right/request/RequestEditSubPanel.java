@@ -4,13 +4,14 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyTablePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -732,7 +733,7 @@ public class RequestEditSubPanel extends JPanel {
         }
 
         if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
-            EasyTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+            EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             formDataTablePanel.clear();
             if (item.getFormData() != null) {
                 for (Map.Entry<String, String> entry : item.getFormData().entrySet()) {

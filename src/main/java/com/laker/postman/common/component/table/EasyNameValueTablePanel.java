@@ -1,7 +1,4 @@
-package com.laker.postman.common.component.table.map;
-
-import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
-import com.laker.postman.common.component.table.EasyPostmanTextFieldCellRenderer;
+package com.laker.postman.common.component.table;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

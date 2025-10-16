@@ -1,6 +1,5 @@
-package com.laker.postman.common.component.table.map;
+package com.laker.postman.common.component.table;
 
-import com.laker.postman.common.component.table.TableRowTransferHandler;
 import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

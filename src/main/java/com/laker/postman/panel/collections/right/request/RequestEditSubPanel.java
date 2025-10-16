@@ -844,10 +844,7 @@ public class RequestEditSubPanel extends JPanel {
             // 检查URL参数和当前Params参数是否完全一致
             if (!urlParams.equals(currentParams)) {
                 // 完全用URL中的参数替换Params面板
-                paramsPanel.clear();
-                for (Map.Entry<String, String> entry : urlParams.entrySet()) {
-                    paramsPanel.addRow(entry.getKey(), entry.getValue());
-                }
+                paramsPanel.setMap(urlParams);
             }
         } finally {
             isUpdatingFromUrl = false;

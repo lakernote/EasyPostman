@@ -527,12 +527,10 @@ public class EasyParamsTablePanel extends JPanel {
         });
     }
 
-    // Public API methods
-
     /**
      * Add a new row with the given values
      */
-    public void addRow(Object... values) {
+    private void addRow(Object... values) {
         if (values == null || values.length == 0) {
             tableModel.addRow(new Object[]{true, "", "", ""});
         } else if (values.length == 2) {

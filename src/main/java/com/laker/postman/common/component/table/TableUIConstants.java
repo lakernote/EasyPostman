@@ -12,7 +12,7 @@ import java.awt.*;
  */
 public class TableUIConstants {
     // 文本常量
-    public static final String SELECT_FILE_TEXT = "选择文件";
+    public static final String SELECT_FILE_TEXT = "Select File";
     public static final String FILE_TYPE = "File";
 
     // 颜色常量 - 基础色

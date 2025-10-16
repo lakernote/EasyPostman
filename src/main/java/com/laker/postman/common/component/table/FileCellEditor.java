@@ -22,10 +22,10 @@ public class FileCellEditor extends DefaultCellEditor {
     private final Component parentComponent;
 
     // 记住最近打开的目录
-    private static File lastDirectory = null;
+    private File lastDirectory = null;
 
     // 可选的文件类型过滤器
-    private FileNameExtensionFilter fileFilter = null;
+    private transient FileNameExtensionFilter fileFilter = null;
 
     public FileCellEditor(Component parentComponent) {
         super(new JCheckBox());
@@ -42,7 +42,7 @@ public class FileCellEditor extends DefaultCellEditor {
         // 创建浏览按钮
         browseButton = new JButton();
         browseButton.setIcon(new FlatSVGIcon("icons/file.svg", TableUIConstants.ICON_SIZE, TableUIConstants.ICON_SIZE));
-        browseButton.setText("浏览");
+        browseButton.setText("Browse");
         browseButton.setMargin(new Insets(2, 8, 2, 8));
         browseButton.setFocusPainted(false);
         browseButton.setBackground(TableUIConstants.ZEBRA_LIGHT);
@@ -139,7 +139,6 @@ public class FileCellEditor extends DefaultCellEditor {
 
         if (filePath.isEmpty() || TableUIConstants.SELECT_FILE_TEXT.equals(filePath)) {
             pathField.setText("");
-            pathField.setToolTipText("双击此处选择文件");
         } else {
             pathField.setText(filePath);
             pathField.setToolTipText(filePath);

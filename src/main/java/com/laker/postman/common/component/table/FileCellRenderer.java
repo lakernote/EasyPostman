@@ -17,9 +17,6 @@ public class FileCellRenderer implements TableCellRenderer {
     // 文件路径显示的最大长度，超过则截断
     private static final int MAX_PATH_DISPLAY_LENGTH = 35;
 
-    public FileCellRenderer() {
-    }
-
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         String val = value == null ? "" : value.toString();
@@ -54,7 +51,6 @@ public class FileCellRenderer implements TableCellRenderer {
             // 添加文件状态指示器
             JLabel statusLabel = new JLabel();
             statusLabel.setIcon(getFileStatusIcon(val));
-            statusLabel.setToolTipText(getFileStatusToolTip(val));
             panel.add(statusLabel, BorderLayout.EAST);
 
             // 设置边框和内边距
@@ -154,40 +150,6 @@ public class FileCellRenderer implements TableCellRenderer {
             return IconFontSwing.buildIcon(FontAwesome.LOCK, TableUIConstants.ICON_SIZE, Color.ORANGE);
         } else {
             return IconFontSwing.buildIcon(FontAwesome.CHECK_CIRCLE, TableUIConstants.ICON_SIZE, new Color(76, 175, 80));
-        }
-    }
-
-    /**
-     * 获取文件状态提示文本
-     */
-    private String getFileStatusToolTip(String path) {
-        if (path == null || path.isEmpty()) {
-            return "";
-        }
-
-        File file = new File(path);
-
-        if (!file.exists()) {
-            return "文件不存在";
-        } else if (!file.canRead()) {
-            return "文件无法读取";
-        } else {
-            return "文件可用 (" + formatFileSize(file.length()) + ")";
-        }
-    }
-
-    /**
-     * 格式化文件大小
-     */
-    private String formatFileSize(long size) {
-        if (size < 1024) {
-            return size + " B";
-        } else if (size < 1024 * 1024) {
-            return String.format("%.1f KB", size / 1024.0);
-        } else if (size < 1024 * 1024 * 1024) {
-            return String.format("%.1f MB", size / (1024.0 * 1024));
-        } else {
-            return String.format("%.1f GB", size / (1024.0 * 1024 * 1024));
         }
     }
 }

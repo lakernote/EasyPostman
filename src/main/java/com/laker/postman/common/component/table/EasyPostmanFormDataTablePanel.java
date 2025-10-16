@@ -43,7 +43,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         setLayout(new BorderLayout());
 
         // 创建表格面板
-        tablePanel = new EasyTablePanel(COLUMNS, 28, popupMenuEnabled, autoAppendRowEnabled);
+        tablePanel = new EasyTablePanel(COLUMNS, 24, popupMenuEnabled, autoAppendRowEnabled);
 
         // 设置 Type 列为下拉框编辑器
         JComboBox<String> typeCombo = new JComboBox<>(TYPE_OPTIONS);

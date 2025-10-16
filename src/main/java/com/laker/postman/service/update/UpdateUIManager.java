@@ -2,7 +2,7 @@ package com.laker.postman.service.update;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

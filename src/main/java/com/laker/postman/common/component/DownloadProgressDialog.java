@@ -1,7 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.setting.SettingManager;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.FileSizeDisplayUtil;
 import lombok.Getter;
 import org.jfree.chart.ChartFactory;

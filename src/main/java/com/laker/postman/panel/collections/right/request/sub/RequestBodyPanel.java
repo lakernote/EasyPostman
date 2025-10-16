@@ -5,10 +5,10 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.table.TextOrFileTableCellEditor;
-import com.laker.postman.common.table.TextOrFileTableCellRenderer;
-import com.laker.postman.common.table.map.EasyNameValueTablePanel;
-import com.laker.postman.common.table.map.EasyTablePanel;
+import com.laker.postman.common.component.table.TextOrFileTableCellEditor;
+import com.laker.postman.common.component.table.TextOrFileTableCellRenderer;
+import com.laker.postman.common.component.table.map.EasyNameValueTablePanel;
+import com.laker.postman.common.component.table.map.EasyTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.util.EasyPostmanVariableUtil;
@@ -39,7 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.laker.postman.common.table.TableUIConstants.SELECT_FILE_TEXT;
+import static com.laker.postman.common.component.table.TableUIConstants.SELECT_FILE_TEXT;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw

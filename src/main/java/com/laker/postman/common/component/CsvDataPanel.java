@@ -3,7 +3,7 @@ package com.laker.postman.common.component;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.CsvDataUtil;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;

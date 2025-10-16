@@ -2,10 +2,11 @@ package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.EasyPostManColors;
-import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
@@ -236,7 +237,7 @@ public class HistoryPanel extends SingletonBasePanel {
             historyListModel.add(0, item);
 
             // 限制UI显示的历史记录数量
-            int maxCount = com.laker.postman.common.setting.SettingManager.getMaxHistoryCount();
+            int maxCount = SettingManager.getMaxHistoryCount();
             while (historyListModel.size() > maxCount) {
                 historyListModel.remove(historyListModel.size() - 1);
             }

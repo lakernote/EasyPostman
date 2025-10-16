@@ -6,7 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.MessageType;
 import com.laker.postman.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;

@@ -4,7 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.EasyPostManColors;
-import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.common.SingletonBasePanel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;

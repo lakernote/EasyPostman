@@ -5,10 +5,11 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.exception.CancelException;
-import com.laker.postman.common.tab.ClosableTabComponent;
+import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
@@ -111,7 +112,7 @@ public class OpenedRequestsService {
         }
 
         // 只保存最新的多少个请求
-        int maxOpenedRequests = com.laker.postman.common.setting.SettingManager.getMaxOpenedRequestsCount();
+        int maxOpenedRequests = SettingManager.getMaxOpenedRequestsCount();
         if (openedRequestItem.size() > maxOpenedRequests) {
             openedRequestItem = new ArrayList<>(openedRequestItem.subList(openedRequestItem.size() - maxOpenedRequests, openedRequestItem.size()));
         }

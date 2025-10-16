@@ -6,7 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.setting.SettingManager;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;

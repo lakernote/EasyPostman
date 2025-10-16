@@ -2,7 +2,7 @@ package com.laker.postman.service;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.exception.CancelException;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.service.collections.OpenedRequestsService;
 import lombok.extern.slf4j.Slf4j;
 

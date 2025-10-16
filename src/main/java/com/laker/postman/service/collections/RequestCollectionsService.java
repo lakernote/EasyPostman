@@ -1,7 +1,7 @@
 package com.laker.postman.service.collections;
 
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;

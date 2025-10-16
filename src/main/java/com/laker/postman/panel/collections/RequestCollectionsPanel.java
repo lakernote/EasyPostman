@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections;
 
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.extern.slf4j.Slf4j;

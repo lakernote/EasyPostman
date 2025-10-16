@@ -4,7 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.common.panel.SingletonBasePanel;
+import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.functional.table.RunnerRowData;
 import com.laker.postman.panel.functional.table.RunnerTableModel;

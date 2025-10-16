@@ -2,7 +2,7 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.frame.MainFrame;
+import com.laker.postman.frame.MainFrame;
 
 import javax.swing.*;
 import java.awt.*;

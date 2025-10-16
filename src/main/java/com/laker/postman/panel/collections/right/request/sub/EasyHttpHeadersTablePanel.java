@@ -1,8 +1,8 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.table.EasyPostmanTextFieldCellEditor;
-import com.laker.postman.common.table.EasyPostmanTextFieldCellRenderer;
+import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
+import com.laker.postman.common.component.table.EasyPostmanTextFieldCellRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

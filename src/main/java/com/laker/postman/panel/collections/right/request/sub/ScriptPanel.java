@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.laker.postman.common.dialog.SnippetDialog;
+import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

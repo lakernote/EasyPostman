@@ -1,7 +1,6 @@
 package com.laker.postman.common;
 
 import com.laker.postman.common.exception.GetInstanceException;
-import com.laker.postman.common.panel.SingletonBasePanel;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;

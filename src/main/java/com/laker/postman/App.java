@@ -1,7 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
-import com.laker.postman.common.EasyPostManSplashWindow;
+import com.laker.postman.common.window.EasyPostManSplashWindow;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.EasyPostManStyleUtils;

@@ -158,10 +158,6 @@ public final class MessageKeys {
     public static final String WEBSOCKET_NOT_CONNECTED = "websocket.not_connected";
 
     // ============ SSE相关 ============
-    public static final String SSE_SWITCH_TIP = "sse.switch.tip";
-    public static final String SSE_SWITCH_TITLE = "sse.switch.title";
-    public static final String SSE_HEADER_ADDED = "sse.header.added";
-    public static final String OPERATION_TIP = "operation.tip";
     public static final String SSE_FAILED = "sse.failed";
     public static final String SSE_ERROR = "sse.error";
 
@@ -295,7 +291,6 @@ public final class MessageKeys {
     public static final String WORKSPACE_CREATE_DIALOG_CREATION_COMPLETED = "workspace.create.dialog.creation.completed";
     public static final String WORKSPACE_CREATE_DIALOG_CREATION_FAILED = "workspace.create.dialog.creation.failed";
     public static final String WORKSPACE_CREATE_DIALOG_CREATION_FAILED_WITH_MESSAGE = "workspace.create.dialog.creation.failed.with.message";
-    public static final String WORKSPACE_CREATE_DIALOG_GIT_INFO_TITLE = "workspace.create.dialog.git.info.title";
 
     // ProgressDialog keys
     public static final String PROGRESS_DIALOG_OPERATION_SUCCESS = "progress.dialog.operation.success";
@@ -305,7 +300,6 @@ public final class MessageKeys {
     public static final String PROGRESS_DIALOG_OPERATION_FAILED_WITH_MESSAGE = "progress.dialog.operation.failed.with.message";
     public static final String PROGRESS_DIALOG_CONFIRM_CANCEL_OPERATION = "progress.dialog.confirm.cancel.operation";
     public static final String PROGRESS_DIALOG_CONFIRM_CANCEL_TITLE = "progress.dialog.confirm.cancel.title";
-    public static final String PROGRESS_DIALOG_PROGRESS_LABEL = "progress.dialog.progress.label";
 
     // ProgressPanel keys
     public static final String PROGRESS_PANEL_READY = "progress.panel.ready";
@@ -620,7 +614,6 @@ public final class MessageKeys {
     public static final String REQUEST_BODY_NONE = "request.body.none";
     public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";
     public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
-    public static final String REQUEST_BODY_FORMAT_INVALID_JSON = "request.body.format.invalid_json";
 
     // ============ 响应头面板相关 ============
     public static final String RESPONSE_HEADERS_COPY_SELECTED = "response.headers.copy_selected";
@@ -786,11 +779,8 @@ public final class MessageKeys {
 
     // ============ PLUS_PANEL_HINT ============
     public static final String PLUS_PANEL_HINT = "plus.panel.hint";
-    public static final String PLUS_PANEL_SHORTCUT = "plus.panel.shortcut";
     public static final String PLUS_PANEL_SHORTCUT_DESC = "plus.panel.shortcut.desc";
-    public static final String SAVE_SHORTCUT = "save.shortcut";
     public static final String SAVE_SHORTCUT_DESC = "save.shortcut.desc";
-    public static final String EXIT_SHORTCUT = "exit.shortcut";
     public static final String EXIT_SHORTCUT_DESC = "exit.shortcut.desc";
 
     // ============ 代码片段弹窗（SnippetDialog）相关 ============
@@ -828,7 +818,6 @@ public final class MessageKeys {
     public static final String WATERFALL_CERTIFICATE_CN = "waterfall.certificate_cn";
     public static final String WATERFALL_ISSUER_CN = "waterfall.issuer_cn";
     public static final String WATERFALL_VALID_UNTIL = "waterfall.valid_until";
-    public static final String WATERFALL_TOTAL = "waterfall.total";
     public static final String WATERFALL_STAGE_DNS = "waterfall.stage.dns";
     public static final String WATERFALL_STAGE_SOCKET = "waterfall.stage.socket";
     public static final String WATERFALL_STAGE_SSL = "waterfall.stage.ssl";
@@ -872,7 +861,6 @@ public final class MessageKeys {
     public static final String GIT_DIALOG_REMOTE_AHEAD = "git.dialog.remoteAhead";
     public static final String GIT_DIALOG_WARNINGS = "git.dialog.warnings";
     public static final String GIT_DIALOG_SUGGESTIONS = "git.dialog.suggestions";
-    public static final String GIT_DIALOG_BULLET = "git.dialog.bullet";
     public static final String GIT_DIALOG_YES = "git.dialog.yes";
     public static final String GIT_DIALOG_NO = "git.dialog.no";
 
@@ -1006,10 +994,6 @@ public final class MessageKeys {
     public static final String GIT_CONFLICT_DETECTOR_INIT_SAFE_FIRST_PUSH = "git.conflictDetector.initSafeFirstPush";
     public static final String GIT_CONFLICT_DETECTOR_INIT_CANNOT_GET_REMOTE_INFO = "git.conflictDetector.initCannotGetRemoteInfo";
     public static final String GIT_CONFLICT_DETECTOR_INIT_CHECK_NETWORK_AUTH = "git.conflictDetector.initCheckNetworkAuth";
-
-    // 日志消息（这些是 log.info 的消息，也可以考虑国际化）
-    public static final String GIT_CONFLICT_DETECTOR_LOG_LOCAL_COMMITS_AHEAD = "git.conflictDetector.log.localCommitsAhead";
-    public static final String GIT_CONFLICT_DETECTOR_LOG_REMOTE_BRANCH_NOT_EXISTS = "git.conflictDetector.log.remoteBranchNotExists";
 
     // 文件冲突检查相关
     public static final String GIT_CONFLICT_DETECTOR_CHECK_INIT_CONFLICTS_FAILED = "git.conflictDetector.checkInitConflictsFailed";

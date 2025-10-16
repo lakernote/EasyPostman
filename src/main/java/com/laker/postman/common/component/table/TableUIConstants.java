@@ -72,9 +72,9 @@ public class TableUIConstants {
         } else if (isHovered) {
             return HOVER_COLOR;
         } else if (isEmpty) {
-            return EasyPostManColors.EMPTY_CELL_YELLOW;
+            return EasyPostManColors.EMPTY_CELL;
         } else {
-            return EasyPostManColors.EMPTY_CELL_YELLOW;
+            return table.getBackground();
         }
     }
 }

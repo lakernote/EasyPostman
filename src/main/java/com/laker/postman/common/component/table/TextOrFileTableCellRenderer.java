@@ -51,7 +51,6 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
             }
         }
 
-        // 斑马纹、选中、悬停、空值高亮
         int hoverRow = -1;
         Object hoverObj = table.getClientProperty("hoverRow");
         if (hoverObj instanceof Integer) hoverRow = (Integer) hoverObj;

@@ -18,7 +18,7 @@ public class EasyPostManColors {
     public static final Color PANEL_BACKGROUND = new Color(245, 247, 250);
 
     // 空值列配色
-    public static final Color EMPTY_CELL_YELLOW = Color.WHITE;
+    public static final Color EMPTY_CELL = Color.WHITE;
 
     // ==================== 菜单相关颜色 ====================
 

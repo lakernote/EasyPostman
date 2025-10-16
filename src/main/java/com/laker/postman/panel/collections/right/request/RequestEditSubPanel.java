@@ -5,7 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
-import com.laker.postman.common.component.table.EasyTablePanel;
+import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
@@ -748,7 +748,7 @@ public class RequestEditSubPanel extends JPanel {
         }
 
         if (MapUtil.isNotEmpty(item.getUrlencoded())) {
-            EasyTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+            EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             urlencodedTablePanel.clear();
             for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
                 urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());

@@ -5,8 +5,8 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.table.EasyNameValueTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
+import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.util.EasyPostmanVariableUtil;
@@ -57,7 +57,7 @@ public class RequestBodyPanel extends JPanel {
     @Getter
     private EasyPostmanFormDataTablePanel formDataTablePanel;
     @Getter
-    private EasyNameValueTablePanel formUrlencodedTablePanel;
+    private EasyPostmanFormUrlencodedTablePanel formUrlencodedTablePanel;
     @Getter
     private RSyntaxTextArea bodyArea;
     private CardLayout bodyCardLayout;
@@ -224,10 +224,8 @@ public class RequestBodyPanel extends JPanel {
     }
 
     private JPanel createFormUrlencodedPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        formUrlencodedTablePanel = new EasyNameValueTablePanel("Key", "Value");
-        panel.add(formUrlencodedTablePanel, BorderLayout.CENTER);
-        return panel;
+        formUrlencodedTablePanel = new EasyPostmanFormUrlencodedTablePanel();
+        return formUrlencodedTablePanel;
     }
 
     private JPanel createRawPanel() {
@@ -480,8 +478,8 @@ public class RequestBodyPanel extends JPanel {
     }
 
     public Map<String, String> getUrlencoded() {
-        if (formUrlencodedTablePanel == null) return null;
-        return formUrlencodedTablePanel.getMap();
+        if (formUrlencodedTablePanel == null) return new LinkedHashMap<>();
+        return formUrlencodedTablePanel.getFormData();
     }
 
 }

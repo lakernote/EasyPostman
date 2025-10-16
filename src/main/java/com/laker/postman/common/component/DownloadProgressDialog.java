@@ -27,14 +27,13 @@ public class DownloadProgressDialog extends JDialog {
     private final JButton cancelButton;
     private final JButton closeButton;
     private final TimeSeries speedSeries;
-    private final ChartPanel chartPanel;
     private final Timer updateTimer;
 
     @Getter
     private boolean cancelled = false;
 
     // 是否自动关闭对话框
-    private boolean autoClose = false;
+    private final boolean autoClose = false;
     // 当前下载信息
     private int currentContentLength;
     private int currentTotalBytes;
@@ -85,9 +84,7 @@ public class DownloadProgressDialog extends JDialog {
         plot.setDomainGridlinePaint(new Color(194, 211, 236));
         plot.setRangeGridlinePaint(new Color(194, 211, 236));
         DateAxis dateAxis = (DateAxis) plot.getDomainAxis();
-//        dateAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
         dateAxis.setAutoRange(true);
-//        dateAxis.setFixedAutoRange(20000); // 显示20秒的数据，减少初始空白区域
 
         NumberAxis valueAxis = (NumberAxis) plot.getRangeAxis();
         valueAxis.setAutoRangeIncludesZero(true);
@@ -101,7 +98,7 @@ public class DownloadProgressDialog extends JDialog {
         plot.getRenderer().setSeriesPaint(0, new Color(0, 120, 220)); // 蓝色线条
         plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f)); // 加粗线条
 
-        chartPanel = new ChartPanel(chart);
+        ChartPanel chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new Dimension(400, 150));
         chartPanel.setMouseWheelEnabled(true);
 
@@ -131,32 +128,18 @@ public class DownloadProgressDialog extends JDialog {
         mainPanel.add(chartPanel, BorderLayout.CENTER); // 添加图表到中央区域
         mainPanel.add(southPanel, BorderLayout.SOUTH);
         setContentPane(mainPanel);
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
         // 创建定时器，定期更新UI（无论是否有新数据）
         updateTimer = new Timer(200, e -> updateUIWithLatestData());
-    }
-
-    public DownloadProgressDialog() {
-        this("Download Progress");
-    }
-
-    /**
-     * 设置是否自动关闭对话框
-     *
-     * @param autoClose 是否自动关闭
-     */
-    public void setAutoClose(boolean autoClose) {
-        this.autoClose = autoClose;
     }
 
     /**
      * 开始下载并显示进度
      *
      * @param contentLength 内容总长度
-     * @return 是否显示了对话框
      */
-    public boolean startDownload(int contentLength) {
+    public void startDownload(int contentLength) {
         this.currentContentLength = contentLength;
         this.currentTotalBytes = 0;
         this.lastBytesForSpeed = 0;
@@ -168,7 +151,6 @@ public class DownloadProgressDialog extends JDialog {
             setVisible(true);
             updateTimer.start();
         }
-        return shouldDisplay;
     }
 
     /**

@@ -23,8 +23,6 @@ public class PlusPanel extends JPanel {
     private static final Color BG_GRADIENT_END = new Color(225, 230, 240);
     // 圆角半径
     private static final int CORNER_RADIUS = 18;
-    private JLabel plusIcon;
-    private JPanel contentPanel;
 
     public PlusPanel() {
         setLayout(new BorderLayout());
@@ -32,7 +30,10 @@ public class PlusPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 创建主要内容面板，使用垂直居中的布局
-        contentPanel = new JPanel() {
+        // 采用对角线渐变，提升美观度
+        // 对角线渐变（左上到右下）
+        // 添加轻微阴影，提升立体感
+        JPanel contentPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 // 采用对角线渐变，提升美观度
@@ -57,7 +58,7 @@ public class PlusPanel extends JPanel {
         contentPanel.add(Box.createVerticalGlue());
 
         // 图标部分
-        plusIcon = new JLabel();
+        JLabel plusIcon = new JLabel();
         // 调整图标大小
         ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
         plusIcon.setIcon(logoIcon);

@@ -16,7 +16,7 @@ import java.util.TimerTask;
  * 支持自动刷新和双击手动GC功能。
  */
 public class MemoryLabel extends JLabel {
-    private Timer refreshTimer;
+    private transient Timer refreshTimer;
     private final int refreshInterval;
     private boolean autoRefresh = true;
 

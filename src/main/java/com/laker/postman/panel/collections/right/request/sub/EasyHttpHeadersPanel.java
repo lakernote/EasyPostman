@@ -203,18 +203,6 @@ public class EasyHttpHeadersPanel extends JPanel {
         }
     }
 
-    public void addRow(Object... values) {
-        if (tablePanel != null) {
-            tablePanel.addRow(values);
-        }
-    }
-
-    public void scrollRectToVisible() {
-        if (tablePanel != null) {
-            tablePanel.scrollRectToVisible();
-        }
-    }
-
     /**
      * Get all headers as a list (including enabled state) for persistence
      */
@@ -333,38 +321,6 @@ public class EasyHttpHeadersPanel extends JPanel {
     }
 
     /**
-     * Get all headers as a map, considering current filter state
-     * This method now properly handles filtered rows and only includes enabled headers
-     */
-    public Map<String, String> getMap() {
-        Map<String, String> map = new LinkedHashMap<>();
-
-        if (tablePanel == null) {
-            return map;
-        }
-
-        // Get all rows from the model (not view) to include both visible and hidden headers
-        java.util.List<Map<String, Object>> allRows = tablePanel.getRows();
-
-        for (Map<String, Object> row : allRows) {
-            Object enabledObj = row.get("Enabled");
-            Object keyObj = row.get("Key");
-            Object valueObj = row.get("Value");
-
-            // Only include enabled headers
-            boolean enabled = enabledObj == null ? true : (Boolean) enabledObj;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String value = valueObj == null ? "" : valueObj.toString().trim();
-
-            if (enabled && !key.isEmpty()) {
-                map.put(key, value);
-            }
-        }
-
-        return map;
-    }
-
-    /**
      * Check if header is a default header (case-insensitive)
      */
     private boolean isDefaultHeader(String key) {
@@ -381,21 +337,6 @@ public class EasyHttpHeadersPanel extends JPanel {
         }
 
         return false;
-    }
-
-    private String getDefaultValue(String key) {
-        return switch (key) {
-            case USER_AGENT -> USER_AGENT_VALUE;
-            case ACCEPT -> ACCEPT_VALUE;
-            case ACCEPT_ENCODING -> ACCEPT_ENCODING_VALUE;
-            case CONNECTION -> CONNECTION_VALUE;
-            default -> "";
-        };
-    }
-
-    // Getter methods for testing and external access
-    public boolean isShowingDefaultHeaders() {
-        return showDefaultHeaders;
     }
 
     /**

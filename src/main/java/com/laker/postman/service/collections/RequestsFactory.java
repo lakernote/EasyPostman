@@ -1,10 +1,6 @@
 package com.laker.postman.service.collections;
 
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.*;
 import com.laker.postman.service.http.HttpRequestFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,10 +48,6 @@ public class RequestsFactory {
             getExample.setName("GET Example");
             getExample.setMethod("GET");
             getExample.setUrl("https://httpbin.org/get?q=easytools&lang=en&page=1&size=10&sort=desc&filter=active");
-            // Add headers to existing list
-            List<HttpHeader> getHeaders = new ArrayList<>(getExample.getHeadersList());
-            getHeaders.add(new HttpHeader(true, "Accept", APPLICATION_JSON));
-            getExample.setHeadersList(getHeaders);
             getExample.setParamsList(List.of(
                     new HttpParam(true, "q", "easytools"),
                     new HttpParam(true, "lang", "en"),

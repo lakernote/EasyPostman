@@ -5,6 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
+import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.util.EasyPostmanVariableUtil;
 import com.laker.postman.util.SystemUtil;
@@ -111,13 +112,13 @@ public class EnvironmentService {
                 JSONArray variableListJson = envJson.getJSONArray("variableList");
                 if (variableListJson != null && !variableListJson.isEmpty()) {
                     // 使用新格式
-                    List<com.laker.postman.model.EnvironmentVariable> varList = new ArrayList<>();
+                    List<EnvironmentVariable> varList = new ArrayList<>();
                     for (Object varObj : variableListJson) {
                         JSONObject varJson = (JSONObject) varObj;
                         boolean enabled = varJson.getBool("enabled", true);
                         String key = varJson.getStr("key");
                         String value = varJson.getStr("value", "");
-                        varList.add(new com.laker.postman.model.EnvironmentVariable(enabled, key, value));
+                        varList.add(new EnvironmentVariable(enabled, key, value));
                     }
                     env.setVariableList(varList);
                 } else {

@@ -5,7 +5,6 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.util.EasyPostmanVariableUtil;
 import com.laker.postman.util.SystemUtil;
@@ -102,27 +101,7 @@ public class EnvironmentService {
             environments.clear();
             JSONArray array = JSONUtil.readJSONArray(file, StandardCharsets.UTF_8);
             for (Object obj : array) {
-                JSONObject envJson = (JSONObject) obj;
-                Environment env = new Environment();
-                env.setId(envJson.getStr("id"));
-                env.setName(envJson.getStr("name"));
-                env.setActive(envJson.getBool("active", false));
-
-                // 优先加载新格式 variableList
-                JSONArray variableListJson = envJson.getJSONArray("variableList");
-                if (variableListJson != null && !variableListJson.isEmpty()) {
-                    // 使用新格式
-                    List<EnvironmentVariable> varList = new ArrayList<>();
-                    for (Object varObj : variableListJson) {
-                        JSONObject varJson = (JSONObject) varObj;
-                        boolean enabled = varJson.getBool("enabled", true);
-                        String key = varJson.getStr("key");
-                        String value = varJson.getStr("value", "");
-                        varList.add(new EnvironmentVariable(enabled, key, value));
-                    }
-                    env.setVariableList(varList);
-                }
-
+                Environment env = JSONUtil.toBean((JSONObject) obj, Environment.class);
                 environments.put(env.getId(), env);
                 if (env.isActive()) {
                     activeEnvironment = env;
@@ -200,37 +179,10 @@ public class EnvironmentService {
                 parentDir.mkdirs();
             }
 
-            JSONArray array = new JSONArray();
-            for (Environment env : environments.values()) {
-                JSONObject envJson = new JSONObject();
-                envJson.set("id", env.getId());
-                envJson.set("name", env.getName());
-                envJson.set("active", env.isActive());
+            List<Environment> envList = new ArrayList<>(environments.values());
+            String jsonStr = JSONUtil.toJsonPrettyStr(envList);
 
-                // 优先保存新格式 variableList
-                if (env.getVariableList() != null && !env.getVariableList().isEmpty()) {
-                    JSONArray varListJson = new JSONArray();
-                    for (com.laker.postman.model.EnvironmentVariable var : env.getVariableList()) {
-                        JSONObject varJson = new JSONObject();
-                        varJson.set("enabled", var.isEnabled());
-                        varJson.set("key", var.getKey());
-                        varJson.set("value", var.getValue());
-                        varListJson.add(varJson);
-                    }
-                    envJson.set("variableList", varListJson);
-                } else {
-                    // 后备方案：保存旧格式 variables（向后兼容）
-                    JSONObject varsJson = new JSONObject();
-                    for (Map.Entry<String, String> entry : env.getVariables().entrySet()) {
-                        varsJson.set(entry.getKey(), entry.getValue());
-                    }
-                    envJson.set("variables", varsJson);
-                }
-
-                array.add(envJson);
-            }
-
-            FileUtil.writeString(array.toStringPretty(), file, StandardCharsets.UTF_8);
+            FileUtil.writeString(jsonStr, file, StandardCharsets.UTF_8);
             log.debug("环境变量已保存到: {}", filePath);
         } catch (Exception e) {
             log.error("保存环境变量失败", e);

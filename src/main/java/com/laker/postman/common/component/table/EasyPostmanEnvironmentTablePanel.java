@@ -16,9 +16,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Postman 环境变量表格面板
@@ -48,9 +46,6 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
-    private final String nameCol;
-    private final String valueCol;
-
     /**
      * Flag to track if dragging is in progress
      */
@@ -77,8 +72,6 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
     public EasyPostmanEnvironmentTablePanel(String nameCol, String valueCol, boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
-        this.nameCol = nameCol;
-        this.valueCol = valueCol;
         this.columns = new String[]{"", nameCol, valueCol, ""};
         initializeComponents();
         initializeTableUI();
@@ -827,100 +820,6 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     }
 
     /**
-     * 获取所有行数据
-     */
-    public List<Map<String, Object>> getRows() {
-        List<Map<String, Object>> rows = new ArrayList<>();
-
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Enabled", tableModel.getValueAt(i, COL_DRAG_ENABLE));
-            row.put(nameCol, tableModel.getValueAt(i, COL_KEY));
-            row.put(valueCol, tableModel.getValueAt(i, COL_VALUE));
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
-    /**
-     * Set all rows from a list of maps
-     */
-    public void setRows(List<Map<String, Object>> rows) {
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-
-            if (rows != null) {
-                for (Map<String, Object> row : rows) {
-                    Object enabled = row.get("Enabled");
-                    if (enabled == null) {
-                        enabled = true;
-                    }
-                    Object key = row.get(nameCol);
-                    Object value = row.get(valueCol);
-
-                    tableModel.addRow(new Object[]{enabled, key, value, ""});
-                }
-            }
-
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * 获取表格内容为Map（第一列为key，第二列为value）- 仅返回已启用的行
-     * 保持向后兼容性
-     */
-    public Map<String, String> getMap() {
-        Map<String, String> map = new LinkedHashMap<>();
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_DRAG_ENABLE);
-            Object keyObj = tableModel.getValueAt(i, COL_KEY);
-            Object valueObj = tableModel.getValueAt(i, COL_VALUE);
-
-            boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String value = valueObj == null ? "" : valueObj.toString().trim();
-
-            if (enabled && !key.isEmpty()) {
-                map.put(key, value);
-            }
-        }
-        return map;
-    }
-
-    /**
-     * 用Map数据填充表格（兼容旧版本，默认全部启用）
-     * 保持向后兼容性
-     */
-    public void setMap(Map<String, String> map) {
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-            if (map != null) {
-                for (var e : map.entrySet()) {
-                    tableModel.addRow(new Object[]{true, e.getKey(), e.getValue(), ""});
-                }
-            }
-
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
      * 获取环境变量列表（新格式）
      */
     public List<EnvironmentVariable> getVariableList() {
@@ -1011,6 +910,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
 
     /**
      * Check if table is currently in dragging state
+     *
      * @return true if dragging is in progress
      */
     public boolean isDragging() {

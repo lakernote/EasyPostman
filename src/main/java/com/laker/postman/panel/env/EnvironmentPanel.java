@@ -40,9 +40,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 环境变量管理面板
@@ -131,27 +129,11 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         try {
             variablesTablePanel.stopCellEditing();
-
-            // 清空旧格式和新格式数据
-            currentEnvironment.getVariables().clear();
-            currentEnvironment.getVariableList().clear();
-
-            // 保存到新格式 variableList
             List<EnvironmentVariable> variableList = variablesTablePanel.getVariableList();
-            currentEnvironment.setVariableList(variableList);
-
-            // 同时保存已启用的变量到旧格式 variables，保持向后兼容
-            for (EnvironmentVariable var : variableList) {
-                if (var.isEnabled()) {
-                    currentEnvironment.addVariable(var.getKey(), var.getValue());
-                }
-            }
-
-            List<Map<String, Object>> newRows = getRowDatasFromTable();
+            currentEnvironment.setVariableList(new ArrayList<>(variableList)); // 使用副本避免并发修改
             EnvironmentService.saveEnvironment(currentEnvironment);
             // 保存后更新快照
-            originalVariablesSnapshot = JSONUtil.toJsonStr(newRows);
-
+            originalVariablesSnapshot = JSONUtil.toJsonStr(currentEnvironment.getVariableList());
             log.debug("自动保存环境变量: {}", currentEnvironment.getName());
         } catch (Exception ex) {
             log.error("自动保存环境变量失败", ex);
@@ -388,19 +370,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
         variablesTablePanel.clear();
         isLoadingData = true; // 设置标志位，开始加载数据
         if (env != null) {
-            List<Map<String, Object>> rows = new ArrayList<>();
-            if (env.getVariableList() != null && !env.getVariableList().isEmpty()) {
-                for (EnvironmentVariable var : env.getVariableList()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("Enabled", var.isEnabled());
-                    row.put(COLUMN_NAME, var.getKey());
-                    row.put(COLUMN_VALUE, var.getValue());
-                    rows.add(row);
-                }
-            }
-
-            variablesTablePanel.setRows(rows);
-            originalVariablesSnapshot = JSONUtil.toJsonStr(rows); // 用rows做快照，保证同步
+            variablesTablePanel.setVariableList(env.getVariableList());
+            originalVariablesSnapshot = JSONUtil.toJsonStr(env.getVariableList()); // 用rows做快照，保证同步
         } else {
             variablesTablePanel.clear();
             originalVariablesSnapshot = JSONUtil.toJsonStr(new ArrayList<>()); // 空快照
@@ -415,44 +386,12 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (currentEnvironment == null) return;
         variablesTablePanel.stopCellEditing();
 
-        // 清空旧格式和新格式数据
-        currentEnvironment.getVariables().clear();
-        currentEnvironment.getVariableList().clear();
-
         // 保存到新格式 variableList
         List<EnvironmentVariable> variableList = variablesTablePanel.getVariableList();
-        currentEnvironment.setVariableList(variableList);
-
-        // 同时保存已启用的变量到旧格式 variables，保持向后兼容
-        for (EnvironmentVariable var : variableList) {
-            if (var.isEnabled()) {
-                currentEnvironment.addVariable(var.getKey(), var.getValue());
-            }
-        }
-
-        List<Map<String, Object>> newRows = getRowDatasFromTable();
+        currentEnvironment.setVariableList(new ArrayList<>(variableList)); // 使用副本避免并发修改
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
-        originalVariablesSnapshot = JSONUtil.toJsonStr(newRows);
-
-        // 显示保存成功提示
-        JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS_TITLE),
-                JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private List<Map<String, Object>> getRowDatasFromTable() {
-        List<Map<String, Object>> rows = variablesTablePanel.getRows();
-        List<Map<String, Object>> newRows = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
-            String key = row.get(COLUMN_NAME) == null ? null : row.get(COLUMN_NAME).toString();
-            if (CharSequenceUtil.isBlank(key)) {
-                continue; // 跳过空key
-            }
-            newRows.add(row);
-        }
-        return newRows;
+        originalVariablesSnapshot = JSONUtil.toJsonStr(currentEnvironment.getVariableList());
     }
 
     /**
@@ -684,8 +623,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     // 判断当前表格内容和快照是否一致，使用JSON序列化比较
     public boolean isVariablesChanged() {
-        List<Map<String, Object>> rows = getRowDatasFromTable();
-        String curJson = JSONUtil.toJsonStr(rows);
+        String curJson = JSONUtil.toJsonStr(variablesTablePanel.getVariableList());
         boolean isVariablesChanged = !CharSequenceUtil.equals(curJson, originalVariablesSnapshot);
         if (isVariablesChanged) {
             log.debug("env name: {}", currentEnvironment != null ? currentEnvironment.getName() : "null");

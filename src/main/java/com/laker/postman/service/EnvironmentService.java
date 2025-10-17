@@ -121,17 +121,6 @@ public class EnvironmentService {
                         varList.add(new EnvironmentVariable(enabled, key, value));
                     }
                     env.setVariableList(varList);
-                } else {
-                    // 兼容旧格式 variables (Map)
-                    JSONObject varsJson = envJson.getJSONObject("variables");
-                    if (varsJson != null) {
-                        for (Map.Entry<String, Object> entry : varsJson.entrySet()) {
-                            env.addVariable(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
-                        }
-                    }
-                    // 自动迁移到新格式
-                    env.migrateToNewFormat();
-                    log.info("已自动迁移环境 [{}] 从旧格式到新格式", env.getName());
                 }
 
                 environments.put(env.getId(), env);
@@ -178,14 +167,12 @@ public class EnvironmentService {
         devEnv.setActive(true);
         devEnv.addVariable("baseUrl", "https://so.gitee.com");
         devEnv.addVariable("apiKey", "dev-api-key-123");
-        devEnv.migrateToNewFormat(); // 自动迁移到新格式
 
         // Create Testing Environment
         Environment testEnv = new Environment("Test Env");
         testEnv.setId("test-" + System.currentTimeMillis());
         testEnv.addVariable("baseUrl", "https://so.csdn.net/so/search");
         testEnv.addVariable("apiKey", "test-api-key-456");
-        testEnv.migrateToNewFormat(); // 自动迁移到新格式
 
         environments.put(devEnv.getId(), devEnv);
         environments.put(testEnv.getId(), testEnv);

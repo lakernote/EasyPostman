@@ -388,31 +388,13 @@ public class EnvironmentPanel extends SingletonBasePanel {
         variablesTablePanel.clear();
         isLoadingData = true; // 设置标志位，开始加载数据
         if (env != null) {
-            // 数据迁移：如果使用旧格式，自动迁移到新格式
-            env.migrateToNewFormat();
-
             List<Map<String, Object>> rows = new ArrayList<>();
-
-            // 优先使用新格式 variableList
             if (env.getVariableList() != null && !env.getVariableList().isEmpty()) {
                 for (EnvironmentVariable var : env.getVariableList()) {
                     Map<String, Object> row = new LinkedHashMap<>();
                     row.put("Enabled", var.isEnabled());
                     row.put(COLUMN_NAME, var.getKey());
                     row.put(COLUMN_VALUE, var.getValue());
-                    rows.add(row);
-                }
-            } else {
-                // 兼容旧格式：从 variables Map 加载
-                for (String key : env.getVariables().keySet()) {
-                    if (CharSequenceUtil.isBlank(key)) {
-                        continue;
-                    }
-                    String value = env.getVariable(key);
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("Enabled", true); // 旧数据默认启用
-                    row.put(COLUMN_NAME, key);
-                    row.put(COLUMN_VALUE, value);
                     rows.add(row);
                 }
             }

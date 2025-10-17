@@ -1,6 +1,7 @@
 package com.laker.postman.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -10,11 +11,11 @@ import java.util.Map;
 /**
  * 环境变量模型，用于管理一组相关的变量
  */
-@Data
+@Setter
+@Getter
 public class Environment {
     private String id;
     private String name;
-    private Map<String, String> variables = new LinkedHashMap<>();
     private List<EnvironmentVariable> variableList = new ArrayList<>();
     private boolean active = false;
 
@@ -27,29 +28,37 @@ public class Environment {
 
     public void addVariable(String key, String value) {
         if (key != null && !key.isEmpty()) {
-            variables.put(key, value);
-            // 同步更新 variableList
-            syncVariableToList(key, value);
+            EnvironmentVariable variable = new EnvironmentVariable(true, key, value);
+            variableList.add(variable);
         }
     }
 
-    public void removeVariable(String key) {
-        if (key != null) {
-            variables.remove(key);
-            // 同步从 variableList 中删除
+
+    public void set(String key, String value) {
+        if (key != null && !key.isEmpty()) {
+            // 查找是否存在该key的变量
+            boolean found = false;
             if (variableList != null) {
-                variableList.removeIf(var -> key.equals(var.getKey()));
+                for (EnvironmentVariable envVar : variableList) {
+                    if (key.equals(envVar.getKey())) {
+                        envVar.setValue(value);
+                        envVar.setEnabled(true);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            // 如果不存在，则添加新变量
+            if (!found) {
+                if (variableList == null) {
+                    variableList = new ArrayList<>();
+                }
+                variableList.add(new EnvironmentVariable(true, key, value));
             }
         }
     }
 
-    public void set(String key, String value) {
-        if (key != null && !key.isEmpty()) {
-            variables.put(key, value);
-            // 同步更新 variableList
-            syncVariableToList(key, value);
-        }
-    }
+
 
     /**
      * 重载set方法，支持任意Object类型参数，自动转换为String
@@ -58,39 +67,38 @@ public class Environment {
     public void set(String key, Object value) {
         if (key != null && !key.isEmpty() && value != null) {
             String strValue = String.valueOf(value);
-            variables.put(key, strValue);
-            // 同步更新 variableList
-            syncVariableToList(key, strValue);
+            set(key, strValue);
         }
     }
 
+    public void removeVariable(String key) {
+        if (key != null && variableList != null) {
+            variableList.removeIf(envVar -> key.equals(envVar.getKey()));
+        }
+    }
+
+
     public String get(String key) {
-        // 优先从新格式获取已启用的变量
+        // 从 variableList 获取已启用的变量
         if (variableList != null && !variableList.isEmpty()) {
-            for (EnvironmentVariable var : variableList) {
-                if (var.isEnabled() && key.equals(var.getKey())) {
-                    return var.getValue();
+            for (EnvironmentVariable envVar : variableList) {
+                if (envVar.isEnabled() && key.equals(envVar.getKey())) {
+                    return envVar.getValue();
                 }
             }
         }
-        // 后备方案：从旧格式获取
-        return variables.get(key);
+        return null;
     }
 
     // for javascript
     public void unset(String key) {
-        if (key != null) {
-            variables.remove(key);
-            // 同步从 variableList 中删除
-            if (variableList != null) {
-                variableList.removeIf(var -> key.equals(var.getKey()));
-            }
+        if (key != null && variableList != null) {
+            variableList.removeIf(envVar -> key.equals(envVar.getKey()));
         }
     }
 
     // for javascript
     public void clear() {
-        variables.clear();
         if (variableList != null) {
             variableList.clear();
         }
@@ -100,54 +108,32 @@ public class Environment {
         return get(key);
     }
 
+    // for javascript
     public boolean hasVariable(String key) {
-        // 优先从新格式查找已启用的变量
+        // 从 variableList 查找已启用的变量
         if (variableList != null && !variableList.isEmpty()) {
-            for (EnvironmentVariable var : variableList) {
-                if (var.isEnabled() && key.equals(var.getKey())) {
+            for (EnvironmentVariable envVar : variableList) {
+                if (envVar.isEnabled() && key.equals(envVar.getKey())) {
                     return true;
                 }
             }
         }
-        // 后备方案：从旧格式查找
-        return variables.containsKey(key);
+        return false;
     }
 
     /**
-     * 同步变量到 variableList
-     * 如果 key 已存在则更新，否则添加新项
+     * 获取所有变量的 Map 表示
+     * 从 variableList 构建 Map，只包含已启用的变量
      */
-    private void syncVariableToList(String key, String value) {
-        if (variableList == null) {
-            variableList = new ArrayList<>();
-        }
-
-        // 查找是否已存在
-        boolean found = false;
-        for (EnvironmentVariable var : variableList) {
-            if (key.equals(var.getKey())) {
-                var.setValue(value);
-                found = true;
-                break;
+    public Map<String, String> getVariables() {
+        Map<String, String> result = new LinkedHashMap<>();
+        if (variableList != null) {
+            for (EnvironmentVariable envVar : variableList) {
+                if (envVar.isEnabled()) {
+                    result.put(envVar.getKey(), envVar.getValue());
+                }
             }
         }
-
-        // 如果不存在则添加新项
-        if (!found) {
-            variableList.add(new EnvironmentVariable(true, key, value));
-        }
-    }
-
-    /**
-     * 从旧格式迁移到新格式
-     * 用于数据兼容性
-     */
-    public void migrateToNewFormat() {
-        if ((variableList == null || variableList.isEmpty()) && variables != null && !variables.isEmpty()) {
-            variableList = new ArrayList<>();
-            for (Map.Entry<String, String> entry : variables.entrySet()) {
-                variableList.add(new EnvironmentVariable(true, entry.getKey(), entry.getValue()));
-            }
-        }
+        return result;
     }
 }

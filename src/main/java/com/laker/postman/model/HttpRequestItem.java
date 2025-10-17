@@ -23,26 +23,16 @@ public class HttpRequestItem implements Serializable {
     private String url = ""; // 请求URL
     private String method = "GET"; // 请求方法（GET, POST, PUT, DELETE等）
     private RequestItemProtocolEnum protocol = RequestItemProtocolEnum.HTTP; // 协议类型，默认HTTP
-    // 新版本：带启用状态的 headers（优先使用）
     private List<HttpHeader> headersList = new ArrayList<>();
-
     private String bodyType = ""; // 请求体类型
     private String body = ""; // 请求体内容（如JSON、表单数据等）
-    // 新版本：带启用状态的 params（优先使用）
     private List<HttpParam> paramsList = new ArrayList<>();
-
-    // 新版本：带启用状态的 form-data（优先使用）
     private List<HttpFormData> formDataList = new ArrayList<>();
-
-    // 新版本：带启用状态的 urlencoded（优先使用）
     private List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-
-    // 认证相关字段
     private String authType = AUTH_TYPE_NONE; // 认证类型（none/basic/bearer）
     private String authUsername = ""; // Basic用户名
     private String authPassword = ""; // Basic密码
     private String authToken = "";    // Bearer Token
-
     // 前置脚本（请求前执行）
     private String prescript = "";
     // 后置脚本（响应后执行）

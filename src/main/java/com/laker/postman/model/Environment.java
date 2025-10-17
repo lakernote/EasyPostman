@@ -2,7 +2,9 @@ package com.laker.postman.model;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,6 +15,7 @@ public class Environment {
     private String id;
     private String name;
     private Map<String, String> variables = new LinkedHashMap<>();
+    private List<EnvironmentVariable> variableList = new ArrayList<>();
     private boolean active = false;
 
     public Environment() {
@@ -51,6 +54,15 @@ public class Environment {
     }
 
     public String get(String key) {
+        // 优先从新格式获取已启用的变量
+        if (variableList != null && !variableList.isEmpty()) {
+            for (EnvironmentVariable var : variableList) {
+                if (var.isEnabled() && key.equals(var.getKey())) {
+                    return var.getValue();
+                }
+            }
+        }
+        // 后备方案：从旧格式获取
         return variables.get(key);
     }
 
@@ -64,13 +76,38 @@ public class Environment {
     // for javascript
     public void clear() {
         variables.clear();
+        if (variableList != null) {
+            variableList.clear();
+        }
     }
 
     public String getVariable(String key) {
-        return variables.get(key);
+        return get(key);
     }
 
     public boolean hasVariable(String key) {
+        // 优先从新格式查找已启用的变量
+        if (variableList != null && !variableList.isEmpty()) {
+            for (EnvironmentVariable var : variableList) {
+                if (var.isEnabled() && key.equals(var.getKey())) {
+                    return true;
+                }
+            }
+        }
+        // 后备方案：从旧格式查找
         return variables.containsKey(key);
+    }
+
+    /**
+     * 从旧格式迁移到新格式
+     * 用于数据兼容性
+     */
+    public void migrateToNewFormat() {
+        if ((variableList == null || variableList.isEmpty()) && variables != null && !variables.isEmpty()) {
+            variableList = new ArrayList<>();
+            for (Map.Entry<String, String> entry : variables.entrySet()) {
+                variableList.add(new EnvironmentVariable(true, entry.getKey(), entry.getValue()));
+            }
+        }
     }
 }

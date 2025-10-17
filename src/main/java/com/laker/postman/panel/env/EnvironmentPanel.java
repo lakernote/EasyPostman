@@ -14,6 +14,7 @@ import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
+import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.service.EnvironmentService;
@@ -129,7 +130,22 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         try {
             variablesTablePanel.stopCellEditing();
+
+            // 清空旧格式和新格式数据
             currentEnvironment.getVariables().clear();
+            currentEnvironment.getVariableList().clear();
+
+            // 保存到新格式 variableList
+            List<EnvironmentVariable> variableList = variablesTablePanel.getVariableList();
+            currentEnvironment.setVariableList(variableList);
+
+            // 同时保存已启用的变量到旧格式 variables，保持向后兼容
+            for (EnvironmentVariable var : variableList) {
+                if (var.isEnabled()) {
+                    currentEnvironment.addVariable(var.getKey(), var.getValue());
+                }
+            }
+
             List<Map<String, Object>> newRows = getRowDatasFromTable();
             EnvironmentService.saveEnvironment(currentEnvironment);
             // 保存后更新快照
@@ -371,17 +387,35 @@ public class EnvironmentPanel extends SingletonBasePanel {
         variablesTablePanel.clear();
         isLoadingData = true; // 设置标志位，开始加载数据
         if (env != null) {
+            // 数据迁移：如果使用旧格式，自动迁移到新格式
+            env.migrateToNewFormat();
+
             List<Map<String, Object>> rows = new ArrayList<>();
-            for (String key : env.getVariables().keySet()) {
-                if (CharSequenceUtil.isBlank(key)) {
-                    continue;
+
+            // 优先使用新格式 variableList
+            if (env.getVariableList() != null && !env.getVariableList().isEmpty()) {
+                for (EnvironmentVariable var : env.getVariableList()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("Enabled", var.isEnabled());
+                    row.put(COLUMN_NAME, var.getKey());
+                    row.put(COLUMN_VALUE, var.getValue());
+                    rows.add(row);
                 }
-                String value = env.getVariable(key);
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put(COLUMN_NAME, key);
-                row.put(COLUMN_VALUE, value);
-                rows.add(row);
+            } else {
+                // 兼容旧格式：从 variables Map 加载
+                for (String key : env.getVariables().keySet()) {
+                    if (CharSequenceUtil.isBlank(key)) {
+                        continue;
+                    }
+                    String value = env.getVariable(key);
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("Enabled", true); // 旧数据默认启用
+                    row.put(COLUMN_NAME, key);
+                    row.put(COLUMN_VALUE, value);
+                    rows.add(row);
+                }
             }
+
             variablesTablePanel.setRows(rows);
             originalVariablesSnapshot = JSONUtil.toJsonStr(rows); // 用rows做快照，保证同步
         } else {
@@ -397,7 +431,22 @@ public class EnvironmentPanel extends SingletonBasePanel {
     public void saveVariables() {
         if (currentEnvironment == null) return;
         variablesTablePanel.stopCellEditing();
+
+        // 清空旧格式和新格式数据
         currentEnvironment.getVariables().clear();
+        currentEnvironment.getVariableList().clear();
+
+        // 保存到新格式 variableList
+        List<EnvironmentVariable> variableList = variablesTablePanel.getVariableList();
+        currentEnvironment.setVariableList(variableList);
+
+        // 同时保存已启用的变量到旧格式 variables，保持向后兼容
+        for (EnvironmentVariable var : variableList) {
+            if (var.isEnabled()) {
+                currentEnvironment.addVariable(var.getKey(), var.getValue());
+            }
+        }
+
         List<Map<String, Object>> newRows = getRowDatasFromTable();
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
@@ -418,8 +467,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
             if (CharSequenceUtil.isBlank(key)) {
                 continue; // 跳过空key
             }
-            String value = row.get(COLUMN_VALUE) == null ? "" : row.get(COLUMN_VALUE).toString();
-            currentEnvironment.addVariable(key, value);
             newRows.add(row);
         }
         return newRows;

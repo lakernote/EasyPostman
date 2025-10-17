@@ -103,9 +103,11 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     private void enableRowDragAndDrop() {
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
-        // 传递回调函数，在拖拽期间控制自动补空行
+
+        // 传递回调函数，在拖拽期间控制自动补空行和编辑状态
         table.setTransferHandler(new ImprovedTableRowTransferHandler(tableModel, dragging -> {
             suppressAutoDuringDrag = dragging;
+            isDragging = dragging;
             log.debug("Drag state changed: {}", dragging);
         }));
     }
@@ -498,7 +500,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
                 int column = table.columnAtPoint(e.getPoint());
                 int row = table.rowAtPoint(e.getPoint());
 
-                // 在第一列的拖拽手柄区域按下时，选中行并准备拖拽
+                // 在第一列的拖拽手柄区域按下时，选中行并立即启动拖拽
                 if (column == COL_DRAG_ENABLE && row >= 0) {
                     Rectangle cellRect = table.getCellRect(row, column, false);
                     int relativeX = e.getX() - cellRect.x;
@@ -515,6 +517,12 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
 
                         // 标记为拖拽状态，防止意外编辑
                         isDragging = true;
+
+                        // 立即触发拖拽操作
+                        TransferHandler handler = table.getTransferHandler();
+                        if (handler != null) {
+                            handler.exportAsDrag(table, e, TransferHandler.MOVE);
+                        }
                     }
                 }
             }

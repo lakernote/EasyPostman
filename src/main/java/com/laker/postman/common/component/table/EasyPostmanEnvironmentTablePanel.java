@@ -477,9 +477,9 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
                     Rectangle cellRect = table.getCellRect(row, column, false);
                     int relativeX = e.getX() - cellRect.x;
 
-                    // 左侧拖拽区域显示移动光标
+                    // 左侧拖拽区域显示小手指光标，提示用户可以拖拽
                     if (relativeX < 25) {
-                        table.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                        table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                     } else {
                         table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                     }

@@ -661,17 +661,12 @@ public class RequestEditSubPanel extends JPanel {
         if (item.getParamsList() != null && !item.getParamsList().isEmpty()) {
             // 使用新格式加载（包含 enabled 状态）
             paramsPanel.setParamsList(item.getParamsList());
-        } else if (item.getParams() != null && !item.getParams().isEmpty()) {
-            // 兼容旧格式（从 Map 加载，合并 URL 中的参数）
-            Map<String, String> mergedParams = HttpUtil.getMergedParams(item.getParams(), url);
-            paramsPanel.setMap(mergedParams);
-            // 迁移到新格式
-            item.setParamsList(paramsPanel.getParamsList());
         } else {
             // 没有数据，尝试从 URL 解析参数
             Map<String, String> urlParams = HttpUtil.getParamsMapFromUrl(url);
             if (urlParams != null && !urlParams.isEmpty()) {
                 paramsPanel.setMap(urlParams);
+                item.setParamsList(paramsPanel.getParamsList());
             } else {
                 paramsPanel.clear();
             }
@@ -682,16 +677,10 @@ public class RequestEditSubPanel extends JPanel {
         if (item.getHeadersList() != null && !item.getHeadersList().isEmpty()) {
             // 使用新格式加载（包含 enabled 状态）
             headersPanel.setHeadersList(item.getHeadersList());
-        } else if (item.getHeaders() != null && !item.getHeaders().isEmpty()) {
-            // 兼容旧格式（从 Map 加载）
-            Map<String, String> sortedMap = headersPanel.setHeadersMap(item.getHeaders());
-            item.getHeaders().clear();
-            item.getHeaders().putAll(sortedMap); // 保持item.headers有序
-            // 迁移到新格式
-            item.setHeadersList(headersPanel.getHeadersList());
         } else {
             // 没有数据，使用默认 headers
-            headersPanel.setHeadersMap(null);
+            headersPanel.setHeadersList(List.of());
+            item.setHeadersList(headersPanel.getHeadersList());
         }
 
         // Body

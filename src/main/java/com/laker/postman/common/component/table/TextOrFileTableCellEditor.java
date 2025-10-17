@@ -13,8 +13,8 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
     // 使用缓存避免频繁创建对象
     private static final WeakHashMap<Component, FileCellEditor> FILE_EDITOR_CACHE = new WeakHashMap<>();
 
-    // 可配置的类型列索引，默认为1
-    private int typeColumnIndex = 1;
+    // 可配置的类型列索引，默认为2（Form-Data表格中Type列的索引）
+    private int typeColumnIndex = 2;
 
     private final DefaultCellEditor textEditor;
     private FileCellEditor fileEditor;

@@ -732,19 +732,43 @@ public class RequestEditSubPanel extends JPanel {
             }
         }
 
-        if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
+        // Form-Data - 优先使用新格式（包含 enabled 状态）
+        if (item.getFormDataList() != null && !item.getFormDataList().isEmpty()) {
+            // 使用新格式加载（包含 enabled 状态）
             EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
-            formDataTablePanel.clear();
+            formDataTablePanel.setFormDataList(item.getFormDataList());
+        } else if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
+            // 兼容旧格式（从 Map 加载）
+            EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+
+            // 构建行数据列表
+            List<Map<String, Object>> rows = new ArrayList<>();
             if (item.getFormData() != null) {
                 for (Map.Entry<String, String> entry : item.getFormData().entrySet()) {
-                    formDataTablePanel.addRow(entry.getKey(), "Text", entry.getValue());
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("Enabled", true);
+                    row.put("Key", entry.getKey());
+                    row.put("Type", "Text");
+                    row.put("Value", entry.getValue());
+                    rows.add(row);
                 }
             }
             if (item.getFormFiles() != null) {
                 for (Map.Entry<String, String> entry : item.getFormFiles().entrySet()) {
-                    formDataTablePanel.addRow(entry.getKey(), "File", entry.getValue());
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("Enabled", true);
+                    row.put("Key", entry.getKey());
+                    row.put("Type", "File");
+                    row.put("Value", entry.getValue());
+                    rows.add(row);
                 }
             }
+
+            // 批量设置数据
+            formDataTablePanel.setRows(rows);
+
+            // 迁移到新格式
+            item.setFormDataList(formDataTablePanel.getFormDataList());
         }
 
         // Form-urlencoded - 优先使用新格式（包含 enabled 状态）
@@ -798,6 +822,10 @@ public class RequestEditSubPanel extends JPanel {
         item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());
         String bodyType = requestBodyPanel.getBodyType();
         if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(bodyType)) {
+            // 使用新格式保存 form-data（包含 enabled 状态）
+            EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+            item.setFormDataList(formDataTablePanel.getFormDataList());
+            // 同时保存旧格式用于兼容（只包含启用的数据）
             item.setFormData(requestBodyPanel.getFormData());
             item.setFormFiles(requestBodyPanel.getFormFiles());
             item.setBody(""); // form-data模式下，body通常不直接使用

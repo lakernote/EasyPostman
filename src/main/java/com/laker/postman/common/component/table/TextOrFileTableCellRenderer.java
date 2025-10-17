@@ -14,8 +14,8 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
     private final FileCellRenderer fileRenderer = new FileCellRenderer();
     private final DefaultTableCellRenderer textRenderer;
 
-    // 可配置的类型列索引，默认为1
-    private int typeColumnIndex = 1;
+    // 可配置的类型列索引，默认为2（Form-Data表格中Type列的索引）
+    private int typeColumnIndex = 2;
 
     // 可选的空值提示文本
     private String emptyValueHint = null;

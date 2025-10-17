@@ -38,7 +38,11 @@ public class HttpRequestItem implements Serializable {
     // 旧版本：仅保留用于向后兼容（从旧数据迁移）
     @Deprecated
     private Map<String, String> params = new LinkedHashMap<>(); // 请求参数（查询字符串）
-    // form-data 普通字段
+
+    // 新版本：带启用状态的 form-data（优先使用）
+    private List<HttpFormData> formDataList = new ArrayList<>();
+
+    // form-data 普通字段（旧版本，向后兼容）
     private Map<String, String> formData = new LinkedHashMap<>();
     // form-data 文件字段（key=字段名，value=文件绝对路径）
     private Map<String, String> formFiles = new LinkedHashMap<>();

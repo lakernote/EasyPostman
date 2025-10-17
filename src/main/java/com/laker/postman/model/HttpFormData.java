@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * HTTP Form Data model with enabled state
- * 用于 multipart/form-data 类型的表单数据
+ * Form-Data Parameter model with enabled state
+ * Supports both text and file types
  */
 @Data
 @NoArgsConstructor
@@ -18,7 +18,7 @@ public class HttpFormData implements Serializable {
 
     private boolean enabled = true;
     private String key = "";
-    private String type = ""; // Text or File
+    private String type = "Text"; // "Text" or "File"
     private String value = "";
 }
 

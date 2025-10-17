@@ -51,8 +51,6 @@ import static com.laker.postman.service.http.HttpUtil.*;
  */
 @Slf4j
 public class RequestEditSubPanel extends JPanel {
-    public static final String TEXT_EVENT_STREAM = "text/event-stream";
-    public static final String ACCEPT = "Accept";
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyPostmanParamsTablePanel paramsPanel;

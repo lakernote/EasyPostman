@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request;
 
-import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
@@ -656,10 +656,7 @@ public class RequestEditSubPanel extends JPanel {
         urlField.setText(url);
         urlField.setCaretPosition(0); // 设置光标到开头
 
-        // 如果URL中有参数，解析到paramsPanel
-        // Params - 优先使用新格式（包含 enabled 状态）
-        if (item.getParamsList() != null && !item.getParamsList().isEmpty()) {
-            // 使用新格式加载（包含 enabled 状态）
+        if (CollUtil.isNotEmpty(item.getParamsList())) {
             paramsPanel.setParamsList(item.getParamsList());
         } else {
             // 没有数据，尝试从 URL 解析参数
@@ -673,9 +670,7 @@ public class RequestEditSubPanel extends JPanel {
         }
         methodBox.setSelectedItem(item.getMethod());
 
-        // Headers - 优先使用新格式（包含 enabled 状态）
-        if (item.getHeadersList() != null && !item.getHeadersList().isEmpty()) {
-            // 使用新格式加载（包含 enabled 状态）
+        if (CollUtil.isNotEmpty(item.getHeadersList())) {
             headersPanel.setHeadersList(item.getHeadersList());
         } else {
             // 没有数据，使用默认 headers
@@ -716,56 +711,14 @@ public class RequestEditSubPanel extends JPanel {
             }
         }
 
-        // Form-Data - 优先使用新格式（包含 enabled 状态）
-        if (item.getFormDataList() != null && !item.getFormDataList().isEmpty()) {
-            // 使用新格式加载（包含 enabled 状态）
+        if (CollUtil.isNotEmpty(item.getFormDataList())) {
             EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             formDataTablePanel.setFormDataList(item.getFormDataList());
-        } else if (MapUtil.isNotEmpty(item.getFormData()) || MapUtil.isNotEmpty(item.getFormFiles())) {
-            // 兼容旧格式（从 Map 加载）
-            EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
-
-            // 构建行数据列表
-            List<Map<String, Object>> rows = new ArrayList<>();
-            if (item.getFormData() != null) {
-                for (Map.Entry<String, String> entry : item.getFormData().entrySet()) {
-                    Map<String, Object> row = new HashMap<>();
-                    row.put("Enabled", true);
-                    row.put("Key", entry.getKey());
-                    row.put("Type", "Text");
-                    row.put("Value", entry.getValue());
-                    rows.add(row);
-                }
-            }
-            if (item.getFormFiles() != null) {
-                for (Map.Entry<String, String> entry : item.getFormFiles().entrySet()) {
-                    Map<String, Object> row = new HashMap<>();
-                    row.put("Enabled", true);
-                    row.put("Key", entry.getKey());
-                    row.put("Type", "File");
-                    row.put("Value", entry.getValue());
-                    rows.add(row);
-                }
-            }
-
-            // 批量设置数据
-            formDataTablePanel.setRows(rows);
-
-            // 迁移到新格式
-            item.setFormDataList(formDataTablePanel.getFormDataList());
         }
 
-        // Form-urlencoded - 优先使用新格式（包含 enabled 状态）
-        if (item.getUrlencodedList() != null && !item.getUrlencodedList().isEmpty()) {
-            // 使用新格式加载（包含 enabled 状态）
+        if (CollUtil.isNotEmpty(item.getUrlencodedList())) {
             EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             urlencodedTablePanel.setFormDataList(item.getUrlencodedList());
-        } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
-            // 兼容旧格式（从 Map 加载）
-            EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
-            urlencodedTablePanel.setFormData(item.getUrlencoded());
-            // 迁移到新格式
-            item.setUrlencodedList(urlencodedTablePanel.getFormDataList());
         }
 
         // 认证Tab
@@ -806,27 +759,28 @@ public class RequestEditSubPanel extends JPanel {
         item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());
         String bodyType = requestBodyPanel.getBodyType();
         if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(bodyType)) {
-            // 使用新格式保存 form-data（包含 enabled 状态）
             EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             item.setFormDataList(formDataTablePanel.getFormDataList());
-            // 同时保存旧格式用于兼容（只包含启用的数据）
             item.setFormData(requestBodyPanel.getFormData());
             item.setFormFiles(requestBodyPanel.getFormFiles());
             item.setBody(""); // form-data模式下，body通常不直接使用
+            item.setUrlencoded(new LinkedHashMap<>());
+            item.setUrlencodedList(new ArrayList<>());
         } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(bodyType)) {
             item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
-
-            // 使用新格式保存 urlencoded（包含 enabled 状态）
+            item.setFormDataList(new ArrayList<>());
             EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             item.setUrlencodedList(urlencodedTablePanel.getFormDataList());
-            // 同时保存旧格式用于兼容（只包含启用的数据）
             item.setUrlencoded(requestBodyPanel.getUrlencoded());
         } else if (RequestBodyPanel.BODY_TYPE_RAW.equals(bodyType)) {
             item.setBody(requestBodyPanel.getRawBody());
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
+            item.setFormDataList(new ArrayList<>());
+            item.setUrlencoded(new LinkedHashMap<>());
+            item.setUrlencodedList(new ArrayList<>());
         }
         // 认证Tab收集
         item.setAuthType(authTabPanel.getAuthType());

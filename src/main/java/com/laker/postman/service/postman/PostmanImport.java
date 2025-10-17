@@ -4,8 +4,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.*;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.*;
@@ -71,14 +70,13 @@ public class PostmanImport {
                 // 解析query参数
                 JSONArray queryArr = urlJson.getJSONArray("query");
                 if (queryArr != null) {
-                    Map<String, String> params = new LinkedHashMap<>();
+                    List<HttpParam> paramsList = new ArrayList<>();
                     for (Object q : queryArr) {
                         JSONObject qObj = (JSONObject) q;
-                        if (!qObj.getBool("disabled", false)) {
-                            params.put(qObj.getStr("key", ""), qObj.getStr("value", ""));
-                        }
+                        boolean enabled = !qObj.getBool("disabled", false);
+                        paramsList.add(new HttpParam(enabled, qObj.getStr("key", ""), qObj.getStr("value", "")));
                     }
-                    req.setParams(params);
+                    req.setParamsList(paramsList);
                 }
             } else if (urlObj instanceof String urlStr) {
                 req.setUrl(urlStr);
@@ -86,14 +84,13 @@ public class PostmanImport {
             // headers
             JSONArray headers = request.getJSONArray("header");
             if (headers != null && !headers.isEmpty()) {
-                Map<String, String> headerMap = new LinkedHashMap<>();
+                List<HttpHeader> headersList = new ArrayList<>();
                 for (Object h : headers) {
                     JSONObject hObj = (JSONObject) h;
-                    if (!hObj.getBool("disabled", false)) {
-                        headerMap.put(hObj.getStr("key", ""), hObj.getStr("value", ""));
-                    }
+                    boolean enabled = !hObj.getBool("disabled", false);
+                    headersList.add(new HttpHeader(enabled, hObj.getStr("key", ""), hObj.getStr("value", "")));
                 }
-                req.setHeaders(headerMap);
+                req.setHeadersList(headersList);
             }
             // auth
             JSONObject auth = request.getJSONObject("auth");
@@ -136,34 +133,30 @@ public class PostmanImport {
                 } else if ("formdata".equals(mode)) {
                     JSONArray arr = body.getJSONArray("formdata");
                     if (arr != null && !arr.isEmpty()) {
-                        Map<String, String> formData = new LinkedHashMap<>();
-                        Map<String, String> formFiles = new LinkedHashMap<>();
+                        List<HttpFormData> formDataList = new ArrayList<>();
                         for (Object o : arr) {
                             JSONObject oObj = (JSONObject) o;
                             String formType = oObj.getStr("type", "text");
                             String key = oObj.getStr("key", "");
-                            if (!oObj.getBool("disabled", false)) {
-                                if ("file".equals(formType)) {
-                                    formFiles.put(key, oObj.getStr("src", ""));
-                                } else {
-                                    formData.put(key, oObj.getStr("value", ""));
-                                }
+                            boolean enabled = !oObj.getBool("disabled", false);
+                            if ("file".equals(formType)) {
+                                formDataList.add(new HttpFormData(enabled, key, "file", oObj.getStr("src", "")));
+                            } else {
+                                formDataList.add(new HttpFormData(enabled, key, "text", oObj.getStr("value", "")));
                             }
                         }
-                        req.setFormData(formData);
-                        req.setFormFiles(formFiles);
+                        req.setFormDataList(formDataList);
                     }
                 } else if ("urlencoded".equals(mode)) {
                     JSONArray arr = body.getJSONArray("urlencoded");
                     if (arr != null && !arr.isEmpty()) {
-                        Map<String, String> urlencoded = new LinkedHashMap<>();
+                        List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
                         for (Object o : arr) {
                             JSONObject oObj = (JSONObject) o;
-                            if (!oObj.getBool("disabled", false)) {
-                                urlencoded.put(oObj.getStr("key", ""), oObj.getStr("value", ""));
-                            }
+                            boolean enabled = !oObj.getBool("disabled", false);
+                            urlencodedList.add(new HttpFormUrlencoded(enabled, oObj.getStr("key", ""), oObj.getStr("value", "")));
                         }
-                        req.setUrlencoded(urlencoded);
+                        req.setUrlencodedList(urlencodedList);
                     }
                 }
             }

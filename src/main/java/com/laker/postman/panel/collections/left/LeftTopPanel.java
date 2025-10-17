@@ -13,6 +13,9 @@ import com.laker.postman.common.component.dialog.LargeInputDialog;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.model.CurlRequest;
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -39,6 +42,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
@@ -255,11 +259,44 @@ public class LeftTopPanel extends SingletonBasePanel {
             item.setName(curlRequest.url);
             item.setUrl(curlRequest.url);
             item.setMethod(curlRequest.method);
-            item.setHeaders(curlRequest.headers);
+
+            // Convert headers map to list
+            if (curlRequest.headers != null && !curlRequest.headers.isEmpty()) {
+                List<HttpHeader> headersList = new ArrayList<>();
+                for (Map.Entry<String, String> entry : curlRequest.headers.entrySet()) {
+                    headersList.add(new HttpHeader(true, entry.getKey(), entry.getValue()));
+                }
+                item.setHeadersList(headersList);
+            }
+
             item.setBody(curlRequest.body);
-            item.setParams(curlRequest.params);
-            item.setFormData(curlRequest.formData);
-            item.setFormFiles(curlRequest.formFiles);
+
+            // Convert params map to list
+            if (curlRequest.params != null && !curlRequest.params.isEmpty()) {
+                List<HttpParam> paramsList = new ArrayList<>();
+                for (Map.Entry<String, String> entry : curlRequest.params.entrySet()) {
+                    paramsList.add(new HttpParam(true, entry.getKey(), entry.getValue()));
+                }
+                item.setParamsList(paramsList);
+            }
+
+            // Convert formData and formFiles maps to list
+            if ((curlRequest.formData != null && !curlRequest.formData.isEmpty()) ||
+                (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
+                List<HttpFormData> formDataList = new ArrayList<>();
+                if (curlRequest.formData != null) {
+                    for (Map.Entry<String, String> entry : curlRequest.formData.entrySet()) {
+                        formDataList.add(new HttpFormData(true, entry.getKey(), "text", entry.getValue()));
+                    }
+                }
+                if (curlRequest.formFiles != null) {
+                    for (Map.Entry<String, String> entry : curlRequest.formFiles.entrySet()) {
+                        formDataList.add(new HttpFormData(true, entry.getKey(), "file", entry.getValue()));
+                    }
+                }
+                item.setFormDataList(formDataList);
+            }
+
             if (HttpUtil.isSSERequest(item.getHeaders())) {
                 item.setProtocol(RequestItemProtocolEnum.SSE);
             } else if (HttpUtil.isWebSocketRequest(item.getUrl())) {
@@ -422,3 +459,4 @@ public class LeftTopPanel extends SingletonBasePanel {
         }
     }
 }
+

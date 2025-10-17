@@ -739,42 +739,24 @@ public class RequestEditSubPanel extends JPanel {
         item.setUrl(urlField.getText().trim());
         item.setMethod((String) methodBox.getSelectedItem());
         item.setProtocol(protocol);
-
-        // 使用新格式保存 headers（包含 enabled 状态）
         item.setHeadersList(headersPanel.getHeadersList());
-        // 同时保存旧格式用于兼容（只包含启用的 headers）
-        item.setHeaders(headersPanel.getMap());
-
-        // 使用新格式保存 params（包含 enabled 状态）
         item.setParamsList(paramsPanel.getParamsList());
-        // 同时保存旧格式用于兼容（只包含启用的 params）
-        item.setParams(paramsPanel.getMap());
-        // 统一通过requestBodyPanel获取body相关内容
         item.setBody(requestBodyPanel.getBodyArea().getText().trim());
         item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());
         String bodyType = requestBodyPanel.getBodyType();
         if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(bodyType)) {
             EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             item.setFormDataList(formDataTablePanel.getFormDataList());
-            item.setFormData(requestBodyPanel.getFormData());
-            item.setFormFiles(requestBodyPanel.getFormFiles());
             item.setBody(""); // form-data模式下，body通常不直接使用
-            item.setUrlencoded(new LinkedHashMap<>());
             item.setUrlencodedList(new ArrayList<>());
         } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(bodyType)) {
             item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
-            item.setFormData(new LinkedHashMap<>());
-            item.setFormFiles(new LinkedHashMap<>());
             item.setFormDataList(new ArrayList<>());
             EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             item.setUrlencodedList(urlencodedTablePanel.getFormDataList());
-            item.setUrlencoded(requestBodyPanel.getUrlencoded());
         } else if (RequestBodyPanel.BODY_TYPE_RAW.equals(bodyType)) {
             item.setBody(requestBodyPanel.getRawBody());
-            item.setFormData(new LinkedHashMap<>());
-            item.setFormFiles(new LinkedHashMap<>());
             item.setFormDataList(new ArrayList<>());
-            item.setUrlencoded(new LinkedHashMap<>());
             item.setUrlencodedList(new ArrayList<>());
         }
         // 认证Tab收集

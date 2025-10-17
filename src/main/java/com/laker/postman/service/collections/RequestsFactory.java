@@ -1,11 +1,17 @@
 package com.laker.postman.service.collections;
 
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.http.HttpRequestFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class RequestsFactory {
@@ -29,7 +35,9 @@ public class RequestsFactory {
             example.setName("Environment Variable + Script Example");
             example.setMethod("GET");
             example.setUrl("{{baseUrl}}?q=lakernote");
-            example.getParams().put("q", "lakernote");
+            example.setParamsList(List.of(
+                    new HttpParam(true, "q", "lakernote")
+            ));
             example.setPrescript("console.log('This is a pre-request script');");
             example.setPostscript("""
                     console.log('This is a post-request script');
@@ -44,13 +52,18 @@ public class RequestsFactory {
             getExample.setName("GET Example");
             getExample.setMethod("GET");
             getExample.setUrl("https://httpbin.org/get?q=easytools&lang=en&page=1&size=10&sort=desc&filter=active");
-            getExample.getHeaders().put("Accept", APPLICATION_JSON);
-            getExample.getParams().put("q", "easytools");
-            getExample.getParams().put("lang", "en");
-            getExample.getParams().put("page", "1");
-            getExample.getParams().put("size", "10");
-            getExample.getParams().put("sort", "desc");
-            getExample.getParams().put("filter", "active");
+            // Add headers to existing list
+            List<HttpHeader> getHeaders = new ArrayList<>(getExample.getHeadersList());
+            getHeaders.add(new HttpHeader(true, "Accept", APPLICATION_JSON));
+            getExample.setHeadersList(getHeaders);
+            getExample.setParamsList(List.of(
+                    new HttpParam(true, "q", "easytools"),
+                    new HttpParam(true, "lang", "en"),
+                    new HttpParam(true, "page", "1"),
+                    new HttpParam(true, "size", "10"),
+                    new HttpParam(true, "sort", "desc"),
+                    new HttpParam(true, "filter", "active")
+            ));
             getExample.setPostscript("""
                     pm.test('Response status is 200', function () {
                         pm.response.to.have.status(200);
@@ -62,7 +75,9 @@ public class RequestsFactory {
             postJson.setName("POST-JSON Example");
             postJson.setMethod("POST");
             postJson.setUrl(HTTPS_HTTPBIN_ORG_POST);
-            postJson.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
+            List<HttpHeader> postJsonHeaders = new ArrayList<>(postJson.getHeadersList());
+            postJsonHeaders.add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
+            postJson.setHeadersList(postJsonHeaders);
             postJson.setBody("""
                     {
                         "key1": "value1",
@@ -76,9 +91,13 @@ public class RequestsFactory {
             postFormData.setName("POST-form-data Example");
             postFormData.setMethod("POST");
             postFormData.setUrl(HTTPS_HTTPBIN_ORG_POST);
-            postFormData.getHeaders().put(CONTENT_TYPE, "multipart/form-data");
-            postFormData.getFormData().put("key1", "value1");
-            postFormData.getFormData().put("key2", "value2");
+            List<HttpHeader> formDataHeaders = new ArrayList<>(postFormData.getHeadersList());
+            formDataHeaders.add(new HttpHeader(true, CONTENT_TYPE, "multipart/form-data"));
+            postFormData.setHeadersList(formDataHeaders);
+            postFormData.setFormDataList(List.of(
+                    new HttpFormData(true, "key1", "text", "value1"),
+                    new HttpFormData(true, "key2", "text", "value2")
+            ));
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, postFormData}));
 
             // POST x-www-form-urlencoded Example
@@ -86,9 +105,13 @@ public class RequestsFactory {
             postUrl.setName("POST-x-www-form-urlencoded Example");
             postUrl.setMethod("POST");
             postUrl.setUrl(HTTPS_HTTPBIN_ORG_POST);
-            postUrl.getHeaders().put(CONTENT_TYPE, "application/x-www-form-urlencoded");
-            postUrl.getUrlencoded().put("key1", "value1");
-            postUrl.getUrlencoded().put("key2", "value2");
+            List<HttpHeader> urlEncodedHeaders = new ArrayList<>(postUrl.getHeadersList());
+            urlEncodedHeaders.add(new HttpHeader(true, CONTENT_TYPE, "application/x-www-form-urlencoded"));
+            postUrl.setHeadersList(urlEncodedHeaders);
+            postUrl.setUrlencodedList(List.of(
+                    new HttpFormUrlencoded(true, "key1", "value1"),
+                    new HttpFormUrlencoded(true, "key2", "value2")
+            ));
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, postUrl}));
 
             // PUT Example
@@ -96,7 +119,9 @@ public class RequestsFactory {
             put.setName("PUT Example");
             put.setMethod("PUT");
             put.setUrl("https://httpbin.org/put");
-            put.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
+            List<HttpHeader> putHeaders = new ArrayList<>(put.getHeadersList());
+            putHeaders.add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
+            put.setHeadersList(putHeaders);
             put.setBody("{\"update\":true}");
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, put}));
 

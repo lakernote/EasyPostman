@@ -286,9 +286,10 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         table.getColumnModel().getColumn(COL_KEY).setCellEditor(new EasyPostmanTextFieldCellEditor());
         table.getColumnModel().getColumn(COL_KEY).setCellRenderer(new EasyPostmanTextFieldCellRenderer());
 
-        // Set Type column to dropdown editor
+        // Set Type column to dropdown editor with custom renderer
         JComboBox<String> typeCombo = new JComboBox<>(TYPE_OPTIONS);
         table.getColumnModel().getColumn(COL_TYPE).setCellEditor(new DefaultCellEditor(typeCombo));
+        table.getColumnModel().getColumn(COL_TYPE).setCellRenderer(new TypeColumnRenderer());
 
         // Set Value column to dynamic text/file editor and renderer
         table.getColumnModel().getColumn(COL_VALUE).setCellEditor(new TextOrFileTableCellEditor());
@@ -412,6 +413,36 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
                 }
             }
 
+            return this;
+        }
+    }
+
+    /**
+     * Custom renderer for Type column
+     * 提供与其他列一致的样式和更美观的显示效果
+     */
+    private class TypeColumnRenderer extends DefaultTableCellRenderer {
+        public TypeColumnRenderer() {
+            setVerticalAlignment(SwingConstants.CENTER);
+            setHorizontalAlignment(SwingConstants.LEFT);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            // 设置背景色 - 与其他列保持一致
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+
+            // 添加内边距，与其他列保持一致
+            setBorder(TableUIConstants.createLabelBorder());
             return this;
         }
     }

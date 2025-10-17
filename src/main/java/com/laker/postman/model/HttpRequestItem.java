@@ -1,6 +1,7 @@
 package com.laker.postman.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,7 +16,8 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
  * 包含请求的基本信息、头部、参数、认证等
  * 每个参数都要求有默认值，便于前端展示和编辑
  */
-@Data
+@Getter
+@Setter
 public class HttpRequestItem implements Serializable {
     private String id = ""; // 唯一标识符
     private String name = ""; // 请求名称

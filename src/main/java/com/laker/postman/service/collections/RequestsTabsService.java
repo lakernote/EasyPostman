@@ -27,7 +27,7 @@ public class RequestsTabsService {
             throw new IllegalArgumentException("Request item ID cannot be null or empty");
         }
         RequestEditSubPanel subPanel = new RequestEditSubPanel(id, item.getProtocol());
-        subPanel.updateRequestForm(item);
+        subPanel.initPanelData(item);
         String tabTitle = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
         JTabbedPane tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
         tabbedPane.addTab(tabTitle, subPanel);

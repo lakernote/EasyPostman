@@ -296,7 +296,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                                     // 更新自定义标签组件
                                     tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, item.getProtocol()));
                                     // 同步刷新内容
-                                    subPanel.updateRequestForm(item);
+                                    subPanel.initPanelData(item);
                                 }
                             }
                         }

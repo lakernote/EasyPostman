@@ -27,7 +27,7 @@ import java.util.Map;
  * Similar to EasyHttpHeadersTablePanel but for request parameters
  */
 @Slf4j
-public class EasyParamsTablePanel extends JPanel {
+public class EasyPostmanParamsTablePanel extends JPanel {
     // Table components
     private DefaultTableModel tableModel;
     @Getter
@@ -48,7 +48,7 @@ public class EasyParamsTablePanel extends JPanel {
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
-    public EasyParamsTablePanel() {
+    public EasyPostmanParamsTablePanel() {
         this.columns = new String[]{"", "Key", "Value", ""};
         initializeComponents();
         initializeTableUI();

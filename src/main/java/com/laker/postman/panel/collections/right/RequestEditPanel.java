@@ -93,7 +93,7 @@ public class RequestEditPanel extends SingletonBasePanel {
     // 更新当前Tab内容
     public void updateRequest(HttpRequestItem item) {
         RequestEditSubPanel subPanel = getCurrentSubPanel();
-        if (subPanel != null) subPanel.updateRequestForm(item);
+        if (subPanel != null) subPanel.initPanelData(item);
     }
 
     private RequestEditSubPanel getCurrentSubPanel() {
@@ -122,7 +122,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
         // 没有同id Tab则新建
         RequestEditSubPanel subPanel = new RequestEditSubPanel(id, item.getProtocol());
-        subPanel.updateRequestForm(item);
+        subPanel.initPanelData(item);
         String name = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : REQUEST_STRING;
         int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0; // 插入到“+”Tab前
         tabbedPane.insertTab(name, null, subPanel, null, plusTabIdx);
@@ -368,7 +368,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             }
             RequestEditSubPanel subPanel = getCurrentSubPanel();
             if (subPanel != null) {
-                subPanel.updateRequestForm(item);
+                subPanel.initPanelData(item);
             }
         }
     }
@@ -450,7 +450,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                                     // 新建Tab并填充内容
                                     RequestEditSubPanel tab = addNewTab(null, item.getProtocol());
                                     item.setId(tab.getId());
-                                    tab.updateRequestForm(item);
+                                    tab.initPanelData(item);
                                     // 清空剪贴板内容
                                     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
                                     return;
@@ -515,7 +515,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         RequestEditSubPanel newPanel = new RequestEditSubPanel(currentItem.getId(), RequestItemProtocolEnum.SSE);
 
         // 将请求数据填充到新面板
-        newPanel.updateRequestForm(currentItem);
+        newPanel.initPanelData(currentItem);
 
         // 替换 tab
         tabbedPane.setComponentAt(currentIndex, newPanel);

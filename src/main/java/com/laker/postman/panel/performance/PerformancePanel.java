@@ -1164,7 +1164,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     case REQUEST -> {
                         propertyCardLayout.show(propertyPanel, REQUEST);
                         if (jtNode.httpRequestItem != null) {
-                            requestEditSubPanel.updateRequestForm(jtNode.httpRequestItem);
+                            requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
                         }
                     }
                     case ASSERTION -> {
@@ -1227,7 +1227,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 TreePath newPath = new TreePath(newNodes.get(0).getPath());
                 jmeterTree.setSelectionPath(newPath);
                 propertyCardLayout.show(propertyPanel, REQUEST);
-                requestEditSubPanel.updateRequestForm(((JMeterTreeNode) newNodes.get(0).getUserObject()).httpRequestItem);
+                requestEditSubPanel.initPanelData(((JMeterTreeNode) newNodes.get(0).getUserObject()).httpRequestItem);
             });
         });
         // 添加断言
@@ -1261,7 +1261,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 // 同步更新 request 类型的 httpRequestItem name 字段
                 if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
                     jtNode.httpRequestItem.setName(newName.trim());
-                    requestEditSubPanel.updateRequestForm(jtNode.httpRequestItem);
+                    requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
                 }
                 treeModel.nodeChanged(node);
             }

@@ -55,7 +55,7 @@ public class RequestEditSubPanel extends JPanel {
     public static final String ACCEPT = "Accept";
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
-    private final EasyParamsTablePanel paramsPanel;
+    private final EasyPostmanParamsTablePanel paramsPanel;
     private final EasyHttpHeadersPanel headersPanel;
     @Getter
     private String id;
@@ -124,7 +124,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.setMinimumSize(new Dimension(400, 120));
 
         // 2.1 Params
-        paramsPanel = new EasyParamsTablePanel();
+        paramsPanel = new EasyPostmanParamsTablePanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel); // 2.1 添加参数选项卡
 
         // 添加Params面板的监听器，实现从Params到URL的联动
@@ -653,7 +653,7 @@ public class RequestEditSubPanel extends JPanel {
     /**
      * 更新表单内容（用于切换请求或保存后刷新）
      */
-    public void updateRequestForm(HttpRequestItem item) {
+    public void initPanelData(HttpRequestItem item) {
         this.id = item.getId();
         this.name = item.getName();
         // 拆解URL参数

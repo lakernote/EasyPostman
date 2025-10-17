@@ -3,7 +3,6 @@ package com.laker.postman;
 import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.laker.postman.common.window.EasyPostManSplashWindow;
 import com.laker.postman.service.UpdateService;
-import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.EasyPostManStyleUtils;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -23,19 +22,17 @@ public class App {
     public static void main(String[] args) {
         // Swing 推荐在事件分派线程（EDT）中运行所有 UI 相关操作
         SwingUtilities.invokeLater(() -> {
-            // 1. 设置主题（必须在设置字体之前）
+            // 1. 设置主题
             FlatIntelliJLaf.setup();
-            // 2. 设置字体，使用 UIManager 的字体缩放，保留字体降级链
-            EasyPostManFontUtil.setupFontScaling();
-            // 3. FlatLaf 统一商务风格属性（圆角、阴影等）
+            // 2. FlatLaf 统一商务风格属性（圆角、阴影等）
             EasyPostManStyleUtils.apply();
-            // 4. 注册图标字体，使用 FontAwesome 图标库
+            // 3. 注册图标字体，使用 FontAwesome 图标库
             IconFontSwing.register(FontAwesome.getIconFont());
-            // 5. 显示 SplashWindow
+            // 4. 显示 SplashWindow
             EasyPostManSplashWindow splash = new EasyPostManSplashWindow();
-            // 6. 异步加载主窗口
+            // 5. 异步加载主窗口
             splash.initMainFrame();
-            // 7. 启动后台版本检查
+            // 6. 启动后台版本检查
             UpdateService.getInstance().checkUpdateOnStartup();
         });
 

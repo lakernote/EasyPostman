@@ -662,8 +662,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
-            // Add an empty row after clearing
-            tableModel.addRow(new Object[]{true, "", "", ""});
+            // Don't add empty row here - let caller or setRows handle it
         } finally {
             suppressAutoAppendRow = false;
         }
@@ -715,7 +714,7 @@ public class EasyHttpHeadersTablePanel extends JPanel {
             tableModel.setRowCount(0);
 
             // Add new rows
-            if (rows != null) {
+            if (rows != null && !rows.isEmpty()) {
                 for (Map<String, Object> row : rows) {
                     Object enabled = row.get("Enabled");
                     if (enabled == null) {
@@ -727,6 +726,9 @@ public class EasyHttpHeadersTablePanel extends JPanel {
                     tableModel.addRow(new Object[]{enabled, key, value, ""});
                 }
             }
+
+            // Ensure there's always an empty row at the end
+            ensureEmptyLastRow();
         } finally {
             suppressAutoAppendRow = false;
         }

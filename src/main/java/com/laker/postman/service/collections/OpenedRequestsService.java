@@ -101,7 +101,6 @@ public class OpenedRequestsService {
                 HttpRequestItem item;
                 if (closable.isNewRequest()) {
                     item = subPanel.getCurrentRequest();
-                    item.setNewRequest(true);
                 } else if (closable.isDirty() && !saveAll) {
                     item = subPanel.getOriginalRequestItem();
                 } else {

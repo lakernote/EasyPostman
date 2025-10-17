@@ -2,6 +2,7 @@ package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.service.EnvironmentService;
 
 import java.util.LinkedHashMap;
@@ -35,7 +36,7 @@ public class PreparedRequestBuilder {
             req.formData = item.getFormData(); // 暂不替换变量
             req.formFiles = item.getFormFiles(); // 暂不替换变量
         }
-        req.followRedirects = item.isFollowRedirects();
+        req.followRedirects = SettingManager.isFollowRedirects();
         return req;
     }
 

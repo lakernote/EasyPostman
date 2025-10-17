@@ -57,11 +57,6 @@ public class HttpRequestItem implements Serializable {
     // 后置脚本（响应后执行）
     private String postscript = "";
 
-    // 是否自动重定向（默认true）
-    private boolean isFollowRedirects = true;
-
-    private boolean newRequest = false; // 是否为新建请求（未命名）
-
     /**
      * 判断该请求是否为新建（未命名）请求
      */

@@ -11,7 +11,6 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -314,8 +313,6 @@ public class RequestEditSubPanel extends JPanel {
             }
         }
 
-        // 强制使用全局 followRedirects 设置
-        item.setFollowRedirects(SettingManager.isFollowRedirects());
         PreparedRequest req = PreparedRequestBuilder.build(item);
         Map<String, Object> bindings = prepareBindings(req);
         if (!executePrescript(item, bindings)) return;
@@ -850,7 +847,6 @@ public class RequestEditSubPanel extends JPanel {
         // 脚本内容
         item.setPrescript(scriptPanel.getPrescript());
         item.setPostscript(scriptPanel.getPostscript());
-        item.setFollowRedirects(SettingManager.isFollowRedirects());
         return item;
     }
 

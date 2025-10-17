@@ -80,18 +80,8 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
             addAutoAppendRowFeature();
         }
 
-        enableRowDragAndDrop();
         // Add initial empty row
         addRow();
-    }
-
-    /**
-     * 启用JTable行拖动排序
-     */
-    private void enableRowDragAndDrop() {
-        table.setDragEnabled(true);
-        table.setDropMode(DropMode.INSERT_ROWS);
-        table.setTransferHandler(new TableRowTransferHandler(tableModel));
     }
 
     private void initializeComponents() {

@@ -43,13 +43,23 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     private boolean suppressAutoAppendRow = false;
 
     // Column indices
-    private static final int COL_ENABLED = 0;
+    private static final int COL_DRAG_ENABLE = 0;  // 合并拖动手柄和启用复选框
     private static final int COL_KEY = 1;
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
     private final String nameCol;
     private final String valueCol;
+
+    /**
+     * Flag to track if dragging is in progress
+     */
+    private boolean isDragging = false;
+
+    /**
+     * Flag to suppress auto-append during drag operations
+     */
+    private boolean suppressAutoDuringDrag = false;
 
     /**
      * 构造函数，创建默认的环境变量表格面板
@@ -80,8 +90,24 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
             addAutoAppendRowFeature();
         }
 
+        enableRowDragAndDrop();
+
         // Add initial empty row
         addRow();
+    }
+
+
+    /**
+     * 启用JTable行拖动排序
+     */
+    private void enableRowDragAndDrop() {
+        table.setDragEnabled(true);
+        table.setDropMode(DropMode.INSERT_ROWS);
+        // 传递回调函数，在拖拽期间控制自动补空行
+        table.setTransferHandler(new ImprovedTableRowTransferHandler(tableModel, dragging -> {
+            suppressAutoDuringDrag = dragging;
+            log.debug("Drag state changed: {}", dragging);
+        }));
     }
 
     private void initializeComponents() {
@@ -95,7 +121,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == COL_ENABLED) {
+                if (columnIndex == COL_DRAG_ENABLE) {
                     return Boolean.class;
                 }
                 return Object.class;
@@ -103,12 +129,12 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
 
             @Override
             public boolean isCellEditable(int row, int column) {
-                if (!editable) {
+                if (!editable || isDragging) {
                     return false;
                 }
 
-                // Checkbox column is always editable
-                if (column == COL_ENABLED) {
+                // Drag/Enable column - checkbox part is editable
+                if (column == COL_DRAG_ENABLE) {
                     return true;
                 }
 
@@ -153,11 +179,12 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         // Configure Tab key behavior to move between columns
         table.setSurrendersFocusOnKeystroke(true);
 
-        // Set column widths
-        table.getColumnModel().getColumn(COL_ENABLED).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_ENABLED).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_ENABLED).setMinWidth(40);
+        // Set column widths for drag/enable column
+        table.getColumnModel().getColumn(COL_DRAG_ENABLE).setPreferredWidth(40);
+        table.getColumnModel().getColumn(COL_DRAG_ENABLE).setMaxWidth(40);
+        table.getColumnModel().getColumn(COL_DRAG_ENABLE).setMinWidth(40);
 
+        // Set column widths for delete button
         table.getColumnModel().getColumn(COL_DELETE).setPreferredWidth(40);
         table.getColumnModel().getColumn(COL_DELETE).setMaxWidth(40);
         table.getColumnModel().getColumn(COL_DELETE).setMinWidth(40);
@@ -267,6 +294,10 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     private void setupCellRenderersAndEditors() {
         setEmptyCellWhiteBackgroundRenderer();
 
+        // Set custom renderer and editor for drag/enable column
+        setColumnRenderer(COL_DRAG_ENABLE, new DragEnableRenderer());
+        setColumnEditor(COL_DRAG_ENABLE, new DragEnableEditor());
+
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         setColumnEditor(COL_VALUE, new EasyPostmanTextFieldCellEditor());
@@ -277,9 +308,118 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
     }
 
+    /**
+     * Custom renderer for drag/enable column that combines drag handle and checkbox
+     */
+    private class DragEnableRenderer extends JPanel implements TableCellRenderer {
+        private final JLabel dragLabel;
+        private final JCheckBox checkBox;
+
+        public DragEnableRenderer() {
+            setLayout(new BorderLayout(0, 0)); // 减少间距从 2 到 0
+            setOpaque(true);
+
+            // Drag handle label - 加粗的拖拽图标
+            dragLabel = new JLabel("⋮⋮");
+            dragLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
+            dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
+            dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20
+            dragLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            // Checkbox
+            checkBox = new JCheckBox();
+            checkBox.setHorizontalAlignment(SwingConstants.CENTER);
+            checkBox.setOpaque(false);
+
+            add(dragLabel, BorderLayout.WEST);
+            add(checkBox, BorderLayout.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                // 选中时拖拽手柄颜色更深
+                dragLabel.setForeground(new Color(60, 60, 60));
+            } else {
+                setBackground(table.getBackground());
+                dragLabel.setForeground(new Color(100, 100, 100));
+            }
+
+            // Set checkbox state
+            checkBox.setSelected(value instanceof Boolean && (Boolean) value);
+
+            return this;
+        }
+    }
+
+    /**
+     * Custom editor for drag/enable column
+     */
+    private class DragEnableEditor extends DefaultCellEditor {
+        private final JPanel panel;
+        private final JLabel dragLabel;
+        private final JCheckBox checkBox;
+
+        public DragEnableEditor() {
+            super(new JCheckBox());
+
+            panel = new JPanel(new BorderLayout(0, 0)); // 减少间距从 2 到 0
+            panel.setOpaque(true);
+
+            // Drag handle label - 加粗的拖拽图标
+            dragLabel = new JLabel("⋮⋮");
+            dragLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
+            dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
+            dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20
+            dragLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            // Checkbox
+            checkBox = new JCheckBox();
+            checkBox.setHorizontalAlignment(SwingConstants.CENTER);
+            checkBox.setOpaque(false);
+
+            panel.add(dragLabel, BorderLayout.WEST);
+            panel.add(checkBox, BorderLayout.CENTER);
+
+            // Add mouse listener to handle clicks on drag area vs checkbox area
+            panel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    Rectangle checkBoxBounds = checkBox.getBounds();
+                    Point panelPoint = e.getPoint();
+
+                    // If click is on checkbox area, toggle it
+                    if (checkBoxBounds.contains(panelPoint)) {
+                        checkBox.setSelected(!checkBox.isSelected());
+                        fireEditingStopped();
+                    }
+                }
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            panel.setBackground(table.getSelectionBackground());
+            checkBox.setSelected(value instanceof Boolean && (Boolean) value);
+            dragLabel.setForeground(new Color(60, 60, 60));
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return checkBox.isSelected();
+        }
+    }
+
     private void setupTableListeners() {
         addTableRightMouseListener();
         addDeleteButtonListener();
+        addDragHandleMouseListener();
     }
 
     /**
@@ -315,6 +455,74 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
                     tableModel.removeRow(modelRow);
                     ensureEmptyLastRow();
                 }
+            }
+        });
+    }
+
+    /**
+     * Add mouse listener to show hand cursor when hovering over drag handle area
+     */
+    private void addDragHandleMouseListener() {
+        // 使用简单的鼠标监听器来显示光标
+        table.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+
+                // 在第一列显示手型光标
+                if (column == COL_DRAG_ENABLE && row >= 0) {
+                    Rectangle cellRect = table.getCellRect(row, column, false);
+                    int relativeX = e.getX() - cellRect.x;
+
+                    // 左侧拖拽区域显示移动光标
+                    if (relativeX < 25) {
+                        table.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                    } else {
+                        table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                    }
+                } else {
+                    table.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        });
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent e) {
+                table.setCursor(Cursor.getDefaultCursor());
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+
+                // 在第一列的拖拽手柄区域按下时，选中行并准备拖拽
+                if (column == COL_DRAG_ENABLE && row >= 0) {
+                    Rectangle cellRect = table.getCellRect(row, column, false);
+                    int relativeX = e.getX() - cellRect.x;
+
+                    // 左侧25px是拖拽区域
+                    if (relativeX < 25) {
+                        // 选中该行
+                        table.setRowSelectionInterval(row, row);
+
+                        // 停止编辑
+                        if (table.isEditing()) {
+                            table.getCellEditor().stopCellEditing();
+                        }
+
+                        // 标记为拖拽状态，防止意外编辑
+                        isDragging = true;
+                    }
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // 释放鼠标后重置拖拽状态
+                SwingUtilities.invokeLater(() -> isDragging = false);
             }
         });
     }
@@ -475,7 +683,8 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
      */
     private void addAutoAppendRowFeature() {
         tableModel.addTableModelListener(e -> {
-            if (suppressAutoAppendRow || !editable) {
+            // 在拖拽期间、批量操作期间或不可编辑时，禁用自动补空行
+            if (suppressAutoAppendRow || suppressAutoDuringDrag || !editable) {
                 return;
             }
 
@@ -550,14 +759,14 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
             tableModel.addRow(new Object[]{values[0], values[1], values[2], ""});
         } else {
             Object[] row = new Object[4];
-            row[0] = true;
+            row[0] = true; // enabled
             for (int i = 0; i < Math.min(values.length, 2); i++) {
                 row[i + 1] = values[i];
             }
-            for (int i = values.length; i < 3; i++) {
+            for (int i = values.length; i < 2; i++) {
                 row[i + 1] = "";
             }
-            row[3] = "";
+            row[3] = ""; // delete
             tableModel.addRow(row);
         }
     }
@@ -617,7 +826,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Enabled", tableModel.getValueAt(i, COL_ENABLED));
+            row.put("Enabled", tableModel.getValueAt(i, COL_DRAG_ENABLE));
             row.put(nameCol, tableModel.getValueAt(i, COL_KEY));
             row.put(valueCol, tableModel.getValueAt(i, COL_VALUE));
             rows.add(row);
@@ -664,7 +873,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     public Map<String, String> getMap() {
         Map<String, String> map = new LinkedHashMap<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);
+            Object enabledObj = tableModel.getValueAt(i, COL_DRAG_ENABLE);
             Object keyObj = tableModel.getValueAt(i, COL_KEY);
             Object valueObj = tableModel.getValueAt(i, COL_VALUE);
 
@@ -709,7 +918,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     public List<EnvironmentVariable> getVariableList() {
         List<EnvironmentVariable> dataList = new ArrayList<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);
+            Object enabledObj = tableModel.getValueAt(i, COL_DRAG_ENABLE);
             Object keyObj = tableModel.getValueAt(i, COL_KEY);
             Object valueObj = tableModel.getValueAt(i, COL_VALUE);
 

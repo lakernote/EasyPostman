@@ -48,8 +48,6 @@ import java.util.List;
 @Slf4j
 public class EnvironmentPanel extends SingletonBasePanel {
     public static final String SAVE_VARIABLES = "saveVariables";
-    public static final String COLUMN_NAME = "Name";
-    public static final String COLUMN_VALUE = "Value";
     public static final String EXPORT_FILE_NAME = "EasyPostman-Environments.json";
     private EasyPostmanEnvironmentTablePanel variablesTablePanel;
     private transient Environment currentEnvironment;

@@ -377,6 +377,11 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
             checkBox.setHorizontalAlignment(SwingConstants.CENTER);
             checkBox.setOpaque(false);
 
+            // Add ActionListener to immediately commit checkbox changes
+            checkBox.addActionListener(e -> {
+                fireEditingStopped();
+            });
+
             panel.add(dragLabel, BorderLayout.WEST);
             panel.add(checkBox, BorderLayout.CENTER);
 

@@ -42,7 +42,12 @@ public class HttpRequestItem implements Serializable {
     private Map<String, String> formData = new LinkedHashMap<>();
     // form-data 文件字段（key=字段名，value=文件绝对路径）
     private Map<String, String> formFiles = new LinkedHashMap<>();
-    // x-www-form-urlencoded 字段
+
+    // 新版本：带启用状态的 urlencoded（优先使用）
+    private List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+
+    // 旧版本：仅保留用于向后兼容（从旧数据迁移）
+    @Deprecated
     private Map<String, String> urlencoded = new LinkedHashMap<>();
 
     // 认证相关字段

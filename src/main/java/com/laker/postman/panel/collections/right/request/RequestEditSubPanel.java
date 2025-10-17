@@ -747,12 +747,17 @@ public class RequestEditSubPanel extends JPanel {
             }
         }
 
-        if (MapUtil.isNotEmpty(item.getUrlencoded())) {
+        // Form-urlencoded - 优先使用新格式（包含 enabled 状态）
+        if (item.getUrlencodedList() != null && !item.getUrlencodedList().isEmpty()) {
+            // 使用新格式加载（包含 enabled 状态）
             EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
-            urlencodedTablePanel.clear();
-            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
-                urlencodedTablePanel.addRow(entry.getKey(), entry.getValue());
-            }
+            urlencodedTablePanel.setFormDataList(item.getUrlencodedList());
+        } else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
+            // 兼容旧格式（从 Map 加载）
+            EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+            urlencodedTablePanel.setFormData(item.getUrlencoded());
+            // 迁移到新格式
+            item.setUrlencodedList(urlencodedTablePanel.getFormDataList());
         }
 
         // 认证Tab
@@ -800,6 +805,11 @@ public class RequestEditSubPanel extends JPanel {
             item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
             item.setFormData(new LinkedHashMap<>());
             item.setFormFiles(new LinkedHashMap<>());
+
+            // 使用新格式保存 urlencoded（包含 enabled 状态）
+            EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+            item.setUrlencodedList(urlencodedTablePanel.getFormDataList());
+            // 同时保存旧格式用于兼容（只包含启用的数据）
             item.setUrlencoded(requestBodyPanel.getUrlencoded());
         } else if (RequestBodyPanel.BODY_TYPE_RAW.equals(bodyType)) {
             item.setBody(requestBodyPanel.getRawBody());

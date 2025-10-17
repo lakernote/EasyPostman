@@ -385,11 +385,6 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-//                    if (!isSSERequest(req)) {
-//                        req.headers.remove("accept"); // 如果不是SSE请求，移除Accept头
-//                        req.headers.remove(ACCEPT);
-//                        req.headers.put(ACCEPT, TEXT_EVENT_STREAM); // 确保设置为SSE类型
-//                    }
                     startTime = System.currentTimeMillis();
                     resp = new HttpResponse();
                     sseBodyBuilder = new StringBuilder();

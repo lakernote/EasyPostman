@@ -21,11 +21,9 @@ public class TableRowTransferHandler extends TransferHandler {
     private int addIndex = -1; // 新插入行的索引
     private int addCount = 0;  // 插入的行数
     private final DefaultTableModel model;
-    private final EasyTablePanel tablePanel;
 
-    public TableRowTransferHandler(DefaultTableModel model, EasyTablePanel tablePanel) {
+    public TableRowTransferHandler(DefaultTableModel model) {
         this.model = model;
-        this.tablePanel = tablePanel;
         localObjectFlavor = new DataFlavor(List.class, "List of items");
     }
 

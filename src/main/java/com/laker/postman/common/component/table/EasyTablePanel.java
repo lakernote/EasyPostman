@@ -96,8 +96,6 @@ public class EasyTablePanel extends JPanel {
         };
         // 创建表格
         table = new JTable(tableModel);
-        // 启用行拖动排序
-        enableRowDragAndDrop();
         // 初始化表格UI
         initTableUI();
         // 设置空值渲染器
@@ -174,6 +172,7 @@ public class EasyTablePanel extends JPanel {
 
     /**
      * Move to the next (or previous) editable cell in the current row
+     *
      * @param reverse true to move backwards (Shift+Tab), false to move forwards (Tab)
      */
     private void moveToNextEditableCell(boolean reverse) {
@@ -550,15 +549,6 @@ public class EasyTablePanel extends JPanel {
     public void setEditable(boolean editable) {
         this.editable = editable;
         table.repaint();
-    }
-
-    /**
-     * 启用JTable行拖动排序
-     */
-    private void enableRowDragAndDrop() {
-        table.setDragEnabled(true);
-        table.setDropMode(DropMode.INSERT_ROWS);
-        table.setTransferHandler(new TableRowTransferHandler(tableModel, this));
     }
 
     /**

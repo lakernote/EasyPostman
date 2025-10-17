@@ -120,7 +120,19 @@ public class RequestsPersistence {
             } else if ("request".equals(childObj[0])) {
                 JSONObject reqJson = new JSONObject();
                 reqJson.set("type", "request");
-                reqJson.set("data", JSONUtil.parseObj(childObj[1]));
+
+                // 将 HttpRequestItem 转为 JSON，然后移除旧版本的字段
+                HttpRequestItem requestItem = (HttpRequestItem) childObj[1];
+                JSONObject itemJson = JSONUtil.parseObj(requestItem);
+
+                // 移除旧版本的字段（仅保留新版本的 List 字段）
+                itemJson.remove("params");
+                itemJson.remove("formData");
+                itemJson.remove("formFiles");
+                itemJson.remove("headers");
+                itemJson.remove("urlencoded");
+
+                reqJson.set("data", itemJson);
                 children.add(reqJson);
             }
         }

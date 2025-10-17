@@ -114,7 +114,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
                 // 使用 SwingUtilities.invokeLater 确保在事件处理完成后执行保存
                 SwingUtilities.invokeLater(() -> {
-                    if (!isLoadingData && isVariablesChanged()) {
+                    // 在拖拽期间跳过自动保存，避免保存中间状态
+                    if (!isLoadingData && !variablesTablePanel.isDragging() && isVariablesChanged()) {
                         autoSaveVariables();
                     }
                 });

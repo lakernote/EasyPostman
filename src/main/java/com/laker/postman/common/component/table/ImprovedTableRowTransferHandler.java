@@ -138,9 +138,12 @@ public class ImprovedTableRowTransferHandler extends TransferHandler {
         DefaultTableModel targetModel = (DefaultTableModel) target.getModel();
         int index = ((JTable.DropLocation) info.getDropLocation()).getRow();
 
-        // 防止插入到自身内部
-        if (rows != null && index >= rows[0] && index <= rows[rows.length - 1] + 1) {
-            return false;
+        // 修正索引：确保索引在有效范围内
+        int max = targetModel.getRowCount();
+        if (index < 0) {
+            index = max;
+        } else if (index > max) {
+            index = max;
         }
 
         try {
@@ -150,30 +153,65 @@ public class ImprovedTableRowTransferHandler extends TransferHandler {
             addCount = values.size();
 
             // 批量插入行，减少UI更新次数
-            for (Object[] value : values) {
-                targetModel.insertRow(index++, value);
+            for (int i = 0; i < values.size(); i++) {
+                targetModel.insertRow(index + i, values.get(i));
             }
 
             return true;
         } catch (UnsupportedFlavorException | IOException e) {
             log.error("Error importing data: {}", e.getMessage(), e);
+            return false;
         }
-        return false;
     }
 
     @Override
     protected void exportDone(JComponent c, Transferable t, int action) {
         try {
             if ((action == MOVE) && rows != null && addCount > 0) {
-                // 删除原始行
+                log.debug("ExportDone - Original rows: {}, addIndex: {}, addCount: {}, total rows: {}",
+                    java.util.Arrays.toString(rows), addIndex, addCount, model.getRowCount());
+
+                // 简化逻辑：从后往前删除源行，每次删除时重新计算正确的索引
                 for (int i = rows.length - 1; i >= 0; i--) {
-                    if (rows[i] >= addIndex) {
-                        model.removeRow(rows[i] + addCount);
+                    int originalRow = rows[i];
+                    int rowToDelete = originalRow;
+
+                    // 如果插入位置在源行之前，源行索引向后偏移了addCount
+                    if (addIndex <= originalRow) {
+                        rowToDelete = originalRow + addCount;
+                    }
+
+                    // 对于后面的行，还需要考虑前面已经删除的行数
+                    // 计算当前行之前有多少行已经被删除了
+                    int deletedBeforeCurrent = 0;
+                    for (int j = i + 1; j < rows.length; j++) {
+                        // 如果前面删除的行在当前行之前，需要调整索引
+                        int prevDeletedRow = rows[j];
+                        if (addIndex <= prevDeletedRow) {
+                            prevDeletedRow = prevDeletedRow + addCount;
+                        }
+                        if (prevDeletedRow < rowToDelete) {
+                            deletedBeforeCurrent++;
+                        }
+                    }
+
+                    rowToDelete -= deletedBeforeCurrent;
+
+                    log.debug("Removing row - original: {}, calculated: {}, model size: {}",
+                        originalRow, rowToDelete, model.getRowCount());
+
+                    // 确保索引有效
+                    if (rowToDelete >= 0 && rowToDelete < model.getRowCount()) {
+                        model.removeRow(rowToDelete);
                     } else {
-                        model.removeRow(rows[i]);
+                        log.warn("Invalid row index to remove: {}", rowToDelete);
                     }
                 }
+
+                log.debug("ExportDone complete - final row count: {}", model.getRowCount());
             }
+        } catch (Exception e) {
+            log.error("Error in exportDone: {}", e.getMessage(), e);
         } finally {
             // 拖拽完成，重新启用自动补空行
             if (dragStateCallback != null) {

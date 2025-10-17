@@ -1008,5 +1008,12 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
             }
         }
     }
-}
 
+    /**
+     * Check if table is currently in dragging state
+     * @return true if dragging is in progress
+     */
+    public boolean isDragging() {
+        return isDragging;
+    }
+}

@@ -6,8 +6,8 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.util.SystemUtil;
 import com.laker.postman.util.EasyPostmanVariableUtil;
+import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -107,11 +107,30 @@ public class EnvironmentService {
                 env.setName(envJson.getStr("name"));
                 env.setActive(envJson.getBool("active", false));
 
-                JSONObject varsJson = envJson.getJSONObject("variables");
-                if (varsJson != null) {
-                    for (Map.Entry<String, Object> entry : varsJson.entrySet()) {
-                        env.addVariable(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+                // 优先加载新格式 variableList
+                JSONArray variableListJson = envJson.getJSONArray("variableList");
+                if (variableListJson != null && !variableListJson.isEmpty()) {
+                    // 使用新格式
+                    List<com.laker.postman.model.EnvironmentVariable> varList = new ArrayList<>();
+                    for (Object varObj : variableListJson) {
+                        JSONObject varJson = (JSONObject) varObj;
+                        boolean enabled = varJson.getBool("enabled", true);
+                        String key = varJson.getStr("key");
+                        String value = varJson.getStr("value", "");
+                        varList.add(new com.laker.postman.model.EnvironmentVariable(enabled, key, value));
                     }
+                    env.setVariableList(varList);
+                } else {
+                    // 兼容旧格式 variables (Map)
+                    JSONObject varsJson = envJson.getJSONObject("variables");
+                    if (varsJson != null) {
+                        for (Map.Entry<String, Object> entry : varsJson.entrySet()) {
+                            env.addVariable(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+                        }
+                    }
+                    // 自动迁移到新格式
+                    env.migrateToNewFormat();
+                    log.info("已自动迁移环境 [{}] 从旧格式到新格式", env.getName());
                 }
 
                 environments.put(env.getId(), env);
@@ -158,12 +177,14 @@ public class EnvironmentService {
         devEnv.setActive(true);
         devEnv.addVariable("baseUrl", "https://so.gitee.com");
         devEnv.addVariable("apiKey", "dev-api-key-123");
+        devEnv.migrateToNewFormat(); // 自动迁移到新格式
 
         // Create Testing Environment
         Environment testEnv = new Environment("Test Env");
         testEnv.setId("test-" + System.currentTimeMillis());
         testEnv.addVariable("baseUrl", "https://so.csdn.net/so/search");
         testEnv.addVariable("apiKey", "test-api-key-456");
+        testEnv.migrateToNewFormat(); // 自动迁移到新格式
 
         environments.put(devEnv.getId(), devEnv);
         environments.put(testEnv.getId(), testEnv);
@@ -198,16 +219,31 @@ public class EnvironmentService {
                 envJson.set("name", env.getName());
                 envJson.set("active", env.isActive());
 
-                JSONObject varsJson = new JSONObject();
-                for (Map.Entry<String, String> entry : env.getVariables().entrySet()) {
-                    varsJson.set(entry.getKey(), entry.getValue());
+                // 优先保存新格式 variableList
+                if (env.getVariableList() != null && !env.getVariableList().isEmpty()) {
+                    JSONArray varListJson = new JSONArray();
+                    for (com.laker.postman.model.EnvironmentVariable var : env.getVariableList()) {
+                        JSONObject varJson = new JSONObject();
+                        varJson.set("enabled", var.isEnabled());
+                        varJson.set("key", var.getKey());
+                        varJson.set("value", var.getValue());
+                        varListJson.add(varJson);
+                    }
+                    envJson.set("variableList", varListJson);
+                } else {
+                    // 后备方案：保存旧格式 variables（向后兼容）
+                    JSONObject varsJson = new JSONObject();
+                    for (Map.Entry<String, String> entry : env.getVariables().entrySet()) {
+                        varsJson.set(entry.getKey(), entry.getValue());
+                    }
+                    envJson.set("variables", varsJson);
                 }
-                envJson.set("variables", varsJson);
 
                 array.add(envJson);
             }
 
             FileUtil.writeString(array.toStringPretty(), file, StandardCharsets.UTF_8);
+            log.debug("环境变量已保存到: {}", filePath);
         } catch (Exception e) {
             log.error("保存环境变量失败", e);
         }

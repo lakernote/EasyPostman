@@ -15,15 +15,16 @@ public class TimelineWaterfallChartPanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
     private static final Color[] COLORS = {
-            new Color(0x4F8EF7), new Color(0x34C759), new Color(0xAF52DE), new Color(0xFF9500), new Color(0xFF375F), new Color(0x32D1C6)
+            new Color(0x5B9EFF), new Color(0x44D492), new Color(0xB77FE8),
+            new Color(0xFFAC3E), new Color(0xFF6B93), new Color(0x4FD1CA)
     };
     private HttpEventInfo httpEventInfo;
 
     // 瀑布图参数
-    private static final int BAR_HEIGHT = 16; // 瀑布条的高度
-    private static final int BAR_GAP = 3; // 瀑布条之间的垂直间距
+    private static final int BAR_HEIGHT = 20; // 瀑布条的高度（从16增加到20）
+    private static final int BAR_GAP = 4; // 瀑布条之间的垂直间距
     private static final int RIGHT_PAD = 30; // 右侧内边距
-    private static final int TOP_PAD = 15; // 顶部内边距
+    private static final int TOP_PAD = 18; // 顶部内边距（从15增加到18）
     private static final int BOTTOM_PAD = 5; // 底部内边距
     private static final int BAR_RADIUS = 10; // 瀑布条圆角半径
     private static final int MIN_BAR_WIDTH = 12; // 瀑布条最小宽度
@@ -34,12 +35,12 @@ public class TimelineWaterfallChartPanel extends JPanel {
     // 信息区参数
     private static final int INFO_BLOCK_H_GAP = 16; // 信息区块之间的水平间距
     private static final int INFO_BLOCK_V_GAP = 3; // 信息区块之间的垂直间距
-    private static final int INFO_TEXT_LINE_HEIGHT = 16; // 信息文本行高
+    private static final int INFO_TEXT_LINE_HEIGHT = 18; // 信息文本行高（从16增加到18）
     private static final int INFO_TEXT_EXTRA_GAP = 6; // 信息区每项之间额外空白
     private static final int INFO_TEXT_BOTTOM_PAD = 20;  // 信息区底部内边距
     private static final int INFO_TEXT_LEFT_PAD = 20; // 信息区左侧内边距
-    private static final Color INFO_BG_COLOR = new Color(245, 247, 250);
-    private static final Color INFO_BORDER_COLOR = new Color(220, 220, 220);
+    private static final Color INFO_BG_COLOR = new Color(247, 249, 252);
+    private static final Color INFO_BORDER_COLOR = new Color(225, 230, 235);
 
     public TimelineWaterfallChartPanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout

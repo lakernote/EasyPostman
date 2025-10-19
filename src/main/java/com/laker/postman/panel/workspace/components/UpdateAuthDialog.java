@@ -49,7 +49,8 @@ public class UpdateAuthDialog extends JDialog {
     private void initDialog() {
         setupLayout();
         setupEventHandlers();
-        pack();
+        setSize(430, 230); // 设置对话框
+        setMinimumSize(new Dimension(430, 230)); // 设置最小尺寸
         setLocationRelativeTo(getParent());
     }
 

@@ -34,7 +34,7 @@ public class ResponsePanel extends JPanel {
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final NetworkLogPanel networkLogPanel;
-    private final TimelineWaterfallChartPanel timingChartPanel;
+    private final TimelinePanel timelinePanel;
     private final JEditorPane testsPane;
     private final JButton[] tabButtons;
     private int selectedTabIndex = 0;
@@ -77,7 +77,7 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(webSocketResponsePanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             networkLogPanel = null;
-            timingChartPanel = null;
+            timelinePanel = null;
             responseBodyPanel = null;
             testsPane = null;
             sseResponsePanel = null;
@@ -106,7 +106,7 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(sseResponsePanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             networkLogPanel = null;
-            timingChartPanel = null;
+            timelinePanel = null;
             responseBodyPanel = null;
             webSocketResponsePanel = null;
             testsPane = null;
@@ -144,12 +144,12 @@ public class ResponsePanel extends JPanel {
             JScrollPane testsScrollPane = new JScrollPane(testsPane);
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
-            timingChartPanel = new TimelineWaterfallChartPanel(new ArrayList<>(), null);
+            timelinePanel = new TimelinePanel(new ArrayList<>(), null);
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
             cardPanel.add(networkLogPanel, tabNames[3]);
-            cardPanel.add(new JScrollPane(timingChartPanel), tabNames[4]);
+            cardPanel.add(new JScrollPane(timelinePanel), tabNames[4]);
             webSocketResponsePanel = null;
             sseResponsePanel = null;
         }
@@ -205,15 +205,15 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setTiming(HttpResponse resp) {
-        if (timingChartPanel == null) return;
-        List<TimelineWaterfallChartPanel.Stage> stages = new ArrayList<>();
+        if (timelinePanel == null) return;
+        List<TimelinePanel.Stage> stages = new ArrayList<>();
         HttpEventInfo info = null;
         if (resp != null && resp.httpEventInfo != null) {
             info = resp.httpEventInfo;
-            stages = TimelineWaterfallChartPanel.buildStandardStages(info);
+            stages = TimelinePanel.buildStandardStages(info);
         }
-        timingChartPanel.setStages(stages);
-        timingChartPanel.setHttpEventInfo(info);
+        timelinePanel.setStages(stages);
+        timelinePanel.setHttpEventInfo(info);
     }
 
     public void setStatus(String statusText, Color color) {
@@ -333,9 +333,9 @@ public class ResponsePanel extends JPanel {
         }
         if (protocol.isHttpProtocol()) {
             responseBodyPanel.setBodyText(null);
-            timingChartPanel.removeAll();
-            timingChartPanel.revalidate();
-            timingChartPanel.repaint();
+            timelinePanel.removeAll();
+            timelinePanel.revalidate();
+            timelinePanel.repaint();
             networkLogPanel.clearLog();
         }
 

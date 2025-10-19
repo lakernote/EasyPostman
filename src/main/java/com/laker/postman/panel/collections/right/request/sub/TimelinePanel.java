@@ -11,7 +11,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TimelineWaterfallChartPanel extends JPanel {
+public class TimelinePanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
     private static final Color[] COLORS = {
@@ -42,7 +42,7 @@ public class TimelineWaterfallChartPanel extends JPanel {
     private static final Color INFO_BG_COLOR = new Color(247, 249, 252);
     private static final Color INFO_BORDER_COLOR = new Color(225, 230, 235);
 
-    public TimelineWaterfallChartPanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
+    public TimelinePanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
         this.httpEventInfo = httpEventInfo;
         setStages(stages);

@@ -65,12 +65,12 @@ public class TimelineWaterfallChartPanel extends JPanel {
         int labelMaxWidth = 80, descMaxWidth = 80;
         Graphics g = getGraphics();
         if (g != null) {
-            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
             for (Stage s : stages) {
                 int w = g.getFontMetrics().stringWidth(s.label);
                 if (w > labelMaxWidth) labelMaxWidth = w;
             }
-            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+            g.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
             for (Stage s : stages) {
                 if (s.desc != null && !s.desc.isEmpty()) {
                     int w = g.getFontMetrics().stringWidth(s.desc);
@@ -106,7 +106,7 @@ public class TimelineWaterfallChartPanel extends JPanel {
         g2.setColor(INFO_BORDER_COLOR);
         g2.drawRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 8, 8);
         int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_LINE_HEIGHT - 3;
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.setColor(Color.DARK_GRAY);
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
@@ -131,22 +131,22 @@ public class TimelineWaterfallChartPanel extends JPanel {
         int lineEndX = getWidth() - INFO_TEXT_LEFT_PAD;
         int remoteLineY = -1, cipherLineY = -1;
         // HTTP Version
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.setColor(Color.DARK_GRAY);
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Local Address
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Remote Address
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
@@ -156,15 +156,15 @@ public class TimelineWaterfallChartPanel extends JPanel {
             g2.setColor(Color.DARK_GRAY);
         }
         // TLS Protocol
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Cipher Name
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
@@ -174,30 +174,30 @@ public class TimelineWaterfallChartPanel extends JPanel {
             g2.setColor(Color.DARK_GRAY);
         }
         // Certificate CN
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Issuer CN
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Valid Until
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
 
         // SSL Certificate Warning - 如果有警告则显示
         if (httpEventInfo != null && httpEventInfo.getSslCertWarning() != null && !httpEventInfo.getSslCertWarning().isEmpty()) {
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
             g2.setColor(new Color(220, 53, 69)); // 红色警告
             g2.drawString("Cert Warning:", labelX, infoY);
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
 
             // 处理过长的警告文本，可能需要换行或截断
             String warning = httpEventInfo.getSslCertWarning();
@@ -221,12 +221,12 @@ public class TimelineWaterfallChartPanel extends JPanel {
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
         int descMaxWidth = 0;
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         for (Stage s : stages) {
             int w = g2.getFontMetrics().stringWidth(s.label);
             if (w > labelMaxWidth) labelMaxWidth = w;
         }
-        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         for (Stage s : stages) {
             if (s.desc != null && !s.desc.isEmpty()) {
                 int w = g2.getFontMetrics().stringWidth(s.desc);
@@ -265,28 +265,33 @@ public class TimelineWaterfallChartPanel extends JPanel {
         // 绘制
         int barY = getInfoBlockHeight() + TOP_PAD;
         int currentX = leftPad;
+
+        // 计算文字垂直居中的位置
+        g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        FontMetrics fm = g2.getFontMetrics();
+        int textYOffset = (BAR_HEIGHT - fm.getHeight()) / 2 + fm.getAscent();
+
         for (int i = 0; i < n; i++, barY += BAR_HEIGHT + BAR_GAP) {
             Stage s = stages.get(i);
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
             // label 区域
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
             g2.setColor(new Color(40, 40, 40));
-            int labelW = labelMaxWidth;
             String label = s.label;
             int labelStrW = g2.getFontMetrics().stringWidth(label);
             boolean labelTruncated = false;
-            if (labelStrW > labelW && labelW > 10) {
+            if (labelStrW > labelMaxWidth && labelMaxWidth > 10) {
                 for (int cut = label.length(); cut > 0; cut--) {
                     String sub = label.substring(0, cut) + "...";
-                    if (g2.getFontMetrics().stringWidth(sub) <= labelW) {
+                    if (g2.getFontMetrics().stringWidth(sub) <= labelMaxWidth) {
                         label = sub;
                         labelTruncated = true;
                         break;
                     }
                 }
             }
-            g2.drawString(label, labelX, barY + BAR_HEIGHT - 7);
+            g2.drawString(label, labelX, barY + textYOffset);
             // 设置 label 悬浮提示
             if (labelTruncated) {
                 setToolTipText(s.label);
@@ -302,15 +307,15 @@ public class TimelineWaterfallChartPanel extends JPanel {
             }
             // 耗时始终在bar内右侧，bar太窄则不显示
             String ms = (s.end - s.start) + "ms";
-            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 8) {
                 g2.setColor(Color.WHITE);
-                g2.drawString(ms, currentX + barW - strW - 6, barY + BAR_HEIGHT - 7);
+                g2.drawString(ms, currentX + barW - strW - 6, barY + textYOffset);
             }
             // desc 区域
             if (s.desc != null && !s.desc.isEmpty()) {
-                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+                g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
                 g2.setColor(new Color(140, 140, 140));
                 int descX = currentX + barW + DESC_LEFT_PAD;
                 int maxDescW = panelW - descX - RIGHT_PAD;
@@ -327,7 +332,7 @@ public class TimelineWaterfallChartPanel extends JPanel {
                         }
                     }
                 }
-                g2.drawString(desc, descX, barY + BAR_HEIGHT - 7);
+                g2.drawString(desc, descX, barY + textYOffset);
                 // 设置 desc 悬浮提示
                 if (descTruncated) {
                     setToolTipText(s.desc);

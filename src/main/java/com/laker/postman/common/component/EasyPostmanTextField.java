@@ -220,37 +220,60 @@ public class EasyPostmanTextField extends FlatTextField {
                             Graphics2D g2d = (Graphics2D) g.create();
                             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                            // 获取字体度量信息以实现垂直对齐
+                            Font font = getFont();
+                            FontMetrics fm = g2d.getFontMetrics(font);
+                            int panelHeight = getHeight();
+
+                            // 计算圆点垂直居中位置
+                            int circleSize = 12;
+                            int circleY = (panelHeight - circleSize) / 2;
+
                             // 绘制圆形图标
                             g2d.setColor(isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR);
-                            g2d.fillOval(2, 2, 12, 12);
+                            g2d.fillOval(2, circleY, circleSize, circleSize);
 
-                            // 绘制白色符号
+                            // 绘制白色符号 - 垂直居中对齐
                             g2d.setColor(Color.WHITE);
                             g2d.setFont(new Font("Dialog", Font.BOLD, 10));
-                            FontMetrics fm = g2d.getFontMetrics();
+                            FontMetrics symbolFm = g2d.getFontMetrics();
                             String symbol = isBuiltIn ? "$" : "E";
-                            int symbolWidth = fm.stringWidth(symbol);
-                            int symbolHeight = fm.getAscent();
-                            g2d.drawString(symbol, 8 - symbolWidth / 2, 8 + symbolHeight / 2 - 1);
+                            int symbolWidth = symbolFm.stringWidth(symbol);
+                            int symbolAscent = symbolFm.getAscent();
+                            int symbolDescent = symbolFm.getDescent();
+                            int symbolHeight = symbolAscent + symbolDescent;
+
+                            // 符号在圆点内垂直居中
+                            int symbolX = 2 + (circleSize - symbolWidth) / 2;
+                            int symbolY = circleY + (circleSize - symbolHeight) / 2 + symbolAscent;
+                            g2d.drawString(symbol, symbolX, symbolY);
 
                             g2d.dispose();
                         }
 
                         @Override
                         public Dimension getPreferredSize() {
-                            return new Dimension(16, 16);
+                            return new Dimension(16, 24);
                         }
                     };
                     iconPanel.setOpaque(false);
                     panel.add(iconPanel, BorderLayout.WEST);
 
-                    // 中间区域：变量名（可能需要截断）
+                    // 中间区域：使用固定宽度的面板容纳name和value，让它们各占一半空间
+                    JPanel contentPanel = new JPanel(new GridLayout(1, 2, 8, 0));
+                    contentPanel.setOpaque(false);
+
+                    // 左侧：变量名（占一半空间）
+                    JPanel namePanel = new JPanel(new BorderLayout());
+                    namePanel.setOpaque(false);
+
                     String displayName = varName;
                     String fullName = varName;
 
-                    // 如果变量名过长，截断显示
-                    if (varName.length() > 40) {
-                        displayName = varName.substring(0, 37) + "...";
+                    // 变量名最大长度（约占一半宽度）
+                    int maxNameLength = 25;
+                    if (varName.length() > maxNameLength) {
+                        displayName = varName.substring(0, maxNameLength - 3) + "...";
                     }
 
                     JLabel nameLabel = new JLabel(displayName);
@@ -262,15 +285,19 @@ public class EasyPostmanTextField extends FlatTextField {
                         nameLabel.setToolTipText(fullName);
                     }
 
-                    panel.add(nameLabel, BorderLayout.CENTER);
+                    namePanel.add(nameLabel, BorderLayout.WEST);
+                    contentPanel.add(namePanel);
 
-                    // 右侧区域：变量值或描述（可能需要截断）
+                    // 右侧：变量值或描述（占一半空间）
+                    JPanel valuePanel = new JPanel(new BorderLayout());
+                    valuePanel.setOpaque(false);
+
                     if (varValue != null && !varValue.isEmpty()) {
                         String displayValue = varValue;
                         String fullValue = varValue;
 
-                        // 根据是否选中和值的长度，动态调整显示
-                        int maxValueLength = isSelected ? 80 : 50;
+                        // 变量值最大长度（约占一半宽度）
+                        int maxValueLength = 25;
                         if (varValue.length() > maxValueLength) {
                             displayValue = varValue.substring(0, maxValueLength - 3) + "...";
                         }
@@ -280,14 +307,17 @@ public class EasyPostmanTextField extends FlatTextField {
                         valueLabel.setForeground(Color.GRAY);
 
                         // 为值添加工具提示（显示完整内容）
-                        if (!displayValue.equals(fullValue) || fullValue.length() > 30) {
+                        if (!displayValue.equals(fullValue) || fullValue.length() > 20) {
                             // 格式化工具提示，支持换行
                             String tooltipText = formatTooltipText(fullValue, 60);
                             valueLabel.setToolTipText("<html>" + tooltipText + "</html>");
                         }
 
-                        panel.add(valueLabel, BorderLayout.EAST);
+                        valuePanel.add(valueLabel, BorderLayout.WEST);
                     }
+                    contentPanel.add(valuePanel);
+
+                    panel.add(contentPanel, BorderLayout.CENTER);
 
                     // 为整个面板添加工具提示（显示完整信息）
                     StringBuilder tooltipBuilder = new StringBuilder("<html>");

@@ -11,7 +11,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WaterfallChartPanel extends JPanel {
+public class TimelineWaterfallChartPanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
     private static final Color[] COLORS = {
@@ -41,7 +41,7 @@ public class WaterfallChartPanel extends JPanel {
     private static final Color INFO_BG_COLOR = new Color(245, 247, 250);
     private static final Color INFO_BORDER_COLOR = new Color(220, 220, 220);
 
-    public WaterfallChartPanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
+    public TimelineWaterfallChartPanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
         this.httpEventInfo = httpEventInfo;
         setStages(stages);
@@ -261,14 +261,7 @@ public class WaterfallChartPanel extends JPanel {
                 totalBarSum += barWidths[i];
             }
         }
-        // 顶部total
-//        if (total > 0) {
-//            String totalStr = I18nUtil.getMessage(MessageKeys.WATERFALL_TOTAL, total);
-//            g2.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
-//            int strW = g2.getFontMetrics().stringWidth(totalStr);
-//            g2.setColor(new Color(30, 30, 30));
-//            g2.drawString(totalStr, leftPad + (availableBarSum - strW) / 2, getInfoBlockHeight() + 22);
-//        }
+
         // 绘制
         int barY = getInfoBlockHeight() + TOP_PAD;
         int currentX = leftPad;

@@ -34,7 +34,7 @@ public class ResponsePanel extends JPanel {
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final NetworkLogPanel networkLogPanel;
-    private final WaterfallChartPanel timingChartPanel;
+    private final TimelineWaterfallChartPanel timingChartPanel;
     private final JEditorPane testsPane;
     private final JButton[] tabButtons;
     private int selectedTabIndex = 0;
@@ -144,7 +144,7 @@ public class ResponsePanel extends JPanel {
             JScrollPane testsScrollPane = new JScrollPane(testsPane);
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
-            timingChartPanel = new WaterfallChartPanel(new ArrayList<>(), null);
+            timingChartPanel = new TimelineWaterfallChartPanel(new ArrayList<>(), null);
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
@@ -206,11 +206,11 @@ public class ResponsePanel extends JPanel {
 
     public void setTiming(HttpResponse resp) {
         if (timingChartPanel == null) return;
-        List<WaterfallChartPanel.Stage> stages = new ArrayList<>();
+        List<TimelineWaterfallChartPanel.Stage> stages = new ArrayList<>();
         HttpEventInfo info = null;
         if (resp != null && resp.httpEventInfo != null) {
             info = resp.httpEventInfo;
-            stages = WaterfallChartPanel.buildStandardStages(info);
+            stages = TimelineWaterfallChartPanel.buildStandardStages(info);
         }
         timingChartPanel.setStages(stages);
         timingChartPanel.setHttpEventInfo(info);

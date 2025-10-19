@@ -44,12 +44,12 @@ public class NetworkLogPanel extends JPanel {
                 Style stageStyle = logArea.addStyle("stageStyle", null);
                 StyleConstants.setForeground(stageStyle, color);
                 StyleConstants.setBold(stageStyle, true);
-                StyleConstants.setFontSize(stageStyle, 11);
+                StyleConstants.setFontSize(stageStyle, 12);
                 // 4. 正文样式
                 Style contentStyle = logArea.addStyle("contentStyle", null);
                 StyleConstants.setForeground(contentStyle, color);
                 StyleConstants.setBold(contentStyle, bold);
-                StyleConstants.setFontSize(contentStyle, 11);
+                StyleConstants.setFontSize(contentStyle, 12);
                 // 5. 插入 emoji+阶段名
                 if (stage != null) {
                     doc.insertString(doc.getLength(), emoji + " " + stage + " ", stageStyle);

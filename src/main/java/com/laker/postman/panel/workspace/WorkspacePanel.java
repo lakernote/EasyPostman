@@ -292,6 +292,12 @@ public class WorkspacePanel extends SingletonBasePanel {
                     pushItem.addActionListener(e -> performGitPush(workspace));
                     menu.add(pushItem);
                 }
+
+                // 添加更新认证菜单项
+                JMenuItem updateAuthItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_UPDATE));
+                updateAuthItem.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                updateAuthItem.addActionListener(e -> updateGitAuthentication(workspace));
+                menu.add(updateAuthItem);
             }
         } catch (Exception ex) {
             log.warn("Failed to check remote repository for workspace: {}", workspace.getId(), ex);
@@ -505,6 +511,20 @@ public class WorkspacePanel extends SingletonBasePanel {
     }
 
     /**
+     * 更新 Git 认证信息
+     */
+    private void updateGitAuthentication(Workspace workspace) {
+        UpdateAuthDialog dialog = new UpdateAuthDialog(
+                SwingUtilities.getWindowAncestor(this), workspace);
+        dialog.setVisible(true);
+
+        if (dialog.isConfirmed()) {
+            refreshWorkspaceList();
+            logSuccess("Git authentication updated successfully for workspace: " + workspace.getName());
+        }
+    }
+
+    /**
      * 刷新工作区列表
      */
     private void refreshWorkspaceList() {
@@ -564,6 +584,20 @@ public class WorkspacePanel extends SingletonBasePanel {
                 SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
                 String timestamp = sdf.format(new Date());
                 logArea.append("[" + timestamp + "] ERROR: " + message + "\n");
+                logArea.setCaretPosition(logArea.getDocument().getLength());
+            });
+        }
+    }
+
+    /**
+     * 记录成功日志
+     */
+    private void logSuccess(String message) {
+        if (logArea != null) {
+            SwingUtilities.invokeLater(() -> {
+                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
+                String timestamp = sdf.format(new Date());
+                logArea.append("[" + timestamp + "] SUCCESS: " + message + "\n");
                 logArea.setCaretPosition(logArea.getDocument().getLength());
             });
         }

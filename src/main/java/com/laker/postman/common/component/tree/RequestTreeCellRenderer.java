@@ -17,8 +17,8 @@ import java.awt.*;
 public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
 
     private static final int ICON_SIZE = 16;
-    private static final int METHOD_FONT_PX = 7;
-    private static final int NAME_FONT_PX = 8; // using 8 instead of 8.5 for simplicity
+    private static final int METHOD_FONT_PX = 8;
+    private static final int NAME_FONT_PX = 9;
 
     @Override
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,

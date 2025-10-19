@@ -1,8 +1,6 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.frame.MainFrame;
 
 import javax.swing.*;
 import java.awt.*;
@@ -51,11 +49,6 @@ public class MemoryLabel extends JLabel {
                 if (e.getClickCount() == 2) {
                     System.gc();
                     updateMemoryInfo();
-                    JOptionPane.showMessageDialog(
-                            SingletonFactory.getInstance(MainFrame.class),
-                            "垃圾回收已触发",
-                            "信息",
-                            JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });

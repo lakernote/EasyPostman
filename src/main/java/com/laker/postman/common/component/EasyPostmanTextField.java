@@ -2,6 +2,7 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.VariableSegment;
+import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.EasyPostmanVariableUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -221,8 +222,6 @@ public class EasyPostmanTextField extends FlatTextField {
                             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                             // 获取字体度量信息以实现垂直对齐
-                            Font font = getFont();
-                            FontMetrics fm = g2d.getFontMetrics(font);
                             int panelHeight = getHeight();
 
                             // 计算圆点垂直居中位置
@@ -235,7 +234,7 @@ public class EasyPostmanTextField extends FlatTextField {
 
                             // 绘制白色符号 - 垂直居中对齐
                             g2d.setColor(Color.WHITE);
-                            g2d.setFont(new Font("Dialog", Font.BOLD, 10));
+                            g2d.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 10));
                             FontMetrics symbolFm = g2d.getFontMetrics();
                             String symbol = isBuiltIn ? "$" : "E";
                             int symbolWidth = symbolFm.stringWidth(symbol);
@@ -335,8 +334,8 @@ public class EasyPostmanTextField extends FlatTextField {
 
         JScrollPane scrollPane = new JScrollPane(autocompleteList);
         // 禁用横向滚动条，只保留纵向滚动
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(180, 180, 180), 1),
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)

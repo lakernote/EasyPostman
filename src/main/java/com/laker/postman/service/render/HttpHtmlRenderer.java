@@ -231,20 +231,19 @@ public class HttpHtmlRenderer {
                 "<table style='border-collapse:collapse;margin:4px 0;width:100%;table-layout:fixed;'>" +
 
                 // 添加时序表格行
-                createTimingRow("Total", calc.getTotal(), COLOR_ERROR, true, "总耗时（CallStart→CallEnd，整个请求生命周期）") +
-                createTimingRow("Queueing", calc.getQueueing(), null, false, "QueueStart→CallStart，排队等待调度") +
-                createTimingRow("Stalled", calc.getStalled(), null, false, "CallStart→ConnectStart，阻塞（包含DNS解析）") +
-                createTimingRow("DNS Lookup", calc.getDns(), null, false, "DnsStart→DnsEnd，域名解析（Stalled子阶段）") +
-                createTimingRow("Initial Connection (TCP)", calc.getConnect(), null, false, "ConnectStart→ConnectEnd，TCP连接建立（包含SSL/TLS）") +
-                createTimingRow("SSL/TLS", calc.getTls(), null, false, "SecureConnectStart→SecureConnectEnd，SSL/TLS握手（TCP连接子阶段）") +
-                createTimingRow("Request Sent", calc.getRequestSent(), null, false, "RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd，请求头和体发送") +
-                createTimingRow("Waiting (TTFB)", calc.getServerCost(), COLOR_SUCCESS, true, "RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart，服务端处理") +
-                createTimingRow("Content Download", calc.getResponseBody(), null, false, "ResponseBodyStart→ResponseBodyEnd，响应体下载") +
-                createTimingRowString("Connection Reused", calc.getConnectionReused() ? "Yes" : "No", null, false, "本次请求是否复用连接") +
-                createTimingRowString("OkHttp Idle Connections", String.valueOf(response.idleConnectionCount), null, false, "OkHttp空闲连接数（快照）") +
-                createTimingRowString("OkHttp Total Connections", String.valueOf(response.connectionCount), null, false, "OkHttp总连接数（快照）") +
+                createTimingRow("Total", calc.getTotal(), COLOR_ERROR, true, "Total time (CallStart→CallEnd, the whole request lifecycle)") +
+                createTimingRow("Queueing", calc.getQueueing(), null, false, "Waiting in queue (QueueStart→CallStart, waiting for scheduling)") +
+                createTimingRow("Stalled", calc.getStalled(), null, false, "Blocked (CallStart→ConnectStart, includes DNS lookup)") +
+                createTimingRow("DNS Lookup", calc.getDns(), null, false, "Domain name lookup (DnsStart→DnsEnd, part of Stalled)") +
+                createTimingRow("Initial Connection (TCP)", calc.getConnect(), null, false, "TCP connection setup (ConnectStart→ConnectEnd, includes SSL/TLS)") +
+                createTimingRow("SSL/TLS", calc.getTls(), null, false, "SSL/TLS handshake (SecureConnectStart→SecureConnectEnd, part of TCP connection)") +
+                createTimingRow("Request Sent", calc.getRequestSent(), null, false, "Sending request headers and body (RequestHeadersStart/RequestBodyStart→RequestHeadersEnd/RequestBodyEnd)") +
+                createTimingRow("Waiting (TTFB)", calc.getServerCost(), COLOR_SUCCESS, true, "Server processing time (RequestBodyEnd/RequestHeadersEnd→ResponseHeadersStart)") +
+                createTimingRow("Content Download", calc.getResponseBody(), null, false, "Downloading response body (ResponseBodyStart→ResponseBodyEnd)") +
+                createTimingRowString("Connection Reused", calc.getConnectionReused() ? "Yes" : "No", null, false, "Was the connection reused for this request?") +
+                createTimingRowString("OkHttp Idle Connections", String.valueOf(response.idleConnectionCount), null, false, "Number of idle OkHttp connections (snapshot)") +
+                createTimingRowString("OkHttp Total Connections", String.valueOf(response.connectionCount), null, false, "Total number of OkHttp connections (snapshot)") +
                 "</table>" +
-                buildTimingDescription() +
                 "</div>";
     }
 
@@ -266,16 +265,6 @@ public class HttpHtmlRenderer {
                 "<td style='" + valueStyle + "width:15%;word-wrap:break-word;overflow-wrap:break-word;'>" + value + "</td>" +
                 "<td style='color:" + COLOR_GRAY + ";font-size:9px;width:60%;word-wrap:break-word;overflow-wrap:break-word;'>" + description + "</td>" +
                 "</tr>";
-    }
-
-    private static String buildTimingDescription() {
-        return "<div style='font-size:9px;color:" + COLOR_GRAY + ";margin-top:2px;'>" +
-                "各阶段含义参考Chrome DevTools：Queueing(排队，OkHttp近似为newCall到callStart间)、Stalled(阻塞，近似为callStart到connectStart间)、" +
-                "DNS Lookup、Initial Connection (TCP)、SSL/TLS、Request Sent、Waiting (TTFB)(服务端处理)、Content Download(内容下载)。<br>" +
-                "Queueing和Stalled为近似值，受OkHttp实现限制，仅供参考。<br>" +
-                "Connection Reused=Yes 表示本次请求未新建TCP连接。<br>" +
-                "OkHttp Idle/Total Connections为请求时刻连接池快照，仅供参考。" +
-                "</div>";
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {

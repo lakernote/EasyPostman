@@ -25,6 +25,13 @@ public class ExitService {
             return;
         }
 
+        // 关闭后台服务
+        try {
+            UpdateService.getInstance().shutdown();
+        } catch (Exception e) {
+            log.warn("Failed to shutdown UpdateService", e);
+        }
+
         // 没有未保存内容，或已处理完未保存内容，直接退出
         log.info("User chose to exit application");
         SingletonFactory.getInstance(MainFrame.class).dispose();

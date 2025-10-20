@@ -36,19 +36,25 @@ public class EasyPostManStyleUtils {
      */
     public static void apply() {
         try {
+            // 一次性设置所有UI属性，减少方法调用开销
+            Map<String, Object> allProperties = new HashMap<>(100);
+
             // 应用背景色设置
-            applyBackgroundColors();
+            addBackgroundColors(allProperties);
 
             // 应用圆角设置
-            applyRoundedCorners();
+            addRoundedCorners(allProperties);
 
             // 应用分割线设置
-            applySplitPaneStyles();
+            addSplitPaneStyles(allProperties);
 
             // 应用FlatLaf增强设置
-            applyFlatLafEnhancements();
+            addFlatLafEnhancements(allProperties);
 
-            log.debug("风格应用成功");
+            // 批量设置所有属性
+            setUIProperties(allProperties);
+
+            log.debug("风格应用成功，共设置 {} 个UI属性", allProperties.size());
 
         } catch (Exception e) {
             // 如果应用样式失败，记录错误但不中断程序运行
@@ -57,135 +63,115 @@ public class EasyPostManStyleUtils {
     }
 
     /**
-     * 应用背景色相关设置
+     * 添加背景色相关设置
      */
-    private static void applyBackgroundColors() {
+    private static void addBackgroundColors(Map<String, Object> properties) {
         // 基础背景色设置
-        Map<String, Color> backgroundColors = new HashMap<>();
-        backgroundColors.put("Panel.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("ToolBar.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("TextArea.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("ScrollPane.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("Table.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("Label.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("Label.disabledBackground", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("Tree.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("SplitPane.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("TextPane.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("List.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("EditorPane.background", EasyPostManColors.PANEL_BACKGROUND);
+        Color panelBg = EasyPostManColors.PANEL_BACKGROUND;
+        properties.put("Panel.background", panelBg);
+        properties.put("ToolBar.background", panelBg);
+        properties.put("TextArea.background", panelBg);
+        properties.put("ScrollPane.background", panelBg);
+        properties.put("Table.background", panelBg);
+        properties.put("Label.background", panelBg);
+        properties.put("Label.disabledBackground", panelBg);
+        properties.put("Tree.background", panelBg);
+        properties.put("SplitPane.background", panelBg);
+        properties.put("TextPane.background", panelBg);
+        properties.put("List.background", panelBg);
+        properties.put("EditorPane.background", panelBg);
 
         // 菜单相关背景色
-        backgroundColors.put("MenuBar.background", EasyPostManColors.MENU_BACKGROUND);
-        backgroundColors.put("Menu.background", EasyPostManColors.MENU_BACKGROUND);
-        backgroundColors.put("MenuItem.background", EasyPostManColors.MENU_BACKGROUND);
+        Color menuBg = EasyPostManColors.MENU_BACKGROUND;
+        properties.put("MenuBar.background", menuBg);
+        properties.put("Menu.background", menuBg);
+        properties.put("MenuItem.background", menuBg);
 
         // TabbedPane 背景色
-        backgroundColors.put("TabbedPane.background", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("TabbedPane.tabAreaBackground", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("TabbedPane.selectedBackground", EasyPostManColors.PANEL_BACKGROUND);
-        backgroundColors.put("TabbedPane.contentAreaColor", EasyPostManColors.PANEL_BACKGROUND);
-
-        // 批量设置背景色
-        setUIProperties(backgroundColors);
+        properties.put("TabbedPane.background", panelBg);
+        properties.put("TabbedPane.tabAreaBackground", panelBg);
+        properties.put("TabbedPane.selectedBackground", panelBg);
+        properties.put("TabbedPane.contentAreaColor", panelBg);
 
         // 选中背景色设置
-        Map<String, Color> selectionColors = new HashMap<>();
-        selectionColors.put("Menu.selectionBackground", EasyPostManColors.SELECTION_BACKGROUND);
-        selectionColors.put("MenuItem.selectionBackground", EasyPostManColors.SELECTION_BACKGROUND);
-        selectionColors.put("Table.selectionBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
-        selectionColors.put("TextArea.selectionBackground", EasyPostManColors.PANEL_BACKGROUND);
-
-        setUIProperties(selectionColors);
-
+        properties.put("Menu.selectionBackground", EasyPostManColors.SELECTION_BACKGROUND);
+        properties.put("MenuItem.selectionBackground", EasyPostManColors.SELECTION_BACKGROUND);
+        properties.put("Table.selectionBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
+        properties.put("TextArea.selectionBackground", panelBg);
 
         // Dialog 样式增强
-        // 统一设置 JDialog/JOptionPane 保证弹窗与主界面风格一致
-        Map<String, Object> dialogProperties = new HashMap<>();
-        dialogProperties.put("Dialog.background", EasyPostManColors.PANEL_BACKGROUND); // Dialog 主体背景色
-        dialogProperties.put("OptionPane.background", EasyPostManColors.PANEL_BACKGROUND); // OptionPane 背景色
-        dialogProperties.put("OptionPane.buttonArea.background", EasyPostManColors.PANEL_BACKGROUND); // 按钮区域背景色
-        dialogProperties.put("OptionPane.messageArea.background", EasyPostManColors.PANEL_BACKGROUND); // 消息区域背景色
-        setUIProperties(dialogProperties);
+        properties.put("Dialog.background", panelBg);
+        properties.put("OptionPane.background", panelBg);
+        properties.put("OptionPane.buttonArea.background", panelBg);
+        properties.put("OptionPane.messageArea.background", panelBg);
 
         // 前景色设置
-        Map<String, Color> foregroundColors = new HashMap<>();
-        foregroundColors.put("TabbedPane.selectedForeground", EasyPostManColors.ACCENT_COLOR);
-        foregroundColors.put("TextArea.caretForeground", EasyPostManColors.ACCENT_COLOR);
-        foregroundColors.put("TextArea.selectionForeground", EasyPostManColors.ACCENT_COLOR);
-
-        setUIProperties(foregroundColors);
+        Color accentColor = EasyPostManColors.ACCENT_COLOR;
+        properties.put("TabbedPane.selectedForeground", accentColor);
+        properties.put("TextArea.caretForeground", accentColor);
+        properties.put("TextArea.selectionForeground", accentColor);
 
         // 特殊属性设置
-        UIManager.put("Table.gridColor", EasyPostManColors.TABLE_GRID_COLOR);
-        UIManager.put("TableHeader.background", EasyPostManColors.TABLE_HEADER_BACKGROUND);
-        UIManager.put("ScrollPane.border", BorderFactory.createLineBorder(EasyPostManColors.BORDER_COLOR));
+        properties.put("Table.gridColor", EasyPostManColors.TABLE_GRID_COLOR);
+        properties.put("TableHeader.background", EasyPostManColors.TABLE_HEADER_BACKGROUND);
+        properties.put("ScrollPane.border", BorderFactory.createLineBorder(EasyPostManColors.BORDER_COLOR));
     }
 
     /**
-     * 应用圆角设置
+     * 添加圆角设置
      */
-    private static void applyRoundedCorners() {
-        Map<String, Integer> arcProperties = new HashMap<>();
-        arcProperties.put("Component.arc", DEFAULT_ARC);
-        arcProperties.put("Button.arc", BUTTON_ARC);
-        arcProperties.put("ProgressBar.arc", COMPONENT_ARC);
-        arcProperties.put("TextComponent.arc", COMPONENT_ARC);
-        arcProperties.put("ScrollBar.thumbArc", COMPONENT_ARC);
-        arcProperties.put("TabbedPane.tabAreaArc", COMPONENT_ARC);
-        arcProperties.put("TabbedPane.tabArc", COMPONENT_ARC);
-
-        for (Map.Entry<String, Integer> entry : arcProperties.entrySet()) {
-            UIManager.put(entry.getKey(), entry.getValue());
-        }
+    private static void addRoundedCorners(Map<String, Object> properties) {
+        properties.put("Component.arc", DEFAULT_ARC);
+        properties.put("Button.arc", BUTTON_ARC);
+        properties.put("ProgressBar.arc", COMPONENT_ARC);
+        properties.put("TextComponent.arc", COMPONENT_ARC);
+        properties.put("ScrollBar.thumbArc", COMPONENT_ARC);
+        properties.put("TabbedPane.tabAreaArc", COMPONENT_ARC);
+        properties.put("TabbedPane.tabArc", COMPONENT_ARC);
     }
 
     /**
-     * 应用分割线设置
+     * 添加分割线设置
      */
-    private static void applySplitPaneStyles() {
-        UIManager.put("SplitPane.dividerSize", DIVIDER_SIZE);
-        UIManager.put("SplitPane.dividerFocusColor", EasyPostManColors.DIVIDER_FOCUS_COLOR);
-        UIManager.put("SplitPaneDivider.background", EasyPostManColors.DIVIDER_BACKGROUND);
-        UIManager.put("SplitPaneDivider.border",
+    private static void addSplitPaneStyles(Map<String, Object> properties) {
+        properties.put("SplitPane.dividerSize", DIVIDER_SIZE);
+        properties.put("SplitPane.dividerFocusColor", EasyPostManColors.DIVIDER_FOCUS_COLOR);
+        properties.put("SplitPaneDivider.background", EasyPostManColors.DIVIDER_BACKGROUND);
+        properties.put("SplitPaneDivider.border",
                 BorderFactory.createLineBorder(EasyPostManColors.DIVIDER_BORDER_COLOR, BORDER_WIDTH));
     }
 
     /**
-     * 应用 FlatLaf 细节增强设置
+     * 添加 FlatLaf 细节增强设置
      */
-    private static void applyFlatLafEnhancements() {
+    private static void addFlatLafEnhancements(Map<String, Object> properties) {
         // 标题栏增强
-        Map<String, Object> titlePaneProperties = new HashMap<>();
-        titlePaneProperties.put("TitlePane.unifiedBackground", true);
-        titlePaneProperties.put("TitlePane.showIcon", true);
-        titlePaneProperties.put("TitlePane.centerTitle", true);
-        titlePaneProperties.put("TitlePane.buttonHoverBackground", EasyPostManColors.SELECTION_BACKGROUND);
-        titlePaneProperties.put("TitlePane.buttonPressedBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
-
-        setUIProperties(titlePaneProperties);
+        properties.put("TitlePane.unifiedBackground", true);
+        properties.put("TitlePane.showIcon", true);
+        properties.put("TitlePane.centerTitle", true);
+        properties.put("TitlePane.buttonHoverBackground", EasyPostManColors.SELECTION_BACKGROUND);
+        properties.put("TitlePane.buttonPressedBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
 
         // 菜单悬停效果
-        Map<String, Color> menuHoverColors = new HashMap<>();
-        menuHoverColors.put("Menu.selectionBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
-        menuHoverColors.put("MenuItem.selectionBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
-        menuHoverColors.put("Menu.selectionForeground", EasyPostManColors.ACCENT_COLOR);
-        menuHoverColors.put("MenuItem.selectionForeground", EasyPostManColors.ACCENT_COLOR);
-
-        setUIProperties(menuHoverColors);
+        Color tableSelectionBg = EasyPostManColors.TABLE_SELECTION_BACKGROUND;
+        Color accentColor = EasyPostManColors.ACCENT_COLOR;
+        properties.put("Menu.selectionBackground", tableSelectionBg);
+        properties.put("MenuItem.selectionBackground", tableSelectionBg);
+        properties.put("Menu.selectionForeground", accentColor);
+        properties.put("MenuItem.selectionForeground", accentColor);
 
         // 按钮悬停效果
-        UIManager.put("Button.hoverBackground", EasyPostManColors.BUTTON_HOVER_BACKGROUND);
-        UIManager.put("Button.pressedBackground", EasyPostManColors.BUTTON_PRESSED_BACKGROUND);
+        properties.put("Button.hoverBackground", EasyPostManColors.BUTTON_HOVER_BACKGROUND);
+        properties.put("Button.pressedBackground", EasyPostManColors.BUTTON_PRESSED_BACKGROUND);
 
         // 滚动条样式
-        UIManager.put("ScrollBar.thumb", EasyPostManColors.SCROLLBAR_THUMB);
-        UIManager.put("ScrollBar.thumbHover", EasyPostManColors.SCROLLBAR_THUMB_HOVER);
-        UIManager.put("ScrollBar.track", EasyPostManColors.SCROLLBAR_TRACK);
+        properties.put("ScrollBar.thumb", EasyPostManColors.SCROLLBAR_THUMB);
+        properties.put("ScrollBar.thumbHover", EasyPostManColors.SCROLLBAR_THUMB_HOVER);
+        properties.put("ScrollBar.track", EasyPostManColors.SCROLLBAR_TRACK);
 
         // 分隔符样式
-        UIManager.put("Separator.foreground", EasyPostManColors.SEPARATOR_FOREGROUND);
-        UIManager.put("Separator.background", EasyPostManColors.SEPARATOR_BACKGROUND);
+        properties.put("Separator.foreground", EasyPostManColors.SEPARATOR_FOREGROUND);
+        properties.put("Separator.background", EasyPostManColors.SEPARATOR_BACKGROUND);
     }
 
     /**
@@ -194,7 +180,7 @@ public class EasyPostManStyleUtils {
      * @param properties 属性映射表
      */
     private static void setUIProperties(Map<String, ?> properties) {
-        if (properties == null) {
+        if (properties == null || properties.isEmpty()) {
             return;
         }
 

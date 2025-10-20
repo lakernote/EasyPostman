@@ -32,11 +32,9 @@ public class App {
             EasyPostManSplashWindow splash = new EasyPostManSplashWindow();
             // 5. 异步加载主窗口
             splash.initMainFrame();
-            // 6. 启动后台版本检查
-            UpdateService.getInstance().checkUpdateOnStartup();
         });
 
-        // 8. 设置全局异常处理器，防止程序因未捕获异常崩溃
+        // 6. 设置全局异常处理器，防止程序因未捕获异常崩溃
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
@@ -45,5 +43,8 @@ public class App {
                     I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE
             ));
         });
+
+        // 7. 启动后台版本检查
+        UpdateService.getInstance().checkUpdateOnStartup();
     }
 }

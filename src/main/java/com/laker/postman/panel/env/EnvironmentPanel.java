@@ -95,7 +95,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     /**
-     * 初始化表格验证和自动保存功能
+     * 自动保存功能
      */
     private void initTableValidationAndAutoSave() {
 
@@ -620,7 +620,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     // 判断当前表格内容和快照是否一致，使用JSON序列化比较
-    public boolean isVariablesChanged() {
+    private boolean isVariablesChanged() {
         String curJson = JSONUtil.toJsonStr(variablesTablePanel.getVariableList());
         boolean isVariablesChanged = !CharSequenceUtil.equals(curJson, originalVariablesSnapshot);
         if (isVariablesChanged) {

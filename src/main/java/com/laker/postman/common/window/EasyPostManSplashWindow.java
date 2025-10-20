@@ -211,7 +211,7 @@ public class EasyPostManSplashWindow extends JWindow {
             @Override
             protected void process(java.util.List<String> chunks) {
                 // 在EDT中更新状态
-                if (!chunks.isEmpty()) {
+                if (!chunks.isEmpty() && !isDisposed) {
                     setStatus(chunks.get(chunks.size() - 1));
                 }
             }

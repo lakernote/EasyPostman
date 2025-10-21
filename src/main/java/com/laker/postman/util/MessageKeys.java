@@ -1099,11 +1099,28 @@ public final class MessageKeys {
 
     public static final String TOOLBOX_CRYPTO = "toolbox.crypto";
     public static final String TOOLBOX_CRYPTO_ALGORITHM = "toolbox.crypto.algorithm";
+    public static final String TOOLBOX_CRYPTO_MODE = "toolbox.crypto.mode";
     public static final String TOOLBOX_CRYPTO_INPUT = "toolbox.crypto.input";
     public static final String TOOLBOX_CRYPTO_OUTPUT = "toolbox.crypto.output";
     public static final String TOOLBOX_CRYPTO_KEY = "toolbox.crypto.key";
+    public static final String TOOLBOX_CRYPTO_IV = "toolbox.crypto.iv";
     public static final String TOOLBOX_CRYPTO_ENCRYPT = "toolbox.crypto.encrypt";
     public static final String TOOLBOX_CRYPTO_DECRYPT = "toolbox.crypto.decrypt";
+    public static final String TOOLBOX_CRYPTO_GENERATE_KEY = "toolbox.crypto.generate_key";
+    public static final String TOOLBOX_CRYPTO_GENERATE_IV = "toolbox.crypto.generate_iv";
+    public static final String TOOLBOX_CRYPTO_BASE64URL = "toolbox.crypto.base64url";
+    public static final String TOOLBOX_CRYPTO_BASE64URL_TOOLTIP = "toolbox.crypto.base64url.tooltip";
+    public static final String TOOLBOX_CRYPTO_ERROR_KEY_REQUIRED = "toolbox.crypto.error.key_required";
+    public static final String TOOLBOX_CRYPTO_ERROR_KEY_LENGTH = "toolbox.crypto.error.key_length";
+    public static final String TOOLBOX_CRYPTO_ERROR_IV_REQUIRED = "toolbox.crypto.error.iv_required";
+    public static final String TOOLBOX_CRYPTO_ERROR_IV_LENGTH = "toolbox.crypto.error.iv_length";
+    public static final String TOOLBOX_CRYPTO_ERROR_INPUT_EMPTY = "toolbox.crypto.error.input_empty";
+    public static final String TOOLBOX_CRYPTO_SUCCESS_ENCRYPTED = "toolbox.crypto.success.encrypted";
+    public static final String TOOLBOX_CRYPTO_SUCCESS_DECRYPTED = "toolbox.crypto.success.decrypted";
+    public static final String TOOLBOX_CRYPTO_KEY_PLACEHOLDER_AES128 = "toolbox.crypto.key.placeholder.aes128";
+    public static final String TOOLBOX_CRYPTO_KEY_PLACEHOLDER_AES256 = "toolbox.crypto.key.placeholder.aes256";
+    public static final String TOOLBOX_CRYPTO_KEY_PLACEHOLDER_DES = "toolbox.crypto.key.placeholder.des";
+    public static final String TOOLBOX_CRYPTO_IV_PLACEHOLDER = "toolbox.crypto.iv.placeholder";
 
     public static final String TOOLBOX_HASH = "toolbox.hash";
     public static final String TOOLBOX_HASH_INPUT = "toolbox.hash.input";

@@ -115,7 +115,7 @@ public class CronPanel extends JPanel {
 
         splitPane.setTopComponent(descPanel);
         splitPane.setBottomComponent(tablePanel);
-        splitPane.setDividerLocation(150);
+        splitPane.setDividerLocation(250);
 
         panel.add(splitPane, BorderLayout.CENTER);
 

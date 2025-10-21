@@ -5,7 +5,9 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.text.*;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 
@@ -62,7 +64,7 @@ public class DiffPanel extends JPanel {
 
         topSplitPane.setLeftComponent(originalPanel);
         topSplitPane.setRightComponent(modifiedPanel);
-        topSplitPane.setDividerLocation(300);
+        topSplitPane.setResizeWeight(0.5); // 平均分配空间
 
         // 整体分割面板
         JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -186,11 +188,11 @@ public class DiffPanel extends JPanel {
         String text = resultPane.getText();
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
-                   .setContents(new StringSelection(text), null);
+                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                I18nUtil.getMessage(MessageKeys.TIP),
-                JOptionPane.INFORMATION_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                    I18nUtil.getMessage(MessageKeys.TIP),
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

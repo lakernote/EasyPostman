@@ -1,8 +1,8 @@
 package com.laker.postman.panel.sidebar;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.TabInfo;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -53,6 +53,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             MessageKeys.MENU_WORKSPACES,
             MessageKeys.MENU_FUNCTIONAL,
             MessageKeys.MENU_PERFORMANCE,
+            MessageKeys.MENU_TOOLBOX,
             MessageKeys.MENU_HISTORY
     };
     // 支持的语言
@@ -78,10 +79,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 () -> SingletonFactory.getInstance(FunctionalPanel.class)));
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_PERFORMANCE), new FlatSVGIcon("icons/performance.svg", 20, 20),
                 () -> SingletonFactory.getInstance(PerformancePanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_HISTORY), new FlatSVGIcon("icons/history.svg", 20, 20),
-                () -> SingletonFactory.getInstance(HistoryPanel.class)));
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_TOOLBOX), new FlatSVGIcon("icons/tools.svg", 20, 20),
                 () -> SingletonFactory.getInstance(ToolboxPanel.class)));
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_HISTORY), new FlatSVGIcon("icons/history.svg", 20, 20),
+                () -> SingletonFactory.getInstance(HistoryPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
             tabbedPane.addTab(info.title, new JPanel());

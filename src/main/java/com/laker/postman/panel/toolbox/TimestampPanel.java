@@ -32,111 +32,197 @@ public class TimestampPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // 顶部面板
-        JPanel topPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // 主容器使用垂直布局
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
-        // 当前时间戳
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CURRENT) + ":"), gbc);
+        // 1. 当前时间戳区域
+        mainPanel.add(createCurrentTimestampPanel());
+        mainPanel.add(Box.createVerticalStrut(15));
 
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
+        // 2. 时间戳转日期区域
+        mainPanel.add(createTimestampToDatePanel());
+        mainPanel.add(Box.createVerticalStrut(15));
+
+        // 3. 日期转时间戳区域
+        mainPanel.add(createDateToTimestampPanel());
+        mainPanel.add(Box.createVerticalStrut(15));
+
+        // 4. 结果显示区域
+        mainPanel.add(createResultPanel());
+
+        add(mainPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * 创建当前时间戳面板
+     */
+    private JPanel createCurrentTimestampPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 5));
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CURRENT)
+        ));
+
+        // 时间戳显示标签
         JLabel currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
-        currentLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
-        topPanel.add(currentLabel, gbc);
+        currentLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
+        currentLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // 按钮面板
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+
+        JButton copyCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        copyCurrentBtn.addActionListener(e -> {
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(new StringSelection(currentLabel.getText()), null);
+            JOptionPane.showMessageDialog(this,
+                    I18nUtil.getMessage(MessageKeys.SUCCESS),
+                    I18nUtil.getMessage(MessageKeys.TIP),
+                    JOptionPane.INFORMATION_MESSAGE);
+        });
 
         JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
         refreshBtn.addActionListener(e -> currentLabel.setText(String.valueOf(System.currentTimeMillis())));
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        topPanel.add(refreshBtn, gbc);
 
-        // 分隔线
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 3;
-        topPanel.add(new JSeparator(), gbc);
-        gbc.gridwidth = 1;
+        btnPanel.add(copyCurrentBtn);
+        btnPanel.add(refreshBtn);
 
-        // 时间戳转日期部分
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_INPUT) + ":"), gbc);
+        panel.add(currentLabel, BorderLayout.CENTER);
+        panel.add(btnPanel, BorderLayout.EAST);
 
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
+        // 自动刷新当前时间戳
+        timer = new Timer(1000, e -> currentLabel.setText(String.valueOf(System.currentTimeMillis())));
+
+        return panel;
+    }
+
+    /**
+     * 创建时间戳转日期面板
+     */
+    private JPanel createTimestampToDatePanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE)
+        ));
+
+        // 输入区域
+        JPanel inputPanel = new JPanel(new BorderLayout(10, 5));
+
+        // 输入框和单位选择在同一行
+        JPanel fieldPanel = new JPanel(new BorderLayout(5, 0));
         timestampField = new FlatTextField();
-        timestampField.setPlaceholderText("Enter timestamp (e.g. 1729468800000)");
+        timestampField.setPlaceholderText("1729468800000");
         timestampField.setBackground(Color.WHITE);
-        topPanel.add(timestampField, gbc);
+        timestampField.setPreferredSize(new Dimension(200, 32));
 
-        gbc.gridx = 2;
-        gbc.weightx = 0;
         unitCombo = new JComboBox<>(new String[]{
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS),
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_SECONDS)
         });
-        topPanel.add(unitCombo, gbc);
+        unitCombo.setPreferredSize(new Dimension(120, 32));
 
-        gbc.gridx = 1;
-        gbc.gridy = 3;
-        JButton convertToDateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE));
-        convertToDateBtn.addActionListener(e -> convertToDate());
-        topPanel.add(convertToDateBtn, gbc);
+        fieldPanel.add(timestampField, BorderLayout.CENTER);
+        fieldPanel.add(unitCombo, BorderLayout.EAST);
 
-        // 分隔线
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.gridwidth = 3;
-        topPanel.add(new JSeparator(), gbc);
-        gbc.gridwidth = 1;
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_INPUT) + ":"), BorderLayout.WEST);
+        inputPanel.add(fieldPanel, BorderLayout.CENTER);
 
-        // 日期转时间戳部分
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        topPanel.add(new JLabel("Date to Timestamp:"), gbc);
+        // 转换按钮
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        JButton convertBtn = new JButton("🔄 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE));
+        convertBtn.addActionListener(e -> convertToDate());
+        btnPanel.add(convertBtn);
 
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
+        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(btnPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * 创建日期转时间戳面板
+     */
+    private JPanel createDateToTimestampPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                "Date to Timestamp"
+        ));
+
+        // 输入区域
+        JPanel inputPanel = new JPanel(new BorderLayout(10, 5));
+
         dateField = new FlatTextField();
-        dateField.setPlaceholderText("yyyy-MM-dd HH:mm:ss (e.g. 2025-10-21 12:00:00)");
+        dateField.setPlaceholderText("2025-10-21 12:00:00");
         dateField.setToolTipText("Format: yyyy-MM-dd HH:mm:ss");
         dateField.setBackground(Color.WHITE);
-        topPanel.add(dateField, gbc);
+        dateField.setPreferredSize(new Dimension(200, 32));
 
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        JButton convertToTimestampBtn = new JButton("To Timestamp");
-        convertToTimestampBtn.addActionListener(e -> convertToTimestamp());
-        topPanel.add(convertToTimestampBtn, gbc);
+        inputPanel.add(new JLabel("Date Input:"), BorderLayout.WEST);
+        inputPanel.add(dateField, BorderLayout.CENTER);
 
-        add(topPanel, BorderLayout.NORTH);
+        // 快速填充按钮
+        JPanel quickBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JButton nowBtn = new JButton("Now");
+        nowBtn.setToolTipText("Fill with current date time");
+        nowBtn.addActionListener(e -> {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            dateField.setText(sdf.format(new Date()));
+        });
+        quickBtnPanel.add(nowBtn);
 
-        // 结果区域
-        JPanel resultPanel = new JPanel(new BorderLayout(5, 5));
+        inputPanel.add(quickBtnPanel, BorderLayout.EAST);
 
-        JPanel resultHeaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        resultHeaderPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_OUTPUT)));
-        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
-        copyBtn.addActionListener(e -> copyToClipboard());
-        resultHeaderPanel.add(copyBtn);
+        // 转换按钮
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        JButton convertBtn = new JButton("🔄 To Timestamp");
+        convertBtn.addActionListener(e -> convertToTimestamp());
+        btnPanel.add(convertBtn);
 
-        resultPanel.add(resultHeaderPanel, BorderLayout.NORTH);
+        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(btnPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * 创建结果显示面板
+     */
+    private JPanel createResultPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_OUTPUT)
+        ));
+
         resultArea = new JTextArea();
         resultArea.setEditable(false);
-        resultArea.setRows(10);
-        resultPanel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+        resultArea.setRows(12);
+        resultArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        resultArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        add(resultPanel, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(resultArea);
+        scrollPane.setPreferredSize(new Dimension(400, 250));
 
-        // 自动刷新当前时间戳
-        timer = new Timer(1000, e -> currentLabel.setText(String.valueOf(System.currentTimeMillis())));
+        // 按钮面板
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        copyBtn.addActionListener(e -> copyToClipboard());
+
+        JButton clearBtn = new JButton("Clear");
+        clearBtn.addActionListener(e -> resultArea.setText(""));
+
+        btnPanel.add(clearBtn);
+        btnPanel.add(copyBtn);
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+
+        return panel;
     }
 
     private void startAutoRefresh() {

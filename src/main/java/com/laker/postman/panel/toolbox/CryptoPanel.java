@@ -1,5 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class CryptoPanel extends JPanel {
     private JTextArea inputArea;
     private JTextArea outputArea;
     private JComboBox<String> algorithmCombo;
-    private JTextField keyField;
+    private FlatTextField keyField;
 
     public CryptoPanel() {
         initUI();
@@ -39,7 +40,7 @@ public class CryptoPanel extends JPanel {
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_ALGORITHM) + ":"));
         algorithmCombo = new JComboBox<>(new String[]{
-            "AES-128", "AES-256", "DES"
+                "AES-128", "AES-256", "DES"
         });
         row1.add(algorithmCombo);
         topPanel.add(row1);
@@ -47,8 +48,10 @@ public class CryptoPanel extends JPanel {
         // 第二行：密钥输入
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         row2.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_KEY) + ":"));
-        keyField = new JTextField(30);
-        keyField.setToolTipText("AES-128: 16 characters, AES-256: 32 characters, DES: 8 characters");
+        keyField = new FlatTextField();
+        keyField.setColumns(30);
+        keyField.setPlaceholderText("AES-128: 16 characters, AES-256: 32 characters, DES: 8 characters");
+        keyField.setBackground(Color.WHITE);
         row2.add(keyField);
         topPanel.add(row2);
 
@@ -76,7 +79,7 @@ public class CryptoPanel extends JPanel {
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        inputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        inputArea.setBackground(Color.WHITE);
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
 
         // 输出区域
@@ -86,7 +89,7 @@ public class CryptoPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
-        outputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        outputArea.setBackground(Color.WHITE);
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);
@@ -136,7 +139,7 @@ public class CryptoPanel extends JPanel {
 
             if (key.length() != keyLength) {
                 outputArea.setText("❌ Error: Key must be exactly " + keyLength + " characters for " +
-                                 algorithmCombo.getSelectedItem());
+                        algorithmCombo.getSelectedItem());
                 return;
             }
 
@@ -194,11 +197,11 @@ public class CryptoPanel extends JPanel {
         String text = outputArea.getText();
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
-                   .setContents(new StringSelection(text), null);
+                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                I18nUtil.getMessage(MessageKeys.TIP),
-                JOptionPane.INFORMATION_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                    I18nUtil.getMessage(MessageKeys.TIP),
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

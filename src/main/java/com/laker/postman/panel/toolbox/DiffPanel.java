@@ -49,7 +49,7 @@ public class DiffPanel extends JPanel {
         originalPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_ORIGINAL) + ":"), BorderLayout.NORTH);
         originalArea = new JTextArea();
         originalArea.setLineWrap(true);
-        originalArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        originalArea.setBackground(Color.WHITE);
         originalPanel.add(new JScrollPane(originalArea), BorderLayout.CENTER);
 
         // 修改后文本
@@ -57,7 +57,7 @@ public class DiffPanel extends JPanel {
         modifiedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_MODIFIED) + ":"), BorderLayout.NORTH);
         modifiedArea = new JTextArea();
         modifiedArea.setLineWrap(true);
-        modifiedArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        modifiedArea.setBackground(Color.WHITE);
         modifiedPanel.add(new JScrollPane(modifiedArea), BorderLayout.CENTER);
 
         topSplitPane.setLeftComponent(originalPanel);
@@ -73,7 +73,6 @@ public class DiffPanel extends JPanel {
         resultPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_RESULT) + ":"), BorderLayout.NORTH);
         resultPane = new JTextPane();
         resultPane.setEditable(false);
-        resultPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         resultPanel.add(new JScrollPane(resultPane), BorderLayout.CENTER);
 
         mainSplitPane.setBottomComponent(resultPanel);
@@ -195,4 +194,3 @@ public class DiffPanel extends JPanel {
         }
     }
 }
-

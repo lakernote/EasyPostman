@@ -24,7 +24,7 @@ public class ToolboxPanel extends SingletonBasePanel {
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 
         // 创建标签页容器
-        toolTabs = new JTabbedPane(JTabbedPane.TOP);
+        toolTabs = new JTabbedPane(SwingConstants.TOP);
 
         // 添加各种工具标签页 - 按功能分类和使用频率排序
         initToolTabs();

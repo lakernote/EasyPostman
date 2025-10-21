@@ -53,7 +53,7 @@ public class JsonToolPanel extends JPanel {
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        inputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        inputArea.setBackground(Color.WHITE);
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
 
         // 输出区域
@@ -63,7 +63,6 @@ public class JsonToolPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
-        outputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);
@@ -125,8 +124,8 @@ public class JsonToolPanel extends JPanel {
         try {
             JSONUtil.parse(input);
             outputArea.setText("✅ Valid JSON\n\n" +
-                "Characters: " + input.length() + "\n" +
-                "Lines: " + (input.split("\n").length));
+                    "Characters: " + input.length() + "\n" +
+                    "Lines: " + (input.split("\n").length));
         } catch (Exception ex) {
             log.error("JSON validate error", ex);
             outputArea.setText("❌ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_ERROR) + ":\n\n" + ex.getMessage());
@@ -137,11 +136,11 @@ public class JsonToolPanel extends JPanel {
         String text = outputArea.getText();
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
-                   .setContents(new StringSelection(text), null);
+                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                I18nUtil.getMessage(MessageKeys.TIP),
-                JOptionPane.INFORMATION_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                    I18nUtil.getMessage(MessageKeys.TIP),
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
+import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +19,8 @@ import java.util.Date;
 @Slf4j
 public class TimestampPanel extends JPanel {
 
-    private JTextField timestampField;
-    private JTextField dateField;
+    private FlatTextField timestampField;
+    private FlatTextField dateField;
     private JTextArea resultArea;
     private JComboBox<String> unitCombo;
     private Timer timer;
@@ -39,61 +41,77 @@ public class TimestampPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // 当前时间戳
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CURRENT) + ":"), gbc);
 
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         JLabel currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
-        currentLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
+        currentLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
         topPanel.add(currentLabel, gbc);
 
         JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
         refreshBtn.addActionListener(e -> currentLabel.setText(String.valueOf(System.currentTimeMillis())));
-        gbc.gridx = 2; gbc.weightx = 0;
+        gbc.gridx = 2;
+        gbc.weightx = 0;
         topPanel.add(refreshBtn, gbc);
 
         // 分隔线
-        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 3;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 3;
         topPanel.add(new JSeparator(), gbc);
         gbc.gridwidth = 1;
 
         // 时间戳转日期部分
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_INPUT) + ":"), gbc);
 
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        timestampField = new JTextField();
-        timestampField.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        timestampField = new FlatTextField();
+        timestampField.setPlaceholderText("Enter timestamp (e.g. 1729468800000)");
+        timestampField.setBackground(Color.WHITE);
         topPanel.add(timestampField, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0;
+        gbc.gridx = 2;
+        gbc.weightx = 0;
         unitCombo = new JComboBox<>(new String[]{
-            I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS),
-            I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_SECONDS)
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS),
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_SECONDS)
         });
         topPanel.add(unitCombo, gbc);
 
-        gbc.gridx = 1; gbc.gridy = 3;
+        gbc.gridx = 1;
+        gbc.gridy = 3;
         JButton convertToDateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE));
         convertToDateBtn.addActionListener(e -> convertToDate());
         topPanel.add(convertToDateBtn, gbc);
 
         // 分隔线
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 3;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 3;
         topPanel.add(new JSeparator(), gbc);
         gbc.gridwidth = 1;
 
         // 日期转时间戳部分
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         topPanel.add(new JLabel("Date to Timestamp:"), gbc);
 
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        dateField = new JTextField();
-        dateField.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        dateField = new FlatTextField();
+        dateField.setPlaceholderText("yyyy-MM-dd HH:mm:ss (e.g. 2025-10-21 12:00:00)");
         dateField.setToolTipText("Format: yyyy-MM-dd HH:mm:ss");
+        dateField.setBackground(Color.WHITE);
         topPanel.add(dateField, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0;
+        gbc.gridx = 2;
+        gbc.weightx = 0;
         JButton convertToTimestampBtn = new JButton("To Timestamp");
         convertToTimestampBtn.addActionListener(e -> convertToTimestamp());
         topPanel.add(convertToTimestampBtn, gbc);
@@ -113,7 +131,6 @@ public class TimestampPanel extends JPanel {
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setRows(10);
-        resultArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         resultPanel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         add(resultPanel, BorderLayout.CENTER);
@@ -198,11 +215,11 @@ public class TimestampPanel extends JPanel {
         String text = resultArea.getText();
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
-                   .setContents(new StringSelection(text), null);
+                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                I18nUtil.getMessage(MessageKeys.TIP),
-                JOptionPane.INFORMATION_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                    I18nUtil.getMessage(MessageKeys.TIP),
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

@@ -60,7 +60,7 @@ public class EncoderPanel extends JPanel {
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        inputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        inputArea.setBackground(Color.WHITE);
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
 
         // 输出区域
@@ -70,7 +70,6 @@ public class EncoderPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
-        outputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);

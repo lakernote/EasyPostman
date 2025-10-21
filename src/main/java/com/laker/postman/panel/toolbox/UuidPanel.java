@@ -52,7 +52,7 @@ public class UuidPanel extends JPanel {
         uuidArea = new JTextArea();
         uuidArea.setEditable(false);
         uuidArea.setLineWrap(true);
-        uuidArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        uuidArea.setBackground(Color.WHITE);
         add(new JScrollPane(uuidArea), BorderLayout.CENTER);
 
         // 底部信息面板

@@ -1,6 +1,8 @@
 package com.laker.postman.panel.toolbox;
 
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.util.CronExpressionUtil;
+import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +11,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.util.*;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -18,7 +20,7 @@ import java.util.List;
 @Slf4j
 public class CronPanel extends JPanel {
 
-    private JTextField cronField;
+    private FlatTextField cronField;
     private JTextArea descriptionArea;
     private JTable nextExecutionTable;
     private DefaultTableModel tableModel;
@@ -30,7 +32,7 @@ public class CronPanel extends JPanel {
     private JComboBox<String> dayCombo;
     private JComboBox<String> monthCombo;
     private JComboBox<String> weekCombo;
-    private JTextField yearField;
+    private FlatTextField yearField;
 
     public CronPanel() {
         initUI();
@@ -63,9 +65,11 @@ public class CronPanel extends JPanel {
         // 第一行：Cron表达式输入
         JPanel row1 = new JPanel(new BorderLayout(5, 5));
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXPRESSION) + ":"), BorderLayout.WEST);
-        cronField = new JTextField();
-        cronField.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        cronField = new FlatTextField();
+        cronField.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
         cronField.setText("0 0 12 * * ?");
+        cronField.setPlaceholderText("Enter cron expression (e.g. 0 0 12 * * ?)");
+        cronField.setBackground(Color.WHITE);
         row1.add(cronField, BorderLayout.CENTER);
         topPanel.add(row1);
 
@@ -94,7 +98,6 @@ public class CronPanel extends JPanel {
         descriptionArea.setEditable(false);
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
-        descriptionArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         descPanel.add(new JScrollPane(descriptionArea), BorderLayout.CENTER);
 
         // 下次执行时间表格
@@ -108,7 +111,6 @@ public class CronPanel extends JPanel {
             }
         };
         nextExecutionTable = new JTable(tableModel);
-        nextExecutionTable.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
         tablePanel.add(new JScrollPane(nextExecutionTable), BorderLayout.CENTER);
 
         splitPane.setTopComponent(descPanel);
@@ -149,33 +151,35 @@ public class CronPanel extends JPanel {
 
         // 秒
         mainPanel.add(createFieldPanel("Second (0-59):",
-            secondCombo = new JComboBox<>(new String[]{"*", "0", "15", "30", "45", "0/5", "0/10", "0/15"})));
+                secondCombo = new JComboBox<>(new String[]{"*", "0", "15", "30", "45", "0/5", "0/10", "0/15"})));
 
         // 分钟
         mainPanel.add(createFieldPanel("Minute (0-59):",
-            minuteCombo = new JComboBox<>(new String[]{"*", "0", "15", "30", "45", "0/5", "0/10", "0/15"})));
+                minuteCombo = new JComboBox<>(new String[]{"*", "0", "15", "30", "45", "0/5", "0/10", "0/15"})));
 
         // 小时
         mainPanel.add(createFieldPanel("Hour (0-23):",
-            hourCombo = new JComboBox<>(new String[]{"*", "0", "6", "12", "18", "0/2", "0/4", "0/6"})));
+                hourCombo = new JComboBox<>(new String[]{"*", "0", "6", "12", "18", "0/2", "0/4", "0/6"})));
 
         // 日
         mainPanel.add(createFieldPanel("Day (1-31):",
-            dayCombo = new JComboBox<>(new String[]{"*", "?", "1", "15", "L", "1-15", "*/2"})));
+                dayCombo = new JComboBox<>(new String[]{"*", "?", "1", "15", "L", "1-15", "*/2"})));
 
         // 月
         mainPanel.add(createFieldPanel("Month (1-12):",
-            monthCombo = new JComboBox<>(new String[]{"*", "1", "6", "12", "1-6", "*/2", "*/3"})));
+                monthCombo = new JComboBox<>(new String[]{"*", "1", "6", "12", "1-6", "*/2", "*/3"})));
 
         // 周
         mainPanel.add(createFieldPanel("Week (0-7):",
-            weekCombo = new JComboBox<>(new String[]{"?", "*", "1", "2", "3", "4", "5", "6", "7", "MON-FRI"})));
+                weekCombo = new JComboBox<>(new String[]{"?", "*", "1", "2", "3", "4", "5", "6", "7", "MON-FRI"})));
 
         // 年（可选）
         JPanel yearPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         yearPanel.add(new JLabel("Year (optional):"));
-        yearField = new JTextField(10);
+        yearField = new FlatTextField();
+        yearField.setColumns(10);
         yearField.setText("");
+        yearField.setPlaceholderText("Enter year (optional):");
         yearPanel.add(yearField);
         mainPanel.add(yearPanel);
 
@@ -199,7 +203,7 @@ public class CronPanel extends JPanel {
         resultPanel.add(new JLabel("Generated Cron:"), BorderLayout.WEST);
         JTextField generatedField = new JTextField();
         generatedField.setEditable(false);
-        generatedField.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        generatedField.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
         resultPanel.add(generatedField, BorderLayout.CENTER);
         mainPanel.add(resultPanel);
 
@@ -239,24 +243,23 @@ public class CronPanel extends JPanel {
         panel.setBorder(BorderFactory.createTitledBorder("Common Presets"));
 
         String[][] presets = {
-            {"Every second", "* * * * * ?"},
-            {"Every minute", "0 * * * * ?"},
-            {"Every 5 minutes", "0 */5 * * * ?"},
-            {"Every 15 minutes", "0 */15 * * * ?"},
-            {"Every 30 minutes", "0 */30 * * * ?"},
-            {"Every hour", "0 0 * * * ?"},
-            {"Every 2 hours", "0 0 */2 * * ?"},
-            {"Every day at noon", "0 0 12 * * ?"},
-            {"Every day at midnight", "0 0 0 * * ?"},
-            {"Every Monday at 9 AM", "0 0 9 ? * MON"},
-            {"Every weekday at 9 AM", "0 0 9 ? * MON-FRI"},
-            {"First day of month", "0 0 0 1 * ?"},
-            {"Last day of month", "0 0 0 L * ?"}
+                {"Every second", "* * * * * ?"},
+                {"Every minute", "0 * * * * ?"},
+                {"Every 5 minutes", "0 */5 * * * ?"},
+                {"Every 15 minutes", "0 */15 * * * ?"},
+                {"Every 30 minutes", "0 */30 * * * ?"},
+                {"Every hour", "0 0 * * * ?"},
+                {"Every 2 hours", "0 0 */2 * * ?"},
+                {"Every day at noon", "0 0 12 * * ?"},
+                {"Every day at midnight", "0 0 0 * * ?"},
+                {"Every Monday at 9 AM", "0 0 9 ? * MON"},
+                {"Every weekday at 9 AM", "0 0 9 ? * MON-FRI"},
+                {"First day of month", "0 0 0 1 * ?"},
+                {"Last day of month", "0 0 0 L * ?"}
         };
 
         JTextArea presetArea = new JTextArea(15, 50);
         presetArea.setEditable(false);
-        presetArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
 
         StringBuilder sb = new StringBuilder();
         sb.append("Common Cron Expressions:\n\n");
@@ -284,12 +287,12 @@ public class CronPanel extends JPanel {
         JPopupMenu menu = new JPopupMenu();
 
         String[][] presets = {
-            {"Every minute", "0 * * * * ?"},
-            {"Every 5 minutes", "0 */5 * * * ?"},
-            {"Every hour", "0 0 * * * ?"},
-            {"Every day at noon", "0 0 12 * * ?"},
-            {"Every day at midnight", "0 0 0 * * ?"},
-            {"Every weekday at 9 AM", "0 0 9 ? * MON-FRI"}
+                {"Every minute", "0 * * * * ?"},
+                {"Every 5 minutes", "0 */5 * * * ?"},
+                {"Every hour", "0 0 * * * ?"},
+                {"Every day at noon", "0 0 12 * * ?"},
+                {"Every day at midnight", "0 0 0 * * ?"},
+                {"Every weekday at 9 AM", "0 0 9 ? * MON-FRI"}
         };
 
         for (String[] preset : presets) {
@@ -383,8 +386,8 @@ public class CronPanel extends JPanel {
             int index = 1;
             for (Date time : executionTimes) {
                 tableModel.addRow(new Object[]{
-                    index++,
-                    CronExpressionUtil.formatDate(time)
+                        index++,
+                        CronExpressionUtil.formatDate(time)
                 });
             }
 
@@ -401,11 +404,11 @@ public class CronPanel extends JPanel {
     private void copyToClipboard(String text) {
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
-                   .setContents(new StringSelection(text), null);
+                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                "Copied: " + text,
-                I18nUtil.getMessage(MessageKeys.TIP),
-                JOptionPane.INFORMATION_MESSAGE);
+                    "Copied: " + text,
+                    I18nUtil.getMessage(MessageKeys.TIP),
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

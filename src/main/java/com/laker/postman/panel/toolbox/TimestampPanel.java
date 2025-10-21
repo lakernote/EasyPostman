@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -39,14 +40,14 @@ public class TimestampPanel extends JPanel {
 
         // 当前时间戳
         gbc.gridx = 0; gbc.gridy = 0;
-        topPanel.add(new JLabel(I18nUtil.getMessage("toolbox.timestamp.current") + ":"), gbc);
+        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CURRENT) + ":"), gbc);
 
         gbc.gridx = 1; gbc.weightx = 1.0;
         JLabel currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
         currentLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
         topPanel.add(currentLabel, gbc);
 
-        JButton refreshBtn = new JButton(I18nUtil.getMessage("button.refresh"));
+        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
         refreshBtn.addActionListener(e -> currentLabel.setText(String.valueOf(System.currentTimeMillis())));
         gbc.gridx = 2; gbc.weightx = 0;
         topPanel.add(refreshBtn, gbc);
@@ -58,7 +59,7 @@ public class TimestampPanel extends JPanel {
 
         // 时间戳转日期部分
         gbc.gridx = 0; gbc.gridy = 2;
-        topPanel.add(new JLabel(I18nUtil.getMessage("toolbox.timestamp.input") + ":"), gbc);
+        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_INPUT) + ":"), gbc);
 
         gbc.gridx = 1; gbc.weightx = 1.0;
         timestampField = new JTextField();
@@ -67,13 +68,13 @@ public class TimestampPanel extends JPanel {
 
         gbc.gridx = 2; gbc.weightx = 0;
         unitCombo = new JComboBox<>(new String[]{
-            I18nUtil.getMessage("toolbox.timestamp.milliseconds"),
-            I18nUtil.getMessage("toolbox.timestamp.seconds")
+            I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS),
+            I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_SECONDS)
         });
         topPanel.add(unitCombo, gbc);
 
         gbc.gridx = 1; gbc.gridy = 3;
-        JButton convertToDateBtn = new JButton(I18nUtil.getMessage("toolbox.timestamp.toDate"));
+        JButton convertToDateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE));
         convertToDateBtn.addActionListener(e -> convertToDate());
         topPanel.add(convertToDateBtn, gbc);
 
@@ -103,8 +104,8 @@ public class TimestampPanel extends JPanel {
         JPanel resultPanel = new JPanel(new BorderLayout(5, 5));
 
         JPanel resultHeaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        resultHeaderPanel.add(new JLabel(I18nUtil.getMessage("toolbox.timestamp.output")));
-        JButton copyBtn = new JButton(I18nUtil.getMessage("button.copy"));
+        resultHeaderPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_OUTPUT)));
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         copyBtn.addActionListener(e -> copyToClipboard());
         resultHeaderPanel.add(copyBtn);
 
@@ -199,8 +200,8 @@ public class TimestampPanel extends JPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage("button.copy") + " " + I18nUtil.getMessage("success"),
-                I18nUtil.getMessage("tip"),
+                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                I18nUtil.getMessage(MessageKeys.TIP),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }

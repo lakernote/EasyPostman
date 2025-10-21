@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -31,17 +32,17 @@ public class EncoderPanel extends JPanel {
 
         // 顶部工具栏
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.add(new JLabel(I18nUtil.getMessage("toolbox.encoder.title") + ":"));
+        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_TITLE) + ":"));
 
         typeCombo = new JComboBox<>(new String[]{
             "Base64", "URL", "HTML Entity", "Unicode"
         });
         topPanel.add(typeCombo);
 
-        JButton encodeBtn = new JButton(I18nUtil.getMessage("toolbox.encoder.encode"));
-        JButton decodeBtn = new JButton(I18nUtil.getMessage("toolbox.encoder.decode"));
-        JButton copyBtn = new JButton(I18nUtil.getMessage("button.copy"));
-        JButton clearBtn = new JButton(I18nUtil.getMessage("button.clear"));
+        JButton encodeBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_ENCODE));
+        JButton decodeBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_DECODE));
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
 
         topPanel.add(encodeBtn);
         topPanel.add(decodeBtn);
@@ -55,7 +56,7 @@ public class EncoderPanel extends JPanel {
 
         // 输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.add(new JLabel(I18nUtil.getMessage("toolbox.encoder.input")), BorderLayout.NORTH);
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_INPUT)), BorderLayout.NORTH);
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
@@ -64,7 +65,7 @@ public class EncoderPanel extends JPanel {
 
         // 输出区域
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.add(new JLabel(I18nUtil.getMessage("toolbox.encoder.output")), BorderLayout.NORTH);
+        outputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_OUTPUT)), BorderLayout.NORTH);
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
@@ -138,8 +139,8 @@ public class EncoderPanel extends JPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage("button.copy") + " " + I18nUtil.getMessage("success"),
-                I18nUtil.getMessage("tip"),
+                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                I18nUtil.getMessage(MessageKeys.TIP),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -193,4 +194,3 @@ public class EncoderPanel extends JPanel {
         return sb.toString();
     }
 }
-

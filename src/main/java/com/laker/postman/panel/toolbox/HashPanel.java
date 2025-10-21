@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -34,8 +35,8 @@ public class HashPanel extends JPanel {
         JButton sha1Btn = new JButton("SHA-1");
         JButton sha256Btn = new JButton("SHA-256");
         JButton sha512Btn = new JButton("SHA-512");
-        JButton copyBtn = new JButton(I18nUtil.getMessage("button.copy"));
-        JButton clearBtn = new JButton(I18nUtil.getMessage("button.clear"));
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
 
         allHashCheckBox = new JCheckBox("All", false);
         allHashCheckBox.setToolTipText("Calculate all hash algorithms at once");
@@ -57,7 +58,7 @@ public class HashPanel extends JPanel {
 
         // 输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.add(new JLabel(I18nUtil.getMessage("toolbox.hash.input")), BorderLayout.NORTH);
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_INPUT)), BorderLayout.NORTH);
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
@@ -66,7 +67,7 @@ public class HashPanel extends JPanel {
 
         // 输出区域
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.add(new JLabel(I18nUtil.getMessage("toolbox.hash.output")), BorderLayout.NORTH);
+        outputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_OUTPUT)), BorderLayout.NORTH);
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setEditable(false);
@@ -178,8 +179,8 @@ public class HashPanel extends JPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage("button.copy") + " " + I18nUtil.getMessage("success"),
-                    I18nUtil.getMessage("tip"),
+                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                    I18nUtil.getMessage(MessageKeys.TIP),
                     JOptionPane.INFORMATION_MESSAGE);
         }
     }

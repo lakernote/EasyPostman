@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -28,11 +29,11 @@ public class UuidPanel extends JPanel {
         // 顶部工具栏
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
-        JButton generateBtn = new JButton(I18nUtil.getMessage("toolbox.uuid.generate"));
-        JButton copyBtn = new JButton(I18nUtil.getMessage("button.copy"));
-        JButton clearBtn = new JButton(I18nUtil.getMessage("button.clear"));
+        JButton generateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATE));
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
 
-        topPanel.add(new JLabel(I18nUtil.getMessage("toolbox.uuid.generate") + ":"));
+        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATE) + ":"));
 
         // 添加数量选择器
         SpinnerNumberModel spinnerModel = new SpinnerNumberModel(1, 1, 100, 1);
@@ -90,8 +91,8 @@ public class UuidPanel extends JPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage("button.copy") + " " + I18nUtil.getMessage("success"),
-                I18nUtil.getMessage("tip"),
+                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                I18nUtil.getMessage(MessageKeys.TIP),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }

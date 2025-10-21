@@ -1087,4 +1087,43 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_TOOLTIP = "settings.proxy.ssl.verification.tooltip";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX = "settings.proxy.ssl.verification.checkbox";
     public static final String SETTINGS_VALIDATION_PROXY_PORT_ERROR = "settings.validation.proxy_port.error";
+
+    // ============ 工具箱相关 ============
+    public static final String TOOLBOX_ENCODER = "toolbox.encoder";
+    public static final String TOOLBOX_ENCODER_TITLE = "toolbox.encoder.title";
+    public static final String TOOLBOX_ENCODER_INPUT = "toolbox.encoder.input";
+    public static final String TOOLBOX_ENCODER_OUTPUT = "toolbox.encoder.output";
+    public static final String TOOLBOX_ENCODER_ENCODE = "toolbox.encoder.encode";
+    public static final String TOOLBOX_ENCODER_DECODE = "toolbox.encoder.decode";
+
+    public static final String TOOLBOX_CRYPTO = "toolbox.crypto";
+    public static final String TOOLBOX_CRYPTO_ALGORITHM = "toolbox.crypto.algorithm";
+    public static final String TOOLBOX_CRYPTO_INPUT = "toolbox.crypto.input";
+    public static final String TOOLBOX_CRYPTO_OUTPUT = "toolbox.crypto.output";
+
+    public static final String TOOLBOX_JSON = "toolbox.json";
+    public static final String TOOLBOX_JSON_FORMAT = "toolbox.json.format";
+    public static final String TOOLBOX_JSON_COMPRESS = "toolbox.json.compress";
+    public static final String TOOLBOX_JSON_VALIDATE = "toolbox.json.validate";
+    public static final String TOOLBOX_JSON_INPUT = "toolbox.json.input";
+    public static final String TOOLBOX_JSON_OUTPUT = "toolbox.json.output";
+    public static final String TOOLBOX_JSON_ERROR = "toolbox.json.error";
+
+    public static final String TOOLBOX_TIMESTAMP = "toolbox.timestamp";
+    public static final String TOOLBOX_TIMESTAMP_CURRENT = "toolbox.timestamp.current";
+    public static final String TOOLBOX_TIMESTAMP_INPUT = "toolbox.timestamp.input";
+    public static final String TOOLBOX_TIMESTAMP_OUTPUT = "toolbox.timestamp.output";
+    public static final String TOOLBOX_TIMESTAMP_MILLISECONDS = "toolbox.timestamp.milliseconds";
+    public static final String TOOLBOX_TIMESTAMP_SECONDS = "toolbox.timestamp.seconds";
+    public static final String TOOLBOX_TIMESTAMP_TO_DATE = "toolbox.timestamp.toDate";
+
+    public static final String TOOLBOX_UUID = "toolbox.uuid";
+    public static final String TOOLBOX_UUID_GENERATE = "toolbox.uuid.generate";
+    public static final String TOOLBOX_UUID_COPY = "toolbox.uuid.copy";
+    public static final String TOOLBOX_UUID_GENERATE10 = "toolbox.uuid.generate10";
+
+    public static final String TOOLBOX_HASH = "toolbox.hash";
+    public static final String TOOLBOX_HASH_INPUT = "toolbox.hash.input";
+    public static final String TOOLBOX_HASH_OUTPUT = "toolbox.hash.output";
+    public static final String TOOLBOX_HASH_CALCULATE = "toolbox.hash.calculate";
 }

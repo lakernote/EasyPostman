@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.Cipher;
@@ -34,7 +35,7 @@ public class CryptoPanel extends JPanel {
 
         // 顶部工具栏
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        topPanel.add(new JLabel(I18nUtil.getMessage("toolbox.crypto.algorithm") + ":"));
+        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_ALGORITHM) + ":"));
 
         algorithmCombo = new JComboBox<>(new String[]{
             "MD5", "SHA-1", "SHA-256", "SHA-512", "AES-128"
@@ -50,9 +51,9 @@ public class CryptoPanel extends JPanel {
         keyField.setToolTipText("Required for AES encryption/decryption");
         topPanel.add(keyField);
 
-        JButton calculateBtn = new JButton(I18nUtil.getMessage("toolbox.hash.calculate"));
-        JButton copyBtn = new JButton(I18nUtil.getMessage("button.copy"));
-        JButton clearBtn = new JButton(I18nUtil.getMessage("button.clear"));
+        JButton calculateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_CALCULATE));
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
 
         topPanel.add(calculateBtn);
         topPanel.add(copyBtn);
@@ -65,7 +66,7 @@ public class CryptoPanel extends JPanel {
 
         // 输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.add(new JLabel(I18nUtil.getMessage("toolbox.crypto.input")), BorderLayout.NORTH);
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_INPUT)), BorderLayout.NORTH);
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
@@ -74,7 +75,7 @@ public class CryptoPanel extends JPanel {
 
         // 输出区域
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.add(new JLabel(I18nUtil.getMessage("toolbox.crypto.output")), BorderLayout.NORTH);
+        outputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_OUTPUT)), BorderLayout.NORTH);
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
@@ -191,8 +192,8 @@ public class CryptoPanel extends JPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                    .setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage("button.copy") + " " + I18nUtil.getMessage("success"),
-                I18nUtil.getMessage("tip"),
+                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
+                I18nUtil.getMessage(MessageKeys.TIP),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }

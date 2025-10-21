@@ -20,17 +20,18 @@ public class ToolboxPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 
         // 创建标签页
         toolTabs = new JTabbedPane(JTabbedPane.TOP);
 
         // 添加各种工具标签页
-        addToolTab(I18nUtil.getMessage("toolbox.encoder"), new FlatSVGIcon("icons/code.svg", 16, 16), new EncoderPanel());
-        addToolTab(I18nUtil.getMessage("toolbox.crypto"), new FlatSVGIcon("icons/security.svg", 16, 16), new CryptoPanel());
-        addToolTab(I18nUtil.getMessage("toolbox.json"), new FlatSVGIcon("icons/format.svg", 16, 16), new JsonToolPanel());
-        addToolTab(I18nUtil.getMessage("toolbox.timestamp"), new FlatSVGIcon("icons/time.svg", 16, 16), new TimestampPanel());
-        addToolTab(I18nUtil.getMessage("toolbox.uuid"), new FlatSVGIcon("icons/plus.svg", 16, 16), new UuidPanel());
-        addToolTab(I18nUtil.getMessage("toolbox.hash"), new FlatSVGIcon("icons/security.svg", 16, 16), new HashPanel());
+        addToolTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER), new FlatSVGIcon("icons/code.svg", 16, 16), new EncoderPanel());
+        addToolTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO), new FlatSVGIcon("icons/security.svg", 16, 16), new CryptoPanel());
+        addToolTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON), new FlatSVGIcon("icons/format.svg", 16, 16), new JsonToolPanel());
+        addToolTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP), new FlatSVGIcon("icons/time.svg", 16, 16), new TimestampPanel());
+        addToolTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID), new FlatSVGIcon("icons/plus.svg", 16, 16), new UuidPanel());
+        addToolTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH), new FlatSVGIcon("icons/security.svg", 16, 16), new HashPanel());
 
         add(toolTabs, BorderLayout.CENTER);
     }
@@ -44,4 +45,3 @@ public class ToolboxPanel extends SingletonBasePanel {
         // 可以在这里注册监听器
     }
 }
-

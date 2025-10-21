@@ -10,11 +10,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Base64;
 
 /**
- * 加解密工具面板
+ * 加解密工具面板 - 专注于双向加密解密
  */
 @Slf4j
 public class CryptoPanel extends JPanel {
@@ -23,7 +22,6 @@ public class CryptoPanel extends JPanel {
     private JTextArea outputArea;
     private JComboBox<String> algorithmCombo;
     private JTextField keyField;
-    private JCheckBox encryptModeCheckBox;
 
     public CryptoPanel() {
         initUI();
@@ -34,30 +32,38 @@ public class CryptoPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 顶部工具栏
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_ALGORITHM) + ":"));
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
 
+        // 第一行：算法选择
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_ALGORITHM) + ":"));
         algorithmCombo = new JComboBox<>(new String[]{
-            "MD5", "SHA-1", "SHA-256", "SHA-512", "AES-128"
+            "AES-128", "AES-256", "DES"
         });
-        topPanel.add(algorithmCombo);
+        row1.add(algorithmCombo);
+        topPanel.add(row1);
 
-        encryptModeCheckBox = new JCheckBox("Encrypt Mode", false);
-        encryptModeCheckBox.setToolTipText("For AES: checked=encrypt, unchecked=decrypt");
-        topPanel.add(encryptModeCheckBox);
+        // 第二行：密钥输入
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        row2.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_KEY) + ":"));
+        keyField = new JTextField(30);
+        keyField.setToolTipText("AES-128: 16 characters, AES-256: 32 characters, DES: 8 characters");
+        row2.add(keyField);
+        topPanel.add(row2);
 
-        topPanel.add(new JLabel("Key:"));
-        keyField = new JTextField(16);
-        keyField.setToolTipText("Required for AES encryption/decryption");
-        topPanel.add(keyField);
-
-        JButton calculateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_CALCULATE));
+        // 第三行：操作按钮
+        JPanel row3 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JButton encryptBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_ENCRYPT));
+        JButton decryptBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_DECRYPT));
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
 
-        topPanel.add(calculateBtn);
-        topPanel.add(copyBtn);
-        topPanel.add(clearBtn);
+        row3.add(encryptBtn);
+        row3.add(decryptBtn);
+        row3.add(copyBtn);
+        row3.add(clearBtn);
+        topPanel.add(row3);
 
         add(topPanel, BorderLayout.NORTH);
 
@@ -90,100 +96,98 @@ public class CryptoPanel extends JPanel {
         add(splitPane, BorderLayout.CENTER);
 
         // 按钮事件
-        calculateBtn.addActionListener(e -> calculate());
+        encryptBtn.addActionListener(e -> encrypt());
+        decryptBtn.addActionListener(e -> decrypt());
         copyBtn.addActionListener(e -> copyToClipboard());
         clearBtn.addActionListener(e -> {
             inputArea.setText("");
             outputArea.setText("");
         });
-
-        // 算法选择监听
-        algorithmCombo.addActionListener(e -> {
-            boolean isAES = algorithmCombo.getSelectedIndex() == 4;
-            keyField.setEnabled(isAES);
-            encryptModeCheckBox.setEnabled(isAES);
-        });
-
-        // 初始化状态
-        keyField.setEnabled(false);
-        encryptModeCheckBox.setEnabled(false);
     }
 
-    private void calculate() {
+    private void encrypt() {
         String input = inputArea.getText();
+        String key = keyField.getText();
+
         if (input.isEmpty()) {
             outputArea.setText("");
             return;
         }
 
+        if (key.isEmpty()) {
+            outputArea.setText("❌ Error: Key is required for encryption");
+            return;
+        }
+
         try {
-            int selectedIndex = algorithmCombo.getSelectedIndex();
+            String algorithm = switch (algorithmCombo.getSelectedIndex()) {
+                case 0 -> "AES"; // AES-128
+                case 1 -> "AES"; // AES-256
+                case 2 -> "DES";
+                default -> "AES";
+            };
 
-            if (selectedIndex == 4) { // AES
-                String key = keyField.getText();
-                if (key.isEmpty()) {
-                    outputArea.setText("❌ Error: Key is required for AES encryption/decryption");
-                    return;
-                }
+            int keyLength = switch (algorithmCombo.getSelectedIndex()) {
+                case 0 -> 16; // AES-128
+                case 1 -> 32; // AES-256
+                case 2 -> 8;  // DES
+                default -> 16;
+            };
 
-                if (encryptModeCheckBox.isSelected()) {
-                    String encrypted = aesEncrypt(input, key);
-                    outputArea.setText("✅ AES Encrypted (Base64):\n\n" + encrypted);
-                } else {
-                    String decrypted = aesDecrypt(input, key);
-                    outputArea.setText("✅ AES Decrypted:\n\n" + decrypted);
-                }
-            } else {
-                String algorithm = switch (selectedIndex) {
-                    case 0 -> "MD5";
-                    case 1 -> "SHA-1";
-                    case 2 -> "SHA-256";
-                    case 3 -> "SHA-512";
-                    default -> "MD5";
-                };
-
-                MessageDigest md = MessageDigest.getInstance(algorithm);
-                byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
-
-                StringBuilder hexString = new StringBuilder();
-                for (byte b : hash) {
-                    String hex = Integer.toHexString(0xff & b);
-                    if (hex.length() == 1) hexString.append('0');
-                    hexString.append(hex);
-                }
-
-                outputArea.setText("✅ " + algorithm + " Hash:\n\n" + hexString.toString());
+            if (key.length() != keyLength) {
+                outputArea.setText("❌ Error: Key must be exactly " + keyLength + " characters for " +
+                                 algorithmCombo.getSelectedItem());
+                return;
             }
+
+            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm);
+            Cipher cipher = Cipher.getInstance(algorithm);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+
+            byte[] encrypted = cipher.doFinal(input.getBytes(StandardCharsets.UTF_8));
+            String result = Base64.getEncoder().encodeToString(encrypted);
+
+            outputArea.setText("✅ Encrypted (Base64):\n\n" + result);
         } catch (Exception ex) {
-            log.error("Crypto calculation error", ex);
+            log.error("Encryption error", ex);
             outputArea.setText("❌ Error: " + ex.getMessage());
         }
     }
 
-    private String aesEncrypt(String text, String key) throws Exception {
-        SecretKeySpec secretKey = new SecretKeySpec(padKey(key).getBytes(StandardCharsets.UTF_8), "AES");
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-        byte[] encrypted = cipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
-        return Base64.getEncoder().encodeToString(encrypted);
-    }
+    private void decrypt() {
+        String input = inputArea.getText();
+        String key = keyField.getText();
 
-    private String aesDecrypt(String encryptedText, String key) throws Exception {
-        SecretKeySpec secretKey = new SecretKeySpec(padKey(key).getBytes(StandardCharsets.UTF_8), "AES");
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, secretKey);
-        byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(encryptedText));
-        return new String(decrypted, StandardCharsets.UTF_8);
-    }
-
-    private String padKey(String key) {
-        // AES-128 requires 16-byte key
-        if (key.length() > 16) {
-            return key.substring(0, 16);
-        } else if (key.length() < 16) {
-            return String.format("%-16s", key).replace(' ', '0');
+        if (input.isEmpty()) {
+            outputArea.setText("");
+            return;
         }
-        return key;
+
+        if (key.isEmpty()) {
+            outputArea.setText("❌ Error: Key is required for decryption");
+            return;
+        }
+
+        try {
+            String algorithm = switch (algorithmCombo.getSelectedIndex()) {
+                case 0 -> "AES"; // AES-128
+                case 1 -> "AES"; // AES-256
+                case 2 -> "DES";
+                default -> "AES";
+            };
+
+            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm);
+            Cipher cipher = Cipher.getInstance(algorithm);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+
+            byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(input));
+            String result = new String(decrypted, StandardCharsets.UTF_8);
+
+            outputArea.setText("✅ Decrypted:\n\n" + result);
+        } catch (Exception ex) {
+            log.error("Decryption error", ex);
+            outputArea.setText("❌ Error: " + ex.getMessage());
+        }
     }
 
     private void copyToClipboard() {

@@ -1100,6 +1100,15 @@ public final class MessageKeys {
     public static final String TOOLBOX_CRYPTO_ALGORITHM = "toolbox.crypto.algorithm";
     public static final String TOOLBOX_CRYPTO_INPUT = "toolbox.crypto.input";
     public static final String TOOLBOX_CRYPTO_OUTPUT = "toolbox.crypto.output";
+    public static final String TOOLBOX_CRYPTO_KEY = "toolbox.crypto.key";
+    public static final String TOOLBOX_CRYPTO_ENCRYPT = "toolbox.crypto.encrypt";
+    public static final String TOOLBOX_CRYPTO_DECRYPT = "toolbox.crypto.decrypt";
+
+    public static final String TOOLBOX_HASH = "toolbox.hash";
+    public static final String TOOLBOX_HASH_INPUT = "toolbox.hash.input";
+    public static final String TOOLBOX_HASH_OUTPUT = "toolbox.hash.output";
+    public static final String TOOLBOX_HASH_CALCULATE = "toolbox.hash.calculate";
+    public static final String TOOLBOX_HASH_ALL = "toolbox.hash.all";
 
     public static final String TOOLBOX_JSON = "toolbox.json";
     public static final String TOOLBOX_JSON_FORMAT = "toolbox.json.format";
@@ -1122,8 +1131,37 @@ public final class MessageKeys {
     public static final String TOOLBOX_UUID_COPY = "toolbox.uuid.copy";
     public static final String TOOLBOX_UUID_GENERATE10 = "toolbox.uuid.generate10";
 
-    public static final String TOOLBOX_HASH = "toolbox.hash";
-    public static final String TOOLBOX_HASH_INPUT = "toolbox.hash.input";
-    public static final String TOOLBOX_HASH_OUTPUT = "toolbox.hash.output";
-    public static final String TOOLBOX_HASH_CALCULATE = "toolbox.hash.calculate";
+    public static final String TOOLBOX_REGEX = "toolbox.regex";
+    public static final String TOOLBOX_REGEX_PATTERN = "toolbox.regex.pattern";
+    public static final String TOOLBOX_REGEX_TEXT = "toolbox.regex.text";
+    public static final String TOOLBOX_REGEX_RESULT = "toolbox.regex.result";
+    public static final String TOOLBOX_REGEX_TEST = "toolbox.regex.test";
+    public static final String TOOLBOX_REGEX_FLAGS = "toolbox.regex.flags";
+    public static final String TOOLBOX_REGEX_MATCHES = "toolbox.regex.matches";
+
+    public static final String TOOLBOX_DIFF = "toolbox.diff";
+    public static final String TOOLBOX_DIFF_ORIGINAL = "toolbox.diff.original";
+    public static final String TOOLBOX_DIFF_MODIFIED = "toolbox.diff.modified";
+    public static final String TOOLBOX_DIFF_COMPARE = "toolbox.diff.compare";
+    public static final String TOOLBOX_DIFF_RESULT = "toolbox.diff.result";
+
+    public static final String TOOLBOX_COLOR = "toolbox.color";
+    public static final String TOOLBOX_COLOR_HEX = "toolbox.color.hex";
+    public static final String TOOLBOX_COLOR_RGB = "toolbox.color.rgb";
+    public static final String TOOLBOX_COLOR_PREVIEW = "toolbox.color.preview";
+    public static final String TOOLBOX_COLOR_CONVERT = "toolbox.color.convert";
+
+    public static final String TOOLBOX_QRCODE = "toolbox.qrcode";
+    public static final String TOOLBOX_QRCODE_INPUT = "toolbox.qrcode.input";
+    public static final String TOOLBOX_QRCODE_GENERATE = "toolbox.qrcode.generate";
+    public static final String TOOLBOX_QRCODE_SAVE = "toolbox.qrcode.save";
+    public static final String TOOLBOX_QRCODE_SIZE = "toolbox.qrcode.size";
+
+    public static final String TOOLBOX_CRON = "toolbox.cron";
+    public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";
+    public static final String TOOLBOX_CRON_PARSE = "toolbox.cron.parse";
+    public static final String TOOLBOX_CRON_GENERATE = "toolbox.cron.generate";
+    public static final String TOOLBOX_CRON_DESCRIPTION = "toolbox.cron.description";
+    public static final String TOOLBOX_CRON_NEXT_EXECUTIONS = "toolbox.cron.next_executions";
+
 }

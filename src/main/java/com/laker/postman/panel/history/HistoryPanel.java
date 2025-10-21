@@ -1,8 +1,8 @@
 package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.constants.EasyPostManColors;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.constants.EasyPostManColors;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
@@ -26,10 +26,8 @@ import java.util.List;
  * 历史记录面板
  */
 public class HistoryPanel extends SingletonBasePanel {
-    public static final String EMPTY_BODY_HTML = I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY);
     private JList<Object> historyList;
     private JPanel historyDetailPanel;
-    private JTabbedPane historyDetailTabPane;
     private JTextPane requestPane;
     private JTextPane responsePane;
     private JTextPane timingPane;
@@ -38,6 +36,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
     @Override
     protected void initUI() {
+        JTabbedPane historyDetailTabPane;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
         JPanel titlePanel = new JPanel(new BorderLayout());
@@ -147,6 +146,7 @@ public class HistoryPanel extends SingletonBasePanel {
      * 清空所有详情面板
      */
     private void clearDetailPanes() {
+        String EMPTY_BODY_HTML = I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY);
         requestPane.setText(EMPTY_BODY_HTML);
         responsePane.setText(EMPTY_BODY_HTML);
         timingPane.setText(EMPTY_BODY_HTML);

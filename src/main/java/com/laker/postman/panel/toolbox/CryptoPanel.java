@@ -49,7 +49,7 @@ public class CryptoPanel extends JPanel {
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         row2.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_KEY) + ":"));
         keyField = new FlatTextField();
-        keyField.setColumns(30);
+        keyField.setColumns(40);
         keyField.setPlaceholderText("AES-128: 16 characters, AES-256: 32 characters, DES: 8 characters");
         keyField.setBackground(Color.WHITE);
         row2.add(keyField);
@@ -89,7 +89,6 @@ public class CryptoPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
-        outputArea.setBackground(Color.WHITE);
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);

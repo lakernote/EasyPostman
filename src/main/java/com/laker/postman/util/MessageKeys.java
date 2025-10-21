@@ -29,6 +29,7 @@ public final class MessageKeys {
     public static final String MENU_PERFORMANCE = "menu.performance";
     public static final String MENU_HISTORY = "menu.history";
     public static final String MENU_WORKSPACES = "menu.workspaces";
+    public static final String MENU_TOOLBOX = "menu.toolbox";
 
     // ============ 语言相关 ============
     public static final String LANGUAGE_CHANGED = "language.changed";

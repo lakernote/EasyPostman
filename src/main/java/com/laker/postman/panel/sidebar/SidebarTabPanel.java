@@ -9,6 +9,7 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
+import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
@@ -79,6 +80,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 () -> SingletonFactory.getInstance(PerformancePanel.class)));
         tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_HISTORY), new FlatSVGIcon("icons/history.svg", 20, 20),
                 () -> SingletonFactory.getInstance(HistoryPanel.class)));
+        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_TOOLBOX), new FlatSVGIcon("icons/tools.svg", 20, 20),
+                () -> SingletonFactory.getInstance(ToolboxPanel.class)));
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
             tabbedPane.addTab(info.title, new JPanel());

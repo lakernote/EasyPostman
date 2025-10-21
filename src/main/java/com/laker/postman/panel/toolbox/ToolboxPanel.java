@@ -53,7 +53,7 @@ public class ToolboxPanel extends SingletonBasePanel {
         // 3. 哈希计算工具（单向加密）
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH),
-                new FlatSVGIcon("icons/security.svg", 16, 16),
+                new FlatSVGIcon("icons/hash.svg", 16, 16),
                 new HashPanel()
         );
 

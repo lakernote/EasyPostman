@@ -98,7 +98,7 @@ public class EasyPostManSplashWindow extends JWindow {
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
-        versionLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        versionLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
         versionLabel.setForeground(new Color(120, 130, 150));
         infoPanel.add(versionLabel);
 

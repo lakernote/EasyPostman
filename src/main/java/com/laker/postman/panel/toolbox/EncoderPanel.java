@@ -35,7 +35,7 @@ public class EncoderPanel extends JPanel {
         topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_TITLE) + ":"));
 
         typeCombo = new JComboBox<>(new String[]{
-            "Base64", "URL", "HTML Entity", "Unicode"
+                "Base64", "URL", "HTML Entity", "Unicode"
         });
         topPanel.add(typeCombo);
 
@@ -136,28 +136,24 @@ public class EncoderPanel extends JPanel {
         String text = outputArea.getText();
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
-                   .setContents(new StringSelection(text), null);
-            JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                I18nUtil.getMessage(MessageKeys.TIP),
-                JOptionPane.INFORMATION_MESSAGE);
+                    .setContents(new StringSelection(text), null);
         }
     }
 
     private String htmlEncode(String str) {
         return str.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;")
-                  .replace("\"", "&quot;")
-                  .replace("'", "&#39;");
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private String htmlDecode(String str) {
         return str.replace("&amp;", "&")
-                  .replace("&lt;", "<")
-                  .replace("&gt;", ">")
-                  .replace("&quot;", "\"")
-                  .replace("&#39;", "'");
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'");
     }
 
     private String unicodeEncode(String str) {

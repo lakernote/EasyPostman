@@ -106,6 +106,7 @@ public final class MessageKeys {
     public static final String BUTTON_CLEAR = "button.clear";
     public static final String BUTTON_REFRESH = "button.refresh";
     public static final String BUTTON_CONNECT = "button.connect";
+    public static final String BUTTON_CALCULATE = "button.calculate";
 
     // ============ 请求相关 ============
     public static final String NEW_REQUEST = "new.request";
@@ -1107,6 +1108,10 @@ public final class MessageKeys {
     public static final String TOOLBOX_HASH = "toolbox.hash";
     public static final String TOOLBOX_HASH_INPUT = "toolbox.hash.input";
     public static final String TOOLBOX_HASH_OUTPUT = "toolbox.hash.output";
+    public static final String TOOLBOX_HASH_CALCULATE_ALL = "toolbox.hash.calculate_all";
+    public static final String TOOLBOX_HASH_CALCULATE_ALL_TOOLTIP = "toolbox.hash.calculate_all.tooltip";
+    public static final String TOOLBOX_HASH_UPPERCASE = "toolbox.hash.uppercase";
+    public static final String TOOLBOX_HASH_UPPERCASE_TOOLTIP = "toolbox.hash.uppercase.tooltip";
 
     public static final String TOOLBOX_JSON = "toolbox.json";
     public static final String TOOLBOX_JSON_FORMAT = "toolbox.json.format";

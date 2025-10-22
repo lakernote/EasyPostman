@@ -213,14 +213,20 @@ public class ImprovedTableRowTransferHandler extends TransferHandler {
         } catch (Exception e) {
             log.error("Error in exportDone: {}", e.getMessage(), e);
         } finally {
-            // 拖拽完成，重新启用自动补空行
-            if (dragStateCallback != null) {
-                // 延迟一点执行，确保拖拽完全结束
-                SwingUtilities.invokeLater(() -> dragStateCallback.accept(false));
-            }
             rows = null;
             addCount = 0;
             addIndex = -1;
+
+            // 拖拽完成，重新启用自动补空行并触发保存
+            if (dragStateCallback != null) {
+                // 使用invokeLater确保在UI更新完成后执行，并传递拖动完成标志
+                SwingUtilities.invokeLater(() -> {
+                    dragStateCallback.accept(false);
+                    // 再次延迟以确保拖动状态已完全重置后触发一次表格数据变更事件
+                    // 触发表格模型更新事件，让自动保存逻辑能够检测到变化
+                    SwingUtilities.invokeLater(model::fireTableDataChanged);
+                });
+            }
         }
     }
 

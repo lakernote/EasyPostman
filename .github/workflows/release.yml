@@ -111,12 +111,21 @@ jobs:
             --java-options "-Djavax.accessibility.assistive_technologies="
 
       - name: Upload to Release（上传到 GitHub Release）
+        if: github.event_name == 'release'  # 只在 Release 触发时上传
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.msi
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as Artifact（手动触发时上传为构建产物）
+        if: github.event_name == 'workflow_dispatch'  # 只在手动触发时上传为 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-Windows-MSI
+          path: dist/*.msi
+          retention-days: 7  # 保留 7 天
 
   build-macos:
     name: Build macOS Universal DMG（构建 macOS 通用版安装包）
@@ -190,12 +199,21 @@ jobs:
             --java-options "-Dfile.encoding=UTF-8"
 
       - name: Upload to Release（上传到 GitHub Release）
+        if: github.event_name == 'release'  # 只在 Release 触发时上传
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.dmg
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as Artifact（手动触发时上传为构建产物）
+        if: github.event_name == 'workflow_dispatch'  # 只在手动触发时上传为 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-macOS-DMG
+          path: dist/*.dmg
+          retention-days: 7  # 保留 7 天
 
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
@@ -278,9 +296,19 @@ jobs:
             --java-options "-Dfile.encoding=UTF-8"
 
       - name: Upload to Release（上传到 GitHub Release）
+        if: github.event_name == 'release'  # 只在 Release 触发时上传
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.deb
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as Artifact（手动触发时上传为构建产物）
+        if: github.event_name == 'workflow_dispatch'  # 只在手动触发时上传为 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-Ubuntu-DEB
+          path: dist/*.deb
+          retention-days: 7  # 保留 7 天
+

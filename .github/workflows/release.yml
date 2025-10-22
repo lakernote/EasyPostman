@@ -282,7 +282,7 @@ jobs:
             --main-class com.laker.postman.App \
             --runtime-image target/runtime \
             --type deb \
-            --name "easypostman" \
+            --name "EasyPostman" \
             --app-version "$VERSION" \
             --dest dist \
             --vendor "Laker" \
@@ -311,4 +311,3 @@ jobs:
           name: EasyPostman-Ubuntu-DEB
           path: dist/*.deb
           retention-days: 7  # 保留 7 天
-

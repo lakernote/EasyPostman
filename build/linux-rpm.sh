@@ -97,7 +97,7 @@ jpackage \
     --main-class ${MAIN_CLASS} \
     --runtime-image target/runtime \
     --type rpm \
-    --name "easypostman" \
+    --name "${APP_NAME}" \
     --app-version "${VERSION}" \
     --dest "${OUTPUT_DIR}" \
     --vendor "Laker" \
@@ -118,6 +118,6 @@ fi
 
 # 完成提示
 echo "🎉 RPM 包打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"
-echo "📝 安装命令: sudo rpm -ivh ${OUTPUT_DIR}/easypostman-${VERSION}-1.x86_64.rpm"
-echo "📝 或使用: sudo yum install ${OUTPUT_DIR}/easypostman-${VERSION}-1.x86_64.rpm"
-echo "📝 卸载命令: sudo rpm -e easypostman"
+echo "📝 安装命令: sudo rpm -ivh ${OUTPUT_DIR}/EasyPostman-${VERSION}-1.x86_64.rpm"
+echo "📝 或使用: sudo yum install ${OUTPUT_DIR}/EasyPostman-${VERSION}-1.x86_64.rpm"
+echo "📝 卸载命令: sudo rpm -e EasyPostman"

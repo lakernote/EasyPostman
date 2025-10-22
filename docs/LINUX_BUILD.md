@@ -58,16 +58,16 @@ jpackage --version
 
 3. **生成的文件**
    ```
-   dist/easypostman_2.1.8_amd64.deb
+   dist/EasyPostman_3.0.4-1_amd64.deb
    ```
 
 4. **安装 DEB 包**
    ```bash
    # 推荐方式：使用 apt 安装（自动处理依赖）
-   sudo apt install ./dist/easypostman_2.1.8_amd64.deb
+   sudo apt install ./dist/EasyPostman_3.0.4-1_amd64.deb
    
    # 或者先用 dpkg 安装，再修复依赖
-   sudo dpkg -i dist/easypostman_2.1.8_amd64.deb
+   sudo dpkg -i dist/EasyPostman_3.0.4-1_amd64.deb
    sudo apt-get install -f
    
    # 卸载
@@ -89,23 +89,23 @@ jpackage --version
 
 3. **生成的文件**
    ```
-   dist/easypostman-2.1.8-1.x86_64.rpm
+   dist/EasyPostman-3.0.4-1.x86_64.rpm
    ```
 
 4. **安装 RPM 包**
    ```bash
    # 使用 rpm 安装
-   sudo rpm -ivh dist/easypostman-2.1.8-1.x86_64.rpm
+   sudo rpm -ivh dist/EasyPostMan-3.0.4-1.x86_64.rpm
    
    # 或使用 yum/dnf（会自动处理依赖）
-   sudo yum install dist/easypostman-2.1.8-1.x86_64.rpm
+   sudo yum install dist/EasyPostMan-3.0.4-1.x86_64.rpm
    # 或
-   sudo dnf install dist/easypostman-2.1.8-1.x86_64.rpm
+   sudo dnf install dist/EasyPostMan-3.0.4-1.x86_64.rpm
    
    # 卸载
-   sudo rpm -e easypostman
+   sudo rpm -e EasyPostMan
    # 或
-   sudo yum remove easypostman
+   sudo yum remove EasyPostMan
    ```
 
 ## 打包过程说明
@@ -237,12 +237,12 @@ objcopy --version
 ```bash
 # 方式 1：先安装依赖，再安装 DEB 包
 sudo apt-get install xdg-utils
-sudo dpkg -i dist/easypostman_2.1.8_amd64.deb
+sudo dpkg -i dist/EasyPostman_3.0.4-1_amd64.deb
 
 # 方式 2：使用 apt-get 自动处理依赖（推荐）
 sudo apt-get install -f
 # 这会自动安装缺失的依赖并完成 easypostman 的配置
 
 # 方式 3：使用 apt 直接安装（会自动处理依赖）
-sudo apt install ./dist/easypostman_2.1.8_amd64.deb
+sudo apt install ./dist/EasyPostman_3.0.4-1_amd64.deb
 ```

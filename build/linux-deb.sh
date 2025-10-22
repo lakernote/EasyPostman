@@ -96,7 +96,7 @@ jpackage \
     --main-class ${MAIN_CLASS} \
     --runtime-image target/runtime \
     --type deb \
-    --name "easypostman" \
+    --name "${APP_NAME}" \
     --app-version "${VERSION}" \
     --dest "${OUTPUT_DIR}" \
     --vendor "Laker" \
@@ -116,5 +116,6 @@ fi
 
 # 完成提示
 echo "🎉 DEB 包打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"
-echo "📝 安装命令: sudo dpkg -i ${OUTPUT_DIR}/easypostman_${VERSION}_amd64.deb"
+echo "📝 安装命令: sudo dpkg -i ${OUTPUT_DIR}/EasyPostman_${VERSION}-1_amd64.deb"
+echo "📝 或使用: sudo apt install ${OUTPUT_DIR}/EasyPostman_${VERSION}-1_amd64.deb"
 echo "📝 卸载命令: sudo dpkg -r easypostman"

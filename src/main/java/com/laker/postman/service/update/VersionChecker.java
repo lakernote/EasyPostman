@@ -1,6 +1,8 @@
 package com.laker.postman.service.update;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.util.I18nUtil;
@@ -21,6 +23,7 @@ import java.util.Scanner;
 public class VersionChecker {
 
     private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/latest";
+    private static final String OS_RELEASE_FILE = "/etc/os-release";
 
     /**
      * 检查更新信息
@@ -113,7 +116,19 @@ public class VersionChecker {
         }
 
         String osName = System.getProperty("os.name").toLowerCase();
-        String expectedExtension = osName.contains("win") ? ".msi" : ".dmg";
+        String expectedExtension;
+
+        if (osName.contains("win")) {
+            expectedExtension = ".msi";
+        } else if (osName.contains("mac")) {
+            expectedExtension = ".dmg";
+        } else if (osName.contains("linux")) {
+            // Linux 系统根据发行版选择包格式
+            expectedExtension = getLinuxPackageExtension();
+        } else {
+            log.warn("Unsupported OS: {}", osName);
+            return null;
+        }
 
         for (int i = 0; i < assets.size(); i++) {
             JSONObject asset = assets.getJSONObject(i);
@@ -124,6 +139,60 @@ public class VersionChecker {
         }
 
         return null;
+    }
+
+    /**
+     * 获取 Linux 包的扩展名（根据发行版判断）
+     */
+    private String getLinuxPackageExtension() {
+        try {
+            // 优先读取 /etc/os-release 文件判断发行版
+            if (FileUtil.exist(OS_RELEASE_FILE)) {
+                String content = FileUtil.readUtf8String(OS_RELEASE_FILE).toLowerCase();
+
+                // 检测 Red Hat 系列发行版
+                if (CharSequenceUtil.containsAny(content, "centos", "rhel", "fedora", "red hat")) {
+                    log.debug("Detected RPM-based Linux distribution");
+                    return ".rpm";
+                }
+
+                // 检测 Debian 系列发行版
+                if (CharSequenceUtil.containsAny(content, "ubuntu", "debian")) {
+                    log.debug("Detected DEB-based Linux distribution");
+                    return ".deb";
+                }
+            }
+
+            // 备用方案：检查包管理器命令是否存在
+            if (commandExists("dpkg")) {
+                log.debug("Detected dpkg command, using .deb");
+                return ".deb";
+            } else if (commandExists("rpm")) {
+                log.debug("Detected rpm command, using .rpm");
+                return ".rpm";
+            }
+
+        } catch (Exception e) {
+            log.debug("Failed to detect Linux distribution: {}", e.getMessage());
+        }
+
+        // 默认返回 .deb（Ubuntu/Debian 使用更广泛）
+        log.debug("Using default package format: .deb");
+        return ".deb";
+    }
+
+    /**
+     * 检查命令是否存在
+     */
+    private boolean commandExists(String command) {
+        try {
+            // 使用 Hutool 的 RuntimeUtil 执行命令
+            String result = RuntimeUtil.execForStr("which " + command);
+            return CharSequenceUtil.isNotBlank(result);
+        } catch (Exception e) {
+            log.debug("Command '{}' not found: {}", command, e.getMessage());
+            return false;
+        }
     }
 
     /**

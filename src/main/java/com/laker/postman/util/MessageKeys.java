@@ -1176,6 +1176,32 @@ public final class MessageKeys {
     public static final String TOOLBOX_UUID_VERSION_INFO = "toolbox.uuid.version_info";
     public static final String TOOLBOX_UUID_GENERATED = "toolbox.uuid.generated";
     public static final String TOOLBOX_UUID_BATCH_GENERATE = "toolbox.uuid.batch_generate";
+    public static final String TOOLBOX_UUID_VERSION = "toolbox.uuid.version";
+    public static final String TOOLBOX_UUID_SEPARATOR = "toolbox.uuid.separator";
+    public static final String TOOLBOX_UUID_SEPARATOR_NEWLINE = "toolbox.uuid.separator_newline";
+    public static final String TOOLBOX_UUID_SEPARATOR_COMMA = "toolbox.uuid.separator_comma";
+    public static final String TOOLBOX_UUID_SEPARATOR_SPACE = "toolbox.uuid.separator_space";
+    public static final String TOOLBOX_UUID_SEPARATOR_SEMICOLON = "toolbox.uuid.separator_semicolon";
+    public static final String TOOLBOX_UUID_COPY_ONE = "toolbox.uuid.copy_one";
+    public static final String TOOLBOX_UUID_EXPORT = "toolbox.uuid.export";
+    public static final String TOOLBOX_UUID_EXPORT_SUCCESS = "toolbox.uuid.export_success";
+    public static final String TOOLBOX_UUID_EXPORT_FAILED = "toolbox.uuid.export_failed";
+    public static final String TOOLBOX_UUID_EMPTY = "toolbox.uuid.empty";
+    public static final String TOOLBOX_UUID_PARSE = "toolbox.uuid.parse";
+    public static final String TOOLBOX_UUID_INPUT = "toolbox.uuid.input";
+    public static final String TOOLBOX_UUID_PARSE_EMPTY = "toolbox.uuid.parse_empty";
+    public static final String TOOLBOX_UUID_PARSE_INVALID = "toolbox.uuid.parse_invalid";
+    public static final String TOOLBOX_UUID_PARSE_RESULT = "toolbox.uuid.parse_result";
+    public static final String TOOLBOX_UUID_STANDARD_FORMAT = "toolbox.uuid.standard_format";
+    public static final String TOOLBOX_UUID_VARIANT = "toolbox.uuid.variant";
+    public static final String TOOLBOX_UUID_TIMESTAMP = "toolbox.uuid.timestamp";
+
+    public static final String TOOLBOX_UUID_NAMESPACE = "toolbox.uuid.namespace";
+    public static final String TOOLBOX_UUID_NAMESPACE_CUSTOM = "toolbox.uuid.namespace_custom";
+    public static final String TOOLBOX_UUID_NAMESPACE_HINT = "toolbox.uuid.namespace_hint";
+    public static final String TOOLBOX_UUID_NAME = "toolbox.uuid.name";
+    public static final String TOOLBOX_UUID_NAME_BASED = "toolbox.uuid.name_based";
+    public static final String TOOLBOX_UUID_NAME_BASED_DESC = "toolbox.uuid.name_based_desc";
 
     public static final String TOOLBOX_DIFF = "toolbox.diff";
     public static final String TOOLBOX_DIFF_ORIGINAL = "toolbox.diff.original";
@@ -1191,3 +1217,4 @@ public final class MessageKeys {
     public static final String TOOLBOX_CRON_NEXT_EXECUTIONS = "toolbox.cron.next_executions";
 
 }
+

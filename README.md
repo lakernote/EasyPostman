@@ -32,6 +32,7 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
     - 🌏 China Mirror: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
     - 🍏 Mac (Apple Silicon): EasyPostman-latest.dmg
     - 🪟 Windows: EasyPostman-latest.msi
+    - 🐧 Ubuntu: EasyPostman-latest.deb
 - 💬 WeChat: **lakernote**
 
 ---

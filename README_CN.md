@@ -30,6 +30,7 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
     - 🌏 国内镜像: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
     - 🍏 Mac(M芯): EasyPostman-最新版本.dmg
     - 🪟 Windows: EasyPostman-最新版本.msi
+    - 🐧 Ubuntu: EasyPostman-最新版本.deb
 - 💬 微信：**lakernote**
 
 ---

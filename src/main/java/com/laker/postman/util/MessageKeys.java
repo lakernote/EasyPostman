@@ -1167,6 +1167,15 @@ public final class MessageKeys {
 
     public static final String TOOLBOX_UUID = "toolbox.uuid";
     public static final String TOOLBOX_UUID_GENERATE = "toolbox.uuid.generate";
+    public static final String TOOLBOX_UUID_COUNT = "toolbox.uuid.count";
+    public static final String TOOLBOX_UUID_FORMAT = "toolbox.uuid.format";
+    public static final String TOOLBOX_UUID_UPPERCASE = "toolbox.uuid.uppercase";
+    public static final String TOOLBOX_UUID_LOWERCASE = "toolbox.uuid.lowercase";
+    public static final String TOOLBOX_UUID_WITH_HYPHENS = "toolbox.uuid.with_hyphens";
+    public static final String TOOLBOX_UUID_WITHOUT_HYPHENS = "toolbox.uuid.without_hyphens";
+    public static final String TOOLBOX_UUID_VERSION_INFO = "toolbox.uuid.version_info";
+    public static final String TOOLBOX_UUID_GENERATED = "toolbox.uuid.generated";
+    public static final String TOOLBOX_UUID_BATCH_GENERATE = "toolbox.uuid.batch_generate";
 
     public static final String TOOLBOX_DIFF = "toolbox.diff";
     public static final String TOOLBOX_DIFF_ORIGINAL = "toolbox.diff.original";

@@ -201,7 +201,7 @@ public class TimestampPanel extends JPanel {
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setRows(12);
-        resultArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        resultArea.setFont(EasyPostManFontUtil.getDefaultFont( Font.PLAIN, 12));
         resultArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JScrollPane scrollPane = new JScrollPane(resultArea);

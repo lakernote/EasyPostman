@@ -24,6 +24,7 @@ public class TimestampPanel extends JPanel {
     private JTextArea resultArea;
     private JComboBox<String> unitCombo;
     private Timer timer;
+    private JLabel currentLabel;
 
     public TimestampPanel() {
         initUI();
@@ -67,12 +68,12 @@ public class TimestampPanel extends JPanel {
         ));
 
         // 时间戳显示标签
-        JLabel currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
-        currentLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
-        currentLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
+        currentLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
+        currentLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 按钮面板
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
 
         JButton copyCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         copyCurrentBtn.addActionListener(e -> {
@@ -116,8 +117,7 @@ public class TimestampPanel extends JPanel {
         JPanel fieldPanel = new JPanel(new BorderLayout(5, 0));
         timestampField = new FlatTextField();
         timestampField.setPlaceholderText("1729468800000");
-        timestampField.setBackground(Color.WHITE);
-        timestampField.setPreferredSize(new Dimension(200, 32));
+        timestampField.setPreferredSize(new Dimension(300, 32));
 
         unitCombo = new JComboBox<>(new String[]{
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS),
@@ -150,7 +150,7 @@ public class TimestampPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
-                "Date to Timestamp"
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_TO_TIMESTAMP)
         ));
 
         // 输入区域
@@ -158,17 +158,16 @@ public class TimestampPanel extends JPanel {
 
         dateField = new FlatTextField();
         dateField.setPlaceholderText("2025-10-21 12:00:00");
-        dateField.setToolTipText("Format: yyyy-MM-dd HH:mm:ss");
-        dateField.setBackground(Color.WHITE);
-        dateField.setPreferredSize(new Dimension(200, 32));
+        dateField.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_FORMAT_HINT));
+        dateField.setPreferredSize(new Dimension(300, 32));
 
-        inputPanel.add(new JLabel("Date Input:"), BorderLayout.WEST);
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_INPUT) + ":"), BorderLayout.WEST);
         inputPanel.add(dateField, BorderLayout.CENTER);
 
         // 快速填充按钮
         JPanel quickBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        JButton nowBtn = new JButton("Now");
-        nowBtn.setToolTipText("Fill with current date time");
+        JButton nowBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_NOW_BUTTON));
+        nowBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_NOW_TOOLTIP));
         nowBtn.addActionListener(e -> {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             dateField.setText(sdf.format(new Date()));
@@ -179,7 +178,7 @@ public class TimestampPanel extends JPanel {
 
         // 转换按钮
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        JButton convertBtn = new JButton("🔄 To Timestamp");
+        JButton convertBtn = new JButton("🔄 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_TO_TIMESTAMP));
         convertBtn.addActionListener(e -> convertToTimestamp());
         btnPanel.add(convertBtn);
 
@@ -213,7 +212,7 @@ public class TimestampPanel extends JPanel {
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         copyBtn.addActionListener(e -> copyToClipboard());
 
-        JButton clearBtn = new JButton("Clear");
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CLEAR_BUTTON));
         clearBtn.addActionListener(e -> resultArea.setText(""));
 
         btnPanel.add(clearBtn);
@@ -252,21 +251,21 @@ public class TimestampPanel extends JPanel {
             SimpleDateFormat sdf3 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'");
 
             StringBuilder sb = new StringBuilder();
-            sb.append("📅 Formatted Dates:\n\n");
-            sb.append("Standard:    ").append(sdf.format(date)).append("\n");
-            sb.append("ISO 8601:    ").append(sdf2.format(date)).append("\n");
-            sb.append("HTTP Date:   ").append(sdf3.format(date)).append("\n\n");
-            sb.append("⏱️ Timestamps:\n\n");
-            sb.append("Milliseconds: ").append(timestamp).append("\n");
-            sb.append("Seconds:      ").append(timestamp / 1000).append("\n\n");
-            sb.append("📊 Additional Info:\n\n");
-            sb.append("Day of Week:  ").append(new SimpleDateFormat("EEEE").format(date)).append("\n");
-            sb.append("Week of Year: ").append(new SimpleDateFormat("w").format(date));
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_FORMATTED_DATES)).append(":\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_STANDARD)).append(":    ").append(sdf.format(date)).append("\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_ISO8601)).append(":    ").append(sdf2.format(date)).append("\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_HTTP_DATE)).append(":   ").append(sdf3.format(date)).append("\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TIMESTAMPS)).append(":\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS)).append(": ").append(timestamp).append("\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_SECONDS)).append(":      ").append(timestamp / 1000).append("\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_ADDITIONAL_INFO)).append(":\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DAY_OF_WEEK)).append(":  ").append(new SimpleDateFormat("EEEE").format(date)).append("\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_WEEK_OF_YEAR)).append(": ").append(new SimpleDateFormat("w").format(date));
 
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
             log.error("Timestamp conversion error", ex);
-            resultArea.setText("❌ Error: " + ex.getMessage());
+            resultArea.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_ERROR) + ": " + ex.getMessage());
         }
     }
 
@@ -283,17 +282,22 @@ public class TimestampPanel extends JPanel {
             long timestamp = date.getTime();
 
             StringBuilder sb = new StringBuilder();
-            sb.append("📅 Input Date:\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_INPUT_DATE)).append(":\n\n");
             sb.append(input).append("\n\n");
-            sb.append("⏱️ Timestamps:\n\n");
-            sb.append("Milliseconds: ").append(timestamp).append("\n");
-            sb.append("Seconds:      ").append(timestamp / 1000);
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TIMESTAMPS)).append(":\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS)).append(": ").append(timestamp).append("\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_SECONDS)).append(":      ").append(timestamp / 1000);
 
             resultArea.setText(sb.toString());
             timestampField.setText(String.valueOf(timestamp));
         } catch (ParseException ex) {
             log.error("Date parsing error", ex);
-            resultArea.setText("❌ Error: Invalid date format\n\nExpected format: yyyy-MM-dd HH:mm:ss\nExample: 2023-12-25 15:30:00");
+            StringBuilder sb = new StringBuilder();
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_ERROR)).append(": ");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_INVALID_DATE_FORMAT)).append("\n\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_EXPECTED_FORMAT)).append(": yyyy-MM-dd HH:mm:ss\n");
+            sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_EXAMPLE)).append(": 2023-12-25 15:30:00");
+            resultArea.setText(sb.toString());
         }
     }
 

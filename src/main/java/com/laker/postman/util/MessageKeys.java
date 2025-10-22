@@ -1145,6 +1145,25 @@ public final class MessageKeys {
     public static final String TOOLBOX_TIMESTAMP_MILLISECONDS = "toolbox.timestamp.milliseconds";
     public static final String TOOLBOX_TIMESTAMP_SECONDS = "toolbox.timestamp.seconds";
     public static final String TOOLBOX_TIMESTAMP_TO_DATE = "toolbox.timestamp.toDate";
+    public static final String TOOLBOX_TIMESTAMP_DATE_TO_TIMESTAMP = "toolbox.timestamp.dateToTimestamp";
+    public static final String TOOLBOX_TIMESTAMP_DATE_INPUT = "toolbox.timestamp.dateInput";
+    public static final String TOOLBOX_TIMESTAMP_DATE_FORMAT_HINT = "toolbox.timestamp.dateFormatHint";
+    public static final String TOOLBOX_TIMESTAMP_NOW_BUTTON = "toolbox.timestamp.nowButton";
+    public static final String TOOLBOX_TIMESTAMP_NOW_TOOLTIP = "toolbox.timestamp.nowTooltip";
+    public static final String TOOLBOX_TIMESTAMP_CLEAR_BUTTON = "toolbox.timestamp.clearButton";
+    public static final String TOOLBOX_TIMESTAMP_FORMATTED_DATES = "toolbox.timestamp.formattedDates";
+    public static final String TOOLBOX_TIMESTAMP_STANDARD = "toolbox.timestamp.standard";
+    public static final String TOOLBOX_TIMESTAMP_ISO8601 = "toolbox.timestamp.iso8601";
+    public static final String TOOLBOX_TIMESTAMP_HTTP_DATE = "toolbox.timestamp.httpDate";
+    public static final String TOOLBOX_TIMESTAMP_TIMESTAMPS = "toolbox.timestamp.timestamps";
+    public static final String TOOLBOX_TIMESTAMP_ADDITIONAL_INFO = "toolbox.timestamp.additionalInfo";
+    public static final String TOOLBOX_TIMESTAMP_DAY_OF_WEEK = "toolbox.timestamp.dayOfWeek";
+    public static final String TOOLBOX_TIMESTAMP_WEEK_OF_YEAR = "toolbox.timestamp.weekOfYear";
+    public static final String TOOLBOX_TIMESTAMP_ERROR = "toolbox.timestamp.error";
+    public static final String TOOLBOX_TIMESTAMP_INVALID_DATE_FORMAT = "toolbox.timestamp.invalidDateFormat";
+    public static final String TOOLBOX_TIMESTAMP_EXPECTED_FORMAT = "toolbox.timestamp.expectedFormat";
+    public static final String TOOLBOX_TIMESTAMP_EXAMPLE = "toolbox.timestamp.example";
+    public static final String TOOLBOX_TIMESTAMP_INPUT_DATE = "toolbox.timestamp.inputDate";
 
     public static final String TOOLBOX_UUID = "toolbox.uuid";
     public static final String TOOLBOX_UUID_GENERATE = "toolbox.uuid.generate";

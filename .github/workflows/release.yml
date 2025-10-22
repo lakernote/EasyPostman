@@ -356,36 +356,51 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
 
-      - name: Create or get Gitee Release（创建或获取 Gitee Release）
+      - name: Create Gitee Release（创建 Gitee Release）
         id: gitee_release
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           TAG_NAME="${{ steps.get_version.outputs.tag }}"
+          RELEASE_BODY="${{ github.event.release.body }}"
           
-          echo "Creating/Getting Gitee Release for tag: $TAG_NAME"
+          if [ -z "$RELEASE_BODY" ]; then
+            RELEASE_BODY="EasyPostman ${VERSION} 发布版本，支持 Windows、macOS 和 Linux。详情：https://github.com/lakernote/easy-postman"
+          fi
           
-          # 检查 Release 是否存在
-          RELEASE_URL="https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/tags/$TAG_NAME?access_token=${{ secrets.GITEE_TOKEN }}"
+          echo "Creating Gitee Release for tag: $TAG_NAME"
           
-          if curl -s -f "$RELEASE_URL" > /tmp/release.json; then
-            echo "Release already exists"
-            RELEASE_ID=$(cat /tmp/release.json | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
-          else
-            echo "Creating new release on Gitee..."
-            RELEASE_ID=$(curl -s -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"access_token\": \"${{ secrets.GITEE_TOKEN }}\",
-                \"tag_name\": \"$TAG_NAME\",
-                \"name\": \"EasyPostman $VERSION\",
-                \"body\": \"${{ github.event.release.body }}\",
-                \"prerelease\": false,
-                \"target_commitish\": \"master\"
-              }" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
+          curl -s -X POST \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "tag_name=$TAG_NAME" \
+            -F "name=EasyPostman $VERSION" \
+            -F "body=$RELEASE_BODY" \
+            -F "prerelease=false" \
+            -F "target_commitish=master" \
+            "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" > /tmp/release.json
+          
+          echo "API Response:"
+          cat /tmp/release.json
+          
+          # 优先使用 jq（GitHub Actions Ubuntu runner 预装）
+          RELEASE_ID=$(jq -r '.id // empty' /tmp/release.json 2>/dev/null || echo "")
+          
+          if [ -z "$RELEASE_ID" ]; then
+            echo "jq extraction failed, trying python3..."
+            RELEASE_ID=$(python3 -c "import sys, json; print(json.load(open('/tmp/release.json'))['id'])" 2>/dev/null || echo "")
+          fi
+          
+          if [ -z "$RELEASE_ID" ]; then
+            echo "python3 failed, trying grep..."
+            RELEASE_ID=$(grep -o '"id":[0-9]*' /tmp/release.json | head -1 | grep -o '[0-9]*')
+          fi
+          
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Error: Failed to create release or extract release ID"
+            exit 1
           fi
           
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
-          echo "Gitee Release ID: $RELEASE_ID"
+          echo "Gitee Release created successfully with ID: $RELEASE_ID"
 
       - name: Upload MSI to Gitee（上传 MSI 到 Gitee）
         run: |

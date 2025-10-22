@@ -127,6 +127,14 @@ jobs:
           path: dist/*.msi
           retention-days: 7  # 保留 7 天
 
+      - name: Upload MSI for Gitee sync（上传 MSI 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-msi
+          path: dist/*.msi
+          retention-days: 1
+
   build-macos:
     name: Build macOS Universal DMG（构建 macOS 通用版安装包）
     runs-on: macos-latest  # Apple Silicon (M1/M2/M3)
@@ -214,6 +222,14 @@ jobs:
           name: EasyPostman-macOS-DMG
           path: dist/*.dmg
           retention-days: 7  # 保留 7 天
+
+      - name: Upload DMG for Gitee sync（上传 DMG 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dmg
+          path: dist/*.dmg
+          retention-days: 1
 
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
@@ -311,3 +327,122 @@ jobs:
           name: EasyPostman-Ubuntu-DEB
           path: dist/*.deb
           retention-days: 7  # 保留 7 天
+
+      - name: Upload DEB for Gitee sync（上传 DEB 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-deb
+          path: dist/*.deb
+          retention-days: 1
+
+  sync-to-gitee:
+    name: Sync to Gitee Release（同步到 Gitee Release）
+    if: github.event_name == 'release'
+    needs: [build-windows, build-macos, build-ubuntu]  # 等待所有构建完成
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all release artifacts（下载所有发布产物）
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Get version from tag（从标签获取版本号）
+        id: get_version
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除 v 前缀
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create or get Gitee Release（创建或获取 Gitee Release）
+        id: gitee_release
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG_NAME="${{ steps.get_version.outputs.tag }}"
+          
+          echo "Creating/Getting Gitee Release for tag: $TAG_NAME"
+          
+          # 检查 Release 是否存在
+          RELEASE_URL="https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/tags/$TAG_NAME?access_token=${{ secrets.GITEE_TOKEN }}"
+          
+          if curl -s -f "$RELEASE_URL" > /tmp/release.json; then
+            echo "Release already exists"
+            RELEASE_ID=$(cat /tmp/release.json | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
+          else
+            echo "Creating new release on Gitee..."
+            RELEASE_ID=$(curl -s -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"access_token\": \"${{ secrets.GITEE_TOKEN }}\",
+                \"tag_name\": \"$TAG_NAME\",
+                \"name\": \"EasyPostman $VERSION\",
+                \"body\": \"${{ github.event.release.body }}\",
+                \"prerelease\": false,
+                \"target_commitish\": \"master\"
+              }" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
+          fi
+          
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+          echo "Gitee Release ID: $RELEASE_ID"
+
+      - name: Upload MSI to Gitee（上传 MSI 到 Gitee）
+        run: |
+          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
+          MSI_FILE=$(find artifacts/release-msi -name "*.msi" | head -n 1)
+          
+          if [ -z "$MSI_FILE" ]; then
+            echo "⚠️ MSI file not found, skipping..."
+            exit 0
+          fi
+          
+          echo "📦 Uploading $(basename $MSI_FILE) to Gitee..."
+          
+          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "file=@$MSI_FILE"
+          
+          echo "✅ MSI uploaded successfully!"
+
+      - name: Upload DMG to Gitee（上传 DMG 到 Gitee）
+        run: |
+          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
+          DMG_FILE=$(find artifacts/release-dmg -name "*.dmg" | head -n 1)
+          
+          if [ -z "$DMG_FILE" ]; then
+            echo "⚠️ DMG file not found, skipping..."
+            exit 0
+          fi
+          
+          echo "📦 Uploading $(basename $DMG_FILE) to Gitee..."
+          
+          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "file=@$DMG_FILE"
+          
+          echo "✅ DMG uploaded successfully!"
+
+      - name: Upload DEB to Gitee（上传 DEB 到 Gitee）
+        run: |
+          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
+          DEB_FILE=$(find artifacts/release-deb -name "*.deb" | head -n 1)
+          
+          if [ -z "$DEB_FILE" ]; then
+            echo "⚠️ DEB file not found, skipping..."
+            exit 0
+          fi
+          
+          echo "📦 Uploading $(basename $DEB_FILE) to Gitee..."
+          
+          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "file=@$DEB_FILE"
+          
+          echo "✅ DEB uploaded successfully!"
+
+      - name: Summary（汇总）
+        run: |
+          echo "🎉 All packages have been synced to Gitee Release!"
+          echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ steps.get_version.outputs.tag }}"
+

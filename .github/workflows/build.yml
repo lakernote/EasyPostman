@@ -1,0 +1,286 @@
+name: Release Build（发布构建）
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [created]  # 当创建新的 Release 时触发
+  workflow_dispatch: {}  # 支持手动触发
+
+jobs:
+  build-windows:
+    name: Build Windows MSI（构建 Windows 安装包）
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Install WiX (for jpackage)（安装 WiX 工具集，用于创建 MSI）
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y
+          if (Get-Command refreshenv -ErrorAction SilentlyContinue) { 
+            refreshenv 
+          } else {
+            $refreshScript = "$env:ChocolateyInstall\lib\refreshenv\tools\RefreshEnv.ps1"
+            if (Test-Path $refreshScript) { & $refreshScript }
+          }
+
+      - name: Get version from pom.xml（从 pom.xml 提取版本号）
+        id: get_version
+        shell: pwsh
+        run: |
+          [xml]$pom = Get-Content 'pom.xml'
+          $version = $pom.project.version
+          Write-Host "Version: $version"
+          "version=$version" | Out-File -Encoding utf8 -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Build with Maven（使用 Maven 构建项目）
+        shell: pwsh
+        run: |
+          mvn -B clean package -DskipTests
+
+      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+        shell: pwsh
+        run: |
+          $runtimeDir = "target\runtime"
+          if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
+          
+          # 创建包含必要模块的精简运行时环境
+          jlink `
+            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki `
+            --strip-debug `
+            --no-header-files `
+            --no-man-pages `
+            --compress=2 `
+            --output $runtimeDir
+
+      - name: Prepare dist-input（准备打包输入目录）
+        shell: pwsh
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          $jarName = "easy-postman-$version.jar"
+          
+          $distInputDir = "target\dist-input"
+          if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
+          New-Item -ItemType Directory -Path $distInputDir | Out-Null
+          
+          Copy-Item "target\$jarName" -Destination $distInputDir
+
+      - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
+        shell: pwsh
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          $jarName = "easy-postman-$version.jar"
+          $outDir = "dist"
+          
+          if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+          
+          # 创建 Windows MSI 安装包
+          jpackage `
+            --type msi `
+            --input target\dist-input `
+            --main-jar $jarName `
+            --main-class com.laker.postman.App `
+            --runtime-image target\runtime `
+            --dest $outDir `
+            --icon assets\win\EasyPostman.ico `
+            --name EasyPostman `
+            --app-version $version `
+            --vendor "Laker" `
+            --copyright "© 2025 Laker" `
+            --win-shortcut `
+            --win-menu `
+            --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" `
+            --win-dir-chooser `
+            --win-per-user-install `
+            --win-menu-group "EasyTools" `
+            --win-help-url "https://gitee.com/lakernote/easy-postman" `
+            --java-options "-Xms256m" `
+            --java-options "-Xmx512m" `
+            --java-options "-Dfile.encoding=UTF-8" `
+            --java-options "-Djavax.accessibility.assistive_technologies="
+
+      - name: Upload to Release（上传到 GitHub Release）
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.msi
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    name: Build macOS Universal DMG（构建 macOS 通用版安装包）
+    runs-on: macos-latest  # Apple Silicon (M1/M2/M3)
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Get version from pom.xml（从 pom.xml 提取版本号）
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build with Maven（使用 Maven 构建项目）
+        run: |
+          mvn -B clean package -DskipTests
+
+      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+        run: |
+          rm -rf target/runtime
+          # 创建包含必要模块的精简运行时环境
+          jlink \
+            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+
+      - name: Prepare dist-input（准备打包输入目录）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          JAR_NAME="easy-postman-$VERSION.jar"
+          
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          cp target/$JAR_NAME target/dist-input/
+
+      - name: Create DMG with jpackage（使用 jpackage 创建 DMG 镜像）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          JAR_NAME="easy-postman-$VERSION.jar"
+          
+          mkdir -p dist
+          
+          # 创建 macOS Universal Binary DMG（同时支持 Intel 和 Apple Silicon）
+          jpackage \
+            --input target/dist-input \
+            --main-jar $JAR_NAME \
+            --main-class com.laker.postman.App \
+            --runtime-image target/runtime \
+            --type dmg \
+            --name "EasyPostman" \
+            --app-version "$VERSION" \
+            --dest dist \
+            --icon assets/mac/EasyPostman.icns \
+            --vendor "Laker" \
+            --copyright "© 2025 Laker" \
+            --java-options "-Xms256m" \
+            --java-options "-Xmx512m" \
+            --java-options "-Dfile.encoding=UTF-8"
+
+      - name: Upload to Release（上传到 GitHub Release）
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-ubuntu:
+    name: Build Ubuntu DEB（构建 Ubuntu 安装包）
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Install dependencies（安装系统依赖）
+        run: |
+          sudo apt-get update
+          # 安装 GTK3、WebKit 和打包工具
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev binutils
+
+      - name: Get version from pom.xml（从 pom.xml 提取版本号）
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build with Maven（使用 Maven 构建项目）
+        run: |
+          mvn -B clean package -DskipTests
+
+      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+        run: |
+          rm -rf target/runtime
+          # 创建包含必要模块的精简运行时环境
+          jlink \
+            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+
+      - name: Prepare dist-input（准备打包输入目录）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          JAR_NAME="easy-postman-$VERSION.jar"
+          
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          cp target/$JAR_NAME target/dist-input/
+
+      - name: Create DEB with jpackage（使用 jpackage 创建 DEB 安装包）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          JAR_NAME="easy-postman-$VERSION.jar"
+          
+          mkdir -p dist
+          
+          # 创建 Ubuntu/Debian DEB 安装包
+          jpackage \
+            --input target/dist-input \
+            --main-jar $JAR_NAME \
+            --main-class com.laker.postman.App \
+            --runtime-image target/runtime \
+            --type deb \
+            --name "easypostman" \
+            --app-version "$VERSION" \
+            --dest dist \
+            --vendor "Laker" \
+            --copyright "© 2025 Laker" \
+            --description "A modern API testing tool similar to Postman" \
+            --linux-shortcut \
+            --linux-menu-group "Development" \
+            --linux-app-category "Development" \
+            --java-options "-Xms256m" \
+            --java-options "-Xmx512m" \
+            --java-options "-Dfile.encoding=UTF-8"
+
+      - name: Upload to Release（上传到 GitHub Release）
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.deb
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

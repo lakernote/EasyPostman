@@ -11,7 +11,6 @@ import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EasyPostManFontUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.JComponentUtils;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -33,6 +32,16 @@ public class HistoryPanel extends SingletonBasePanel {
     private JTextPane timingPane;
     private JTextPane eventPane;
     private DefaultListModel<Object> historyListModel;
+
+    // 缓存当前选中的项，避免重复渲染
+    private RequestHistoryItem currentSelectedItem = null;
+    // 标记是否正在更新，避免递归
+    private volatile boolean isUpdating = false;
+    // 缓存日期格式化器
+    private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    // 缓存今天和昨天的时间戳
+    private long todayStartCache = 0;
+    private long yesterdayStartCache = 0;
 
     @Override
     protected void initUI() {
@@ -63,25 +72,10 @@ public class HistoryPanel extends SingletonBasePanel {
         // 历史列表
         historyListModel = new DefaultListModel<>();
         historyList = new JList<>(historyListModel);
-        historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        historyList.setCellRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof String dateStr) {
-                    label.setText(dateStr);
-                    label.setFont(label.getFont().deriveFont(Font.BOLD));
-                } else if (value instanceof RequestHistoryItem item) {
-                    label.setText(JComponentUtils.ellipsisText(String.format(" [%s] %s", item.method, item.url), list, 0, 45));
-                    label.setFont(label.getFont().deriveFont(Font.PLAIN));
-                }
-                if (isSelected && value instanceof RequestHistoryItem) {
-                    label.setFont(label.getFont().deriveFont(Font.BOLD));
-                    label.setBackground(new Color(180, 215, 255));
-                }
-                return label;
-            }
-        });
+        historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);// 优化：设置固定行高，提升渲染性能
+        historyList.setFixedCellHeight(24);
+        // 使用缓存的 Renderer
+        historyList.setCellRenderer(new OptimizedHistoryListCellRenderer());
         JScrollPane listScroll = new JScrollPane(historyList);
         listScroll.setPreferredSize(new Dimension(220, 240));
         listScroll.setMinimumSize(new Dimension(220, 240));
@@ -125,10 +119,42 @@ public class HistoryPanel extends SingletonBasePanel {
         add(split, BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
 
-        // 加载持久化的历史记录
-        loadPersistedHistory();
+        // 异步加载持久化的历史记录，避免阻塞UI
+        SwingUtilities.invokeLater(this::loadPersistedHistory);
+    }
 
-        SwingUtilities.invokeLater(() -> historyList.repaint());
+    /**
+     * 优化的列表单元格渲染器 - 极简版，最大化性能
+     */
+    private static class OptimizedHistoryListCellRenderer extends DefaultListCellRenderer {
+        private final Font boldFont;
+        private final Font plainFont;
+        private final Color selectedBackground = new Color(180, 215, 255);
+
+        public OptimizedHistoryListCellRenderer() {
+            Font baseFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
+            boldFont = baseFont.deriveFont(Font.BOLD);
+            plainFont = baseFont.deriveFont(Font.PLAIN);
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+            if (value instanceof String dateStr) {
+                label.setText(dateStr);
+                label.setFont(boldFont);
+            } else if (value instanceof RequestHistoryItem item) {
+                // 直接显示，不做任何截断处理
+                label.setText(String.format(" [%s] %s", item.method, item.url));
+                label.setFont(isSelected ? boldFont : plainFont);
+
+                if (isSelected) {
+                    label.setBackground(selectedBackground);
+                }
+            }
+            return label;
+        }
     }
 
     /**
@@ -151,10 +177,11 @@ public class HistoryPanel extends SingletonBasePanel {
         responsePane.setText(EMPTY_BODY_HTML);
         timingPane.setText(EMPTY_BODY_HTML);
         eventPane.setText(EMPTY_BODY_HTML);
+        currentSelectedItem = null;
     }
 
     /**
-     * 更新详情面板内容
+     * 更新详情面板内容（优化：延迟渲染，避免卡顿）
      */
     private void updateDetailPanes(RequestHistoryItem item) {
         if (item == null) {
@@ -162,42 +189,68 @@ public class HistoryPanel extends SingletonBasePanel {
             return;
         }
 
-        // 更新各个标签页内容
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // 请求标签页
-                requestPane.setText(HttpHtmlRenderer.renderRequest(item.request));
-                requestPane.setCaretPosition(0);
+        // 如果已经是当前选中的项，不重复渲染
+        if (item == currentSelectedItem) {
+            return;
+        }
 
-                // 响应标签页
-                responsePane.setText(HttpHtmlRenderer.renderResponse(item.response));
-                responsePane.setCaretPosition(0);
+        currentSelectedItem = item;
 
-                // 时序标签页
-                timingPane.setText(HttpHtmlRenderer.renderTimingInfo(item.response));
-                timingPane.setCaretPosition(0);
-
-                // 事件标签页
-                eventPane.setText(HttpHtmlRenderer.renderEventInfo(item.response));
-                eventPane.setCaretPosition(0);
-            } catch (Exception e) {
-                // 如果渲染失败，显示错误信息
-                String errorHtml = "<html><body style='font-family:monospace;font-size:9px;'>" +
-                        "<div style='color:#d32f2f;'>渲染详情时出错: " + e.getMessage() + "</div>" +
-                        "</body></html>";
-                requestPane.setText(errorHtml);
-                responsePane.setText(errorHtml);
-                timingPane.setText(errorHtml);
-                eventPane.setText(errorHtml);
+        // 优化：在后台线程渲染HTML，避免阻塞UI
+        SwingWorker<Map<String, String>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Map<String, String> doInBackground() {
+                Map<String, String> htmlMap = new HashMap<>();
+                try {
+                    htmlMap.put("request", HttpHtmlRenderer.renderRequest(item.request));
+                    htmlMap.put("response", HttpHtmlRenderer.renderResponse(item.response));
+                    htmlMap.put("timing", HttpHtmlRenderer.renderTimingInfo(item.response));
+                    htmlMap.put("event", HttpHtmlRenderer.renderEventInfo(item.response));
+                } catch (Exception e) {
+                    String errorHtml = "<html><body style='font-family:monospace;font-size:9px;'>" +
+                            "<div style='color:#d32f2f;'>渲染详情时出错: " + e.getMessage() + "</div>" +
+                            "</body></html>";
+                    htmlMap.put("error", errorHtml);
+                }
+                return htmlMap;
             }
-        });
+
+            @Override
+            protected void done() {
+                try {
+                    Map<String, String> htmlMap = get();
+                    if (htmlMap.containsKey("error")) {
+                        String errorHtml = htmlMap.get("error");
+                        requestPane.setText(errorHtml);
+                        responsePane.setText(errorHtml);
+                        timingPane.setText(errorHtml);
+                        eventPane.setText(errorHtml);
+                    } else {
+                        requestPane.setText(htmlMap.get("request"));
+                        requestPane.setCaretPosition(0);
+
+                        responsePane.setText(htmlMap.get("response"));
+                        responsePane.setCaretPosition(0);
+
+                        timingPane.setText(htmlMap.get("timing"));
+                        timingPane.setCaretPosition(0);
+
+                        eventPane.setText(htmlMap.get("event"));
+                        eventPane.setCaretPosition(0);
+                    }
+                } catch (Exception e) {
+                    // Ignore if cancelled or interrupted
+                }
+            }
+        };
+        worker.execute();
     }
 
     @Override
     protected void registerListeners() {
         // 监听列表选择变化
         historyList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
+            if (!e.getValueIsAdjusting() && !isUpdating) {
                 int idx = historyList.getSelectedIndex();
                 if (idx == -1) {
                     clearDetailPanes();
@@ -231,18 +284,85 @@ public class HistoryPanel extends SingletonBasePanel {
         // 添加到持久化管理器
         HistoryPersistenceManager.getInstance().addHistory(req, resp, requestTime);
 
-        // 添加到UI列表
-        RequestHistoryItem item = new RequestHistoryItem(req, resp, requestTime);
+        // 优化：增量更新UI，而不是完全重新加载
+        RequestHistoryItem newItem = new RequestHistoryItem(req, resp, requestTime);
         if (historyListModel != null) {
-            historyListModel.add(0, item);
+            isUpdating = true;
+            try {
+                // 检查是否需要添加新的日期分组
+                String groupLabel = getDateGroupLabel(requestTime);
+                int insertIndex = 0;
 
-            // 限制UI显示的历史记录数量
-            int maxCount = SettingManager.getMaxHistoryCount();
-            while (historyListModel.size() > maxCount) {
-                historyListModel.remove(historyListModel.size() - 1);
+                // 如果列表为空或第一个元素不是今天的分组，需要添加分组标题
+                if (historyListModel.isEmpty() || !historyListModel.get(0).equals(groupLabel)) {
+                    historyListModel.add(0, groupLabel);
+                    insertIndex = 1;
+                } else {
+                    insertIndex = 1; // 插入到分组标题后
+                }
+
+                historyListModel.add(insertIndex, newItem);
+
+                // 限制UI显示的历史记录数量
+                int maxCount = SettingManager.getMaxHistoryCount();
+                int itemCount = 0;
+                for (int i = 0; i < historyListModel.size(); i++) {
+                    if (historyListModel.get(i) instanceof RequestHistoryItem) {
+                        itemCount++;
+                    }
+                }
+
+                // 如果超过最大数量，移除最旧的记录
+                while (itemCount > maxCount) {
+                    for (int i = historyListModel.size() - 1; i >= 0; i--) {
+                        if (historyListModel.get(i) instanceof RequestHistoryItem) {
+                            historyListModel.remove(i);
+                            itemCount--;
+                            // 检查是否需要移除空的日期分组
+                            if (i > 0 && i == historyListModel.size() &&
+                                    historyListModel.get(i - 1) instanceof String) {
+                                historyListModel.remove(i - 1);
+                            }
+                            break;
+                        }
+                    }
+                }
+            } finally {
+                isUpdating = false;
             }
         }
-        loadPersistedHistory(); // 重新分组刷新
+    }
+
+    /**
+     * 获取日期分组标签（带缓存优化）
+     */
+    private String getDateGroupLabel(long timestamp) {
+        updateDateCache();
+
+        if (timestamp >= todayStartCache) {
+            return I18nUtil.getMessage(MessageKeys.HISTORY_TODAY);
+        } else if (timestamp >= yesterdayStartCache) {
+            return I18nUtil.getMessage(MessageKeys.HISTORY_YESTERDAY);
+        } else {
+            return dateFormatter.format(new Date(timestamp));
+        }
+    }
+
+    /**
+     * 更新日期缓存（每小时更新一次）
+     */
+    private void updateDateCache() {
+        long now = System.currentTimeMillis();
+        // 如果缓存的今天时间戳是0或者已经过了今天，重新计算
+        if (todayStartCache == 0 || now >= todayStartCache + 24 * 60 * 60 * 1000L) {
+            Calendar today = Calendar.getInstance();
+            today.set(Calendar.HOUR_OF_DAY, 0);
+            today.set(Calendar.MINUTE, 0);
+            today.set(Calendar.SECOND, 0);
+            today.set(Calendar.MILLISECOND, 0);
+            todayStartCache = today.getTimeInMillis();
+            yesterdayStartCache = todayStartCache - 24 * 60 * 60 * 1000L;
+        }
     }
 
     private void clearRequestHistory() {
@@ -250,48 +370,68 @@ public class HistoryPanel extends SingletonBasePanel {
         HistoryPersistenceManager.getInstance().clearHistory();
 
         // 清空UI列表
-        historyListModel.clear();
-        clearDetailPanes();
+        isUpdating = true;
+        try {
+            historyListModel.clear();
+            clearDetailPanes();
+        } finally {
+            isUpdating = false;
+        }
         historyDetailPanel.setVisible(true);
     }
 
     /**
-     * 加载持久化的历史记录
+     * 加载持久化的历史记录（优化：异步加载）
      */
     private void loadPersistedHistory() {
         if (historyListModel == null) {
             return;
         }
-        List<RequestHistoryItem> persistedHistory = HistoryPersistenceManager.getInstance().getHistory();
-        historyListModel.clear();
-        // 按天分组，支持 Today/Yesterday/日期
-        Map<String, List<RequestHistoryItem>> dayMap = new LinkedHashMap<>();
-        SimpleDateFormat showFmt = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar today = Calendar.getInstance();
-        today.set(Calendar.HOUR_OF_DAY, 0);
-        today.set(Calendar.MINUTE, 0);
-        today.set(Calendar.SECOND, 0);
-        today.set(Calendar.MILLISECOND, 0);
-        long todayStart = today.getTimeInMillis();
-        long yesterdayStart = todayStart - 24 * 60 * 60 * 1000L;
-        for (RequestHistoryItem item : persistedHistory) {
-            long t = item.requestTime;
-            String groupLabel;
-            if (t >= todayStart) {
-                groupLabel = I18nUtil.getMessage(MessageKeys.HISTORY_TODAY);
-            } else if (t >= yesterdayStart) {
-                groupLabel = I18nUtil.getMessage(MessageKeys.HISTORY_YESTERDAY);
-            } else {
-                groupLabel = showFmt.format(new java.util.Date(t));
+
+        // 在后台线程加载和分组数据
+        SwingWorker<List<Object>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Object> doInBackground() {
+                List<RequestHistoryItem> persistedHistory = HistoryPersistenceManager.getInstance().getHistory();
+                List<Object> result = new ArrayList<>();
+
+                // 按天分组
+                Map<String, List<RequestHistoryItem>> dayMap = new LinkedHashMap<>();
+                updateDateCache();
+
+                for (RequestHistoryItem item : persistedHistory) {
+                    String groupLabel = getDateGroupLabel(item.requestTime);
+                    dayMap.computeIfAbsent(groupLabel, k -> new ArrayList<>()).add(item);
+                }
+
+                // 构建显示列表
+                for (Map.Entry<String, List<RequestHistoryItem>> entry : dayMap.entrySet()) {
+                    result.add(entry.getKey()); // 日期分组标题
+                    result.addAll(entry.getValue());
+                }
+
+                return result;
             }
-            dayMap.computeIfAbsent(groupLabel, k -> new ArrayList<>()).add(item);
-        }
-        for (Map.Entry<String, List<RequestHistoryItem>> entry : dayMap.entrySet()) {
-            historyListModel.addElement(entry.getKey()); // 日期分组标题
-            for (RequestHistoryItem item : entry.getValue()) {
-                historyListModel.addElement(item);
+
+            @Override
+            protected void done() {
+                try {
+                    List<Object> items = get();
+                    isUpdating = true;
+                    try {
+                        historyListModel.clear();
+                        for (Object item : items) {
+                            historyListModel.addElement(item);
+                        }
+                    } finally {
+                        isUpdating = false;
+                    }
+                } catch (Exception e) {
+                    // Ignore if cancelled or interrupted
+                }
             }
-        }
+        };
+        worker.execute();
     }
 
     /**

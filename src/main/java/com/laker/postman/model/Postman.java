@@ -21,14 +21,16 @@ public class Postman {
         this.env = environment; // Postman 中 env 和 environment 是同一个对象
     }
 
+    // Postman 脚本中的 pm.environment.set(key, value)
     public void setEnvironmentVariable(String key, String value) {
-        environment.addVariable(key, value);
+        environment.set(key, value);
     }
 
     /**
      * 重载setEnvironmentVariable方法，支持Object类型参数
      * 解决JavaScript中传入数字等非String类型的问题
      */
+    // Postman 脚本中的 pm.environment.set(key, value)
     public void setEnvironmentVariable(String key, Object value) {
         if (value != null) {
             environment.set(key, String.valueOf(value));

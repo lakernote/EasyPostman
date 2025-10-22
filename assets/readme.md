@@ -5,3 +5,4 @@
 - https://www.svgrepo.com/
 - https://freesvgicons.com/search?q=http
 - https://flowbite.com/icons/
+- https://gitee.com/api/v5/swagger

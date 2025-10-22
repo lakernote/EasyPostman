@@ -38,6 +38,7 @@ public class VersionChecker {
             }
 
             String latestVersion = releaseInfo.getStr("tag_name");
+            log.info("Current version: {}, Gitee latest version: {}", currentVersion, latestVersion);
             if (latestVersion == null) {
                 return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_NO_VERSION_INFO));
             }
@@ -112,6 +113,7 @@ public class VersionChecker {
 
         JSONArray assets = releaseInfo.getJSONArray("assets");
         if (assets == null || assets.isEmpty()) {
+            log.info("Release assets is empty");
             return null;
         }
 

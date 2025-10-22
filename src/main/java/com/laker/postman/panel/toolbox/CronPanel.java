@@ -405,10 +405,6 @@ public class CronPanel extends JPanel {
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(text), null);
-            JOptionPane.showMessageDialog(this,
-                    "Copied: " + text,
-                    I18nUtil.getMessage(MessageKeys.TIP),
-                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

@@ -189,10 +189,6 @@ public class DiffPanel extends JPanel {
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(text), null);
-            JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                    I18nUtil.getMessage(MessageKeys.TIP),
-                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

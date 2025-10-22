@@ -79,10 +79,6 @@ public class TimestampPanel extends JPanel {
         copyCurrentBtn.addActionListener(e -> {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(currentLabel.getText()), null);
-            JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage(MessageKeys.SUCCESS),
-                    I18nUtil.getMessage(MessageKeys.TIP),
-                    JOptionPane.INFORMATION_MESSAGE);
         });
 
         JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
@@ -201,7 +197,7 @@ public class TimestampPanel extends JPanel {
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setRows(12);
-        resultArea.setFont(EasyPostManFontUtil.getDefaultFont( Font.PLAIN, 12));
+        resultArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
         resultArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JScrollPane scrollPane = new JScrollPane(resultArea);
@@ -306,10 +302,6 @@ public class TimestampPanel extends JPanel {
         if (!text.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(text), null);
-            JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage(MessageKeys.BUTTON_COPY) + " " + I18nUtil.getMessage(MessageKeys.SUCCESS),
-                    I18nUtil.getMessage(MessageKeys.TIP),
-                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 }

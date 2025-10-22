@@ -372,7 +372,7 @@ jobs:
           curl -s -X POST \
             -F "access_token=${{ secrets.GITEE_TOKEN }}" \
             -F "tag_name=$TAG_NAME" \
-            -F "name=EasyPostman $VERSION" \
+            -F "name=$TAG_NAME" \
             -F "body=$RELEASE_BODY" \
             -F "prerelease=false" \
             -F "target_commitish=master" \

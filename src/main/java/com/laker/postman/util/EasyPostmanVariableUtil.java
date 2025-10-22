@@ -4,12 +4,12 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.EnvironmentService;
 
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.security.MessageDigest;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,17 +57,12 @@ public class EasyPostmanVariableUtil {
 
     public static boolean isVariableDefined(String varName) {
         if (varName == null) return false;
-        if (EnvironmentService.getTemporaryVariable(varName) != null) {
-            return true;
-        }
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
         return activeEnv != null && activeEnv.getVariable(varName) != null;
     }
 
     public static String getVariableValue(String varName) {
         if (varName == null) return null;
-        Object temp = EnvironmentService.getTemporaryVariable(varName);
-        if (temp != null) return temp.toString();
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
         if (activeEnv != null && activeEnv.getVariable(varName) != null) {
             Object v = activeEnv.getVariable(varName);

@@ -28,7 +28,8 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
-- 📦 **Download**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+- 📦 **Download**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
+    - 🌏 China Mirror: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
     - 🍏 Mac (Apple Silicon): EasyPostman-latest.dmg
     - 🪟 Windows: EasyPostman-latest.msi
 - 💬 WeChat: **lakernote**

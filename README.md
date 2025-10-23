@@ -384,7 +384,7 @@ If you find this project helpful, please:
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=Date)](https://star-history.com/#lakernote/easy-postman&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=date&legend=top-left)](https://www.star-history.com/#lakernote/easy-postman&type=date&legend=top-left)
 
 ---
 

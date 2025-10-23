@@ -381,7 +381,7 @@ A: 可以！通过 Git 工作区功能，你可以在不同设备上克隆同一
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=Date)](https://star-history.com/#lakernote/easy-postman&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=date&legend=top-left)](https://www.star-history.com/#lakernote/easy-postman&type=date&legend=top-left)
 
 ---
 

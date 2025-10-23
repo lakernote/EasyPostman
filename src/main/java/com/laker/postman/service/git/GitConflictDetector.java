@@ -43,6 +43,9 @@ public class GitConflictDetector {
 
     private static final String REFS_HEADS_PREFIX = "refs/heads/";
 
+    // Git 操作超时时间（秒）- 与 WorkspaceService 保持一致
+    private static final int GIT_OPERATION_TIMEOUT = 10;
+
     private GitConflictDetector() {
         // 工具类，隐藏构造函数
     }
@@ -162,6 +165,7 @@ public class GitConflictDetector {
             boolean fetchSuccess = false;
             try {
                 var fetchCommand = git.fetch().setDryRun(false);
+                fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
                 // 设置认证信息 - 支持SSH和其他认证方式
                 if (sshCredentialsProvider != null) {
                     fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
@@ -426,6 +430,7 @@ public class GitConflictDetector {
                 ObjectId remoteId = null;
                 try {
                     var fetchCommand = git.fetch().setDryRun(true);
+                    fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
                     if (sshCredentialsProvider != null) {
                         fetchCommand.setTransportConfigCallback(sshCredentialsProvider);
                     } else if (credentialsProvider != null) {
@@ -468,6 +473,7 @@ public class GitConflictDetector {
             try {
                 // 尝试获取远程分支信息（不会修改工作区）
                 var fetchCommand = git.fetch().setDryRun(true);
+                fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
 
                 // 设置认证信息 - 支持SSH和其他认证方式
                 if (sshCredentialsProvider != null) {

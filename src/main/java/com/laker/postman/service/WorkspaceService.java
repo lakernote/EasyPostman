@@ -39,6 +39,9 @@ public class WorkspaceService {
 
     private static final String WORKSPACE_NOT_FOUND_MSG = "Workspace not found: ";
 
+    // Git 操作超时时间（秒）
+    private static final int GIT_OPERATION_TIMEOUT = 10; // 10 秒超时
+
     private static WorkspaceService instance;
     private List<Workspace> workspaces = new ArrayList<>();
     @Getter
@@ -142,6 +145,7 @@ public class WorkspaceService {
         CloneCommand cloneCommand = Git.cloneRepository()
                 .setURI(workspace.getGitRemoteUrl())
                 .setDirectory(new File(workspace.getPath()));
+        cloneCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
 
         // 如果用户指定了特定的分支，设置分支名称
         if (workspace.getCurrentBranch() != null && !workspace.getCurrentBranch().isEmpty()) {
@@ -468,6 +472,7 @@ public class WorkspaceService {
                 try {
                     // 先尝试 fetch 来检查远程是否有内容
                     var fetchCommand = git.fetch();
+                    fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
                     UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
                     SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
 
@@ -541,6 +546,7 @@ public class WorkspaceService {
 
             try {
                 var pullCommand = git.pull();
+                pullCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
                 // 设置自动merge策略，优先使用远程版本解决冲突
                 pullCommand.setStrategy(MergeStrategy.RECURSIVE);
 
@@ -655,6 +661,7 @@ public class WorkspaceService {
             try {
                 // 先 fetch 最新的远程信息
                 var fetchCommand = git.fetch();
+                fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
 
                 SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
 
@@ -751,6 +758,7 @@ public class WorkspaceService {
             var pushCommand = git.push()
                     .setRemote(remoteName)
                     .add(currentBranch + ":" + remoteBranchName); // 明确指定本地分支推送到远程分支
+            pushCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
             SshCredentialsProvider sshCredentialsProvider = getSshCredentialsProvider(workspace);
             // 设置认证信息 - 支持SSH
             if (credentialsProvider != null) {
@@ -832,6 +840,7 @@ public class WorkspaceService {
             // 执行强制推送
             var pushCommand = git.push()
                     .setForce(true); // 设置强制推送
+            pushCommand.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
 
             if (credentialsProvider != null) {
                 pushCommand.setCredentialsProvider(credentialsProvider);
@@ -992,6 +1001,7 @@ public class WorkspaceService {
             // 拉取远程内容
             UsernamePasswordCredentialsProvider credentialsProvider = getCredentialsProvider(workspace);
             var fetchCmd = git.fetch();
+            fetchCmd.setTimeout(GIT_OPERATION_TIMEOUT); // 设置超时时间
             if (credentialsProvider != null) {
                 fetchCmd.setCredentialsProvider(credentialsProvider);
             }

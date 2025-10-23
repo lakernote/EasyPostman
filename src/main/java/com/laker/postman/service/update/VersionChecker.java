@@ -118,15 +118,16 @@ public class VersionChecker {
         }
 
         String osName = System.getProperty("os.name").toLowerCase();
-        String expectedExtension;
+        String expectedSuffix;
 
         if (osName.contains("win")) {
-            expectedExtension = ".msi";
+            expectedSuffix = ".msi";
         } else if (osName.contains("mac")) {
-            expectedExtension = ".dmg";
+            // macOS 根据芯片架构选择对应的 DMG
+            expectedSuffix = getMacPackageSuffix();
         } else if (osName.contains("linux")) {
             // Linux 系统根据发行版选择包格式
-            expectedExtension = getLinuxPackageExtension();
+            expectedSuffix = getLinuxPackageExtension();
         } else {
             log.warn("Unsupported OS: {}", osName);
             return null;
@@ -135,12 +136,53 @@ public class VersionChecker {
         for (int i = 0; i < assets.size(); i++) {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
-            if (name != null && name.endsWith(expectedExtension)) {
+            if (name != null && name.endsWith(expectedSuffix)) {
                 return asset.getStr("browser_download_url");
             }
         }
 
         return null;
+    }
+
+    /**
+     * 获取 macOS 包的后缀（根据芯片架构判断）
+     */
+    private String getMacPackageSuffix() {
+        try {
+            String arch = System.getProperty("os.arch").toLowerCase();
+            log.debug("Detected macOS architecture: {}", arch);
+
+            // 检测 Apple Silicon (ARM64)
+            if (arch.contains("aarch64") || arch.equals("arm64")) {
+                log.info("Detected Apple Silicon (ARM64), using -arm64.dmg");
+                return "-arm64.dmg";
+            }
+
+            // 检测 Intel (x86_64)
+            if (arch.contains("x86_64") || arch.contains("amd64")) {
+                log.info("Detected Intel chip (x86_64), using -intel.dmg");
+                return "-intel.dmg";
+            }
+
+            // 备用方案：使用 uname -m 命令检测
+            String unameResult = RuntimeUtil.execForStr("uname -m").trim();
+            log.debug("uname -m result: {}", unameResult);
+
+            if ("arm64".equals(unameResult) || "aarch64".equals(unameResult)) {
+                log.info("Detected Apple Silicon via uname, using -arm64.dmg");
+                return "-arm64.dmg";
+            } else if ("x86_64".equals(unameResult)) {
+                log.info("Detected Intel via uname, using -intel.dmg");
+                return "-intel.dmg";
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to detect macOS architecture: {}", e.getMessage());
+        }
+
+        // 默认返回 ARM64 版本（因为新 Mac 都是 Apple Silicon）
+        log.info("Unable to detect architecture, defaulting to -arm64.dmg");
+        return "-arm64.dmg";
     }
 
     /**

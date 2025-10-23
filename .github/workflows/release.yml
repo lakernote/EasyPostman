@@ -135,9 +135,9 @@ jobs:
           path: dist/*.msi
           retention-days: 1
 
-  build-macos:
-    name: Build macOS Universal DMG（构建 macOS 通用版安装包）
-    runs-on: macos-latest  # Apple Silicon (M1/M2/M3)
+  build-macos-intel:
+    name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
+    runs-on: macos-13  # Intel x86_64
 
     steps:
       - name: Checkout（检出代码）
@@ -189,7 +189,7 @@ jobs:
           
           mkdir -p dist
           
-          # 创建 macOS Universal Binary DMG（同时支持 Intel 和 Apple Silicon）
+          # 创建 macOS Intel DMG
           jpackage \
             --input target/dist-input \
             --main-jar $JAR_NAME \
@@ -205,12 +205,15 @@ jobs:
             --java-options "-Xms256m" \
             --java-options "-Xmx512m" \
             --java-options "-Dfile.encoding=UTF-8"
+          
+          # 重命名为 Intel 版本
+          mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-intel.dmg
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'  # 只在 Release 触发时上传
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.dmg
+          files: dist/*-intel.dmg
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -219,16 +222,115 @@ jobs:
         if: github.event_name == 'workflow_dispatch'  # 只在手动触发时上传为 Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EasyPostman-macOS-DMG
-          path: dist/*.dmg
+          name: EasyPostman-macOS-Intel-DMG
+          path: dist/*-intel.dmg
           retention-days: 7  # 保留 7 天
 
       - name: Upload DMG for Gitee sync（上传 DMG 供 Gitee 同步使用）
         if: github.event_name == 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: release-dmg
-          path: dist/*.dmg
+          name: release-dmg-intel
+          path: dist/*-intel.dmg
+          retention-days: 1
+
+  build-macos-arm:
+    name: Build macOS Apple Silicon DMG（构建 macOS Apple Silicon 版安装包）
+    runs-on: macos-latest  # Apple Silicon (M1/M2/M3/M4)
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Get version from pom.xml（从 pom.xml 提取版本号）
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build with Maven（使用 Maven 构建项目）
+        run: |
+          mvn -B clean package -DskipTests
+
+      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+        run: |
+          rm -rf target/runtime
+          # 创建包含必要模块的精简运行时环境
+          jlink \
+            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+
+      - name: Prepare dist-input（准备打包输入目录）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          JAR_NAME="easy-postman-$VERSION.jar"
+          
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          cp target/$JAR_NAME target/dist-input/
+
+      - name: Create DMG with jpackage（使用 jpackage 创建 DMG 镜像）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          JAR_NAME="easy-postman-$VERSION.jar"
+          
+          mkdir -p dist
+          
+          # 创建 macOS Apple Silicon DMG
+          jpackage \
+            --input target/dist-input \
+            --main-jar $JAR_NAME \
+            --main-class com.laker.postman.App \
+            --runtime-image target/runtime \
+            --type dmg \
+            --name "EasyPostman" \
+            --app-version "$VERSION" \
+            --dest dist \
+            --icon assets/mac/EasyPostman.icns \
+            --vendor "Laker" \
+            --copyright "© 2025 Laker" \
+            --java-options "-Xms256m" \
+            --java-options "-Xmx512m" \
+            --java-options "-Dfile.encoding=UTF-8"
+          
+          # 重命名为 ARM 版本
+          mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-arm64.dmg
+
+      - name: Upload to Release（上传到 GitHub Release）
+        if: github.event_name == 'release'  # 只在 Release 触发时上传
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*-arm64.dmg
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as Artifact（手动触发时上传为构建产物）
+        if: github.event_name == 'workflow_dispatch'  # 只在手动触发时上传为 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-macOS-ARM-DMG
+          path: dist/*-arm64.dmg
+          retention-days: 7  # 保留 7 天
+
+      - name: Upload DMG for Gitee sync（上传 DMG 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dmg-arm64
+          path: dist/*-arm64.dmg
           retention-days: 1
 
   build-ubuntu:
@@ -339,7 +441,7 @@ jobs:
   sync-to-gitee:
     name: Sync to Gitee Release（同步到 Gitee Release）
     if: github.event_name == 'release'
-    needs: [build-windows, build-macos, build-ubuntu]  # 等待所有构建完成
+    needs: [build-windows, build-macos-intel, build-macos-arm, build-ubuntu]  # 等待所有构建完成
     runs-on: ubuntu-latest
 
     steps:
@@ -420,13 +522,13 @@ jobs:
           
           echo "✅ MSI uploaded successfully!"
 
-      - name: Upload DMG to Gitee（上传 DMG 到 Gitee）
+      - name: Upload Intel DMG to Gitee（上传 Intel DMG 到 Gitee）
         run: |
           RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          DMG_FILE=$(find artifacts/release-dmg -name "*.dmg" | head -n 1)
+          DMG_FILE=$(find artifacts/release-dmg-intel -name "*-intel.dmg" | head -n 1)
           
           if [ -z "$DMG_FILE" ]; then
-            echo "⚠️ DMG file not found, skipping..."
+            echo "⚠️ Intel DMG file not found, skipping..."
             exit 0
           fi
           
@@ -436,7 +538,25 @@ jobs:
             -F "access_token=${{ secrets.GITEE_TOKEN }}" \
             -F "file=@$DMG_FILE"
           
-          echo "✅ DMG uploaded successfully!"
+          echo "✅ Intel DMG uploaded successfully!"
+
+      - name: Upload ARM DMG to Gitee（上传 ARM DMG 到 Gitee）
+        run: |
+          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
+          DMG_FILE=$(find artifacts/release-dmg-arm64 -name "*-arm64.dmg" | head -n 1)
+          
+          if [ -z "$DMG_FILE" ]; then
+            echo "⚠️ ARM DMG file not found, skipping..."
+            exit 0
+          fi
+          
+          echo "📦 Uploading $(basename $DMG_FILE) to Gitee..."
+          
+          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "file=@$DMG_FILE"
+          
+          echo "✅ ARM DMG uploaded successfully!"
 
       - name: Upload DEB to Gitee（上传 DEB 到 Gitee）
         run: |

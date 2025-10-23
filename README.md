@@ -32,8 +32,13 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
     - 🌏 China Mirror: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): EasyPostman-latest-arm64.dmg
     - 🍏 Mac (Intel Chip): EasyPostman-latest-intel.dmg
-    - 🪟 Windows: EasyPostman-latest.msi
+    - 🪟 Windows: 
+        - **MSI Installer** (Recommended): EasyPostman-latest.msi - For installation to system
+        - **Portable ZIP**: EasyPostman-latest-windows-portable.zip - Extract and run, no installation required
     - 🐧 Ubuntu: EasyPostman-latest.deb
+
+> ⚠️ **Windows SmartScreen Warning**: When running for the first time, Windows may show "Windows protected your PC" warning. This is normal because the app is not code-signed (code signing certificates cost $100-400/year). The app is safe and open-source. Click "More info" → "Run anyway" to proceed. As more users download and use the app, this warning will gradually disappear.
+
 - 💬 WeChat: **lakernote**
 
 ---

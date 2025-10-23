@@ -30,8 +30,13 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
     - 🌏 国内镜像: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): EasyPostman-最新版本-arm64.dmg
     - 🍏 Mac (Intel 芯片): EasyPostman-最新版本-intel.dmg
-    - 🪟 Windows: EasyPostman-最新版本.msi
+    - 🪟 Windows: 
+        - **MSI 安装包**（推荐）: EasyPostman-最新版本.msi - 安装到系统
+        - **便携版 ZIP**: EasyPostman-最新版本-windows-portable.zip - 解压即用，无需安装
     - 🐧 Ubuntu: EasyPostman-最新版本.deb
+
+> ⚠️ **Windows SmartScreen 警告说明**: 首次运行时，Windows 可能会显示"Windows 已保护你的电脑"警告。这是正常现象，因为应用未购买代码签名证书（证书费用约 $100-400/年）。本应用安全且开源，请点击"更多信息" → "仍要运行"即可。随着下载量增加，此警告会逐渐消失。
+
 - 💬 微信：**lakernote**
 
 ---

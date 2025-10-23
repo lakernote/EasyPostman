@@ -1,4 +1,4 @@
-[中文](README_CN.md) | English
+[中文](README_zh.md) | English
 
 # EasyPostman
 
@@ -30,7 +30,8 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 📦 **Download**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
     - 🌏 China Mirror: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍏 Mac (Apple Silicon): EasyPostman-latest.dmg
+    - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): EasyPostman-latest-arm64.dmg
+    - 🍏 Mac (Intel Chip): EasyPostman-latest-intel.dmg
     - 🪟 Windows: EasyPostman-latest.msi
     - 🐧 Ubuntu: EasyPostman-latest.deb
 - 💬 WeChat: **lakernote**

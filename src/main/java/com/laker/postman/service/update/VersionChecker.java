@@ -1,8 +1,6 @@
 package com.laker.postman.service.update;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.util.I18nUtil;
@@ -23,7 +21,6 @@ import java.util.Scanner;
 public class VersionChecker {
 
     private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/latest";
-    private static final String OS_RELEASE_FILE = "/etc/os-release";
 
     /**
      * 检查更新信息
@@ -118,26 +115,66 @@ public class VersionChecker {
         }
 
         String osName = System.getProperty("os.name").toLowerCase();
-        String expectedSuffix;
 
         if (osName.contains("win")) {
-            expectedSuffix = ".msi";
+            return findAssetByExtension(assets, ".msi");
         } else if (osName.contains("mac")) {
-            // macOS 根据芯片架构选择对应的 DMG
-            expectedSuffix = getMacPackageSuffix();
+            // macOS 特殊处理：支持新版本的架构特定 DMG 和旧版本的通用 DMG
+            return getMacDownloadUrl(assets);
         } else if (osName.contains("linux")) {
-            // Linux 系统根据发行版选择包格式
-            expectedSuffix = getLinuxPackageExtension();
+            return findAssetByExtension(assets, ".deb");
         } else {
             log.warn("Unsupported OS: {}", osName);
             return null;
         }
+    }
 
+    /**
+     * 获取 macOS 下载链接（支持向后兼容）
+     */
+    private String getMacDownloadUrl(JSONArray assets) {
+        String arch = System.getProperty("os.arch", "").toLowerCase();
+        boolean isAppleSilicon = arch.contains("aarch64") || arch.equals("arm64");
+
+        // 1. 优先查找架构特定的 DMG（新版本）
+        String archSpecificSuffix = getMacPackageSuffix();
+        String downloadUrl = findAssetByExtension(assets, archSpecificSuffix);
+
+        if (downloadUrl != null) {
+            log.info("Found architecture-specific DMG: {}", archSpecificSuffix);
+            return downloadUrl;
+        }
+
+        // 2. 回退到通用 .dmg（仅限 Apple Silicon，因为旧版本 .dmg 只支持 M 芯片）
+        if (isAppleSilicon) {
+            log.info("Architecture-specific DMG not found, trying generic .dmg for backward compatibility (Apple Silicon only)");
+            downloadUrl = findAssetByExtension(assets, ".dmg");
+
+            if (downloadUrl != null) {
+                log.info("Found generic DMG (legacy version, M chip compatible)");
+                return downloadUrl;
+            }
+        } else {
+            // Intel Mac 必须有 -intel.dmg 才能升级
+            log.warn("Intel Mac requires -intel.dmg file, but not found in release assets");
+            log.info("Note: Legacy .dmg files only support Apple Silicon (M chip)");
+        }
+
+        log.warn("No suitable DMG file found for current architecture");
+        return null;
+    }
+
+    /**
+     * 在 assets 中查找指定扩展名的文件
+     */
+    private String findAssetByExtension(JSONArray assets, String extension) {
         for (int i = 0; i < assets.size(); i++) {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
-            if (name != null && name.endsWith(expectedSuffix)) {
-                return asset.getStr("browser_download_url");
+            if (name != null && name.endsWith(extension)) {
+                String url = asset.getStr("browser_download_url");
+                log.debug("Found asset: {} -> {}", name, url);
+                return url;
             }
         }
 
@@ -149,8 +186,9 @@ public class VersionChecker {
      */
     private String getMacPackageSuffix() {
         try {
-            String arch = System.getProperty("os.arch").toLowerCase();
-            log.debug("Detected macOS architecture: {}", arch);
+            // 使用 Java 系统属性检测架构，避免执行系统命令（防止被杀毒软件误报）
+            String arch = System.getProperty("os.arch", "").toLowerCase();
+            log.debug("Detected macOS architecture via os.arch: {}", arch);
 
             // 检测 Apple Silicon (ARM64)
             if (arch.contains("aarch64") || arch.equals("arm64")) {
@@ -159,20 +197,8 @@ public class VersionChecker {
             }
 
             // 检测 Intel (x86_64)
-            if (arch.contains("x86_64") || arch.contains("amd64")) {
+            if (arch.contains("x86_64") || arch.contains("amd64") || arch.equals("x64")) {
                 log.info("Detected Intel chip (x86_64), using -intel.dmg");
-                return "-intel.dmg";
-            }
-
-            // 备用方案：使用 uname -m 命令检测
-            String unameResult = RuntimeUtil.execForStr("uname -m").trim();
-            log.debug("uname -m result: {}", unameResult);
-
-            if ("arm64".equals(unameResult) || "aarch64".equals(unameResult)) {
-                log.info("Detected Apple Silicon via uname, using -arm64.dmg");
-                return "-arm64.dmg";
-            } else if ("x86_64".equals(unameResult)) {
-                log.info("Detected Intel via uname, using -intel.dmg");
                 return "-intel.dmg";
             }
 
@@ -185,59 +211,6 @@ public class VersionChecker {
         return "-arm64.dmg";
     }
 
-    /**
-     * 获取 Linux 包的扩展名（根据发行版判断）
-     */
-    private String getLinuxPackageExtension() {
-        try {
-            // 优先读取 /etc/os-release 文件判断发行版
-            if (FileUtil.exist(OS_RELEASE_FILE)) {
-                String content = FileUtil.readUtf8String(OS_RELEASE_FILE).toLowerCase();
-
-                // 检测 Red Hat 系列发行版
-                if (CharSequenceUtil.containsAny(content, "centos", "rhel", "fedora", "red hat")) {
-                    log.debug("Detected RPM-based Linux distribution");
-                    return ".rpm";
-                }
-
-                // 检测 Debian 系列发行版
-                if (CharSequenceUtil.containsAny(content, "ubuntu", "debian")) {
-                    log.debug("Detected DEB-based Linux distribution");
-                    return ".deb";
-                }
-            }
-
-            // 备用方案：检查包管理器命令是否存在
-            if (commandExists("dpkg")) {
-                log.debug("Detected dpkg command, using .deb");
-                return ".deb";
-            } else if (commandExists("rpm")) {
-                log.debug("Detected rpm command, using .rpm");
-                return ".rpm";
-            }
-
-        } catch (Exception e) {
-            log.debug("Failed to detect Linux distribution: {}", e.getMessage());
-        }
-
-        // 默认返回 .deb（Ubuntu/Debian 使用更广泛）
-        log.debug("Using default package format: .deb");
-        return ".deb";
-    }
-
-    /**
-     * 检查命令是否存在
-     */
-    private boolean commandExists(String command) {
-        try {
-            // 使用 Hutool 的 RuntimeUtil 执行命令
-            String result = RuntimeUtil.execForStr("which " + command);
-            return CharSequenceUtil.isNotBlank(result);
-        } catch (Exception e) {
-            log.debug("Command '{}' not found: {}", command, e.getMessage());
-            return false;
-        }
-    }
 
     /**
      * 比较版本号

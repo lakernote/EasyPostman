@@ -334,6 +334,56 @@ jobs:
           path: dist/*-arm64.dmg
           retention-days: 1
 
+  build-jar:
+    name: Build Standalone JAR（构建独立 JAR 包）
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Get version from pom.xml（从 pom.xml 提取版本号）
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build with Maven（使用 Maven 构建项目）
+        run: |
+          mvn -B clean package -DskipTests
+
+      - name: Prepare standalone JAR（准备独立 JAR 包）
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          mkdir -p dist
+          cp target/easy-postman-$VERSION.jar dist/
+
+      - name: Upload to Release（上传到 GitHub Release）
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.jar
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as Artifact（手动触发时上传为构建产物）
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-Standalone-JAR
+          path: dist/*.jar
+          retention-days: 7
+
+
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
     runs-on: ubuntu-22.04

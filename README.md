@@ -33,11 +33,21 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): EasyPostman-latest-arm64.dmg
     - 🍏 Mac (Intel Chip): EasyPostman-latest-intel.dmg
     - 🪟 Windows: 
-        - **MSI Installer** (Recommended): EasyPostman-latest.msi - For installation to system
-        - **Portable ZIP**: EasyPostman-latest-windows-portable.zip - Extract and run, no installation required
+        - **MSI Installer**: EasyPostman-latest.msi - Install to system with desktop shortcut, supports auto-update
+        - **Portable ZIP**: EasyPostman-latest-windows-portable.zip - Extract and run, no installation required, fully portable
     - 🐧 Ubuntu: EasyPostman-latest.deb
 
-> ⚠️ **Windows SmartScreen Warning**: When running for the first time, Windows may show "Windows protected your PC" warning. This is normal because the app is not code-signed (code signing certificates cost $100-400/year). The app is safe and open-source. Click "More info" → "Run anyway" to proceed. As more users download and use the app, this warning will gradually disappear.
+> ⚠️ **Security Notice**:
+> 
+> **Windows Users**: When running for the first time, Windows SmartScreen may show "Windows protected your PC" warning. This is because the app is not code-signed (code signing certificates cost $100-400/year). The app is completely open-source and safe. You can:
+> - **MSI Installer**: Click "More info" → "Run anyway", after installation it supports auto-update
+> - **Portable ZIP**: Extract and run EasyPostman.exe directly, may still trigger SmartScreen, simply click "More info" → "Run anyway"
+> - 💡 Both methods are equally safe, SmartScreen warning will gradually disappear as download count increases
+> 
+> **macOS Users**: When opening for the first time, macOS may show "cannot be opened because the developer cannot be verified". This is also due to not purchasing an Apple Developer certificate ($99/year). The app is safe and open-source. Solutions:
+> - Method 1: Right-click the app → Select "Open" → Click "Open" in the dialog
+> - Method 2: System Settings → Privacy & Security → Find the blocked app at the bottom → Click "Open Anyway"
+> - Method 3: Run in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
 
 - 💬 WeChat: **lakernote**
 

@@ -117,7 +117,8 @@ public class VersionChecker {
         String osName = System.getProperty("os.name").toLowerCase();
 
         if (osName.contains("win")) {
-            return findAssetByExtension(assets, ".msi");
+            // Windows 特殊处理：区分便携版和安装版
+            return getWindowsDownloadUrl(assets);
         } else if (osName.contains("mac")) {
             // macOS 特殊处理：支持新版本的架构特定 DMG 和旧版本的通用 DMG
             return getMacDownloadUrl(assets);
@@ -127,6 +128,83 @@ public class VersionChecker {
             log.warn("Unsupported OS: {}", osName);
             return null;
         }
+    }
+
+    /**
+     * 获取 Windows 下载链接（区分便携版和安装版）
+     */
+    private String getWindowsDownloadUrl(JSONArray assets) {
+        // 检测当前运行的是便携版还是安装版
+        boolean isPortable = isWindowsPortableVersion();
+
+        if (isPortable) {
+            // 便携版：优先下载便携版 ZIP
+            log.info("Detected portable version, looking for -portable.zip");
+            String portableUrl = findAssetByPattern(assets, "-portable.zip");
+
+            if (portableUrl != null) {
+                log.info("Found portable ZIP for update");
+                return portableUrl;
+            }
+
+            // 如果没有便携版，提示用户手动下载（不自动降级到 MSI）
+            log.warn("Portable ZIP not found in release, update not available for portable version");
+            return null;
+        } else {
+            // 安装版：下载 MSI
+            log.info("Detected installed version, looking for .msi");
+            return findAssetByExtension(assets, ".msi");
+        }
+    }
+
+    /**
+     * 检测是否为 Windows 便携版
+     * 判断依据：
+     * 1. 检查是否从 Program Files 或 AppData 目录运行（安装版特征）
+     * 2. 检查是否存在卸载注册表项（安装版特征）
+     */
+    private boolean isWindowsPortableVersion() {
+        try {
+            // 获取当前 JAR 文件路径
+            String jarPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+            String decodedPath = java.net.URLDecoder.decode(jarPath, java.nio.charset.StandardCharsets.UTF_8);
+
+            log.debug("Current JAR path: {}", decodedPath);
+
+            // 如果从 Program Files 或 AppData 目录运行，可能是安装版
+            String lowerPath = decodedPath.toLowerCase();
+            if (lowerPath.contains("program files") ||
+                lowerPath.contains("appdata\\local\\programs") ||
+                lowerPath.contains("appdata/local/programs")) {
+                log.info("Running from Program Files or AppData, likely installed version");
+                return false;
+            }
+
+            // 默认认为是便携版（更安全的选择）
+            log.info("Not running from typical installation directory, assuming portable version");
+            return true;
+
+        } catch (Exception e) {
+            log.warn("Failed to detect Windows version type: {}", e.getMessage());
+            // 检测失败时默认为便携版（避免强制下载 MSI）
+            return true;
+        }
+    }
+
+    /**
+     * 在 assets 中查找匹配模式的文件
+     */
+    private String findAssetByPattern(JSONArray assets, String pattern) {
+        for (int i = 0; i < assets.size(); i++) {
+            JSONObject asset = assets.getJSONObject(i);
+            String name = asset.getStr("name");
+            if (name != null && name.contains(pattern)) {
+                String url = asset.getStr("browser_download_url");
+                log.debug("Found asset by pattern '{}': {} -> {}", pattern, name, url);
+                return url;
+            }
+        }
+        return null;
     }
 
     /**
@@ -148,7 +226,7 @@ public class VersionChecker {
         // 2. 回退到通用 .dmg（仅限 Apple Silicon，因为旧版本 .dmg 只支持 M 芯片）
         if (isAppleSilicon) {
             log.info("Architecture-specific DMG not found, trying generic .dmg for backward compatibility (Apple Silicon only)");
-            downloadUrl = findAssetByExtension(assets, ".dmg");
+            downloadUrl = findGenericDmg(assets);
 
             if (downloadUrl != null) {
                 log.info("Found generic DMG (legacy version, M chip compatible)");
@@ -178,6 +256,26 @@ public class VersionChecker {
             }
         }
 
+        return null;
+    }
+
+    /**
+     * 查找通用 DMG 文件（格式：EasyPostman-版本号.dmg，不包含架构后缀）
+     * 用于向后兼容旧版本（旧版本 DMG 只支持 Apple Silicon）
+     */
+    private String findGenericDmg(JSONArray assets) {
+        for (int i = 0; i < assets.size(); i++) {
+            JSONObject asset = assets.getJSONObject(i);
+            String name = asset.getStr("name");
+            if (name != null && name.endsWith(".dmg")) {
+                // 排除带有架构后缀的 DMG（-intel.dmg 和 -arm64.dmg）
+                if (!name.endsWith("-intel.dmg") && !name.endsWith("-arm64.dmg")) {
+                    String url = asset.getStr("browser_download_url");
+                    log.debug("Found generic DMG (without architecture suffix): {} -> {}", name, url);
+                    return url;
+                }
+            }
+        }
         return null;
     }
 

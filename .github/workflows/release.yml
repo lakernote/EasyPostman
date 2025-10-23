@@ -250,6 +250,14 @@ jobs:
           path: dist/*-portable.zip
           retention-days: 7
 
+      - name: Upload Portable ZIP for Gitee sync（上传便携版 ZIP 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-portable-zip
+          path: dist/*-portable.zip
+          retention-days: 1
+
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
     runs-on: macos-13  # Intel x86_64
@@ -606,7 +614,7 @@ jobs:
   sync-to-gitee:
     name: Sync to Gitee Release（同步到 Gitee Release）
     if: github.event_name == 'release'
-    needs: [build-windows, build-macos-intel, build-macos-arm, build-ubuntu]  # 等待所有构建完成
+    needs: [build-windows, build-windows-portable, build-macos-intel, build-macos-arm, build-ubuntu]  # 等待所有构建完成
     runs-on: ubuntu-latest
 
     steps:
@@ -686,6 +694,24 @@ jobs:
             -F "file=@$MSI_FILE"
           
           echo "✅ MSI uploaded successfully!"
+
+      - name: Upload Windows Portable ZIP to Gitee（上传 Windows 便携版 ZIP 到 Gitee）
+        run: |
+          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
+          ZIP_FILE=$(find artifacts/release-portable-zip -name "*-portable.zip" | head -n 1)
+          
+          if [ -z "$ZIP_FILE" ]; then
+            echo "⚠️ Portable ZIP file not found, skipping..."
+            exit 0
+          fi
+          
+          echo "📦 Uploading $(basename $ZIP_FILE) to Gitee..."
+          
+          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "file=@$ZIP_FILE"
+          
+          echo "✅ Windows Portable ZIP uploaded successfully!"
 
       - name: Upload Intel DMG to Gitee（上传 Intel DMG 到 Gitee）
         run: |

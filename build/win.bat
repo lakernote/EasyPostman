@@ -102,6 +102,7 @@ jpackage ^
     --copyright "© 2025 Laker" ^
     --win-shortcut ^
     --win-menu ^
+    --description "A modern API testing tool similar to Postman" ^
     --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" ^
     --win-dir-chooser ^
     --win-per-user-install ^

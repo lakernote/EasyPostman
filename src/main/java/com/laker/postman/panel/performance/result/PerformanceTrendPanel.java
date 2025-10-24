@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.jfree.chart.ChartFactory;
@@ -59,13 +59,13 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         renderer.setSeriesPaint(3, errorPercent);
         plot.setDomainGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
         plot.setRangeGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
-        trendChart.getTitle().setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        trendChart.getTitle().setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
         if (trendChart.getLegend() != null)
-            trendChart.getLegend().setItemFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getDomainAxis().setTickLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getDomainAxis().setLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getRangeAxis().setTickLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getRangeAxis().setLabelFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            trendChart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getDomainAxis().setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getDomainAxis().setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getRangeAxis().setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        plot.getRangeAxis().setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         plot.setBackgroundPaint(Color.WHITE);
         trendChart.setBackgroundPaint(Color.WHITE);
         plot.getRangeAxis().setAutoRange(true);

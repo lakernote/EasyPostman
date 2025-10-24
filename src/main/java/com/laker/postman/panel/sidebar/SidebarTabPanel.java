@@ -11,7 +11,7 @@ import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.UserSettingsUtil;
@@ -115,7 +115,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private int getMaxTabTitleWidth() {
         int maxWidth = 0;
         JLabel label = new JLabel();
-        Font font = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
+        Font font = FontsUtil.getDefaultFont(Font.PLAIN, 12);
         label.setFont(font);
         for (Locale locale : SUPPORTED_LOCALES) {
             for (String key : TAB_TITLE_KEYS) {
@@ -174,7 +174,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createConsoleLabel() {
         consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
         consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
-        consoleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        consoleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
         consoleLabel.setFocusable(true); // 让label可聚焦
@@ -274,7 +274,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             iconLabel.setPreferredSize(new Dimension(32, 32));
             JLabel titleLabel = new JLabel(title);
-            titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            titleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
             titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             panel.add(iconLabel);
             panel.add(Box.createVerticalStrut(2));

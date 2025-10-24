@@ -1,6 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -204,7 +204,7 @@ public class UuidPanel extends JPanel {
         uuidArea.setEditable(false);
         uuidArea.setLineWrap(true);
         uuidArea.setWrapStyleWord(false);
-        uuidArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        uuidArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
         uuidArea.setBackground(new Color(250, 250, 250));
         uuidArea.setMargin(new Insets(10, 10, 10, 10));
 
@@ -220,12 +220,12 @@ public class UuidPanel extends JPanel {
 
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION_INFO));
-        infoLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 12));
+        infoLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 12));
         infoLabel.setForeground(new Color(100, 100, 100));
         infoPanel.add(infoLabel);
 
         statusLabel = new JLabel("");
-        statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         statusLabel.setForeground(new Color(60, 150, 60));
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         statusPanel.add(statusLabel);
@@ -310,7 +310,7 @@ public class UuidPanel extends JPanel {
         inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_INPUT) + ":"), BorderLayout.NORTH);
 
         JTextField inputField = new JTextField();
-        inputField.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        inputField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
         inputField.setPreferredSize(new Dimension(0, 30));
         inputPanel.add(inputField, BorderLayout.CENTER);
 
@@ -324,7 +324,7 @@ public class UuidPanel extends JPanel {
         // 解析结果显示区域
         parseArea = new JTextArea();
         parseArea.setEditable(false);
-        parseArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        parseArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         parseArea.setBackground(new Color(250, 250, 250));
         parseArea.setMargin(new Insets(10, 10, 10, 10));
         parseArea.setLineWrap(true);

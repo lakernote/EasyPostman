@@ -13,7 +13,7 @@ import java.util.Map;
  * 用于集中设置 FlatLaf/Swing 全局 UI 属性（如圆角、背景色等）
  */
 @Slf4j
-public class EasyPostManStyleUtils {
+public class StyleUtils {
 
     // 圆角常量定义
     private static final int DEFAULT_ARC = 12;
@@ -25,7 +25,7 @@ public class EasyPostManStyleUtils {
     private static final int BORDER_WIDTH = 1;
 
     // 私有构造函数，防止工具类被实例化
-    private EasyPostManStyleUtils() {
+    private StyleUtils() {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 

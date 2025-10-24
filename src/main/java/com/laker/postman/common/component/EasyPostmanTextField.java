@@ -2,8 +2,8 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.util.EasyPostManFontUtil;
-import com.laker.postman.util.EasyPostmanVariableUtil;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.VariableUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -91,7 +91,7 @@ public class EasyPostmanTextField extends FlatTextField {
         super.paintComponent(g);
 
         String value = getText();
-        List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(value);
+        List<VariableSegment> segments = VariableUtil.getVariableSegments(value);
         if (segments.isEmpty()) return;
 
         try {
@@ -116,8 +116,8 @@ public class EasyPostmanTextField extends FlatTextField {
                     x += w;
                 }
                 // 判断变量状态：环境变量、临时变量或内置函数
-                boolean isDefined = EasyPostmanVariableUtil.isVariableDefined(seg.name)
-                        || EasyPostmanVariableUtil.isBuiltInFunction(seg.name);
+                boolean isDefined = VariableUtil.isVariableDefined(seg.name)
+                        || VariableUtil.isBuiltInFunction(seg.name);
                 Color bgColor = isDefined ? DEFINED_VAR_BG : UNDEFINED_VAR_BG;
                 Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
                 String varText = value.substring(seg.start, seg.end);
@@ -234,7 +234,7 @@ public class EasyPostmanTextField extends FlatTextField {
 
                             // 绘制白色符号 - 垂直居中对齐
                             g2d.setColor(Color.WHITE);
-                            g2d.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 10));
+                            g2d.setFont(FontsUtil.getDefaultFont(Font.BOLD, 10));
                             FontMetrics symbolFm = g2d.getFontMetrics();
                             String symbol = isBuiltIn ? "$" : "E";
                             int symbolWidth = symbolFm.stringWidth(symbol);
@@ -492,7 +492,7 @@ public class EasyPostmanTextField extends FlatTextField {
         String prefix = text.substring(openBracePos + 2, caretPos);
 
         // 过滤变量列表
-        currentVariables = EasyPostmanVariableUtil.filterVariables(prefix);
+        currentVariables = VariableUtil.filterVariables(prefix);
 
         if (currentVariables.isEmpty()) {
             hideAutocomplete();
@@ -595,7 +595,7 @@ public class EasyPostmanTextField extends FlatTextField {
     @Override
     public String getToolTipText(MouseEvent event) {
         String value = getText();
-        List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(value);
+        List<VariableSegment> segments = VariableUtil.getVariableSegments(value);
         if (segments.isEmpty()) return super.getToolTipText(event);
 
         try {
@@ -623,7 +623,7 @@ public class EasyPostmanTextField extends FlatTextField {
                     String varName = seg.name;
 
                     // 检查是否是内置函数
-                    if (EasyPostmanVariableUtil.isBuiltInFunction(varName)) {
+                    if (VariableUtil.isBuiltInFunction(varName)) {
                         String desc = currentVariables != null ?
                                 currentVariables.get(varName) :
                                 "Dynamic function generates value at runtime";
@@ -631,7 +631,7 @@ public class EasyPostmanTextField extends FlatTextField {
                     }
 
                     // 环境变量
-                    String varValue = EasyPostmanVariableUtil.getVariableValue(varName);
+                    String varValue = VariableUtil.getVariableValue(varName);
                     if (varValue != null) {
                         return buildTooltip(varName, varValue, false, true);
                     } else {

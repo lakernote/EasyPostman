@@ -16,7 +16,7 @@ import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.JsScriptExecutor;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -57,7 +57,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
-        mainTabbedPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
@@ -96,7 +96,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         timePanel.setOpaque(false);
         JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20));
         timeLabel = new JLabel("0 ms");
-        timeLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        timeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         timePanel.add(timeIcon);
         timePanel.add(Box.createHorizontalStrut(3));
         timePanel.add(timeLabel);
@@ -109,7 +109,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建进度文本标签
         progressLabel = new JLabel("0/0");
-        progressLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        progressLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
 
         taskPanel.add(taskIcon);
         taskPanel.add(Box.createHorizontalStrut(3));
@@ -485,8 +485,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             }
         };
         table.setRowHeight(28);
-        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
-        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
         setTableColumnWidths();
         setTableRenderers();
         table.setGridColor(new Color(220, 220, 220));

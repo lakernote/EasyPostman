@@ -1,7 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.laker.postman.model.GitOperation;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -52,12 +52,12 @@ public class StepIndicator extends JPanel {
         circle.setOpaque(true);
         circle.setBackground(active ? new Color(30, 144, 255) : Color.LIGHT_GRAY);
         circle.setForeground(Color.WHITE);
-        circle.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        circle.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         circle.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
 
         // 文本
         JLabel label = new JLabel(text, SwingConstants.CENTER);
-        label.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 10));
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 10));
         label.setForeground(active ? Color.BLACK : Color.GRAY);
 
         panel.add(circle, BorderLayout.CENTER);
@@ -68,7 +68,7 @@ public class StepIndicator extends JPanel {
 
     private JLabel createArrow() {
         JLabel arrow = new JLabel("→");
-        arrow.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 16));
+        arrow.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 16));
         arrow.setForeground(Color.LIGHT_GRAY);
         return arrow;
     }

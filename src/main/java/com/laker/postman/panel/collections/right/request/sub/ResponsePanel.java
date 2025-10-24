@@ -5,7 +5,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -391,7 +391,7 @@ public class ResponsePanel extends JPanel {
             instance = new EasyPostmanStyleTooltip(parentWindow);
 
             JLabel content = new JLabel(html);
-            content.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+            content.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
             content.setOpaque(true);
             // Use colors matching EasyPostManColors theme
             content.setBackground(new Color(250, 251, 253)); // Very light background

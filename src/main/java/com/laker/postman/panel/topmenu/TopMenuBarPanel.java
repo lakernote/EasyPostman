@@ -11,7 +11,7 @@ import com.laker.postman.panel.topmenu.setting.*;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
@@ -228,7 +228,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         // 创建工作区显示标签
         if (workspaceLabel == null) {
             workspaceLabel = new JLabel();
-            workspaceLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            workspaceLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
             workspaceLabel.setForeground(new Color(70, 70, 70));
             workspaceLabel.setIcon(new FlatSVGIcon("icons/workspace.svg", 20, 20));
             workspaceLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));

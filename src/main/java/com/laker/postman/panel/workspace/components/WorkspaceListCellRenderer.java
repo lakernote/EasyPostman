@@ -4,7 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -83,6 +83,6 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
     }
 
     private void configureWorkspaceStyle() {
-        setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
     }
 }

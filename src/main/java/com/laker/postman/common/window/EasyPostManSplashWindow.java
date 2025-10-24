@@ -3,7 +3,7 @@ package com.laker.postman.common.window;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
@@ -92,13 +92,13 @@ public class EasyPostManSplashWindow extends JWindow {
 
         // 应用名称
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
-        appNameLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 20));
+        appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
         appNameLabel.setForeground(new Color(60, 90, 180));
         infoPanel.add(appNameLabel);
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
-        versionLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 15));
+        versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
         versionLabel.setForeground(new Color(120, 130, 150));
         infoPanel.add(versionLabel);
 
@@ -112,7 +112,7 @@ public class EasyPostManSplashWindow extends JWindow {
         JPanel bottomPanel = new JPanel(new BorderLayout(0, 5));
         bottomPanel.setOpaque(false);
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
-        statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 15));
+        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 15));
         statusLabel.setForeground(new Color(80, 120, 200));
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
         return bottomPanel;

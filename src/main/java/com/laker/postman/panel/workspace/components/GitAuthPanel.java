@@ -2,7 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.GitAuthType;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -60,7 +60,7 @@ public class GitAuthPanel extends JPanel {
         sshKeyBrowseButton.setFocusPainted(false);
 
         // 设置默认字体
-        Font defaultFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
+        Font defaultFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);
         passwordUsernameField.setFont(defaultFont);
         passwordField.setFont(defaultFont);
         tokenUsernameField.setFont(defaultFont);
@@ -132,7 +132,7 @@ public class GitAuthPanel extends JPanel {
     private JPanel createNoAuthPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_NONE));
-        label.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 11));
+        label.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 11));
         label.setForeground(Color.GRAY);
         panel.add(label);
         return panel;

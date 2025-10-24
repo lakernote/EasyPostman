@@ -2,7 +2,7 @@ package com.laker.postman.frame;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
-import com.laker.postman.panel.EasyPostmanMainPanel;
+import com.laker.postman.panel.MainPanel;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -31,7 +31,7 @@ public class MainFrame extends JFrame {
     }
 
     public void initComponents() {
-        setContentPane(SingletonFactory.getInstance(EasyPostmanMainPanel.class)); // 设置主面板为内容面板
+        setContentPane(SingletonFactory.getInstance(MainPanel.class)); // 设置主面板为内容面板
         initWindowSize(); // 初始化窗口大小
         initWindowCloseListener(); // 初始化窗口关闭监听器
         initWindowStateListener(); // 初始化窗口状态监听器

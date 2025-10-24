@@ -3,7 +3,7 @@ package com.laker.postman.panel.workspace.components;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -67,7 +67,7 @@ public class UpdateAuthDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_TYPE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD, 12)
         ));
         authContainer.add(gitAuthPanel, BorderLayout.CENTER);
         mainPanel.add(authContainer, BorderLayout.CENTER);

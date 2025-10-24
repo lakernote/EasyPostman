@@ -3,7 +3,7 @@ package com.laker.postman.service.update;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -221,7 +221,7 @@ public class UpdateUIManager {
 
             // 版本信息
             JLabel versionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_FOUND, updateInfo.getLatestVersion()));
-            versionLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
             versionLabel.setForeground(new Color(108, 117, 125));
 
             // 按钮面板
@@ -243,7 +243,7 @@ public class UpdateUIManager {
 
             JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 24, 24));
             JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
-            titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
+            titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
             titleLabel.setForeground(new Color(33, 37, 41));
             titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
 
@@ -251,7 +251,7 @@ public class UpdateUIManager {
             titlePanel.add(titleLabel);
 
             JButton closeButton = new JButton("×");
-            closeButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
+            closeButton.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
             closeButton.setFocusPainted(false);
             closeButton.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
             closeButton.setBackground(new Color(248, 249, 250));
@@ -269,14 +269,14 @@ public class UpdateUIManager {
             buttonPanel.setOpaque(false);
 
             JButton laterButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_LATER));
-            laterButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            laterButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
             laterButton.setFocusPainted(false);
             laterButton.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
             laterButton.setBackground(new Color(248, 249, 250));
             laterButton.addActionListener(e -> window.dispose());
 
             JButton updateButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_NOW));
-            updateButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+            updateButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
             updateButton.setFocusPainted(false);
             updateButton.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
             updateButton.setBackground(new Color(0, 123, 255));

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +69,7 @@ public class TimestampPanel extends JPanel {
 
         // 时间戳显示标签
         currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
-        currentLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
+        currentLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16));
         currentLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 按钮面板
@@ -197,7 +197,7 @@ public class TimestampPanel extends JPanel {
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setRows(12);
-        resultArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        resultArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         resultArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JScrollPane scrollPane = new JScrollPane(resultArea);

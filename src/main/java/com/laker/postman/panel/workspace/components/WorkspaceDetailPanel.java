@@ -3,7 +3,7 @@ package com.laker.postman.panel.workspace.components;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -34,7 +34,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.weightx = 1.0; // 值扩展填充剩余空间
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel nameLabel = new JLabel(workspace.getName());
-        nameLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        nameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         infoSection.add(nameLabel, gbc);
 
         // 类型
@@ -130,7 +130,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel urlLabel = new JLabel(workspace.getGitRemoteUrl());
-        urlLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        urlLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         panel.add(urlLabel, gbc);
         row++;
 
@@ -174,7 +174,7 @@ public class WorkspaceDetailPanel extends JPanel {
                     : workspace.getLastCommitId();
         }
         JLabel commitLabel = new JLabel(shortCommitId);
-        commitLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        commitLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         panel.add(commitLabel, gbc);
 
         return panel;

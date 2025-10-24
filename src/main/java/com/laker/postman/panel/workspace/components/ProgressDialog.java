@@ -1,6 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -106,11 +106,11 @@ public abstract class ProgressDialog extends JDialog {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        cancelButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         cancelButton.addActionListener(this::handleCancel);
 
         confirmButton = new JButton(confirmText);
-        confirmButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        confirmButton.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         confirmButton.addActionListener(this::handleConfirm);
 
         panel.add(cancelButton);

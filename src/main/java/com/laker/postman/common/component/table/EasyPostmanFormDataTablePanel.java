@@ -2,7 +2,7 @@ package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpFormData;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -134,8 +134,8 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
     private void initializeTableUI() {
         table.setFillsViewportHeight(true);
         table.setRowHeight(24);
-        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
         table.getTableHeader().setBackground(new Color(240, 242, 245));
         table.getTableHeader().setForeground(new Color(33, 33, 33));
         table.setGridColor(new Color(237, 237, 237));

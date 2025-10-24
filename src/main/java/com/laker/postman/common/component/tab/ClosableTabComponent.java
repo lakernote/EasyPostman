@@ -8,7 +8,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -80,7 +80,7 @@ public class ClosableTabComponent extends JPanel {
                 return false;
             }
         };
-        label.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         label.setIcon(protocol.getIcon());
         label.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, closeButtonSpace + 4)); // 右侧预留关闭按钮空间
         label.setHorizontalAlignment(SwingConstants.LEFT); // 改为左对齐，避免文本居中与按钮重叠

@@ -9,7 +9,7 @@ import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.service.HistoryPersistenceManager;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -55,7 +55,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 BorderFactory.createEmptyBorder(4, 8, 4, 8) // 内边框
         ));
         JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.MENU_HISTORY));
-        title.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 13));
+        title.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
         JButton clearBtn = new JButton(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setMargin(new Insets(0, 4, 0, 4));
         clearBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
@@ -86,7 +86,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
         // 创建 Tab 面板
         historyDetailTabPane = new JTabbedPane();
-        historyDetailTabPane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        historyDetailTabPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
 
         // 创建各个标签页
         requestPane = createDetailPane();
@@ -132,7 +132,7 @@ public class HistoryPanel extends SingletonBasePanel {
         private final Color selectedBackground = new Color(180, 215, 255);
 
         public OptimizedHistoryListCellRenderer() {
-            Font baseFont = EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12);
+            Font baseFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);
             boldFont = baseFont.deriveFont(Font.BOLD);
             plainFont = baseFont.deriveFont(Font.PLAIN);
         }
@@ -164,7 +164,7 @@ public class HistoryPanel extends SingletonBasePanel {
         JTextPane pane = new JTextPane();
         pane.setEditable(false);
         pane.setContentType("text/html");
-        pane.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         return pane;
     }
 

@@ -2,7 +2,7 @@ package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.EnvironmentVariable;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -155,8 +155,8 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     private void initializeTableUI() {
         table.setFillsViewportHeight(true);
         table.setRowHeight(28);
-        table.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 11));
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
         table.getTableHeader().setBackground(new Color(240, 242, 245));
         table.getTableHeader().setForeground(new Color(33, 33, 33));
         table.setGridColor(new Color(237, 237, 237));
@@ -316,7 +316,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
 
             // Drag handle label - 加粗的拖拽图标
             dragLabel = new JLabel("⋮⋮");
-            dragLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
+            dragLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
             dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
             dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20
@@ -366,7 +366,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
 
             // Drag handle label - 加粗的拖拽图标
             dragLabel = new JLabel("⋮⋮");
-            dragLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
+            dragLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
             dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
             dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20

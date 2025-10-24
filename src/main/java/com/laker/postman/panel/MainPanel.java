@@ -13,7 +13,7 @@ import java.awt.*;
  * 左侧标签页面板包含了集合、环境变量、压测三个标签页，
  */
 @Slf4j
-public class EasyPostmanMainPanel extends SingletonBasePanel {
+public class MainPanel extends SingletonBasePanel {
 
     @Override
     protected void initUI() {

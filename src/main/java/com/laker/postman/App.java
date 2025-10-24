@@ -4,7 +4,7 @@ import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.laker.postman.common.window.EasyPostManSplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
-import com.laker.postman.util.EasyPostManStyleUtils;
+import com.laker.postman.util.StyleUtils;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -30,7 +30,7 @@ public class App {
             // 1. 设置主题
             FlatIntelliJLaf.setup();
             // 2. FlatLaf 统一商务风格属性（圆角、阴影等）
-            EasyPostManStyleUtils.apply();
+            StyleUtils.apply();
             // 3. 注册图标字体，使用 FontAwesome 图标库
             IconFontSwing.register(FontAwesome.getIconFont());
             // 4. 显示 SplashWindow

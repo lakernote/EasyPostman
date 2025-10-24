@@ -6,9 +6,9 @@ import java.awt.*;
 /**
  * 字体工具类，提供系统默认字体，保留完整的字体降级链以支持 emoji 等特殊字符
  */
-public class EasyPostManFontUtil {
+public class FontsUtil {
     // 私有构造函数，防止实例化工具类
-    private EasyPostManFontUtil() {
+    private FontsUtil() {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 

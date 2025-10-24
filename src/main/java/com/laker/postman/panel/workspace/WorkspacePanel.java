@@ -81,14 +81,14 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 新建工作区按钮
         JButton newButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_NEW));
         newButton.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
-        newButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
         toolbar.add(newButton);
 
         // 刷新按钮
         JButton refreshButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
         refreshButton.setIcon(new FlatSVGIcon("icons/refresh.svg", 16, 16));
-        refreshButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        refreshButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         refreshButton.addActionListener(e -> refreshWorkspaceList());
         toolbar.add(refreshButton);
 
@@ -107,7 +107,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 设置列表样式
         workspaceList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         workspaceList.setCellRenderer(new WorkspaceListCellRenderer());
-        workspaceList.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        workspaceList.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         workspaceList.setFixedCellHeight(50);
 
         // 添加右键菜单和双击事件
@@ -151,7 +151,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) +
                 "</center></html>");
         welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        welcomeLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 12));
+        welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 12));
         welcomeLabel.setForeground(Color.GRAY);
 
         infoPanel.add(welcomeLabel, BorderLayout.CENTER);
@@ -171,7 +171,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 创建日志文本区域
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        logArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         logArea.setBackground(new Color(248, 248, 248));
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
@@ -182,7 +182,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         JPanel logToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
         JButton clearLogButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
         clearLogButton.setIcon(new FlatSVGIcon("icons/clear.svg", 20, 20));
-        clearLogButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        clearLogButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         clearLogButton.addActionListener(e -> logArea.setText(""));
         logToolbar.add(clearLogButton);
         panel.add(logToolbar, BorderLayout.SOUTH);
@@ -566,7 +566,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                     I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) +
                     "</center>" + HTML_END);
             welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            welcomeLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 12));
+            welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 12));
             welcomeLabel.setForeground(Color.GRAY);
             infoPanel.add(welcomeLabel, BorderLayout.CENTER);
         }

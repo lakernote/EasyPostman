@@ -1,7 +1,7 @@
 package com.laker.postman.service.update;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -107,7 +107,7 @@ public class UpdateProgressDialog {
         headerPanel.add(Box.createVerticalStrut(16));
 
         // 状态标签
-        statusLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 18));
+        statusLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 18));
         statusLabel.setForeground(PRIMARY_TEXT);
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         headerPanel.add(statusLabel);
@@ -134,7 +134,7 @@ public class UpdateProgressDialog {
         progressBar.setBorderPainted(false);
 
         // 百分比标签
-        percentageLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 24));
+        percentageLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 24));
         percentageLabel.setForeground(PRIMARY_TEXT);
         percentageLabel.setBorder(new EmptyBorder(0, 0, 8, 0));
 
@@ -189,7 +189,7 @@ public class UpdateProgressDialog {
         buttonPanel.setOpaque(false);
 
         // 美化取消按钮
-        cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
+        cancelButton.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
         cancelButton.setFocusPainted(false);
         cancelButton.setBorder(new CompoundBorder(
                 new LineBorder(new Color(218, 220, 224), 1, true),
@@ -224,7 +224,7 @@ public class UpdateProgressDialog {
 
     private JLabel createInfoLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 13));
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
         label.setForeground(SECONDARY_TEXT);
         return label;
     }

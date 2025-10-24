@@ -9,7 +9,7 @@ import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.util.EasyPostmanVariableUtil;
+import com.laker.postman.util.VariableUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.XmlUtil;
@@ -254,9 +254,9 @@ public class RequestBodyPanel extends JPanel {
             void updateHighlights() {
                 highlighter.removeAllHighlights();
                 String text = bodyArea.getText();
-                java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
+                java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
-                    boolean isDefined = EasyPostmanVariableUtil.isVariableDefined(seg.name);
+                    boolean isDefined = VariableUtil.isVariableDefined(seg.name);
                     try {
                         highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
                     } catch (BadLocationException ignored) {
@@ -279,9 +279,9 @@ public class RequestBodyPanel extends JPanel {
         // 初始化高亮
         SwingUtilities.invokeLater(() -> {
             String text = bodyArea.getText();
-            java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
+            java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
             for (VariableSegment seg : segments) {
-                boolean isDefined = EasyPostmanVariableUtil.isVariableDefined(seg.name);
+                boolean isDefined = VariableUtil.isVariableDefined(seg.name);
                 try {
                     highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
                 } catch (BadLocationException ignored) {
@@ -294,11 +294,11 @@ public class RequestBodyPanel extends JPanel {
             public void mouseMoved(MouseEvent e) {
                 int pos = bodyArea.viewToModel2D(e.getPoint());
                 String text = bodyArea.getText();
-                java.util.List<VariableSegment> segments = EasyPostmanVariableUtil.getVariableSegments(text);
+                java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
                     if (pos >= seg.start && pos <= seg.end) {
                         String varName = seg.name;
-                        String varValue = EasyPostmanVariableUtil.getVariableValue(varName);
+                        String varValue = VariableUtil.getVariableValue(varName);
                         if (varValue != null) {
                             bodyArea.setToolTipText(varName + " = " + varValue);
                         } else {

@@ -2,7 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.util.CronExpressionUtil;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +66,7 @@ public class CronPanel extends JPanel {
         JPanel row1 = new JPanel(new BorderLayout(5, 5));
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXPRESSION) + ":"), BorderLayout.WEST);
         cronField = new FlatTextField();
-        cronField.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 14));
+        cronField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 14));
         cronField.setText("0 0 12 * * ?");
         cronField.setPlaceholderText("Enter cron expression (e.g. 0 0 12 * * ?)");
         cronField.setBackground(Color.WHITE);
@@ -203,7 +203,7 @@ public class CronPanel extends JPanel {
         resultPanel.add(new JLabel("Generated Cron:"), BorderLayout.WEST);
         JTextField generatedField = new JTextField();
         generatedField.setEditable(false);
-        generatedField.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 14));
+        generatedField.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
         resultPanel.add(generatedField, BorderLayout.CENTER);
         mainPanel.add(resultPanel);
 

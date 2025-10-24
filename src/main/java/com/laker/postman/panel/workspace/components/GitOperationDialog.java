@@ -10,7 +10,7 @@ import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.EasyPostManFontUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -144,11 +144,11 @@ public class GitOperationDialog extends JDialog {
         textPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(operation.getDisplayName());
-        titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 16));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
 
         JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WORKSPACE, workspace.getName()));
-        subtitleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        subtitleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         subtitleLabel.setForeground(Color.WHITE);
 
         textPanel.add(titleLabel);
@@ -175,13 +175,13 @@ public class GitOperationDialog extends JDialog {
 
         JLabel currentBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CURRENT_BRANCH,
                 workspace.getCurrentBranch() != null ? workspace.getCurrentBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNKNOWN)));
-        currentBranchLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        currentBranchLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         currentBranchLabel.setForeground(Color.WHITE);
         currentBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         JLabel remoteBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_BRANCH,
                 workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NOT_SET)));
-        remoteBranchLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        remoteBranchLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         remoteBranchLabel.setForeground(Color.WHITE);
         remoteBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
@@ -238,13 +238,13 @@ public class GitOperationDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD, 12)
         ));
 
         JPanel statusInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         statusIcon = new JLabel(new FlatSVGIcon("icons/refresh.svg", 16, 16));
         statusMessage = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS));
-        statusMessage.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        statusMessage.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
 
         statusInfoPanel.add(statusIcon);
         statusInfoPanel.add(statusMessage);
@@ -277,7 +277,7 @@ public class GitOperationDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD, 12)
         ));
 
         JPanel fileChangesPanel = new JPanel(new BorderLayout());
@@ -316,12 +316,12 @@ public class GitOperationDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_COMMIT_MESSAGE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD, 12)
         ));
         panel.setPreferredSize(new Dimension(0, 60)); // 设置固定高度
 
         commitMessageArea = new JTextArea(1, 0);
-        commitMessageArea.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 11));
+        commitMessageArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         commitMessageArea.setLineWrap(true);
         commitMessageArea.setWrapStyleWord(true);
         commitMessageArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_DEFAULT_COMMIT_MESSAGE,
@@ -371,12 +371,12 @@ public class GitOperationDialog extends JDialog {
         buttonPanel.setOpaque(false);
 
         JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        cancelButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        cancelButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         cancelButton.setPreferredSize(new Dimension(80, 32));
         cancelButton.addActionListener(e -> dispose());
 
         executeButton = new JButton(operation.getDisplayName());
-        executeButton.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        executeButton.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         executeButton.setPreferredSize(new Dimension(100, 32));
         executeButton.setBackground(operation.getColor());
         executeButton.setForeground(Color.WHITE);
@@ -569,7 +569,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void addOptionTitle(String title) {
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.BOLD, 12));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         titleLabel.setBorder(new EmptyBorder(5, 0, 5, 0));
         optionsPanel.add(titleLabel);
     }
@@ -588,7 +588,7 @@ public class GitOperationDialog extends JDialog {
 
         JRadioButton radio = new JRadioButton(text, selected);
         radio.setActionCommand(value);
-        radio.setFont(EasyPostManFontUtil.getDefaultFont(Font.PLAIN, 12));
+        radio.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         if (textColor != null) {
             radio.setForeground(textColor);
         }
@@ -598,7 +598,7 @@ public class GitOperationDialog extends JDialog {
         radio.addActionListener(e -> updateExecuteButtonStateByChoice());
 
         JLabel descLabel = new JLabel(description);
-        descLabel.setFont(EasyPostManFontUtil.getDefaultFont(Font.ITALIC, 10));
+        descLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 10));
         descLabel.setForeground(Color.GRAY);
         descLabel.setBorder(new EmptyBorder(0, 25, 0, 0));
 

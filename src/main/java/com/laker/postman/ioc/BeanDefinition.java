@@ -18,14 +18,10 @@ public class BeanDefinition {
     private Class<?> beanClass;
 
     /**
-     * 是否单例
+     * 是否单例（默认为单例）
      */
     private boolean singleton = true;
 
-    /**
-     * 单例对象实例（如果是单例）
-     */
-    private Object instance;
 
     public BeanDefinition(String name, Class<?> beanClass) {
         this.name = name;

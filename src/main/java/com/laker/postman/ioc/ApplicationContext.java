@@ -155,7 +155,13 @@ public class ApplicationContext {
             beanName = getBeanName(clazz);
         }
 
-        boolean singleton = !clazz.isAnnotationPresent(Singleton.class) || clazz.getAnnotation(Singleton.class) != null;
+        // 检查作用域：默认为单例，除非明确指定为 prototype
+        boolean singleton = true;
+        if (clazz.isAnnotationPresent(Scope.class)) {
+            Scope scope = clazz.getAnnotation(Scope.class);
+            singleton = !Scope.PROTOTYPE.equals(scope.value());
+        }
+
         BeanDefinition beanDefinition = new BeanDefinition(beanName, clazz, singleton);
 
         beanDefinitionMap.put(beanName, beanDefinition);
@@ -166,7 +172,7 @@ public class ApplicationContext {
         // 同时索引所有接口和父类
         indexInterfaces(clazz, beanName);
 
-        log.debug("Registered bean: {} -> {}", beanName, clazz.getName());
+        log.debug("Registered bean: {} -> {} (singleton={})", beanName, clazz.getName(), singleton);
     }
 
     /**
@@ -192,8 +198,10 @@ public class ApplicationContext {
      */
     public void registerBean(String beanName, Object bean) {
         BeanDefinition beanDefinition = new BeanDefinition(beanName, bean.getClass(), true);
-        beanDefinition.setInstance(bean);
         beanDefinitionMap.put(beanName, beanDefinition);
+
+        // 直接放入一级缓存（已经是完整的Bean实例）
+        singletonObjects.put(beanName, bean);
 
         // 建立类型索引
         typeIndexMap.computeIfAbsent(bean.getClass(), k -> new ArrayList<>()).add(beanName);
@@ -209,7 +217,7 @@ public class ApplicationContext {
     public <T> T getBean(String beanName) {
         BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
         if (beanDefinition == null) {
-            throw new RuntimeException("No bean named '" + beanName + "' found");
+            throw new NoSuchBeanException(beanName);
         }
 
         return (T) getBean(beanDefinition);
@@ -222,11 +230,11 @@ public class ApplicationContext {
         List<String> beanNames = typeIndexMap.get(requiredType);
 
         if (beanNames == null || beanNames.isEmpty()) {
-            throw new RuntimeException("No bean of type '" + requiredType.getName() + "' found");
+            throw new NoSuchBeanException(requiredType);
         }
 
         if (beanNames.size() > 1) {
-            throw new RuntimeException("Multiple beans of type '" + requiredType.getName() + "' found: " + beanNames);
+            throw new BeanException("Multiple beans of type '" + requiredType.getName() + "' found: " + beanNames);
         }
 
         return getBean(beanNames.get(0));
@@ -260,22 +268,29 @@ public class ApplicationContext {
 
         // 2. 如果一级缓存没有，且Bean正在创建中（说明存在循环依赖）
         if (singletonObject == null && singletonsCurrentlyInCreation.contains(beanName)) {
-            // 从二级缓存获取早期引用
-            singletonObject = earlySingletonObjects.get(beanName);
+            // 加锁保证线程安全
+            synchronized (this.singletonObjects) {
+                // 双重检查
+                singletonObject = singletonObjects.get(beanName);
+                if (singletonObject == null) {
+                    // 从二级缓存获取早期引用
+                    singletonObject = earlySingletonObjects.get(beanName);
 
-            // 3. 如果二级缓存也没有，从三级缓存获取
-            if (singletonObject == null) {
-                ObjectFactory<?> factory = singletonFactories.get(beanName);
-                if (factory != null) {
-                    try {
-                        // 从工厂获取早期引用
-                        singletonObject = factory.getObject();
-                        // 放入二级缓存，移除三级缓存
-                        earlySingletonObjects.put(beanName, singletonObject);
-                        singletonFactories.remove(beanName);
-                        log.debug("Resolved circular dependency for bean: {}", beanName);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to get early reference for bean: " + beanName, e);
+                    // 3. 如果二级缓存也没有，从三级缓存获取
+                    if (singletonObject == null) {
+                        ObjectFactory<?> factory = singletonFactories.get(beanName);
+                        if (factory != null) {
+                            try {
+                                // 从工厂获取早期引用
+                                singletonObject = factory.getObject();
+                                // 放入二级缓存，移除三级缓存
+                                earlySingletonObjects.put(beanName, singletonObject);
+                                singletonFactories.remove(beanName);
+                                log.debug("Resolved circular dependency for bean: {}", beanName);
+                            } catch (Exception e) {
+                                throw new BeanCreationException(beanName, "Failed to get early reference", e);
+                            }
+                        }
                     }
                 }
             }
@@ -283,30 +298,37 @@ public class ApplicationContext {
 
         // 4. 如果所有缓存都没有，创建新的Bean
         if (singletonObject == null) {
-            // 标记Bean正在创建
-            singletonsCurrentlyInCreation.add(beanName);
+            // 使用同步锁保证单例Bean只被创建一次
+            synchronized (this.singletonObjects) {
+                // 再次检查缓存（可能其他线程已创建）
+                singletonObject = singletonObjects.get(beanName);
+                if (singletonObject == null) {
+                    // 标记Bean正在创建
+                    singletonsCurrentlyInCreation.add(beanName);
 
-            try {
-                // 调用工厂方法创建Bean
-                singletonObject = singletonFactory.getObject();
+                    try {
+                        // 调用工厂方法创建Bean
+                        singletonObject = singletonFactory.getObject();
 
-                // 从二级缓存移除（如果存在）
-                earlySingletonObjects.remove(beanName);
-                // 从三级缓存移除（如果存在）
-                singletonFactories.remove(beanName);
-                // 放入一级缓存
-                singletonObjects.put(beanName, singletonObject);
+                        // 从二级缓存移除（如果存在）
+                        earlySingletonObjects.remove(beanName);
+                        // 从三级缓存移除（如果存在）
+                        singletonFactories.remove(beanName);
+                        // 放入一级缓存
+                        singletonObjects.put(beanName, singletonObject);
 
-                log.debug("Created and cached singleton bean: {}", beanName);
-            } catch (Exception e) {
-                // 创建失败，清理状态
-                singletonsCurrentlyInCreation.remove(beanName);
-                earlySingletonObjects.remove(beanName);
-                singletonFactories.remove(beanName);
-                throw new RuntimeException("Failed to create bean: " + beanName, e);
-            } finally {
-                // 创建完成，移除创建标记
-                singletonsCurrentlyInCreation.remove(beanName);
+                        log.debug("Created and cached singleton bean: {}", beanName);
+                    } catch (Exception e) {
+                        // 创建失败，清理状态
+                        singletonsCurrentlyInCreation.remove(beanName);
+                        earlySingletonObjects.remove(beanName);
+                        singletonFactories.remove(beanName);
+                        throw new BeanCreationException(beanName, e);
+                    } finally {
+                        // 创建完成，移除创建标记
+                        singletonsCurrentlyInCreation.remove(beanName);
+                    }
+                }
             }
         }
 
@@ -345,8 +367,11 @@ public class ApplicationContext {
             log.debug("Created bean: {}", beanName);
             return instance;
 
+        } catch (BeanCreationException e) {
+            // 直接重新抛出 BeanCreationException
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create bean: " + beanName, e);
+            throw new BeanCreationException(beanName, e);
         }
     }
 
@@ -414,12 +439,23 @@ public class ApplicationContext {
                         Object dependency = getBean(field.getType());
                         field.setAccessible(true);
                         field.set(instance, dependency);
-                    } catch (Exception e) {
+                        log.debug("Injected field '{}' in bean '{}'", field.getName(), instance.getClass().getSimpleName());
+                    } catch (NoSuchBeanException e) {
                         if (autowired.required()) {
-                            throw new RuntimeException("Failed to inject field: " + field.getName(), e);
+                            throw new BeanCreationException(
+                                instance.getClass().getSimpleName(),
+                                "Failed to inject required field '" + field.getName() + "': " + e.getMessage(),
+                                e
+                            );
                         } else {
-                            log.warn("Failed to inject optional field: {}", field.getName());
+                            log.debug("Skipped optional field injection: {}.{}", clazz.getSimpleName(), field.getName());
                         }
+                    } catch (Exception e) {
+                        throw new BeanCreationException(
+                            instance.getClass().getSimpleName(),
+                            "Failed to inject field '" + field.getName() + "'",
+                            e
+                        );
                     }
                 }
             }
@@ -441,7 +477,10 @@ public class ApplicationContext {
                 if (method.isAnnotationPresent(PostConstruct.class)) {
                     // 验证方法签名
                     if (method.getParameterCount() != 0) {
-                        throw new RuntimeException("@PostConstruct method must have no parameters: " + method.getName());
+                        throw new BeanCreationException(
+                            instance.getClass().getSimpleName(),
+                            "@PostConstruct method '" + method.getName() + "' must have no parameters"
+                        );
                     }
 
                     try {
@@ -449,7 +488,11 @@ public class ApplicationContext {
                         method.invoke(instance);
                         log.debug("Invoked @PostConstruct method: {}.{}", clazz.getSimpleName(), method.getName());
                     } catch (Exception e) {
-                        throw new RuntimeException("Failed to invoke @PostConstruct method: " + method.getName(), e);
+                        throw new BeanCreationException(
+                            instance.getClass().getSimpleName(),
+                            "Failed to invoke @PostConstruct method '" + method.getName() + "'",
+                            e
+                        );
                     }
                 }
             }
@@ -462,14 +505,17 @@ public class ApplicationContext {
      * 调用InitializingBean接口的afterPropertiesSet方法
      */
     private void invokeInitializingBean(Object instance) {
-        if (instance instanceof InitializingBean) {
+        if (instance instanceof InitializingBean initializingBean) {
             try {
-                ((InitializingBean) instance).afterPropertiesSet();
+                initializingBean.afterPropertiesSet();
                 log.debug("Invoked InitializingBean.afterPropertiesSet() for: {}",
                         instance.getClass().getSimpleName());
             } catch (Exception e) {
-                throw new RuntimeException("Failed to invoke afterPropertiesSet() for: "
-                        + instance.getClass().getName(), e);
+                throw new BeanCreationException(
+                    instance.getClass().getSimpleName(),
+                    "Failed to invoke afterPropertiesSet()",
+                    e
+                );
             }
         }
     }
@@ -487,7 +533,10 @@ public class ApplicationContext {
             for (Method method : methods) {
                 if (method.isAnnotationPresent(PreDestroy.class)) {
                     if (method.getParameterCount() != 0) {
-                        throw new RuntimeException("@PreDestroy method must have no parameters: " + method.getName());
+                        throw new BeanCreationException(
+                            instance.getClass().getSimpleName(),
+                            "@PreDestroy method '" + method.getName() + "' must have no parameters"
+                        );
                     }
 
                     method.setAccessible(true);
@@ -527,9 +576,9 @@ public class ApplicationContext {
 
         // 2. 然后调用DisposableBean接口的destroy方法
         for (Object instance : singletonObjects.values()) {
-            if (instance instanceof DisposableBean) {
+            if (instance instanceof DisposableBean disposableBean) {
                 try {
-                    ((DisposableBean) instance).destroy();
+                    disposableBean.destroy();
                     log.debug("Invoked DisposableBean.destroy() for: {}",
                             instance.getClass().getSimpleName());
                 } catch (Exception e) {

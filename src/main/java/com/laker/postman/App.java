@@ -2,6 +2,7 @@ package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.laker.postman.common.window.EasyPostManSplashWindow;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.EasyPostManStyleUtils;
 import com.laker.postman.util.I18nUtil;
@@ -20,6 +21,10 @@ public class App {
 
 
     public static void main(String[] args) {
+        // 0. 初始化 IOC 容器（在 EDT 之前，避免阻塞 UI）
+        // 扫描 com.laker.postman 包下的所有 @Component 注解的类
+        BeanFactory.init("com.laker.postman");
+
         // Swing 推荐在事件分派线程（EDT）中运行所有 UI 相关操作
         SwingUtilities.invokeLater(() -> {
             // 1. 设置主题
@@ -44,7 +49,26 @@ public class App {
             ));
         });
 
-        // 7. 启动后台版本检查
+        // 7. 注册应用程序关闭钩子，确保优雅关闭
+        registerShutdownHook();
+
+        // 8. 启动后台版本检查
         UpdateService.getInstance().checkUpdateOnStartup();
+    }
+
+    /**
+     * 注册应用程序关闭钩子
+     */
+    private static void registerShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("Application shutting down...");
+            try {
+                // 销毁 IOC 容器，调用所有 @PreDestroy 方法
+                BeanFactory.destroy();
+                log.info("Application shutdown completed");
+            } catch (Exception e) {
+                log.error("Error during application shutdown", e);
+            }
+        }, "ShutdownHook"));
     }
 }

@@ -92,6 +92,8 @@ public class ApplicationContext {
                 log.error("Failed to scan package: {}", basePackage, e);
             }
         }
+        // 已注册的Bean数量
+        log.info("Total registered beans: [{}]", beanDefinitionMap.size());
     }
 
     /**
@@ -258,7 +260,7 @@ public class ApplicationContext {
     /**
      * 获取单例Bean（三级缓存核心方法）
      *
-     * @param beanName Bean名称
+     * @param beanName         Bean名称
      * @param singletonFactory Bean工厂
      * @return Bean实例
      */
@@ -412,7 +414,7 @@ public class ApplicationContext {
      * 这个方法返回的是实例化但未完全初始化的Bean
      *
      * @param beanName Bean名称
-     * @param bean Bean实例
+     * @param bean     Bean实例
      * @return 早期Bean引用
      */
     private Object getEarlyBeanReference(String beanName, Object bean) {
@@ -443,18 +445,18 @@ public class ApplicationContext {
                     } catch (NoSuchBeanException e) {
                         if (autowired.required()) {
                             throw new BeanCreationException(
-                                instance.getClass().getSimpleName(),
-                                "Failed to inject required field '" + field.getName() + "': " + e.getMessage(),
-                                e
+                                    instance.getClass().getSimpleName(),
+                                    "Failed to inject required field '" + field.getName() + "': " + e.getMessage(),
+                                    e
                             );
                         } else {
                             log.debug("Skipped optional field injection: {}.{}", clazz.getSimpleName(), field.getName());
                         }
                     } catch (Exception e) {
                         throw new BeanCreationException(
-                            instance.getClass().getSimpleName(),
-                            "Failed to inject field '" + field.getName() + "'",
-                            e
+                                instance.getClass().getSimpleName(),
+                                "Failed to inject field '" + field.getName() + "'",
+                                e
                         );
                     }
                 }
@@ -478,8 +480,8 @@ public class ApplicationContext {
                     // 验证方法签名
                     if (method.getParameterCount() != 0) {
                         throw new BeanCreationException(
-                            instance.getClass().getSimpleName(),
-                            "@PostConstruct method '" + method.getName() + "' must have no parameters"
+                                instance.getClass().getSimpleName(),
+                                "@PostConstruct method '" + method.getName() + "' must have no parameters"
                         );
                     }
 
@@ -489,9 +491,9 @@ public class ApplicationContext {
                         log.debug("Invoked @PostConstruct method: {}.{}", clazz.getSimpleName(), method.getName());
                     } catch (Exception e) {
                         throw new BeanCreationException(
-                            instance.getClass().getSimpleName(),
-                            "Failed to invoke @PostConstruct method '" + method.getName() + "'",
-                            e
+                                instance.getClass().getSimpleName(),
+                                "Failed to invoke @PostConstruct method '" + method.getName() + "'",
+                                e
                         );
                     }
                 }
@@ -512,9 +514,9 @@ public class ApplicationContext {
                         instance.getClass().getSimpleName());
             } catch (Exception e) {
                 throw new BeanCreationException(
-                    instance.getClass().getSimpleName(),
-                    "Failed to invoke afterPropertiesSet()",
-                    e
+                        instance.getClass().getSimpleName(),
+                        "Failed to invoke afterPropertiesSet()",
+                        e
                 );
             }
         }
@@ -534,8 +536,8 @@ public class ApplicationContext {
                 if (method.isAnnotationPresent(PreDestroy.class)) {
                     if (method.getParameterCount() != 0) {
                         throw new BeanCreationException(
-                            instance.getClass().getSimpleName(),
-                            "@PreDestroy method '" + method.getName() + "' must have no parameters"
+                                instance.getClass().getSimpleName(),
+                                "@PreDestroy method '" + method.getName() + "' must have no parameters"
                         );
                     }
 

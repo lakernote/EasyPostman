@@ -34,27 +34,6 @@ public class BeanFactory {
     }
 
     /**
-     * 手动注册Bean实例
-     */
-    public static void registerBean(String beanName, Object bean) {
-        context.registerBean(beanName, bean);
-    }
-
-    /**
-     * 检查是否包含指定名称的Bean
-     */
-    public static boolean containsBean(String beanName) {
-        return context.containsBean(beanName);
-    }
-
-    /**
-     * 获取ApplicationContext实例
-     */
-    public static ApplicationContext getContext() {
-        return context;
-    }
-
-    /**
      * 销毁所有Bean，调用@PreDestroy方法
      * 建议在应用程序关闭时调用此方法
      */

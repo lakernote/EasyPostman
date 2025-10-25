@@ -1130,14 +1130,58 @@ public final class MessageKeys {
     public static final String TOOLBOX_HASH_UPPERCASE = "toolbox.hash.uppercase";
     public static final String TOOLBOX_HASH_UPPERCASE_TOOLTIP = "toolbox.hash.uppercase.tooltip";
 
+    // ============ JSON 工具相关 ============
     public static final String TOOLBOX_JSON = "toolbox.json";
     public static final String TOOLBOX_JSON_FORMAT = "toolbox.json.format";
     public static final String TOOLBOX_JSON_COMPRESS = "toolbox.json.compress";
     public static final String TOOLBOX_JSON_VALIDATE = "toolbox.json.validate";
+    public static final String TOOLBOX_JSON_ESCAPE = "toolbox.json.escape";
+    public static final String TOOLBOX_JSON_UNESCAPE = "toolbox.json.unescape";
+    public static final String TOOLBOX_JSON_SORT_KEYS = "toolbox.json.sort_keys";
+    public static final String TOOLBOX_JSON_SWAP = "toolbox.json.swap";
+    public static final String TOOLBOX_JSON_PASTE = "toolbox.json.paste";
     public static final String TOOLBOX_JSON_INPUT = "toolbox.json.input";
     public static final String TOOLBOX_JSON_OUTPUT = "toolbox.json.output";
     public static final String TOOLBOX_JSON_ERROR = "toolbox.json.error";
 
+    // JSON 工具状态消息
+    public static final String TOOLBOX_JSON_STATUS_EMPTY = "toolbox.json.status.empty";
+    public static final String TOOLBOX_JSON_STATUS_FORMATTED = "toolbox.json.status.formatted";
+    public static final String TOOLBOX_JSON_STATUS_COMPRESSED = "toolbox.json.status.compressed";
+    public static final String TOOLBOX_JSON_STATUS_VALIDATED = "toolbox.json.status.validated";
+    public static final String TOOLBOX_JSON_STATUS_INVALID = "toolbox.json.status.invalid";
+    public static final String TOOLBOX_JSON_STATUS_ESCAPED = "toolbox.json.status.escaped";
+    public static final String TOOLBOX_JSON_STATUS_UNESCAPED = "toolbox.json.status.unescaped";
+    public static final String TOOLBOX_JSON_STATUS_SORTED = "toolbox.json.status.sorted";
+    public static final String TOOLBOX_JSON_STATUS_SWAPPED = "toolbox.json.status.swapped";
+    public static final String TOOLBOX_JSON_STATUS_COPIED = "toolbox.json.status.copied";
+    public static final String TOOLBOX_JSON_STATUS_PASTED = "toolbox.json.status.pasted";
+    public static final String TOOLBOX_JSON_STATUS_CLEARED = "toolbox.json.status.cleared";
+    public static final String TOOLBOX_JSON_STATUS_OUTPUT_EMPTY = "toolbox.json.status.output_empty";
+    public static final String TOOLBOX_JSON_STATUS_NOT_OBJECT = "toolbox.json.status.not_object";
+
+    // JSON 验证相关
+    public static final String TOOLBOX_JSON_VALIDATION_EMPTY = "toolbox.json.validation.empty";
+    public static final String TOOLBOX_JSON_VALIDATION_VALID = "toolbox.json.validation.valid";
+    public static final String TOOLBOX_JSON_VALIDATION_TYPE = "toolbox.json.validation.type";
+    public static final String TOOLBOX_JSON_VALIDATION_CHARACTERS = "toolbox.json.validation.characters";
+    public static final String TOOLBOX_JSON_VALIDATION_LINES = "toolbox.json.validation.lines";
+    public static final String TOOLBOX_JSON_VALIDATION_KEYS = "toolbox.json.validation.keys";
+    public static final String TOOLBOX_JSON_VALIDATION_ARRAY_LENGTH = "toolbox.json.validation.array_length";
+
+    // JSON 工具提示
+    public static final String TOOLBOX_JSON_TOOLTIP_FORMAT = "toolbox.json.tooltip.format";
+    public static final String TOOLBOX_JSON_TOOLTIP_COMPRESS = "toolbox.json.tooltip.compress";
+    public static final String TOOLBOX_JSON_TOOLTIP_VALIDATE = "toolbox.json.tooltip.validate";
+    public static final String TOOLBOX_JSON_TOOLTIP_ESCAPE = "toolbox.json.tooltip.escape";
+    public static final String TOOLBOX_JSON_TOOLTIP_UNESCAPE = "toolbox.json.tooltip.unescape";
+    public static final String TOOLBOX_JSON_TOOLTIP_SORT = "toolbox.json.tooltip.sort";
+    public static final String TOOLBOX_JSON_TOOLTIP_COPY = "toolbox.json.tooltip.copy";
+    public static final String TOOLBOX_JSON_TOOLTIP_PASTE = "toolbox.json.tooltip.paste";
+    public static final String TOOLBOX_JSON_TOOLTIP_CLEAR = "toolbox.json.tooltip.clear";
+    public static final String TOOLBOX_JSON_TOOLTIP_SWAP = "toolbox.json.tooltip.swap";
+
+    // ============ 时间戳工具相关 ============
     public static final String TOOLBOX_TIMESTAMP = "toolbox.timestamp";
     public static final String TOOLBOX_TIMESTAMP_CURRENT = "toolbox.timestamp.current";
     public static final String TOOLBOX_TIMESTAMP_INPUT = "toolbox.timestamp.input";

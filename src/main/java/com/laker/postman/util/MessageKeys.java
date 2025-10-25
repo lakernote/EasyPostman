@@ -1259,6 +1259,44 @@ public final class MessageKeys {
     public static final String TOOLBOX_CRON_GENERATE = "toolbox.cron.generate";
     public static final String TOOLBOX_CRON_DESCRIPTION = "toolbox.cron.description";
     public static final String TOOLBOX_CRON_NEXT_EXECUTIONS = "toolbox.cron.next_executions";
+    public static final String TOOLBOX_CRON_TAB_PARSE = "toolbox.cron.tab.parse";
+    public static final String TOOLBOX_CRON_TAB_GENERATE = "toolbox.cron.tab.generate";
+    public static final String TOOLBOX_CRON_PLACEHOLDER = "toolbox.cron.placeholder";
+    public static final String TOOLBOX_CRON_EXECUTION_TIME = "toolbox.cron.execution_time";
+    public static final String TOOLBOX_CRON_FORMAT = "toolbox.cron.format";
+    public static final String TOOLBOX_CRON_SECOND = "toolbox.cron.second";
+    public static final String TOOLBOX_CRON_MINUTE = "toolbox.cron.minute";
+    public static final String TOOLBOX_CRON_HOUR = "toolbox.cron.hour";
+    public static final String TOOLBOX_CRON_DAY = "toolbox.cron.day";
+    public static final String TOOLBOX_CRON_MONTH = "toolbox.cron.month";
+    public static final String TOOLBOX_CRON_WEEK = "toolbox.cron.week";
+    public static final String TOOLBOX_CRON_YEAR = "toolbox.cron.year";
+    public static final String TOOLBOX_CRON_YEAR_OPTIONAL = "toolbox.cron.year.optional";
+    public static final String TOOLBOX_CRON_YEAR_PLACEHOLDER = "toolbox.cron.year.placeholder";
+    public static final String TOOLBOX_CRON_GENERATED = "toolbox.cron.generated";
+    public static final String TOOLBOX_CRON_QUICK_PRESETS = "toolbox.cron.quick_presets";
+    public static final String TOOLBOX_CRON_COMMON_PRESETS = "toolbox.cron.common_presets";
+    public static final String TOOLBOX_CRON_SPECIAL_CHARS = "toolbox.cron.special_chars";
+    public static final String TOOLBOX_CRON_COMMON_EXPRESSIONS = "toolbox.cron.common_expressions";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_SECOND = "toolbox.cron.preset.every_second";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_MINUTE = "toolbox.cron.preset.every_minute";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_5MIN = "toolbox.cron.preset.every_5min";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_15MIN = "toolbox.cron.preset.every_15min";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_30MIN = "toolbox.cron.preset.every_30min";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_HOUR = "toolbox.cron.preset.every_hour";
+    public static final String TOOLBOX_CRON_PRESET_EVERY_2HOUR = "toolbox.cron.preset.every_2hour";
+    public static final String TOOLBOX_CRON_PRESET_DAILY_NOON = "toolbox.cron.preset.daily_noon";
+    public static final String TOOLBOX_CRON_PRESET_DAILY_MIDNIGHT = "toolbox.cron.preset.daily_midnight";
+    public static final String TOOLBOX_CRON_PRESET_MONDAY_9AM = "toolbox.cron.preset.monday_9am";
+    public static final String TOOLBOX_CRON_PRESET_WEEKDAY_9AM = "toolbox.cron.preset.weekday_9am";
+    public static final String TOOLBOX_CRON_PRESET_FIRST_DAY_MONTH = "toolbox.cron.preset.first_day_month";
+    public static final String TOOLBOX_CRON_PRESET_LAST_DAY_MONTH = "toolbox.cron.preset.last_day_month";
+    public static final String TOOLBOX_CRON_ERROR_EMPTY = "toolbox.cron.error.empty";
+    public static final String TOOLBOX_CRON_ERROR_INVALID = "toolbox.cron.error.invalid";
+    public static final String TOOLBOX_CRON_ERROR_PARSE = "toolbox.cron.error.parse";
+    public static final String TOOLBOX_CRON_ANALYSIS = "toolbox.cron.analysis";
+    public static final String TOOLBOX_CRON_FIELDS = "toolbox.cron.fields";
+    public static final String TOOLBOX_CRON_UNABLE_CALCULATE = "toolbox.cron.unable_calculate";
 
 }
 

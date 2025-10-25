@@ -46,10 +46,10 @@ public class CronPanel extends JPanel {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         // Tab 1: Cron表达式解析
-        tabbedPane.addTab("Parse Cron", createParsePanel());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_TAB_PARSE), createParsePanel());
 
         // Tab 2: Cron表达式生成
-        tabbedPane.addTab("Generate Cron", createGeneratePanel());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_TAB_GENERATE), createGeneratePanel());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -68,7 +68,7 @@ public class CronPanel extends JPanel {
         cronField = new FlatTextField();
         cronField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 14));
         cronField.setText("0 0 12 * * ?");
-        cronField.setPlaceholderText("Enter cron expression (e.g. 0 0 12 * * ?)");
+        cronField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PLACEHOLDER));
         cronField.setBackground(Color.WHITE);
         row1.add(cronField, BorderLayout.CENTER);
         topPanel.add(row1);
@@ -103,7 +103,7 @@ public class CronPanel extends JPanel {
         // 下次执行时间表格
         JPanel tablePanel = new JPanel(new BorderLayout(5, 5));
         tablePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_NEXT_EXECUTIONS) + ":"), BorderLayout.NORTH);
-        String[] columns = {"#", "Execution Time"};
+        String[] columns = {"#", I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXECUTION_TIME)};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -143,43 +143,43 @@ public class CronPanel extends JPanel {
 
         // Cron字段说明
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel infoLabel = new JLabel("<html><b>Cron Format:</b> Second Minute Hour Day Month Week [Year]</html>");
+        JLabel infoLabel = new JLabel("<html><b>" + I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_FORMAT) + ":</b> Second Minute Hour Day Month Week [Year]</html>");
         infoPanel.add(infoLabel);
         mainPanel.add(infoPanel);
 
         mainPanel.add(Box.createVerticalStrut(10));
 
         // 秒
-        mainPanel.add(createFieldPanel("Second (0-59):",
+        mainPanel.add(createFieldPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_SECOND) + ":",
                 secondCombo = new JComboBox<>(new String[]{"*", "0", "15", "30", "45", "0/5", "0/10", "0/15"})));
 
         // 分钟
-        mainPanel.add(createFieldPanel("Minute (0-59):",
+        mainPanel.add(createFieldPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MINUTE) + ":",
                 minuteCombo = new JComboBox<>(new String[]{"*", "0", "15", "30", "45", "0/5", "0/10", "0/15"})));
 
         // 小时
-        mainPanel.add(createFieldPanel("Hour (0-23):",
+        mainPanel.add(createFieldPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_HOUR) + ":",
                 hourCombo = new JComboBox<>(new String[]{"*", "0", "6", "12", "18", "0/2", "0/4", "0/6"})));
 
         // 日
-        mainPanel.add(createFieldPanel("Day (1-31):",
+        mainPanel.add(createFieldPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DAY) + ":",
                 dayCombo = new JComboBox<>(new String[]{"*", "?", "1", "15", "L", "1-15", "*/2"})));
 
         // 月
-        mainPanel.add(createFieldPanel("Month (1-12):",
+        mainPanel.add(createFieldPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MONTH) + ":",
                 monthCombo = new JComboBox<>(new String[]{"*", "1", "6", "12", "1-6", "*/2", "*/3"})));
 
         // 周
-        mainPanel.add(createFieldPanel("Week (0-7):",
+        mainPanel.add(createFieldPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_WEEK) + ":",
                 weekCombo = new JComboBox<>(new String[]{"?", "*", "1", "2", "3", "4", "5", "6", "7", "MON-FRI"})));
 
         // 年（可选）
         JPanel yearPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        yearPanel.add(new JLabel("Year (optional):"));
+        yearPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_YEAR_OPTIONAL) + ":"));
         yearField = new FlatTextField();
         yearField.setColumns(10);
         yearField.setText("");
-        yearField.setPlaceholderText("Enter year (optional):");
+        yearField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_YEAR_PLACEHOLDER));
         yearPanel.add(yearField);
         mainPanel.add(yearPanel);
 
@@ -189,7 +189,7 @@ public class CronPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JButton generateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_GENERATE));
         JButton copyGenBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
-        JButton presetBtn = new JButton("Quick Presets");
+        JButton presetBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_QUICK_PRESETS));
 
         buttonPanel.add(generateBtn);
         buttonPanel.add(copyGenBtn);
@@ -200,7 +200,7 @@ public class CronPanel extends JPanel {
 
         // 生成的Cron表达式
         JPanel resultPanel = new JPanel(new BorderLayout(5, 5));
-        resultPanel.add(new JLabel("Generated Cron:"), BorderLayout.WEST);
+        resultPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_GENERATED) + ":"), BorderLayout.WEST);
         JTextField generatedField = new JTextField();
         generatedField.setEditable(false);
         generatedField.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
@@ -240,34 +240,34 @@ public class CronPanel extends JPanel {
 
     private JPanel createPresetPanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("Common Presets"));
+        panel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_COMMON_PRESETS)));
 
         String[][] presets = {
-                {"Every second", "* * * * * ?"},
-                {"Every minute", "0 * * * * ?"},
-                {"Every 5 minutes", "0 */5 * * * ?"},
-                {"Every 15 minutes", "0 */15 * * * ?"},
-                {"Every 30 minutes", "0 */30 * * * ?"},
-                {"Every hour", "0 0 * * * ?"},
-                {"Every 2 hours", "0 0 */2 * * ?"},
-                {"Every day at noon", "0 0 12 * * ?"},
-                {"Every day at midnight", "0 0 0 * * ?"},
-                {"Every Monday at 9 AM", "0 0 9 ? * MON"},
-                {"Every weekday at 9 AM", "0 0 9 ? * MON-FRI"},
-                {"First day of month", "0 0 0 1 * ?"},
-                {"Last day of month", "0 0 0 L * ?"}
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_SECOND), "* * * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_MINUTE), "0 * * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_5MIN), "0 */5 * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_15MIN), "0 */15 * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_30MIN), "0 */30 * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_HOUR), "0 0 * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_2HOUR), "0 0 */2 * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_DAILY_NOON), "0 0 12 * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_DAILY_MIDNIGHT), "0 0 0 * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_MONDAY_9AM), "0 0 9 ? * MON"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_WEEKDAY_9AM), "0 0 9 ? * MON-FRI"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_FIRST_DAY_MONTH), "0 0 0 1 * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_LAST_DAY_MONTH), "0 0 0 L * ?"}
         };
 
         JTextArea presetArea = new JTextArea(15, 50);
         presetArea.setEditable(false);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Common Cron Expressions:\n\n");
+        sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_COMMON_EXPRESSIONS)).append(":\n\n");
         for (String[] preset : presets) {
             sb.append(String.format("%-25s : %s\n", preset[0], preset[1]));
         }
         sb.append("\n");
-        sb.append("Special Characters:\n");
+        sb.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_SPECIAL_CHARS)).append(":\n");
         sb.append("  *  - All values\n");
         sb.append("  ?  - No specific value (Day/Week)\n");
         sb.append("  -  - Range (e.g., 1-5)\n");
@@ -287,12 +287,12 @@ public class CronPanel extends JPanel {
         JPopupMenu menu = new JPopupMenu();
 
         String[][] presets = {
-                {"Every minute", "0 * * * * ?"},
-                {"Every 5 minutes", "0 */5 * * * ?"},
-                {"Every hour", "0 0 * * * ?"},
-                {"Every day at noon", "0 0 12 * * ?"},
-                {"Every day at midnight", "0 0 0 * * ?"},
-                {"Every weekday at 9 AM", "0 0 9 ? * MON-FRI"}
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_MINUTE), "0 * * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_5MIN), "0 */5 * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_HOUR), "0 0 * * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_DAILY_NOON), "0 0 12 * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_DAILY_MIDNIGHT), "0 0 0 * * ?"},
+                {I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_WEEKDAY_9AM), "0 0 9 ? * MON-FRI"}
         };
 
         for (String[] preset : presets) {
@@ -329,7 +329,7 @@ public class CronPanel extends JPanel {
         String cronExpression = cronField.getText().trim();
 
         if (cronExpression.isEmpty()) {
-            descriptionArea.setText("Please enter a Cron expression");
+            descriptionArea.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_ERROR_EMPTY));
             tableModel.setRowCount(0);
             return;
         }
@@ -337,7 +337,7 @@ public class CronPanel extends JPanel {
         try {
             // 验证Cron表达式
             if (!CronExpressionUtil.isValid(cronExpression)) {
-                descriptionArea.setText("❌ Invalid Cron expression. Expected format:\nSecond Minute Hour Day Month Week [Year]");
+                descriptionArea.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_ERROR_INVALID));
                 tableModel.setRowCount(0);
                 return;
             }
@@ -347,20 +347,20 @@ public class CronPanel extends JPanel {
 
             // 生成描述
             StringBuilder desc = new StringBuilder();
-            desc.append("✅ Cron Expression Analysis:\n\n");
-            desc.append("Expression: ").append(cronExpression).append("\n\n");
-            desc.append("Fields:\n");
-            desc.append("  Second: ").append(parts[0]).append("\n");
-            desc.append("  Minute: ").append(parts[1]).append("\n");
-            desc.append("  Hour:   ").append(parts[2]).append("\n");
-            desc.append("  Day:    ").append(parts[3]).append("\n");
-            desc.append("  Month:  ").append(parts[4]).append("\n");
-            desc.append("  Week:   ").append(parts[5]).append("\n");
+            desc.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_ANALYSIS)).append(":\n\n");
+            desc.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXPRESSION)).append(": ").append(cronExpression).append("\n\n");
+            desc.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_FIELDS)).append(":\n");
+            desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_SECOND)).append(": ").append(parts[0]).append("\n");
+            desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MINUTE)).append(": ").append(parts[1]).append("\n");
+            desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_HOUR)).append(":   ").append(parts[2]).append("\n");
+            desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DAY)).append(":    ").append(parts[3]).append("\n");
+            desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MONTH)).append(":  ").append(parts[4]).append("\n");
+            desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_WEEK)).append(":   ").append(parts[5]).append("\n");
             if (parts.length > 6) {
-                desc.append("  Year:   ").append(parts[6]).append("\n");
+                desc.append("  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_YEAR)).append(":   ").append(parts[6]).append("\n");
             }
 
-            desc.append("\nDescription:\n");
+            desc.append("\n").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DESCRIPTION)).append(":\n");
             desc.append(CronExpressionUtil.describe(cronExpression));
 
             descriptionArea.setText(desc.toString());
@@ -370,7 +370,7 @@ public class CronPanel extends JPanel {
             calculateNextExecutions(cronExpression);
 
         } catch (Exception ex) {
-            descriptionArea.setText("❌ Error parsing Cron expression:\n" + ex.getMessage());
+            descriptionArea.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_ERROR_PARSE) + ":\n" + ex.getMessage());
             tableModel.setRowCount(0);
             log.error("Cron parse error", ex);
         }
@@ -392,7 +392,7 @@ public class CronPanel extends JPanel {
             }
 
             if (executionTimes.isEmpty()) {
-                tableModel.addRow(new Object[]{"N/A", "Unable to calculate execution times"});
+                tableModel.addRow(new Object[]{"N/A", I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_UNABLE_CALCULATE)});
             }
 
         } catch (Exception ex) {

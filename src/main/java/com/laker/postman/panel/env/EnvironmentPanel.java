@@ -32,6 +32,8 @@ import javax.swing.event.TableModelEvent;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -255,8 +257,12 @@ public class EnvironmentPanel extends SingletonBasePanel {
         envListMenu.add(addItem);
         envListMenu.addSeparator();
         JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_RENAME), new FlatSVGIcon("icons/refresh.svg", 16, 16));
+        // 设置 F2 快捷键显示
+        renameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
         JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DUPLICATE), new FlatSVGIcon("icons/duplicate.svg", 16, 16)); // 复制菜单项
         JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE), new FlatSVGIcon("icons/close.svg", 16, 16));
+        // 设置 Delete 快捷键显示
+        deleteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
         JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT_POSTMAN), new FlatSVGIcon("icons/postman.svg", 16, 16));
         exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
         renameItem.addActionListener(e -> renameSelectedEnvironment());
@@ -272,6 +278,23 @@ public class EnvironmentPanel extends SingletonBasePanel {
         JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE), new FlatSVGIcon("icons/workspace.svg", 16, 16));
         moveToWorkspaceItem.addActionListener(e -> moveEnvironmentToWorkspace());
         envListMenu.add(moveToWorkspaceItem);
+
+        // 添加键盘监听器，支持 F2 重命名和 Delete 删除
+        environmentList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                EnvironmentItem selectedItem = environmentList.getSelectedValue();
+                if (selectedItem != null) {
+                    if (e.getKeyCode() == KeyEvent.VK_F2) {
+                        // F2 重命名
+                        renameSelectedEnvironment();
+                    } else if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+                        // Delete 或 Backspace 删除（Mac 上常用 Backspace）
+                        deleteSelectedEnvironment();
+                    }
+                }
+            }
+        });
 
         environmentList.addMouseListener(new MouseAdapter() {
             @Override

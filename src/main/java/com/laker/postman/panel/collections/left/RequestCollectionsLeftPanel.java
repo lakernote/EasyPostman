@@ -37,6 +37,8 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -128,6 +130,22 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
+        // 添加键盘监听器，支持 F2 快捷键重命名和 Delete 键删除
+        requestTree.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+                if (selectedNode != null && selectedNode != rootTreeNode) {
+                    if (e.getKeyCode() == KeyEvent.VK_F2) {
+                        // F2 重命名
+                        renameSelectedItem();
+                    } else if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+                        // Delete 或 Backspace 删除（Mac 上常用 Backspace）
+                        deleteSelectedItem();
+                    }
+                }
+            }
+        });
 
         // 鼠标点击事件，右键弹出菜单 左键打开请求
         requestTree.addMouseListener(new MouseAdapter() {
@@ -234,150 +252,18 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 if (selectedNode != rootTreeNode) {
                     JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_RENAME),
                             new FlatSVGIcon("icons/refresh.svg", 16, 16));
+                    // 设置 F2 快捷键显示
+                    renameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
                     JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
                             new FlatSVGIcon("icons/close.svg", 16, 16));
-                    renameItem.addActionListener(e -> renameSelectedItem());
-                    deleteItem.addActionListener(e -> deleteSelectedItem());
+                    // 设置 Delete 快捷键显示
+                    deleteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
+                    renameItem.addActionListener(e -> RequestCollectionsLeftPanel.this.renameSelectedItem());
+                    deleteItem.addActionListener(e -> RequestCollectionsLeftPanel.this.deleteSelectedItem());
                     menu.add(renameItem);
                     menu.add(deleteItem);
                 }
                 menu.show(requestTree, x, y);
-            }
-
-            private void renameSelectedItem() {
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-                if (selectedNode == null) return;
-
-                Object userObj = selectedNode.getUserObject();
-                if (userObj instanceof Object[] obj) {
-                    if (GROUP.equals(obj[0])) {
-                        String newName = JOptionPane.showInputDialog(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT), obj[1]);
-                        if (newName != null) newName = newName.trim();
-                        if (newName == null) {
-                            // 用户取消输入，直接退出
-                            return;
-                        }
-                        if (newName.isEmpty()) {
-                            JOptionPane.showMessageDialog(RequestCollectionsLeftPanel.this,
-                                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY),
-                                    I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
-                            return;
-                        }
-                        obj[1] = newName;
-                        treeModel.nodeChanged(selectedNode);
-                        saveRequestGroups();
-                    } else if (REQUEST.equals(obj[0])) {
-                        HttpRequestItem item = (HttpRequestItem) obj[1];
-                        String oldName = item.getName();
-                        String newName = JOptionPane.showInputDialog(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT), oldName);
-                        if (newName != null) newName = newName.trim();
-                        if (newName == null) {
-                            // 用户取消输入，直接退出
-                            return;
-                        }
-                        if (newName.isEmpty()) {
-                            JOptionPane.showMessageDialog(RequestCollectionsLeftPanel.this,
-                                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY),
-                                    I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
-                            return;
-                        }
-                        item.setName(newName);
-                        treeModel.nodeChanged(selectedNode);
-                        saveRequestGroups();
-                        // 同步更新已打开Tab的标题
-                        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-                        JTabbedPane tabbedPane = editPanel.getTabbedPane();
-                        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-                            Component comp = tabbedPane.getComponentAt(i);
-                            if (comp instanceof RequestEditSubPanel subPanel) {
-                                HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                                if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                                    tabbedPane.setTitleAt(i, newName);
-                                    // 更新自定义标签组件
-                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, item.getProtocol()));
-                                    // 同步刷新内容
-                                    subPanel.initPanelData(item);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            private void deleteSelectedItem() {
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-                if (selectedNode != null && selectedNode.getParent() != null) {
-                    // 删除前弹出确认提示
-                    int confirm = JOptionPane.showConfirmDialog(
-                            SingletonFactory.getInstance(MainFrame.class),
-                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM),
-                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM_TITLE),
-                            JOptionPane.YES_NO_OPTION
-                    );
-                    if (confirm != JOptionPane.YES_OPTION) {
-                        return;
-                    }
-                    // 先关闭相关Tab
-                    Object userObj = selectedNode.getUserObject();
-                    RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-                    JTabbedPane tabbedPane = editPanel.getTabbedPane();
-                    if (userObj instanceof Object[] obj) {
-                        if (REQUEST.equals(obj[0])) {
-                            HttpRequestItem item = (HttpRequestItem) obj[1];
-                            // 关闭所有与该请求id匹配的Tab
-                            for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
-                                Component comp = tabbedPane.getComponentAt(i);
-                                if (comp instanceof RequestEditSubPanel subPanel) {
-                                    HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                                    if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                                        tabbedPane.remove(i);
-                                    }
-                                }
-                            }
-                            if (tabbedPane.getTabCount() > 1) {
-                                tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
-                            }
-                        } else if (GROUP.equals(obj[0])) {
-                            // 递归关闭该组下所有请求Tab
-                            closeTabsForGroup(selectedNode, tabbedPane);
-                            if (tabbedPane.getTabCount() > 1) {
-                                tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
-                            }
-                        }
-                    }
-                    // 删除树节点
-                    DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
-                    parent.remove(selectedNode);
-                    treeModel.reload();
-                    // 删除后保持父节点展开
-                    TreePath parentPath = new TreePath(parent.getPath());
-                    requestTree.expandPath(parentPath);
-                    saveRequestGroups();
-                }
-            }
-
-            // 递归关闭分组下所有请求Tab
-            private void closeTabsForGroup(DefaultMutableTreeNode groupNode, JTabbedPane tabbedPane) {
-                for (int i = 0; i < groupNode.getChildCount(); i++) {
-                    DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
-                    Object userObj = child.getUserObject();
-                    if (userObj instanceof Object[] obj) {
-                        if (REQUEST.equals(obj[0])) {
-                            HttpRequestItem item = (HttpRequestItem) obj[1];
-                            for (int j = tabbedPane.getTabCount() - 1; j >= 0; j--) {
-                                Component comp = tabbedPane.getComponentAt(j);
-                                if (comp instanceof RequestEditSubPanel subPanel) {
-                                    HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                                    if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                                        tabbedPane.remove(j);
-                                    }
-                                }
-                            }
-                        } else if (GROUP.equals(obj[0])) {
-                            closeTabsForGroup(child, tabbedPane);
-                        }
-                    }
-                }
             }
         });
 
@@ -434,6 +320,175 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private void saveRequestGroups() {
         persistence.saveRequestGroups();
+    }
+
+    /**
+     * 重命名选中的项（分组或请求）
+     * 支持通过 F2 快捷键或右键菜单调用
+     */
+    private void renameSelectedItem() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+        if (selectedNode == null) return;
+
+        Object userObj = selectedNode.getUserObject();
+        if (userObj instanceof Object[] obj) {
+            if (GROUP.equals(obj[0])) {
+                // 重命名分组
+                String newName = JOptionPane.showInputDialog(
+                        this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT),
+                        obj[1]
+                );
+                if (newName != null) newName = newName.trim();
+                if (newName == null) {
+                    // 用户取消输入，直接退出
+                    return;
+                }
+                if (newName.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+                obj[1] = newName;
+                treeModel.nodeChanged(selectedNode);
+                saveRequestGroups();
+            } else if (REQUEST.equals(obj[0])) {
+                // 重命名请求
+                HttpRequestItem item = (HttpRequestItem) obj[1];
+                String oldName = item.getName();
+                String newName = JOptionPane.showInputDialog(
+                        this,
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT),
+                        oldName
+                );
+                if (newName != null) newName = newName.trim();
+                if (newName == null) {
+                    // 用户取消输入，直接退出
+                    return;
+                }
+                if (newName.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+                item.setName(newName);
+                treeModel.nodeChanged(selectedNode);
+                saveRequestGroups();
+
+                // 同步更新已打开Tab的标题
+                RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+                JTabbedPane tabbedPane = editPanel.getTabbedPane();
+                for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                    Component comp = tabbedPane.getComponentAt(i);
+                    if (comp instanceof RequestEditSubPanel subPanel) {
+                        HttpRequestItem tabItem = subPanel.getCurrentRequest();
+                        if (tabItem != null && item.getId().equals(tabItem.getId())) {
+                            tabbedPane.setTitleAt(i, newName);
+                            // 更新自定义标签组件
+                            tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, item.getProtocol()));
+                            // 同步刷新内容
+                            subPanel.initPanelData(item);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 删除选中的项（分组或请求）
+     * 支持通过 Delete/Backspace 快捷键或右键菜单调用
+     */
+    private void deleteSelectedItem() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+        if (selectedNode == null || selectedNode.getParent() == null) {
+            return;
+        }
+
+        // 删除前弹出确认提示
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // 先关闭相关Tab
+        Object userObj = selectedNode.getUserObject();
+        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        JTabbedPane tabbedPane = editPanel.getTabbedPane();
+
+        if (userObj instanceof Object[] obj) {
+            if (REQUEST.equals(obj[0])) {
+                // 删除请求：关闭所有与该请求id匹配的Tab
+                HttpRequestItem item = (HttpRequestItem) obj[1];
+                for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
+                    Component comp = tabbedPane.getComponentAt(i);
+                    if (comp instanceof RequestEditSubPanel subPanel) {
+                        HttpRequestItem tabItem = subPanel.getCurrentRequest();
+                        if (tabItem != null && item.getId().equals(tabItem.getId())) {
+                            tabbedPane.remove(i);
+                        }
+                    }
+                }
+                if (tabbedPane.getTabCount() > 1) {
+                    tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
+                }
+            } else if (GROUP.equals(obj[0])) {
+                // 删除分组：递归关闭该组下所有请求Tab
+                closeTabsForGroup(selectedNode, tabbedPane);
+                if (tabbedPane.getTabCount() > 1) {
+                    tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
+                }
+            }
+        }
+
+        // 删除树节点
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
+        parent.remove(selectedNode);
+        treeModel.reload();
+
+        // 删除后保持父节点展开
+        TreePath parentPath = new TreePath(parent.getPath());
+        requestTree.expandPath(parentPath);
+        saveRequestGroups();
+    }
+
+    /**
+     * 递归关闭分组下所有请求的Tab
+     */
+    private void closeTabsForGroup(DefaultMutableTreeNode groupNode, JTabbedPane tabbedPane) {
+        for (int i = 0; i < groupNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof Object[] obj) {
+                if (REQUEST.equals(obj[0])) {
+                    HttpRequestItem item = (HttpRequestItem) obj[1];
+                    for (int j = tabbedPane.getTabCount() - 1; j >= 0; j--) {
+                        Component comp = tabbedPane.getComponentAt(j);
+                        if (comp instanceof RequestEditSubPanel subPanel) {
+                            HttpRequestItem tabItem = subPanel.getCurrentRequest();
+                            if (tabItem != null && item.getId().equals(tabItem.getId())) {
+                                tabbedPane.remove(j);
+                            }
+                        }
+                    }
+                } else if (GROUP.equals(obj[0])) {
+                    closeTabsForGroup(child, tabbedPane);
+                }
+            }
+        }
     }
 
     // 返回在 parent 下插入新分组的索引：分组应排在所有请求之上，因此插入到第一个请求位置前

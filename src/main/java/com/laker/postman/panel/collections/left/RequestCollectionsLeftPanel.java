@@ -205,16 +205,18 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 // 仅分组节点可新增文件/请求
                 if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
                     menu.addSeparator();
-                    JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
-                            new FlatSVGIcon("icons/group.svg", 16, 16));
-                    addGroupItem.addActionListener(e -> addGroupUnderSelected());
-                    menu.add(addGroupItem);
 
-                    // 合并添加请求为单个菜单项，点击弹出对话框
+                    // 新增请求放在第一位（更高频的操作）
                     JMenuItem addRequestItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
                             new FlatSVGIcon("icons/request.svg", 16, 16));
                     addRequestItem.addActionListener(e -> showAddRequestDialog(selectedNode));
                     menu.add(addRequestItem);
+
+                    // 新增分组放在第二位
+                    JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
+                            new FlatSVGIcon("icons/group.svg", 16, 16));
+                    addGroupItem.addActionListener(e -> addGroupUnderSelected());
+                    menu.add(addGroupItem);
 
                     JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));

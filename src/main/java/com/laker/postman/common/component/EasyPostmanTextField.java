@@ -377,19 +377,25 @@ public class EasyPostmanTextField extends FlatTextField {
                 if (autocompleteWindow.isVisible()) {
                     switch (e.getKeyCode()) {
                         case KeyEvent.VK_DOWN:
-                            int nextIndex = autocompleteList.getSelectedIndex() + 1;
-                            if (nextIndex < autocompleteModel.getSize()) {
-                                autocompleteList.setSelectedIndex(nextIndex);
-                                autocompleteList.ensureIndexIsVisible(nextIndex);
+                            int currentIndex = autocompleteList.getSelectedIndex();
+                            int nextIndex = currentIndex + 1;
+                            // 循环导航：到达最后一个后返回第一个
+                            if (nextIndex >= autocompleteModel.getSize()) {
+                                nextIndex = 0;
                             }
+                            autocompleteList.setSelectedIndex(nextIndex);
+                            autocompleteList.ensureIndexIsVisible(nextIndex);
                             e.consume();
                             break;
                         case KeyEvent.VK_UP:
-                            int prevIndex = autocompleteList.getSelectedIndex() - 1;
-                            if (prevIndex >= 0) {
-                                autocompleteList.setSelectedIndex(prevIndex);
-                                autocompleteList.ensureIndexIsVisible(prevIndex);
+                            int currentUpIndex = autocompleteList.getSelectedIndex();
+                            int prevIndex = currentUpIndex - 1;
+                            // 循环导航：在第一个选项前跳到最后一个
+                            if (prevIndex < 0) {
+                                prevIndex = autocompleteModel.getSize() - 1;
                             }
+                            autocompleteList.setSelectedIndex(prevIndex);
+                            autocompleteList.ensureIndexIsVisible(prevIndex);
                             e.consume();
                             break;
                         case KeyEvent.VK_ENTER:

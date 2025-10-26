@@ -666,13 +666,14 @@ public class RequestEditSubPanel extends JPanel {
         methodBox.setSelectedItem(item.getMethod());
 
         if (CollUtil.isNotEmpty(item.getHeadersList())) {
+            // 有数据，使用请求的 headers
             headersPanel.setHeadersList(item.getHeadersList());
         } else {
             // 没有数据，使用默认 headers
             headersPanel.setHeadersList(List.of());
-            item.setHeadersList(headersPanel.getHeadersList());
         }
-
+        // 获取最新的补充了默认值和排序的 headers 列表
+        item.setHeadersList(headersPanel.getHeadersList());
         // Body
         requestBodyPanel.getBodyArea().setText(item.getBody());
         // 这是兼容性代码，防止旧数据bodyType字段为空

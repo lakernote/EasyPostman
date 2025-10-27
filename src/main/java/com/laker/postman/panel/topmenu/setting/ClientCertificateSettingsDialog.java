@@ -31,7 +31,7 @@ public class ClientCertificateSettingsDialog extends JDialog {
         add(mainPanel, BorderLayout.CENTER);
 
 
-        setSize(900, 650);
+        setSize(700, 450);
         setLocationRelativeTo(getOwner());
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }

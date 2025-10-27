@@ -337,69 +337,73 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         if (userObj instanceof Object[] obj) {
             if (GROUP.equals(obj[0])) {
                 // 重命名分组
-                String newName = JOptionPane.showInputDialog(
+                Object result = JOptionPane.showInputDialog(
                         this,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT),
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_TITLE),
+                        JOptionPane.PLAIN_MESSAGE,
+                        null,
+                        null,
                         obj[1]
                 );
-                if (newName != null) newName = newName.trim();
-                if (newName == null) {
-                    // 用户取消输入，直接退出
-                    return;
+                if (result != null) {
+                    String newName = result.toString().trim();
+                    if (!newName.isEmpty() && !newName.equals(obj[1])) {
+                        obj[1] = newName;
+                        treeModel.nodeChanged(selectedNode);
+                        saveRequestGroups();
+                    } else if (newName.isEmpty()) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY),
+                                I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                    }
                 }
-                if (newName.isEmpty()) {
-                    JOptionPane.showMessageDialog(
-                            this,
-                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY),
-                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
-                            JOptionPane.WARNING_MESSAGE
-                    );
-                    return;
-                }
-                obj[1] = newName;
-                treeModel.nodeChanged(selectedNode);
-                saveRequestGroups();
             } else if (REQUEST.equals(obj[0])) {
                 // 重命名请求
                 HttpRequestItem item = (HttpRequestItem) obj[1];
                 String oldName = item.getName();
-                String newName = JOptionPane.showInputDialog(
+                Object result = JOptionPane.showInputDialog(
                         this,
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT),
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE),
+                        JOptionPane.PLAIN_MESSAGE,
+                        null,
+                        null,
                         oldName
                 );
-                if (newName != null) newName = newName.trim();
-                if (newName == null) {
-                    // 用户取消输入，直接退出
-                    return;
-                }
-                if (newName.isEmpty()) {
-                    JOptionPane.showMessageDialog(
-                            this,
-                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY),
-                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
-                            JOptionPane.WARNING_MESSAGE
-                    );
-                    return;
-                }
-                item.setName(newName);
-                treeModel.nodeChanged(selectedNode);
-                saveRequestGroups();
+                if (result != null) {
+                    String newName = result.toString().trim();
+                    if (!newName.isEmpty() && !newName.equals(oldName)) {
+                        item.setName(newName);
+                        treeModel.nodeChanged(selectedNode);
+                        saveRequestGroups();
 
-                // 同步更新已打开Tab的标题
-                RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-                JTabbedPane tabbedPane = editPanel.getTabbedPane();
-                for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-                    Component comp = tabbedPane.getComponentAt(i);
-                    if (comp instanceof RequestEditSubPanel subPanel) {
-                        HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                        if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                            tabbedPane.setTitleAt(i, newName);
-                            // 更新自定义标签组件
-                            tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, item.getProtocol()));
-                            // 同步刷新内容
-                            subPanel.initPanelData(item);
+                        // 同步更新已打开Tab的标题
+                        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+                        JTabbedPane tabbedPane = editPanel.getTabbedPane();
+                        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                            Component comp = tabbedPane.getComponentAt(i);
+                            if (comp instanceof RequestEditSubPanel subPanel) {
+                                HttpRequestItem tabItem = subPanel.getCurrentRequest();
+                                if (tabItem != null && item.getId().equals(tabItem.getId())) {
+                                    tabbedPane.setTitleAt(i, newName);
+                                    // 更新自定义标签组件
+                                    tabbedPane.setTabComponentAt(i, new ClosableTabComponent(newName, item.getProtocol()));
+                                    // 同步刷新内容
+                                    subPanel.initPanelData(item);
+                                }
+                            }
                         }
+                    } else if (newName.isEmpty()) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY),
+                                I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
+                                JOptionPane.WARNING_MESSAGE
+                        );
                     }
                 }
             }

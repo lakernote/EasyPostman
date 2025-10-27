@@ -439,12 +439,14 @@ public final class MessageKeys {
     // ============ 集合对话框相关 ============
     public static final String COLLECTIONS_DIALOG_ADD_GROUP_PROMPT = "collections.dialog.add_group.prompt";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT = "collections.dialog.rename_group.prompt";
+    public static final String COLLECTIONS_DIALOG_RENAME_GROUP_TITLE = "collections.dialog.rename_group.title";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_TITLE = "collections.dialog.add_request.title";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME = "collections.dialog.add_request.name";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL = "collections.dialog.add_request.protocol";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME_EMPTY = "collections.dialog.add_request.name_empty";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY = "collections.dialog.rename_group.empty";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT = "collections.dialog.rename_request.prompt";
+    public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE = "collections.dialog.rename_request.title";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY = "collections.dialog.rename_request.empty";
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_TITLE = "collections.dialog.multi_select.title";
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_EMPTY = "collections.dialog.multi_select.empty";

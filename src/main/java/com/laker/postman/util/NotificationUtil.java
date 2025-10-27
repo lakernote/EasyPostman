@@ -231,7 +231,7 @@ public class NotificationUtil {
 
             // 图标标签
             JLabel iconLabel = new JLabel(type.getIcon());
-            iconLabel.setFont(new Font("Arial", Font.BOLD, 20));
+            iconLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
             iconLabel.setForeground(type.getColor());
 
             // 消息标签

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.service.ClientCertificateService;
 import com.laker.postman.util.I18nUtil;
@@ -302,12 +303,12 @@ public class ClientCertificateSettingsPanel extends JPanel {
         private final ClientCertificate certificate;
         private boolean confirmed = false;
 
-        private JTextField nameField;
-        private JTextField hostField;
-        private JTextField portField;
+        private FlatTextField nameField;
+        private FlatTextField hostField;
+        private FlatTextField portField;
         private JComboBox<String> certTypeCombo;
-        private JTextField certPathField;
-        private JTextField keyPathField;
+        private FlatTextField certPathField;
+        private FlatTextField keyPathField;
         private JPasswordField passwordField;
         private JCheckBox enabledCheckBox;
 
@@ -397,8 +398,8 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridx = 2;
             gbc.weightx = 0;
             JButton certPathBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));
-            certPathBtn.addActionListener(e -> selectFile(certPathField, "Certificate Files",
-                    "*.pfx", "*.p12", "*.pem", "*.crt"));
+            certPathBtn.addActionListener(e -> selectFile(certPathField
+            ));
             formPanel.add(certPathBtn, gbc);
             row++;
 
@@ -419,16 +420,23 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridx = 2;
             gbc.weightx = 0;
             JButton keyPathBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));
-            keyPathBtn.addActionListener(e -> selectFile(keyPathField, "Private Key Files",
-                    "*.key", "*.pem"));
+            keyPathBtn.addActionListener(e -> selectFile(keyPathField
+            ));
             formPanel.add(keyPathBtn, gbc);
             row++;
 
             // 密码
-            addFormRow(formPanel, gbc, row++,
-                    I18nUtil.getMessage(MessageKeys.CERT_PASSWORD) + ":",
-                    passwordField = new JPasswordField(30),
-                    false);
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            gbc.weightx = 0;
+            gbc.gridwidth = 1;
+            formPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.CERT_PASSWORD) + ":"), gbc);
+            gbc.gridx = 1;
+            gbc.weightx = 1.0;
+            gbc.gridwidth = 2;
+            passwordField = new JPasswordField(30);
+            formPanel.add(passwordField, gbc);
+            row++;
 
             // 启用
             gbc.gridx = 0;
@@ -446,7 +454,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         }
 
         private void addFormRow(JPanel panel, GridBagConstraints gbc, int row,
-                                String label, JTextField field, boolean required) {
+                                String label, FlatTextField field, boolean required) {
             gbc.gridx = 0;
             gbc.gridy = row;
             gbc.weightx = 0;
@@ -463,10 +471,11 @@ public class ClientCertificateSettingsPanel extends JPanel {
             panel.add(field, gbc);
         }
 
-        private JTextField createTextField(int columns, String tooltip) {
-            JTextField field = new JTextField(columns);
-            if (tooltip != null && !tooltip.isEmpty()) {
-                field.setToolTipText(tooltip);
+        private FlatTextField createTextField(int columns, String placeholder) {
+            FlatTextField field = new FlatTextField();
+            field.setColumns(columns);
+            if (placeholder != null && !placeholder.isEmpty()) {
+                field.setPlaceholderText(placeholder);
             }
             return field;
         }
@@ -513,7 +522,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             updateFieldVisibility();
         }
 
-        private void selectFile(JTextField targetField, String description, String... extensions) {
+        private void selectFile(FlatTextField targetField) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));

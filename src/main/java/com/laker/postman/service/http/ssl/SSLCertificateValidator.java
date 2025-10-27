@@ -170,7 +170,7 @@ public class SSLCertificateValidator {
     }
 
     /**
-     * 检查主机名是否匹配（支持通配符）
+     * 检查主机名是否匹配（支持通配符和 www 前缀）
      */
     private static boolean hostnameMatches(String hostname, String pattern) {
         if (hostname == null || pattern == null) {
@@ -180,12 +180,22 @@ public class SSLCertificateValidator {
         hostname = hostname.toLowerCase();
         pattern = pattern.toLowerCase();
 
-        // 完全匹配
+        // 1. 完全匹配
         if (hostname.equals(pattern)) {
             return true;
         }
 
-        // 通配符匹配 (*.example.com)
+        // 2. www 前缀匹配
+        // 允许 csdn.com 匹配证书 CN=www.csdn.com
+        // 允许 www.csdn.com 匹配证书 CN=csdn.com
+        if (hostname.startsWith("www.") && pattern.equals(hostname.substring(4))) {
+            return true;
+        }
+        if (pattern.startsWith("www.") && hostname.equals(pattern.substring(4))) {
+            return true;
+        }
+
+        // 3. 通配符匹配 (*.example.com)
         if (pattern.startsWith("*.")) {
             String patternSuffix = pattern.substring(1); // .example.com
 

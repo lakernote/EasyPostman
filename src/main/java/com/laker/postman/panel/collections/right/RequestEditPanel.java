@@ -2,17 +2,13 @@ package com.laker.postman.panel.collections.right;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.frame.MainFrame;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.RequestsTabsService;
@@ -204,48 +200,107 @@ public class RequestEditPanel extends SingletonBasePanel {
                     I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.INFORMATION_MESSAGE);
             return null;
         }
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
-        JPanel namePanel = new JPanel(new BorderLayout(8, 0));
-        JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_NAME));
-        nameLabel.setPreferredSize(new Dimension(100, 28));
-        JTextField nameField = new JTextField(20);
-        nameField.setPreferredSize(new Dimension(180, 28));
-        if (defaultName != null) nameField.setText(defaultName);
-        namePanel.add(nameLabel, BorderLayout.WEST);
-        namePanel.add(nameField, BorderLayout.CENTER);
-        namePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-        namePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(namePanel);
-        panel.add(Box.createVerticalStrut(12));
-        JPanel groupPanel = new JPanel(new BorderLayout(8, 0));
-        JLabel groupLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SELECT_GROUP));
-        groupLabel.setPreferredSize(new Dimension(100, 28));
-        groupPanel.add(groupLabel, BorderLayout.WEST);
+
+        // 创建主面板，使用GridBagLayout以获得更好的布局控制
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // 请求名称标签
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_NAME) + ":");
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 13f));
+        mainPanel.add(nameLabel, gbc);
+
+        // 请求名称输入框
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(0, 0, 20, 0);
+        JTextField nameField = new JTextField(25);
+        nameField.setPreferredSize(new Dimension(350, 32));
+        if (defaultName != null && !defaultName.trim().isEmpty()) {
+            nameField.setText(defaultName);
+            nameField.selectAll(); // 自动选中文本，方便用户直接修改
+        }
+        mainPanel.add(nameField, gbc);
+
+        // 分组选择标签
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 8, 0);
+        JLabel groupLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SELECT_GROUP) + ":");
+        groupLabel.setFont(groupLabel.getFont().deriveFont(Font.BOLD, 13f));
+        mainPanel.add(groupLabel, gbc);
+
+        // 分组树
+        gbc.gridy = 3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.insets = new Insets(0, 0, 0, 0);
         JTree groupTree = getGroupTree(groupTreeModel);
+
+        // 展开第一层节点
+        for (int i = 0; i < groupTree.getRowCount(); i++) {
+            groupTree.expandRow(i);
+        }
+
         JScrollPane treeScroll = new JScrollPane(groupTree);
-        treeScroll.setPreferredSize(new Dimension(220, 180));
-        treeScroll.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
-        groupPanel.add(treeScroll, BorderLayout.CENTER);
-        groupPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
-        groupPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(groupPanel);
-        int result = JOptionPane.showConfirmDialog(this, panel, I18nUtil.getMessage(MessageKeys.SAVE_REQUEST),
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
+        treeScroll.setPreferredSize(new Dimension(350, 200));
+        treeScroll.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)
+        ));
+        mainPanel.add(treeScroll, gbc);
+
+        // 创建自定义对话框以支持更好的交互
+        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.SAVE_REQUEST), true);
+        dialog.setLayout(new BorderLayout());
+        dialog.add(mainPanel, BorderLayout.CENTER);
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
+        buttonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
+
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        okButton.setPreferredSize(new Dimension(80, 32));
+        cancelButton.setPreferredSize(new Dimension(80, 32));
+
+        // 设置确定按钮为默认按钮样式
+        okButton.setBackground(new Color(0, 123, 255));
+        okButton.setForeground(Color.WHITE);
+        okButton.setFocusPainted(false);
+        okButton.setBorderPainted(false);
+        okButton.setOpaque(true);
+
+        final Object[] result = {null};
+
+        // 确定按钮逻辑
+        Runnable okAction = () -> {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME),
-                        I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.WARNING_MESSAGE);
-                return null;
+                JOptionPane.showMessageDialog(dialog,
+                        I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME),
+                        I18nUtil.getMessage(MessageKeys.TIP),
+                        JOptionPane.WARNING_MESSAGE);
+                nameField.requestFocusInWindow();
+                return;
             }
+
             javax.swing.tree.TreePath selectedPath = groupTree.getSelectionPath();
             if (selectedPath == null) {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP),
-                        I18nUtil.getMessage(I18nUtil.getMessage(MessageKeys.TIP)), JOptionPane.WARNING_MESSAGE);
-                return null;
+                JOptionPane.showMessageDialog(dialog,
+                        I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP),
+                        I18nUtil.getMessage(MessageKeys.TIP),
+                        JOptionPane.WARNING_MESSAGE);
+                return;
             }
+
             Object selectedGroupNode = selectedPath.getLastPathComponent();
             Object[] groupObj = null;
             if (selectedGroupNode instanceof javax.swing.tree.DefaultMutableTreeNode node) {
@@ -254,14 +309,50 @@ public class RequestEditPanel extends SingletonBasePanel {
                     groupObj = arr;
                 }
             }
+
             if (groupObj == null) {
-                JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP),
-                        I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.WARNING_MESSAGE);
-                return null;
+                JOptionPane.showMessageDialog(dialog,
+                        I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP),
+                        I18nUtil.getMessage(MessageKeys.TIP),
+                        JOptionPane.WARNING_MESSAGE);
+                return;
             }
-            return new Object[]{groupObj, requestName};
-        }
-        return null;
+
+            result[0] = new Object[]{groupObj, requestName.trim()};
+            dialog.dispose();
+        };
+
+        okButton.addActionListener(e -> okAction.run());
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(okButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 支持回车键确认
+        nameField.addActionListener(e -> okAction.run());
+
+        // 支持ESC键取消
+        dialog.getRootPane().registerKeyboardAction(
+                e -> dialog.dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
+        // 设置默认按钮
+        dialog.getRootPane().setDefaultButton(okButton);
+
+        // 设置对话框属性
+        dialog.setSize(420, 420);
+        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setResizable(false);
+
+        // 显示对话框后自动聚焦到名称输入框
+        SwingUtilities.invokeLater(() -> nameField.requestFocusInWindow());
+
+        dialog.setVisible(true);
+
+        return (Object[]) result[0];
     }
 
     private static JTree getGroupTree(TreeModel groupTreeModel) {
@@ -464,7 +555,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
                                     // Convert formData and formFiles maps to list
                                     if ((curlRequest.formData != null && !curlRequest.formData.isEmpty()) ||
-                                        (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
+                                            (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
                                         List<HttpFormData> formDataList = new ArrayList<>();
                                         if (curlRequest.formData != null) {
                                             for (Map.Entry<String, String> entry : curlRequest.formData.entrySet()) {

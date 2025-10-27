@@ -1,13 +1,17 @@
 package com.laker.postman.service.http.ssl;
 
 import com.laker.postman.model.ClientCertificate;
+import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.ClientCertificateService;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 
 import javax.net.ssl.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.text.MessageFormat;
 
 /**
  * SSL配置工具类
@@ -135,9 +139,31 @@ public class SSLConfigurationUtil {
         try {
             KeyManager[] keyManagers = ClientCertificateLoader.createKeyManagers(clientCert);
             log.info("Using client certificate for host: {} ({})", host, clientCert.getName());
+
+            // 输出到控制台：证书加载成功
+            String certName = clientCert.getName() != null && !clientCert.getName().isEmpty()
+                ? clientCert.getName()
+                : clientCert.getCertPath();
+            String message = MessageFormat.format(
+                I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOADED),
+                certName
+            );
+            ConsolePanel.appendLog(message, ConsolePanel.LogType.SUCCESS);
+
             return keyManagers;
         } catch (Exception e) {
             log.error("Failed to load client certificate for host: {}", host, e);
+
+            // 输出到控制台：证书加载失败
+            String certName = clientCert.getName() != null && !clientCert.getName().isEmpty()
+                ? clientCert.getName()
+                : clientCert.getCertPath();
+            String message = MessageFormat.format(
+                I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
+                certName, e.getMessage()
+            );
+            ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
+
             return new KeyManager[0];
         }
     }

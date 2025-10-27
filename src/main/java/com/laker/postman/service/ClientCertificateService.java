@@ -4,10 +4,14 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.ClientCertificate;
+import com.laker.postman.panel.sidebar.ConsolePanel;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -129,6 +133,17 @@ public class ClientCertificateService {
         for (ClientCertificate cert : certificates) {
             if (cert.matches(host, port)) {
                 log.debug("Found matching certificate for {}:{} - {}", host, port, cert.getName());
+
+                // 输出到控制台
+                String certName = cert.getName() != null && !cert.getName().isEmpty()
+                        ? cert.getName()
+                        : cert.getCertPath();
+                String message = MessageFormat.format(
+                        I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_MATCHED),
+                        host, port, cert.getCertType(), certName
+                );
+                ConsolePanel.appendLog(message, ConsolePanel.LogType.SUCCESS);
+
                 return cert;
             }
         }
@@ -140,23 +155,43 @@ public class ClientCertificateService {
      */
     public static boolean validateCertificatePaths(ClientCertificate cert) {
         if (cert.getCertPath() == null || cert.getCertPath().trim().isEmpty()) {
+            String message = MessageFormat.format(
+                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),
+                    cert.getName() != null ? cert.getName() : "Unknown"
+            );
+            ConsolePanel.appendLog(message, ConsolePanel.LogType.WARN);
             return false;
         }
 
         File certFile = new File(cert.getCertPath());
         if (!certFile.exists() || !certFile.canRead()) {
             log.warn("Certificate file not found or not readable: {}", cert.getCertPath());
+            String message = MessageFormat.format(
+                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND),
+                    cert.getCertPath()
+            );
+            ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
             return false;
         }
 
         // 如果是 PEM 格式，还需要检查私钥文件
         if (ClientCertificate.CERT_TYPE_PEM.equals(cert.getCertType())) {
             if (cert.getKeyPath() == null || cert.getKeyPath().trim().isEmpty()) {
+                String message = MessageFormat.format(
+                        I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),
+                        cert.getName() != null ? cert.getName() : "Unknown"
+                );
+                ConsolePanel.appendLog(message, ConsolePanel.LogType.WARN);
                 return false;
             }
             File keyFile = new File(cert.getKeyPath());
             if (!keyFile.exists() || !keyFile.canRead()) {
                 log.warn("Private key file not found or not readable: {}", cert.getKeyPath());
+                String message = MessageFormat.format(
+                        I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND),
+                        cert.getKeyPath()
+                );
+                ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
                 return false;
             }
         }

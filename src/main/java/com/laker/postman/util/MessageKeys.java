@@ -346,6 +346,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_SELECT_THREAD_GROUP = "performance.msg.select_thread_group";
     public static final String PERFORMANCE_MSG_RENAME_NODE = "performance.msg.rename_node";
     public static final String PERFORMANCE_MSG_EXECUTION_INTERRUPTED = "performance.msg.execution_interrupted";
+    public static final String PERFORMANCE_MSG_EXECUTION_COMPLETED = "performance.msg.execution_completed";
     public static final String PERFORMANCE_MSG_PRE_SCRIPT_FAILED = "performance.msg.pre_script_failed";
     public static final String PERFORMANCE_MSG_REQUEST_FAILED = "performance.msg.request_failed";
     public static final String PERFORMANCE_MSG_ASSERTION_FAILED = "performance.msg.assertion_failed";

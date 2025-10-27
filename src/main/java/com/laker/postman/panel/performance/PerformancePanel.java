@@ -35,6 +35,7 @@ import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonPathUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
 
@@ -353,6 +354,14 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
 
                     performanceReportPanel.updateReport(apiCostMapCopy, apiSuccessMap, apiFailMap, startTimesCopy, resultsCopy);
+
+                    // 显示执行完成提示
+                    long totalTime = System.currentTimeMillis() - startTime;
+                    int totalRequests = resultsCopy.size();
+                    long successCount = resultsCopy.stream().filter(r -> r.success).count();
+                    String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_COMPLETED,
+                            totalRequests, successCount, totalTime / 1000.0);
+                    NotificationUtil.showSuccess(PerformancePanel.this, message);
                 });
             }
         });

@@ -25,8 +25,11 @@ public class ClientCertificateSettingsPanel extends JPanel {
     private JButton editBtn;
     private JButton deleteBtn;
     private JButton helpBtn;
+    private JButton closeBtn;
+    private Window parentWindow;
 
-    public ClientCertificateSettingsPanel() {
+    public ClientCertificateSettingsPanel(Window parentWindow) {
+        this.parentWindow = parentWindow;
         initUI();
         registerListeners();
         loadCertificates();
@@ -93,17 +96,27 @@ public class ClientCertificateSettingsPanel extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        JPanel buttonPanel = new JPanel(new BorderLayout());
 
+        // 左侧按钮组
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         addBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_ADD));
         editBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT));
         deleteBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_DELETE));
         helpBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_HELP));
-        buttonPanel.add(addBtn);
-        buttonPanel.add(editBtn);
-        buttonPanel.add(deleteBtn);
-        buttonPanel.add(Box.createHorizontalStrut(20));
-        buttonPanel.add(helpBtn);
+        leftPanel.add(addBtn);
+        leftPanel.add(editBtn);
+        leftPanel.add(deleteBtn);
+        leftPanel.add(Box.createHorizontalStrut(20));
+        leftPanel.add(helpBtn);
+
+        // 右侧关闭按钮
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_CLOSE));
+        rightPanel.add(closeBtn);
+
+        buttonPanel.add(leftPanel, BorderLayout.WEST);
+        buttonPanel.add(rightPanel, BorderLayout.EAST);
 
         return buttonPanel;
     }
@@ -113,6 +126,11 @@ public class ClientCertificateSettingsPanel extends JPanel {
         editBtn.addActionListener(e -> showEditDialog());
         deleteBtn.addActionListener(e -> deleteCertificate());
         helpBtn.addActionListener(e -> showHelp());
+        closeBtn.addActionListener(e -> {
+            if (parentWindow != null) {
+                parentWindow.dispose();
+            }
+        });
 
         certificateTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {

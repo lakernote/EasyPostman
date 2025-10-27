@@ -1319,8 +1319,11 @@ public final class MessageKeys {
     public static final String CERT_TYPE_PFX = "cert.type.pfx";
     public static final String CERT_TYPE_PEM = "cert.type.pem";
     public static final String CERT_PORT_ALL = "cert.port.all";
+    public static final String CERT_PORT_PLACEHOLDER = "cert.port.placeholder";
     public static final String CERT_HOST_PLACEHOLDER = "cert.host.placeholder";
     public static final String CERT_NAME_PLACEHOLDER = "cert.name.placeholder";
+    public static final String CERT_CERT_PATH_PLACEHOLDER = "cert.cert_path.placeholder";
+    public static final String CERT_KEY_PATH_PLACEHOLDER = "cert.key_path.placeholder";
     public static final String CERT_VALIDATION_HOST_REQUIRED = "cert.validation.host_required";
     public static final String CERT_VALIDATION_CERT_REQUIRED = "cert.validation.cert_required";
     public static final String CERT_VALIDATION_KEY_REQUIRED = "cert.validation.key_required";

@@ -360,7 +360,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             // 端口
             addFormRow(formPanel, gbc, row++,
                     I18nUtil.getMessage(MessageKeys.CERT_PORT) + ":",
-                    portField = createTextField(10, I18nUtil.getMessage(MessageKeys.CERT_PORT_ALL)),
+                    portField = createTextField(10, I18nUtil.getMessage(MessageKeys.CERT_PORT_PLACEHOLDER)),
                     false);
 
             // 证书类型
@@ -392,7 +392,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridx = 1;
             gbc.weightx = 1.0;
             gbc.gridwidth = 1;
-            certPathField = createTextField(28, "");
+            certPathField = createTextField(28, I18nUtil.getMessage(MessageKeys.CERT_CERT_PATH_PLACEHOLDER));
             formPanel.add(certPathField, gbc);
 
             gbc.gridx = 2;
@@ -414,7 +414,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridx = 1;
             gbc.weightx = 1.0;
             gbc.gridwidth = 1;
-            keyPathField = createTextField(28, "");
+            keyPathField = createTextField(28, I18nUtil.getMessage(MessageKeys.CERT_KEY_PATH_PLACEHOLDER));
             formPanel.add(keyPathField, gbc);
 
             gbc.gridx = 2;

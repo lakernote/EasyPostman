@@ -59,7 +59,8 @@ public class ClientCertificate implements Serializable {
         // 支持通配符匹配
         if (pattern.startsWith("*.")) {
             String domain = pattern.substring(2);
-            return target.endsWith(domain) || target.equals(domain.substring(1));
+            // 匹配 "api.example.com" 或 "example.com" 本身
+            return target.endsWith("." + domain) || target.equals(domain);
         }
 
         // 精确匹配

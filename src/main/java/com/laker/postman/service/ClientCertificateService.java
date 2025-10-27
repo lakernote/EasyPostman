@@ -86,7 +86,8 @@ public class ClientCertificateService {
      * 添加证书配置
      */
     public static void addCertificate(ClientCertificate cert) {
-        if (cert.getId() == null || cert.getId().isEmpty()) {
+        String id = cert.getId();
+        if (id == null || id.isEmpty()) {
             cert.setId(UUID.randomUUID().toString());
         }
         cert.setCreatedAt(System.currentTimeMillis());

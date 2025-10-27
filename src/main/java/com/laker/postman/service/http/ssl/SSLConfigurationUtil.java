@@ -124,12 +124,12 @@ public class SSLConfigurationUtil {
      */
     private static KeyManager[] loadClientCertificate(String host, int port) {
         if (host == null || host.isEmpty()) {
-            return null;
+            return new KeyManager[0];
         }
 
         ClientCertificate clientCert = ClientCertificateService.findMatchingCertificate(host, port);
         if (clientCert == null || !ClientCertificateService.validateCertificatePaths(clientCert)) {
-            return null;
+            return new KeyManager[0];
         }
 
         try {
@@ -138,7 +138,7 @@ public class SSLConfigurationUtil {
             return keyManagers;
         } catch (Exception e) {
             log.error("Failed to load client certificate for host: {}", host, e);
-            return null;
+            return new KeyManager[0];
         }
     }
 

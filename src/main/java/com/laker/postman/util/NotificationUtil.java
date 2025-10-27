@@ -233,20 +233,46 @@ public class NotificationUtil {
             JLabel iconLabel = new JLabel(type.getIcon());
             iconLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
             iconLabel.setForeground(type.getColor());
+            iconLabel.setVerticalAlignment(SwingConstants.TOP); // 图标顶部对齐
 
-            // 消息标签
-            JLabel messageLabel = new JLabel("<html><body style='width: " + (MAX_WIDTH - 100) + "px'>" + message + "</body></html>");
+            // 转义 HTML 特殊字符
+            String escapedMessage = escapeHtml(message);
+
+            // 限制消息长度，超长显示省略号
+            int maxLength = 150; // 最多显示150个字符
+            if (escapedMessage.length() > maxLength) {
+                escapedMessage = escapedMessage.substring(0, maxLength) + "...";
+            }
+
+            // 消息标签 - 单行显示，超长截断
+            JLabel messageLabel = new JLabel(escapedMessage);
             messageLabel.setFont(UIManager.getFont("Label.font"));
 
             panel.add(iconLabel, BorderLayout.WEST);
             panel.add(messageLabel, BorderLayout.CENTER);
 
-            // 计算合适的宽度
+            // 计算合适的尺寸
             Dimension prefSize = panel.getPreferredSize();
             int width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, prefSize.width));
-            panel.setPreferredSize(new Dimension(width, prefSize.height));
+            int height = Math.min(80, prefSize.height); // 限制最大高度为 80px（约2-3行）
+            panel.setPreferredSize(new Dimension(width, height));
 
             return panel;
+        }
+
+        /**
+         * 转义 HTML 特殊字符
+         */
+        private static String escapeHtml(String text) {
+            if (text == null) {
+                return "";
+            }
+            return text.replace("&", "&amp;")
+                       .replace("<", "&lt;")
+                       .replace(">", "&gt;")
+                       .replace("\"", "&quot;")
+                       .replace("'", "&#39;")
+                       .replace("\n", "<br/>");
         }
 
         private Point calculatePosition() {

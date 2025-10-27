@@ -1,5 +1,7 @@
 package com.laker.postman.service.http.ssl;
 
+import com.laker.postman.model.ClientCertificate;
+import com.laker.postman.service.ClientCertificateService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 
@@ -9,7 +11,7 @@ import java.security.cert.X509Certificate;
 
 /**
  * SSL配置工具类
- * 职责：为OkHttpClient配置SSL设置，支持严格模式和宽松模式
+ * 职责：为OkHttpClient配置SSL设置，支持严格模式和宽松模式，以及客户端证书（mTLS）
  */
 @Slf4j
 public class SSLConfigurationUtil {
@@ -69,29 +71,92 @@ public class SSLConfigurationUtil {
      * @param mode    SSL验证模式
      */
     public static void configureSSL(OkHttpClient.Builder builder, SSLVerificationMode mode) {
-        if (mode == SSLVerificationMode.STRICT) {
-            // 严格模式：使用默认的SSL配置，不需要额外配置
-            return;
-        }
+        configureSSL(builder, mode, null, 0);
+    }
 
+    /**
+     * 为OkHttpClient配置SSL设置，支持客户端证书（mTLS）
+     *
+     * @param builder OkHttpClient构建器
+     * @param mode    SSL验证模式
+     * @param host    目标主机名（用于匹配客户端证书）
+     * @param port    目标端口（用于匹配客户端证书）
+     */
+    public static void configureSSL(OkHttpClient.Builder builder, SSLVerificationMode mode,
+                                   String host, int port) {
         try {
-            X509TrustManager trustManager = createTrustManager(mode);
+            // 查找并加载匹配的客户端证书
+            KeyManager[] keyManagers = loadClientCertificate(host, port);
+
+            // 配置 TrustManager
+            X509TrustManager trustManager = configureTrustManager(mode, keyManagers);
+
+            // 严格模式且没有客户端证书：使用默认配置
+            if (trustManager == null) {
+                return;
+            }
+
+            // 初始化 SSL 上下文
             SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[]{trustManager}, new java.security.SecureRandom());
+            sslContext.init(keyManagers, new TrustManager[]{trustManager}, new java.security.SecureRandom());
 
             // 使用自定义的 SSLSocketFactory 来捕获证书信息
             CertificateCapturingSSLSocketFactory socketFactory =
                     new CertificateCapturingSSLSocketFactory(sslContext);
 
             builder.sslSocketFactory(socketFactory, trustManager);
-            builder.hostnameVerifier(createHostnameVerifier(mode));
 
-            log.warn("SSL verification mode set to: {}. Use with caution in production.", mode);
+            // 配置 HostnameVerifier
+            if (mode != SSLVerificationMode.STRICT) {
+                builder.hostnameVerifier(createHostnameVerifier(mode));
+                log.warn("SSL verification mode set to: {}. Use with caution in production.", mode);
+            }
 
         } catch (Exception e) {
             log.error("Failed to configure SSL settings", e);
             throw new SSLException("Failed to configure SSL settings", e,
                     SSLException.SSLErrorType.CONFIGURATION_ERROR);
+        }
+    }
+
+    /**
+     * 加载客户端证书
+     */
+    private static KeyManager[] loadClientCertificate(String host, int port) {
+        if (host == null || host.isEmpty()) {
+            return null;
+        }
+
+        ClientCertificate clientCert = ClientCertificateService.findMatchingCertificate(host, port);
+        if (clientCert == null || !ClientCertificateService.validateCertificatePaths(clientCert)) {
+            return null;
+        }
+
+        try {
+            KeyManager[] keyManagers = ClientCertificateLoader.createKeyManagers(clientCert);
+            log.info("Using client certificate for host: {} ({})", host, clientCert.getName());
+            return keyManagers;
+        } catch (Exception e) {
+            log.error("Failed to load client certificate for host: {}", host, e);
+            return null;
+        }
+    }
+
+    /**
+     * 配置 TrustManager
+     * @return TrustManager 或 null（表示使用默认配置）
+     */
+    private static X509TrustManager configureTrustManager(SSLVerificationMode mode, KeyManager[] keyManagers)
+            throws SSLConfigurationException {
+        if (mode == SSLVerificationMode.STRICT && keyManagers == null) {
+            // 严格模式且没有客户端证书：使用默认配置
+            return null;
+        } else if (mode == SSLVerificationMode.STRICT) {
+            // 严格模式但有客户端证书：需要配置 KeyManager
+            return getDefaultTrustManager();
+        } else {
+            // 宽松模式或信任所有模式
+            return createTrustManager(mode);
         }
     }
 

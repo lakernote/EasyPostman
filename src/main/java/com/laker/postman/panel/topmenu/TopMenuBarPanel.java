@@ -155,6 +155,11 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         proxySettingMenuItem.addActionListener(e -> showProxySettingDialog());
         settingMenu.add(proxySettingMenuItem);
 
+        // 客户端证书设置
+        JMenuItem clientCertMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
+        clientCertMenuItem.addActionListener(e -> showClientCertificateDialog());
+        settingMenu.add(clientCertMenuItem);
+
         // 系统设置
         JMenuItem systemSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE));
         systemSettingMenuItem.addActionListener(e -> showSystemSettingDialog());
@@ -192,6 +197,15 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         Window window = SwingUtilities.getWindowAncestor(this);
         ProxySettingsDialog dialog = new ProxySettingsDialog(window);
         dialog.setVisible(true);
+    }
+
+    private void showClientCertificateDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        if (window instanceof Frame frame) {
+            ClientCertificateSettingsDialog.showDialog(frame);
+        } else {
+            log.warn("Cannot show client certificate dialog: parent is not a Frame");
+        }
     }
 
     private void addHelpMenu() {

@@ -1301,5 +1301,42 @@ public final class MessageKeys {
     public static final String TOOLBOX_CRON_FIELDS = "toolbox.cron.fields";
     public static final String TOOLBOX_CRON_UNABLE_CALCULATE = "toolbox.cron.unable_calculate";
 
+    // ============ 客户端证书相关 ============
+    public static final String CERT_TITLE = "cert.title";
+    public static final String CERT_ADD = "cert.add";
+    public static final String CERT_EDIT = "cert.edit";
+    public static final String CERT_DELETE = "cert.delete";
+    public static final String CERT_DELETE_CONFIRM = "cert.delete.confirm";
+    public static final String CERT_NAME = "cert.name";
+    public static final String CERT_HOST = "cert.host";
+    public static final String CERT_PORT = "cert.port";
+    public static final String CERT_CERT_TYPE = "cert.cert_type";
+    public static final String CERT_CERT_PATH = "cert.cert_path";
+    public static final String CERT_KEY_PATH = "cert.key_path";
+    public static final String CERT_PASSWORD = "cert.password";
+    public static final String CERT_ENABLED = "cert.enabled";
+    public static final String CERT_SELECT_FILE = "cert.select_file";
+    public static final String CERT_TYPE_PFX = "cert.type.pfx";
+    public static final String CERT_TYPE_PEM = "cert.type.pem";
+    public static final String CERT_PORT_ALL = "cert.port.all";
+    public static final String CERT_HOST_PLACEHOLDER = "cert.host.placeholder";
+    public static final String CERT_NAME_PLACEHOLDER = "cert.name.placeholder";
+    public static final String CERT_VALIDATION_HOST_REQUIRED = "cert.validation.host_required";
+    public static final String CERT_VALIDATION_CERT_REQUIRED = "cert.validation.cert_required";
+    public static final String CERT_VALIDATION_KEY_REQUIRED = "cert.validation.key_required";
+    public static final String CERT_VALIDATION_FILE_NOT_FOUND = "cert.validation.file_not_found";
+    public static final String CERT_SAVE = "cert.save";
+    public static final String CERT_CANCEL = "cert.cancel";
+    public static final String CERT_HELP = "cert.help";
+    public static final String CERT_HELP_TITLE = "cert.help.title";
+    public static final String CERT_HELP_CONTENT = "cert.help.content";
+    public static final String CERT_CLOSE = "cert.close";
+    public static final String CERT_ERROR = "cert.error";
+    public static final String CERT_DESCRIPTION = "cert.description";
+    public static final String CERT_ADD_TOOLTIP = "cert.add.tooltip";
+    public static final String CERT_EDIT_TOOLTIP = "cert.edit.tooltip";
+    public static final String CERT_DELETE_TOOLTIP = "cert.delete.tooltip";
+    public static final String CERT_HELP_TOOLTIP = "cert.help.tooltip";
+
 }
 

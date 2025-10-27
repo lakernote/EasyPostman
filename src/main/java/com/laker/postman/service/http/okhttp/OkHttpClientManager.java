@@ -4,11 +4,9 @@ import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import okhttp3.Authenticator;
 
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
+import java.net.*;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +91,7 @@ public class OkHttpClientManager {
             configureProxy(builder);
 
             // 配置SSL设置
-            configureSSLSettings(builder);
+            configureSSLSettings(builder, baseUri);
 
             return builder.build();
         });
@@ -147,7 +145,7 @@ public class OkHttpClientManager {
     /**
      * 配置SSL设置（统一处理所有HTTPS连接的SSL配置）
      */
-    private static void configureSSLSettings(OkHttpClient.Builder builder) {
+    private static void configureSSLSettings(OkHttpClient.Builder builder, String baseUri) {
         // 检查是否启用了代理
         boolean isProxyEnabled = SettingManager.isProxyEnabled();
         // 检查用户是否在请求设置中禁用了SSL验证
@@ -171,7 +169,21 @@ public class OkHttpClientManager {
             mode = SSLConfigurationUtil.SSLVerificationMode.STRICT;
         }
 
-        SSLConfigurationUtil.configureSSL(builder, mode);
+        // 提取主机名和端口用于客户端证书匹配
+        String host = null;
+        int port = 443; // HTTPS 默认端口
+        try {
+            URL url = new URL(baseUri);
+            host = url.getHost();
+            port = url.getPort();
+            if (port == -1) {
+                port = url.getDefaultPort();
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse baseUri for client certificate matching: {}", baseUri);
+        }
+
+        SSLConfigurationUtil.configureSSL(builder, mode, host, port);
     }
 
     /**

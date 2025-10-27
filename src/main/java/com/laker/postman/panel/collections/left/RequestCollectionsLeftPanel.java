@@ -27,6 +27,7 @@ import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -637,13 +638,11 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
                 String curl = CurlParser.toCurl(req);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(curl), null); // 将cUrl命令复制到剪贴板
-                JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(SingletonFactory.getInstance(MainFrame.class),
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS));
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.showError(SingletonFactory.getInstance(MainFrame.class),
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()));
             }
         }
     }

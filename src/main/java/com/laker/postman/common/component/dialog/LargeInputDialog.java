@@ -7,6 +7,7 @@ public class LargeInputDialog {
 
     public static String show(Component parent, String title, String message, String defaultText) {
         JTextArea textArea = new JTextArea(10, 60);
+        textArea.setBackground(Color.WHITE);
         if (defaultText != null) {
             textArea.setText(defaultText);
             textArea.setCaretPosition(0);

@@ -16,6 +16,7 @@ import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
@@ -586,9 +587,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                                     return;
                                 }
                             } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(SingletonFactory.getInstance(RequestEditPanel.class),
-                                        I18nUtil.getMessage(MessageKeys.PARSE_CURL_ERROR, ex.getMessage()),
-                                        I18nUtil.getMessage(MessageKeys.ERROR), JOptionPane.ERROR_MESSAGE);
+                                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.PARSE_CURL_ERROR, ex.getMessage()));
                             }
                         }
                     }

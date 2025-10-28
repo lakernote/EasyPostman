@@ -248,9 +248,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         try {
             CurlRequest curlRequest = CurlParser.parse(curlText);
             if (curlRequest.url == null) {
-                JOptionPane.showMessageDialog(mainFrame,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL));
                 return;
             }
             // 构造HttpRequestItem
@@ -310,9 +308,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(mainFrame,
-                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()));
         }
     }
 

@@ -6,6 +6,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -83,10 +84,7 @@ public class UpdateUIManager {
         try {
             Desktop.getDesktop().browse(new URI(RELEASE_URL));
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(null,
-                    I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                    JOptionPane.ERROR_MESSAGE);
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
         }
     }
 
@@ -96,10 +94,7 @@ public class UpdateUIManager {
     private void startAutomaticUpdate(UpdateInfo updateInfo) {
         String downloadUrl = versionChecker.getDownloadUrl(updateInfo.getReleaseInfo());
         if (downloadUrl == null) {
-            JOptionPane.showMessageDialog(null,
-                    I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND),
-                    I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
-                    JOptionPane.ERROR_MESSAGE);
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
             return;
         }
 
@@ -125,9 +120,7 @@ public class UpdateUIManager {
             public void onError(String errorMessage) {
                 SwingUtilities.invokeLater(() -> {
                     progressDialog.hide();
-                    JOptionPane.showMessageDialog(null, errorMessage,
-                            I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
-                            JOptionPane.ERROR_MESSAGE);
+                    NotificationUtil.showError(errorMessage);
                 });
             }
 
@@ -135,10 +128,7 @@ public class UpdateUIManager {
             public void onCancelled() {
                 SwingUtilities.invokeLater(() -> {
                     progressDialog.hide();
-                    JOptionPane.showMessageDialog(null,
-                            I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED),
-                            I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
-                            JOptionPane.INFORMATION_MESSAGE);
+                    NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED));
                 });
             }
         });

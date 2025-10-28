@@ -4,6 +4,7 @@ import cn.hutool.system.OsInfo;
 import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -145,20 +146,14 @@ public class AutoUpdateManager {
      * 显示无更新消息
      */
     private void showNoUpdateMessage(UpdateInfo updateInfo) {
-        JOptionPane.showMessageDialog(null,
-                updateInfo.getMessage(),
-                I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE),
-                JOptionPane.INFORMATION_MESSAGE);
+        NotificationUtil.showInfo(updateInfo.getMessage());
     }
 
     /**
      * 显示检查失败消息
      */
     private void showCheckFailedMessage(UpdateInfo updateInfo) {
-        JOptionPane.showMessageDialog(null,
-                I18nUtil.getMessage(MessageKeys.ERROR_UPDATE_FAILED, updateInfo.getMessage()),
-                I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE),
-                JOptionPane.ERROR_MESSAGE);
+        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_UPDATE_FAILED, updateInfo.getMessage()));
     }
 
     /**

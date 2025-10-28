@@ -6,6 +6,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -120,11 +121,34 @@ public class ChangelogDialog extends JDialog {
         SwingWorker<String, Void> worker = new SwingWorker<>() {
             @Override
             protected String doInBackground() {
-                // 优先尝试 Gitee API（国内访问更快）
-                String result = fetchFromGitee();
-                if (result == null) {
-                    log.info("Gitee API failed, trying GitHub API");
+                // 根据用户设置的更新源偏好选择获取源
+                String preference = SettingManager.getUpdateSourcePreference();
+
+                String result = null;
+                if ("github".equals(preference)) {
+                    // 用户指定使用 GitHub
+                    log.info("Using user-preferred source: GitHub");
                     result = fetchFromGitHub();
+                    if (result == null) {
+                        log.info("GitHub API failed, trying Gitee as fallback");
+                        result = fetchFromGitee();
+                    }
+                } else if ("gitee".equals(preference)) {
+                    // 用户指定使用 Gitee
+                    log.info("Using user-preferred source: Gitee");
+                    result = fetchFromGitee();
+                    if (result == null) {
+                        log.info("Gitee API failed, trying GitHub as fallback");
+                        result = fetchFromGitHub();
+                    }
+                } else {
+                    // auto 模式：优先尝试 Gitee（国内用户居多）
+                    log.info("Auto mode: trying Gitee first");
+                    result = fetchFromGitee();
+                    if (result == null) {
+                        log.info("Gitee API failed, trying GitHub API");
+                        result = fetchFromGitHub();
+                    }
                 }
                 return result;
             }

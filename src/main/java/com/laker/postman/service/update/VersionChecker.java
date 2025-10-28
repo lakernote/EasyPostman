@@ -186,9 +186,10 @@ public class VersionChecker {
      */
     private JSONObject fetchLatestReleaseInfo(String apiUrl) {
         String sourceName = apiUrl.contains("github") ? SOURCE_GITHUB : SOURCE_GITEE;
+        HttpURLConnection conn = null;
         try {
             URL url = new URL(apiUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
             conn.setRequestMethod("GET");
@@ -198,7 +199,6 @@ public class VersionChecker {
             // 添加更多请求头来避免被拒绝
             conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
             conn.setRequestProperty("Cache-Control", "no-cache");
-            conn.setRequestProperty("Connection", "keep-alive");
 
             int code = conn.getResponseCode();
             if (code == 200) {
@@ -213,25 +213,40 @@ public class VersionChecker {
                 }
             } else {
                 // 尝试读取错误响应
-                String errorResponse = "";
-                try (InputStream errorStream = conn.getErrorStream()) {
-                    if (errorStream != null) {
-                        try (Scanner scanner = new Scanner(errorStream, StandardCharsets.UTF_8)) {
-                            errorResponse = scanner.useDelimiter("\\A").next();
-                        }
-                    }
-                } catch (Exception ignored) {
-                    // 忽略读取错误响应的异常
-                }
-
+                String errorResponse = readErrorResponse(conn);
                 log.warn("Failed to fetch release info from {}, HTTP code: {}, response: {}", sourceName, code, errorResponse);
-
                 return null;
             }
         } catch (Exception e) {
             log.debug("Error fetching release info from {}: {}", sourceName, e.getMessage());
+            return null;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.disconnect();
+                } catch (Exception ignored) {
+                    // 忽略断开连接时的异常
+                }
+            }
         }
-        return null;
+    }
+
+    /**
+     * 读取 HTTP 错误响应
+     */
+    private String readErrorResponse(HttpURLConnection conn) {
+        try (InputStream errorStream = conn.getErrorStream()) {
+            if (errorStream != null) {
+                try (Scanner scanner = new Scanner(errorStream, StandardCharsets.UTF_8)) {
+                    if (scanner.hasNext()) {
+                        return scanner.useDelimiter("\\A").next();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // 忽略读取错误响应的异常
+        }
+        return "";
     }
 
     /**

@@ -646,18 +646,17 @@ jobs:
           path: dist/*.deb
           retention-days: 1
 
-  sync-to-gitee:
-    name: Sync to Gitee Release（同步到 Gitee Release）
+  # 创建 Gitee Release
+  create-gitee-release:
+    name: Create Gitee Release（创建 Gitee Release）
     if: github.event_name == 'release'
     needs: [build-windows, build-windows-portable, build-macos-intel, build-macos-arm, build-ubuntu]  # 等待所有构建完成
     runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.gitee_release.outputs.release_id }}
+      tag_name: ${{ steps.get_version.outputs.tag }}
 
     steps:
-      - name: Download all release artifacts（下载所有发布产物）
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
       - name: Get version from tag（从标签获取版本号）
         id: get_version
         run: |
@@ -712,98 +711,107 @@ jobs:
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
           echo "Gitee Release created successfully with ID: $RELEASE_ID"
 
-      - name: Upload MSI to Gitee（上传 MSI 到 Gitee）
+  # 并行上传到 Gitee（使用 matrix 策略）
+  sync-to-gitee:
+    name: Upload ${{ matrix.platform }} to Gitee（上传 ${{ matrix.platform }} 到 Gitee）
+    if: github.event_name == 'release'
+    needs: [create-gitee-release]  # 等待 Gitee Release 创建完成
+    runs-on: ubuntu-latest
+    strategy:
+      # 不因单个平台失败而取消其他上传任务
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macOS Apple Silicon'
+            priority: 1
+            artifact_name: 'release-dmg-arm64'
+            file_pattern: '*-macos-arm64.dmg'
+            emoji: '🍎'
+          - platform: 'Windows MSI'
+            priority: 2
+            artifact_name: 'release-msi'
+            file_pattern: '*.msi'
+            emoji: '🪟'
+          - platform: 'Windows Portable'
+            priority: 3
+            artifact_name: 'release-portable-zip'
+            file_pattern: '*-portable.zip'
+            emoji: '📦'
+          - platform: 'macOS Intel'
+            priority: 4
+            artifact_name: 'release-dmg-intel'
+            file_pattern: '*-macos-x86_64.dmg'
+            emoji: '🍎'
+          - platform: 'Ubuntu DEB'
+            priority: 5
+            artifact_name: 'release-deb'
+            file_pattern: '*.deb'
+            emoji: '🐧'
+
+    steps:
+      - name: Download ${{ matrix.platform }} artifact（下载 ${{ matrix.platform }} 产物）
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts
+
+      - name: Upload ${{ matrix.platform }} to Gitee（上传 ${{ matrix.platform }} 到 Gitee）
         run: |
-          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          MSI_FILE=$(find artifacts/release-msi -name "*.msi" | head -n 1)
+          RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
+          FILE=$(find artifacts -name "${{ matrix.file_pattern }}" | head -n 1)
           
-          if [ -z "$MSI_FILE" ]; then
-            echo "⚠️ MSI file not found, skipping..."
+          if [ -z "$FILE" ]; then
+            echo "⚠️ ${{ matrix.platform }} file not found, skipping..."
             exit 0
           fi
           
-          echo "📦 Uploading $(basename $MSI_FILE) to Gitee..."
+          echo "${{ matrix.emoji }} [Priority ${{ matrix.priority }}] Uploading $(basename $FILE) to Gitee..."
           
-          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
-            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-            -F "file=@$MSI_FILE"
+          # 上传到 Gitee，带重试机制
+          MAX_RETRIES=3
+          RETRY_COUNT=0
           
-          echo "✅ MSI uploaded successfully!"
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+              -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+              -F "file=@$FILE"; then
+              echo "✅ ${{ matrix.platform }} uploaded successfully!"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Upload failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                sleep 5
+              fi
+            fi
+          done
+          
+          echo "❌ Failed to upload ${{ matrix.platform }} after $MAX_RETRIES attempts"
+          exit 1
 
-      - name: Upload Windows Portable ZIP to Gitee（上传 Windows 便携版 ZIP 到 Gitee）
-        run: |
-          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          ZIP_FILE=$(find artifacts/release-portable-zip -name "*-portable.zip" | head -n 1)
-          
-          if [ -z "$ZIP_FILE" ]; then
-            echo "⚠️ Portable ZIP file not found, skipping..."
-            exit 0
-          fi
-          
-          echo "📦 Uploading $(basename $ZIP_FILE) to Gitee..."
-          
-          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
-            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-            -F "file=@$ZIP_FILE"
-          
-          echo "✅ Windows Portable ZIP uploaded successfully!"
+  # 汇总结果
+  sync-summary:
+    name: Sync Summary（同步汇总）
+    if: github.event_name == 'release' && always()  # 即使有失败也执行
+    needs: [create-gitee-release, sync-to-gitee]
+    runs-on: ubuntu-latest
 
-      - name: Upload Intel DMG to Gitee（上传 Intel DMG 到 Gitee）
-        run: |
-          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          DMG_FILE=$(find artifacts/release-dmg-intel -name "*-macos-x86_64.dmg" | head -n 1)
-          
-          if [ -z "$DMG_FILE" ]; then
-            echo "⚠️ Intel DMG file not found, skipping..."
-            exit 0
-          fi
-          
-          echo "📦 Uploading $(basename $DMG_FILE) to Gitee..."
-          
-          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
-            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-            -F "file=@$DMG_FILE"
-          
-          echo "✅ Intel DMG uploaded successfully!"
-
-      - name: Upload ARM DMG to Gitee（上传 ARM DMG 到 Gitee）
-        run: |
-          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          DMG_FILE=$(find artifacts/release-dmg-arm64 -name "*-macos-arm64.dmg" | head -n 1)
-          
-          if [ -z "$DMG_FILE" ]; then
-            echo "⚠️ ARM DMG file not found, skipping..."
-            exit 0
-          fi
-          
-          echo "📦 Uploading $(basename $DMG_FILE) to Gitee..."
-          
-          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
-            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-            -F "file=@$DMG_FILE"
-          
-          echo "✅ ARM DMG uploaded successfully!"
-
-      - name: Upload DEB to Gitee（上传 DEB 到 Gitee）
-        run: |
-          RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          DEB_FILE=$(find artifacts/release-deb -name "*.deb" | head -n 1)
-          
-          if [ -z "$DEB_FILE" ]; then
-            echo "⚠️ DEB file not found, skipping..."
-            exit 0
-          fi
-          
-          echo "📦 Uploading $(basename $DEB_FILE) to Gitee..."
-          
-          curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
-            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-            -F "file=@$DEB_FILE"
-          
-          echo "✅ DEB uploaded successfully!"
-
+    steps:
       - name: Summary（汇总）
         run: |
-          echo "🎉 All packages have been synced to Gitee Release!"
-          echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ steps.get_version.outputs.tag }}"
+          echo "📊 Gitee Release 同步完成！"
+          echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
+          echo ""
+          echo "上传状态："
+          echo "  🍎 macOS Apple Silicon: ${{ needs.sync-to-gitee.result }}"
+          echo "  🪟 Windows MSI: ${{ needs.sync-to-gitee.result }}"
+          echo "  📦 Windows Portable: ${{ needs.sync-to-gitee.result }}"
+          echo "  🍎 macOS Intel: ${{ needs.sync-to-gitee.result }}"
+          echo "  🐧 Ubuntu DEB: ${{ needs.sync-to-gitee.result }}"
+          echo ""
+          if [ "${{ needs.sync-to-gitee.result }}" == "success" ]; then
+            echo "✅ 所有平台均已成功上传到 Gitee！"
+          else
+            echo "⚠️ 部分平台上传可能失败，请检查上方日志"
+          fi
 

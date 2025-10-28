@@ -136,27 +136,38 @@ public class VersionChecker {
      */
     private static long testSourceSpeed(String apiUrl, String sourceName) {
         long startTime = System.currentTimeMillis();
+        HttpURLConnection conn = null;
         try {
             URL url = new URL(apiUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(3000);
-            conn.setRequestMethod("HEAD"); // 只测试连接，不下载内容
+            conn.setRequestMethod("GET"); // 使用 GET 请求（Gitee API 不支持 HEAD）
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; EasyPostman/" + SystemUtil.getCurrentVersion() + ")");
+            conn.setRequestProperty("Accept", "application/json");
 
             int code = conn.getResponseCode();
             long responseTime = System.currentTimeMillis() - startTime;
 
             if (code == 200 || code == 301 || code == 302) {
-                log.debug("{} connection test successful: {} ms", sourceName, responseTime);
+                log.debug("{} connection test successful: {} ms (HTTP {})", sourceName, responseTime, code);
                 return responseTime;
             } else {
                 log.debug("{} connection test failed with code: {}", sourceName, code);
                 return Long.MAX_VALUE;
             }
         } catch (Exception e) {
-            log.debug("{} connection test failed: {}", sourceName, e.getMessage());
+            long failedTime = System.currentTimeMillis() - startTime;
+            log.debug("{} connection test failed after {} ms: {}", sourceName, failedTime, e.getMessage());
             return Long.MAX_VALUE;
+        } finally {
+            if (conn != null) {
+                try {
+                    // 关闭连接，避免资源泄漏
+                    conn.disconnect();
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 

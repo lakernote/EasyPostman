@@ -764,6 +764,11 @@ public final class MessageKeys {
     public static final String SETTINGS_AUTO_UPDATE_INTERVAL_TOOLTIP = "settings.auto_update.interval.tooltip";
     public static final String SETTINGS_AUTO_UPDATE_STARTUP_DELAY = "settings.auto_update.startup_delay";
     public static final String SETTINGS_AUTO_UPDATE_STARTUP_DELAY_TOOLTIP = "settings.auto_update.startup_delay.tooltip";
+    public static final String SETTINGS_UPDATE_SOURCE_PREFERENCE = "settings.update_source.preference";
+    public static final String SETTINGS_UPDATE_SOURCE_PREFERENCE_TOOLTIP = "settings.update_source.preference.tooltip";
+    public static final String SETTINGS_UPDATE_SOURCE_AUTO = "settings.update_source.auto";
+    public static final String SETTINGS_UPDATE_SOURCE_GITHUB = "settings.update_source.github";
+    public static final String SETTINGS_UPDATE_SOURCE_GITEE = "settings.update_source.gitee";
     public static final String SETTINGS_VALIDATION_AUTO_UPDATE_INTERVAL_ERROR = "settings.validation.auto_update_interval.error";
     public static final String SETTINGS_VALIDATION_AUTO_UPDATE_STARTUP_DELAY_ERROR = "settings.validation.auto_update_startup_delay.error";
 

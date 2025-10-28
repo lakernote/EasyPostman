@@ -82,16 +82,31 @@ public class VersionChecker {
 
     /**
      * 检测最佳源（GitHub 或 Gitee）
-     * 策略：并行测试连接速度，选择响应最快的源
+     * 策略：根据用户偏好设置或并行测试连接速度，选择最合适的源
      */
     private static String detectBestSource() {
+        // 检查用户的更新源偏好设置
+        String preference = com.laker.postman.panel.topmenu.setting.SettingManager.getUpdateSourcePreference();
+
+        // 如果用户指定了固定源，直接使用
+        if ("github".equals(preference)) {
+            log.info("Using user-preferred source: GitHub");
+            cachedBestSource = GITHUB_API_URL;
+            return GITHUB_API_URL;
+        } else if ("gitee".equals(preference)) {
+            log.info("Using user-preferred source: Gitee");
+            cachedBestSource = GITEE_API_URL;
+            return GITEE_API_URL;
+        }
+
+        // auto 模式：自动选择最快的源
         // 如果已有缓存，直接使用
         if (cachedBestSource != null) {
             log.info("Using cached best source: {}", cachedBestSource.contains("github") ? SOURCE_GITHUB : SOURCE_GITEE);
             return cachedBestSource;
         }
 
-        log.info("Detecting best update source...");
+        log.info("Auto-detecting best update source...");
 
         // 并行测试两个源的连接速度
         CompletableFuture<Long> githubTest = CompletableFuture.supplyAsync(() -> testSourceSpeed(GITHUB_API_URL, SOURCE_GITHUB));

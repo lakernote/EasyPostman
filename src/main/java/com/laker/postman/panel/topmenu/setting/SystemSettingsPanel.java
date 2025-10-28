@@ -22,6 +22,7 @@ public class SystemSettingsPanel extends JPanel {
     private JCheckBox autoUpdateCheckBox;
     private JTextField autoUpdateIntervalField;
     private JTextField autoUpdateStartupDelayField;
+    private JComboBox<String> updateSourceComboBox;
     private JButton saveBtn;
     private JButton cancelBtn;
 
@@ -82,6 +83,30 @@ public class SystemSettingsPanel extends JPanel {
         autoUpdateStartupDelayField = new JTextField(10);
         autoUpdateStartupDelayField.setText(String.valueOf(SettingManager.getAutoUpdateStartupDelaySeconds()));
         autoUpdatePanel.add(autoUpdateStartupDelayField, gbc);
+
+        // 更新源选择
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        JLabel updateSourceLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UPDATE_SOURCE_PREFERENCE));
+        updateSourceLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_UPDATE_SOURCE_PREFERENCE_TOOLTIP));
+        autoUpdatePanel.add(updateSourceLabel, gbc);
+
+        gbc.gridx = 1;
+        String[] sourceOptions = {
+            I18nUtil.getMessage(MessageKeys.SETTINGS_UPDATE_SOURCE_AUTO),
+            I18nUtil.getMessage(MessageKeys.SETTINGS_UPDATE_SOURCE_GITHUB),
+            I18nUtil.getMessage(MessageKeys.SETTINGS_UPDATE_SOURCE_GITEE)
+        };
+        updateSourceComboBox = new JComboBox<>(sourceOptions);
+
+        // 根据当前设置选择对应的选项
+        String currentPreference = SettingManager.getUpdateSourcePreference();
+        switch (currentPreference) {
+            case "github" -> updateSourceComboBox.setSelectedIndex(1);
+            case "gitee" -> updateSourceComboBox.setSelectedIndex(2);
+            default -> updateSourceComboBox.setSelectedIndex(0); // auto
+        }
+        autoUpdatePanel.add(updateSourceComboBox, gbc);
 
         mainPanel.add(autoUpdatePanel);
         mainPanel.add(Box.createVerticalGlue());
@@ -183,6 +208,7 @@ public class SystemSettingsPanel extends JPanel {
         autoUpdateCheckBox.addKeyListener(keyAdapter);
         autoUpdateIntervalField.addKeyListener(keyAdapter);
         autoUpdateStartupDelayField.addKeyListener(keyAdapter);
+        updateSourceComboBox.addKeyListener(keyAdapter);
     }
 
     private void registerListeners() {
@@ -217,6 +243,15 @@ public class SystemSettingsPanel extends JPanel {
             SettingManager.setAutoUpdateCheckEnabled(autoUpdateCheckBox.isSelected());
             SettingManager.setAutoUpdateCheckIntervalHours(autoUpdateInterval);
             SettingManager.setAutoUpdateStartupDelaySeconds(autoUpdateStartupDelay);
+
+            // 保存更新源偏好
+            int selectedIndex = updateSourceComboBox.getSelectedIndex();
+            String preference = switch (selectedIndex) {
+                case 1 -> "github";
+                case 2 -> "gitee";
+                default -> "auto";
+            };
+            SettingManager.setUpdateSourcePreference(preference);
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS));
 

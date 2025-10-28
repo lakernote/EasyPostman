@@ -312,6 +312,28 @@ public class SettingManager {
         save();
     }
 
+    /**
+     * 更新源偏好设置
+     * 支持的值：
+     * - "auto": 自动选择最快的源（默认）
+     * - "github": 始终使用 GitHub
+     * - "gitee": 始终使用 Gitee
+     */
+    public static String getUpdateSourcePreference() {
+        String val = props.getProperty("update_source_preference");
+        if (val != null && (val.equals("github") || val.equals("gitee") || val.equals("auto"))) {
+            return val;
+        }
+        return "gitee";
+    }
+
+    public static void setUpdateSourcePreference(String preference) {
+        if (preference != null && (preference.equals("auto") || preference.equals("github") || preference.equals("gitee"))) {
+            props.setProperty("update_source_preference", preference);
+            save();
+        }
+    }
+
     // ===== 网络代理设置 =====
 
     /**

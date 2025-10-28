@@ -650,7 +650,7 @@ jobs:
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
     if: github.event_name == 'release'
-    needs: [build-windows, build-windows-portable, build-macos-intel, build-macos-arm, build-ubuntu]  # 等待所有构建完成
+    needs: [build-windows, build-macos-arm]  # 只等待需要同步到 Gitee 的构建（Windows MSI + macOS ARM）
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -787,15 +787,14 @@ jobs:
           echo "📊 Gitee Release 同步完成！"
           echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
           echo ""
-          echo "上传状态："
-          echo "  🍎 macOS Apple Silicon: ${{ needs.sync-to-gitee.result }}"
-          echo "  🪟 Windows MSI: ${{ needs.sync-to-gitee.result }}"
-          echo "  📦 Windows Portable: ${{ needs.sync-to-gitee.result }}"
-          echo "  🍎 macOS Intel: ${{ needs.sync-to-gitee.result }}"
-          echo "  🐧 Ubuntu DEB: ${{ needs.sync-to-gitee.result }}"
+          echo "已同步到 Gitee 的平台："
+          echo "  🪟 Windows MSI"
+          echo "  🍎 macOS Apple Silicon (ARM64)"
+          echo ""
+          echo "💡 其他平台（Windows Portable、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
           if [ "${{ needs.sync-to-gitee.result }}" == "success" ]; then
-            echo "✅ 所有平台均已成功上传到 Gitee！"
+            echo "✅ 所有配置平台均已成功上传到 Gitee！"
           else
             echo "⚠️ 部分平台上传可能失败，请检查上方日志"
           fi

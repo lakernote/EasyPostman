@@ -48,31 +48,20 @@ public class UpdateUIManager {
     }
 
     /**
-     * 显示更新对话框
+     * 显示更新对话框（带更新日志）
      */
     public void showUpdateDialog(UpdateInfo updateInfo) {
         SwingUtilities.invokeLater(() -> {
-            Object[] options = {
-                    I18nUtil.getMessage(MessageKeys.UPDATE_MANUAL_DOWNLOAD),
-                    I18nUtil.getMessage(MessageKeys.UPDATE_AUTO_DOWNLOAD),
-                    I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL)
-            };
-
             MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-            int choice = JOptionPane.showOptionDialog(
-                    mainFrame,
-                    I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_FOUND, updateInfo.getLatestVersion()),
-                    I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE),
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.INFORMATION_MESSAGE,
-                    null,
-                    options,
-                    options[1]);
 
+            // 使用新的带更新日志的对话框
+            int choice = UpdateDialogWithChangelog.showUpdateDialog(mainFrame, updateInfo);
+
+            // 处理用户选择: 0=手动下载, 1=自动下载, 2=稍后提醒, -1=关闭对话框
             switch (choice) {
                 case 0 -> openManualDownloadPage();
                 case 1 -> startAutomaticUpdate(updateInfo);
-                default -> { /* 用户取消 */ }
+                case 2, -1 -> { /* 用户稍后提醒或关闭对话框 */ }
             }
         });
     }
@@ -204,24 +193,72 @@ public class UpdateUIManager {
                     BorderFactory.createEmptyBorder(15, 15, 15, 15)
             ));
             panel.setBackground(new Color(248, 249, 250));
-            panel.setPreferredSize(new Dimension(350, 120));
+            panel.setPreferredSize(new Dimension(380, 140));
 
             // 头部面板
             JPanel headerPanel = createHeaderPanel();
 
+            // 内容面板：版本信息 + 更新摘要
+            JPanel contentPanel = new JPanel();
+            contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+            contentPanel.setOpaque(false);
+
             // 版本信息
-            JLabel versionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_FOUND, updateInfo.getLatestVersion()));
-            versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-            versionLabel.setForeground(new Color(108, 117, 125));
+            JLabel versionLabel = new JLabel(String.format("%s → %s",
+                    updateInfo.getCurrentVersion(), updateInfo.getLatestVersion()));
+            versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+            versionLabel.setForeground(new Color(0, 120, 215));
+            versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            // 更新摘要（显示前80个字符）
+            String summary = extractChangelogSummary(updateInfo.getReleaseInfo(), 80);
+            JLabel summaryLabel = new JLabel("<html>" + summary + "</html>");
+            summaryLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+            summaryLabel.setForeground(new Color(108, 117, 125));
+            summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            contentPanel.add(versionLabel);
+            contentPanel.add(Box.createVerticalStrut(5));
+            contentPanel.add(summaryLabel);
 
             // 按钮面板
             JPanel buttonPanel = createButtonPanel(updateInfo, onUpdateClick);
 
             panel.add(headerPanel, BorderLayout.NORTH);
-            panel.add(versionLabel, BorderLayout.CENTER);
+            panel.add(contentPanel, BorderLayout.CENTER);
             panel.add(buttonPanel, BorderLayout.SOUTH);
 
             return panel;
+        }
+
+        /**
+         * 提取更新日志摘要（用于通知窗口）
+         */
+        private String extractChangelogSummary(cn.hutool.json.JSONObject releaseInfo, int maxLength) {
+            if (releaseInfo == null) {
+                return "点击查看更新详情...";
+            }
+
+            String body = releaseInfo.getStr("body");
+            if (cn.hutool.core.util.StrUtil.isBlank(body)) {
+                return "点击查看更新详情...";
+            }
+
+            // 清理格式并截取前几行
+            String cleaned = body.trim()
+                    .replaceAll("^#{1,6}\\s+", "")
+                    .replaceAll("\\*\\*(.+?)\\*\\*", "$1")
+                    .replaceAll("\\*(.+?)\\*", "$1")
+                    .replaceAll("```[\\s\\S]*?```", "")
+                    .replaceAll("`(.+?)`", "$1")
+                    .replaceAll("\\[(.+?)\\]\\(.+?\\)", "$1")
+                    .replaceAll("\\n+", " ");
+
+            if (cleaned.length() > maxLength) {
+                return cleaned.substring(0, maxLength) + "...";
+            }
+
+            return cleaned;
         }
 
         private JPanel createHeaderPanel() {

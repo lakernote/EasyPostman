@@ -411,7 +411,9 @@ public class LeftTopPanel extends SingletonBasePanel {
                 }
             } else if (REQUEST.equals(type)) {
                 HttpRequestItem item = (HttpRequestItem) obj[1];
-                if (item.getName() != null && item.getName().toLowerCase().contains(keyword)) {
+                boolean nameMatch = item.getName() != null && item.getName().toLowerCase().contains(keyword);
+                boolean urlMatch = item.getUrl() != null && item.getUrl().toLowerCase().contains(keyword);
+                if (nameMatch || urlMatch) {
                     dest.add(new DefaultMutableTreeNode(obj.clone()));
                     matched = true;
                 }

@@ -12,7 +12,6 @@ import java.util.Map;
 
 @Slf4j
 public class UserSettingsUtil {
-    private static final String KEY_SIDEBAR_EXPANDED = "sidebarExpanded";
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
     private static final String KEY_WINDOW_MAXIMIZED = "windowMaximized";
@@ -104,16 +103,6 @@ public class UserSettingsUtil {
 
     public static Map<String, Object> getAll() {
         return Collections.unmodifiableMap(readSettings());
-    }
-
-    // sidebarExpanded 专用方法
-    public static void saveSidebarExpanded(boolean expanded) {
-        set(KEY_SIDEBAR_EXPANDED, expanded);
-    }
-
-    public static boolean isSidebarExpanded() {
-        Boolean v = getBoolean(KEY_SIDEBAR_EXPANDED);
-        return v != null ? v : true; // 默认展开
     }
 
     // 窗口状态专用方法

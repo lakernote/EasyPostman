@@ -597,6 +597,9 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP = "settings.general.max_opened_requests.tooltip";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE = "settings.general.auto_format_response";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
+    public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED = "settings.general.sidebar_expanded";
+    public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP = "settings.general.sidebar_expanded.tooltip";
+    public static final String SETTINGS_SIDEBAR_RESTART_REQUIRED = "settings.sidebar.restart.required";
 
     // Validation messages
     public static final String SETTINGS_VALIDATION_ERROR_TITLE = "settings.validation.error.title";

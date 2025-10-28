@@ -26,6 +26,7 @@ public class UISettingsPanel extends JPanel {
     private JButton saveBtn;
     private JButton cancelBtn;
     private JCheckBox autoFormatResponseCheckBox;
+    private JCheckBox sidebarExpandedCheckBox;
 
     private final Map<JTextField, Predicate<String>> validators = new HashMap<>();
     private final Map<JTextField, String> errorMessages = new HashMap<>();
@@ -120,6 +121,15 @@ public class UISettingsPanel extends JPanel {
         autoFormatResponseCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE), SettingManager.isAutoFormatResponse());
         autoFormatResponseCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP));
         generalPanel.add(autoFormatResponseCheckBox, gbc);
+
+        // 侧边栏展开设置
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        sidebarExpandedCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_EXPANDED), SettingManager.isSidebarExpanded());
+        sidebarExpandedCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP));
+        generalPanel.add(sidebarExpandedCheckBox, gbc);
+
 
         mainPanel.add(downloadPanel);
         mainPanel.add(Box.createVerticalStrut(10));
@@ -271,13 +281,22 @@ public class UISettingsPanel extends JPanel {
             int maxHistoryCount = Integer.parseInt(maxHistoryCountField.getText().trim());
             int maxOpenedRequestsCount = Integer.parseInt(maxOpenedRequestsCountField.getText().trim());
 
+            // 检查侧边栏设置是否改变
+            boolean sidebarExpandedChanged = SettingManager.isSidebarExpanded() != sidebarExpandedCheckBox.isSelected();
+
             SettingManager.setShowDownloadProgressDialog(showDownloadProgressCheckBox.isSelected());
             SettingManager.setDownloadProgressDialogThreshold(thresholdMB * 1024 * 1024);
             SettingManager.setMaxHistoryCount(maxHistoryCount);
             SettingManager.setMaxOpenedRequestsCount(maxOpenedRequestsCount);
             SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
+            SettingManager.setSidebarExpanded(sidebarExpandedCheckBox.isSelected());
 
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS));
+            // 如果侧边栏设置改变了，提示用户重启
+            if (sidebarExpandedChanged) {
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SIDEBAR_RESTART_REQUIRED));
+            } else {
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS));
+            }
 
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JDialog dialog) {

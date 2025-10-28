@@ -238,6 +238,22 @@ public class SettingManager {
         save();
     }
 
+    /**
+     * 是否默认展开侧边栏
+     */
+    public static boolean isSidebarExpanded() {
+        String val = props.getProperty("sidebar_expanded");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false; // 默认不展开
+    }
+
+    public static void setSidebarExpanded(boolean expanded) {
+        props.setProperty("sidebar_expanded", String.valueOf(expanded));
+        save();
+    }
+
     // ===== 自动更新设置 =====
 
     /**

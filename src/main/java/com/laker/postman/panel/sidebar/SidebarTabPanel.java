@@ -11,10 +11,10 @@ import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.UserSettingsUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +35,6 @@ import static com.laker.postman.util.MessageKeys.MENU_FUNCTIONAL;
 @Slf4j
 public class SidebarTabPanel extends SingletonBasePanel {
 
-    private static final String TAB_TOGGLE = "Toggle";
     @Getter
     private JTabbedPane tabbedPane;
     @Getter
@@ -44,7 +43,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JLabel consoleLabel;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
-    private int lastSelectedTabIndex = 0; // 记录上一个被选中的标签索引
 
     // 支持的tab标题i18n key
     private static final String[] TAB_TITLE_KEYS = {
@@ -64,7 +62,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         // 先读取侧边栏展开状态
-        sidebarExpanded = UserSettingsUtil.isSidebarExpanded();
+        sidebarExpanded = SettingManager.isSidebarExpanded();
         setLayout(new BorderLayout());
         // 1. 创建标签页
         tabbedPane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
@@ -88,10 +86,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
             tabbedPane.addTab(info.title, new JPanel());
             tabbedPane.setTabComponentAt(i, createPostmanTabHeader(info.title, info.icon));
         }
-        // 在tabbedPane最后面增加展开、收起菜单标签
-        tabbedPane.addTab(TAB_TOGGLE, new JPanel()); // 添加一个空的tab作为占位符
-        int toggleTabIndex = tabbedPane.getTabCount() - 1;
-        tabbedPane.setTabComponentAt(toggleTabIndex, createToggleTabHeader());
 
         // 默认设置选中第一个标签
         tabbedPane.setSelectedIndex(0);
@@ -189,24 +183,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-        tabbedPane.addChangeListener(e -> {
-            int selectedIndex = tabbedPane.getSelectedIndex();
-            int toggleTabIndex = tabbedPane.getTabCount() - 1;
-            if (selectedIndex == toggleTabIndex) {
-                // 切换侧边栏状态
-                toggleSidebar();
-                // 重新选择之前的标签，避免选中切换按钮标签
-                SwingUtilities.invokeLater(() -> {
-                    if (tabbedPane.getTabCount() > 1 && lastSelectedTabIndex >= 0 && lastSelectedTabIndex < toggleTabIndex) {
-                        tabbedPane.setSelectedIndex(lastSelectedTabIndex);
-                    }
-                });
-            } else {
-                // 记录上一个被选中的标签索引（不包括toggle标签）
-                lastSelectedTabIndex = selectedIndex;
-                handleTabChange();
-            }
-        });
+        tabbedPane.addChangeListener(e -> handleTabChange());
         // 懒加载第一个tab
         SwingUtilities.invokeLater(() -> ensureTabComponentLoaded(0));
     }
@@ -303,86 +280,5 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         panel.setBorder(BorderFactory.createEmptyBorder(6, 2, 6, 2)); // 恢复原来的边距
         return panel;
-    }
-
-    /**
-     * 创建展开/收起侧边栏的标签头部
-     */
-    private JPanel createToggleTabHeader() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setOpaque(false);
-
-        // 根据当前状态显示不同的图标和大小
-        Icon toggleIcon = sidebarExpanded ?
-                new FlatSVGIcon("icons/collapse.svg", 20, 20) :
-                new FlatSVGIcon("icons/expand.svg", 20, 20); // 收起状态下也保持20x20
-
-        // 创建鼠标监听器，用于处理切换操作
-        MouseAdapter toggleClickListener = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                toggleSidebar();
-            }
-        };
-
-        if (sidebarExpanded) {
-            panel.setPreferredSize(new Dimension(81, 60));
-            JLabel iconLabel = new JLabel(toggleIcon);
-            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SIDEBAR_TOGGLE)); // 悬停提示
-            iconLabel.setPreferredSize(new Dimension(32, 32));
-            panel.add(Box.createVerticalGlue());
-            panel.add(iconLabel);
-            panel.add(Box.createVerticalGlue());
-
-            // 为图标添加点击事件
-            iconLabel.addMouseListener(toggleClickListener);
-        } else {
-            panel.setPreferredSize(new Dimension(30, 60));
-            JLabel iconLabel = new JLabel(toggleIcon);
-            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SIDEBAR_TOGGLE)); // 悬停提示
-            iconLabel.setPreferredSize(new Dimension(20, 20)); // 保持图标20x20大小不变
-            panel.add(Box.createVerticalGlue());
-            panel.add(iconLabel);
-            panel.add(Box.createVerticalGlue());
-
-            // 为收起状态下的图标添加点击事件
-            iconLabel.addMouseListener(toggleClickListener);
-        }
-
-        // 添加鼠标监听器来处理切换操作
-        panel.addMouseListener(toggleClickListener);
-
-        panel.setBorder(BorderFactory.createEmptyBorder(6, 2, 6, 2)); // 恢复原来的边距
-        return panel;
-    }
-
-    /**
-     * 切换侧边栏的展开和收起状态
-     */
-    private void toggleSidebar() {
-        sidebarExpanded = !sidebarExpanded;
-        UserSettingsUtil.saveSidebarExpanded(sidebarExpanded); // 保存状态
-        updateTabHeaders();
-    }
-
-    /**
-     * 更新所有标签头部的显示状态
-     */
-    private void updateTabHeaders() {
-        // 更新所有常规标签的头部
-        for (int i = 0; i < tabInfos.size(); i++) {
-            TabInfo info = tabInfos.get(i);
-            tabbedPane.setTabComponentAt(i, createTabHeader(info.title, info.icon, sidebarExpanded));
-        }
-
-        // 更新切换按钮的头部
-        int toggleTabIndex = tabbedPane.getTabCount() - 1;
-        tabbedPane.setTabComponentAt(toggleTabIndex, createToggleTabHeader());
-
-        revalidate(); // 重新布局
-        repaint(); // 重绘组件
     }
 }

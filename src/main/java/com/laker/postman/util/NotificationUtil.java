@@ -285,7 +285,7 @@ public class NotificationUtil {
                     new Rectangle(0, 0, screenSize.width, screenSize.height);
 
             int x = 0, y = 0;
-            int margin = 20;
+            int margin = 5; // 距离右边/下边缘的距离
 
             switch (position) {
                 case TOP_RIGHT:

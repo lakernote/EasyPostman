@@ -193,7 +193,10 @@ public class UpdateUIManager {
                     BorderFactory.createEmptyBorder(15, 15, 15, 15)
             ));
             panel.setBackground(new Color(248, 249, 250));
-            panel.setPreferredSize(new Dimension(380, 140));
+            // 增加面板高度，确保内容完整显示
+            panel.setPreferredSize(new Dimension(400, 170));  // 从 150 增加到 170
+            panel.setMinimumSize(new Dimension(400, 140));    // 从 120 增加到 140
+            panel.setMaximumSize(new Dimension(400, 220));    // 从 200 增加到 220
 
             // 头部面板
             JPanel headerPanel = createHeaderPanel();
@@ -210,16 +213,25 @@ public class UpdateUIManager {
             versionLabel.setForeground(new Color(0, 120, 215));
             versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            // 更新摘要（显示前80个字符）
-            String summary = extractChangelogSummary(updateInfo.getReleaseInfo(), 80);
-            JLabel summaryLabel = new JLabel("<html>" + summary + "</html>");
-            summaryLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-            summaryLabel.setForeground(new Color(108, 117, 125));
-            summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            // 更新摘要（使用 JTextArea 确保正确换行）
+            String summary = extractChangelogSummary(updateInfo.getReleaseInfo(), 150);
+            JTextArea summaryArea = new JTextArea(summary);
+            summaryArea.setEditable(false);
+            summaryArea.setFocusable(false);
+            summaryArea.setLineWrap(true);          // 启用自动换行
+            summaryArea.setWrapStyleWord(true);     // 在单词边界换行
+            summaryArea.setRows(3);                 // 最多显示3行
+            summaryArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+            summaryArea.setForeground(new Color(108, 117, 125));
+            summaryArea.setBackground(new Color(248, 249, 250));  // 与面板背景一致
+            summaryArea.setBorder(null);            // 移除边框
+            summaryArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+            // 增加最大高度，确保 3 行文字完整显示（约 18px/行 * 3 = 54px，留余量到 70px）
+            summaryArea.setMaximumSize(new Dimension(360, 70));
 
             contentPanel.add(versionLabel);
-            contentPanel.add(Box.createVerticalStrut(5));
-            contentPanel.add(summaryLabel);
+            contentPanel.add(Box.createVerticalStrut(8));
+            contentPanel.add(summaryArea);
 
             // 按钮面板
             JPanel buttonPanel = createButtonPanel(updateInfo, onUpdateClick);
@@ -236,30 +248,46 @@ public class UpdateUIManager {
          */
         private String extractChangelogSummary(cn.hutool.json.JSONObject releaseInfo, int maxLength) {
             if (releaseInfo == null) {
-                return "点击查看更新详情...";
+                return getDefaultSummary();
             }
 
             String body = releaseInfo.getStr("body");
             if (cn.hutool.core.util.StrUtil.isBlank(body)) {
-                return "点击查看更新详情...";
+                return getDefaultSummary();
             }
 
-            // 清理格式并截取前几行
+            // 清理 Markdown 格式
             String cleaned = body.trim()
-                    .replaceAll("^#{1,6}\\s+", "")
-                    .replaceAll("\\*\\*(.+?)\\*\\*", "$1")
-                    .replaceAll("\\*(.+?)\\*", "$1")
-                    .replaceAll("```[\\s\\S]*?```", "")
-                    .replaceAll("`(.+?)`", "$1")
-                    .replaceAll("\\[(.+?)\\]\\(.+?\\)", "$1")
-                    .replaceAll("\\n+", " ");
+                    .replaceAll("^#{1,6}\\s+", "")  // 移除标题标记
+                    .replaceAll("\\*\\*(.+?)\\*\\*", "$1")  // 移除粗体
+                    .replaceAll("\\*(.+?)\\*", "$1")  // 移除斜体
+                    .replaceAll("```[\\s\\S]*?```", "")  // 移除代码块
+                    .replaceAll("`(.+?)`", "$1")  // 移除行内代码
+                    .replaceAll("\\[(.+?)\\]\\(.+?\\)", "$1")  // 链接只保留文本
+                    .replaceAll("\\n+", " ")  // 将所有换行替换为空格
+                    .replaceAll("\\s+", " ")  // 压缩多个空格为单个空格
+                    .trim();
 
+            // 智能截断：在单词边界处截断
             if (cleaned.length() > maxLength) {
-                return cleaned.substring(0, maxLength) + "...";
+                String truncated = cleaned.substring(0, maxLength);
+                int lastSpace = truncated.lastIndexOf(' ');
+                if (lastSpace > maxLength * 0.8) {  // 如果最后一个空格不是太靠前
+                    truncated = truncated.substring(0, lastSpace);
+                }
+                return truncated + "...";
             }
 
-            return cleaned;
+            return cleaned.isEmpty() ? getDefaultSummary() : cleaned;
         }
+
+        /**
+         * 获取默认摘要文本
+         */
+        private String getDefaultSummary() {
+            return I18nUtil.isChinese() ? "点击查看更新详情..." : "Click to view update details...";
+        }
+
 
         private JPanel createHeaderPanel() {
             JPanel headerPanel = new JPanel(new BorderLayout());

@@ -722,31 +722,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macOS Apple Silicon'
-            priority: 1
-            artifact_name: 'release-dmg-arm64'
-            file_pattern: '*-macos-arm64.dmg'
-            emoji: '🍎'
           - platform: 'Windows MSI'
-            priority: 2
+            priority: 1
             artifact_name: 'release-msi'
             file_pattern: '*.msi'
             emoji: '🪟'
-          - platform: 'Windows Portable'
-            priority: 3
-            artifact_name: 'release-portable-zip'
-            file_pattern: '*-portable.zip'
-            emoji: '📦'
-          - platform: 'macOS Intel'
-            priority: 4
-            artifact_name: 'release-dmg-intel'
-            file_pattern: '*-macos-x86_64.dmg'
+          - platform: 'macOS Apple Silicon'
+            priority: 2
+            artifact_name: 'release-dmg-arm64'
+            file_pattern: '*-macos-arm64.dmg'
             emoji: '🍎'
-          - platform: 'Ubuntu DEB'
-            priority: 5
-            artifact_name: 'release-deb'
-            file_pattern: '*.deb'
-            emoji: '🐧'
 
     steps:
       - name: Download ${{ matrix.platform }} artifact（下载 ${{ matrix.platform }} 产物）

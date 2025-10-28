@@ -17,6 +17,9 @@ import java.util.function.Consumer;
 @Slf4j
 public class UpdateDownloader {
 
+    private static final String GITHUB_COM = "github.com";
+    private static final String GITEE_COM = "gitee.com";
+
     /**
      * 下载进度回调接口
      */
@@ -33,20 +36,73 @@ public class UpdateDownloader {
     private volatile boolean cancelled = false;
 
     /**
-     * 异步下载文件
+     * 异步下载文件（支持多源切换）
      */
     public CompletableFuture<File> downloadAsync(String downloadUrl, DownloadProgressCallback callback) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                // 尝试从原始 URL 下载
+                log.info("Attempting to download from: {}", downloadUrl);
                 return downloadFile(downloadUrl, callback);
             } catch (Exception e) {
                 if (!cancelled) {
-                    String friendlyError = getFriendlyErrorMessage(e);
-                    callback.onError(friendlyError);
+                    log.warn("Download failed from primary source: {}", e.getMessage());
+
+                    // 尝试切换到备用源
+                    String alternativeUrl = getAlternativeDownloadUrl(downloadUrl);
+                    if (alternativeUrl != null && !alternativeUrl.equals(downloadUrl)) {
+                        log.info("Trying alternative source: {}", alternativeUrl);
+                        callback.onProgress(0, 0, 0, 0); // 重置进度
+
+                        try {
+                            return downloadFile(alternativeUrl, callback);
+                        } catch (Exception e2) {
+                            log.error("Download failed from alternative source: {}", e2.getMessage());
+                            String friendlyError = getFriendlyErrorMessage(e2);
+                            callback.onError(friendlyError);
+                        }
+                    } else {
+                        String friendlyError = getFriendlyErrorMessage(e);
+                        callback.onError(friendlyError);
+                    }
                 }
                 return null;
             }
         });
+    }
+
+    /**
+     * 获取备用下载源
+     * GitHub <-> Gitee 互为备用
+     */
+    private String getAlternativeDownloadUrl(String originalUrl) {
+        if (originalUrl == null) {
+            return null;
+        }
+
+        // GitHub -> Gitee
+        if (originalUrl.contains(GITHUB_COM) || originalUrl.contains("githubusercontent.com")) {
+            // GitHub Release 下载链接格式:
+            // https://github.com/lakernote/easy-postman/releases/download/v1.0.0/EasyPostman-1.0.0.msi
+            // Gitee Release 下载链接格式:
+            // https://gitee.com/lakernote/easy-postman/releases/download/v1.0.0/EasyPostman-1.0.0.msi
+
+            String giteeUrl = originalUrl
+                    .replace(GITHUB_COM, GITEE_COM)
+                    .replace("githubusercontent.com", GITEE_COM);
+
+            log.debug("Switched from GitHub to Gitee: {} -> {}", originalUrl, giteeUrl);
+            return giteeUrl;
+        }
+
+        // Gitee -> GitHub
+        if (originalUrl.contains(GITEE_COM)) {
+            String githubUrl = originalUrl.replace(GITEE_COM, GITHUB_COM);
+            log.debug("Switched from Gitee to GitHub: {} -> {}", originalUrl, githubUrl);
+            return githubUrl;
+        }
+
+        return null;
     }
 
     /**
@@ -98,7 +154,11 @@ public class UpdateDownloader {
         }
 
         if (cancelled) {
-            tempFile.delete();
+            try {
+                java.nio.file.Files.delete(tempFile.toPath());
+            } catch (IOException e) {
+                log.warn("Failed to delete temporary file: {}", e.getMessage());
+            }
             callback.onCancelled();
             return null;
         }

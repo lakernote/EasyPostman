@@ -13,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 版本检查器 - 负责检查远程版本信息
@@ -20,7 +21,18 @@ import java.util.Scanner;
 @Slf4j
 public class VersionChecker {
 
+    private static final String GITHUB_API_URL = "https://api.github.com/repos/lakernote/easy-postman/releases/latest";
     private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/latest";
+
+    private static final String SOURCE_GITHUB = "GitHub";
+    private static final String SOURCE_GITEE = "Gitee";
+    private static final String SOURCE_KEY = "_source";
+    private static final String BROWSER_DOWNLOAD_URL = "browser_download_url";
+    private static final String MACOS_ARM64_DMG = "-macos-arm64.dmg";
+    private static final String PORTABLE_ZIP = "-portable.zip";
+
+    // 缓存最佳源，避免重复检测
+    private static volatile String cachedBestSource = null;
 
     /**
      * 检查更新信息
@@ -28,14 +40,30 @@ public class VersionChecker {
     public UpdateInfo checkForUpdate() {
         try {
             String currentVersion = SystemUtil.getCurrentVersion();
-            JSONObject releaseInfo = fetchLatestReleaseInfo();
+
+            // 并行检测最快的源
+            String bestSource = detectBestSource();
+            JSONObject releaseInfo = fetchLatestReleaseInfo(bestSource);
+
+            if (releaseInfo == null) {
+                // 如果最佳源失败，尝试备用源
+                String fallbackSource = bestSource.equals(GITHUB_API_URL) ? GITEE_API_URL : GITHUB_API_URL;
+                log.info("Primary source failed, trying fallback source");
+                releaseInfo = fetchLatestReleaseInfo(fallbackSource);
+
+                if (releaseInfo != null) {
+                    cachedBestSource = fallbackSource; // 更新缓存
+                }
+            }
 
             if (releaseInfo == null) {
                 return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_FETCH_RELEASE_FAILED));
             }
 
             String latestVersion = releaseInfo.getStr("tag_name");
-            log.info("Current version: {}, Gitee latest version: {}", currentVersion, latestVersion);
+            String sourceName = releaseInfo.getStr(SOURCE_KEY, "unknown");
+            log.info("Current version: {}, Latest version: {} (from {})", currentVersion, latestVersion, sourceName);
+
             if (latestVersion == null) {
                 return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_NO_VERSION_INFO));
             }
@@ -53,11 +81,92 @@ public class VersionChecker {
     }
 
     /**
+     * 检测最佳源（GitHub 或 Gitee）
+     * 策略：并行测试连接速度，选择响应最快的源
+     */
+    private static String detectBestSource() {
+        // 如果已有缓存，直接使用
+        if (cachedBestSource != null) {
+            log.info("Using cached best source: {}", cachedBestSource.contains("github") ? SOURCE_GITHUB : SOURCE_GITEE);
+            return cachedBestSource;
+        }
+
+        log.info("Detecting best update source...");
+
+        // 并行测试两个源的连接速度
+        CompletableFuture<Long> githubTest = CompletableFuture.supplyAsync(() -> testSourceSpeed(GITHUB_API_URL, SOURCE_GITHUB));
+        CompletableFuture<Long> giteeTest = CompletableFuture.supplyAsync(() -> testSourceSpeed(GITEE_API_URL, SOURCE_GITEE));
+
+        try {
+            // 等待两个测试完成，最多等待 5 秒
+            CompletableFuture.allOf(githubTest, giteeTest).get(5, java.util.concurrent.TimeUnit.SECONDS);
+
+            long githubTime = githubTest.getNow(Long.MAX_VALUE);
+            long giteeTime = giteeTest.getNow(Long.MAX_VALUE);
+
+            // 选择响应时间更短的源
+            if (githubTime < giteeTime && githubTime < 5000) {
+                log.info("GitHub is faster ({} ms vs {} ms), using GitHub", githubTime, giteeTime);
+                cachedBestSource = GITHUB_API_URL;
+                return GITHUB_API_URL;
+            } else if (giteeTime < Long.MAX_VALUE) {
+                log.info("Gitee is faster or preferred ({} ms vs {} ms), using Gitee", giteeTime, githubTime);
+                cachedBestSource = GITEE_API_URL;
+                return GITEE_API_URL;
+            }
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.debug("Source detection timeout: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        } catch (java.util.concurrent.ExecutionException e) {
+            log.debug("Source detection execution error: {}", e.getMessage());
+        } catch (InterruptedException e) {
+            log.debug("Source detection interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+
+        // 默认使用 Gitee（国内用户居多）
+        log.info("Using default source: Gitee");
+        cachedBestSource = GITEE_API_URL;
+        return GITEE_API_URL;
+    }
+
+    /**
+     * 测试源的连接速度（返回响应时间，单位：毫秒）
+     */
+    private static long testSourceSpeed(String apiUrl, String sourceName) {
+        long startTime = System.currentTimeMillis();
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+            conn.setRequestMethod("HEAD"); // 只测试连接，不下载内容
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; EasyPostman/" + SystemUtil.getCurrentVersion() + ")");
+
+            int code = conn.getResponseCode();
+            long responseTime = System.currentTimeMillis() - startTime;
+
+            if (code == 200 || code == 301 || code == 302) {
+                log.debug("{} connection test successful: {} ms", sourceName, responseTime);
+                return responseTime;
+            } else {
+                log.debug("{} connection test failed with code: {}", sourceName, code);
+                return Long.MAX_VALUE;
+            }
+        } catch (Exception e) {
+            log.debug("{} connection test failed: {}", sourceName, e.getMessage());
+            return Long.MAX_VALUE;
+        }
+    }
+
+    /**
      * 获取最新版本发布信息
      */
-    private JSONObject fetchLatestReleaseInfo() {
+    private JSONObject fetchLatestReleaseInfo(String apiUrl) {
+        String sourceName = apiUrl.contains("github") ? SOURCE_GITHUB : SOURCE_GITEE;
         try {
-            URL url = new URL(GITEE_API_URL);
+            URL url = new URL(apiUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
@@ -75,7 +184,11 @@ public class VersionChecker {
                 try (InputStream is = conn.getInputStream();
                      Scanner scanner = new Scanner(is, StandardCharsets.UTF_8)) {
                     String json = scanner.useDelimiter("\\A").next();
-                    return new JSONObject(json);
+                    JSONObject releaseInfo = new JSONObject(json);
+                    // 标记数据来源
+                    releaseInfo.set(SOURCE_KEY, sourceName);
+                    log.info("Successfully fetched release info from {}", sourceName);
+                    return releaseInfo;
                 }
             } else {
                 // 尝试读取错误响应
@@ -90,12 +203,12 @@ public class VersionChecker {
                     // 忽略读取错误响应的异常
                 }
 
-                log.warn("Failed to fetch release info, HTTP code: {}, response: {}", code, errorResponse);
+                log.warn("Failed to fetch release info from {}, HTTP code: {}, response: {}", sourceName, code, errorResponse);
 
                 return null;
             }
         } catch (Exception e) {
-            log.debug("Error fetching release info: {}", e.getMessage());
+            log.debug("Error fetching release info from {}: {}", sourceName, e.getMessage());
         }
         return null;
     }
@@ -115,19 +228,27 @@ public class VersionChecker {
         }
 
         String osName = System.getProperty("os.name").toLowerCase();
+        String source = releaseInfo.getStr(SOURCE_KEY, "unknown");
 
+        String downloadUrl;
         if (osName.contains("win")) {
             // Windows 特殊处理：区分便携版和安装版
-            return getWindowsDownloadUrl(assets);
+            downloadUrl = getWindowsDownloadUrl(assets);
         } else if (osName.contains("mac")) {
             // macOS 特殊处理：支持新版本的架构特定 DMG 和旧版本的通用 DMG
-            return getMacDownloadUrl(assets);
+            downloadUrl = getMacDownloadUrl(assets);
         } else if (osName.contains("linux")) {
-            return findAssetByExtension(assets, ".deb");
+            downloadUrl = findAssetByExtension(assets, ".deb");
         } else {
             log.warn("Unsupported OS: {}", osName);
             return null;
         }
+
+        if (downloadUrl != null) {
+            log.info("Found download URL from {}: {}", source, downloadUrl);
+        }
+
+        return downloadUrl;
     }
 
     /**
@@ -139,8 +260,8 @@ public class VersionChecker {
 
         if (isPortable) {
             // 便携版：优先下载便携版 ZIP
-            log.info("Detected portable version, looking for -portable.zip");
-            String portableUrl = findAssetByPattern(assets, "-portable.zip");
+            log.info("Detected portable version, looking for portable.zip");
+            String portableUrl = findAssetByPattern(assets, PORTABLE_ZIP);
 
             if (portableUrl != null) {
                 log.info("Found portable ZIP for update");
@@ -225,7 +346,7 @@ public class VersionChecker {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
             if (name != null && name.contains(pattern)) {
-                String url = asset.getStr("browser_download_url");
+                String url = asset.getStr(BROWSER_DOWNLOAD_URL);
                 log.debug("Found asset by pattern '{}': {} -> {}", pattern, name, url);
                 return url;
             }
@@ -293,7 +414,7 @@ public class VersionChecker {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
             if (name != null && name.endsWith(extension)) {
-                String url = asset.getStr("browser_download_url");
+                String url = asset.getStr(BROWSER_DOWNLOAD_URL);
                 log.debug("Found asset: {} -> {}", name, url);
                 return url;
             }
@@ -310,18 +431,14 @@ public class VersionChecker {
         for (int i = 0; i < assets.size(); i++) {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
-            if (name != null && name.endsWith(".dmg")) {
-                // 排除带有架构后缀的 DMG（支持新旧两种命名格式）
-                // 新格式: -macos-x86_64.dmg, -macos-arm64.dmg
-                // 旧格式: -intel.dmg, -arm64.dmg
-                if (!name.endsWith("-intel.dmg") &&
+            if (name != null && name.endsWith(".dmg") &&
+                    !name.endsWith("-intel.dmg") &&
                     !name.endsWith("-arm64.dmg") &&
                     !name.endsWith("-macos-x86_64.dmg") &&
-                    !name.endsWith("-macos-arm64.dmg")) {
-                    String url = asset.getStr("browser_download_url");
-                    log.debug("Found generic DMG (without architecture suffix): {} -> {}", name, url);
-                    return url;
-                }
+                    !name.endsWith(MACOS_ARM64_DMG)) {
+                String url = asset.getStr(BROWSER_DOWNLOAD_URL);
+                log.debug("Found generic DMG (without architecture suffix): {} -> {}", name, url);
+                return url;
             }
         }
         return null;
@@ -341,7 +458,7 @@ public class VersionChecker {
             // 检测 Apple Silicon (ARM64)
             if (arch.contains("aarch64") || arch.equals("arm64")) {
                 log.info("Detected Apple Silicon (ARM64), using -macos-arm64.dmg");
-                return "-macos-arm64.dmg";
+                return MACOS_ARM64_DMG;
             }
 
             // 检测 Intel (x86_64)
@@ -356,7 +473,7 @@ public class VersionChecker {
 
         // 默认返回 ARM64 版本（因为新 Mac 都是 Apple Silicon）
         log.info("Unable to detect architecture, defaulting to -macos-arm64.dmg");
-        return "-macos-arm64.dmg";
+        return MACOS_ARM64_DMG;
     }
 
 
@@ -385,7 +502,7 @@ public class VersionChecker {
 
     private int parseIntSafe(String s) {
         try {
-            return Integer.parseInt(s.replaceAll("[^0-9]", ""));
+            return Integer.parseInt(s.replaceAll("\\D", ""));
         } catch (Exception e) {
             return 0;
         }

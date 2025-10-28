@@ -240,18 +240,27 @@ public class VersionChecker {
         String arch = System.getProperty("os.arch", "").toLowerCase();
         boolean isAppleSilicon = arch.contains("aarch64") || arch.equals("arm64");
 
-        // 1. 优先查找架构特定的 DMG（新版本）
+        // 1. 优先查找新格式的架构特定 DMG
         String archSpecificSuffix = getMacPackageSuffix();
         String downloadUrl = findAssetByExtension(assets, archSpecificSuffix);
 
         if (downloadUrl != null) {
-            log.info("Found architecture-specific DMG: {}", archSpecificSuffix);
+            log.info("Found architecture-specific DMG (new format): {}", archSpecificSuffix);
             return downloadUrl;
         }
 
-        // 2. 回退到通用 .dmg（仅限 Apple Silicon，因为旧版本 .dmg 只支持 M 芯片）
+        // 2. 回退到旧格式的架构特定 DMG
         if (isAppleSilicon) {
-            log.info("Architecture-specific DMG not found, trying generic .dmg for backward compatibility (Apple Silicon only)");
+            log.info("New format not found, trying legacy format: -arm64.dmg");
+            downloadUrl = findAssetByExtension(assets, "-arm64.dmg");
+
+            if (downloadUrl != null) {
+                log.info("Found legacy ARM64 DMG: -arm64.dmg");
+                return downloadUrl;
+            }
+
+            // 3. 最后尝试通用 .dmg（旧版本，只支持 M 芯片）
+            log.info("Legacy ARM64 DMG not found, trying generic .dmg for backward compatibility");
             downloadUrl = findGenericDmg(assets);
 
             if (downloadUrl != null) {
@@ -259,9 +268,17 @@ public class VersionChecker {
                 return downloadUrl;
             }
         } else {
-            // Intel Mac 必须有 -intel.dmg 才能升级
-            log.warn("Intel Mac requires -intel.dmg file, but not found in release assets");
-            log.info("Note: Legacy .dmg files only support Apple Silicon (M chip)");
+            // Intel Mac: 尝试旧格式 -intel.dmg
+            log.info("New format not found, trying legacy format: -intel.dmg");
+            downloadUrl = findAssetByExtension(assets, "-intel.dmg");
+
+            if (downloadUrl != null) {
+                log.info("Found legacy Intel DMG: -intel.dmg");
+                return downloadUrl;
+            }
+
+            log.warn("Intel Mac requires -intel.dmg or -macos-x86_64.dmg file, but not found in release assets");
+            log.info("Note: Legacy generic .dmg files only support Apple Silicon (M chip)");
         }
 
         log.warn("No suitable DMG file found for current architecture");

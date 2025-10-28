@@ -151,9 +151,9 @@ public class NotificationUtil {
      * Toast 窗口类
      */
     private static class ToastWindow extends JWindow {
-        private static final int PADDING = 16;
-        private static final int MIN_WIDTH = 200;
-        private static final int MAX_WIDTH = 400;
+        private static final int PADDING = 12;  // 优化：减少内边距，更紧凑
+        private static final int MIN_WIDTH = 180;  // 优化：最小宽度减少，适合短消息
+        private static final int MAX_WIDTH = 350;  // 优化：最大宽度减少，避免过宽
         private static final int CORNER_RADIUS = 8;
 
         private final Window parentWindow;
@@ -253,10 +253,16 @@ public class NotificationUtil {
             panel.add(iconLabel, BorderLayout.WEST);
             panel.add(messageLabel, BorderLayout.CENTER);
 
-            // 计算合适的尺寸
+            // 优化：计算合适的尺寸，更智能地适应内容
             Dimension prefSize = panel.getPreferredSize();
-            int width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, prefSize.width));
-            int height = Math.min(80, prefSize.height); // 限制最大高度为 80px（约2-3行）
+
+            // 宽度：根据内容自适应，但限制在 MIN_WIDTH 和 MAX_WIDTH 之间
+            int width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, prefSize.width + PADDING * 2));
+
+            // 高度：根据内容自适应，但设置合理的范围
+            // 单行消息约 40-45px，多行消息最多约 70px
+            int height = Math.max(40, Math.min(70, prefSize.height));
+
             panel.setPreferredSize(new Dimension(width, height));
 
             return panel;
@@ -285,7 +291,8 @@ public class NotificationUtil {
                     new Rectangle(0, 0, screenSize.width, screenSize.height);
 
             int x = 0, y = 0;
-            int margin = 5; // 距离右边/下边缘的距离
+            // Windows 下特别需要更大的边距，避免紧贴边缘或被任务栏遮挡
+            int margin = 10;
 
             switch (position) {
                 case TOP_RIGHT:

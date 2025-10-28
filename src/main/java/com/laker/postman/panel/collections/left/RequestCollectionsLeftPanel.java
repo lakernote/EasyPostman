@@ -638,11 +638,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
                 String curl = CurlParser.toCurl(req);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(curl), null); // 将cUrl命令复制到剪贴板
-                NotificationUtil.showSuccess(SingletonFactory.getInstance(MainFrame.class),
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS));
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_SUCCESS));
             } catch (Exception ex) {
-                NotificationUtil.showError(SingletonFactory.getInstance(MainFrame.class),
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()));
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL_FAIL, ex.getMessage()));
             }
         }
     }
@@ -710,9 +708,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             try {
                 JSONObject postmanCollection = PostmanImport.buildPostmanCollectionFromTreeNode(groupNode, groupName);
                 FileUtil.writeUtf8String(postmanCollection.toStringPretty(), fileToSave);
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export Postman error", ex);
                 JOptionPane.showMessageDialog(this,

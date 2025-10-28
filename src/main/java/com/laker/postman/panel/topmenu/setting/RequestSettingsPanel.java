@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -161,11 +162,19 @@ public class RequestSettingsPanel extends JPanel {
 
         DocumentListener validationListener = new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) { validateField(e); }
+            public void insertUpdate(DocumentEvent e) {
+                validateField(e);
+            }
+
             @Override
-            public void removeUpdate(DocumentEvent e) { validateField(e); }
+            public void removeUpdate(DocumentEvent e) {
+                validateField(e);
+            }
+
             @Override
-            public void changedUpdate(DocumentEvent e) { validateField(e); }
+            public void changedUpdate(DocumentEvent e) {
+                validateField(e);
+            }
 
             private void validateField(DocumentEvent e) {
                 for (Map.Entry<JTextField, Predicate<String>> entry : validators.entrySet()) {
@@ -237,7 +246,7 @@ public class RequestSettingsPanel extends JPanel {
                 field.setBackground(new Color(255, 220, 220));
                 field.requestFocus();
                 JOptionPane.showMessageDialog(this, errorMessages.get(field),
-                    I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_TITLE), JOptionPane.WARNING_MESSAGE);
+                        I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_TITLE), JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -253,8 +262,7 @@ public class RequestSettingsPanel extends JPanel {
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
             SettingManager.setRequestSslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
 
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS));
 
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JDialog dialog) {
@@ -262,7 +270,7 @@ public class RequestSettingsPanel extends JPanel {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_INVALID_NUMBER),
-                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
         }
     }
 }

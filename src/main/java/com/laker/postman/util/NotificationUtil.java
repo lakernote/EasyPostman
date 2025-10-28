@@ -1,5 +1,8 @@
 package com.laker.postman.util;
 
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.frame.MainFrame;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
@@ -16,6 +19,17 @@ public class NotificationUtil {
 
     private NotificationUtil() {
         // 工具类，隐藏构造函数
+    }
+
+    /**
+     * 获取 MainFrame 实例
+     */
+    private static Window getMainFrame() {
+        try {
+            return SingletonFactory.getInstance(MainFrame.class);
+        } catch (Exception e) {
+            return JOptionPane.getRootFrame();
+        }
     }
 
     // 通知类型枚举
@@ -59,61 +73,49 @@ public class NotificationUtil {
     // 当前显示的通知列表（用于堆叠管理）
     private static final List<ToastWindow> activeToasts = new ArrayList<>();
 
-    /**
-     * 设置默认通知位置
-     */
-    public static void setDefaultPosition(NotificationPosition position) {
-        defaultPosition = position;
-    }
 
     /**
      * 显示成功通知（2秒后自动关闭）
      */
-    public static void showSuccess(Component parent, String message) {
-        showToast(parent, message, NotificationType.SUCCESS, 2);
+    public static void showSuccess(String message) {
+        showToast(message, NotificationType.SUCCESS, 2);
     }
 
     /**
      * 显示信息通知（3秒后自动关闭）
      */
-    public static void showInfo(Component parent, String message) {
-        showToast(parent, message, NotificationType.INFO, 3);
+    public static void showInfo(String message) {
+        showToast(message, NotificationType.INFO, 3);
     }
 
     /**
      * 显示警告通知（3秒后自动关闭）
      */
-    public static void showWarning(Component parent, String message) {
-        showToast(parent, message, NotificationType.WARNING, 3);
+    public static void showWarning(String message) {
+        showToast(message, NotificationType.WARNING, 3);
     }
 
     /**
      * 显示错误通知（4秒后自动关闭）
      */
-    public static void showError(Component parent, String message) {
-        showToast(parent, message, NotificationType.ERROR, 4);
-    }
-
-    /**
-     * 显示成功通知（兼容旧API）
-     */
-    public static void showAutoCloseSuccess(Component parent, String message, String title) {
-        showSuccess(parent, message);
+    public static void showError(String message) {
+        showToast(message, NotificationType.ERROR, 4);
     }
 
     /**
      * 显示 Toast 通知
      */
-    public static void showToast(Component parent, String message, NotificationType type, int seconds) {
-        showToast(parent, message, type, seconds, defaultPosition);
+    public static void showToast(String message, NotificationType type, int seconds) {
+        showToast(message, type, seconds, defaultPosition);
     }
 
     /**
      * 显示 Toast 通知（指定位置）
      */
-    public static void showToast(Component parent, String message, NotificationType type, int seconds, NotificationPosition position) {
+    public static void showToast(String message, NotificationType type, int seconds, NotificationPosition position) {
         SwingUtilities.invokeLater(() -> {
-            ToastWindow toast = new ToastWindow(parent, message, type, seconds, position);
+            Window mainFrame = getMainFrame();
+            ToastWindow toast = new ToastWindow(mainFrame, message, type, seconds, position);
             synchronized (activeToasts) {
                 activeToasts.add(toast);
                 updateToastPositions();
@@ -154,15 +156,15 @@ public class NotificationUtil {
         private static final int MAX_WIDTH = 400;
         private static final int CORNER_RADIUS = 8;
 
-        private final Component parent;
+        private final Window parentWindow;
         private final NotificationType type;
         private final NotificationPosition position;
         private float opacity = 0.0f;
         private int stackOffset = 0;
 
-        public ToastWindow(Component parent, String message, NotificationType type, int seconds, NotificationPosition position) {
-            super(getWindowForComponent(parent));
-            this.parent = parent;
+        public ToastWindow(Window parentWindow, String message, NotificationType type, int seconds, NotificationPosition position) {
+            super(parentWindow);
+            this.parentWindow = parentWindow;
             this.type = type;
             this.position = position;
 
@@ -268,19 +270,18 @@ public class NotificationUtil {
                 return "";
             }
             return text.replace("&", "&amp;")
-                       .replace("<", "&lt;")
-                       .replace(">", "&gt;")
-                       .replace("\"", "&quot;")
-                       .replace("'", "&#39;")
-                       .replace("\n", "<br/>");
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&#39;")
+                    .replace("\n", "<br/>");
         }
 
         private Point calculatePosition() {
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             Dimension windowSize = getSize();
 
-            Window window = getWindowForComponent(parent);
-            Rectangle parentBounds = window != null ? window.getBounds() :
+            Rectangle parentBounds = parentWindow != null ? parentWindow.getBounds() :
                     new Rectangle(0, 0, screenSize.width, screenSize.height);
 
             int x = 0, y = 0;
@@ -338,16 +339,6 @@ public class NotificationUtil {
                 getContentPane().repaint();
             });
             fadeOutTimer.start();
-        }
-
-        private static Window getWindowForComponent(Component parent) {
-            if (parent == null) {
-                return JOptionPane.getRootFrame();
-            }
-            if (parent instanceof Window) {
-                return (Window) parent;
-            }
-            return SwingUtilities.getWindowAncestor(parent);
         }
     }
 }

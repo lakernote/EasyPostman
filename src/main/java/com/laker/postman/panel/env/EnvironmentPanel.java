@@ -22,6 +22,7 @@ import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -428,9 +429,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
                 java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
                 writer.write(JSONUtil.toJsonPrettyStr(envs));
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_TITLE), JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export Error", ex);
                 JOptionPane.showMessageDialog(this,
@@ -469,9 +468,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             environmentComboBox.addItem(new EnvironmentItem(env)); // 添加到下拉框
             environmentListModel.addElement(new EnvironmentItem(env)); // 添加到列表
         }
-        JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_TITLE), JOptionPane.INFORMATION_MESSAGE);
+        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_SUCCESS));
     }
 
     /**
@@ -669,10 +666,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 // 只导出当前环境为Postman格式
                 String postmanEnvJson = PostmanImport.toPostmanEnvironmentJson(env);
                 FileUtil.writeUtf8String(postmanEnvJson, fileToSave);
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_TITLE),
-                        JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_SUCCESS));
             } catch (Exception ex) {
                 log.error("导出Postman环境失败", ex);
                 JOptionPane.showMessageDialog(this,

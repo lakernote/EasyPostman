@@ -8,6 +8,7 @@ import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -143,7 +144,7 @@ public class ResponseBodyPanel extends JPanel {
     private void saveFile() {
         if (currentFilePath == null) return;
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("保存文件");
+        fileChooser.setDialogTitle("Save File");
         fileChooser.setSelectedFile(new File(fileName));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
@@ -155,7 +156,6 @@ public class ResponseBodyPanel extends JPanel {
                 while ((len = in.read(buffer)) != -1) {
                     out.write(buffer, 0, len);
                 }
-                JOptionPane.showMessageDialog(this, "文件已保存到: " + destFile.getAbsolutePath());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "保存文件失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }

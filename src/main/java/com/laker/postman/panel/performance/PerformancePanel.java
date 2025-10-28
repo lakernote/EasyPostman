@@ -361,7 +361,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     long successCount = resultsCopy.stream().filter(r -> r.success).count();
                     String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_COMPLETED,
                             totalRequests, successCount, totalTime / 1000.0);
-                    NotificationUtil.showSuccess(PerformancePanel.this, message);
+                    NotificationUtil.showSuccess(message);
                 });
             }
         });

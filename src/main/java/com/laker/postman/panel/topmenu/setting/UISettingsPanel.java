@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -276,8 +277,7 @@ public class UISettingsPanel extends JPanel {
             SettingManager.setMaxOpenedRequestsCount(maxOpenedRequestsCount);
             SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
 
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS),
-                    I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_TITLE), JOptionPane.INFORMATION_MESSAGE);
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS));
 
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JDialog dialog) {

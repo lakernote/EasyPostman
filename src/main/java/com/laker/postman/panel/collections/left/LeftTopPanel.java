@@ -7,23 +7,19 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.dialog.LargeInputDialog;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.postman.PostmanImport;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -186,9 +182,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                 leftPanel.getTreeModel().reload();
                 leftPanel.getPersistence().saveRequestGroups();
                 leftPanel.getRequestTree().expandPath(new TreePath(easyPostmanGroup.getPath()));
-                JOptionPane.showMessageDialog(mainFrame,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Import error", ex);
                 JOptionPane.showMessageDialog(mainFrame,
@@ -223,9 +217,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
-                    JOptionPane.showMessageDialog(mainFrame,
-                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS),
-                            I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                    NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
                     JOptionPane.showMessageDialog(mainFrame,
                             I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_INVALID),
@@ -289,7 +281,7 @@ public class LeftTopPanel extends SingletonBasePanel {
 
             // Convert formData and formFiles maps to list
             if ((curlRequest.formData != null && !curlRequest.formData.isEmpty()) ||
-                (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
+                    (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
                 List<HttpFormData> formDataList = new ArrayList<>();
                 if (curlRequest.formData != null) {
                     for (Map.Entry<String, String> entry : curlRequest.formData.entrySet()) {
@@ -390,9 +382,7 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 leftPanel.getPersistence().exportRequestCollection(fileToSave);
-                JOptionPane.showMessageDialog(mainFrame,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export error", ex);
                 JOptionPane.showMessageDialog(mainFrame,

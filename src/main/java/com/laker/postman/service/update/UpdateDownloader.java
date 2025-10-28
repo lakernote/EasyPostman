@@ -120,51 +120,92 @@ public class UpdateDownloader {
         String fileName = downloadUrl.substring(downloadUrl.lastIndexOf('/') + 1);
         File tempFile = File.createTempFile("EasyPostman-", "-" + fileName);
 
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
-        conn.setRequestProperty("User-Agent", "EasyPostman-Updater");
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(15000);  // 连接超时 15 秒
+            conn.setReadTimeout(30000);     // 读取超时 30 秒（下载大文件需要更长时间）
+            conn.setInstanceFollowRedirects(true);  // 自动跟随 HTTP 重定向
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; EasyPostman-Updater)");
+            conn.setRequestProperty("Accept", "*/*");
 
-        long totalSize = conn.getContentLength();
+            // 检查响应码
+            int responseCode = conn.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw new IOException("HTTP error code: " + responseCode);
+            }
 
-        try (InputStream in = new BufferedInputStream(conn.getInputStream());
-             FileOutputStream out = new FileOutputStream(tempFile)) {
+            long totalSize = conn.getContentLengthLong();  // 使用 Long 版本支持大文件
+            log.info("Starting download: {} bytes from {}", totalSize, downloadUrl);
 
-            byte[] buffer = new byte[8192];
-            long downloaded = 0;
-            int bytesRead;
-            long startTime = System.currentTimeMillis();
-            long lastProgressTime = 0;
+            // 使用 try-with-resources 自动管理流资源
+            try (InputStream in = new BufferedInputStream(conn.getInputStream());
+                 FileOutputStream out = new FileOutputStream(tempFile)) {
 
-            while ((bytesRead = in.read(buffer)) != -1 && !cancelled) {
-                out.write(buffer, 0, bytesRead);
-                downloaded += bytesRead;
+                long downloaded = performDownload(in, out, totalSize, callback);
 
-                // 限制进度回调频率，避免UI卡顿
-                long currentTime = System.currentTimeMillis();
-                if (currentTime - lastProgressTime > 100) { // 每100ms更新一次
-                    double elapsedSeconds = (currentTime - startTime) / 1000.0;
-                    double speed = elapsedSeconds > 0 ? downloaded / elapsedSeconds : 0;
-                    int percentage = totalSize > 0 ? (int) ((downloaded * 100L) / totalSize) : 0;
+                // 如果下载被取消
+                if (cancelled) {
+                    cleanupTempFile(tempFile);
+                    callback.onCancelled();
+                    return null;
+                }
 
-                    callback.onProgress(percentage, downloaded, totalSize, speed);
-                    lastProgressTime = currentTime;
+                log.info("Download completed: {} bytes", downloaded);
+                callback.onCompleted(tempFile);
+                return tempFile;
+            }
+
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.disconnect();
+                } catch (Exception e) {
+                    log.warn("Failed to disconnect connection: {}", e.getMessage());
                 }
             }
         }
+    }
 
-        if (cancelled) {
-            try {
-                java.nio.file.Files.delete(tempFile.toPath());
-            } catch (IOException e) {
-                log.warn("Failed to delete temporary file: {}", e.getMessage());
+    /**
+     * 执行实际的下载操作
+     */
+    private long performDownload(InputStream in, FileOutputStream out, long totalSize,
+                                  DownloadProgressCallback callback) throws IOException {
+        byte[] buffer = new byte[8192];
+        long downloaded = 0;
+        int bytesRead;
+        long startTime = System.currentTimeMillis();
+        long lastProgressTime = 0;
+
+        while ((bytesRead = in.read(buffer)) != -1 && !cancelled) {
+            out.write(buffer, 0, bytesRead);
+            downloaded += bytesRead;
+
+            // 限制进度回调频率，避免UI卡顿
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastProgressTime > 100) { // 每100ms更新一次
+                double elapsedSeconds = (currentTime - startTime) / 1000.0;
+                double speed = elapsedSeconds > 0 ? downloaded / elapsedSeconds : 0;
+                int percentage = totalSize > 0 ? (int) ((downloaded * 100L) / totalSize) : 0;
+
+                callback.onProgress(percentage, downloaded, totalSize, speed);
+                lastProgressTime = currentTime;
             }
-            callback.onCancelled();
-            return null;
         }
 
-        callback.onCompleted(tempFile);
-        return tempFile;
+        return downloaded;
+    }
+
+    /**
+     * 清理临时文件
+     */
+    private void cleanupTempFile(File tempFile) {
+        try {
+            java.nio.file.Files.delete(tempFile.toPath());
+        } catch (IOException e) {
+            log.warn("Failed to delete temporary file: {}", e.getMessage());
+        }
     }
 
     /**

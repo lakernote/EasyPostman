@@ -160,8 +160,9 @@ public class VersionChecker {
     /**
      * 检测是否为 Windows 便携版
      * 判断依据：
-     * 1. 检查是否从 Program Files 或 AppData 目录运行（安装版特征）
-     * 2. 检查是否存在卸载注册表项（安装版特征）
+     * 1. 检查应用根目录是否存在 .portable 标识文件（绿色版特征，优先级最高）
+     * 2. 检查是否从 Program Files 或 AppData 目录运行（安装版特征）
+     * 3. 默认认为是安装版
      */
     private boolean isWindowsPortableVersion() {
         try {
@@ -169,25 +170,50 @@ public class VersionChecker {
             String jarPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
             String decodedPath = java.net.URLDecoder.decode(jarPath, java.nio.charset.StandardCharsets.UTF_8);
 
-            log.debug("Current JAR path: {}", decodedPath);
+            log.info("Current JAR path: {}", decodedPath);
 
-            // 如果从 Program Files 或 AppData 目录运行，可能是安装版
+            // 获取应用根目录（JAR 文件的父目录或上级目录）
+            java.io.File jarFile = new java.io.File(decodedPath);
+            java.io.File appDir = jarFile.getParentFile();
+
+            if (appDir == null) {
+                log.warn("Cannot determine application directory");
+            } else {
+                // 1. 优先检查 .portable 标识文件（release.yml 中创建的标识文件）
+                java.io.File portableMarker = new java.io.File(appDir, ".portable");
+                if (portableMarker.exists() && portableMarker.isFile()) {
+                    log.info("Found .portable marker file, confirmed portable version");
+                    return true;
+                }
+
+                // 检查上级目录（可能 JAR 在 app 子目录中）
+                java.io.File parentDir = appDir.getParentFile();
+                if (parentDir != null) {
+                    portableMarker = new java.io.File(parentDir, ".portable");
+                    if (portableMarker.exists() && portableMarker.isFile()) {
+                        log.info("Found .portable marker file in parent directory, confirmed portable version");
+                        return true;
+                    }
+                }
+            }
+
+            // 2. 检查安装路径特征
             String lowerPath = decodedPath.toLowerCase();
             if (lowerPath.contains("program files") ||
-                lowerPath.contains("appdata\\local\\programs") ||
-                lowerPath.contains("appdata/local/programs")) {
-                log.info("Running from Program Files or AppData, likely installed version");
+                    lowerPath.contains("appdata\\local\\programs") ||
+                    lowerPath.contains("appdata/local/programs")) {
+                log.info("Running from Program Files or AppData, detected as installed version");
                 return false;
             }
 
-            // 默认认为是便携版（更安全的选择）
-            log.info("Not running from typical installation directory, assuming portable version");
-            return true;
+            // 3. 默认认为是安装版
+            log.info("No .portable marker found and not in typical installation directory, assuming installed version");
+            return false;
 
         } catch (Exception e) {
             log.warn("Failed to detect Windows version type: {}", e.getMessage());
-            // 检测失败时默认为便携版（避免强制下载 MSI）
-            return true;
+            // 检测失败时默认为安装版
+            return false;
         }
     }
 

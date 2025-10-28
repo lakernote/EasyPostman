@@ -228,6 +228,11 @@ jobs:
           
           if (-not (Test-Path "dist")) { New-Item -ItemType Directory -Path "dist" | Out-Null }
           
+          # 创建 .portable 标识文件，用于运行时检测便携版
+          $portableMarker = Join-Path $appImageDir ".portable"
+          "This is a portable version" | Out-File -FilePath $portableMarker -Encoding UTF8
+          Write-Host "Created .portable marker file"
+          
           # 压缩为 ZIP
           Compress-Archive -Path $appImageDir -DestinationPath "dist\$zipName" -Force
           

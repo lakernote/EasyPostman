@@ -98,14 +98,14 @@ public class VersionChecker {
         CompletableFuture<Long> giteeTest = CompletableFuture.supplyAsync(() -> testSourceSpeed(GITEE_API_URL, SOURCE_GITEE));
 
         try {
-            // 等待两个测试完成，最多等待 5 秒
-            CompletableFuture.allOf(githubTest, giteeTest).get(5, java.util.concurrent.TimeUnit.SECONDS);
+            // 等待两个测试完成，最多等待 6 秒（给予足够的时间完成 2.5 秒超时测试）
+            CompletableFuture.allOf(githubTest, giteeTest).get(6, java.util.concurrent.TimeUnit.SECONDS);
 
             long githubTime = githubTest.getNow(Long.MAX_VALUE);
             long giteeTime = giteeTest.getNow(Long.MAX_VALUE);
 
-            // 选择响应时间更短的源
-            if (githubTime < giteeTime && githubTime < 5000) {
+            // 选择响应时间更短的源（优先选择 3 秒内响应的源）
+            if (githubTime < giteeTime && githubTime < 3000) {
                 log.info("GitHub is faster ({} ms vs {} ms), using GitHub", githubTime, giteeTime);
                 cachedBestSource = GITHUB_API_URL;
                 return GITHUB_API_URL;
@@ -133,6 +133,7 @@ public class VersionChecker {
 
     /**
      * 测试源的连接速度（返回响应时间，单位：毫秒）
+     * 注意：只测试连接和响应头，不下载完整内容，以节省带宽和提高测试准确性
      */
     private static long testSourceSpeed(String apiUrl, String sourceName) {
         long startTime = System.currentTimeMillis();
@@ -140,14 +141,18 @@ public class VersionChecker {
         try {
             URL url = new URL(apiUrl);
             conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
+            conn.setConnectTimeout(2500);  // 缩短超时时间到 2.5 秒
+            conn.setReadTimeout(2500);
             conn.setRequestMethod("GET"); // 使用 GET 请求（Gitee API 不支持 HEAD）
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; EasyPostman/" + SystemUtil.getCurrentVersion() + ")");
             conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("Connection", "close"); // 明确告知服务器关闭连接
 
+            // 获取响应码（此时会建立连接并接收响应头）
             int code = conn.getResponseCode();
             long responseTime = System.currentTimeMillis() - startTime;
+
+            // 不读取响应体，立即断开连接以节省带宽
 
             if (code == 200 || code == 301 || code == 302) {
                 log.debug("{} connection test successful: {} ms (HTTP {})", sourceName, responseTime, code);
@@ -156,6 +161,10 @@ public class VersionChecker {
                 log.debug("{} connection test failed with code: {}", sourceName, code);
                 return Long.MAX_VALUE;
             }
+        } catch (java.net.SocketTimeoutException e) {
+            long failedTime = System.currentTimeMillis() - startTime;
+            log.debug("{} connection timeout after {} ms", sourceName, failedTime);
+            return Long.MAX_VALUE;
         } catch (Exception e) {
             long failedTime = System.currentTimeMillis() - startTime;
             log.debug("{} connection test failed after {} ms: {}", sourceName, failedTime, e.getMessage());
@@ -166,6 +175,7 @@ public class VersionChecker {
                     // 关闭连接，避免资源泄漏
                     conn.disconnect();
                 } catch (Exception ignored) {
+                    // 忽略断开连接时的异常
                 }
             }
         }

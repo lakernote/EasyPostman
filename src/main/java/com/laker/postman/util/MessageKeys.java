@@ -612,7 +612,6 @@ public final class MessageKeys {
 
     // Success messages
     public static final String SETTINGS_SAVE_SUCCESS = "settings.save.success";
-    public static final String SETTINGS_SAVE_SUCCESS_TITLE = "settings.save.success.title";
 
     // ============ 请求Body相关 ============
     public static final String REQUEST_BODY_TYPE = "request.body.type";
@@ -1217,7 +1216,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_UUID_COUNT = "toolbox.uuid.count";
     public static final String TOOLBOX_UUID_FORMAT = "toolbox.uuid.format";
     public static final String TOOLBOX_UUID_UPPERCASE = "toolbox.uuid.uppercase";
-    public static final String TOOLBOX_UUID_LOWERCASE = "toolbox.uuid.lowercase";
     public static final String TOOLBOX_UUID_WITH_HYPHENS = "toolbox.uuid.with_hyphens";
     public static final String TOOLBOX_UUID_WITHOUT_HYPHENS = "toolbox.uuid.without_hyphens";
     public static final String TOOLBOX_UUID_VERSION_INFO = "toolbox.uuid.version_info";
@@ -1336,16 +1334,11 @@ public final class MessageKeys {
     public static final String CERT_CLOSE = "cert.close";
     public static final String CERT_ERROR = "cert.error";
     public static final String CERT_DESCRIPTION = "cert.description";
-    public static final String CERT_ADD_TOOLTIP = "cert.add.tooltip";
-    public static final String CERT_EDIT_TOOLTIP = "cert.edit.tooltip";
-    public static final String CERT_DELETE_TOOLTIP = "cert.delete.tooltip";
-    public static final String CERT_HELP_TOOLTIP = "cert.help.tooltip";
 
     // Client Certificate Console Logs
     public static final String CERT_CONSOLE_MATCHED = "cert.console.matched";
     public static final String CERT_CONSOLE_LOADED = "cert.console.loaded";
     public static final String CERT_CONSOLE_LOAD_FAILED = "cert.console.load_failed";
-    public static final String CERT_CONSOLE_NOT_FOUND = "cert.console.not_found";
     public static final String CERT_CONSOLE_VALIDATION_FAILED = "cert.console.validation_failed";
     public static final String CERT_CONSOLE_FILE_NOT_FOUND = "cert.console.file_not_found";
 

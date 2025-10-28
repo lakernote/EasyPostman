@@ -2,15 +2,16 @@ package com.laker.postman.panel.topmenu;
 
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.setting.*;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.update.ChangelogDialog;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -212,9 +213,12 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenu helpMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_HELP));
         JMenuItem updateMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_UPDATE));
         updateMenuItem.addActionListener(e -> checkUpdate());
+        JMenuItem changelogMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_CHANGELOG));
+        changelogMenuItem.addActionListener(e -> showChangelogDialog());
         JMenuItem feedbackMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_FEEDBACK));
         feedbackMenuItem.addActionListener(e -> showFeedbackDialog());
         helpMenu.add(updateMenuItem);
+        helpMenu.add(changelogMenuItem);
         helpMenu.add(feedbackMenuItem);
         menuBar.add(helpMenu);
     }
@@ -222,6 +226,15 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     private void showFeedbackDialog() {
         JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.FEEDBACK_MESSAGE),
                 I18nUtil.getMessage(MessageKeys.FEEDBACK_TITLE), JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void showChangelogDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        if (window instanceof Frame frame) {
+            ChangelogDialog.showDialog(frame);
+        } else {
+            log.warn("Cannot show changelog dialog: parent is not a Frame");
+        }
     }
 
     private void addAboutMenu() {

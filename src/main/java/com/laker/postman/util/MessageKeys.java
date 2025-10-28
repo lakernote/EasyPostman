@@ -20,6 +20,7 @@ public final class MessageKeys {
     public static final String MENU_SETTINGS = "menu.settings";
     public static final String MENU_HELP = "menu.help";
     public static final String MENU_HELP_UPDATE = "menu.help.update";
+    public static final String MENU_HELP_CHANGELOG = "menu.help.changelog";
     public static final String MENU_HELP_FEEDBACK = "menu.help.feedback";
     public static final String MENU_ABOUT = "menu.about";
     public static final String MENU_ABOUT_EASYPOSTMAN = "menu.about.easypostman";
@@ -58,6 +59,17 @@ public final class MessageKeys {
     public static final String UPDATE_FETCH_RELEASE_FAILED = "update.fetch_release_failed";
     public static final String UPDATE_NO_VERSION_INFO = "update.no_version_info";
     public static final String UPDATE_ALREADY_LATEST = "update.already_latest";
+    // ============ 更新日志相关 ============
+    public static final String CHANGELOG_TITLE = "changelog.title";
+    public static final String CHANGELOG_CURRENT_VERSION = "changelog.current_version";
+    public static final String CHANGELOG_LOADING = "changelog.loading";
+    public static final String CHANGELOG_LOAD_FAILED = "changelog.load_failed";
+    public static final String CHANGELOG_NO_RELEASES = "changelog.no_releases";
+    public static final String CHANGELOG_VIEW_ON_GITHUB = "changelog.view_on_github";
+    public static final String CHANGELOG_VIEW_ON_GITEE = "changelog.view_on_gitee";
+    public static final String CHANGELOG_CLOSE = "changelog.close";
+    public static final String CHANGELOG_REFRESH = "changelog.refresh";
+
 
     // ============ 错误消息 ============
     public static final String ERROR_UPDATE_FAILED = "error.update_failed";

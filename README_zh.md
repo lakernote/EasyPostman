@@ -28,12 +28,13 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 📦 **下载地址**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
     - 🌏 国内镜像: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): EasyPostman-最新版本-arm64.dmg
-    - 🍏 Mac (Intel 芯片): EasyPostman-最新版本-intel.dmg
+    - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{版本号}-macos-arm64.dmg`
+    - 🍏 Mac (Intel 芯片): `EasyPostman-{版本号}-macos-x86_64.dmg`
     - 🪟 Windows: 
-        - **MSI 安装包**: EasyPostman-最新版本.msi - 安装到系统，创建桌面快捷方式，支持自动升级
-        - **便携版 ZIP**: EasyPostman-最新版本-windows-portable.zip - 解压即用，无需安装，绿色便携
-    - 🐧 Ubuntu: EasyPostman-最新版本.deb
+        - **MSI 安装包**: `EasyPostman-{版本号}-windows-x64.msi` - 安装到系统，创建桌面快捷方式，支持自动升级
+        - **便携版 ZIP**: `EasyPostman-{版本号}-windows-x64-portable.zip` - 解压即用，无需安装，绿色便携
+    - 🐧 Ubuntu/Debian: `easypostman_{版本号}_amd64.deb`
+    - ☕ 跨平台 JAR: `easy-postman-{版本号}.jar` - 需要 Java 17+ 环境
 
 > ⚠️ **安全提示**:
 > 

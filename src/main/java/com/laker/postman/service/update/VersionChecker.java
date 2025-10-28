@@ -294,8 +294,13 @@ public class VersionChecker {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
             if (name != null && name.endsWith(".dmg")) {
-                // 排除带有架构后缀的 DMG（-intel.dmg 和 -arm64.dmg）
-                if (!name.endsWith("-intel.dmg") && !name.endsWith("-arm64.dmg")) {
+                // 排除带有架构后缀的 DMG（支持新旧两种命名格式）
+                // 新格式: -macos-x86_64.dmg, -macos-arm64.dmg
+                // 旧格式: -intel.dmg, -arm64.dmg
+                if (!name.endsWith("-intel.dmg") &&
+                    !name.endsWith("-arm64.dmg") &&
+                    !name.endsWith("-macos-x86_64.dmg") &&
+                    !name.endsWith("-macos-arm64.dmg")) {
                     String url = asset.getStr("browser_download_url");
                     log.debug("Found generic DMG (without architecture suffix): {} -> {}", name, url);
                     return url;
@@ -307,6 +312,8 @@ public class VersionChecker {
 
     /**
      * 获取 macOS 包的后缀（根据芯片架构判断）
+     * 支持新命名规范（-macos-x86_64.dmg / -macos-arm64.dmg）
+     * 同时兼容旧命名规范（-intel.dmg / -arm64.dmg）用于向后兼容
      */
     private String getMacPackageSuffix() {
         try {
@@ -316,14 +323,14 @@ public class VersionChecker {
 
             // 检测 Apple Silicon (ARM64)
             if (arch.contains("aarch64") || arch.equals("arm64")) {
-                log.info("Detected Apple Silicon (ARM64), using -arm64.dmg");
-                return "-arm64.dmg";
+                log.info("Detected Apple Silicon (ARM64), using -macos-arm64.dmg");
+                return "-macos-arm64.dmg";
             }
 
             // 检测 Intel (x86_64)
             if (arch.contains("x86_64") || arch.contains("amd64") || arch.equals("x64")) {
-                log.info("Detected Intel chip (x86_64), using -intel.dmg");
-                return "-intel.dmg";
+                log.info("Detected Intel chip (x86_64), using -macos-x86_64.dmg");
+                return "-macos-x86_64.dmg";
             }
 
         } catch (Exception e) {
@@ -331,8 +338,8 @@ public class VersionChecker {
         }
 
         // 默认返回 ARM64 版本（因为新 Mac 都是 Apple Silicon）
-        log.info("Unable to detect architecture, defaulting to -arm64.dmg");
-        return "-arm64.dmg";
+        log.info("Unable to detect architecture, defaulting to -macos-arm64.dmg");
+        return "-macos-arm64.dmg";
     }
 
 

@@ -30,12 +30,13 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 📦 **Download**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
     - 🌏 China Mirror: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-    - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): EasyPostman-latest-arm64.dmg
-    - 🍏 Mac (Intel Chip): EasyPostman-latest-intel.dmg
+    - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{version}-macos-arm64.dmg`
+    - 🍏 Mac (Intel Chip): `EasyPostman-{version}-macos-x86_64.dmg`
     - 🪟 Windows: 
-        - **MSI Installer**: EasyPostman-latest.msi - Install to system with desktop shortcut, supports auto-update
-        - **Portable ZIP**: EasyPostman-latest-windows-portable.zip - Extract and run, no installation required, fully portable
-    - 🐧 Ubuntu: EasyPostman-latest.deb
+        - **MSI Installer**: `EasyPostman-{version}-windows-x64.msi` - Install to system with desktop shortcut, supports auto-update
+        - **Portable ZIP**: `EasyPostman-{version}-windows-x64-portable.zip` - Extract and run, no installation required, fully portable
+    - 🐧 Ubuntu/Debian: `easypostman_{version}_amd64.deb`
+    - ☕ Cross-platform JAR: `easy-postman-{version}.jar` - Requires Java 17+ runtime
 
 > ⚠️ **Security Notice**:
 > 

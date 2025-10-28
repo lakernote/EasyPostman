@@ -8,21 +8,83 @@ on:
     types: [created]  # 当创建新的 Release 时触发
   workflow_dispatch: {}  # 支持手动触发
 
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
+  JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
+
 jobs:
+  # 提取版本号，供所有 job 复用
+  get-version:
+    name: Get Version（获取版本号）
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Extract version（提取版本号）
+        id: extract_version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  # 构建 Fat JAR（跨平台），供所有平台复用
+  build-jar-artifact:
+    name: Build Fat JAR（构建跨平台 JAR）
+    runs-on: ubuntu-latest
+    needs: [get-version]
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build with Maven（使用 Maven 构建 Fat JAR）
+        run: mvn -B clean package -DskipTests
+
+      - name: Upload JAR for reuse（上传 JAR 供其他 job 复用）
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
+          retention-days: 1
+
   build-windows:
     name: Build Windows MSI（构建 Windows 安装包）
     runs-on: windows-latest
+    needs: [get-version, build-jar-artifact]
 
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+      - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
       - name: Install WiX (for jpackage)（安装 WiX 工具集，用于创建 MSI）
         shell: pwsh
@@ -35,29 +97,15 @@ jobs:
             if (Test-Path $refreshScript) { & $refreshScript }
           }
 
-      - name: Get version from pom.xml（从 pom.xml 提取版本号）
-        id: get_version
-        shell: pwsh
-        run: |
-          [xml]$pom = Get-Content 'pom.xml'
-          $version = $pom.project.version
-          Write-Host "Version: $version"
-          "version=$version" | Out-File -Encoding utf8 -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Build with Maven（使用 Maven 构建项目）
-        shell: pwsh
-        run: |
-          mvn -B clean package -DskipTests
-
-      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+      - name: Create runtime with jlink（使用 jlink 创建 Windows 精简 JRE）
         shell: pwsh
         run: |
           $runtimeDir = "target\runtime"
           if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
           
-          # 创建包含必要模块的精简运行时环境
+          # 创建 Windows 平台的 JRE
           jlink `
-            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki `
+            --add-modules $env:JLINK_MODULES `
             --strip-debug `
             --no-header-files `
             --no-man-pages `
@@ -67,7 +115,7 @@ jobs:
       - name: Prepare dist-input（准备打包输入目录）
         shell: pwsh
         run: |
-          $version = "${{ steps.get_version.outputs.version }}"
+          $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman-$version.jar"
           
           $distInputDir = "target\dist-input"
@@ -79,11 +127,14 @@ jobs:
       - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
         shell: pwsh
         run: |
-          $version = "${{ steps.get_version.outputs.version }}"
+          $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman-$version.jar"
           $outDir = "dist"
           
           if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+          
+          # 解析 Java 选项
+          $javaOpts = $env:JAVA_OPTIONS -split '\|'
           
           # 创建 Windows MSI 安装包
           jpackage `
@@ -106,10 +157,18 @@ jobs:
             --win-per-user-install `
             --win-menu-group "EasyTools" `
             --win-help-url "https://gitee.com/lakernote/easy-postman" `
-            --java-options "-Xms256m" `
-            --java-options "-Xmx512m" `
-            --java-options "-Dfile.encoding=UTF-8" `
+            --java-options $javaOpts[0] `
+            --java-options $javaOpts[1] `
+            --java-options $javaOpts[2] `
             --java-options "-Djavax.accessibility.assistive_technologies="
+          
+          # 重命名添加平台和架构标识（符合命名规范）
+          $oldMsiName = "EasyPostman-$version.msi"
+          $newMsiName = "EasyPostman-$version-windows-x64.msi"
+          if (Test-Path "dist\$oldMsiName") {
+            Rename-Item -Path "dist\$oldMsiName" -NewName $newMsiName
+            Write-Host "✅ Renamed to: $newMsiName"
+          }
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'  # 只在 Release 触发时上传
@@ -140,40 +199,32 @@ jobs:
   build-windows-portable:
     name: Build Windows Portable（构建 Windows 绿色版）
     runs-on: windows-latest
+    needs: [get-version, build-jar-artifact]
 
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+      - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Get version from pom.xml（从 pom.xml 提取版本号）
-        id: get_version
-        shell: pwsh
-        run: |
-          [xml]$pom = Get-Content 'pom.xml'
-          $version = $pom.project.version
-          Write-Host "Version: $version"
-          "version=$version" | Out-File -Encoding utf8 -FilePath $env:GITHUB_OUTPUT -Append
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
-      - name: Build with Maven（使用 Maven 构建项目）
-        shell: pwsh
-        run: |
-          mvn -B clean package -DskipTests
-
-      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+      - name: Create runtime with jlink（使用 jlink 创建 Windows 精简 JRE）
         shell: pwsh
         run: |
           $runtimeDir = "target\runtime"
           if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
           
           jlink `
-            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki `
+            --add-modules $env:JLINK_MODULES `
             --strip-debug `
             --no-header-files `
             --no-man-pages `
@@ -183,7 +234,7 @@ jobs:
       - name: Prepare dist-input（准备打包输入目录）
         shell: pwsh
         run: |
-          $version = "${{ steps.get_version.outputs.version }}"
+          $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman-$version.jar"
           
           $distInputDir = "target\dist-input"
@@ -195,11 +246,14 @@ jobs:
       - name: Create app-image with jpackage（创建应用镜像，免安装）
         shell: pwsh
         run: |
-          $version = "${{ steps.get_version.outputs.version }}"
+          $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman-$version.jar"
           $appImageDir = "target\app-image"
           
           if (Test-Path $appImageDir) { Remove-Item -Recurse -Force $appImageDir }
+          
+          # 解析 Java 选项
+          $javaOpts = $env:JAVA_OPTIONS -split '\|'
           
           # 创建应用镜像（app-image 类型，不是安装包）
           jpackage `
@@ -214,17 +268,17 @@ jobs:
             --app-version $version `
             --vendor "Laker" `
             --copyright "© 2025 Laker" `
-            --java-options "-Xms256m" `
-            --java-options "-Xmx512m" `
-            --java-options "-Dfile.encoding=UTF-8" `
+            --java-options $javaOpts[0] `
+            --java-options $javaOpts[1] `
+            --java-options $javaOpts[2] `
             --java-options "-Djavax.accessibility.assistive_technologies="
 
       - name: Package portable version（打包绿色版为 ZIP）
         shell: pwsh
         run: |
-          $version = "${{ steps.get_version.outputs.version }}"
+          $version = "${{ needs.get-version.outputs.version }}"
           $appImageDir = "target\EasyPostman"
-          $zipName = "EasyPostman-$version-windows-portable.zip"
+          $zipName = "EasyPostman-$version-windows-x64-portable.zip"
           
           if (-not (Test-Path "dist")) { New-Item -ItemType Directory -Path "dist" | Out-Null }
           
@@ -236,7 +290,7 @@ jobs:
           # 压缩为 ZIP
           Compress-Archive -Path $appImageDir -DestinationPath "dist\$zipName" -Force
           
-          Write-Host "Created portable version: $zipName"
+          Write-Host "✅ Created portable version: $zipName"
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'
@@ -266,35 +320,30 @@ jobs:
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
     runs-on: macos-13  # Intel x86_64
+    needs: [get-version, build-jar-artifact]
 
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+      - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Get version from pom.xml（从 pom.xml 提取版本号）
-        id: get_version
-        run: |
-          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
-          echo "Version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
-      - name: Build with Maven（使用 Maven 构建项目）
-        run: |
-          mvn -B clean package -DskipTests
-
-      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+      - name: Create runtime with jlink（使用 jlink 创建 macOS Intel 精简 JRE）
         run: |
           rm -rf target/runtime
-          # 创建包含必要模块的精简运行时环境
+          # 创建 macOS Intel 平台的 JRE
           jlink \
-            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki \
+            --add-modules ${{ env.JLINK_MODULES }} \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
@@ -303,7 +352,7 @@ jobs:
 
       - name: Prepare dist-input（准备打包输入目录）
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
           JAR_NAME="easy-postman-$VERSION.jar"
           
           rm -rf target/dist-input
@@ -312,10 +361,13 @@ jobs:
 
       - name: Create DMG with jpackage（使用 jpackage 创建 DMG 镜像）
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
           JAR_NAME="easy-postman-$VERSION.jar"
           
           mkdir -p dist
+          
+          # 解析 Java 选项
+          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
           
           # 创建 macOS Intel DMG
           jpackage \
@@ -330,18 +382,19 @@ jobs:
             --icon assets/mac/EasyPostman.icns \
             --vendor "Laker" \
             --copyright "© 2025 Laker" \
-            --java-options "-Xms256m" \
-            --java-options "-Xmx512m" \
-            --java-options "-Dfile.encoding=UTF-8"
+            --java-options "${JAVA_OPTS[0]}" \
+            --java-options "${JAVA_OPTS[1]}" \
+            --java-options "${JAVA_OPTS[2]}"
           
-          # 重命名为 Intel 版本
-          mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-intel.dmg
+          # 重命名为 Intel 版本（使用标准架构标识）
+          mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-macos-x86_64.dmg
+          echo "✅ Created: EasyPostman-$VERSION-macos-x86_64.dmg"
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'  # 只在 Release 触发时上传
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*-intel.dmg
+          files: dist/*-macos-x86_64.dmg
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -351,7 +404,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: EasyPostman-macOS-Intel-DMG
-          path: dist/*-intel.dmg
+          path: dist/*-macos-x86_64.dmg
           retention-days: 7  # 保留 7 天
 
       - name: Upload DMG for Gitee sync（上传 DMG 供 Gitee 同步使用）
@@ -359,41 +412,36 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-dmg-intel
-          path: dist/*-intel.dmg
+          path: dist/*-macos-x86_64.dmg
           retention-days: 1
 
   build-macos-arm:
     name: Build macOS Apple Silicon DMG（构建 macOS Apple Silicon 版安装包）
     runs-on: macos-latest  # Apple Silicon (M1/M2/M3/M4)
+    needs: [get-version, build-jar-artifact]
 
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+      - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Get version from pom.xml（从 pom.xml 提取版本号）
-        id: get_version
-        run: |
-          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
-          echo "Version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
-      - name: Build with Maven（使用 Maven 构建项目）
-        run: |
-          mvn -B clean package -DskipTests
-
-      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+      - name: Create runtime with jlink（使用 jlink 创建 macOS ARM 精简 JRE）
         run: |
           rm -rf target/runtime
-          # 创建包含必要模块的精简运行时环境
+          # 创建 macOS ARM 平台的 JRE
           jlink \
-            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki \
+            --add-modules ${{ env.JLINK_MODULES }} \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
@@ -402,7 +450,7 @@ jobs:
 
       - name: Prepare dist-input（准备打包输入目录）
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
           JAR_NAME="easy-postman-$VERSION.jar"
           
           rm -rf target/dist-input
@@ -411,10 +459,13 @@ jobs:
 
       - name: Create DMG with jpackage（使用 jpackage 创建 DMG 镜像）
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
           JAR_NAME="easy-postman-$VERSION.jar"
           
           mkdir -p dist
+          
+          # 解析 Java 选项
+          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
           
           # 创建 macOS Apple Silicon DMG
           jpackage \
@@ -429,18 +480,19 @@ jobs:
             --icon assets/mac/EasyPostman.icns \
             --vendor "Laker" \
             --copyright "© 2025 Laker" \
-            --java-options "-Xms256m" \
-            --java-options "-Xmx512m" \
-            --java-options "-Dfile.encoding=UTF-8"
+            --java-options "${JAVA_OPTS[0]}" \
+            --java-options "${JAVA_OPTS[1]}" \
+            --java-options "${JAVA_OPTS[2]}"
           
-          # 重命名为 ARM 版本
-          mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-arm64.dmg
+          # 重命名为 ARM 版本（使用标准架构标识）
+          mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-macos-arm64.dmg
+          echo "✅ Created: EasyPostman-$VERSION-macos-arm64.dmg"
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'  # 只在 Release 触发时上传
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*-arm64.dmg
+          files: dist/*-macos-arm64.dmg
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -450,7 +502,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: EasyPostman-macOS-ARM-DMG
-          path: dist/*-arm64.dmg
+          path: dist/*-macos-arm64.dmg
           retention-days: 7  # 保留 7 天
 
       - name: Upload DMG for Gitee sync（上传 DMG 供 Gitee 同步使用）
@@ -458,40 +510,20 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-dmg-arm64
-          path: dist/*-arm64.dmg
+          path: dist/*-macos-arm64.dmg
           retention-days: 1
 
   build-jar:
     name: Build Standalone JAR（构建独立 JAR 包）
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    needs: [get-version, build-jar-artifact]
 
     steps:
-      - name: Checkout（检出代码）
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
-        uses: actions/setup-java@v4
+      - name: Download JAR artifact（下载已构建的 JAR）
+        uses: actions/download-artifact@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-
-      - name: Get version from pom.xml（从 pom.xml 提取版本号）
-        id: get_version
-        run: |
-          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
-          echo "Version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build with Maven（使用 Maven 构建项目）
-        run: |
-          mvn -B clean package -DskipTests
-
-      - name: Prepare standalone JAR（准备独立 JAR 包）
-        run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
-          mkdir -p dist
-          cp target/easy-postman-$VERSION.jar dist/
+          name: app-jar
+          path: dist
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'
@@ -514,17 +546,23 @@ jobs:
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
     runs-on: ubuntu-22.04
+    needs: [get-version, build-jar-artifact]
 
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)（配置 Java 17 环境）
+      - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
       - name: Install dependencies（安装系统依赖）
         run: |
@@ -532,23 +570,12 @@ jobs:
           # 安装 GTK3、WebKit 和打包工具
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev binutils
 
-      - name: Get version from pom.xml（从 pom.xml 提取版本号）
-        id: get_version
-        run: |
-          VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
-          echo "Version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build with Maven（使用 Maven 构建项目）
-        run: |
-          mvn -B clean package -DskipTests
-
-      - name: Create runtime with jlink（使用 jlink 创建精简的 JRE）
+      - name: Create runtime with jlink（使用 jlink 创建 Linux 精简 JRE）
         run: |
           rm -rf target/runtime
-          # 创建包含必要模块的精简运行时环境
+          # 创建 Linux 平台的 JRE
           jlink \
-            --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki \
+            --add-modules ${{ env.JLINK_MODULES }} \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
@@ -557,7 +584,7 @@ jobs:
 
       - name: Prepare dist-input（准备打包输入目录）
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
           JAR_NAME="easy-postman-$VERSION.jar"
           
           rm -rf target/dist-input
@@ -566,10 +593,13 @@ jobs:
 
       - name: Create DEB with jpackage（使用 jpackage 创建 DEB 安装包）
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
           JAR_NAME="easy-postman-$VERSION.jar"
           
           mkdir -p dist
+          
+          # 解析 Java 选项
+          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
           
           # 创建 Ubuntu/Debian DEB 安装包
           jpackage \
@@ -587,9 +617,9 @@ jobs:
             --linux-shortcut \
             --linux-menu-group "Development" \
             --linux-app-category "Development" \
-            --java-options "-Xms256m" \
-            --java-options "-Xmx512m" \
-            --java-options "-Dfile.encoding=UTF-8"
+            --java-options "${JAVA_OPTS[0]}" \
+            --java-options "${JAVA_OPTS[1]}" \
+            --java-options "${JAVA_OPTS[2]}"
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'  # 只在 Release 触发时上传
@@ -721,7 +751,7 @@ jobs:
       - name: Upload Intel DMG to Gitee（上传 Intel DMG 到 Gitee）
         run: |
           RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          DMG_FILE=$(find artifacts/release-dmg-intel -name "*-intel.dmg" | head -n 1)
+          DMG_FILE=$(find artifacts/release-dmg-intel -name "*-macos-x86_64.dmg" | head -n 1)
           
           if [ -z "$DMG_FILE" ]; then
             echo "⚠️ Intel DMG file not found, skipping..."
@@ -739,7 +769,7 @@ jobs:
       - name: Upload ARM DMG to Gitee（上传 ARM DMG 到 Gitee）
         run: |
           RELEASE_ID="${{ steps.gitee_release.outputs.release_id }}"
-          DMG_FILE=$(find artifacts/release-dmg-arm64 -name "*-arm64.dmg" | head -n 1)
+          DMG_FILE=$(find artifacts/release-dmg-arm64 -name "*-macos-arm64.dmg" | head -n 1)
           
           if [ -z "$DMG_FILE" ]; then
             echo "⚠️ ARM DMG file not found, skipping..."

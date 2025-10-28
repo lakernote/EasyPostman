@@ -102,7 +102,9 @@ public class SSLConfigurationUtil {
 
             // 初始化 SSL 上下文
             SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagers, new TrustManager[]{trustManager}, new java.security.SecureRandom());
+            // 当 keyManagers 为空数组时，传递 null 更合适
+            KeyManager[] kms = (keyManagers != null && keyManagers.length > 0) ? keyManagers : null;
+            sslContext.init(kms, new TrustManager[]{trustManager}, new java.security.SecureRandom());
 
             // 使用自定义的 SSLSocketFactory 来捕获证书信息
             CertificateCapturingSSLSocketFactory socketFactory =
@@ -174,12 +176,15 @@ public class SSLConfigurationUtil {
      */
     private static X509TrustManager configureTrustManager(SSLVerificationMode mode, KeyManager[] keyManagers)
             throws SSLConfigurationException {
-        if (mode == SSLVerificationMode.STRICT && keyManagers == null) {
-            // 严格模式且没有客户端证书：使用默认配置
-            return null;
-        } else if (mode == SSLVerificationMode.STRICT) {
-            // 严格模式但有客户端证书：需要配置 KeyManager
-            return getDefaultTrustManager();
+        if (mode == SSLVerificationMode.STRICT) {
+            // 严格模式：使用系统默认的信任管理器（只有在有客户端证书时才需要自定义配置）
+            if (keyManagers != null && keyManagers.length > 0) {
+                // 有客户端证书，需要返回默认的 TrustManager 以配置 SSL 上下文
+                return getDefaultTrustManager();
+            } else {
+                // 没有客户端证书，使用默认配置（返回null会跳过自定义配置）
+                return null;
+            }
         } else {
             // 宽松模式或信任所有模式
             return createTrustManager(mode);

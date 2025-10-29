@@ -24,7 +24,7 @@
 ├── CONTRIBUTING.md                    # 贡献指南
 ├── labels.yml                         # 标签定义
 ├── dependabot.yml                     # Dependabot 依赖更新配置
-└── README.md                          # 本文档（配置说明）
+└── WORKFLOWS_CONFIG.md                # 本文档（配置说明）
 ```
 
 ---

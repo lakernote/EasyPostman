@@ -1,7 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
-import com.laker.postman.common.window.EasyPostManSplashWindow;
+import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.StyleUtils;
@@ -33,8 +33,8 @@ public class App {
             StyleUtils.apply();
             // 3. 注册图标字体，使用 FontAwesome 图标库
             IconFontSwing.register(FontAwesome.getIconFont());
-            // 4. 显示 SplashWindow
-            EasyPostManSplashWindow splash = new EasyPostManSplashWindow();
+            // 4. 从 IOC 容器获取 SplashWindow
+            SplashWindow splash = BeanFactory.getBean(SplashWindow.class);
             // 5. 异步加载主窗口
             splash.initMainFrame();
         });

@@ -15,6 +15,7 @@ import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,6 +42,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private transient List<TabInfo> tabInfos;
     private JPanel consoleContainer;
     private JLabel consoleLabel;
+    private JLabel versionLabel;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
 
@@ -90,11 +92,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 默认设置选中第一个标签
         tabbedPane.setSelectedIndex(0);
 
-        // 2. 控制台日志区
+        // 2. 控制台日志区和底部栏
         consoleContainer = new JPanel(new BorderLayout());
         consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
         consoleContainer.setOpaque(false);
-        createConsoleLabel();
+        initBottomBar();
         consolePanel = SingletonFactory.getInstance(ConsolePanel.class);
         // 注册关闭按钮事件
         consolePanel.setCloseAction(e -> setConsoleExpanded(false));
@@ -158,13 +160,25 @@ public class SidebarTabPanel extends SingletonBasePanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
-            consoleContainer.add(consoleLabel, BorderLayout.CENTER);
+            consoleContainer.add(consoleLabel, BorderLayout.WEST);
+            consoleContainer.add(versionLabel, BorderLayout.EAST);
             add(consoleContainer, BorderLayout.SOUTH);
             revalidate();
             repaint();
         }
     }
 
+    /**
+     * 初始化底部栏，包括控制台标签和版本标签
+     */
+    private void initBottomBar() {
+        createConsoleLabel();
+        createVersionLabel();
+    }
+
+    /**
+     * 创建控制台标签
+     */
     private void createConsoleLabel() {
         consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
         consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
@@ -179,6 +193,16 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 setConsoleExpanded(true);
             }
         });
+    }
+
+    /**
+     * 创建版本号标签
+     */
+    private void createVersionLabel() {
+        versionLabel = new JLabel(SystemUtil.getCurrentVersion());
+        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        versionLabel.setForeground(Color.GRAY);
+        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
     }
 
     @Override

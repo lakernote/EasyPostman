@@ -1,0 +1,99 @@
+name: Auto Label
+
+on:
+  issues:
+    types: [opened, edited]
+  pull_request_target:
+    types: [opened, edited]
+
+jobs:
+  auto-label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Auto label issues and PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isIssue = context.payload.issue !== undefined;
+            const item = isIssue ? context.payload.issue : context.payload.pull_request;
+            const title = item.title.toLowerCase();
+            const body = (item.body || '').toLowerCase();
+            const labels = [];
+            
+            // Detect language
+            if (body.includes('chinese') || /[\u4e00-\u9fa5]/.test(body)) {
+              labels.push('chinese');
+            }
+            
+            // Detect issue type from title
+            if (title.includes('[bug]') || title.includes('bug:')) {
+              labels.push('bug');
+            }
+            if (title.includes('[feature]') || title.includes('feat:')) {
+              labels.push('enhancement');
+            }
+            if (title.includes('[question]') || title.includes('question:')) {
+              labels.push('question');
+            }
+            if (title.includes('[docs]') || title.includes('documentation')) {
+              labels.push('documentation');
+            }
+            
+            // Detect component from title and body
+            const components = {
+              'ui': ['ui', 'interface', '界面', '显示'],
+              'api': ['api', 'request', 'http', '请求'],
+              'performance': ['performance', 'jmeter', '性能', '压测'],
+              'workspace': ['workspace', 'git', '工作区'],
+              'environment': ['environment', 'variable', '环境', '变量'],
+              'script': ['script', 'javascript', '脚本'],
+              'network': ['network', 'websocket', 'sse', '网络'],
+              'import-export': ['import', 'export', 'postman', 'curl', '导入', '导出']
+            };
+            
+            for (const [label, keywords] of Object.entries(components)) {
+              if (keywords.some(keyword => title.includes(keyword) || body.includes(keyword))) {
+                labels.push(label);
+              }
+            }
+            
+            // Detect OS
+            const osKeywords = {
+              'windows': ['windows', 'win10', 'win11'],
+              'macos': ['macos', 'mac', 'osx', 'apple silicon', 'm1', 'm2', 'm3'],
+              'linux': ['linux', 'ubuntu', 'debian']
+            };
+            
+            for (const [os, keywords] of Object.entries(osKeywords)) {
+              if (keywords.some(keyword => body.includes(keyword))) {
+                labels.push(os);
+              }
+            }
+            
+            // Add labels if any found
+            if (labels.length > 0) {
+              const uniqueLabels = [...new Set(labels)];
+              
+              if (isIssue) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.issue.number,
+                  labels: uniqueLabels
+                });
+              } else {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  labels: uniqueLabels
+                });
+              }
+              
+              console.log(`Added labels: ${uniqueLabels.join(', ')}`);
+            }
+

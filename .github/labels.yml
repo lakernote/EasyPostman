@@ -1,0 +1,166 @@
+# GitHub Labels Configuration
+# This file defines all labels used in the project
+
+# Issue Types
+- name: bug
+  color: d73a4a
+  description: 🐛 报告的错误或问题 | Something isn't working
+
+- name: enhancement
+  color: a2eeef
+  description: ✨ 新功能或功能改进请求 | New feature or request
+
+- name: question
+  color: d876e3
+  description: ❓ 使用问题或咨询 | Further information is requested
+
+- name: documentation
+  color: 0075ca
+  description: 📚 文档相关的改进 | Improvements or additions to documentation
+
+# Priority
+- name: priority-high
+  color: b60205
+  description: 🔴 高优先级 | High priority
+
+- name: priority-medium
+  color: fbca04
+  description: 🟡 中优先级 | Medium priority
+
+- name: priority-low
+  color: 0e8a16
+  description: 🟢 低优先级 | Low priority
+
+# Status
+- name: 需要确认 | need-confirm
+  color: fbca04
+  description: ⏳ 需要更多信息或确认 | Needs more information or confirmation
+
+- name: 需要讨论 | need-discussion
+  color: d4c5f9
+  description: 💬 需要社区讨论 | Needs community discussion
+
+- name: 进行中 | in-progress
+  color: 1d76db
+  description: 🚧 正在处理中 | Work in progress
+
+- name: 已解决 | resolved
+  color: 0e8a16
+  description: ✅ 问题已解决 | Issue has been resolved
+
+- name: 不会修复 | wontfix
+  color: ffffff
+  description: 🚫 不会处理此问题 | This will not be worked on
+
+- name: duplicate
+  color: cfd3d7
+  description: 📋 重复的问题 | This issue or pull request already exists
+
+- name: invalid
+  color: e4e669
+  description: ⚠️ 无效的问题 | This doesn't seem right
+
+# Component Labels
+- name: ui
+  color: 006b75
+  description: 🎨 用户界面相关 | UI related
+
+- name: api
+  color: 0052cc
+  description: 🔌 API调试相关 | API debugging related
+
+- name: performance
+  color: d93f0b
+  description: ⚡ 性能测试相关 | Performance testing related
+
+- name: workspace
+  color: "5319e7"
+  description: 🏢 工作区管理相关 | Workspace management related
+
+- name: environment
+  color: bfd4f2
+  description: 🌍 环境变量相关 | Environment variables related
+
+- name: script
+  color: c2e0c6
+  description: 📝 脚本功能相关 | Script features related
+
+- name: network
+  color: 7057ff
+  description: 🌐 网络协议相关 | Network protocol related
+
+- name: import-export
+  color: fef2c0
+  description: 🔄 导入导出功能 | Import/Export features
+
+- name: git
+  color: "000000"
+  description: 🔀 Git集成相关 | Git integration related
+
+# Platform Labels
+- name: windows
+  color: 0078d7
+  description: 🪟 Windows平台 | Windows platform
+
+- name: macos
+  color: "999999"
+  description: 🍎 macOS平台 | macOS platform
+
+- name: linux
+  color: fcc624
+  description: 🐧 Linux平台 | Linux platform
+
+# Language
+- name: chinese
+  color: d4c5f9
+  description: 🇨🇳 中文 | Chinese language
+
+- name: english
+  color: d4c5f9
+  description: 🇺🇸 英文 | English language
+
+# Good First Issue
+- name: good first issue
+  color: 7057ff
+  description: 👋 适合新手的问题 | Good for newcomers
+
+- name: help wanted
+  color: "008672"
+  description: 🙋 需要帮助 | Extra attention is needed
+
+# Security
+- name: security
+  color: d73a4a
+  description: 🔐 安全相关 | Security related
+
+# Dependencies
+- name: dependencies
+  color: 0366d6
+  description: 📦 依赖更新 | Pull requests that update a dependency file
+- name: chinese
+  color: d4c5f9
+  description: 🇨🇳 中文 | Chinese language
+
+- name: english
+  color: d4c5f9
+  description: 🇺🇸 英文 | English language
+
+# Good First Issue
+- name: good first issue
+  color: 7057ff
+  description: 👋 适合新手的问题 | Good for newcomers
+
+- name: help wanted
+  color: "008672"
+  description: 🙋 需要帮助 | Extra attention is needed
+
+# Security
+- name: security
+  color: d73a4a
+  description: 🔐 安全相关 | Security related
+
+# Dependencies
+- name: dependencies
+  color: 0366d6
+  description: 📦 依赖更新 | Pull requests that update a dependency file
+

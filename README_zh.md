@@ -320,20 +320,53 @@ build/win.bat
 
 ## 🤝 贡献指南
 
-我们欢迎任何形式的贡献！
+我们欢迎任何形式的贡献！我们已经设置了完善的模板和自动化检查，让贡献变得更简单。
 
-### 贡献方式
+### 🐛 报告 Bug
 
-1. 🐛 **Bug 报告**: [提交 Issue](https://gitee.com/lakernote/easy-postman/issues)
-2. 💡 **功能建议**: [功能请求](https://gitee.com/lakernote/easy-postman/issues)
-3. 📝 **代码贡献**: Fork -> 修改 -> Pull Request
-4. 📚 **文档改进**: 完善 README、Wiki 等文档
+发现了 Bug？请使用我们的 Bug 报告模板：
+
+1. 前往 [Issues](https://github.com/lakernote/easy-postman/issues/new/choose)
+2. 选择 "🐛 Bug 报告"
+3. 填写必要信息
+4. 提交后我们会尽快回复
+
+### ✨ 功能建议
+
+有好的想法？我们很乐意听取：
+
+1. 前往 [Issues](https://github.com/lakernote/easy-postman/issues/new/choose)
+2. 选择 "✨ 功能请求"
+3. 描述你的使用场景和期望的解决方案
+4. 提交后进入社区讨论
+
+### 💻 提交代码
+
+我们欢迎代码贡献！当你提交 PR 时：
+
+- **自动化检查**：你的 PR 会自动经过：
+  - ✅ 构建和编译检查
+  - ✅ 测试执行
+  - ✅ 代码质量验证
+  - ✅ PR 格式校验
+- **审查流程**：维护者会审查你的代码并提供反馈
+- **开发规范**：请遵循我们的 [贡献指南](.github/CONTRIBUTING.md)
+
+### 📝 改进文档
+
+文档同样重要！你可以：
+
+- 修正错别字或不准确的描述
+- 补充使用示例
+- 翻译文档
+- 完善常见问题
 
 ### 开发规范
 
 - 遵循 Java 编码规范
 - 提交前请运行测试：`mvn test`
 - 提交信息，格式：`feat: 添加新功能` 或 `fix: 修复bug`
+- 阅读完整的 [贡献指南](.github/CONTRIBUTING.md) 获取详细说明
 
 ---
 

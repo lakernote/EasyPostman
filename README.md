@@ -322,20 +322,53 @@ build/win.bat
 
 ## 🤝 Contribution Guide
 
-All contributions are welcome!
+All contributions are welcome! We've set up comprehensive templates and automated checks to make contributing easier.
 
-### How to Contribute
+### 🐛 Report a Bug
 
-1. 🐛 **Bug Report**: [Submit Issue](https://gitee.com/lakernote/easy-postman/issues)
-2. 💡 **Feature Request**: [Request Feature](https://gitee.com/lakernote/easy-postman/issues)
-3. 📝 **Code Contribution**: Fork -> Edit -> Pull Request
-4. 📚 **Docs Improvement**: Improve README, Wiki, etc.
+Found a bug? Please use our bug report template:
+
+1. Go to [Issues](https://github.com/lakernote/easy-postman/issues/new/choose)
+2. Select "🐛 Bug Report"
+3. Fill in the required information
+4. Submit and we'll respond as soon as possible
+
+### ✨ Request a Feature
+
+Have a great idea? We'd love to hear it:
+
+1. Go to [Issues](https://github.com/lakernote/easy-postman/issues/new/choose)
+2. Select "✨ Feature Request"
+3. Describe your use case and expected solution
+4. Submit for community discussion
+
+### 💻 Submit Code
+
+We welcome code contributions! When you submit a PR:
+
+- **Automated Checks**: Your PR will automatically go through:
+  - ✅ Build and compilation check
+  - ✅ Test execution
+  - ✅ Code quality validation
+  - ✅ PR format verification
+- **Review Process**: Maintainers will review your code and provide feedback
+- **Guidelines**: Please follow our [Contributing Guide](.github/CONTRIBUTING.md)
+
+### 📝 Improve Documentation
+
+Documentation is crucial! You can:
+
+- Fix typos or inaccurate descriptions
+- Add usage examples
+- Translate documentation
+- Improve FAQ
 
 ### Development Guidelines
 
 - Follow Java coding standards
 - Run tests before commit: `mvn test`
 - Commit message format: `feat: add new feature` or `fix: bug fix`
+- Read the full [Contributing Guide](.github/CONTRIBUTING.md) for detailed instructions
 
 ---
 

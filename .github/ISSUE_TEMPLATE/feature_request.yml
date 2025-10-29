@@ -1,0 +1,149 @@
+name: ✨ 功能请求 | Feature Request
+description: 建议一个新功能 | Suggest a new feature
+title: "[Feature]: "
+labels: ["enhancement", "需要讨论 | need-discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你的建议！我们很高兴听到你的想法。
+        Thank you for your suggestion! We're excited to hear your ideas.
+
+  - type: checkboxes
+    id: pre-check
+    attributes:
+      label: 前置检查 | Pre-check
+      description: 提交前请确认以下事项 | Please confirm the following before submitting
+      options:
+        - label: 我已经搜索过 [Issues](https://github.com/lakernote/easy-postman/issues) 和 [Discussions](https://github.com/lakernote/easy-postman/discussions)，没有找到类似的功能请求 | I have searched Issues and Discussions and found no similar feature requests
+          required: true
+        - label: 我已经阅读过 [功能说明](https://github.com/lakernote/easy-postman#-features)，确认这是一个新功能 | I have read the feature list and confirmed this is a new feature
+          required: true
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: 功能类型 | Feature Type
+      description: 这个功能属于哪个类别？ | What category does this feature belong to?
+      options:
+        - 🔌 API 调试 | API Debugging
+        - ⚡ 性能测试 | Performance Testing
+        - 🌍 环境管理 | Environment Management
+        - 📝 脚本功能 | Script Features
+        - 🏢 工作区 | Workspace
+        - 🔄 数据导入导出 | Data Import/Export
+        - 🎨 UI/UX 改进 | UI/UX Improvement
+        - 📊 数据分析 | Data Analysis
+        - 🔐 安全性 | Security
+        - 🌐 协议支持 | Protocol Support
+        - 📚 文档 | Documentation
+        - 🔧 其他 | Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述 | Problem Description
+      description: 你遇到了什么问题？这个功能能解决什么痛点？ | What problem are you facing? What pain point would this feature solve?
+      placeholder: |
+        我在使用 EasyPostman 时，经常遇到... 这让我感到很不方便...
+        When using EasyPostman, I often encounter... which is inconvenient...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 期望的解决方案 | Desired Solution
+      description: 你希望如何解决这个问题？详细描述你期望的功能 | How would you like to solve this? Describe your desired feature in detail
+      placeholder: |
+        我希望 EasyPostman 能够...
+        I would like EasyPostman to be able to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: 使用场景 | Use Case
+      description: 这个功能的具体使用场景是什么？ | What are the specific use cases for this feature?
+      placeholder: |
+        场景1：当我... 时，我需要...
+        场景2：在... 情况下，这个功能可以...
+        
+        Scenario 1: When I... I need to...
+        Scenario 2: In... situation, this feature could...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案 | Alternatives
+      description: 你考虑过其他解决方案吗？ | Have you considered any alternative solutions?
+      placeholder: |
+        我也考虑过... 但是...
+        I also considered... but...
+
+  - type: textarea
+    id: mockup
+    attributes:
+      label: 界面设计（可选）| UI Mockup (Optional)
+      description: 如果涉及 UI 改动，可以提供设计图或示意图 | If UI changes are involved, you can provide mockups or sketches
+      placeholder: 拖放图片到这里 | Drag and drop images here
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: 参考实现 | Reference Implementation
+      description: 其他工具中有类似的实现吗？ | Are there similar implementations in other tools?
+      placeholder: |
+        Postman 的 XXX 功能...
+        JMeter 的 XXX 特性...
+        
+        Postman's XXX feature...
+        JMeter's XXX feature...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级 | Priority
+      description: 你认为这个功能有多重要？ | How important do you think this feature is?
+      options:
+        - 🔴 高 - 严重影响使用体验 | High - Seriously affects user experience
+        - 🟡 中 - 对使用体验有明显提升 | Medium - Significantly improves user experience
+        - 🟢 低 - 锦上添花的功能 | Low - Nice to have
+    validations:
+      required: true
+
+  - type: dropdown
+    id: users
+    attributes:
+      label: 受益用户 | Beneficiary Users
+      description: 你认为有多少用户会从这个功能中受益？ | How many users do you think would benefit from this feature?
+      options:
+        - 所有用户 | All users
+        - 大多数用户 | Most users
+        - 部分用户 | Some users
+        - 少数用户 | Few users
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: 贡献意愿 | Willingness to Contribute
+      description: 你是否愿意参与这个功能的开发？ | Are you willing to contribute to this feature?
+      options:
+        - label: 我愿意提交 PR 来实现这个功能 | I'm willing to submit a PR to implement this feature
+        - label: 我可以帮助测试这个功能 | I can help test this feature
+        - label: 我可以提供更多的使用场景和反馈 | I can provide more use cases and feedback
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息 | Additional Context
+      description: 其他有助于我们理解这个功能请求的信息 | Any other information that helps us understand this feature request
+      placeholder: 例如：相关的技术文档、API 文档等 | e.g. related technical docs, API docs, etc.
+

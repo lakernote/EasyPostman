@@ -1,0 +1,15 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 讨论区 | Discussions
+    url: https://github.com/lakernote/easy-postman/discussions
+    about: 提问、分享想法或与社区讨论 | Ask questions, share ideas, or discuss with the community
+  - name: 📖 文档 | Documentation
+    url: https://github.com/lakernote/easy-postman#readme
+    about: 查看项目文档和使用指南 | View project documentation and user guide
+  - name: ❓ 常见问题 | FAQ
+    url: https://github.com/lakernote/easy-postman#-faq
+    about: 查看常见问题解答 | View frequently asked questions
+  - name: 🌏 Gitee (国内镜像 | China Mirror)
+    url: https://gitee.com/lakernote/easy-postman/issues
+    about: 国内用户可在 Gitee 提 Issue | China users can submit issues on Gitee
+

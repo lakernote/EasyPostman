@@ -1,0 +1,137 @@
+name: 🐛 Bug 报告 | Bug Report
+description: 报告一个 Bug 帮助我们改进 | Report a bug to help us improve
+title: "[Bug]: "
+labels: ["bug", "需要确认 | need-confirm"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你花时间填写这个 Bug 报告！
+        Thank you for taking the time to fill out this bug report!
+
+  - type: checkboxes
+    id: pre-check
+    attributes:
+      label: 前置检查 | Pre-check
+      description: 提交前请确认以下事项 | Please confirm the following before submitting
+      options:
+        - label: 我已经搜索过 [Issues](https://github.com/lakernote/easy-postman/issues) 和 [Discussions](https://github.com/lakernote/easy-postman/discussions)，没有找到类似的问题 | I have searched Issues and Discussions and found no similar issues
+          required: true
+        - label: 我已经阅读过 [FAQ 文档](https://github.com/lakernote/easy-postman#-faq) | I have read the FAQ documentation
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: EasyPostman 版本 | Version
+      description: 你使用的 EasyPostman 版本（在关于页面查看）| Your EasyPostman version (check in About page)
+      placeholder: 例如 | e.g. 3.1.5
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统 | Operating System
+      description: 你的操作系统 | Your operating system
+      options:
+        - Windows
+        - macOS (Apple Silicon - M1/M2/M3/M4)
+        - macOS (Intel)
+        - Linux (Ubuntu/Debian)
+        - Linux (其他发行版 | Other distributions)
+        - 其他 | Other
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: Java 版本 | Java Version
+      description: 如果使用 JAR 运行，请提供 Java 版本（运行 `java -version`）| If running JAR, provide Java version (run `java -version`)
+      placeholder: 例如 | e.g. Java 17.0.8
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述 | Bug Description
+      description: 清晰简洁地描述遇到的问题 | A clear and concise description of the bug
+      placeholder: 告诉我们发生了什么... | Tell us what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 | Steps to Reproduce
+      description: 如何复现这个问题？ | How to reproduce this bug?
+      placeholder: |
+        1. 打开 '...' | Open '...'
+        2. 点击 '...' | Click on '...'
+        3. 滚动到 '...' | Scroll to '...'
+        4. 看到错误 | See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 | Expected Behavior
+      description: 你期望发生什么？ | What did you expect to happen?
+      placeholder: 我期望... | I expected...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为 | Actual Behavior
+      description: 实际发生了什么？ | What actually happened?
+      placeholder: 实际上... | Actually...
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图 | Screenshots
+      description: 如果适用，请添加截图帮助说明问题 | If applicable, add screenshots to help explain the problem
+      placeholder: 拖放图片到这里 | Drag and drop images here
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 | Logs
+      description: 如果有相关日志或错误信息，请粘贴在这里 | If there are relevant logs or error messages, paste them here
+      placeholder: |
+        日志内容... | Log content...
+      render: shell
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 严重程度 | Severity
+      description: 这个 Bug 对你的影响程度 | How much does this bug affect you?
+      options:
+        - 🔴 严重 - 应用崩溃或无法使用 | Critical - App crashes or unusable
+        - 🟠 高 - 主要功能不可用 | High - Major feature not working
+        - 🟡 中 - 功能受限但有替代方案 | Medium - Feature limited but workaround exists
+        - 🟢 低 - 小问题，不影响使用 | Low - Minor issue, doesn't affect usage
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息 | Additional Context
+      description: 其他有助于解决问题的信息 | Any other information that might help
+      placeholder: 例如：特定的 API 配置、网络环境等 | e.g. specific API config, network environment, etc.
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: 贡献意愿 | Willingness to Contribute
+      description: 你是否愿意提交 PR 来修复这个问题？ | Are you willing to submit a PR to fix this issue?
+      options:
+        - label: 我愿意提交 PR 来修复这个问题 | I'm willing to submit a PR to fix this issue
+

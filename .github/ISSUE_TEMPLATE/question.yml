@@ -1,0 +1,71 @@
+name: ❓ 问题咨询 | Question
+description: 询问使用问题或寻求帮助 | Ask a question or seek help
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎提问！在提交前，请先查看 [FAQ](https://github.com/lakernote/easy-postman#-faq) 和 [文档](https://github.com/lakernote/easy-postman#readme)。
+        Welcome! Before submitting, please check the [FAQ](https://github.com/lakernote/easy-postman#-faq) and [documentation](https://github.com/lakernote/easy-postman#readme).
+
+  - type: checkboxes
+    id: pre-check
+    attributes:
+      label: 前置检查 | Pre-check
+      options:
+        - label: 我已经搜索过 [Issues](https://github.com/lakernote/easy-postman/issues) 和 [Discussions](https://github.com/lakernote/easy-postman/discussions) | I have searched Issues and Discussions
+          required: true
+        - label: 我已经阅读过 [FAQ](https://github.com/lakernote/easy-postman#-faq) | I have read the FAQ
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 问题类别 | Question Category
+      options:
+        - 安装与启动 | Installation and Startup
+        - 功能使用 | Feature Usage
+        - 工作区管理 | Workspace Management
+        - Git 集成 | Git Integration
+        - 性能测试 | Performance Testing
+        - 数据导入导出 | Data Import/Export
+        - 脚本编写 | Script Writing
+        - 环境变量 | Environment Variables
+        - 网络连接 | Network Connection
+        - 其他 | Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 问题描述 | Question Description
+      description: 请详细描述你的问题 | Please describe your question in detail
+      placeholder: 我想知道如何... | I would like to know how to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 相关信息 | Context
+      description: 提供相关的环境信息、版本号、操作系统等 | Provide relevant information like environment, version, OS, etc.
+      placeholder: |
+        - EasyPostman 版本 | Version: 
+        - 操作系统 | OS: 
+        - 其他信息 | Other info:
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: 已尝试的方法 | What I've Tried
+      description: 你已经尝试过哪些方法？ | What have you already tried?
+      placeholder: 我尝试过... | I have tried...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息 | Additional Information
+      description: 其他有助于我们回答问题的信息 | Any other information that helps us answer your question
+

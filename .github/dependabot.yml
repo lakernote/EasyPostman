@@ -1,18 +1,72 @@
+# Dependabot 配置文件
+#
+# Dependabot 是什么？
+# - GitHub 的自动依赖更新工具，帮助保持项目依赖的安全性和时效性
+# - 自动检测过时的依赖包和安全漏洞（CVE）
+# - 自动创建 Pull Request 来更新依赖版本
+#
+# 主要作用：
+# 1. 🔒 安全防护：及时发现并修复依赖包中的安全漏洞
+# 2. 📦 版本管理：自动更新依赖到最新版本
+# 3. ⏰ 节省时间：无需手动检查和更新依赖
+# 4. 📊 可追溯性：通过 PR 记录每次依赖更新
+#
+# 如何查看？
+# - 仓库 Security -> Dependabot alerts：查看安全漏洞警告
+# - Pull requests：查看 Dependabot 创建的更新 PR
+
 version: 2
 updates:
+  # Maven 项目依赖更新配置
   - package-ecosystem: "maven"
+    # 扫描目录：根目录的 pom.xml
     directory: "/"
+    # 更新频率：每周检查一次
+    # 可选值：daily(每天)、weekly(每周)、monthly(每月)
     schedule:
       interval: "weekly"
-    # 限制同时打开的 PR 数量，避免刷屏
-    open-pull-requests-limit: 5
-    # 自动将 security updates 也作为普通更新处理（Dependabot 会为CVE创建安全PR）
+      # 可选：指定检查时间（UTC 时区）
+      # day: "monday"
+      # time: "02:00"
+
+    # 限制同时打开的 PR 数量，避免一次性创建太多 PR
+    # 推荐值：3-10，根据项目活跃度调整
+    open-pull-requests-limit: 3
+
+    # 允许更新的依赖类型
+    # - dependency-type: "all" 表示更新所有依赖（直接依赖和间接依赖）
+    # - 其他选项：production（生产依赖）、development（开发依赖）
     allow:
       - dependency-type: "all"
-    # 可选：忽略某些依赖（示例）
-    # ignore:
-    #   - dependency-name: "org.example:unwanted"
-    #     update-types: ["version-update:semver-major"]
 
-# Dependabot 还会自动处理 GitHub Advisory 的安全修复 PR（仓库启用 Dependabot alerts 时）
+    # 可选：将 Dependabot PR 自动分配给特定审核人员
+    # reviewers:
+    #   - "your-github-username"
+
+    # 可选：为 Dependabot PR 自动添加标签，便于管理
+    # labels:
+    #   - "dependencies"
+    #   - "automated"
+
+    # 可选：设置提交信息前缀，便于识别
+    # commit-message:
+    #   prefix: "chore"
+    #   include: "scope"
+
+    # 忽略某些依赖的更新
+    # 使用场景：某些依赖版本需要保持稳定，不希望自动更新
+    ignore:
+      # 忽略 okhttp 相关依赖的更新
+      - dependency-name: "com.squareup.okhttp3:okhttp"
+      - dependency-name: "com.squareup.okhttp3:okhttp-*"  # 忽略所有 okhttp 子模块
+      - dependency-name: "com.squareup.okhttp3:logging-interceptor"
+    #   - dependency-name: "org.example:unwanted"
+    #     update-types: ["version-update:semver-major"]  # 忽略主版本更新
+
+# 注意事项：
+# 1. Dependabot 会自动处理 GitHub Advisory 数据库中的安全修复
+# 2. 需在仓库设置中启用 "Dependabot alerts" 和 "Dependabot security updates"
+# 3. 路径：Settings -> Security -> Code security and analysis
+# 4. 安全更新的 PR 会被标记为 "security" 优先级
+# 5. 可以手动触发更新：在 Insights -> Dependency graph -> Dependabot 中点击 "Check for updates"
 

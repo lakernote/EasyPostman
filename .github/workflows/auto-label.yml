@@ -1,83 +1,95 @@
+# 工作流名称：自动标签
 name: Auto Label
 
+# 触发条件
 on:
+  # 当 issue 被创建或编辑时触发
   issues:
     types: [opened, edited]
+  # 当 Pull Request 被创建或编辑时触发（使用 pull_request_target 确保权限）
   pull_request_target:
     types: [opened, edited]
 
 jobs:
   auto-label:
+    # 运行环境：使用最新版本的 Ubuntu
     runs-on: ubuntu-latest
+    # 权限设置：允许写入 issues 和 pull requests
     permissions:
       issues: write
       pull-requests: write
 
     steps:
+      # 自动为 issues 和 PRs 添加标签
       - name: Auto label issues and PRs
         uses: actions/github-script@v7
         with:
           script: |
+            // 判断是 issue 还是 pull request
             const isIssue = context.payload.issue !== undefined;
             const item = isIssue ? context.payload.issue : context.payload.pull_request;
             const title = item.title.toLowerCase();
             const body = (item.body || '').toLowerCase();
             const labels = [];
             
-            // Detect language
+            // 检测语言：如果内容包含中文字符，添加 'chinese' 标签
             if (body.includes('chinese') || /[\u4e00-\u9fa5]/.test(body)) {
               labels.push('chinese');
             }
             
-            // Detect issue type from title
+            // 从标题检测 issue 类型
             if (title.includes('[bug]') || title.includes('bug:')) {
-              labels.push('bug');
+              labels.push('bug');  // 错误报告
             }
             if (title.includes('[feature]') || title.includes('feat:')) {
-              labels.push('enhancement');
+              labels.push('enhancement');  // 功能增强
             }
             if (title.includes('[question]') || title.includes('question:')) {
-              labels.push('question');
+              labels.push('question');  // 问题咨询
             }
             if (title.includes('[docs]') || title.includes('documentation')) {
-              labels.push('documentation');
+              labels.push('documentation');  // 文档相关
             }
             
-            // Detect component from title and body
+            // 从标题和内容检测组件类型（根据关键词匹配）
             const components = {
-              'ui': ['ui', 'interface', '界面', '显示'],
-              'api': ['api', 'request', 'http', '请求'],
-              'performance': ['performance', 'jmeter', '性能', '压测'],
-              'workspace': ['workspace', 'git', '工作区'],
-              'environment': ['environment', 'variable', '环境', '变量'],
-              'script': ['script', 'javascript', '脚本'],
-              'network': ['network', 'websocket', 'sse', '网络'],
-              'import-export': ['import', 'export', 'postman', 'curl', '导入', '导出']
+              'ui': ['ui', 'interface', '界面', '显示'],  // 用户界面相关
+              'api': ['api', 'request', 'http', '请求'],  // API 和 HTTP 请求相关
+              'performance': ['performance', 'jmeter', '性能', '压测'],  // 性能测试相关
+              'workspace': ['workspace', 'git', '工作区'],  // 工作区和版本控制
+              'environment': ['environment', 'variable', '环境', '变量'],  // 环境变量
+              'script': ['script', 'javascript', '脚本'],  // 脚本功能
+              'network': ['network', 'websocket', 'sse', '网络'],  // 网络连接
+              'import-export': ['import', 'export', 'postman', 'curl', '导入', '导出']  // 导入导出功能
             };
             
+            // 遍历组件关键词，匹配则添加对应标签
             for (const [label, keywords] of Object.entries(components)) {
               if (keywords.some(keyword => title.includes(keyword) || body.includes(keyword))) {
                 labels.push(label);
               }
             }
             
-            // Detect OS
+            // 从内容检测操作系统
             const osKeywords = {
-              'windows': ['windows', 'win10', 'win11'],
-              'macos': ['macos', 'mac', 'osx', 'apple silicon', 'm1', 'm2', 'm3'],
-              'linux': ['linux', 'ubuntu', 'debian']
+              'windows': ['windows', 'win10', 'win11'],  // Windows 系统
+              'macos': ['macos', 'mac', 'osx', 'apple silicon', 'm1', 'm2', 'm3'],  // macOS 系统
+              'linux': ['linux', 'ubuntu', 'debian']  // Linux 系统
             };
             
+            // 遍历操作系统关键词，匹配则添加对应标签
             for (const [os, keywords] of Object.entries(osKeywords)) {
               if (keywords.some(keyword => body.includes(keyword))) {
                 labels.push(os);
               }
             }
             
-            // Add labels if any found
+            // 如果找到标签，则应用到 issue 或 PR
             if (labels.length > 0) {
+              // 去重标签
               const uniqueLabels = [...new Set(labels)];
               
+              // 根据类型应用标签
               if (isIssue) {
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
@@ -94,6 +106,6 @@ jobs:
                 });
               }
               
-              console.log(`Added labels: ${uniqueLabels.join(', ')}`);
+              console.log(`已添加标签: ${uniqueLabels.join(', ')}`);
             }
 

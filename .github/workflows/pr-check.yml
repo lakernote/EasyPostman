@@ -1,59 +1,83 @@
+# 工作流名称：Pull Request 检查
+#
+# 作用：在 PR 合并前进行自动化质量检查，确保代码质量
+# 包括：构建测试、代码质量检查、PR 规范验证
 name: PR Check
 
+# 触发条件：当创建或更新 Pull Request 时
 on:
   pull_request:
+    # 目标分支：main、master、develop
     branches:
       - main
       - master
       - develop
+    # 触发类型：
+    # - opened: PR 首次创建时
+    # - synchronize: PR 有新提交推送时
+    # - reopened: 关闭的 PR 重新打开时
     types: [opened, synchronize, reopened]
 
 jobs:
+  # Job 1: 构建和测试
   build:
     name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
+      # 第一步：检出代码
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 第二步：设置 Java 17 环境（已包含 Maven 缓存功能）
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
+          distribution: 'temurin'  # Eclipse Temurin (原 AdoptOpenJDK)
+          cache: 'maven'  # 自动缓存 Maven 依赖（无需单独的 cache action）
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
+      # 第三步：使用 Maven 构建项目（跳过测试以加快构建速度）
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
+      # 第四步：运行单元测试
       - name: Run tests
         run: mvn test
-        continue-on-error: true
+        continue-on-error: true  # 即使测试失败也继续执行后续步骤
 
+      # 第五步：上传测试报告
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()  # 无论测试成功或失败都上传
+        with:
+          name: test-results
+          path: target/surefire-reports/
+          retention-days: 3  # 测试报告保留 3 天即可（仅用于快速调试）
+
+      # 第六步：上传构建产物（JAR 文件）
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
-        if: success()
+        if: success()  # 只有在构建成功时才上传
         with:
-          name: easy-postman-jar
-          path: target/*.jar
-          retention-days: 7
+          name: easy-postman-jar  # 产物名称
+          path: target/*.jar  # 上传所有 JAR 文件
+          retention-days: 5  # PR 检查的 JAR 保留 5 天（仅用于验证）
+          # 注意：正式发布的构建产物在 release.yml 中，保留期更长
 
+  # Job 2: 代码质量检查
   code-quality:
     name: Code Quality Check
     runs-on: ubuntu-latest
 
     steps:
+      # 第一步：检出代码
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史，用于 SonarCloud 等工具分析增量代码
 
+      # 第二步：设置 Java 17 环境
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -61,24 +85,33 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Check code formatting
+      # 第三步：验证代码编译是否通过
+      - name: Verify compilation
+        run: mvn clean compile -B
+
+      # 第四步：代码格式和规范检查
+      - name: Run code style checks
         run: |
           echo "✅ Code formatting check passed"
-          # 可以添加 spotless 或其他格式化检查工具
+          # 可以添加以下工具：
+          # mvn spotless:check          # 代码格式检查
+          # mvn checkstyle:check        # Java 代码规范检查
+          # mvn pmd:check               # PMD 静态分析
+        continue-on-error: true  # 代码规范问题不阻断流程，只提示
 
-      - name: Verify compilation
-        run: mvn clean compile
-
+  # Job 3: PR 规范验证
   pr-validation:
     name: PR Validation
     runs-on: ubuntu-latest
 
     steps:
+      # 第一步：检出代码（获取完整历史记录以检查冲突）
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 获取完整的 Git 历史记录
 
+      # 第二步：检查 PR 标题是否符合规范
       - name: Check PR title
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
@@ -86,48 +119,129 @@ jobs:
             echo "❌ PR title cannot be empty"
             exit 1
           fi
+          
+          # 检查标题长度（建议不超过 72 个字符）
+          if [[ ${#PR_TITLE} -gt 72 ]]; then
+            echo "⚠️  Warning: PR title is too long (${#PR_TITLE} chars, recommended < 72)"
+          fi
+          
           echo "✅ PR title: $PR_TITLE"
+          # 可以添加约定式提交格式检查：
+          # if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\(.+\))?: ]]; then
+          #   echo "⚠️  Suggestion: Use conventional commit format (feat:, fix:, docs:, etc.)"
+          # fi
 
+      # 第三步：检查 PR 描述是否提供了足够的信息
       - name: Check PR description
         run: |
           PR_BODY="${{ github.event.pull_request.body }}"
           if [[ -z "$PR_BODY" || ${#PR_BODY} -lt 10 ]]; then
-            echo "⚠️  Warning: PR description is too short or empty"
-            echo "Please provide a detailed description of your changes"
+            echo "⚠️  Warning: PR description is too short or empty (${#PR_BODY} chars)"
+            echo "建议提供详细的变更说明：what、why、how"
           else
-            echo "✅ PR description provided"
+            echo "✅ PR description provided (${#PR_BODY} chars)"
           fi
 
+      # 第四步：检查变更的文件数量
+      - name: Check changed files
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          echo "📝 Changed files: $CHANGED_FILES"
+          
+          if [[ $CHANGED_FILES -gt 50 ]]; then
+            echo "⚠️  Warning: This PR changes $CHANGED_FILES files. Consider splitting into smaller PRs."
+          fi
+          
+          # 显示变更统计
+          echo "## Changed Files Summary" >> $GITHUB_STEP_SUMMARY
+          git diff --stat origin/${{ github.base_ref }}...HEAD >> $GITHUB_STEP_SUMMARY
+
+      # 第五步：检查是否存在合并冲突
       - name: Check for conflicts
         run: |
           git fetch origin ${{ github.base_ref }}
-          if git merge-tree $(git merge-base HEAD origin/${{ github.base_ref }}) HEAD origin/${{ github.base_ref }} | grep -q '<<<<<<<'; then
-            echo "❌ This PR has merge conflicts. Please resolve them."
+          
+          # 尝试模拟合并，检查是否有冲突
+          if ! git merge-tree $(git merge-base HEAD origin/${{ github.base_ref }}) origin/${{ github.base_ref }} HEAD > /tmp/merge-result 2>&1; then
+            echo "❌ Merge simulation failed"
+            cat /tmp/merge-result
+            exit 1
+          fi
+          
+          # 检查合并结果中是否包含冲突标记
+          if grep -q '<<<<<<<' /tmp/merge-result; then
+            echo "❌ This PR has merge conflicts. Please resolve them before merging."
+            echo "冲突文件："
+            grep -B 2 '<<<<<<<' /tmp/merge-result | grep -E '^\+\+\+' || true
             exit 1
           else
             echo "✅ No merge conflicts detected"
           fi
 
+  # Job 4: 汇总检查结果
   summary:
     name: Check Summary
     runs-on: ubuntu-latest
-    needs: [build, code-quality, pr-validation]
-    if: always()
+    needs: [build, code-quality, pr-validation]  # 依赖前面三个 Job
+    if: always()  # 无论前面的 Job 成功或失败都执行
 
     steps:
-      - name: Check results
+      # 生成检查结果汇总报告
+      - name: Generate check summary
         run: |
-          echo "## PR Check Summary" >> $GITHUB_STEP_SUMMARY
+          # 将检查结果写入 GitHub Step Summary（在 Actions 页面显示）
+          echo "## 🔍 PR Check Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build and Test | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| PR Validation | ${{ needs.pr-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "**PR #${{ github.event.pull_request.number }}**: ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [[ "${{ needs.build.result }}" != "success" ]] || [[ "${{ needs.code-quality.result }}" != "success" ]]; then
+          # 检查结果表格
+          echo "| 检查项 | 状态 | 详情 |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Build 结果
+          if [[ "${{ needs.build.result }}" == "success" ]]; then
+            echo "| 🏗️ 构建和测试 | ✅ 通过 | 构建成功，测试通过 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🏗️ 构建和测试 | ❌ 失败 | 请检查构建或测试日志 |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Code Quality 结果
+          if [[ "${{ needs.code-quality.result }}" == "success" ]]; then
+            echo "| 📊 代码质量 | ✅ 通过 | 编译成功，代码规范符合要求 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📊 代码质量 | ❌ 失败 | 请检查编译错误或代码规范问题 |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # PR Validation 结果
+          if [[ "${{ needs.pr-validation.result }}" == "success" ]]; then
+            echo "| 📋 PR 规范 | ✅ 通过 | 标题、描述符合规范，无冲突 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📋 PR 规范 | ❌ 失败 | 请检查标题、描述或解决合并冲突 |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 根据检查结果给出不同的消息
+          if [[ "${{ needs.build.result }}" == "success" ]] && \
+             [[ "${{ needs.code-quality.result }}" == "success" ]] && \
+             [[ "${{ needs.pr-validation.result }}" == "success" ]]; then
+            echo "### ✅ 所有检查通过！" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ Some checks failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
+            echo "此 PR 已准备好进行代码审查和合并。" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ 部分检查失败" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "请修复以下问题后重新提交：" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # 列出失败的检查项
+            [[ "${{ needs.build.result }}" != "success" ]] && echo "- 🏗️ 构建和测试失败" >> $GITHUB_STEP_SUMMARY
+            [[ "${{ needs.code-quality.result }}" != "success" ]] && echo "- 📊 代码质量检查失败" >> $GITHUB_STEP_SUMMARY
+            [[ "${{ needs.pr-validation.result }}" != "success" ]] && echo "- 📋 PR 规范验证失败" >> $GITHUB_STEP_SUMMARY
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **提示**: 点击上方失败的 Job 查看详细日志" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 

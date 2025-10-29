@@ -1,26 +1,36 @@
+# 工作流名称：同步标签
 name: Sync Labels
 
+# 触发条件
 on:
+  # 当推送到 main 分支，且 .github/labels.yml 文件发生变化时触发
   push:
     branches:
       - main
     paths:
       - '.github/labels.yml'
+  # 允许手动触发工作流
   workflow_dispatch:
 
 jobs:
   sync-labels:
+    # 运行环境：使用最新版本的 Ubuntu
     runs-on: ubuntu-latest
+    # 权限设置：允许写入 issues（包括标签管理）
     permissions:
       issues: write
 
     steps:
+      # 第一步：检出代码仓库
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 第二步：同步标签配置到 GitHub 仓库
       - name: Sync labels
         uses: EndBug/label-sync@v2
         with:
+          # 标签配置文件路径
           config-file: .github/labels.yml
+          # 使用 GitHub 提供的访问令牌进行身份验证
           token: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,36 +1,67 @@
+# 工作流名称：CodeQL 代码安全分析
+# CodeQL 是什么？
+# - GitHub 的代码安全扫描工具，用于自动检测代码中的安全漏洞和编码错误
+# - 支持多种编程语言（Java、JavaScript、Python、C/C++等）
+# - 可以发现：SQL 注入、XSS、路径遍历、不安全的反序列化等安全问题
 name: "CodeQL"
 
+# 触发条件
 on:
+  # 当代码推送到 master 分支时触发（检测新代码的安全问题）
   push:
     branches: [ master ]
+  # 当创建针对 master 分支的 PR 时触发（在合并前发现安全问题）
   pull_request:
-    # Analyze PRs targeting master
     branches: [ master ]
+  # 定时扫描：每周日 UTC 02:00（北京时间 10:00）运行一次
+  # 作用：即使代码没有变化，也能检测到新发现的安全漏洞模式
   schedule:
-    - cron: '0 2 * * 0' # 每周日 UTC 02:00 运行一次
+    - cron: '0 2 * * 0'
 
+# 权限设置：允许将安全问题写入 GitHub Security 标签页
 permissions:
   security-events: write
+  # 添加 actions 读取权限（某些环境需要）
+  actions: read
+  # 添加内容读取权限
+  contents: read
 
 jobs:
   analyze:
     name: Analyze (CodeQL)
     runs-on: ubuntu-latest
+
+    # 超时设置：避免分析任务运行过久
+    timeout-minutes: 360
+
     steps:
+      # 第一步：检出代码仓库
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 第二步：初始化 CodeQL 分析环境
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
+          # 指定要分析的编程语言
           languages: java
+          # 查询级别：security-extended（推荐）
+          # - default: 基础安全检查
+          # - security-extended: 扩展安全检查（推荐，覆盖更多安全问题）
+          # - security-and-quality: 安全+代码质量检查（最全面但耗时更长）
+          queries: security-extended
 
+      # 第三步：自动构建项目（CodeQL 需要编译后的代码进行分析）
+      # 对于 Java/Maven 项目，会自动执行 mvn compile
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
 
+      # 第四步：执行 CodeQL 安全分析
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
-          # upload results as code scanning alerts in the repository
+          # 分析类别标识（用于在 Security 标签页中区分不同类型的扫描）
           category: "security"
+          # 上传结果到 GitHub Security 标签页
+          # 可以在仓库的 Security -> Code scanning alerts 中查看发现的问题
 

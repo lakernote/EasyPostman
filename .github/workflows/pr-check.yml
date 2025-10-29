@@ -1,7 +1,7 @@
 # 工作流名称：Pull Request 检查
 #
 # 作用：在 PR 合并前进行自动化质量检查，确保代码质量
-# 包括：构建测试、代码质量检查、PR 规范验证
+# 包括：构建测试、代码质量检查、PR 规范验证、跨平台打包和功能测试
 name: PR Check
 
 # 触发条件：当创建或更新 Pull Request 时
@@ -18,11 +18,44 @@ on:
     # - reopened: 关闭的 PR 重新打开时
     types: [opened, synchronize, reopened]
 
+# 环境变量：定义跨平台打包所需的配置
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
+  JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
+
 jobs:
-  # Job 1: 构建和测试
+  # Job 0: 获取版本号（供所有 Job 使用）
+  get-version:
+    name: Get Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  # Job 1: 构建和测试（生成跨平台 JAR）
   build:
     name: Build and Test
     runs-on: ubuntu-latest
+    needs: [get-version]
 
     steps:
       # 第一步：检出代码
@@ -33,13 +66,13 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'  # Eclipse Temurin (原 AdoptOpenJDK)
-          cache: 'maven'  # 自动缓存 Maven 依赖（无需单独的 cache action）
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
 
       # 第三步：使用 Maven 构建项目（跳过测试以加快构建速度）
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTests -B
 
       # 第四步：运行单元测试
       - name: Run tests
@@ -55,17 +88,344 @@ jobs:
           path: target/surefire-reports/
           retention-days: 3  # 测试报告保留 3 天即可（仅用于快速调试）
 
-      # 第六步：上传构建产物（JAR 文件）
-      - name: Upload build artifacts
+      # 第六步：上传 JAR 供后续打包任务使用
+      - name: Upload JAR for packaging
         uses: actions/upload-artifact@v4
-        if: success()  # 只有在构建成功时才上传
+        if: success()
         with:
-          name: easy-postman-jar  # 产物名称
-          path: target/*.jar  # 上传所有 JAR 文件
-          retention-days: 5  # PR 检查的 JAR 保留 5 天（仅用于验证）
-          # 注意：正式发布的构建产物在 release.yml 中，保留期更长
+          name: app-jar
+          path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
+          retention-days: 1  # 仅供当前工作流使用
 
-  # Job 2: 代码质量检查
+  # Job 2: Windows 打包和验证
+  test-windows-package:
+    name: Test Windows Package
+    runs-on: windows-latest
+    needs: [get-version, build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Download JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: |
+          Write-Host "📦 Installing WiX Toolset..."
+          choco install wixtoolset -y
+          if (Get-Command refreshenv -ErrorAction SilentlyContinue) { 
+            refreshenv 
+          } else {
+            $refreshScript = "$env:ChocolateyInstall\lib\refreshenv\tools\RefreshEnv.ps1"
+            if (Test-Path $refreshScript) { & $refreshScript }
+          }
+          Write-Host "✅ WiX installed"
+
+      - name: Create runtime with jlink
+        shell: pwsh
+        run: |
+          Write-Host "🔧 Creating Windows runtime..."
+          $runtimeDir = "target\runtime"
+          if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
+          
+          jlink `
+            --add-modules $env:JLINK_MODULES `
+            --strip-debug `
+            --no-header-files `
+            --no-man-pages `
+            --compress=2 `
+            --output $runtimeDir
+          Write-Host "✅ Runtime created"
+
+      - name: Prepare dist-input
+        shell: pwsh
+        run: |
+          $version = "${{ needs.get-version.outputs.version }}"
+          $jarName = "easy-postman-$version.jar"
+          
+          $distInputDir = "target\dist-input"
+          if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
+          New-Item -ItemType Directory -Path $distInputDir | Out-Null
+          
+          Copy-Item "target\$jarName" -Destination $distInputDir
+          Write-Host "✅ Prepared dist-input"
+
+      - name: Create Windows portable version
+        shell: pwsh
+        run: |
+          Write-Host "📦 Creating Windows portable version..."
+          $version = "${{ needs.get-version.outputs.version }}"
+          $jarName = "easy-postman-$version.jar"
+          
+          $javaOpts = $env:JAVA_OPTIONS -split '\|'
+          
+          # 创建 app-image（便携版，不需要安装）
+          jpackage `
+            --type app-image `
+            --input target\dist-input `
+            --main-jar $jarName `
+            --main-class com.laker.postman.App `
+            --runtime-image target\runtime `
+            --dest target `
+            --icon assets\win\EasyPostman.ico `
+            --name EasyPostman `
+            --app-version $version `
+            --vendor "Laker" `
+            --copyright "© 2025 Laker" `
+            --java-options $javaOpts[0] `
+            --java-options $javaOpts[1] `
+            --java-options $javaOpts[2] `
+            --java-options "-Djavax.accessibility.assistive_technologies="
+          
+          # 创建 .portable 标识文件
+          $appDir = "target\EasyPostman"
+          "This is a portable version" | Out-File -FilePath "$appDir\.portable" -Encoding UTF8
+          Write-Host "✅ Portable version created"
+
+      - name: Verify Windows package
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Verifying Windows package..."
+          $appDir = "target\EasyPostman"
+          $exeFile = "$appDir\EasyPostman.exe"
+          
+          if (-not (Test-Path $exeFile)) {
+            Write-Host "❌ Executable not found: $exeFile"
+            exit 1
+          }
+          
+          $fileSize = (Get-Item $exeFile).Length / 1KB
+          Write-Host "✅ Executable exists: $exeFile ($([math]::Round($fileSize, 2)) KB)"
+          
+          # 检查运行时目录
+          $runtimeDir = "$appDir\runtime"
+          if (Test-Path $runtimeDir) {
+            Write-Host "✅ Runtime directory exists"
+            $javaExe = "$runtimeDir\bin\java.exe"
+            if (Test-Path $javaExe) {
+              Write-Host "✅ Java runtime found"
+            }
+          }
+
+      - name: Run Windows smoke test
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
+          Write-Host "🧪 Running Windows smoke test..."
+          $exeFile = "target\EasyPostman\EasyPostman.exe"
+          
+          # 启动应用（后台运行，使用 headless 模式）
+          $env:JAVA_TOOL_OPTIONS = "-Djava.awt.headless=false"
+          $process = Start-Process -FilePath $exeFile -PassThru -WindowStyle Hidden -RedirectStandardError "stderr.log" -RedirectStandardOutput "stdout.log"
+          
+          if ($process) {
+            Write-Host "✅ Application started (PID: $($process.Id))"
+            
+            # 等待应用启动
+            Start-Sleep -Seconds 8
+            
+            # 检查进程是否还在运行
+            $runningProcess = Get-Process -Id $process.Id -ErrorAction SilentlyContinue
+            if ($runningProcess) {
+              Write-Host "✅ Application is running successfully"
+              Write-Host "   Process: $($runningProcess.ProcessName)"
+              Write-Host "   Memory: $([math]::Round($runningProcess.WorkingSet64 / 1MB, 2)) MB"
+              
+              # 停止应用
+              Stop-Process -Id $process.Id -Force
+              Start-Sleep -Seconds 2
+              Write-Host "✅ Application stopped"
+            } else {
+              Write-Host "❌ Application crashed or exited immediately"
+              if (Test-Path "stderr.log") {
+                Write-Host "=== Error Log ==="
+                Get-Content "stderr.log"
+              }
+              exit 1
+            }
+          } else {
+            Write-Host "❌ Failed to start application"
+            exit 1
+          }
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-test-logs
+          path: |
+            *.log
+            target/EasyPostman/
+          retention-days: 3
+
+  # Job 3: macOS 打包和验证
+  test-macos-package:
+    name: Test macOS Package
+    runs-on: macos-latest
+    needs: [get-version, build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Download JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Create runtime with jlink
+        run: |
+          echo "🔧 Creating macOS runtime..."
+          rm -rf target/runtime
+          
+          jlink \
+            --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+          echo "✅ Runtime created"
+
+      - name: Prepare dist-input
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          JAR_NAME="easy-postman-${VERSION}.jar"
+          
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          
+          cp "target/${JAR_NAME}" target/dist-input/
+          echo "✅ Prepared dist-input"
+
+      - name: Create macOS app bundle
+        run: |
+          echo "📦 Creating macOS app bundle..."
+          VERSION="${{ needs.get-version.outputs.version }}"
+          JAR_NAME="easy-postman-${VERSION}.jar"
+          
+          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
+          
+          jpackage \
+            --type app-image \
+            --input target/dist-input \
+            --main-jar "${JAR_NAME}" \
+            --main-class com.laker.postman.App \
+            --runtime-image target/runtime \
+            --dest target \
+            --icon assets/mac/EasyPostman.icns \
+            --name EasyPostman \
+            --app-version "${VERSION}" \
+            --vendor "Laker" \
+            --copyright "© 2025 Laker" \
+            --java-options "${JAVA_OPTS[0]}" \
+            --java-options "${JAVA_OPTS[1]}" \
+            --java-options "${JAVA_OPTS[2]}"
+          
+          echo "✅ App bundle created"
+
+      - name: Verify macOS package
+        run: |
+          echo "🔍 Verifying macOS package..."
+          APP_PATH="target/EasyPostman.app"
+          
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ App bundle not found: $APP_PATH"
+            exit 1
+          fi
+          
+          echo "✅ App bundle exists: $APP_PATH"
+          
+          # 检查可执行文件
+          EXE_PATH="$APP_PATH/Contents/MacOS/EasyPostman"
+          if [ -f "$EXE_PATH" ]; then
+            echo "✅ Executable exists: $EXE_PATH"
+            ls -lh "$EXE_PATH"
+          else
+            echo "❌ Executable not found"
+            exit 1
+          fi
+          
+          # 检查 Info.plist
+          PLIST_PATH="$APP_PATH/Contents/Info.plist"
+          if [ -f "$PLIST_PATH" ]; then
+            echo "✅ Info.plist exists"
+            plutil -p "$PLIST_PATH" | head -20
+          fi
+          
+          # 检查运行时
+          RUNTIME_PATH="$APP_PATH/Contents/runtime"
+          if [ -d "$RUNTIME_PATH" ]; then
+            echo "✅ Runtime directory exists"
+            ls -la "$RUNTIME_PATH/Contents/Home/bin/" | head -10
+          fi
+
+      - name: Run macOS smoke test
+        timeout-minutes: 2
+        run: |
+          echo "🧪 Running macOS smoke test..."
+          APP_PATH="target/EasyPostman.app"
+          EXE_PATH="$APP_PATH/Contents/MacOS/EasyPostman"
+          
+          # 启动应用（后台运行）
+          "$EXE_PATH" > stdout.log 2> stderr.log &
+          APP_PID=$!
+          
+          echo "✅ Application started (PID: $APP_PID)"
+          
+          # 等待应用启动
+          sleep 8
+          
+          # 检查进程是否还在运行
+          if ps -p $APP_PID > /dev/null; then
+            echo "✅ Application is running successfully"
+            ps -p $APP_PID -o pid,comm,rss
+            
+            # 停止应用
+            kill -TERM $APP_PID 2>/dev/null || true
+            sleep 2
+            
+            # 强制终止（如果还在运行）
+            if ps -p $APP_PID > /dev/null 2>&1; then
+              kill -9 $APP_PID 2>/dev/null || true
+            fi
+            
+            echo "✅ Application stopped"
+          else
+            echo "❌ Application crashed or exited immediately"
+            echo "=== Error Log ==="
+            cat stderr.log || true
+            exit 1
+          fi
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-test-logs
+          path: |
+            *.log
+          retention-days: 3
+
+  # Job 4: 代码质量检查
   code-quality:
     name: Code Quality Check
     runs-on: ubuntu-latest
@@ -178,11 +538,11 @@ jobs:
             echo "✅ No merge conflicts detected"
           fi
 
-  # Job 4: 汇总检查结果
+  # Job 5: 汇总检查结果
   summary:
     name: Check Summary
     runs-on: ubuntu-latest
-    needs: [build, code-quality, pr-validation]  # 依赖前面三个 Job
+    needs: [build, test-windows-package, test-macos-package, code-quality, pr-validation]  # 依赖所有检查 Job
     if: always()  # 无论前面的 Job 成功或失败都执行
 
     steps:
@@ -201,9 +561,27 @@ jobs:
           
           # Build 结果
           if [[ "${{ needs.build.result }}" == "success" ]]; then
-            echo "| 🏗️ 构建和测试 | ✅ 通过 | 构建成功，测试通过 |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🏗️ 构建和测试 | ✅ 通过 | JAR 构建成功，单元测试通过 |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 🏗️ 构建和测试 | ❌ 失败 | 请检查构建或测试日志 |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Windows 打包测试结果
+          if [[ "${{ needs.test-windows-package.result }}" == "success" ]]; then
+            echo "| 🪟 Windows 打包 | ✅ 通过 | 便携版打包成功，启动测试通过 |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.test-windows-package.result }}" == "skipped" ]]; then
+            echo "| 🪟 Windows 打包 | ⏭️ 跳过 | 因前置任务失败而跳过 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🪟 Windows 打包 | ❌ 失败 | 打包或启动测试失败 |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # macOS 打包测试结果
+          if [[ "${{ needs.test-macos-package.result }}" == "success" ]]; then
+            echo "| 🍎 macOS 打包 | ✅ 通过 | App bundle 打包成功，启动测试通过 |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.test-macos-package.result }}" == "skipped" ]]; then
+            echo "| 🍎 macOS 打包 | ⏭️ 跳过 | 因前置任务失败而跳过 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🍎 macOS 打包 | ❌ 失败 | 打包或启动测试失败 |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # Code Quality 结果
@@ -224,9 +602,18 @@ jobs:
           
           # 根据检查结果给出不同的消息
           if [[ "${{ needs.build.result }}" == "success" ]] && \
+             [[ "${{ needs.test-windows-package.result }}" == "success" ]] && \
+             [[ "${{ needs.test-macos-package.result }}" == "success" ]] && \
              [[ "${{ needs.code-quality.result }}" == "success" ]] && \
              [[ "${{ needs.pr-validation.result }}" == "success" ]]; then
             echo "### ✅ 所有检查通过！" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 恭喜！此 PR 已通过以下验证：" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ 跨平台 JAR 构建" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Windows 应用打包和启动测试" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ macOS 应用打包和启动测试" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ 代码质量检查" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ PR 规范验证" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "此 PR 已准备好进行代码审查和合并。" >> $GITHUB_STEP_SUMMARY
           else
@@ -237,11 +624,14 @@ jobs:
             
             # 列出失败的检查项
             [[ "${{ needs.build.result }}" != "success" ]] && echo "- 🏗️ 构建和测试失败" >> $GITHUB_STEP_SUMMARY
+            [[ "${{ needs.test-windows-package.result }}" == "failure" ]] && echo "- 🪟 Windows 打包/启动测试失败" >> $GITHUB_STEP_SUMMARY
+            [[ "${{ needs.test-macos-package.result }}" == "failure" ]] && echo "- 🍎 macOS 打包/启动测试失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.code-quality.result }}" != "success" ]] && echo "- 📊 代码质量检查失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.pr-validation.result }}" != "success" ]] && echo "- 📋 PR 规范验证失败" >> $GITHUB_STEP_SUMMARY
             
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "💡 **提示**: 点击上方失败的 Job 查看详细日志" >> $GITHUB_STEP_SUMMARY
+            echo "📝 **说明**: 打包测试确保应用在目标平台能正常启动运行" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 

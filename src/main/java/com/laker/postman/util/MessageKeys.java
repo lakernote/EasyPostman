@@ -464,6 +464,7 @@ public final class MessageKeys {
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_TITLE = "collections.dialog.multi_select.title";
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_EMPTY = "collections.dialog.multi_select.empty";
     public static final String COLLECTIONS_DELETE_CONFIRM = "collections.delete.confirm";
+    public static final String COLLECTIONS_DELETE_BATCH_CONFIRM = "collections.delete.batch_confirm";
     public static final String COLLECTIONS_DELETE_CONFIRM_TITLE = "collections.delete.confirm_title";
 
     // ============ 功能测试执行结果相关 ============

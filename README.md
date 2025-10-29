@@ -29,7 +29,11 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 📦 **Download**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
-    - 🌏 China Mirror: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+    - 🌏 **China Mirror**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+        - ⚠️ Due to storage limitations, China mirror only provides:
+            - `EasyPostman-{version}-macos-arm64.dmg`
+            - `EasyPostman-{version}-windows-x64.msi`
+        - 💡 For other platforms, please visit GitHub Releases
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{version}-macos-arm64.dmg`
     - 🍏 Mac (Intel Chip): `EasyPostman-{version}-macos-x86_64.dmg`
     - 🪟 Windows: 

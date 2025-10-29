@@ -27,7 +27,11 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 📦 **下载地址**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
-    - 🌏 国内镜像: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+    - 🌏 **国内镜像**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
+        - ⚠️ 由于存储空间限制，国内镜像仅提供以下版本：
+            - `EasyPostman-{版本号}-macos-arm64.dmg`
+            - `EasyPostman-{版本号}-windows-x64.msi`
+        - 💡 其他平台版本请访问 GitHub Releases 下载
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{版本号}-macos-arm64.dmg`
     - 🍏 Mac (Intel 芯片): `EasyPostman-{版本号}-macos-x86_64.dmg`
     - 🪟 Windows: 

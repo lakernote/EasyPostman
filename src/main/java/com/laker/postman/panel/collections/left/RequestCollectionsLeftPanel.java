@@ -110,8 +110,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         };
         // 不显示根节点
         requestTree.setRootVisible(false);
-        // 让 JTree 组件显示根节点的“展开/收起”小三角（即树形结构的手柄）。
+        // 让 JTree 组件显示根节点的"展开/收起"小三角（即树形结构的手柄）。
         requestTree.setShowsRootHandles(true);
+        // 设置树支持多选（支持批量删除）
+        requestTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         // 设置树的字体和行高
         requestTree.setCellRenderer(new RequestTreeCellRenderer());
         requestTree.setRowHeight(28);
@@ -179,7 +181,12 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     int y = e.getY();
                     int row = requestTree.getClosestRowForLocation(x, y);
                     if (row != -1) {
-                        requestTree.setSelectionRow(row);
+                        TreePath clickedPath = requestTree.getPathForRow(row);
+                        // 如果右键点击的节点不在当前选中的节点中，则替换选择
+                        // 如果已经在选中的节点中，则保持多选状态
+                        if (clickedPath != null && !requestTree.isPathSelected(clickedPath)) {
+                            requestTree.setSelectionRow(row);
+                        }
                     } else {
                         requestTree.clearSelection(); // 没有节点时取消选中
                     }
@@ -413,18 +420,39 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     /**
      * 删除选中的项（分组或请求）
+     * 支持批量删除多个选中项
      * 支持通过 Delete/Backspace 快捷键或右键菜单调用
      */
     private void deleteSelectedItem() {
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-        if (selectedNode == null || selectedNode.getParent() == null) {
+        TreePath[] selectedPaths = requestTree.getSelectionPaths();
+        if (selectedPaths == null || selectedPaths.length == 0) {
+            return;
+        }
+
+        // 过滤掉根节点和没有父节点的节点
+        List<DefaultMutableTreeNode> nodesToDelete = new ArrayList<>();
+        for (TreePath path : selectedPaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            if (node != null && node != rootTreeNode && node.getParent() != null) {
+                nodesToDelete.add(node);
+            }
+        }
+
+        if (nodesToDelete.isEmpty()) {
             return;
         }
 
         // 删除前弹出确认提示
+        String confirmMessage;
+        if (nodesToDelete.size() == 1) {
+            confirmMessage = I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM);
+        } else {
+            confirmMessage = I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_BATCH_CONFIRM, nodesToDelete.size());
+        }
+
         int confirm = JOptionPane.showConfirmDialog(
                 this,
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM),
+                confirmMessage,
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM_TITLE),
                 JOptionPane.YES_NO_OPTION
         );
@@ -432,44 +460,53 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             return;
         }
 
-        // 先关闭相关Tab
-        Object userObj = selectedNode.getUserObject();
+        // 保存展开状态
+        List<TreePath> expandedPaths = saveExpandedPaths();
+
         RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
 
-        if (userObj instanceof Object[] obj) {
-            if (REQUEST.equals(obj[0])) {
-                // 删除请求：关闭所有与该请求id匹配的Tab
-                HttpRequestItem item = (HttpRequestItem) obj[1];
-                for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
-                    Component comp = tabbedPane.getComponentAt(i);
-                    if (comp instanceof RequestEditSubPanel subPanel) {
-                        HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                        if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                            tabbedPane.remove(i);
+        // 批量关闭相关Tab
+        for (DefaultMutableTreeNode node : nodesToDelete) {
+            Object userObj = node.getUserObject();
+            if (userObj instanceof Object[] obj) {
+                if (REQUEST.equals(obj[0])) {
+                    // 删除请求：关闭所有与该请求id匹配的Tab
+                    HttpRequestItem item = (HttpRequestItem) obj[1];
+                    for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
+                        Component comp = tabbedPane.getComponentAt(i);
+                        if (comp instanceof RequestEditSubPanel subPanel) {
+                            HttpRequestItem tabItem = subPanel.getCurrentRequest();
+                            if (tabItem != null && item.getId().equals(tabItem.getId())) {
+                                tabbedPane.remove(i);
+                            }
                         }
                     }
-                }
-                if (tabbedPane.getTabCount() > 1) {
-                    tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
-                }
-            } else if (GROUP.equals(obj[0])) {
-                // 删除分组：递归关闭该组下所有请求Tab
-                closeTabsForGroup(selectedNode, tabbedPane);
-                if (tabbedPane.getTabCount() > 1) {
-                    tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
+                } else if (GROUP.equals(obj[0])) {
+                    // 删除分组：递归关闭该组下所有请求Tab
+                    closeTabsForGroup(node, tabbedPane);
                 }
             }
         }
 
-        // 删除树节点
-        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
-        parent.remove(selectedNode);
+        // 批量删除树节点
+        for (DefaultMutableTreeNode node : nodesToDelete) {
+            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+            if (parent != null) {
+                parent.remove(node);
+            }
+        }
+
         treeModel.reload();
 
-        // 删除后保持父节点展开
-        TreePath parentPath = new TreePath(parent.getPath());
-        requestTree.expandPath(parentPath);
+        // 恢复展开状态
+        restoreExpandedPaths(expandedPaths);
+
+        // 调整Tab选中状态
+        if (tabbedPane.getTabCount() > 1) {
+            tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
+        }
+
         saveRequestGroups();
     }
 
@@ -1138,5 +1175,129 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 自动打开新创建的请求
         SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(defaultRequest);
+    }
+
+    /**
+     * 保存所有展开的路径
+     * @return 所有展开路径的列表
+     */
+    private List<TreePath> saveExpandedPaths() {
+        List<TreePath> expandedPaths = new ArrayList<>();
+        int rowCount = requestTree.getRowCount();
+        for (int i = 0; i < rowCount; i++) {
+            TreePath path = requestTree.getPathForRow(i);
+            if (path != null && requestTree.isExpanded(path)) {
+                expandedPaths.add(path);
+            }
+        }
+        return expandedPaths;
+    }
+
+    /**
+     * 恢复展开的路径
+     * 根据节点的userObject匹配来恢复展开状态
+     * @param expandedPaths 之前保存的展开路径列表
+     */
+    private void restoreExpandedPaths(List<TreePath> expandedPaths) {
+        if (expandedPaths == null || expandedPaths.isEmpty()) {
+            return;
+        }
+
+        for (TreePath oldPath : expandedPaths) {
+            // 根据路径中的节点userObject找到新的路径
+            TreePath newPath = findMatchingPath(oldPath);
+            if (newPath != null) {
+                requestTree.expandPath(newPath);
+            }
+        }
+    }
+
+    /**
+     * 根据旧路径的节点userObject查找匹配的新路径
+     * @param oldPath 旧的树路径
+     * @return 匹配的新路径，如果未找到返回null
+     */
+    private TreePath findMatchingPath(TreePath oldPath) {
+        Object[] oldNodes = oldPath.getPath();
+        if (oldNodes.length == 0) {
+            return null;
+        }
+
+        // 从根节点开始匹配
+        DefaultMutableTreeNode currentNode = rootTreeNode;
+        List<DefaultMutableTreeNode> matchedNodes = new ArrayList<>();
+        matchedNodes.add(currentNode);
+
+        // 跳过根节点，从第一个子节点开始匹配
+        for (int i = 1; i < oldNodes.length; i++) {
+            DefaultMutableTreeNode oldNode = (DefaultMutableTreeNode) oldNodes[i];
+            Object oldUserObj = oldNode.getUserObject();
+
+            // 在当前节点的子节点中查找匹配的节点
+            DefaultMutableTreeNode matchedChild = null;
+            for (int j = 0; j < currentNode.getChildCount(); j++) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(j);
+                if (isSameNode(child.getUserObject(), oldUserObj)) {
+                    matchedChild = child;
+                    break;
+                }
+            }
+
+            if (matchedChild == null) {
+                // 没有找到匹配的子节点，停止匹配
+                return null;
+            }
+
+            matchedNodes.add(matchedChild);
+            currentNode = matchedChild;
+        }
+
+        return new TreePath(matchedNodes.toArray());
+    }
+
+    /**
+     * 判断两个节点的userObject是否表示同一个节点
+     * @param obj1 第一个userObject
+     * @param obj2 第二个userObject
+     * @return 是否表示同一个节点
+     */
+    private boolean isSameNode(Object obj1, Object obj2) {
+        if (obj1 == obj2) {
+            return true;
+        }
+        if (obj1 == null || obj2 == null) {
+            return false;
+        }
+
+        // 根节点比较
+        if (ROOT.equals(obj1) && ROOT.equals(obj2)) {
+            return true;
+        }
+
+        // 数组类型节点比较
+        if (obj1 instanceof Object[] arr1 && obj2 instanceof Object[] arr2) {
+            if (arr1.length < 2 || arr2.length < 2) {
+                return false;
+            }
+
+            String type1 = (String) arr1[0];
+            String type2 = (String) arr2[0];
+
+            if (!type1.equals(type2)) {
+                return false;
+            }
+
+            if (GROUP.equals(type1)) {
+                // 分组节点按名称比较
+                return arr1[1].equals(arr2[1]);
+            } else if (REQUEST.equals(type1)) {
+                // 请求节点按ID比较
+                HttpRequestItem item1 = (HttpRequestItem) arr1[1];
+                HttpRequestItem item2 = (HttpRequestItem) arr2[1];
+                return item1.getId().equals(item2.getId());
+            }
+        }
+
+        return false;
     }
 }

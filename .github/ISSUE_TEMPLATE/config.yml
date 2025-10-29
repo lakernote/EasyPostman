@@ -4,9 +4,9 @@ contact_links:
     url: https://github.com/lakernote/easy-postman/discussions
     about: 使用问答、功能建议讨论、分享经验 | Q&A, feature discussions, and sharing experiences
   - name: 📖 中文文档 | Chinese Documentation
-    url: https://github.com/lakernote/easy-postman/blob/main/README_zh.md
+    url: https://github.com/lakernote/easy-postman/blob/master/README_zh.md
     about: 查看中文文档 | View Chinese documentation
   - name: 📖 English Documentation
-    url: https://github.com/lakernote/easy-postman/blob/main/README.md
+    url: https://github.com/lakernote/easy-postman/blob/master/README.md
     about: View English documentation
 

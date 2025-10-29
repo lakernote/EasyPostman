@@ -256,27 +256,27 @@
 
 **标签分类**:
 
-1. **问题类型** (Issue Types)
+1. **问题类型**
    - `bug` - Bug 报告
    - `enhancement` - 功能增强
    - `question` - 问题咨询
    - `documentation` - 文档相关
 
-2. **优先级** (Priority)
+2. **优先级**
    - `priority-high` - 高优先级
    - `priority-medium` - 中优先级
    - `priority-low` - 低优先级
 
-3. **状态** (Status)
-   - `需要确认 | need-confirm` - 需要更多信息
-   - `需要讨论 | need-discussion` - 需要社区讨论
-   - `进行中 | in-progress` - 正在处理
-   - `已解决 | resolved` - 已解决
-   - `不会修复 | wontfix` - 不会处理
+3. **状态**
+   - `需要确认  need-confirm` - 需要更多信息
+   - `需要讨论  need-discussion` - 需要社区讨论
+   - `进行中  in-progress` - 正在处理
+   - `已解决  resolved` - 已解决
+   - `不会修复  wontfix` - 不会处理
    - `duplicate` - 重复问题
    - `invalid` - 无效问题
 
-4. **组件标签** (Component Labels)
+4. **组件标签**
    - `ui` - UI 相关
    - `api` - API 调试相关
    - `performance` - 性能测试相关
@@ -287,16 +287,16 @@
    - `import-export` - 导入导出
    - `git` - Git 集成
 
-5. **平台标签** (Platform Labels)
+5. **平台标签**
    - `windows` - Windows 平台
    - `macos` - macOS 平台
    - `linux` - Linux 平台
 
-6. **语言标签** (Language)
+6. **语言标签**
    - `chinese` - 中文
    - `english` - 英文
 
-7. **特殊标签** (Special)
+7. **特殊标签**
    - `good first issue` - 适合新手
    - `help wanted` - 需要帮助
    - `security` - 安全相关
@@ -384,5 +384,4 @@
 ---
 
 **感谢你为 EasyPostman 做出贡献！** 🎉
-**Thank you for contributing to EasyPostman!** 🎉
 

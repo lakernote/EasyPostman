@@ -6,6 +6,14 @@ body:
   - type: markdown
     attributes:
       value: |
+        ## 💡 提示 | Tip
+        
+        **对于一般性问题，建议优先使用 [讨论区](https://github.com/lakernote/easy-postman/discussions)**，可以更快得到回复和社区帮助！
+        
+        **For general questions, we recommend using [Discussions](https://github.com/lakernote/easy-postman/discussions)** for faster responses and community help!
+        
+        ---
+        
         欢迎提问！在提交前，请先查看 [FAQ](https://github.com/lakernote/easy-postman#-faq) 和 [文档](https://github.com/lakernote/easy-postman#readme)。
         Welcome! Before submitting, please check the [FAQ](https://github.com/lakernote/easy-postman#-faq) and [documentation](https://github.com/lakernote/easy-postman#readme).
 

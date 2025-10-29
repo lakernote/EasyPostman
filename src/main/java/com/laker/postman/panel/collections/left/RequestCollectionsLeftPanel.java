@@ -138,13 +138,22 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
+                TreePath[] selectedPaths = requestTree.getSelectionPaths();
+                if (selectedPaths == null || selectedPaths.length == 0) {
+                    return;
+                }
+
+                boolean isMultipleSelection = selectedPaths.length > 1;
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+
                 if (selectedNode != null && selectedNode != rootTreeNode) {
                     if (e.getKeyCode() == KeyEvent.VK_F2) {
-                        // F2 重命名
-                        renameSelectedItem();
+                        // F2 重命名 - 仅支持单选
+                        if (!isMultipleSelection) {
+                            renameSelectedItem();
+                        }
                     } else if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                        // Delete 或 Backspace 删除（Mac 上常用 Backspace）
+                        // Delete 或 Backspace 删除（Mac 上常用 Backspace） - 支持多选
                         deleteSelectedItem();
                     }
                 }
@@ -199,6 +208,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
                 Object userObj = selectedNode != null ? selectedNode.getUserObject() : null;
 
+                // 检查是否多选
+                TreePath[] selectedPaths = requestTree.getSelectionPaths();
+                boolean isMultipleSelection = selectedPaths != null && selectedPaths.length > 1;
+
                 // 无论何时都提供"创建root分组"的选项
                 JMenuItem addRootGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_ROOT_GROUP),
                         new FlatSVGIcon("icons/group.svg", 16, 16));
@@ -219,29 +232,39 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     JMenuItem addRequestItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
                             new FlatSVGIcon("icons/request.svg", 16, 16));
                     addRequestItem.addActionListener(e -> showAddRequestDialog(selectedNode));
+                    // 多选时禁用
+                    addRequestItem.setEnabled(!isMultipleSelection);
                     menu.add(addRequestItem);
 
                     // 新增分组放在第二位
                     JMenuItem addGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
                             new FlatSVGIcon("icons/group.svg", 16, 16));
                     addGroupItem.addActionListener(e -> addGroupUnderSelected());
+                    // 多选时禁用
+                    addGroupItem.setEnabled(!isMultipleSelection);
                     menu.add(addGroupItem);
 
                     JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
                     duplicateGroupItem.addActionListener(e -> duplicateSelectedGroup());
+                    // 多选时禁用
+                    duplicateGroupItem.setEnabled(!isMultipleSelection);
                     menu.add(duplicateGroupItem);
 
                     // 导出为Postman
                     JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN),
                             new FlatSVGIcon("icons/export.svg", 16, 16));
                     exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
+                    // 多选时禁用
+                    exportPostmanItem.setEnabled(!isMultipleSelection);
                     menu.add(exportPostmanItem);
 
                     // 转移到其他工作区
                     JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_MOVE_TO_WORKSPACE),
                             new FlatSVGIcon("icons/workspace.svg", 16, 16));
                     moveToWorkspaceItem.addActionListener(e -> moveCollectionToWorkspace(selectedNode));
+                    // 多选时禁用
+                    moveToWorkspaceItem.setEnabled(!isMultipleSelection);
                     menu.add(moveToWorkspaceItem);
 
                     menu.addSeparator();
@@ -251,11 +274,16 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     JMenuItem duplicateItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
                     duplicateItem.addActionListener(e -> duplicateSelectedRequest());
+                    // 多选时禁用
+                    duplicateItem.setEnabled(!isMultipleSelection);
                     menu.add(duplicateItem);
+
                     // 复制为cURL命令
                     JMenuItem copyAsCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL),
                             new FlatSVGIcon("icons/curl.svg", 16, 16));
                     copyAsCurlItem.addActionListener(e -> copySelectedRequestAsCurl());
+                    // 多选时禁用
+                    copyAsCurlItem.setEnabled(!isMultipleSelection);
                     menu.add(copyAsCurlItem);
                     menu.addSeparator();
                 }
@@ -265,13 +293,17 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             new FlatSVGIcon("icons/refresh.svg", 16, 16));
                     // 设置 F2 快捷键显示
                     renameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
+                    renameItem.addActionListener(e -> RequestCollectionsLeftPanel.this.renameSelectedItem());
+                    // 多选时禁用重命名
+                    renameItem.setEnabled(!isMultipleSelection);
+                    menu.add(renameItem);
+
                     JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
                             new FlatSVGIcon("icons/close.svg", 16, 16));
                     // 设置 Delete 快捷键显示
                     deleteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
-                    renameItem.addActionListener(e -> RequestCollectionsLeftPanel.this.renameSelectedItem());
                     deleteItem.addActionListener(e -> RequestCollectionsLeftPanel.this.deleteSelectedItem());
-                    menu.add(renameItem);
+                    // 删除操作始终可用（支持多选）
                     menu.add(deleteItem);
                 }
                 menu.show(requestTree, x, y);

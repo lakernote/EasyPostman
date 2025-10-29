@@ -324,7 +324,8 @@ public class SettingManager {
         if (val != null && (val.equals("github") || val.equals("gitee") || val.equals("auto"))) {
             return val;
         }
-        return "gitee";
+        // 默认自动选择
+        return "auto";
     }
 
     public static void setUpdateSourcePreference(String preference) {

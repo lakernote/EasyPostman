@@ -332,9 +332,9 @@ jobs:
               exit 1
             }
           } else {
-            echo "❌ Failed to start application"
+            Write-Host "❌ Failed to start application"
             exit 1
-          fi
+          }
 
   # Job 3: macOS 打包和验证
   test-macos-package:

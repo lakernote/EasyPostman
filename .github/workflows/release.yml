@@ -124,43 +124,30 @@ jobs:
           
           Copy-Item "target\$jarName" -Destination $distInputDir
 
-      - name: Create WiX configuration to remember installation path（创建 WiX 配置以记住安装路径）
+      - name: Copy WiX configuration to remember installation path（复制 WiX 配置以记住安装路径）
         shell: pwsh
         run: |
           $resourceDir = "target\jpackage-resources"
           if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
           
-          $wixConfig = @"
-          <?xml version="1.0" encoding="UTF-8"?>
-          <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-            <Fragment>
-              <!-- Read previous installation directory from registry -->
-              <Property Id="INSTALLDIR">
-                <RegistrySearch Id="RememberInstallDir"
-                                Type="raw"
-                                Root="HKCU"
-                                Key="Software\Laker\EasyPostman"
-                                Name="InstallDir" />
-              </Property>
+          # Copy unified WiX configuration file
+          $wixConfig = "build\wix-install-path-memory.wxs"
+          if (-not (Test-Path $wixConfig)) {
+            Write-Host "❌ WiX configuration file not found: $wixConfig"
+            exit 1
+          }
           
-              <!-- Component to save installation directory to registry -->
-              <DirectoryRef Id="INSTALLDIR">
-                <Component Id="RememberInstallDirComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d">
-                  <RegistryKey Root="HKCU" Key="Software\Laker\EasyPostman">
-                    <RegistryValue Type="string" Name="InstallDir" Value="[INSTALLDIR]" KeyPath="yes"/>
-                  </RegistryKey>
-                </Component>
-              </DirectoryRef>
+          Copy-Item $wixConfig -Destination "$resourceDir\main.wxs"
+          Write-Host "✅ WiX configuration copied (install path memory enabled)"
           
-              <ComponentGroup Id="AppComponents">
-                <ComponentRef Id="RememberInstallDirComponent"/>
-              </ComponentGroup>
-            </Fragment>
-          </Wix>
-          "@
-          
-          $wixConfig | Out-File -FilePath "$resourceDir\main.wxs" -Encoding UTF8
-          Write-Host "✅ WiX configuration created to remember installation path"
+          # Verify the copied file
+          if (Test-Path "$resourceDir\main.wxs") {
+            $fileSize = (Get-Item "$resourceDir\main.wxs").Length
+            Write-Host "✅ WiX config file size: $fileSize bytes"
+          } else {
+            Write-Host "❌ Failed to copy WiX config file"
+            exit 1
+          }
 
       - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
         shell: pwsh

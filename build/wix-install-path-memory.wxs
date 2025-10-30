@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WiX Configuration for Installation Path Memory Feature
+  功能：记住用户上次选择的安装路径
+
+  工作原理：
+  1. RegistrySearch: 从注册表读取上次的安装路径
+  2. RegistryValue: 将当前安装路径保存到注册表
+  3. 注册表位置: HKCU\Software\Laker\EasyPostman\InstallDir
+
+  使用方法：
+  - 本地构建: build/win.bat 会自动复制此文件
+  - CI/CD: .github/workflows/*.yml 会复制此文件
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <!-- Read previous installation directory from registry -->
+    <!-- Secure="yes" ensures the property can be used with elevated privileges -->
+    <!-- Type="directory" ensures the path is valid and properly formatted -->
+    <Property Id="INSTALLDIR" Secure="yes">
+      <RegistrySearch Id="RememberInstallDir"
+                      Type="directory"
+                      Root="HKCU"
+                      Key="Software\Laker\EasyPostman"
+                      Name="InstallDir" />
+    </Property>
+
+    <!-- Component to save installation directory to registry -->
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="RememberInstallDirComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d">
+        <RegistryKey Root="HKCU" Key="Software\Laker\EasyPostman">
+          <RegistryValue Type="string" Name="InstallDir" Value="[INSTALLDIR]" KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Add our component to the main feature -->
+    <ComponentGroup Id="RememberInstallDirGroup">
+      <ComponentRef Id="RememberInstallDirComponent"/>
+    </ComponentGroup>
+
+    <FeatureRef Id="DefaultFeature">
+      <ComponentRef Id="RememberInstallDirComponent"/>
+    </FeatureRef>
+  </Fragment>
+</Wix>
+

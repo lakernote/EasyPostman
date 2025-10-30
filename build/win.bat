@@ -81,41 +81,26 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Step 4: Create WiX configuration to remember installation path
+:: Step 4: Copy WiX configuration to remember installation path
 set RESOURCE_DIR=target\jpackage-resources
 if not exist "%RESOURCE_DIR%" mkdir "%RESOURCE_DIR%"
 
-:: Create a WiX fragment to save and retrieve installation directory from registry
-(
-echo ^<?xml version="1.0" encoding="UTF-8"?^>
-echo ^<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"^>
-echo   ^<Fragment^>
-echo     ^<!-- Read previous installation directory from registry --^>
-echo     ^<Property Id="INSTALLDIR"^>
-echo       ^<RegistrySearch Id="RememberInstallDir"
-echo                       Type="raw"
-echo                       Root="HKCU"
-echo                       Key="Software\Laker\EasyPostman"
-echo                       Name="InstallDir" /^>
-echo     ^</Property^>
-echo.
-echo     ^<!-- Component to save installation directory to registry --^>
-echo     ^<DirectoryRef Id="INSTALLDIR"^>
-echo       ^<Component Id="RememberInstallDirComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d"^>
-echo         ^<RegistryKey Root="HKCU" Key="Software\Laker\EasyPostman"^>
-echo           ^<RegistryValue Type="string" Name="InstallDir" Value="[INSTALLDIR]" KeyPath="yes"/^>
-echo         ^</RegistryKey^>
-echo       ^</Component^>
-echo     ^</DirectoryRef^>
-echo.
-echo     ^<ComponentGroup Id="AppComponents"^>
-echo       ^<ComponentRef Id="RememberInstallDirComponent"/^>
-echo     ^</ComponentGroup^>
-echo   ^</Fragment^>
-echo ^</Wix^>
-) > "%RESOURCE_DIR%\main.wxs"
+:: Copy unified WiX configuration file
+set WIX_CONFIG=build\wix-install-path-memory.wxs
+if not exist "%WIX_CONFIG%" (
+    echo ERROR: WiX configuration file not found: %WIX_CONFIG%
+    pause
+    exit /b 1
+)
 
-echo WiX configuration created to remember installation path
+copy "%WIX_CONFIG%" "%RESOURCE_DIR%\main.wxs"
+if errorlevel 1 (
+    echo Failed to copy WiX configuration file
+    pause
+    exit /b 1
+)
+
+echo WiX configuration copied (install path memory enabled)
 
 :: Step 5: Package with jpackage
 if not exist "%ICON_DIR%" (

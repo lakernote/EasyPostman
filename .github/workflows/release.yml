@@ -5,8 +5,8 @@ permissions:
 
 on:
   release:
-    types: [created]  # 当创建新的 Release 时触发
-  workflow_dispatch: {}  # 支持手动触发
+    types: [ created ]  # 当创建新的 Release 时触发
+  workflow_dispatch: { }  # 支持手动触发
 
 env:
   JAVA_VERSION: '17'
@@ -43,7 +43,7 @@ jobs:
   build-jar-artifact:
     name: Build Fat JAR（构建跨平台 JAR）
     runs-on: ubuntu-latest
-    needs: [get-version]
+    needs: [ get-version ]
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
   build-windows:
     name: Build Windows MSI（构建 Windows 安装包）
     runs-on: windows-latest
-    needs: [get-version, build-jar-artifact]
+    needs: [ get-version, build-jar-artifact ]
 
     steps:
       - name: Checkout（检出代码）
@@ -124,31 +124,6 @@ jobs:
           
           Copy-Item "target\$jarName" -Destination $distInputDir
 
-      - name: Copy WiX configuration to remember installation path（复制 WiX 配置以记住安装路径）
-        shell: pwsh
-        run: |
-          $resourceDir = "target\jpackage-resources"
-          if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
-          
-          # Copy as additional WiX fragment file (NOT replacing main.wxs)
-          # jpackage will automatically compile all .wxs files in resource-dir
-          $wixConfig = "build\wix-install-path-memory.wxs"
-          if (-not (Test-Path $wixConfig)) {
-            Write-Host "❌ WiX configuration file not found: $wixConfig"
-            exit 1
-          }
-          
-          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
-          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs (install path memory enabled)"
-          
-          # Verify the copied file
-          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
-            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
-            Write-Host "✅ WiX fragment file size: $fileSize bytes"
-          } else {
-            Write-Host "❌ Failed to copy WiX fragment file"
-            exit 1
-          }
 
       - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
         shell: pwsh
@@ -183,7 +158,6 @@ jobs:
             --win-per-user-install `
             --win-menu-group "EasyTools" `
             --win-help-url "https://gitee.com/lakernote/easy-postman" `
-            --resource-dir "target\jpackage-resources" `
             --java-options $javaOpts[0] `
             --java-options $javaOpts[1] `
             --java-options $javaOpts[2] `
@@ -226,7 +200,7 @@ jobs:
   build-windows-portable:
     name: Build Windows Portable（构建 Windows 绿色版）
     runs-on: windows-latest
-    needs: [get-version, build-jar-artifact]
+    needs: [ get-version, build-jar-artifact ]
 
     steps:
       - name: Checkout（检出代码）
@@ -347,7 +321,7 @@ jobs:
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
     runs-on: macos-13  # Intel x86_64
-    needs: [get-version, build-jar-artifact]
+    needs: [ get-version, build-jar-artifact ]
 
     steps:
       - name: Checkout（检出代码）
@@ -445,7 +419,7 @@ jobs:
   build-macos-arm:
     name: Build macOS Apple Silicon DMG（构建 macOS Apple Silicon 版安装包）
     runs-on: macos-latest  # Apple Silicon (M1/M2/M3/M4)
-    needs: [get-version, build-jar-artifact]
+    needs: [ get-version, build-jar-artifact ]
 
     steps:
       - name: Checkout（检出代码）
@@ -543,7 +517,7 @@ jobs:
   build-jar:
     name: Build Standalone JAR（构建独立 JAR 包）
     runs-on: ubuntu-latest
-    needs: [get-version, build-jar-artifact]
+    needs: [ get-version, build-jar-artifact ]
 
     steps:
       - name: Download JAR artifact（下载已构建的 JAR）
@@ -573,7 +547,7 @@ jobs:
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
     runs-on: ubuntu-22.04
-    needs: [get-version, build-jar-artifact]
+    needs: [ get-version, build-jar-artifact ]
 
     steps:
       - name: Checkout（检出代码）
@@ -677,7 +651,7 @@ jobs:
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
     if: github.event_name == 'release'
-    needs: [build-windows, build-macos-arm]  # 只等待需要同步到 Gitee 的构建（Windows MSI + macOS ARM）
+    needs: [ build-windows, build-macos-arm ]  # 只等待需要同步到 Gitee 的构建（Windows MSI + macOS ARM）
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -742,7 +716,7 @@ jobs:
   sync-to-gitee:
     name: Upload ${{ matrix.platform }} to Gitee（上传 ${{ matrix.platform }} 到 Gitee）
     if: github.event_name == 'release'
-    needs: [create-gitee-release]  # 等待 Gitee Release 创建完成
+    needs: [ create-gitee-release ]  # 等待 Gitee Release 创建完成
     runs-on: ubuntu-latest
     strategy:
       # 不因单个平台失败而取消其他上传任务
@@ -805,7 +779,7 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: github.event_name == 'release' && always()  # 即使有失败也执行
-    needs: [create-gitee-release, sync-to-gitee]
+    needs: [ create-gitee-release, sync-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:

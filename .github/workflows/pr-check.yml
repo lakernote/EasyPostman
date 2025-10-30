@@ -278,6 +278,21 @@ jobs:
             exit 1
           }
 
+      - name: Check jpackage temp directory before packaging（打包前检查临时目录）
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Checking for existing jpackage temp directories..."
+          $tempDirs = Get-ChildItem -Path $env:TEMP -Filter "jdk.jpackage*" -Directory -ErrorAction SilentlyContinue
+          if ($tempDirs) {
+            Write-Host "⚠️  Found existing jpackage temp directories, cleaning up..."
+            foreach ($dir in $tempDirs) {
+              Write-Host "  Removing: $($dir.FullName)"
+              Remove-Item -Recurse -Force $dir.FullName -ErrorAction SilentlyContinue
+            }
+          } else {
+            Write-Host "✅ No existing jpackage temp directories found"
+          }
+
       - name: Create Windows MSI installer for path memory testing（创建 MSI 安装包测试路径记忆）
         shell: pwsh
         run: |
@@ -318,6 +333,7 @@ jobs:
               --java-options $javaOpts[1] `
               --java-options $javaOpts[2] `
               --java-options "-Djavax.accessibility.assistive_technologies=" `
+              --temp "target\jpackage-temp" `
               --verbose
             
             if ($LASTEXITCODE -ne 0) {
@@ -352,6 +368,87 @@ jobs:
             Write-Host $_.ScriptStackTrace
             exit 1
           }
+
+      - name: Check WiX files in jpackage temp directory（检查jpackage临时目录中的WiX文件）
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Checking WiX files in jpackage temp directory..."
+          $tempDir = "target\jpackage-temp"
+          
+          if (-not (Test-Path $tempDir)) {
+            Write-Host "❌ Temp directory not found: $tempDir"
+            exit 1
+          }
+          
+          Write-Host "📂 Temp directory exists: $tempDir"
+          
+          # Find all .wxs files
+          Write-Host "`n🔍 Looking for .wxs files..."
+          $wxsFiles = Get-ChildItem -Path $tempDir -Recurse -Filter "*.wxs" -ErrorAction SilentlyContinue
+          
+          if ($wxsFiles) {
+            Write-Host "✅ Found $($wxsFiles.Count) .wxs file(s):"
+            foreach ($file in $wxsFiles) {
+              $fileSize = $file.Length
+              Write-Host "  📄 $($file.FullName) ($fileSize bytes)"
+            }
+            
+            # Check specifically for our custom wxs and main.wxs
+            $mainWxs = $wxsFiles | Where-Object { $_.Name -eq "main.wxs" }
+            $installDirPatchWxs = $wxsFiles | Where-Object { $_.Name -eq "install-dir-patch.wxs" }
+            
+            if ($mainWxs) {
+              Write-Host "`n📄 Found main.wxs:"
+              Write-Host "   Path: $($mainWxs.FullName)"
+              Write-Host "   Size: $($mainWxs.Length) bytes"
+              Write-Host "`n📄 Content preview (first 50 lines):"
+              Get-Content $mainWxs.FullName -Head 50
+              Write-Host "`n📄 Searching for 'FeatureRef' in main.wxs:"
+              $featureRefs = Select-String -Path $mainWxs.FullName -Pattern "FeatureRef" -AllMatches
+              if ($featureRefs) {
+                foreach ($match in $featureRefs) {
+                  Write-Host "  Line $($match.LineNumber): $($match.Line)"
+                }
+              } else {
+                Write-Host "  ⚠️  No FeatureRef found in main.wxs"
+              }
+            } else {
+              Write-Host "⚠️  main.wxs not found"
+            }
+            
+            if ($installDirPatchWxs) {
+              Write-Host "`n📄 Found install-dir-patch.wxs:"
+              Write-Host "   Path: $($installDirPatchWxs.FullName)"
+              Write-Host "   Size: $($installDirPatchWxs.Length) bytes"
+              Write-Host "`n📄 Content preview (first 30 lines):"
+              Get-Content $installDirPatchWxs.FullName -Head 30
+            } else {
+              Write-Host "❌ install-dir-patch.wxs not found in temp directory!"
+              Write-Host "This means the WiX fragment was not copied by jpackage."
+              exit 1
+            }
+            
+            # Check for compiled .wixobj files
+            Write-Host "`n🔍 Looking for compiled .wixobj files..."
+            $wixobjFiles = Get-ChildItem -Path $tempDir -Recurse -Filter "*.wixobj" -ErrorAction SilentlyContinue
+            if ($wixobjFiles) {
+              Write-Host "✅ Found $($wixobjFiles.Count) .wixobj file(s):"
+              foreach ($file in $wixobjFiles) {
+                Write-Host "  📦 $($file.Name)"
+              }
+            } else {
+              Write-Host "⚠️  No .wixobj files found"
+            }
+            
+          } else {
+            Write-Host "❌ No .wxs files found in temp directory!"
+            Write-Host "Listing all files in temp directory:"
+            Get-ChildItem -Path $tempDir -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
+            exit 1
+          }
+          
+          Write-Host "`n✅ WiX files check completed"
+
 
       - name: Verify MSI installer and WiX integration（验证 MSI 安装包和 WiX 集成）
         shell: pwsh

@@ -1,81 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  WiX Fragment：安装路径记忆功能
-  功能：记住用户上次选择的安装路径
+  WiX Fragment：安装路径记忆功能（完整版：读取+写入）
 
-  重要说明：
-  - 此文件是一个 Fragment，不能替换 jpackage 生成的 main.wxs
-  - 应该作为补充文件（例如 install-dir-patch.wxs）添加到 resource-dir
-  - jpackage 会自动编译所有 .wxs 文件并链接它们
+  功能说明：
+  1. 读取功能：从注册表读取上次的安装路径，并设置为默认目录
+  2. 写入功能：通过独立Component将当前安装路径保存到注册表
 
-  工作原理（双重策略）：
-  1. RegistrySearch: 从自定义注册表位置读取上次的安装路径
-     位置: HKCU\Software\Laker\EasyPostman\InstallDir
-  2. ComponentSearch: 如果上面没找到，通过组件 GUID 查找已安装的组件路径
-  3. RegistryValue: 将当前安装路径保存到注册表（策略1的位置）
-  4. Permanent="yes": 卸载后保留注册表项，确保重新安装时能记住路径
+  支持场景：
+  ✅ 首次安装：安装到默认或用户选择的路径，写入注册表
+  ✅ 卸载重装：自动读取上次的安装路径，用户可修改
+  ✅ 升级安装：自动使用上次的安装路径（支持用户修改过的路径）
+  ✅ 全新环境：注册表为空时使用默认路径
 
-  注册表说明：
-  - Windows Installer 会在 HKCU\Software\Laker\EasyPostman\{版本号}\RM_Rxxxxxx 保存安装路径
-  - 但这些注册表项会在卸载时被删除，且路径结构复杂（包含随机 ID）
-  - 因此我们使用自定义的 InstallDir 注册表项来持久化保存路径
+  技术要点：
+  - 使用Fragment方式，与jpackage生成的main.wxs完美兼容
+  - 独立的ComponentGroup，避免与jpackage的Component冲突
+  - 每次安装（新装或升级）都会更新注册表中的路径
+  - 升级安装时也会读取注册表，确保路径一致性
 
   使用方法：
-  - 本地构建: build/win.bat 会自动复制此文件为 install-dir-patch.wxs
-  - CI/CD: .github/workflows/*.yml 会复制此文件为 install-dir-patch.wxs
+  - build/win.bat 会复制此文件到 resource-dir/install-dir-patch.wxs
+  - jpackage 自动编译、链接此Fragment
+  - 需要在 main.wxs 中引用 ComponentGroup（jpackage通常会自动引用）
+
+  注册表位置：HKCU\Software\Laker\EasyPostman\InstallDir
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
-    <!-- 从注册表读取上次的安装路径 -->
-    <!--
-      问题分析：
-      Windows Installer 在注册表中保存的路径结构为：
-      HKCU\Software\Laker\EasyPostman\{版本号}\RM_{随机ID} = "安装路径"
 
-      解决方案：
-      1. 首先尝试读取我们自己保存的 InstallDir
-      2. 如果没有找到，通过 ComponentSearch 查找已安装的组件路径
-    -->
+    <!-- ==================== 读取功能 ==================== -->
 
-    <!-- 方法1: 读取我们自定义保存的安装路径（持久化保存，卸载后也保留） -->
-    <Property Id="PREVIOUSINSTALLDIR" Secure="yes">
+    <!-- 从注册表读取上次保存的安装目录 -->
+    <Property Id="SAVEDINSTALLDIR" Secure="yes">
       <RegistrySearch Id="RememberInstallDir"
-                      Type="directory"
                       Root="HKCU"
                       Key="Software\Laker\EasyPostman"
-                      Name="InstallDir" />
+                      Name="InstallDir"
+                      Type="raw" />
     </Property>
-
-    <!-- 方法2: 通过 ComponentSearch 查找已安装的组件（如果存在旧版本） -->
-    <Property Id="COMPONENTINSTALLDIR" Secure="yes">
-      <ComponentSearch Id="FindComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d" Type="directory" />
-    </Property>
-
-    <!-- 设置 INSTALLDIR: 优先使用 PREVIOUSINSTALLDIR，如果没有则使用 COMPONENTINSTALLDIR -->
-    <SetProperty Id="INSTALLDIR" Value="[PREVIOUSINSTALLDIR]" Before="AppSearch" Sequence="both">
-      <![CDATA[PREVIOUSINSTALLDIR]]>
-    </SetProperty>
-
-    <SetProperty Id="INSTALLDIR" Value="[COMPONENTINSTALLDIR]" Before="AppSearch" Sequence="both">
-      <![CDATA[NOT PREVIOUSINSTALLDIR AND COMPONENTINSTALLDIR]]>
-    </SetProperty>
-
-    <!-- 将安装路径保存到注册表的组件 -->
-    <!-- Permanent="yes" 确保卸载后保留注册表项，重新安装时能记住路径 -->
-    <DirectoryRef Id="INSTALLDIR">
-      <Component Id="RememberInstallDirComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d" Permanent="yes">
-        <RegistryKey Root="HKCU" Key="Software\Laker\EasyPostman">
-          <RegistryValue Type="string" Name="InstallDir" Value="[INSTALLDIR]" KeyPath="yes"/>
-        </RegistryKey>
-      </Component>
-    </DirectoryRef>
 
     <!--
-      注意事项：
-      - 我们只在这里定义组件，jpackage 会自动将 DirectoryRef Id="INSTALLDIR" 中的组件
-        包含到主 Feature 中（在 MSI 生成时）
-      - 不要在 Fragment 中使用 FeatureRef，否则会导致编译错误
+      设置 INSTALLDIR 为上次的安装路径
+      - Before="CostFinalize": 在目录成本计算之前设置
+      - Sequence="both": 在 UI 和 Execute 序列中都执行
+      - 条件: SAVEDINSTALLDIR 存在
+
+      说明：
+      1. 新安装：如果注册表有历史路径，自动设置（用户仍可修改）
+      2. 升级安装：使用注册表记录的路径（通常就是当前安装路径）
+      3. 全新环境：注册表为空，使用默认路径
+
+      注意：移除了 "NOT Installed" 条件，以支持升级时也记住路径
     -->
+    <SetProperty Id="INSTALLDIR"
+                 Value="[SAVEDINSTALLDIR]"
+                 Before="CostFinalize"
+                 Sequence="both">
+      SAVEDINSTALLDIR
+    </SetProperty>
+
+    <!-- ==================== 写入功能 ==================== -->
+
+    <!--
+      ComponentGroup: 保存安装路径到注册表
+
+      注意：
+      1. 使用独立的ComponentGroup，jpackage会自动引用所有ComponentGroup
+      2. Component的Guid使用"*"，让WiX自动生成（基于文件路径稳定生成）
+      3. KeyPath="yes" 指定此注册表项为Component的关键路径
+      4. 每次安装/升级都会更新此注册表值
+    -->
+    <ComponentGroup Id="InstallDirMemoryComponents" Directory="INSTALLDIR">
+      <Component Id="SaveInstallDirToRegistry" Guid="*">
+        <RegistryValue Root="HKCU"
+                       Key="Software\Laker\EasyPostman"
+                       Name="InstallDir"
+                       Value="[INSTALLDIR]"
+                       Type="string"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
   </Fragment>
 </Wix>
 

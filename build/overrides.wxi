@@ -1,7 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   WiX Include File: overrides.wxi
-
-  此文件通过 <?include overrides.wxi ?> 被包含到 main.wxs 中
 
   功能：安装路径记忆
   - 安装时从注册表读取上次路径
@@ -10,42 +9,45 @@
 
   注册表路径: HKCU\Software\Laker\EasyPostman\InstallDir
 -->
+<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
-<!-- ==================== 读取上次安装路径 ==================== -->
+  <!-- ==================== 读取上次安装路径 ==================== -->
 
-<!-- 从注册表读取上次安装路径 -->
-<Property Id="PREVIOUSINSTALLDIR" Secure="yes">
-  <RegistrySearch Id="FindPreviousInstallDir"
-                  Root="HKCU"
-                  Key="Software\Laker\EasyPostman"
-                  Name="InstallDir"
-                  Type="raw" />
-</Property>
+  <!-- 从注册表读取上次安装路径 -->
+  <Property Id="PREVIOUSINSTALLDIR" Secure="yes">
+    <RegistrySearch Id="FindPreviousInstallDir"
+                    Root="HKCU"
+                    Key="Software\Laker\EasyPostman"
+                    Name="InstallDir"
+                    Type="raw" />
+  </Property>
 
-<!-- 如果找到上次的路径，设置为默认安装路径 -->
-<SetProperty Id="INSTALLDIR"
-             Value="[PREVIOUSINSTALLDIR]"
-             Before="CostFinalize"
-             Sequence="first">
-  PREVIOUSINSTALLDIR
-</SetProperty>
+  <!-- 如果找到上次的路径，设置为默认安装路径 -->
+  <SetProperty Id="INSTALLDIR"
+               Value="[PREVIOUSINSTALLDIR]"
+               Before="CostFinalize"
+               Sequence="first">
+    PREVIOUSINSTALLDIR
+  </SetProperty>
 
-<!-- ==================== 安装后写入注册表 ==================== -->
+  <!-- ==================== 安装后写入注册表 ==================== -->
 
-<DirectoryRef Id="INSTALLDIR">
-  <Component Id="RememberInstallDirComponent" Guid="0c8e5c4a-9d2f-4b1e-a8f7-3e6d9c5b4a2f">
-    <RegistryValue Root="HKCU"
-                   Key="Software\Laker\EasyPostman"
-                   Name="InstallDir"
-                   Value="[INSTALLDIR]"
-                   Type="string"
-                   KeyPath="yes" />
-  </Component>
-</DirectoryRef>
+  <DirectoryRef Id="INSTALLDIR">
+    <Component Id="RememberInstallDirComponent" Guid="0c8e5c4a-9d2f-4b1e-a8f7-3e6d9c5b4a2f">
+      <RegistryValue Root="HKCU"
+                     Key="Software\Laker\EasyPostman"
+                     Name="InstallDir"
+                     Value="[INSTALLDIR]"
+                     Type="string"
+                     KeyPath="yes" />
+    </Component>
+  </DirectoryRef>
 
-<!-- ==================== 提供 Feature 引用 ==================== -->
+  <!-- ==================== 提供 Feature 引用 ==================== -->
 
-<ComponentGroup Id="InstallPathMemoryGroup">
-  <ComponentRef Id="RememberInstallDirComponent" />
-</ComponentGroup>
+  <ComponentGroup Id="InstallPathMemoryGroup">
+    <ComponentRef Id="RememberInstallDirComponent" />
+  </ComponentGroup>
+
+</Include>
 

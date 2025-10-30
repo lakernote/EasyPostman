@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
   WiX Include File: overrides.wxi
 
@@ -12,8 +11,7 @@
 
   注册表位置：HKCU\Software\Laker\EasyPostman\InstallDir
 -->
-<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
-
+<Fragment xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- ==================== 读取上次安装路径 ==================== -->
 
   <!-- 从注册表搜索上次的安装路径 -->
@@ -49,6 +47,5 @@
                      KeyPath="yes" />
     </Component>
   </DirectoryRef>
-
-</Include>
+</Fragment>
 

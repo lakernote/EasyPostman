@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -42,6 +43,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private transient List<TabInfo> tabInfos;
     private JPanel consoleContainer;
     private JLabel consoleLabel;
+    private JLabel cookieLabel;
     private JLabel versionLabel;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
@@ -160,8 +162,14 @@ public class SidebarTabPanel extends SingletonBasePanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
+            // 左侧放 Console
             consoleContainer.add(consoleLabel, BorderLayout.WEST);
-            consoleContainer.add(versionLabel, BorderLayout.EAST);
+            // 右侧放 Cookies 和 Version
+            JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            rightPanel.setOpaque(false);
+            rightPanel.add(cookieLabel);
+            rightPanel.add(versionLabel);
+            consoleContainer.add(rightPanel, BorderLayout.EAST);
             add(consoleContainer, BorderLayout.SOUTH);
             revalidate();
             repaint();
@@ -173,6 +181,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void initBottomBar() {
         createConsoleLabel();
+        createCookieLabel();
         createVersionLabel();
     }
 
@@ -196,13 +205,40 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
+     * 创建 Cookie 标签
+     */
+    private void createCookieLabel() {
+        cookieLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
+        cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
+        cookieLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        cookieLabel.setFocusable(true);
+        cookieLabel.setEnabled(true);
+        cookieLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showCookieManagerDialog();
+            }
+        });
+    }
+
+    /**
+     * 显示 Cookie 管理器对话框
+     */
+    private void showCookieManagerDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        CookieManagerDialog dialog = new CookieManagerDialog(window);
+        dialog.setVisible(true);
+    }
+
+    /**
      * 创建版本号标签
      */
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        versionLabel.setForeground(Color.GRAY);
-        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
     }
 
     @Override

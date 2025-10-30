@@ -281,6 +281,115 @@ jobs:
             exit 1
           }
 
+      - name: Validate overrides.wxi format（验证 overrides.wxi 格式）
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Validating overrides.wxi format for WiX compatibility..."
+          Write-Host ""
+          
+          $wixFile = "target\jpackage-resources\overrides.wxi"
+          if (-not (Test-Path $wixFile)) {
+            Write-Host "❌ overrides.wxi not found in resource directory"
+            exit 1
+          }
+          
+          Write-Host "📄 Complete file content:"
+          Write-Host "=" * 80
+          Get-Content $wixFile | ForEach-Object { Write-Host $_ }
+          Write-Host "=" * 80
+          Write-Host ""
+          
+          # 读取文件内容进行检查
+          $content = Get-Content $wixFile -Raw
+          
+          # 检查 1: 不应该有 <?xml 声明
+          Write-Host "🔍 Check 1: XML Declaration"
+          if ($content -match '<\?xml\s+version') {
+            Write-Host "❌ FAIL: Found <?xml declaration"
+            Write-Host "   Issue: WiX include files should NOT have XML declaration"
+            Write-Host "   Reason: jpackage uses <?include ?> which expects raw content"
+            $hasIssues = $true
+          } else {
+            Write-Host "✅ PASS: No XML declaration (correct)"
+          }
+          
+          # 检查 2: 不应该有 <Include> 根元素
+          Write-Host ""
+          Write-Host "🔍 Check 2: Include Root Element"
+          if ($content -match '<Include\s*>') {
+            Write-Host "❌ FAIL: Found <Include> root element"
+            Write-Host "   Issue: overrides.wxi should NOT have <Include> wrapper"
+            Write-Host "   Reason: <?include ?> directive inserts content directly"
+            $hasIssues = $true
+          } else {
+            Write-Host "✅ PASS: No <Include> root element (correct)"
+          }
+          
+          # 检查 3: 不应该有 <Fragment> 根元素
+          Write-Host ""
+          Write-Host "🔍 Check 3: Fragment Root Element"
+          if ($content -match '^\s*<Fragment\s*>') {
+            Write-Host "❌ FAIL: Found <Fragment> as root element"
+            Write-Host "   Issue: overrides.wxi should NOT have <Fragment> wrapper"
+            Write-Host "   Reason: jpackage expects direct WiX elements"
+            $hasIssues = $true
+          } else {
+            Write-Host "✅ PASS: No <Fragment> root element (correct)"
+          }
+          
+          # 检查 4: 不应该有 xmlns 声明
+          Write-Host ""
+          Write-Host "🔍 Check 4: Namespace Declaration"
+          if ($content -match 'xmlns\s*=') {
+            Write-Host "❌ FAIL: Found xmlns namespace declaration"
+            Write-Host "   Issue: Include files should not declare namespaces"
+            $hasIssues = $true
+          } else {
+            Write-Host "✅ PASS: No xmlns declaration (correct)"
+          }
+          
+          # 检查 5: 应该有必需的 WiX 元素
+          Write-Host ""
+          Write-Host "🔍 Check 5: Required WiX Elements"
+          $requiredElements = @{
+            'Property.*PREVIOUSINSTALLDIR' = 'Property for reading previous install path'
+            'RegistrySearch' = 'RegistrySearch for previous path'
+            'SetProperty.*INSTALLDIR' = 'SetProperty for INSTALLDIR'
+            'DirectoryRef.*INSTALLDIR' = 'DirectoryRef for INSTALLDIR'
+            'RememberInstallDirComponent' = 'Component for saving install path'
+            'RegistryValue' = 'RegistryValue for saving path'
+            'InstallPathMemoryGroup' = 'ComponentGroup for install path memory'
+          }
+          
+          $allElementsFound = $true
+          foreach ($element in $requiredElements.GetEnumerator()) {
+            if ($content -match $element.Key) {
+              Write-Host "  ✅ $($element.Value): Found"
+            } else {
+              Write-Host "  ❌ $($element.Value): NOT Found"
+              $allElementsFound = $false
+              $hasIssues = $true
+            }
+          }
+          
+          # 总结
+          Write-Host ""
+          Write-Host "=" * 80
+          if ($hasIssues) {
+            Write-Host "❌ VALIDATION FAILED: overrides.wxi has format issues"
+            Write-Host ""
+            Write-Host "📝 Correct format should be:"
+            Write-Host "   - No <?xml declaration"
+            Write-Host "   - No <Include> wrapper"
+            Write-Host "   - No <Fragment> wrapper"
+            Write-Host "   - Direct WiX elements: <Property>, <SetProperty>, <DirectoryRef>, <ComponentGroup>"
+            Write-Host ""
+            exit 1
+          } else {
+            Write-Host "✅ VALIDATION PASSED: overrides.wxi format is correct"
+            Write-Host "   Ready for jpackage <?include ?> directive"
+          }
+
       - name: Check jpackage temp directory before packaging（打包前检查临时目录）
         shell: pwsh
         run: |
@@ -404,29 +513,138 @@ jobs:
               Write-Host "`n📄 Found main.wxs:"
               Write-Host "   Path: $($mainWxs.FullName)"
               Write-Host "   Size: $($mainWxs.Length) bytes"
-              Write-Host "`n📄 Content preview (first 50 lines):"
-              Get-Content $mainWxs.FullName -Head 50
               
-              Write-Host "`n🔍 Checking for overrides.wxi include:"
-              $includeCheck = Select-String -Path $mainWxs.FullName -Pattern "overrides.wxi" -AllMatches
-              if ($includeCheck) {
-                Write-Host "  ✅ overrides.wxi is included in main.wxs"
-                foreach ($match in $includeCheck) {
-                  Write-Host "     Line $($match.LineNumber): $($match.Line)"
+              # 读取完整内容
+              $mainContent = Get-Content $mainWxs.FullName -Raw
+              
+              Write-Host "`n📄 Main.wxs structure overview:"
+              Write-Host "   Total lines: $((Get-Content $mainWxs.FullName | Measure-Object -Line).Lines)"
+              
+              # 检查 1: <?include overrides.wxi ?> 指令
+              Write-Host "`n🔍 Check 1: Include Directive"
+              if ($mainContent -match '\<\?include.*overrides\.wxi.*\?\>') {
+                Write-Host "  ✅ PASS: Found <?include overrides.wxi ?> directive"
+                $includeMatches = [regex]::Matches($mainContent, '\<\?include.*overrides\.wxi.*\?\>')
+                foreach ($match in $includeMatches) {
+                  # 找到匹配行号
+                  $lines = Get-Content $mainWxs.FullName
+                  for ($i = 0; $i -lt $lines.Count; $i++) {
+                    if ($lines[$i] -match [regex]::Escape($match.Value)) {
+                      Write-Host "     Line $($i + 1): $($lines[$i].Trim())"
+                      break
+                    }
+                  }
                 }
               } else {
-                Write-Host "  ⚠️  overrides.wxi include not found in main.wxs"
+                Write-Host "  ❌ FAIL: <?include overrides.wxi ?> directive NOT found"
+                Write-Host "     Issue: jpackage did not include our overrides.wxi file"
               }
               
-              Write-Host "`n🔍 Searching for ComponentRef in main.wxs:"
-              $componentRefs = Select-String -Path $mainWxs.FullName -Pattern "ComponentRef|RememberInstallDirComponent" -AllMatches
+              # 检查 2: PREVIOUSINSTALLDIR Property
+              Write-Host "`n🔍 Check 2: PREVIOUSINSTALLDIR Property"
+              if ($mainContent -match 'PREVIOUSINSTALLDIR') {
+                Write-Host "  ✅ PASS: PREVIOUSINSTALLDIR found in main.wxs"
+                $propMatches = Select-String -Path $mainWxs.FullName -Pattern "PREVIOUSINSTALLDIR" -AllMatches
+                foreach ($match in $propMatches | Select-Object -First 3) {
+                  Write-Host "     Line $($match.LineNumber): $($match.Line.Trim())"
+                }
+              } else {
+                Write-Host "  ❌ FAIL: PREVIOUSINSTALLDIR NOT found"
+                Write-Host "     Issue: overrides.wxi content was not included"
+              }
+              
+              # 检查 3: RegistrySearch
+              Write-Host "`n🔍 Check 3: RegistrySearch Element"
+              if ($mainContent -match 'RegistrySearch.*FindPreviousInstallDir') {
+                Write-Host "  ✅ PASS: RegistrySearch for FindPreviousInstallDir found"
+              } elseif ($mainContent -match 'RegistrySearch') {
+                Write-Host "  ⚠️  WARNING: RegistrySearch found but not for FindPreviousInstallDir"
+              } else {
+                Write-Host "  ❌ FAIL: RegistrySearch NOT found"
+              }
+              
+              # 检查 4: SetProperty for INSTALLDIR
+              Write-Host "`n🔍 Check 4: SetProperty for INSTALLDIR"
+              if ($mainContent -match 'SetProperty.*INSTALLDIR') {
+                Write-Host "  ✅ PASS: SetProperty for INSTALLDIR found"
+                $setPropMatches = Select-String -Path $mainWxs.FullName -Pattern "SetProperty.*INSTALLDIR" -AllMatches
+                foreach ($match in $setPropMatches | Select-Object -First 2) {
+                  Write-Host "     Line $($match.LineNumber): $($match.Line.Trim())"
+                }
+              } else {
+                Write-Host "  ❌ FAIL: SetProperty for INSTALLDIR NOT found"
+              }
+              
+              # 检查 5: RememberInstallDirComponent
+              Write-Host "`n🔍 Check 5: RememberInstallDirComponent"
+              if ($mainContent -match 'RememberInstallDirComponent') {
+                Write-Host "  ✅ PASS: RememberInstallDirComponent found"
+                $compMatches = Select-String -Path $mainWxs.FullName -Pattern "RememberInstallDirComponent" -AllMatches
+                foreach ($match in $compMatches) {
+                  Write-Host "     Line $($match.LineNumber): $($match.Line.Trim())"
+                }
+              } else {
+                Write-Host "  ❌ FAIL: RememberInstallDirComponent NOT found"
+              }
+              
+              # 检查 6: RegistryValue for saving path
+              Write-Host "`n🔍 Check 6: RegistryValue for Saving Path"
+              if ($mainContent -match 'RegistryValue.*InstallDir') {
+                Write-Host "  ✅ PASS: RegistryValue for InstallDir found"
+              } else {
+                Write-Host "  ❌ FAIL: RegistryValue for InstallDir NOT found"
+              }
+              
+              # 检查 7: InstallPathMemoryGroup
+              Write-Host "`n🔍 Check 7: ComponentGroup InstallPathMemoryGroup"
+              if ($mainContent -match 'InstallPathMemoryGroup') {
+                Write-Host "  ✅ PASS: InstallPathMemoryGroup ComponentGroup found"
+              } else {
+                Write-Host "  ❌ FAIL: InstallPathMemoryGroup NOT found"
+              }
+              
+              # 检查 8: ComponentRef 引用
+              Write-Host "`n🔍 Check 8: ComponentRef References"
+              $componentRefs = Select-String -Path $mainWxs.FullName -Pattern "ComponentRef.*Id\s*=\s*[`"']RememberInstallDirComponent[`"']" -AllMatches
               if ($componentRefs) {
+                Write-Host "  ✅ PASS: Found ComponentRef to RememberInstallDirComponent"
                 foreach ($match in $componentRefs) {
-                  Write-Host "  ✅ Line $($match.LineNumber): $($match.Line)"
+                  Write-Host "     Line $($match.LineNumber): $($match.Line.Trim())"
                 }
               } else {
-                Write-Host "  ⚠️  No ComponentRef found in main.wxs"
+                Write-Host "  ⚠️  WARNING: ComponentRef to RememberInstallDirComponent NOT found"
+                Write-Host "     The component may not be included in Feature"
               }
+              
+              # 显示 main.wxs 的关键部分
+              Write-Host "`n📄 Main.wxs content preview (first 100 lines):"
+              Write-Host "=" * 80
+              Get-Content $mainWxs.FullName -Head 100 | ForEach-Object { Write-Host $_ }
+              Write-Host "=" * 80
+              
+              # 总结检查结果
+              Write-Host "`n" + "=" * 80
+              $checksPass = (
+                ($mainContent -match '\<\?include.*overrides\.wxi.*\?\>') -and
+                ($mainContent -match 'PREVIOUSINSTALLDIR') -and
+                ($mainContent -match 'RegistrySearch') -and
+                ($mainContent -match 'SetProperty.*INSTALLDIR') -and
+                ($mainContent -match 'RememberInstallDirComponent')
+              )
+              
+              if ($checksPass) {
+                Write-Host "✅ VALIDATION PASSED: overrides.wxi content is properly included in main.wxs"
+                Write-Host "✅ Install path memory feature is integrated successfully"
+              } else {
+                Write-Host "❌ VALIDATION FAILED: Some required elements are missing"
+                Write-Host "❌ Install path memory feature may not work correctly"
+                Write-Host ""
+                Write-Host "This could mean:"
+                Write-Host "  1. overrides.wxi format is incorrect"
+                Write-Host "  2. jpackage did not include overrides.wxi"
+                Write-Host "  3. WiX compilation failed before including our content"
+              }
+              Write-Host "=" * 80
             } else {
               Write-Host "⚠️  main.wxs not found"
             }

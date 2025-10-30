@@ -134,7 +134,8 @@ jobs:
           # 文件内容：
           # 1. Property + RegistrySearch（读取上次安装路径）
           # 2. SetProperty（设置 INSTALLDIR 初始值）
-          # 3. DirectoryRef + Component（保存当前安装路径）
+          # 3. DirectoryRef + Component（定义保存路径的注册表组件）
+          # 4. ComponentGroup（将组件包装成组，方便在 Feature 中引用）
           $wixOverrides = "build\overrides.wxi"
           if (-not (Test-Path $wixOverrides)) {
             Write-Host "❌ overrides.wxi not found: $wixOverrides"
@@ -143,7 +144,8 @@ jobs:
           
           Copy-Item $wixOverrides -Destination "$resourceDir\overrides.wxi"
           Write-Host "✅ Copied overrides.wxi (install path memory enabled)"
-          Write-Host "   jpackage will automatically include via: <?include overrides.wxi ?>"
+          Write-Host "   📦 Contains: Property, SetProperty, Component, ComponentGroup"
+          Write-Host "   🔗 jpackage will include via: <?include overrides.wxi ?>"
           
           # 验证文件
           if (Test-Path "$resourceDir\overrides.wxi") {
@@ -152,7 +154,23 @@ jobs:
             
             # 显示文件内容预览
             Write-Host "`n📄 Content preview:"
-            Get-Content "$resourceDir\overrides.wxi" -Head 15 | ForEach-Object { Write-Host "   $_" }
+            Get-Content "$resourceDir\overrides.wxi" -Head 20 | ForEach-Object { Write-Host "   $_" }
+            
+            # 检查关键元素
+            $content = Get-Content "$resourceDir\overrides.wxi" -Raw
+            $hasProperty = $content -match 'PREVIOUSINSTALLDIR'
+            $hasComponent = $content -match 'RememberInstallDirComponent'
+            $hasGroup = $content -match 'InstallPathMemoryGroup'
+            
+            Write-Host "`n🔍 Structure validation:"
+            Write-Host "   Property 'PREVIOUSINSTALLDIR': $(if ($hasProperty) {'✅'} else {'❌'})"
+            Write-Host "   Component 'RememberInstallDirComponent': $(if ($hasComponent) {'✅'} else {'❌'})"
+            Write-Host "   ComponentGroup 'InstallPathMemoryGroup': $(if ($hasGroup) {'✅'} else {'❌'})"
+            
+            if (-not ($hasProperty -and $hasComponent -and $hasGroup)) {
+              Write-Host "❌ overrides.wxi is missing required elements"
+              exit 1
+            }
           } else {
             Write-Host "❌ Failed to copy overrides.wxi"
             exit 1
@@ -298,10 +316,13 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "🔧 Attempting manual WiX build..."
-          Write-Host "ℹ️  Note: overrides.wxi has been included by jpackage in main.wxs"
-          Write-Host "         It contains Property, SetProperty, and Component definitions."
-          Write-Host "         We only need to add ComponentRef to the Feature section."
-          
+          Write-Host ""
+          Write-Host "ℹ️  Background: Why manual patching is needed?"
+          Write-Host "   1. overrides.wxi defines Component and ComponentGroup"
+          Write-Host "   2. jpackage includes overrides.wxi in main.wxs"
+          Write-Host "   3. BUT: Components must be referenced in <Feature> to be installed"
+          Write-Host "   4. We need to add: <ComponentGroupRef Id='InstallPathMemoryGroup' />"
+          Write-Host ""
           $version = "${{ needs.get-version.outputs.version }}"
           $configDir = "target\jpackage-temp\config"
           $mainWxsPath = "$configDir\main.wxs"

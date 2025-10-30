@@ -14,14 +14,19 @@
 
   技术要点：
   - 使用Fragment方式，与jpackage生成的main.wxs完美兼容
-  - 独立的ComponentGroup，避免与jpackage的Component冲突
+  - 使用DirectoryRef引用INSTALLDIR，避免与jpackage的目录定义冲突
+  - Component定义在DirectoryRef中，需要在main.wxs的Feature中引用
   - 每次安装（新装或升级）都会更新注册表中的路径
   - 升级安装时也会读取注册表，确保路径一致性
 
   使用方法：
   - build/win.bat 会复制此文件到 resource-dir/install-dir-patch.wxs
   - jpackage 自动编译、链接此Fragment
-  - 需要在 main.wxs 中引用 ComponentGroup（jpackage通常会自动引用）
+  - jpackage 会自动在 Feature 中包含所有独立的 Component
+  - 或者在自定义 main.wxs 中手动引用：
+    <Feature ...>
+      <ComponentRef Id="RememberInstallDirComponent" />
+    </Feature>
 
   注册表位置：HKCU\Software\Laker\EasyPostman\InstallDir
 -->
@@ -62,16 +67,22 @@
     <!-- ==================== 写入功能 ==================== -->
 
     <!--
-      ComponentGroup: 保存安装路径到注册表
+      DirectoryRef + Component: 保存安装路径到注册表
 
-      注意：
-      1. 使用独立的ComponentGroup，jpackage会自动引用所有ComponentGroup
-      2. Component的Guid使用"*"，让WiX自动生成（基于文件路径稳定生成）
-      3. KeyPath="yes" 指定此注册表项为Component的关键路径
-      4. 每次安装/升级都会更新此注册表值
+      使用 DirectoryRef 引用 INSTALLDIR，这样：
+      1. 与 jpackage 生成的目录结构兼容
+      2. 符合 WiX Fragment 标准结构
+      3. Component 会被自动添加到安装包中
+
+      技术要点：
+      - DirectoryRef Id="INSTALLDIR": 引用主安装目录
+      - Component Id="RememberInstallDirComponent": 唯一组件标识
+      - Guid="*": 自动生成稳定的 GUID（基于命名空间和组件路径）
+      - KeyPath="yes": 注册表项作为组件的关键路径
+      - 每次安装/升级都会更新此注册表值
     -->
-    <ComponentGroup Id="InstallDirMemoryComponents" Directory="INSTALLDIR">
-      <Component Id="SaveInstallDirToRegistry" Guid="*">
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="RememberInstallDirComponent" Guid="*">
         <RegistryValue Root="HKCU"
                        Key="Software\Laker\EasyPostman"
                        Name="InstallDir"
@@ -79,7 +90,7 @@
                        Type="string"
                        KeyPath="yes" />
       </Component>
-    </ComponentGroup>
+    </DirectoryRef>
 
   </Fragment>
 </Wix>

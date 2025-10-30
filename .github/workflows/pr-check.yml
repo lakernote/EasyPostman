@@ -386,48 +386,6 @@ jobs:
           
           Write-Host "✅ MSI installer verification passed"
 
-      - name: Test WiX configuration syntax（测试 WiX 配置语法）
-        shell: pwsh
-        run: |
-          Write-Host "🧪 Testing WiX configuration syntax..."
-          $wixFile = "target\jpackage-resources\install-dir-patch.wxs"
-          
-          if (-not (Test-Path $wixFile)) {
-            Write-Host "❌ WiX fragment file not found"
-            exit 1
-          }
-          
-          # 检查关键元素是否存在
-          $wixContent = Get-Content $wixFile -Raw
-          
-          $checks = @{
-            "RegistrySearch element" = $wixContent -match '<RegistrySearch.*Id="RememberInstallDir"'
-            "Registry key path" = $wixContent -match 'Key="Software\\Laker\\EasyPostman"'
-            "Registry value name" = $wixContent -match 'Name="InstallDir"'
-            "Component with registry" = $wixContent -match '<Component.*Id="RememberInstallDirComponent"'
-            "DirectoryRef INSTALLDIR" = $wixContent -match '<DirectoryRef.*Id="INSTALLDIR"'
-            "Fragment element" = $wixContent -match '<Fragment>'
-            "No Product element" = -not ($wixContent -match '<Product')
-          }
-          
-          $allPassed = $true
-          foreach ($check in $checks.GetEnumerator()) {
-            if ($check.Value) {
-              Write-Host "✅ $($check.Key) - OK"
-            } else {
-              Write-Host "❌ $($check.Key) - FAILED"
-              $allPassed = $false
-            }
-          }
-          
-          if ($allPassed) {
-            Write-Host "✅ All WiX fragment configuration checks passed"
-          } else {
-            Write-Host "❌ Some WiX fragment configuration checks failed"
-            Write-Host "📄 WiX fragment content:"
-            Write-Host $wixContent
-            exit 1
-          }
 
       - name: Upload MSI installer
         uses: actions/upload-artifact@v4

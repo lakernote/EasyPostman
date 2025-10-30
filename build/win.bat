@@ -85,23 +85,23 @@ if errorlevel 1 (
 set RESOURCE_DIR=target\jpackage-resources
 if not exist "%RESOURCE_DIR%" mkdir "%RESOURCE_DIR%"
 
-:: Copy WiX fragment as additional file (NOT replacing main.wxs)
-:: jpackage will compile all .wxs files in resource-dir
-set WIX_CONFIG=build\wix-install-path-memory.wxs
+:: Copy overrides.wxi - jpackage will automatically include it in main.wxs
+:: This file contains Property, SetProperty, and Component definitions for install path memory
+set WIX_CONFIG=build\overrides.wxi
 if not exist "%WIX_CONFIG%" (
     echo ERROR: WiX configuration file not found: %WIX_CONFIG%
     pause
     exit /b 1
 )
 
-copy "%WIX_CONFIG%" "%RESOURCE_DIR%\install-dir-patch.wxs"
+copy "%WIX_CONFIG%" "%RESOURCE_DIR%\overrides.wxi"
 if errorlevel 1 (
     echo Failed to copy WiX configuration file
     pause
     exit /b 1
 )
 
-echo WiX configuration copied (install path memory enabled)
+echo WiX configuration copied (overrides.wxi - install path memory enabled)
 
 :: Step 5: Package with jpackage
 if not exist "%ICON_DIR%" (

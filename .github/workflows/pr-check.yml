@@ -256,25 +256,28 @@ jobs:
           $resourceDir = "target\jpackage-resources"
           if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
           
-          # Copy as additional WiX fragment file (NOT replacing main.wxs)
-          # jpackage will automatically compile all .wxs files in resource-dir
-          $wixConfig = "build\wix-install-path-memory.wxs"
+          # 复制 overrides.wxi（jpackage 会自动 include 这个文件）
+          # 这个文件包含：
+          # 1. Property + RegistrySearch（读取上次安装路径）
+          # 2. SetProperty（设置 INSTALLDIR 初始值）
+          # 3. DirectoryRef + Component（保存当前安装路径）
+          $wixConfig = "build\overrides.wxi"
           if (-not (Test-Path $wixConfig)) {
             Write-Host "❌ WiX configuration file not found: $wixConfig"
             exit 1
           }
           
-          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
-          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs"
+          Copy-Item $wixConfig -Destination "$resourceDir\overrides.wxi"
+          Write-Host "✅ Copied overrides.wxi (install path memory enabled)"
           
-          # Verify the copied file
-          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
-            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
-            Write-Host "✅ WiX fragment file size: $fileSize bytes"
-            Write-Host "📄 WiX fragment content preview:"
-            Get-Content "$resourceDir\install-dir-patch.wxs" -Head 20
+          # 验证文件
+          if (Test-Path "$resourceDir\overrides.wxi") {
+            $fileSize = (Get-Item "$resourceDir\overrides.wxi").Length
+            Write-Host "✅ overrides.wxi file size: $fileSize bytes"
+            Write-Host "📄 Content preview:"
+            Get-Content "$resourceDir\overrides.wxi" -Head 20
           } else {
-            Write-Host "❌ Failed to copy WiX fragment file"
+            Write-Host "❌ Failed to copy overrides.wxi"
             exit 1
           }
 
@@ -393,9 +396,9 @@ jobs:
               Write-Host "  📄 $($file.FullName) ($fileSize bytes)"
             }
             
-            # Check specifically for our custom wxs and main.wxs
+            # Check specifically for main.wxs and overrides.wxi
             $mainWxs = $wxsFiles | Where-Object { $_.Name -eq "main.wxs" }
-            $installDirPatchWxs = $wxsFiles | Where-Object { $_.Name -eq "install-dir-patch.wxs" }
+            $overridesWxi = Get-ChildItem -Path $tempDir -Recurse -Filter "overrides.wxi" -ErrorAction SilentlyContinue
             
             if ($mainWxs) {
               Write-Host "`n📄 Found main.wxs:"
@@ -403,28 +406,40 @@ jobs:
               Write-Host "   Size: $($mainWxs.Length) bytes"
               Write-Host "`n📄 Content preview (first 50 lines):"
               Get-Content $mainWxs.FullName -Head 50
-              Write-Host "`n📄 Searching for 'FeatureRef' in main.wxs:"
-              $featureRefs = Select-String -Path $mainWxs.FullName -Pattern "FeatureRef" -AllMatches
-              if ($featureRefs) {
-                foreach ($match in $featureRefs) {
-                  Write-Host "  Line $($match.LineNumber): $($match.Line)"
+              
+              Write-Host "`n🔍 Checking for overrides.wxi include:"
+              $includeCheck = Select-String -Path $mainWxs.FullName -Pattern "overrides.wxi" -AllMatches
+              if ($includeCheck) {
+                Write-Host "  ✅ overrides.wxi is included in main.wxs"
+                foreach ($match in $includeCheck) {
+                  Write-Host "     Line $($match.LineNumber): $($match.Line)"
                 }
               } else {
-                Write-Host "  ⚠️  No FeatureRef found in main.wxs"
+                Write-Host "  ⚠️  overrides.wxi include not found in main.wxs"
+              }
+              
+              Write-Host "`n🔍 Searching for ComponentRef in main.wxs:"
+              $componentRefs = Select-String -Path $mainWxs.FullName -Pattern "ComponentRef|RememberInstallDirComponent" -AllMatches
+              if ($componentRefs) {
+                foreach ($match in $componentRefs) {
+                  Write-Host "  ✅ Line $($match.LineNumber): $($match.Line)"
+                }
+              } else {
+                Write-Host "  ⚠️  No ComponentRef found in main.wxs"
               }
             } else {
               Write-Host "⚠️  main.wxs not found"
             }
             
-            if ($installDirPatchWxs) {
-              Write-Host "`n📄 Found install-dir-patch.wxs:"
-              Write-Host "   Path: $($installDirPatchWxs.FullName)"
-              Write-Host "   Size: $($installDirPatchWxs.Length) bytes"
+            if ($overridesWxi) {
+              Write-Host "`n📄 Found overrides.wxi:"
+              Write-Host "   Path: $($overridesWxi.FullName)"
+              Write-Host "   Size: $($overridesWxi.Length) bytes"
               Write-Host "`n📄 Content preview (first 30 lines):"
-              Get-Content $installDirPatchWxs.FullName -Head 30
+              Get-Content $overridesWxi.FullName -Head 30
             } else {
-              Write-Host "❌ install-dir-patch.wxs not found in temp directory!"
-              Write-Host "This means the WiX fragment was not copied by jpackage."
+              Write-Host "❌ overrides.wxi not found in temp directory!"
+              Write-Host "This means the WiX include file was not copied by jpackage."
               exit 1
             }
             

@@ -130,32 +130,43 @@ jobs:
           $resourceDir = "target\jpackage-resources"
           if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
           
-          # Copy as additional WiX fragment file (NOT replacing main.wxs)
-          # jpackage will automatically compile all .wxs files in resource-dir
-          $wixConfig = "build\wix-install-path-memory.wxs"
-          if (-not (Test-Path $wixConfig)) {
-            Write-Host "❌ WiX configuration file not found: $wixConfig"
+          # 复制 overrides.wxi（jpackage 会自动 include 这个文件）
+          # 文件内容：
+          # 1. Property + RegistrySearch（读取上次安装路径）
+          # 2. SetProperty（设置 INSTALLDIR 初始值）
+          # 3. DirectoryRef + Component（保存当前安装路径）
+          $wixOverrides = "build\overrides.wxi"
+          if (-not (Test-Path $wixOverrides)) {
+            Write-Host "❌ overrides.wxi not found: $wixOverrides"
             exit 1
           }
           
-          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
-          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs (install path memory enabled)"
+          Copy-Item $wixOverrides -Destination "$resourceDir\overrides.wxi"
+          Write-Host "✅ Copied overrides.wxi (install path memory enabled)"
+          Write-Host "   jpackage will automatically include via: <?include overrides.wxi ?>"
           
-          # Verify the copied file
-          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
-            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
-            Write-Host "✅ WiX fragment file size: $fileSize bytes"
+          # 验证文件
+          if (Test-Path "$resourceDir\overrides.wxi") {
+            $fileSize = (Get-Item "$resourceDir\overrides.wxi").Length
+            Write-Host "✅ overrides.wxi file size: $fileSize bytes"
+            
+            # 显示文件内容预览
+            Write-Host "`n📄 Content preview:"
+            Get-Content "$resourceDir\overrides.wxi" -Head 15 | ForEach-Object { Write-Host "   $_" }
           } else {
-            Write-Host "❌ Failed to copy WiX fragment file"
+            Write-Host "❌ Failed to copy overrides.wxi"
             exit 1
           }
 
       - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
         shell: pwsh
+        continue-on-error: true
+        id: jpackage_build
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman-$version.jar"
           $outDir = "dist"
+          $tempDir = "target\jpackage-temp"
           
           if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
           
@@ -170,6 +181,7 @@ jobs:
             --main-class com.laker.postman.App `
             --runtime-image target\runtime `
             --dest $outDir `
+            --temp $tempDir `
             --icon assets\win\EasyPostman.ico `
             --name EasyPostman `
             --app-version $version `
@@ -189,12 +201,221 @@ jobs:
             --java-options $javaOpts[2] `
             --java-options "-Djavax.accessibility.assistive_technologies="
           
-          # 重命名添加平台和架构标识（符合命名规范）
+          $jpackageExitCode = $LASTEXITCODE
+          Write-Host "jpackage exit code: $jpackageExitCode"
+          
+          # Check if MSI was created
           $oldMsiName = "EasyPostman-$version.msi"
-          $newMsiName = "EasyPostman-$version-windows-x64.msi"
           if (Test-Path "dist\$oldMsiName") {
+            # 重命名添加平台和架构标识（符合命名规范）
+            $newMsiName = "EasyPostman-$version-windows-x64.msi"
             Rename-Item -Path "dist\$oldMsiName" -NewName $newMsiName
             Write-Host "✅ Renamed to: $newMsiName"
+            exit 0
+          } else {
+            Write-Host "⚠️  MSI not created, will attempt manual build"
+            exit 1
+          }
+
+      - name: Debug - Inspect jpackage temp directory（调试 - 检查 jpackage 临时目录）
+        if: steps.jpackage_build.outcome == 'failure'
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Checking WiX files in jpackage temp directory..."
+          
+          $tempDir = "target\jpackage-temp"
+          
+          if (Test-Path $tempDir) {
+            Write-Host "📂 Temp directory exists: $tempDir"
+            
+            Write-Host "`n🔍 Looking for .wxs and .wxi files..."
+            $wixFiles = Get-ChildItem $tempDir -Recurse -Include "*.wxs","*.wxi"
+            
+            if ($wixFiles.Count -gt 0) {
+              Write-Host "✅ Found $($wixFiles.Count) WiX file(s):"
+              foreach ($file in $wixFiles) {
+                Write-Host "   📄 $($file.FullName) ($($file.Length) bytes)"
+              }
+              
+              # 检查 main.wxs
+              $mainWxs = Get-ChildItem $tempDir -Recurse -Filter "main.wxs" | Select-Object -First 1
+              if ($mainWxs) {
+                Write-Host "`n📄 Found main.wxs:"
+                Write-Host "   Path: $($mainWxs.FullName)"
+                Write-Host "   Size: $($mainWxs.Length) bytes"
+                
+                Write-Host "`n📄 Content preview (first 60 lines):"
+                Get-Content $mainWxs.FullName -Head 60 | ForEach-Object { Write-Host $_ }
+                
+                Write-Host "`n🔍 Checking for overrides.wxi include:"
+                $includeCheck = Select-String -Path $mainWxs.FullName -Pattern "overrides.wxi" -AllMatches
+                if ($includeCheck) {
+                  Write-Host "   ✅ overrides.wxi is included in main.wxs"
+                  $includeCheck | ForEach-Object { Write-Host "      $_" }
+                } else {
+                  Write-Host "   ⚠️  overrides.wxi include not found in main.wxs"
+                }
+                
+                Write-Host "`n🔍 Checking for our custom Property definitions:"
+                $propertyCheck = Select-String -Path $mainWxs.FullName -Pattern "PREVIOUSINSTALLDIR|RememberInstallDirComponent" -AllMatches
+                if ($propertyCheck) {
+                  Write-Host "   ✅ Custom Property/Component found in main.wxs:"
+                  $propertyCheck | ForEach-Object { Write-Host "      $_" }
+                } else {
+                  Write-Host "   ⚠️  Custom Property/Component not found (may be in overrides.wxi)"
+                }
+                
+                Write-Host "`n🔍 Searching for Feature section:"
+                $featureCheck = Select-String -Path $mainWxs.FullName -Pattern "<Feature|</Feature>|ComponentRef" -AllMatches
+                if ($featureCheck) {
+                  Write-Host "   ✅ Feature section found:"
+                  $featureCheck | Select-Object -First 10 | ForEach-Object { Write-Host "      $_" }
+                } else {
+                  Write-Host "   ⚠️  No Feature section found in main.wxs"
+                }
+              }
+              
+              # 检查 overrides.wxi
+              $overridesWxi = Get-ChildItem $tempDir -Recurse -Filter "overrides.wxi" | Select-Object -First 1
+              if ($overridesWxi) {
+                Write-Host "`n📄 Found overrides.wxi:"
+                Write-Host "   Path: $($overridesWxi.FullName)"
+                Write-Host "   Size: $($overridesWxi.Length) bytes"
+                Write-Host "`n   Content:"
+                Get-Content $overridesWxi.FullName | ForEach-Object { Write-Host "   $_" }
+              } else {
+                Write-Host "`n❌ overrides.wxi not found in temp directory!"
+              }
+            } else {
+              Write-Host "❌ No WiX files found in temp directory"
+            }
+          } else {
+            Write-Host "❌ Temp directory does not exist: $tempDir"
+          }
+
+      - name: Manual build - Patch and compile WiX files（手动构建 - 修补并编译 WiX 文件）
+        if: steps.jpackage_build.outcome == 'failure'
+        shell: pwsh
+        run: |
+          Write-Host "🔧 Attempting manual WiX build..."
+          Write-Host "ℹ️  Note: overrides.wxi has been included by jpackage in main.wxs"
+          Write-Host "         It contains Property, SetProperty, and Component definitions."
+          Write-Host "         We only need to add ComponentRef to the Feature section."
+          
+          $version = "${{ needs.get-version.outputs.version }}"
+          $configDir = "target\jpackage-temp\config"
+          $mainWxsPath = "$configDir\main.wxs"
+          
+          # 检查 config 目录是否存在
+          if (-not (Test-Path $configDir)) {
+            Write-Host "❌ Config directory not found. jpackage did not generate WiX files."
+            exit 1
+          }
+          
+          # 修补 main.wxs 添加 ComponentRef
+          if (Test-Path $mainWxsPath) {
+            Write-Host "`n📝 Patching main.wxs to add ComponentRef..."
+            
+            $content = Get-Content -Path $mainWxsPath -Raw
+            
+            # 检查是否已经打过补丁
+            if ($content -match 'RememberInstallDirComponent') {
+              Write-Host "✅ main.wxs already contains RememberInstallDirComponent reference"
+            } else {
+              Write-Host "🔍 Searching for Feature section..."
+              
+              # 在 </Feature> 之前添加 ComponentRef
+              $pattern = '([\s]+)(</Feature>)'
+              $replacement = '$1  <!-- Custom: Install path memory component (defined in overrides.wxi) -->' + "`r`n" + 
+                           '$1  <ComponentRef Id="RememberInstallDirComponent" />' + "`r`n" + 
+                           '$1$2'
+              
+              $newContent = $content -replace $pattern, $replacement
+              
+              if ($newContent -ne $content) {
+                $newContent | Set-Content -Path $mainWxsPath -NoNewline
+                Write-Host "✅ Successfully added ComponentRef to Feature section"
+                Write-Host "   <ComponentRef Id='RememberInstallDirComponent' />"
+              } else {
+                Write-Host "⚠️  Could not find </Feature> tag to patch"
+                Write-Host "🔍 Dumping main.wxs structure for debugging..."
+                Write-Host ($content -split "`n" | Select-Object -First 60 | Out-String)
+                exit 1
+              }
+            }
+          } else {
+            Write-Host "❌ main.wxs not found at: $mainWxsPath"
+            exit 1
+          }
+          
+          # 查找 WiX Toolset
+          Write-Host "`n🔍 Locating WiX Toolset..."
+          $wixPath = "${env:ProgramFiles(x86)}\WiX Toolset v3.11\bin"
+          if (-not (Test-Path $wixPath)) {
+            $wixPath = "${env:ProgramFiles}\WiX Toolset v3.11\bin"
+          }
+          if (-not (Test-Path $wixPath)) {
+            Write-Host "❌ WiX Toolset not found"
+            exit 1
+          }
+          
+          Write-Host "✅ Found WiX at: $wixPath"
+          
+          # 编译 WiX 源文件
+          Write-Host "`n🔨 Compiling WiX sources..."
+          $wixSources = Get-ChildItem $configDir -Filter "*.wxs"
+          Write-Host "   Found $($wixSources.Count) .wxs file(s)"
+          
+          foreach ($wxs in $wixSources) {
+            $objFile = Join-Path $configDir "$($wxs.BaseName).wixobj"
+            Write-Host "   📄 Compiling $($wxs.Name)..."
+            
+            & "$wixPath\candle.exe" -nologo -arch x64 -out $objFile $wxs.FullName
+            
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Failed to compile $($wxs.Name)"
+              exit 1
+            }
+          }
+          
+          Write-Host "✅ All WiX sources compiled successfully"
+          
+          # 链接生成 MSI
+          Write-Host "`n🔗 Linking WiX objects to create MSI..."
+          $wixObjs = Get-ChildItem $configDir -Filter "*.wixobj" | ForEach-Object { $_.FullName }
+          Write-Host "   Found $($wixObjs.Count) .wixobj file(s)"
+          
+          $msiOutput = "dist\EasyPostman-$version.msi"
+          
+          & "$wixPath\light.exe" -nologo -ext WixUIExtension -ext WixUtilExtension -out $msiOutput @wixObjs
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Failed to link MSI"
+            exit 1
+          }
+          
+          Write-Host "✅ MSI created successfully: $msiOutput"
+          
+          # 重命名为平台特定文件名
+          $newMsiName = "EasyPostman-$version-windows-x64.msi"
+          Rename-Item -Path $msiOutput -NewName $newMsiName
+          Write-Host "✅ Renamed to: $newMsiName"
+
+      - name: Verify MSI was created（验证 MSI 已创建）
+        shell: pwsh
+        run: |
+          $version = "${{ needs.get-version.outputs.version }}"
+          $msiFile = "dist\EasyPostman-$version-windows-x64.msi"
+          
+          if (Test-Path $msiFile) {
+            $size = (Get-Item $msiFile).Length
+            $sizeMB = [math]::Round($size / 1MB, 2)
+            Write-Host "✅ MSI created successfully: $msiFile ($sizeMB MB)"
+          } else {
+            Write-Host "❌ MSI file not found: $msiFile"
+            Write-Host "📂 Contents of dist directory:"
+            Get-ChildItem dist -Recurse | ForEach-Object { Write-Host "   $($_.FullName)" }
+            exit 1
           }
 
       - name: Upload to Release（上传到 GitHub Release）

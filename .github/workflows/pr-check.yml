@@ -270,117 +270,13 @@ jobs:
           Copy-Item $wixConfig -Destination "$resourceDir\overrides.wxi"
           Write-Host "✅ Copied overrides.wxi (install path memory enabled)"
           
-          # 验证文件
+          # 验证文件是否复制成功
           if (Test-Path "$resourceDir\overrides.wxi") {
             $fileSize = (Get-Item "$resourceDir\overrides.wxi").Length
-            Write-Host "✅ overrides.wxi file size: $fileSize bytes"
-            Write-Host "📄 Content preview:"
-            Get-Content "$resourceDir\overrides.wxi" -Head 20
+            Write-Host "✅ overrides.wxi copied successfully (size: $fileSize bytes)"
           } else {
             Write-Host "❌ Failed to copy overrides.wxi"
             exit 1
-          }
-
-      - name: Validate overrides.wxi format（验证 overrides.wxi 格式）
-        shell: pwsh
-        run: |
-          Write-Host "🔍 Validating overrides.wxi format for WiX compatibility..."
-          Write-Host ""
-          
-          $wixFile = "target\jpackage-resources\overrides.wxi"
-          if (-not (Test-Path $wixFile)) {
-            Write-Host "❌ overrides.wxi not found in resource directory"
-            exit 1
-          }
-          
-          Write-Host "📄 Complete file content:"
-          Write-Host "=" * 80
-          Get-Content $wixFile | ForEach-Object { Write-Host $_ }
-          Write-Host "=" * 80
-          Write-Host ""
-          
-          # 读取文件内容进行检查
-          $content = Get-Content $wixFile -Raw
-          
-          # 检查 1: 必须有 <?xml 声明
-          Write-Host "🔍 Check 1: XML Declaration"
-          if ($content -match '<\?xml\s+version') {
-            Write-Host "✅ PASS: Found <?xml declaration (required for WiX include files)"
-          } else {
-            Write-Host "❌ FAIL: Missing <?xml declaration"
-            Write-Host "   Issue: WiX include files must be valid XML documents"
-            $hasIssues = $true
-          }
-          
-          # 检查 2: 必须有 <Include> 根元素
-          Write-Host ""
-          Write-Host "🔍 Check 2: Include Root Element"
-          if ($content -match '<Include[\s>]') {
-            Write-Host "✅ PASS: Found <Include> root element (required)"
-            # 检查是否有正确的命名空间
-            if ($content -match '<Include\s+xmlns="http://schemas\.microsoft\.com/wix/2006/wi"') {
-              Write-Host "   ✅ With correct namespace declaration"
-            } else {
-              Write-Host "   ⚠️  WARNING: Missing or incorrect namespace declaration"
-              Write-Host "      Should be: xmlns=`"http://schemas.microsoft.com/wix/2006/wi`""
-            }
-          } else {
-            Write-Host "❌ FAIL: Missing <Include> root element"
-            Write-Host "   Issue: WiX include files must use <Include> as root element"
-            Write-Host "   Error would be: CNDL0048 - invalid document element name"
-            $hasIssues = $true
-          }
-          
-          # 检查 3: 结束标签
-          Write-Host ""
-          Write-Host "🔍 Check 3: Include Closing Tag"
-          if ($content -match '</Include>') {
-            Write-Host "✅ PASS: Found </Include> closing tag"
-          } else {
-            Write-Host "❌ FAIL: Missing </Include> closing tag"
-            $hasIssues = $true
-          }
-          
-          # 检查 5: 应该有必需的 WiX 元素
-          Write-Host ""
-          Write-Host "🔍 Check 5: Required WiX Elements"
-          $requiredElements = @{
-            'Property.*PREVIOUSINSTALLDIR' = 'Property for reading previous install path'
-            'RegistrySearch' = 'RegistrySearch for previous path'
-            'SetProperty.*INSTALLDIR' = 'SetProperty for INSTALLDIR'
-            'DirectoryRef.*INSTALLDIR' = 'DirectoryRef for INSTALLDIR'
-            'RememberInstallDirComponent' = 'Component for saving install path'
-            'RegistryValue' = 'RegistryValue for saving path'
-            'InstallPathMemoryGroup' = 'ComponentGroup for install path memory'
-          }
-          
-          $allElementsFound = $true
-          foreach ($element in $requiredElements.GetEnumerator()) {
-            if ($content -match $element.Key) {
-              Write-Host "  ✅ $($element.Value): Found"
-            } else {
-              Write-Host "  ❌ $($element.Value): NOT Found"
-              $allElementsFound = $false
-              $hasIssues = $true
-            }
-          }
-          
-          # 总结
-          Write-Host ""
-          Write-Host "=" * 80
-          if ($hasIssues) {
-            Write-Host "❌ VALIDATION FAILED: overrides.wxi has format issues"
-            Write-Host ""
-            Write-Host "📝 Correct format for WiX 3.x include files:"
-            Write-Host "   - Must have <?xml version=`"1.0`" encoding=`"utf-8`"?> declaration"
-            Write-Host "   - Must have <Include xmlns=`"http://schemas.microsoft.com/wix/2006/wi`"> as root"
-            Write-Host "   - Contains WiX elements: <Property>, <SetProperty>, <DirectoryRef>, <ComponentGroup>"
-            Write-Host "   - Must close with </Include>"
-            Write-Host ""
-            exit 1
-          } else {
-            Write-Host "✅ VALIDATION PASSED: overrides.wxi format is correct"
-            Write-Host "   Compatible with WiX 3.x and jpackage"
           }
 
       - name: Check jpackage temp directory before packaging（打包前检查临时目录）

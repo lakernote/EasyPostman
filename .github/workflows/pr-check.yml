@@ -290,33 +290,67 @@ jobs:
           $javaOpts = $env:JAVA_OPTIONS -split '\|'
           
           # 创建 Windows MSI 安装包（用于测试安装路径记忆功能）
-          jpackage `
-            --type msi `
-            --input target\dist-input `
-            --main-jar $jarName `
-            --main-class com.laker.postman.App `
-            --runtime-image target\runtime `
-            --dest $outDir `
-            --icon assets\win\EasyPostman.ico `
-            --name EasyPostman `
-            --app-version $version `
-            --vendor "Laker" `
-            --copyright "© 2025 Laker" `
-            --win-shortcut `
-            --win-menu `
-            --description "A modern API testing tool similar to Postman" `
-            --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" `
-            --win-dir-chooser `
-            --win-per-user-install `
-            --win-menu-group "EasyTools" `
-            --win-help-url "https://gitee.com/lakernote/easy-postman" `
-            --resource-dir "target\jpackage-resources" `
-            --java-options $javaOpts[0] `
-            --java-options $javaOpts[1] `
-            --java-options $javaOpts[2] `
-            --java-options "-Djavax.accessibility.assistive_technologies="
-          
-          Write-Host "✅ MSI installer created"
+          # Note: jpackage output is captured for better error reporting
+          try {
+            jpackage `
+              --type msi `
+              --input target\dist-input `
+              --main-jar $jarName `
+              --main-class com.laker.postman.App `
+              --runtime-image target\runtime `
+              --dest $outDir `
+              --icon assets\win\EasyPostman.ico `
+              --name EasyPostman `
+              --app-version $version `
+              --vendor "Laker" `
+              --copyright "© 2025 Laker" `
+              --win-shortcut `
+              --win-menu `
+              --description "A modern API testing tool similar to Postman" `
+              --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" `
+              --win-dir-chooser `
+              --win-per-user-install `
+              --win-menu-group "EasyTools" `
+              --win-help-url "https://gitee.com/lakernote/easy-postman" `
+              --resource-dir "target\jpackage-resources" `
+              --java-options $javaOpts[0] `
+              --java-options $javaOpts[1] `
+              --java-options $javaOpts[2] `
+              --java-options "-Djavax.accessibility.assistive_technologies=" `
+              --verbose
+            
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ jpackage failed with exit code: $LASTEXITCODE"
+              Write-Host "💡 Checking for WiX compilation logs..."
+              
+              # Look for WiX log files in temp directories
+              $tempDirs = @(
+                "$env:TEMP\jdk.jpackage*",
+                "C:\Users\*\AppData\Local\Temp\jdk.jpackage*"
+              )
+              
+              foreach ($pattern in $tempDirs) {
+                $dirs = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue
+                foreach ($dir in $dirs) {
+                  Write-Host "📂 Checking $dir"
+                  $logFiles = Get-ChildItem -Path $dir -Recurse -Include "*.log" -ErrorAction SilentlyContinue
+                  foreach ($log in $logFiles) {
+                    Write-Host "📄 Log file: $($log.FullName)"
+                    Get-Content $log -ErrorAction SilentlyContinue | Select-Object -Last 50
+                  }
+                }
+              }
+              
+              exit 1
+            }
+            
+            Write-Host "✅ MSI installer created successfully"
+          } catch {
+            Write-Host "❌ Exception during jpackage execution:"
+            Write-Host $_.Exception.Message
+            Write-Host $_.ScriptStackTrace
+            exit 1
+          }
 
       - name: Verify MSI installer and WiX integration（验证 MSI 安装包和 WiX 集成）
         shell: pwsh

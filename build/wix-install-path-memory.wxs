@@ -34,14 +34,12 @@
       </Component>
     </DirectoryRef>
 
-    <!-- Add our component to the main feature -->
-    <ComponentGroup Id="RememberInstallDirGroup">
-      <ComponentRef Id="RememberInstallDirComponent"/>
-    </ComponentGroup>
-
-    <FeatureRef Id="DefaultFeature">
-      <ComponentRef Id="RememberInstallDirComponent"/>
-    </FeatureRef>
+    <!--
+      Note: We only define the ComponentGroup here.
+      jpackage will automatically include components from DirectoryRef Id="INSTALLDIR"
+      into the main feature during MSI generation.
+      Do NOT use FeatureRef in a Fragment - it will cause compilation errors.
+    -->
   </Fragment>
 </Wix>
 

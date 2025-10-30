@@ -130,22 +130,23 @@ jobs:
           $resourceDir = "target\jpackage-resources"
           if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
           
-          # Copy unified WiX configuration file
+          # Copy as additional WiX fragment file (NOT replacing main.wxs)
+          # jpackage will automatically compile all .wxs files in resource-dir
           $wixConfig = "build\wix-install-path-memory.wxs"
           if (-not (Test-Path $wixConfig)) {
             Write-Host "❌ WiX configuration file not found: $wixConfig"
             exit 1
           }
           
-          Copy-Item $wixConfig -Destination "$resourceDir\main.wxs"
-          Write-Host "✅ WiX configuration copied (install path memory enabled)"
+          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
+          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs (install path memory enabled)"
           
           # Verify the copied file
-          if (Test-Path "$resourceDir\main.wxs") {
-            $fileSize = (Get-Item "$resourceDir\main.wxs").Length
-            Write-Host "✅ WiX config file size: $fileSize bytes"
+          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
+            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
+            Write-Host "✅ WiX fragment file size: $fileSize bytes"
           } else {
-            Write-Host "❌ Failed to copy WiX config file"
+            Write-Host "❌ Failed to copy WiX fragment file"
             exit 1
           }
 

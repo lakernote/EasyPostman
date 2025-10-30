@@ -85,7 +85,8 @@ if errorlevel 1 (
 set RESOURCE_DIR=target\jpackage-resources
 if not exist "%RESOURCE_DIR%" mkdir "%RESOURCE_DIR%"
 
-:: Copy unified WiX configuration file
+:: Copy WiX fragment as additional file (NOT replacing main.wxs)
+:: jpackage will compile all .wxs files in resource-dir
 set WIX_CONFIG=build\wix-install-path-memory.wxs
 if not exist "%WIX_CONFIG%" (
     echo ERROR: WiX configuration file not found: %WIX_CONFIG%
@@ -93,7 +94,7 @@ if not exist "%WIX_CONFIG%" (
     exit /b 1
 )
 
-copy "%WIX_CONFIG%" "%RESOURCE_DIR%\main.wxs"
+copy "%WIX_CONFIG%" "%RESOURCE_DIR%\install-dir-patch.wxs"
 if errorlevel 1 (
     echo Failed to copy WiX configuration file
     pause

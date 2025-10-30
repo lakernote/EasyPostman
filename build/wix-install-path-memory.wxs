@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  WiX Configuration for Installation Path Memory Feature
+  WiX Fragment for Installation Path Memory Feature
   功能：记住用户上次选择的安装路径
+
+  重要说明：
+  - 此文件是一个 Fragment，不能替换 jpackage 生成的 main.wxs
+  - 应该作为补充文件（例如 install-dir-patch.wxs）添加到 resource-dir
+  - jpackage 会自动编译所有 .wxs 文件并链接它们
 
   工作原理：
   1. RegistrySearch: 从注册表读取上次的安装路径
@@ -9,8 +14,8 @@
   3. 注册表位置: HKCU\Software\Laker\EasyPostman\InstallDir
 
   使用方法：
-  - 本地构建: build/win.bat 会自动复制此文件
-  - CI/CD: .github/workflows/*.yml 会复制此文件
+  - 本地构建: build/win.bat 会自动复制此文件为 install-dir-patch.wxs
+  - CI/CD: .github/workflows/*.yml 会复制此文件为 install-dir-patch.wxs
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>

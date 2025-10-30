@@ -35,7 +35,7 @@
 
   <!--
     在 INSTALLDIR 中添加一个 Component 来保存路径到注册表
-    注意：此 Component 需要在 Feature 中被引用（通过工作流的补丁步骤添加 ComponentRef）
+    注意：此 Component 需要在 Feature 中被引用
   -->
   <DirectoryRef Id="INSTALLDIR">
     <Component Id="RememberInstallDirComponent" Guid="0c8e5c4a-9d2f-4b1e-a8f7-3e6d9c5b4a2f">
@@ -47,5 +47,15 @@
                      KeyPath="yes" />
     </Component>
   </DirectoryRef>
+
+  <!-- ==================== ComponentGroup 定义 ==================== -->
+
+  <!--
+    将组件包装到 ComponentGroup 中，方便在 Feature 中引用
+    在 Feature 中可以使用: <ComponentGroupRef Id="InstallPathMemoryGroup" />
+  -->
+  <ComponentGroup Id="InstallPathMemoryGroup">
+    <ComponentRef Id="RememberInstallDirComponent" />
+  </ComponentGroup>
 </Fragment>
 

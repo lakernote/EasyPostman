@@ -312,35 +312,59 @@ jobs:
             exit 1
           }
           
-          # 修补 main.wxs 添加 ComponentRef
+          # 修补 main.wxs 添加 ComponentRef 或 ComponentGroupRef
           if (Test-Path $mainWxsPath) {
-            Write-Host "`n📝 Patching main.wxs to add ComponentRef..."
+            Write-Host "`n📝 Patching main.wxs to add install path memory component..."
             
             $content = Get-Content -Path $mainWxsPath -Raw
             
-            # 检查是否已经打过补丁
-            if ($content -match 'RememberInstallDirComponent') {
-              Write-Host "✅ main.wxs already contains RememberInstallDirComponent reference"
+            # 检查是否已经打过补丁（检查两种引用方式）
+            if ($content -match 'RememberInstallDirComponent' -or $content -match 'InstallPathMemoryGroup') {
+              Write-Host "✅ main.wxs already contains install path memory component reference"
             } else {
               Write-Host "🔍 Searching for Feature section..."
               
-              # 在 </Feature> 之前添加 ComponentRef
+              # 优先尝试使用 ComponentGroupRef（更简洁，推荐方式）
               $pattern = '([\s]+)(</Feature>)'
-              $replacement = '$1  <!-- Custom: Install path memory component (defined in overrides.wxi) -->' + "`r`n" + 
-                           '$1  <ComponentRef Id="RememberInstallDirComponent" />' + "`r`n" + 
+              $replacement = '$1  <!-- Custom: Install path memory (defined in overrides.wxi) -->' + "`r`n" + 
+                           '$1  <ComponentGroupRef Id="InstallPathMemoryGroup" />' + "`r`n" + 
                            '$1$2'
               
               $newContent = $content -replace $pattern, $replacement
               
               if ($newContent -ne $content) {
                 $newContent | Set-Content -Path $mainWxsPath -NoNewline
-                Write-Host "✅ Successfully added ComponentRef to Feature section"
-                Write-Host "   <ComponentRef Id='RememberInstallDirComponent' />"
+                Write-Host "✅ Successfully added ComponentGroupRef to Feature section"
+                Write-Host "   <ComponentGroupRef Id='InstallPathMemoryGroup' />"
               } else {
                 Write-Host "⚠️  Could not find </Feature> tag to patch"
-                Write-Host "🔍 Dumping main.wxs structure for debugging..."
-                Write-Host ($content -split "`n" | Select-Object -First 60 | Out-String)
-                exit 1
+                Write-Host "🔍 Trying alternative pattern..."
+                
+                # 备用方案：尝试查找 Feature 的其他模式
+                $pattern2 = '(<Feature[^>]*>)(.*?)(</Feature>)'
+                if ($content -match $pattern2) {
+                  Write-Host "✅ Found Feature with alternative pattern"
+                  # 使用直接的 ComponentRef
+                  $pattern3 = '([\s]+)(</Feature>)'
+                  $replacement3 = '$1  <!-- Custom: Install path memory component -->' + "`r`n" + 
+                                '$1  <ComponentRef Id="RememberInstallDirComponent" />' + "`r`n" + 
+                                '$1$2'
+                  $newContent = $content -replace $pattern3, $replacement3
+                  if ($newContent -ne $content) {
+                    $newContent | Set-Content -Path $mainWxsPath -NoNewline
+                    Write-Host "✅ Added ComponentRef (fallback method)"
+                  } else {
+                    Write-Host "❌ Failed to patch main.wxs"
+                    Write-Host "🔍 Dumping main.wxs structure for debugging..."
+                    Write-Host ($content -split "`n" | Select-Object -First 60 | Out-String)
+                    exit 1
+                  }
+                } else {
+                  Write-Host "❌ No Feature section found in main.wxs"
+                  Write-Host "🔍 Dumping main.wxs structure for debugging..."
+                  Write-Host ($content -split "`n" | Select-Object -First 60 | Out-String)
+                  exit 1
+                }
               }
             }
           } else {

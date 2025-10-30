@@ -302,50 +302,43 @@ jobs:
           # 读取文件内容进行检查
           $content = Get-Content $wixFile -Raw
           
-          # 检查 1: 不应该有 <?xml 声明
+          # 检查 1: 必须有 <?xml 声明
           Write-Host "🔍 Check 1: XML Declaration"
           if ($content -match '<\?xml\s+version') {
-            Write-Host "❌ FAIL: Found <?xml declaration"
-            Write-Host "   Issue: WiX include files should NOT have XML declaration"
-            Write-Host "   Reason: jpackage uses <?include ?> which expects raw content"
-            $hasIssues = $true
+            Write-Host "✅ PASS: Found <?xml declaration (required for WiX include files)"
           } else {
-            Write-Host "✅ PASS: No XML declaration (correct)"
+            Write-Host "❌ FAIL: Missing <?xml declaration"
+            Write-Host "   Issue: WiX include files must be valid XML documents"
+            $hasIssues = $true
           }
           
-          # 检查 2: 不应该有 <Include> 根元素
+          # 检查 2: 必须有 <Include> 根元素
           Write-Host ""
           Write-Host "🔍 Check 2: Include Root Element"
-          if ($content -match '<Include\s*>') {
-            Write-Host "❌ FAIL: Found <Include> root element"
-            Write-Host "   Issue: overrides.wxi should NOT have <Include> wrapper"
-            Write-Host "   Reason: <?include ?> directive inserts content directly"
-            $hasIssues = $true
+          if ($content -match '<Include[\s>]') {
+            Write-Host "✅ PASS: Found <Include> root element (required)"
+            # 检查是否有正确的命名空间
+            if ($content -match '<Include\s+xmlns="http://schemas\.microsoft\.com/wix/2006/wi"') {
+              Write-Host "   ✅ With correct namespace declaration"
+            } else {
+              Write-Host "   ⚠️  WARNING: Missing or incorrect namespace declaration"
+              Write-Host "      Should be: xmlns=`"http://schemas.microsoft.com/wix/2006/wi`""
+            }
           } else {
-            Write-Host "✅ PASS: No <Include> root element (correct)"
+            Write-Host "❌ FAIL: Missing <Include> root element"
+            Write-Host "   Issue: WiX include files must use <Include> as root element"
+            Write-Host "   Error would be: CNDL0048 - invalid document element name"
+            $hasIssues = $true
           }
           
-          # 检查 3: 不应该有 <Fragment> 根元素
+          # 检查 3: 结束标签
           Write-Host ""
-          Write-Host "🔍 Check 3: Fragment Root Element"
-          if ($content -match '^\s*<Fragment\s*>') {
-            Write-Host "❌ FAIL: Found <Fragment> as root element"
-            Write-Host "   Issue: overrides.wxi should NOT have <Fragment> wrapper"
-            Write-Host "   Reason: jpackage expects direct WiX elements"
-            $hasIssues = $true
+          Write-Host "🔍 Check 3: Include Closing Tag"
+          if ($content -match '</Include>') {
+            Write-Host "✅ PASS: Found </Include> closing tag"
           } else {
-            Write-Host "✅ PASS: No <Fragment> root element (correct)"
-          }
-          
-          # 检查 4: 不应该有 xmlns 声明
-          Write-Host ""
-          Write-Host "🔍 Check 4: Namespace Declaration"
-          if ($content -match 'xmlns\s*=') {
-            Write-Host "❌ FAIL: Found xmlns namespace declaration"
-            Write-Host "   Issue: Include files should not declare namespaces"
+            Write-Host "❌ FAIL: Missing </Include> closing tag"
             $hasIssues = $true
-          } else {
-            Write-Host "✅ PASS: No xmlns declaration (correct)"
           }
           
           # 检查 5: 应该有必需的 WiX 元素
@@ -378,16 +371,16 @@ jobs:
           if ($hasIssues) {
             Write-Host "❌ VALIDATION FAILED: overrides.wxi has format issues"
             Write-Host ""
-            Write-Host "📝 Correct format should be:"
-            Write-Host "   - No <?xml declaration"
-            Write-Host "   - No <Include> wrapper"
-            Write-Host "   - No <Fragment> wrapper"
-            Write-Host "   - Direct WiX elements: <Property>, <SetProperty>, <DirectoryRef>, <ComponentGroup>"
+            Write-Host "📝 Correct format for WiX 3.x include files:"
+            Write-Host "   - Must have <?xml version=`"1.0`" encoding=`"utf-8`"?> declaration"
+            Write-Host "   - Must have <Include xmlns=`"http://schemas.microsoft.com/wix/2006/wi`"> as root"
+            Write-Host "   - Contains WiX elements: <Property>, <SetProperty>, <DirectoryRef>, <ComponentGroup>"
+            Write-Host "   - Must close with </Include>"
             Write-Host ""
             exit 1
           } else {
             Write-Host "✅ VALIDATION PASSED: overrides.wxi format is correct"
-            Write-Host "   Ready for jpackage <?include ?> directive"
+            Write-Host "   Compatible with WiX 3.x and jpackage"
           }
 
       - name: Check jpackage temp directory before packaging（打包前检查临时目录）

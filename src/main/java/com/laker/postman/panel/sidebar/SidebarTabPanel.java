@@ -162,13 +162,14 @@ public class SidebarTabPanel extends SingletonBasePanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
-            // 左侧放 Console 和 Cookies
-            JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            leftPanel.setOpaque(false);
-            leftPanel.add(consoleLabel);
-            leftPanel.add(cookieLabel);
-            consoleContainer.add(leftPanel, BorderLayout.WEST);
-            consoleContainer.add(versionLabel, BorderLayout.EAST);
+            // 左侧放 Console
+            consoleContainer.add(consoleLabel, BorderLayout.WEST);
+            // 右侧放 Cookies 和 Version
+            JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            rightPanel.setOpaque(false);
+            rightPanel.add(cookieLabel);
+            rightPanel.add(versionLabel);
+            consoleContainer.add(rightPanel, BorderLayout.EAST);
             add(consoleContainer, BorderLayout.SOUTH);
             revalidate();
             repaint();
@@ -211,7 +212,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
         cookieLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         cookieLabel.setFocusable(true);
         cookieLabel.setEnabled(true);
         cookieLabel.addMouseListener(new MouseAdapter() {
@@ -237,8 +238,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        versionLabel.setForeground(Color.GRAY);
-        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
     }
 
     @Override

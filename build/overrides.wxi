@@ -1,55 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   WiX Include File: overrides.wxi
+  用于 jpackage 的 WiX 自定义配置
+
+  重要：此文件内容会被 jpackage 包含到 <Product> 元素内部
+  因此不能使用 <Fragment> 包装，只能包含可以直接放在 <Product> 下的元素
 
   功能：安装路径记忆
   - 安装时从注册表读取上次路径
   - 自动设置为默认安装目录
   - 安装后写入当前安装路径
 
-  注册表路径: HKCU\Software\Laker\EasyPostman\InstallDir
+  实现原理：
+  1. RegistrySearch (Type="raw") - 读取注册表中保存的上次安装路径
+  2. SetProperty (Before="CostFinalize") - 在成本计算前将上次路径设置为 INSTALLDIR
+  3. RegistryValue (in Component) - 安装完成后保存当前安装路径到注册表
+
+  注册表位置: HKCU\Software\Laker\EasyPostman\InstallDir
 -->
-<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
-  <Fragment>
-    <!-- ==================== 读取上次安装路径 ==================== -->
+<!-- ==================== 步骤 1: 读取上次安装路径 ==================== -->
 
-    <!-- 从注册表读取上次安装路径 -->
-    <Property Id="PREVIOUSINSTALLDIR" Secure="yes">
-      <RegistrySearch Id="FindPreviousInstallDir"
-                      Root="HKCU"
-                      Key="Software\Laker\EasyPostman"
-                      Name="InstallDir"
-                      Type="raw" />
-    </Property>
+<!-- 从注册表读取上次安装路径 -->
+<Property Id="PREVIOUSINSTALLDIR" Secure="yes">
+  <RegistrySearch Id="FindPreviousInstallDir"
+                  Root="HKCU"
+                  Key="Software\Laker\EasyPostman"
+                  Name="InstallDir"
+                  Type="raw" />
+</Property>
 
-    <!-- 如果找到上次的路径，设置为默认安装路径 -->
-    <SetProperty Id="INSTALLDIR"
-                 Value="[PREVIOUSINSTALLDIR]"
-                 Before="CostFinalize"
-                 Sequence="first">
-      PREVIOUSINSTALLDIR
-    </SetProperty>
+<!-- ==================== 步骤 2: 设置默认安装路径 ==================== -->
 
-    <!-- ==================== 安装后写入注册表 ==================== -->
+<!-- 如果找到上次的路径，在 CostFinalize 前设置为默认安装路径 -->
+<SetProperty Id="INSTALLDIR"
+             Value="[PREVIOUSINSTALLDIR]"
+             Before="CostFinalize"
+             Sequence="first">
+  PREVIOUSINSTALLDIR
+</SetProperty>
 
-    <DirectoryRef Id="INSTALLDIR">
-      <Component Id="RememberInstallDirComponent" Guid="0c8e5c4a-9d2f-4b1e-a8f7-3e6d9c5b4a2f">
-        <RegistryValue Root="HKCU"
-                       Key="Software\Laker\EasyPostman"
-                       Name="InstallDir"
-                       Value="[INSTALLDIR]"
-                       Type="string"
-                       KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
+<!-- ==================== 步骤 3: 安装后保存路径到注册表 ==================== -->
 
-    <!-- ==================== 提供 Feature 引用 ==================== -->
+<DirectoryRef Id="INSTALLDIR">
+  <Component Id="RememberInstallDirComponent" Guid="0c8e5c4a-9d2f-4b1e-a8f7-3e6d9c5b4a2f">
+    <RegistryValue Root="HKCU"
+                   Key="Software\Laker\EasyPostman"
+                   Name="InstallDir"
+                   Value="[INSTALLDIR]"
+                   Type="string"
+                   KeyPath="yes" />
+  </Component>
+</DirectoryRef>
 
-    <ComponentGroup Id="InstallPathMemoryGroup">
-      <ComponentRef Id="RememberInstallDirComponent" />
-    </ComponentGroup>
-  </Fragment>
+<!-- ==================== 步骤 4: 将组件添加到主 Feature ==================== -->
 
-</Include>
+<!-- 注意：ComponentGroupRef 需要在 Feature 内部，jpackage 会自动处理 -->
+<ComponentGroup Id="InstallPathMemoryGroup">
+  <ComponentRef Id="RememberInstallDirComponent" />
+</ComponentGroup>
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  WiX Fragment for Installation Path Memory Feature
+  WiX Fragment：安装路径记忆功能
   功能：记住用户上次选择的安装路径
 
   重要说明：
@@ -12,6 +12,7 @@
   1. RegistrySearch: 从注册表读取上次的安装路径
   2. RegistryValue: 将当前安装路径保存到注册表
   3. 注册表位置: HKCU\Software\Laker\EasyPostman\InstallDir
+  4. Permanent="yes": 卸载后保留注册表项，确保重新安装时能记住路径
 
   使用方法：
   - 本地构建: build/win.bat 会自动复制此文件为 install-dir-patch.wxs
@@ -19,9 +20,9 @@
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
-    <!-- Read previous installation directory from registry -->
-    <!-- Secure="yes" ensures the property can be used with elevated privileges -->
-    <!-- Type="directory" ensures the path is valid and properly formatted -->
+    <!-- 从注册表读取上次的安装路径 -->
+    <!-- Secure="yes" 确保该属性可以在提升权限后使用 -->
+    <!-- Type="directory" 确保路径有效且格式正确 -->
     <Property Id="INSTALLDIR" Secure="yes">
       <RegistrySearch Id="RememberInstallDir"
                       Type="directory"
@@ -30,9 +31,10 @@
                       Name="InstallDir" />
     </Property>
 
-    <!-- Component to save installation directory to registry -->
+    <!-- 将安装路径保存到注册表的组件 -->
+    <!-- Permanent="yes" 确保卸载后保留注册表项，重新安装时能记住路径 -->
     <DirectoryRef Id="INSTALLDIR">
-      <Component Id="RememberInstallDirComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d">
+      <Component Id="RememberInstallDirComponent" Guid="28607609-97b7-4212-9285-04ef64a4946d" Permanent="yes">
         <RegistryKey Root="HKCU" Key="Software\Laker\EasyPostman">
           <RegistryValue Type="string" Name="InstallDir" Value="[INSTALLDIR]" KeyPath="yes"/>
         </RegistryKey>
@@ -40,10 +42,10 @@
     </DirectoryRef>
 
     <!--
-      Note: We only define the ComponentGroup here.
-      jpackage will automatically include components from DirectoryRef Id="INSTALLDIR"
-      into the main feature during MSI generation.
-      Do NOT use FeatureRef in a Fragment - it will cause compilation errors.
+      注意事项：
+      - 我们只在这里定义组件，jpackage 会自动将 DirectoryRef Id="INSTALLDIR" 中的组件
+        包含到主 Feature 中（在 MSI 生成时）
+      - 不要在 Fragment 中使用 FeatureRef，否则会导致编译错误
     -->
   </Fragment>
 </Wix>

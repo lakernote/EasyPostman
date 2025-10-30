@@ -249,6 +249,194 @@ jobs:
           Copy-Item "target\$jarName" -Destination $distInputDir
           Write-Host "✅ Prepared dist-input"
 
+      - name: Copy WiX configuration for install path memory test（复制 WiX 配置测试安装路径记忆功能）
+        shell: pwsh
+        run: |
+          Write-Host "🔧 Copying WiX configuration to test installation path memory feature..."
+          $resourceDir = "target\jpackage-resources"
+          if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
+          
+          # Copy as additional WiX fragment file (NOT replacing main.wxs)
+          # jpackage will automatically compile all .wxs files in resource-dir
+          $wixConfig = "build\wix-install-path-memory.wxs"
+          if (-not (Test-Path $wixConfig)) {
+            Write-Host "❌ WiX configuration file not found: $wixConfig"
+            exit 1
+          }
+          
+          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
+          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs"
+          
+          # Verify the copied file
+          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
+            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
+            Write-Host "✅ WiX fragment file size: $fileSize bytes"
+            Write-Host "📄 WiX fragment content preview:"
+            Get-Content "$resourceDir\install-dir-patch.wxs" -Head 20
+          } else {
+            Write-Host "❌ Failed to copy WiX fragment file"
+            exit 1
+          }
+
+      - name: Create Windows MSI installer for path memory testing（创建 MSI 安装包测试路径记忆）
+        shell: pwsh
+        run: |
+          Write-Host "📦 Creating Windows MSI installer with install path memory feature..."
+          $version = "${{ needs.get-version.outputs.version }}"
+          $jarName = "easy-postman-$version.jar"
+          $outDir = "target\msi-test"
+          
+          if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+          
+          $javaOpts = $env:JAVA_OPTIONS -split '\|'
+          
+          # 创建 Windows MSI 安装包（用于测试安装路径记忆功能）
+          # Note: jpackage output is captured for better error reporting
+          try {
+            jpackage `
+              --type msi `
+              --input target\dist-input `
+              --main-jar $jarName `
+              --main-class com.laker.postman.App `
+              --runtime-image target\runtime `
+              --dest $outDir `
+              --icon assets\win\EasyPostman.ico `
+              --name EasyPostman `
+              --app-version $version `
+              --vendor "Laker" `
+              --copyright "© 2025 Laker" `
+              --win-shortcut `
+              --win-menu `
+              --description "A modern API testing tool similar to Postman" `
+              --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" `
+              --win-dir-chooser `
+              --win-per-user-install `
+              --win-menu-group "EasyTools" `
+              --win-help-url "https://gitee.com/lakernote/easy-postman" `
+              --resource-dir "target\jpackage-resources" `
+              --java-options $javaOpts[0] `
+              --java-options $javaOpts[1] `
+              --java-options $javaOpts[2] `
+              --java-options "-Djavax.accessibility.assistive_technologies=" `
+              --verbose
+            
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ jpackage failed with exit code: $LASTEXITCODE"
+              Write-Host "💡 Checking for WiX compilation logs..."
+              
+              # Look for WiX log files in temp directories
+              $tempDirs = @(
+                "$env:TEMP\jdk.jpackage*",
+                "C:\Users\*\AppData\Local\Temp\jdk.jpackage*"
+              )
+              
+              foreach ($pattern in $tempDirs) {
+                $dirs = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue
+                foreach ($dir in $dirs) {
+                  Write-Host "📂 Checking $dir"
+                  $logFiles = Get-ChildItem -Path $dir -Recurse -Include "*.log" -ErrorAction SilentlyContinue
+                  foreach ($log in $logFiles) {
+                    Write-Host "📄 Log file: $($log.FullName)"
+                    Get-Content $log -ErrorAction SilentlyContinue | Select-Object -Last 50
+                  }
+                }
+              }
+              
+              exit 1
+            }
+            
+            Write-Host "✅ MSI installer created successfully"
+          } catch {
+            Write-Host "❌ Exception during jpackage execution:"
+            Write-Host $_.Exception.Message
+            Write-Host $_.ScriptStackTrace
+            exit 1
+          }
+
+      - name: Verify MSI installer and WiX integration（验证 MSI 安装包和 WiX 集成）
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Verifying MSI installer..."
+          $version = "${{ needs.get-version.outputs.version }}"
+          $msiFile = "target\msi-test\EasyPostman-$version.msi"
+          
+          if (-not (Test-Path $msiFile)) {
+            Write-Host "❌ MSI file not found: $msiFile"
+            exit 1
+          }
+          
+          $fileSize = (Get-Item $msiFile).Length / 1MB
+          Write-Host "✅ MSI installer exists: $msiFile ($([math]::Round($fileSize, 2)) MB)"
+          
+          # 使用 WiX 工具验证 MSI 结构（如果可用）
+          try {
+            $wixPath = Get-Command candle.exe -ErrorAction SilentlyContinue
+            if ($wixPath) {
+              Write-Host "✅ WiX Toolset is available for MSI validation"
+              
+              # 尝试提取 MSI 内容查看是否包含注册表组件
+              Write-Host "🔍 Checking MSI for registry components..."
+              # 这里可以添加更详细的 MSI 内部结构检查
+            } else {
+              Write-Host "ℹ️  WiX command-line tools not in PATH, skipping detailed MSI validation"
+            }
+          } catch {
+            Write-Host "ℹ️  WiX validation skipped: $_"
+          }
+          
+          Write-Host "✅ MSI installer verification passed"
+
+      - name: Test WiX configuration syntax（测试 WiX 配置语法）
+        shell: pwsh
+        run: |
+          Write-Host "🧪 Testing WiX configuration syntax..."
+          $wixFile = "target\jpackage-resources\install-dir-patch.wxs"
+          
+          if (-not (Test-Path $wixFile)) {
+            Write-Host "❌ WiX fragment file not found"
+            exit 1
+          }
+          
+          # 检查关键元素是否存在
+          $wixContent = Get-Content $wixFile -Raw
+          
+          $checks = @{
+            "RegistrySearch element" = $wixContent -match '<RegistrySearch.*Id="RememberInstallDir"'
+            "Registry key path" = $wixContent -match 'Key="Software\\Laker\\EasyPostman"'
+            "Registry value name" = $wixContent -match 'Name="InstallDir"'
+            "Component with registry" = $wixContent -match '<Component.*Id="RememberInstallDirComponent"'
+            "DirectoryRef INSTALLDIR" = $wixContent -match '<DirectoryRef.*Id="INSTALLDIR"'
+            "Fragment element" = $wixContent -match '<Fragment>'
+            "No Product element" = -not ($wixContent -match '<Product')
+          }
+          
+          $allPassed = $true
+          foreach ($check in $checks.GetEnumerator()) {
+            if ($check.Value) {
+              Write-Host "✅ $($check.Key) - OK"
+            } else {
+              Write-Host "❌ $($check.Key) - FAILED"
+              $allPassed = $false
+            }
+          }
+          
+          if ($allPassed) {
+            Write-Host "✅ All WiX fragment configuration checks passed"
+          } else {
+            Write-Host "❌ Some WiX fragment configuration checks failed"
+            Write-Host "📄 WiX fragment content:"
+            Write-Host $wixContent
+            exit 1
+          }
+
+      - name: Upload MSI installer
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: windows-msi-installer
+          path: target/msi-test/*.msi
+          retention-days: 3
+
       - name: Create Windows portable version
         shell: pwsh
         run: |

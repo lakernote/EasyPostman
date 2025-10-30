@@ -124,6 +124,32 @@ jobs:
           
           Copy-Item "target\$jarName" -Destination $distInputDir
 
+      - name: Copy WiX configuration to remember installation path（复制 WiX 配置以记住安装路径）
+        shell: pwsh
+        run: |
+          $resourceDir = "target\jpackage-resources"
+          if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
+          
+          # Copy as additional WiX fragment file (NOT replacing main.wxs)
+          # jpackage will automatically compile all .wxs files in resource-dir
+          $wixConfig = "build\wix-install-path-memory.wxs"
+          if (-not (Test-Path $wixConfig)) {
+            Write-Host "❌ WiX configuration file not found: $wixConfig"
+            exit 1
+          }
+          
+          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
+          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs (install path memory enabled)"
+          
+          # Verify the copied file
+          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
+            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
+            Write-Host "✅ WiX fragment file size: $fileSize bytes"
+          } else {
+            Write-Host "❌ Failed to copy WiX fragment file"
+            exit 1
+          }
+
       - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
         shell: pwsh
         run: |
@@ -157,6 +183,7 @@ jobs:
             --win-per-user-install `
             --win-menu-group "EasyTools" `
             --win-help-url "https://gitee.com/lakernote/easy-postman" `
+            --resource-dir "target\jpackage-resources" `
             --java-options $javaOpts[0] `
             --java-options $javaOpts[1] `
             --java-options $javaOpts[2] `

@@ -47,6 +47,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JLabel versionLabel;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
+    private CookieManagerDialog cookieManagerDialog; // Cookie管理器对话框实例
 
     // 支持的tab标题i18n key
     private static final String[] TAB_TITLE_KEYS = {
@@ -227,9 +228,17 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 显示 Cookie 管理器对话框
      */
     private void showCookieManagerDialog() {
+        // 如果对话框已存在且可见，则将其置于前台
+        if (cookieManagerDialog != null && cookieManagerDialog.isVisible()) {
+            cookieManagerDialog.toFront();
+            cookieManagerDialog.requestFocus();
+            return;
+        }
+
+        // 创建新对话框
         Window window = SwingUtilities.getWindowAncestor(this);
-        CookieManagerDialog dialog = new CookieManagerDialog(window);
-        dialog.setVisible(true);
+        cookieManagerDialog = new CookieManagerDialog(window);
+        cookieManagerDialog.setVisible(true);
     }
 
     /**

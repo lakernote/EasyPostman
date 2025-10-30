@@ -6,9 +6,12 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * 轻量级IOC容器
@@ -111,7 +114,42 @@ public class ApplicationContext {
             if ("file".equals(protocol)) {
                 String filePath = resource.getFile();
                 scanFile(new File(filePath), basePackage);
+            } else if ("jar".equals(protocol)) {
+                scanJar(resource, packagePath);
             }
+        }
+    }
+
+    /**
+     * 扫描JAR文件中的类
+     */
+    private void scanJar(URL resource, String packagePath) {
+        try {
+            JarURLConnection jarConnection = (JarURLConnection) resource.openConnection();
+            JarFile jarFile = jarConnection.getJarFile();
+            Enumeration<JarEntry> entries = jarFile.entries();
+
+            while (entries.hasMoreElements()) {
+                java.util.jar.JarEntry entry = entries.nextElement();
+                String entryName = entry.getName();
+
+                // 只处理.class文件且在指定包路径下的类
+                if (entryName.endsWith(".class") && entryName.startsWith(packagePath)) {
+                    String className = entryName.replace('/', '.').replace(".class", "");
+                    try {
+                        Class<?> clazz = Class.forName(className);
+                        if (clazz.isAnnotationPresent(Component.class)) {
+                            registerBean(clazz);
+                        }
+                    } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                        log.warn("Failed to load class: {}", className);
+                    } catch (Exception e) {
+                        log.error("Error processing class: {}", className, e);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to scan JAR: {}", resource, e);
         }
     }
 

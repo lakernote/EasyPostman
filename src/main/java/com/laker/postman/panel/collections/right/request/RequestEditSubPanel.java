@@ -148,10 +148,6 @@ public class RequestEditSubPanel extends JPanel {
         scriptPanel = new ScriptPanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptPanel);
 
-        // 2.6 Cookie 面板
-        CookieTablePanel cookiePanel = new CookieTablePanel();
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_COOKIES), cookiePanel);
-
         // 3. 响应面板
         responsePanel = new ResponsePanel(protocol);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
@@ -165,17 +161,15 @@ public class RequestEditSubPanel extends JPanel {
             splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占20%
             // 切换到WebSocket协议时，默认选中Body Tab
             reqTabs.setSelectedComponent(requestBodyPanel);
-            // 隐藏认证tab和cookie tab
+            // 隐藏认证tab
             reqTabs.remove(authTabPanel);
-            reqTabs.remove(cookiePanel);
             // 初始时禁用发送和定时按钮，只有连接后才可用
             requestBodyPanel.setWebSocketConnected(false);
         }
         if (protocol.isSseProtocol()) {
             splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占20%
-            // 隐藏认证tab和cookie tab
+            // 隐藏认证tab
             reqTabs.remove(authTabPanel);
-            reqTabs.remove(cookiePanel);
         }
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();

@@ -190,6 +190,8 @@ public final class MessageKeys {
     public static final String AUTH_TOKEN = "auth.token";
 
     // ============ Cookie相关 ============
+    public static final String COOKIES_TITLE = "cookies.title";
+    public static final String COOKIES_MANAGER_TITLE = "cookies.manager_title";
     public static final String COOKIE_BUTTON_DELETE = "cookie.button.delete";
     public static final String COOKIE_BUTTON_CLEAR = "cookie.button.clear";
     public static final String COOKIE_BUTTON_ADD = "cookie.button.add";

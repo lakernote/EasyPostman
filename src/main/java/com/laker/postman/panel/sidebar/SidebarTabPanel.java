@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -42,6 +43,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private transient List<TabInfo> tabInfos;
     private JPanel consoleContainer;
     private JLabel consoleLabel;
+    private JLabel cookieLabel;
     private JLabel versionLabel;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
@@ -160,7 +162,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
-            consoleContainer.add(consoleLabel, BorderLayout.WEST);
+            // 左侧放 Console 和 Cookies
+            JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            leftPanel.setOpaque(false);
+            leftPanel.add(consoleLabel);
+            leftPanel.add(cookieLabel);
+            consoleContainer.add(leftPanel, BorderLayout.WEST);
             consoleContainer.add(versionLabel, BorderLayout.EAST);
             add(consoleContainer, BorderLayout.SOUTH);
             revalidate();
@@ -173,6 +180,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void initBottomBar() {
         createConsoleLabel();
+        createCookieLabel();
         createVersionLabel();
     }
 
@@ -193,6 +201,34 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 setConsoleExpanded(true);
             }
         });
+    }
+
+    /**
+     * 创建 Cookie 标签
+     */
+    private void createCookieLabel() {
+        cookieLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
+        cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
+        cookieLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        cookieLabel.setFocusable(true);
+        cookieLabel.setEnabled(true);
+        cookieLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showCookieManagerDialog();
+            }
+        });
+    }
+
+    /**
+     * 显示 Cookie 管理器对话框
+     */
+    private void showCookieManagerDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        CookieManagerDialog dialog = new CookieManagerDialog(window);
+        dialog.setVisible(true);
     }
 
     /**

@@ -5,7 +5,7 @@ echo Updating EasyPostman...
 echo.
 
 REM 等待确保文件句柄释放
-timeout /t 2 /nobreak > nul
+timeout /t 1 /nobreak > nul
 
 echo 正在备份当前版本 / Backing up current version...
 move /Y "{{CURRENT_JAR_PATH}}" "{{BACKUP_JAR_PATH}}" > nul 2>&1
@@ -43,8 +43,6 @@ if not exist "%VBSCRIPT%" (
 REM 后台启动VBScript
 start "" wscript.exe "%VBSCRIPT%"
 
-REM 等待VBScript启动
-timeout /t 1 /nobreak > nul
 
 :END
 exit

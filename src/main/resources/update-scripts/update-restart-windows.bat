@@ -5,7 +5,7 @@ echo Updating EasyPostman...
 echo.
 
 REM 等待确保文件句柄释放
-timeout /t 2 /nobreak > nul
+timeout /t 1 /nobreak > nul
 
 echo 正在备份当前版本 / Backing up current version...
 move /Y "{{CURRENT_JAR_PATH}}" "{{BACKUP_JAR_PATH}}" > nul 2>&1
@@ -23,17 +23,26 @@ echo 正在启动新版本 / Starting new version...
 
 REM 创建临时VBScript来启动应用并清理
 set "VBSCRIPT=%TEMP%\start_easypostman_%RANDOM%.vbs"
-echo Set WshShell = CreateObject("WScript.Shell") > "%VBSCRIPT%"
-echo WshShell.Run "javaw -jar ""{{CURRENT_JAR_PATH}}""", 0, False >> "%VBSCRIPT%"
-echo WScript.Sleep 500 >> "%VBSCRIPT%"
-echo Set fso = CreateObject("Scripting.FileSystemObject") >> "%VBSCRIPT%"
-echo On Error Resume Next >> "%VBSCRIPT%"
-echo fso.DeleteFile "{{BACKUP_JAR_PATH}}", True >> "%VBSCRIPT%"
-echo fso.DeleteFile "{{SCRIPT_PATH}}", True >> "%VBSCRIPT%"
-echo fso.DeleteFile WScript.ScriptFullName, True >> "%VBSCRIPT%"
+(
+echo Set WshShell = CreateObject^("WScript.Shell"^)
+echo WshShell.Run "javaw -jar ""{{CURRENT_JAR_PATH}}""", 0, False
+echo WScript.Sleep 500
+echo Set fso = CreateObject^("Scripting.FileSystemObject"^)
+echo On Error Resume Next
+echo fso.DeleteFile "{{BACKUP_JAR_PATH}}", True
+echo fso.DeleteFile "{{SCRIPT_PATH}}", True
+echo fso.DeleteFile WScript.ScriptFullName, True
+) > "%VBSCRIPT%"
 
-REM 后台启动VBScript并立即退出
+REM 检查VBScript是否创建成功
+if not exist "%VBSCRIPT%" (
+    echo 创建启动脚本失败 / Failed to create start script
+    goto END
+)
+
+REM 后台启动VBScript
 start "" wscript.exe "%VBSCRIPT%"
+
 
 :END
 exit

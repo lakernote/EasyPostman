@@ -30,7 +30,8 @@ if not defined VERSION (
 echo Building EasyPostman version: %VERSION%
 
 set APP_NAME=EasyPostman
-set JAR_NAME=easy-postman-%VERSION%.jar
+set JAR_NAME_WITH_VERSION=easy-postman-%VERSION%.jar
+set JAR_NAME=easy-postman.jar
 set MAIN_CLASS=com.laker.postman.App
 set ICON_DIR=assets\win\EasyPostman.ico
 set OUTPUT_DIR=dist
@@ -48,6 +49,22 @@ if %MAJOR_JVER% lss 17 (
 call mvn clean package -DskipTests=false
 if errorlevel 1 (
     echo ERROR: Maven build failed
+    pause
+    exit /b 1
+)
+
+:: Check if JAR was built successfully
+if not exist "target\%JAR_NAME_WITH_VERSION%" (
+    echo ERROR: JAR file not found: target\%JAR_NAME_WITH_VERSION%
+    pause
+    exit /b 1
+)
+
+:: Rename JAR to fixed name (for jpackage and updates)
+echo Renaming JAR: %JAR_NAME_WITH_VERSION% -^> %JAR_NAME%
+copy "target\%JAR_NAME_WITH_VERSION%" "target\%JAR_NAME%"
+if errorlevel 1 (
+    echo ERROR: Failed to rename JAR
     pause
     exit /b 1
 )

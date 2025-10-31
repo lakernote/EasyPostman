@@ -1,5 +1,6 @@
 package com.laker.postman.service.update;
 
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
@@ -62,6 +63,7 @@ public class UpdateUIManager {
                 case 0 -> openManualDownloadPage();
                 case 1 -> startAutomaticUpdate(updateInfo);
                 case 2, -1 -> { /* 用户稍后提醒或关闭对话框 */ }
+                default -> log.debug("Unknown dialog choice: {}", choice);
             }
         });
     }
@@ -130,23 +132,85 @@ public class UpdateUIManager {
      * 显示安装提示
      */
     private void showInstallPrompt(File installerFile) {
-        String message = I18nUtil.getMessage(MessageKeys.UPDATE_INSTALL_PROMPT);
-        int choice = JOptionPane.showConfirmDialog(null, message,
-                I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
-                JOptionPane.YES_NO_OPTION);
+        String fileName = installerFile.getName().toLowerCase();
+        boolean isJarUpdate = fileName.endsWith(".jar");
+
+        // 根据文件类型显示不同的提示消息
+        String message;
+        if (isJarUpdate) {
+            // JAR 更新：自动替换并重启
+            message = I18nUtil.isChinese()
+                ? "下载完成！应用将自动更新并重启。\n\n是否现在更新？"
+                : "Download complete! The application will update and restart automatically.\n\nUpdate now?";
+        } else {
+            // 安装包更新：需要手动安装
+            message = I18nUtil.getMessage(MessageKeys.UPDATE_INSTALL_PROMPT);
+        }
+
+        int choice = JOptionPane.showConfirmDialog(
+            SingletonFactory.getInstance(MainFrame.class),
+            message,
+            I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
 
         if (choice == JOptionPane.YES_OPTION) {
+            if (isJarUpdate) {
+                // JAR 更新：显示进度提示
+                showUpdatingMessage();
+            }
+
             downloader.installUpdate(installerFile, success -> {
-                if (success) {
-                    System.exit(0);
-                } else {
-                    JOptionPane.showMessageDialog(null,
-                            I18nUtil.getMessage(MessageKeys.UPDATE_OPEN_INSTALLER_FAILED, "Unknown error"),
+                if (!success) {
+                    SwingUtilities.invokeLater(() -> {
+                        String errorMsg = isJarUpdate
+                            ? (I18nUtil.isChinese()
+                                ? "更新失败，请手动下载最新版本。"
+                                : "Update failed. Please download the latest version manually.")
+                            : I18nUtil.getMessage(MessageKeys.UPDATE_OPEN_INSTALLER_FAILED, "Unknown error");
+
+                        JOptionPane.showMessageDialog(
+                            SingletonFactory.getInstance(MainFrame.class),
+                            errorMsg,
                             I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
                             JOptionPane.ERROR_MESSAGE);
+                    });
                 }
+                // 成功时：JAR 更新会自动退出；安装包更新需要用户手动操作
             });
         }
+    }
+
+    /**
+     * 显示正在更新的消息
+     */
+    private void showUpdatingMessage() {
+        SwingUtilities.invokeLater(() -> {
+            JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.isChinese() ? "正在更新..." : "Updating...",
+                false);
+
+            JPanel panel = new JPanel(new BorderLayout(10, 10));
+            panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+            JLabel messageLabel = new JLabel(
+                I18nUtil.isChinese()
+                    ? "正在更新应用，请稍候..."
+                    : "Updating application, please wait...");
+            messageLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+
+            JProgressBar progressBar = new JProgressBar();
+            progressBar.setIndeterminate(true);
+
+            panel.add(messageLabel, BorderLayout.NORTH);
+            panel.add(progressBar, BorderLayout.CENTER);
+
+            dialog.setContentPane(panel);
+            dialog.pack();
+            dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+            dialog.setVisible(true);
+        });
     }
 
     /**

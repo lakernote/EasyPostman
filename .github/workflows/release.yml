@@ -116,20 +116,22 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarNameWithVersion = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           
           $distInputDir = "target\dist-input"
           if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
           New-Item -ItemType Directory -Path $distInputDir | Out-Null
           
-          Copy-Item "target\$jarName" -Destination $distInputDir
+          # 重命名 JAR 为固定名称（去除版本号）
+          Copy-Item "target\$jarNameWithVersion" -Destination "$distInputDir\$jarName"
 
 
       - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           $outDir = "dist"
           
           if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
@@ -236,19 +238,21 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarNameWithVersion = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           
           $distInputDir = "target\dist-input"
           if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
           New-Item -ItemType Directory -Path $distInputDir | Out-Null
           
-          Copy-Item "target\$jarName" -Destination $distInputDir
+          # 重命名 JAR 为固定名称（去除版本号）
+          Copy-Item "target\$jarNameWithVersion" -Destination "$distInputDir\$jarName"
 
       - name: Create app-image with jpackage（创建应用镜像，免安装）
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           $appImageDir = "target\app-image"
           
           if (Test-Path $appImageDir) { Remove-Item -Recurse -Force $appImageDir }
@@ -354,16 +358,18 @@ jobs:
       - name: Prepare dist-input（准备打包输入目录）
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-$VERSION.jar"
+          JAR_NAME_WITH_VERSION="easy-postman-$VERSION.jar"
+          JAR_NAME="easy-postman.jar"
           
           rm -rf target/dist-input
           mkdir -p target/dist-input
-          cp target/$JAR_NAME target/dist-input/
+          # 重命名 JAR 为固定名称（去除版本号）
+          cp target/$JAR_NAME_WITH_VERSION target/dist-input/$JAR_NAME
 
       - name: Create DMG with jpackage（使用 jpackage 创建 DMG 镜像）
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-$VERSION.jar"
+          JAR_NAME="easy-postman.jar"
           
           mkdir -p dist
           
@@ -452,16 +458,18 @@ jobs:
       - name: Prepare dist-input（准备打包输入目录）
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-$VERSION.jar"
+          JAR_NAME_WITH_VERSION="easy-postman-$VERSION.jar"
+          JAR_NAME="easy-postman.jar"
           
           rm -rf target/dist-input
           mkdir -p target/dist-input
-          cp target/$JAR_NAME target/dist-input/
+          # 重命名 JAR 为固定名称（去除版本号）
+          cp target/$JAR_NAME_WITH_VERSION target/dist-input/$JAR_NAME
 
       - name: Create DMG with jpackage（使用 jpackage 创建 DMG 镜像）
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-$VERSION.jar"
+          JAR_NAME="easy-postman.jar"
           
           mkdir -p dist
           
@@ -543,6 +551,14 @@ jobs:
           path: dist/*.jar
           retention-days: 7
 
+      - name: Upload JAR for Gitee sync（上传 JAR 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-jar
+          path: dist/*.jar
+          retention-days: 1
+
 
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
@@ -586,16 +602,18 @@ jobs:
       - name: Prepare dist-input（准备打包输入目录）
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-$VERSION.jar"
+          JAR_NAME_WITH_VERSION="easy-postman-$VERSION.jar"
+          JAR_NAME="easy-postman.jar"
           
           rm -rf target/dist-input
           mkdir -p target/dist-input
-          cp target/$JAR_NAME target/dist-input/
+          # 重命名 JAR 为固定名称（去除版本号）
+          cp target/$JAR_NAME_WITH_VERSION target/dist-input/$JAR_NAME
 
       - name: Create DEB with jpackage（使用 jpackage 创建 DEB 安装包）
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-$VERSION.jar"
+          JAR_NAME="easy-postman.jar"
           
           mkdir -p dist
           
@@ -723,13 +741,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'Windows MSI'
+          - platform: 'Standalone JAR'
             priority: 1
+            artifact_name: 'release-jar'
+            file_pattern: '*.jar'
+            emoji: '☕'
+          - platform: 'Windows MSI'
+            priority: 2
             artifact_name: 'release-msi'
             file_pattern: '*.msi'
             emoji: '🪟'
           - platform: 'macOS Apple Silicon'
-            priority: 2
+            priority: 3
             artifact_name: 'release-dmg-arm64'
             file_pattern: '*-macos-arm64.dmg'
             emoji: '🍎'
@@ -789,6 +812,7 @@ jobs:
           echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
           echo ""
           echo "已同步到 Gitee 的平台："
+          echo "  ☕ Standalone JAR (跨平台)"
           echo "  🪟 Windows MSI"
           echo "  🍎 macOS Apple Silicon (ARM64)"
           echo ""

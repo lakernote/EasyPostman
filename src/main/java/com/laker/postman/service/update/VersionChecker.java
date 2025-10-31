@@ -278,9 +278,16 @@ public class VersionChecker {
             return null;
         }
 
-        String osName = System.getProperty("os.name").toLowerCase();
         String source = releaseInfo.getStr(SOURCE_KEY, "unknown");
 
+        String jarUrl = findFatJarAsset(assets);
+        if (jarUrl != null) {
+            log.info("Found fat JAR download URL from {}: {}", source, jarUrl);
+            return jarUrl;
+        }
+        log.warn("Fat JAR not found in assets, falling back to platform-specific installer");
+
+        String osName = System.getProperty("os.name").toLowerCase();
         String downloadUrl;
         if (osName.contains("win")) {
             // Windows 特殊处理：区分便携版和安装版
@@ -300,6 +307,27 @@ public class VersionChecker {
         }
 
         return downloadUrl;
+    }
+
+    /**
+     * 查找 fat JAR 文件（格式：easy-postman-版本号.jar）
+     */
+    private String findFatJarAsset(JSONArray assets) {
+        // 查找模式：easy-postman-x.x.x.jar（不包含其他后缀）
+        for (int i = 0; i < assets.size(); i++) {
+            JSONObject asset = assets.getJSONObject(i);
+            String name = asset.getStr("name");
+            if (name != null && name.startsWith("easy-postman-") &&
+                    name.endsWith(".jar") &&
+                    !name.contains("-sources") &&
+                    !name.contains("-javadoc")) {
+                String url = asset.getStr(BROWSER_DOWNLOAD_URL);
+                log.debug("Found fat JAR asset: {} -> {}", name, url);
+                return url;
+            }
+        }
+        log.debug("No fat JAR asset found in release");
+        return null;
     }
 
     /**

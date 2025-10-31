@@ -39,6 +39,9 @@ public class UpdateDownloader {
      * 异步下载文件（支持多源切换）
      */
     public CompletableFuture<File> downloadAsync(String downloadUrl, DownloadProgressCallback callback) {
+        // 重置取消标志，确保新的下载任务从干净的状态开始
+        cancelled = false;
+
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 尝试从原始 URL 下载

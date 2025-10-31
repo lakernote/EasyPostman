@@ -100,5 +100,15 @@ jpackage \
     --java-options "-Xmx512m" \
     --java-options "-Dfile.encoding=UTF-8"
 
+# 显示文件大小统计
+JAR_SIZE=$(du -h "target/${JAR_NAME}" | awk '{print $1}')
+RUNTIME_SIZE=$(du -sh target/runtime | awk '{print $1}')
+DMG_SIZE=$(du -h "${OUTPUT_DIR}/${APP_NAME}-${VERSION}.dmg" | awk '{print $1}')
+
 # 完成提示
 echo "🎉 打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"
+echo ""
+echo "📊 大小对比："
+echo "   - Fat JAR: ${JAR_SIZE}"
+echo "   - Runtime: ${RUNTIME_SIZE}"
+echo "   - DMG: ${DMG_SIZE}"

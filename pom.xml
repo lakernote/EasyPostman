@@ -42,10 +42,30 @@
             <version>${flatlaf.version}</version>
         </dependency>
 
-        <!-- 工具类集合 -->
+        <!-- 工具类集合 - 模块化依赖以减小包体积 -->
         <dependency>
             <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
+            <artifactId>hutool-json</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-crypto</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-http</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-system</artifactId>
             <version>${hutool.version}</version>
         </dependency>
 
@@ -237,14 +257,29 @@
                                     <resource>META-INF/truffle/instrument</resource>
                                 </transformer>
                             </transformers>
-                            <!-- 排除签名文件  -->
+                            <!-- 排除签名文件和不必要的元数据以减小包体积 -->
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <!-- 签名文件 -->
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <!-- Maven 元数据 -->
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <!-- 许可证和说明文件 -->
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <!-- 文档文件 -->
+                                        <exclude>**/*.md</exclude>
+                                        <exclude>**/*.txt</exclude>
+                                        <!-- 模块化信息 -->
+                                        <exclude>**/module-info.class</exclude>
+                                        <!-- Kotlin 元数据 -->
+                                        <exclude>**/*.kotlin_module</exclude>
+                                        <exclude>**/*.kotlin_builtins</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

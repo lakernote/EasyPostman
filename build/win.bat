@@ -81,29 +81,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Step 4: Copy WiX configuration to remember installation path
-set RESOURCE_DIR=target\jpackage-resources
-if not exist "%RESOURCE_DIR%" mkdir "%RESOURCE_DIR%"
-
-:: Copy WiX fragment as additional file (NOT replacing main.wxs)
-:: jpackage will compile all .wxs files in resource-dir
-set WIX_CONFIG=build\wix-install-path-memory.wxs
-if not exist "%WIX_CONFIG%" (
-    echo ERROR: WiX configuration file not found: %WIX_CONFIG%
-    pause
-    exit /b 1
-)
-
-copy "%WIX_CONFIG%" "%RESOURCE_DIR%\install-dir-patch.wxs"
-if errorlevel 1 (
-    echo Failed to copy WiX configuration file
-    pause
-    exit /b 1
-)
-
-echo WiX configuration copied (install path memory enabled)
-
-:: Step 5: Package with jpackage
+:: Step 4: Package with jpackage
 if not exist "%ICON_DIR%" (
     echo Icon file not found: "%ICON_DIR%"
     pause
@@ -130,7 +108,6 @@ jpackage ^
     --win-per-user-install ^
     --win-menu-group "EasyTools" ^
     --win-help-url "https://gitee.com/lakernote/easy-postman" ^
-    --resource-dir "%RESOURCE_DIR%" ^
     --java-options "-Xms256m" ^
     --java-options "-Xmx512m" ^
     --java-options "-Dfile.encoding=UTF-8" ^

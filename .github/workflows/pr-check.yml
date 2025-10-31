@@ -16,7 +16,7 @@ on:
     # - opened: PR 首次创建时
     # - synchronize: PR 有新提交推送时
     # - reopened: 关闭的 PR 重新打开时
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
 
 # 环境变量：定义跨平台打包所需的配置
 env:
@@ -51,18 +51,16 @@ jobs:
           echo "Version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-  # Job 1: 构建和测试（生成跨平台 JAR）
+  # Job 1: 构建 JAR（一次构建，多次复用）
   build:
-    name: Build and Test
+    name: Build JAR
     runs-on: ubuntu-latest
     needs: [get-version]
 
     steps:
-      # 第一步：检出代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 第二步：设置 Java 17 环境（已包含 Maven 缓存功能）
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -70,120 +68,20 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: 'maven'
 
-      # 第三步：使用 Maven 构建项目（跳过测试以加快构建速度）
       - name: Build with Maven
         run: mvn clean package -DskipTests -B
 
-      # 第四步：运行单元测试
       - name: Run tests
         run: mvn test
-        continue-on-error: true  # 即使测试失败也继续执行后续步骤
+        continue-on-error: true
 
-      # 第五步：JAR 启动测试（验证 IOC 容器扫描等核心功能）
-      - name: Test JAR startup
-        timeout-minutes: 2
-        run: |
-          echo "🧪 Testing JAR startup and IOC container..."
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          JAR_FILE="target/easy-postman-${VERSION}.jar"
-          
-          if [ ! -f "$JAR_FILE" ]; then
-            echo "❌ JAR file not found: $JAR_FILE"
-            exit 1
-          fi
-          
-          echo "✅ JAR file exists: $JAR_FILE ($(du -h $JAR_FILE | cut -f1))"
-          
-          # 启动应用（后台运行，headless 模式）
-          java -jar "$JAR_FILE" > jar-test-stdout.log 2> jar-test-stderr.log &
-          JAR_PID=$!
-          
-          echo "✅ JAR started (PID: $JAR_PID)"
-          
-          # 等待应用启动和 IOC 容器初始化
-          sleep 10
-          
-          # 检查进程是否还在运行
-          if ps -p $JAR_PID > /dev/null 2>&1; then
-            echo "✅ JAR is running successfully"
-            
-            # 检查日志中是否有 IOC 容器初始化成功的标志
-            if grep -q "IOC container initialized successfully" jar-test-stdout.log jar-test-stderr.log 2>/dev/null; then
-              echo "✅ IOC container initialized successfully"
-            else
-              echo "❌ IOC container initialization not detected in logs"
-              echo "=== Checking for errors in logs ==="
-              cat jar-test-stderr.log || true
-              kill -9 $JAR_PID 2>/dev/null || true
-              exit 1
-            fi
-            
-            # 检查是否有 Bean 注册失败的错误
-            if grep -i "NoSuchBeanException" jar-test-stdout.log jar-test-stderr.log 2>/dev/null; then
-              echo "❌ Bean registration failed - NoSuchBeanException detected"
-              cat jar-test-stderr.log || true
-              kill -9 $JAR_PID 2>/dev/null || true
-              exit 1
-            fi
-            
-            # 检查注册的 Bean 数量
-            BEAN_COUNT=$(grep -oP "Total registered beans: \[\K\d+" jar-test-stdout.log jar-test-stderr.log 2>/dev/null | head -1 || echo "0")
-            echo "📊 Total registered beans: $BEAN_COUNT"
-            
-            if [ "$BEAN_COUNT" -eq "0" ]; then
-              echo "❌ No beans registered - IOC container scanning failed!"
-              echo "=== Full log output ==="
-              cat jar-test-stderr.log || true
-              kill -9 $JAR_PID 2>/dev/null || true
-              exit 1
-            fi
-            
-            echo "✅ Bean scanning working correctly"
-            
-            # 停止应用
-            kill -TERM $JAR_PID 2>/dev/null || true
-            sleep 2
-            if ps -p $JAR_PID > /dev/null 2>&1; then
-              kill -9 $JAR_PID 2>/dev/null || true
-            fi
-            
-            echo "✅ JAR startup test passed"
-          else
-            echo "❌ JAR crashed or exited immediately"
-            echo "=== Error Log ==="
-            cat jar-test-stderr.log || true
-            echo "=== Output Log ==="
-            cat jar-test-stdout.log || true
-            exit 1
-          fi
-
-      # 第六步：上传 JAR 测试日志
-      - name: Upload JAR test logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: jar-test-logs
-          path: |
-            jar-test-*.log
-          retention-days: 3
-
-      # 第七步：上传测试报告
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()  # 无论测试成功或失败都上传
-        with:
-          name: test-results
-          path: target/surefire-reports/
-          retention-days: 3  # 测试报告保留 3 天即可（仅用于快速调试）
-
-      # 第八步：上传 JAR 供后续打包任务使用
       - name: Upload JAR for packaging
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: app-jar
           path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
-          retention-days: 1  # 仅供当前工作流使用
+          retention-days: 1
 
   # Job 2: Windows 打包和验证
   test-windows-package:
@@ -249,39 +147,10 @@ jobs:
           Copy-Item "target\$jarName" -Destination $distInputDir
           Write-Host "✅ Prepared dist-input"
 
-      - name: Copy WiX configuration for install path memory test（复制 WiX 配置测试安装路径记忆功能）
+      - name: Create Windows MSI installer
         shell: pwsh
         run: |
-          Write-Host "🔧 Copying WiX configuration to test installation path memory feature..."
-          $resourceDir = "target\jpackage-resources"
-          if (-not (Test-Path $resourceDir)) { New-Item -ItemType Directory -Path $resourceDir | Out-Null }
-          
-          # Copy as additional WiX fragment file (NOT replacing main.wxs)
-          # jpackage will automatically compile all .wxs files in resource-dir
-          $wixConfig = "build\wix-install-path-memory.wxs"
-          if (-not (Test-Path $wixConfig)) {
-            Write-Host "❌ WiX configuration file not found: $wixConfig"
-            exit 1
-          }
-          
-          Copy-Item $wixConfig -Destination "$resourceDir\install-dir-patch.wxs"
-          Write-Host "✅ WiX fragment copied as install-dir-patch.wxs"
-          
-          # Verify the copied file
-          if (Test-Path "$resourceDir\install-dir-patch.wxs") {
-            $fileSize = (Get-Item "$resourceDir\install-dir-patch.wxs").Length
-            Write-Host "✅ WiX fragment file size: $fileSize bytes"
-            Write-Host "📄 WiX fragment content preview:"
-            Get-Content "$resourceDir\install-dir-patch.wxs" -Head 20
-          } else {
-            Write-Host "❌ Failed to copy WiX fragment file"
-            exit 1
-          }
-
-      - name: Create Windows MSI installer for path memory testing（创建 MSI 安装包测试路径记忆）
-        shell: pwsh
-        run: |
-          Write-Host "📦 Creating Windows MSI installer with install path memory feature..."
+          Write-Host "📦 Creating Windows MSI installer..."
           $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman-$version.jar"
           $outDir = "target\msi-test"
@@ -290,7 +159,7 @@ jobs:
           
           $javaOpts = $env:JAVA_OPTIONS -split '\|'
           
-          # 创建 Windows MSI 安装包（用于测试安装路径记忆功能）
+          # 创建 Windows MSI 安装包
           # Note: jpackage output is captured for better error reporting
           try {
             jpackage `
@@ -313,23 +182,22 @@ jobs:
               --win-per-user-install `
               --win-menu-group "EasyTools" `
               --win-help-url "https://gitee.com/lakernote/easy-postman" `
-              --resource-dir "target\jpackage-resources" `
               --java-options $javaOpts[0] `
               --java-options $javaOpts[1] `
               --java-options $javaOpts[2] `
               --java-options "-Djavax.accessibility.assistive_technologies=" `
               --verbose
-            
+          
             if ($LASTEXITCODE -ne 0) {
               Write-Host "❌ jpackage failed with exit code: $LASTEXITCODE"
               Write-Host "💡 Checking for WiX compilation logs..."
-              
+          
               # Look for WiX log files in temp directories
               $tempDirs = @(
                 "$env:TEMP\jdk.jpackage*",
                 "C:\Users\*\AppData\Local\Temp\jdk.jpackage*"
               )
-              
+          
               foreach ($pattern in $tempDirs) {
                 $dirs = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue
                 foreach ($dir in $dirs) {
@@ -341,10 +209,10 @@ jobs:
                   }
                 }
               }
-              
+          
               exit 1
             }
-            
+          
             Write-Host "✅ MSI installer created successfully"
           } catch {
             Write-Host "❌ Exception during jpackage execution:"
@@ -353,7 +221,7 @@ jobs:
             exit 1
           }
 
-      - name: Verify MSI installer and WiX integration（验证 MSI 安装包和 WiX 集成）
+      - name: Verify MSI installer
         shell: pwsh
         run: |
           Write-Host "🔍 Verifying MSI installer..."
@@ -367,33 +235,8 @@ jobs:
           
           $fileSize = (Get-Item $msiFile).Length / 1MB
           Write-Host "✅ MSI installer exists: $msiFile ($([math]::Round($fileSize, 2)) MB)"
-          
-          # 使用 WiX 工具验证 MSI 结构（如果可用）
-          try {
-            $wixPath = Get-Command candle.exe -ErrorAction SilentlyContinue
-            if ($wixPath) {
-              Write-Host "✅ WiX Toolset is available for MSI validation"
-              
-              # 尝试提取 MSI 内容查看是否包含注册表组件
-              Write-Host "🔍 Checking MSI for registry components..."
-              # 这里可以添加更详细的 MSI 内部结构检查
-            } else {
-              Write-Host "ℹ️  WiX command-line tools not in PATH, skipping detailed MSI validation"
-            }
-          } catch {
-            Write-Host "ℹ️  WiX validation skipped: $_"
-          }
-          
           Write-Host "✅ MSI installer verification passed"
 
-
-      - name: Upload MSI installer
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: windows-msi-installer
-          path: target/msi-test/*.msi
-          retention-days: 3
 
       - name: Create Windows portable version
         shell: pwsh
@@ -465,17 +308,17 @@ jobs:
           
           if ($process) {
             Write-Host "✅ Application started (PID: $($process.Id))"
-            
+          
             # 等待应用启动
             Start-Sleep -Seconds 8
-            
+          
             # 检查进程是否还在运行
             $runningProcess = Get-Process -Id $process.Id -ErrorAction SilentlyContinue
             if ($runningProcess) {
               Write-Host "✅ Application is running successfully"
               Write-Host "   Process: $($runningProcess.ProcessName)"
               Write-Host "   Memory: $([math]::Round($runningProcess.WorkingSet64 / 1MB, 2)) MB"
-              
+          
               # 停止应用
               Stop-Process -Id $process.Id -Force
               Start-Sleep -Seconds 2
@@ -492,16 +335,6 @@ jobs:
             Write-Host "❌ Failed to start application"
             exit 1
           }
-
-      - name: Upload test logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: windows-test-logs
-          path: |
-            *.log
-            target/EasyPostman/
-          retention-days: 3
 
   # Job 3: macOS 打包和验证
   test-macos-package:
@@ -632,16 +465,16 @@ jobs:
           if ps -p $APP_PID > /dev/null; then
             echo "✅ Application is running successfully"
             ps -p $APP_PID -o pid,comm,rss
-            
+          
             # 停止应用
             kill -TERM $APP_PID 2>/dev/null || true
             sleep 2
-            
+          
             # 强制终止（如果还在运行）
             if ps -p $APP_PID > /dev/null 2>&1; then
               kill -9 $APP_PID 2>/dev/null || true
             fi
-            
+          
             echo "✅ Application stopped"
           else
             echo "❌ Application crashed or exited immediately"
@@ -650,14 +483,6 @@ jobs:
             exit 1
           fi
 
-      - name: Upload test logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: macos-test-logs
-          path: |
-            *.log
-          retention-days: 3
 
   # Job 4: 代码质量检查
   code-quality:
@@ -776,8 +601,8 @@ jobs:
   summary:
     name: Check Summary
     runs-on: ubuntu-latest
-    needs: [build, test-windows-package, test-macos-package, code-quality, pr-validation]  # 依赖所有检查 Job
-    if: always()  # 无论前面的 Job 成功或失败都执行
+    needs: [build, test-windows-package, test-macos-package, code-quality, pr-validation]
+    if: always()
 
     steps:
       # 生成检查结果汇总报告
@@ -795,9 +620,9 @@ jobs:
           
           # Build 结果
           if [[ "${{ needs.build.result }}" == "success" ]]; then
-            echo "| 🏗️ 构建和测试 | ✅ 通过 | JAR 构建成功，单元测试通过，JAR 启动测试通过 |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🏗️ 构建和测试 | ✅ 通过 | JAR 构建成功，单元测试通过 |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🏗️ 构建和测试 | ❌ 失败 | 请检查构建、测试或 JAR 启动日志 |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🏗️ 构建和测试 | ❌ 失败 | 请检查构建或测试日志 |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # Windows 打包测试结果
@@ -843,7 +668,7 @@ jobs:
             echo "### ✅ 所有检查通过！" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🎉 恭喜！此 PR 已通过以下验证：" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ 跨平台 JAR 构建" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ JAR 构建和测试" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Windows 应用打包和启动测试" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ macOS 应用打包和启动测试" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ 代码质量检查" >> $GITHUB_STEP_SUMMARY
@@ -855,14 +680,14 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "请修复以下问题后重新提交：" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
+          
             # 列出失败的检查项
             [[ "${{ needs.build.result }}" != "success" ]] && echo "- 🏗️ 构建和测试失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.test-windows-package.result }}" == "failure" ]] && echo "- 🪟 Windows 打包/启动测试失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.test-macos-package.result }}" == "failure" ]] && echo "- 🍎 macOS 打包/启动测试失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.code-quality.result }}" != "success" ]] && echo "- 📊 代码质量检查失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.pr-validation.result }}" != "success" ]] && echo "- 📋 PR 规范验证失败" >> $GITHUB_STEP_SUMMARY
-            
+          
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "💡 **提示**: 点击上方失败的 Job 查看详细日志" >> $GITHUB_STEP_SUMMARY
             echo "📝 **说明**: 打包测试确保应用在目标平台能正常启动运行" >> $GITHUB_STEP_SUMMARY

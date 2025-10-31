@@ -4,14 +4,16 @@ echo EasyPostman 正在更新...
 echo Updating EasyPostman...
 echo.
 
-REM 等待当前进程结束（最多等待 10 秒）
+REM 等待当前进程结束（最多等待 5 秒）
 set COUNTER=0
 :WAIT_LOOP
-timeout /t 1 /nobreak > nul
 tasklist | find /i "java.exe" > nul
 if errorlevel 1 goto UPDATE
 set /a COUNTER+=1
-if %COUNTER% lss 10 goto WAIT_LOOP
+if %COUNTER% lss 10 (
+    timeout /t 1 /nobreak > nul
+    goto WAIT_LOOP
+)
 
 REM 执行更新
 :UPDATE
@@ -33,7 +35,7 @@ REM 创建临时VBScript来启动应用并清理
 set "VBSCRIPT=%TEMP%\start_easypostman_%RANDOM%.vbs"
 echo Set WshShell = CreateObject("WScript.Shell") > "%VBSCRIPT%"
 echo WshShell.Run "javaw -jar ""{{CURRENT_JAR_PATH}}""", 0, False >> "%VBSCRIPT%"
-echo WScript.Sleep 2000 >> "%VBSCRIPT%"
+echo WScript.Sleep 500 >> "%VBSCRIPT%"
 echo Set fso = CreateObject("Scripting.FileSystemObject") >> "%VBSCRIPT%"
 echo On Error Resume Next >> "%VBSCRIPT%"
 echo fso.DeleteFile "{{BACKUP_JAR_PATH}}", True >> "%VBSCRIPT%"

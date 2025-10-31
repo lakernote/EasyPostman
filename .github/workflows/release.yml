@@ -543,6 +543,14 @@ jobs:
           path: dist/*.jar
           retention-days: 7
 
+      - name: Upload JAR for Gitee sync（上传 JAR 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-jar
+          path: dist/*.jar
+          retention-days: 1
+
 
   build-ubuntu:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
@@ -723,13 +731,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'Windows MSI'
+          - platform: 'Standalone JAR'
             priority: 1
+            artifact_name: 'release-jar'
+            file_pattern: '*.jar'
+            emoji: '☕'
+          - platform: 'Windows MSI'
+            priority: 2
             artifact_name: 'release-msi'
             file_pattern: '*.msi'
             emoji: '🪟'
           - platform: 'macOS Apple Silicon'
-            priority: 2
+            priority: 3
             artifact_name: 'release-dmg-arm64'
             file_pattern: '*-macos-arm64.dmg'
             emoji: '🍎'
@@ -789,6 +802,7 @@ jobs:
           echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
           echo ""
           echo "已同步到 Gitee 的平台："
+          echo "  ☕ Standalone JAR (跨平台)"
           echo "  🪟 Windows MSI"
           echo "  🍎 macOS Apple Silicon (ARM64)"
           echo ""

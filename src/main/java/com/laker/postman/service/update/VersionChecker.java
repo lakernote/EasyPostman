@@ -280,16 +280,12 @@ public class VersionChecker {
 
         String source = releaseInfo.getStr(SOURCE_KEY, "unknown");
 
-        // 优先检查是否从 JAR 运行，如果是则下载 fat JAR
-//        if (JarUpdateManager.isRunningFromJar()) {
-            log.info("Running from JAR, looking for fat JAR update");
-            String jarUrl = findFatJarAsset(assets);
-            if (jarUrl != null) {
-                log.info("Found fat JAR download URL from {}: {}", source, jarUrl);
-                return jarUrl;
-            }
-            log.warn("Fat JAR not found in assets, falling back to platform-specific installer");
-//        }
+        String jarUrl = findFatJarAsset(assets);
+        if (jarUrl != null) {
+            log.info("Found fat JAR download URL from {}: {}", source, jarUrl);
+            return jarUrl;
+        }
+        log.warn("Fat JAR not found in assets, falling back to platform-specific installer");
 
         String osName = System.getProperty("os.name").toLowerCase();
         String downloadUrl;
@@ -322,9 +318,9 @@ public class VersionChecker {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getStr("name");
             if (name != null && name.startsWith("easy-postman-") &&
-                name.endsWith(".jar") &&
-                !name.contains("-sources") &&
-                !name.contains("-javadoc")) {
+                    name.endsWith(".jar") &&
+                    !name.contains("-sources") &&
+                    !name.contains("-javadoc")) {
                 String url = asset.getStr(BROWSER_DOWNLOAD_URL);
                 log.debug("Found fat JAR asset: {} -> {}", name, url);
                 return url;

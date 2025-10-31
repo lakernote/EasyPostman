@@ -2,8 +2,9 @@ package com.laker.postman.service.update;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
-import java.nio.file.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * JAR 更新管理器 - 负责下载、替换和重启 JAR 应用
@@ -338,22 +339,4 @@ public class JarUpdateManager {
         }
     }
 
-    /**
-     * 检查是否正在从 JAR 运行（而不是 IDE）
-     */
-    public static boolean isRunningFromJar() {
-        try {
-            String jarPath = JarUpdateManager.class.getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation()
-                    .toURI()
-                    .getPath();
-
-            File jarFile = new File(jarPath);
-            return jarFile.isFile() && jarFile.getName().endsWith(JAR_EXTENSION);
-        } catch (Exception e) {
-            return false;
-        }
-    }
 }
-

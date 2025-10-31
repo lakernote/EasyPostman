@@ -6,7 +6,7 @@
 
     <groupId>com.laker.tools</groupId>
     <artifactId>easy-postman</artifactId>
-    <version>3.2.0</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
+    <version>3.2.1</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
 
     <properties>
         <!-- 编译配置 -->

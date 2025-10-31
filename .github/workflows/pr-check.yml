@@ -138,21 +138,23 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarNameWithVersion = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           
           $distInputDir = "target\dist-input"
           if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
           New-Item -ItemType Directory -Path $distInputDir | Out-Null
           
-          Copy-Item "target\$jarName" -Destination $distInputDir
-          Write-Host "✅ Prepared dist-input"
+          # 重命名 JAR 为固定名称（去除版本号）
+          Copy-Item "target\$jarNameWithVersion" -Destination "$distInputDir\$jarName"
+          Write-Host "✅ Prepared dist-input with fixed JAR name: $jarName"
 
       - name: Create Windows MSI installer
         shell: pwsh
         run: |
           Write-Host "📦 Creating Windows MSI installer..."
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           $outDir = "target\msi-test"
           
           if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
@@ -243,7 +245,7 @@ jobs:
         run: |
           Write-Host "📦 Creating Windows portable version..."
           $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
           
           $javaOpts = $env:JAVA_OPTIONS -split '\|'
           
@@ -375,19 +377,21 @@ jobs:
       - name: Prepare dist-input
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-${VERSION}.jar"
+          JAR_NAME_WITH_VERSION="easy-postman-${VERSION}.jar"
+          JAR_NAME="easy-postman.jar"
           
           rm -rf target/dist-input
           mkdir -p target/dist-input
           
-          cp "target/${JAR_NAME}" target/dist-input/
-          echo "✅ Prepared dist-input"
+          # 重命名 JAR 为固定名称（去除版本号）
+          cp "target/${JAR_NAME_WITH_VERSION}" "target/dist-input/${JAR_NAME}"
+          echo "✅ Prepared dist-input with fixed JAR name: ${JAR_NAME}"
 
       - name: Create macOS app bundle
         run: |
           echo "📦 Creating macOS app bundle..."
           VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_NAME="easy-postman-${VERSION}.jar"
+          JAR_NAME="easy-postman.jar"
           
           IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
           

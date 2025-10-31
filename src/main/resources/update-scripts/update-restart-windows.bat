@@ -4,8 +4,9 @@ echo EasyPostman 正在更新...
 echo Updating EasyPostman...
 echo.
 
-REM 短暂等待确保文件句柄释放
-timeout /t 1 /nobreak > nul
+REM 等待确保文件句柄释放
+timeout /t 2 /nobreak > nul
+
 echo 正在备份当前版本 / Backing up current version...
 move /Y "{{CURRENT_JAR_PATH}}" "{{BACKUP_JAR_PATH}}" > nul 2>&1
 
@@ -33,5 +34,7 @@ echo fso.DeleteFile WScript.ScriptFullName, True >> "%VBSCRIPT%"
 
 REM 后台启动VBScript并立即退出
 start "" wscript.exe "%VBSCRIPT%"
+
+:END
 exit
 

@@ -498,7 +498,12 @@ public class JarUpdateManager {
             }
 
             // 延迟退出，确保脚本已完全启动
-            Thread.sleep(500);
+            // Windows需要更长时间确保文件句柄释放
+            if (osName.contains("win")) {
+                Thread.sleep(1000);
+            } else {
+                Thread.sleep(500);
+            }
 
             // 退出当前应用
             log.info("Exiting application for update...");

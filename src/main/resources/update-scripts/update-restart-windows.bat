@@ -30,11 +30,9 @@ REM 启动新版本
 echo 正在启动新版本 / Starting new version...
 start "" javaw -jar "{{CURRENT_JAR_PATH}}"
 
-REM 清理
-timeout /t 2 /nobreak > nul
+REM 清理并自动关闭控制台
 del /F /Q "{{BACKUP_JAR_PATH}}" > nul 2>&1
-del /F /Q "%~f0" > nul 2>&1
+(goto) 2>nul & del /F /Q "%~f0"
 
 :END
-exit
 

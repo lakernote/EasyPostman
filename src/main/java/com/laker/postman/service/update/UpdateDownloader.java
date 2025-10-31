@@ -237,6 +237,20 @@ public class UpdateDownloader {
      */
     public void installUpdate(File installerFile, Consumer<Boolean> callback) {
         try {
+            String fileName = installerFile.getName().toLowerCase();
+
+            // 检查是否为 JAR 文件
+            if (fileName.endsWith(".jar")) {
+                log.info("Installing JAR update: {}", installerFile.getAbsolutePath());
+                JarUpdateManager jarUpdateManager = new JarUpdateManager();
+                boolean success = jarUpdateManager.installJarUpdate(installerFile);
+                callback.accept(success);
+                // 注意：如果成功，JarUpdateManager 会自动重启应用并退出当前进程
+                return;
+            }
+
+            // 其他文件类型（DMG、MSI、DEB、ZIP 等）使用系统默认方式打开
+            log.info("Opening installer with default application: {}", installerFile.getAbsolutePath());
             Desktop.getDesktop().open(installerFile);
             callback.accept(true);
         } catch (Exception e) {

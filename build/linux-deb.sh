@@ -38,7 +38,8 @@ cd "$PROJECT_ROOT" || exit 1
 VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
 echo "🔧 开始打包 EasyPostman DEB 包，版本: $VERSION"
 APP_NAME="EasyPostman"
-JAR_NAME="easy-postman-$VERSION.jar"
+JAR_NAME_WITH_VERSION="easy-postman-$VERSION.jar"
+JAR_NAME="easy-postman.jar"  # 固定名称，不带版本号
 MAIN_CLASS="com.laker.postman.App"
 ICON_DIR="assets/linux/EasyPostman.png"
 OUTPUT_DIR="dist"
@@ -58,10 +59,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 # 检查 jar 包是否生成成功
-if [ ! -f "target/$JAR_NAME" ]; then
-    echo "❌ 构建未生成 jar 包: target/$JAR_NAME"
+if [ ! -f "target/$JAR_NAME_WITH_VERSION" ]; then
+    echo "❌ 构建未生成 jar 包: target/$JAR_NAME_WITH_VERSION"
     exit 1
 fi
+
+# 重命名 JAR 为固定名称（方便 jpackage 配置和后续更新）
+echo "📝 重命名 JAR: $JAR_NAME_WITH_VERSION -> $JAR_NAME"
+cp "target/$JAR_NAME_WITH_VERSION" "target/$JAR_NAME"
 
 # Step 2: 创建最小运行时 jlink
 echo "⚙️ 使用 jlink 创建最小化运行时..."

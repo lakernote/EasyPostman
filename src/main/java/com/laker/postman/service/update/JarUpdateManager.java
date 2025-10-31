@@ -4,7 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * JAR 更新管理器 - 负责下载、替换和重启 JAR 应用
@@ -17,6 +21,12 @@ public class JarUpdateManager {
     private static final String OLD_JAR_SUFFIX = ".old";
     private static final String UPDATE_SCRIPT_NAME_WINDOWS = "update-restart.bat";
     private static final String UPDATE_SCRIPT_NAME_UNIX = "update-restart.sh";
+
+    // 脚本模板路径
+    private static final String WINDOWS_SCRIPT_TEMPLATE = "/update-scripts/update-restart-windows.bat";
+    private static final String UNIX_SCRIPT_TEMPLATE = "/update-scripts/update-restart-unix.sh";
+    private static final String MACOS_START_TEMPLATE = "/update-scripts/start-macos.sh";
+    private static final String LINUX_START_TEMPLATE = "/update-scripts/start-linux.sh";
 
     /**
      * 下载并安装 JAR 更新
@@ -72,6 +82,11 @@ public class JarUpdateManager {
 
             File jarFile = new File(jarPath);
 
+            // 如果在 IDE 中运行（target/classes），返回 null
+            if (jarFile.isDirectory()) {
+                log.warn("Running from directory (IDE mode), not a JAR file");
+                return null;
+            }
 
             // 确保是 JAR 文件
             if (!jarFile.getName().endsWith(JAR_EXTENSION)) {
@@ -124,65 +139,52 @@ public class JarUpdateManager {
     }
 
     /**
+     * 从资源文件加载脚本模板
+     */
+    private String loadScriptTemplate(String templatePath) throws IOException {
+        try (InputStream is = getClass().getResourceAsStream(templatePath)) {
+            if (is == null) {
+                throw new IOException("Script template not found: " + templatePath);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * 替换脚本中的占位符
+     */
+    private String replaceScriptPlaceholders(String script, Map<String, String> placeholders) {
+        String result = script;
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
+        }
+        return result;
+    }
+
+    /**
      * 创建 Windows 更新脚本（批处理文件）
      */
     private File createWindowsUpdateScript(File currentJar, File downloadedJar) {
         try {
             File scriptFile = new File(currentJar.getParentFile(), UPDATE_SCRIPT_NAME_WINDOWS);
 
-            // 脚本逻辑：
-            // 1. 等待当前进程结束
-            // 2. 备份当前 JAR
-            // 3. 用新 JAR 替换当前 JAR
-            // 4. 启动新 JAR
-            // 5. 清理备份和脚本
-
             String currentJarPath = currentJar.getAbsolutePath();
             String downloadedJarPath = downloadedJar.getAbsolutePath();
             String backupJarPath = currentJarPath.replace(JAR_EXTENSION, OLD_JAR_SUFFIX + JAR_EXTENSION);
 
-            StringBuilder script = new StringBuilder();
-            script.append("@echo off\n");
-            script.append("chcp 65001 > nul\n");  // 设置 UTF-8 编码
-            script.append("echo EasyPostman 正在更新...\n");
-            script.append("echo Updating EasyPostman...\n\n");
+            // 加载脚本模板
+            String scriptTemplate = loadScriptTemplate(WINDOWS_SCRIPT_TEMPLATE);
 
-            // 等待当前进程结束（最多等待 10 秒）
-            script.append("set COUNTER=0\n");
-            script.append(":WAIT_LOOP\n");
-            script.append("timeout /t 1 /nobreak > nul\n");
-            script.append("tasklist | find /i \"java.exe\" > nul\n");
-            script.append("if errorlevel 1 goto UPDATE\n");
-            script.append("set /a COUNTER+=1\n");
-            script.append("if %COUNTER% lss 10 goto WAIT_LOOP\n\n");
+            // 替换占位符
+            Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("CURRENT_JAR_PATH", currentJarPath);
+            placeholders.put("DOWNLOADED_JAR_PATH", downloadedJarPath);
+            placeholders.put("BACKUP_JAR_PATH", backupJarPath);
 
-            // 执行更新
-            script.append(":UPDATE\n");
-            script.append("echo 正在备份当前版本 / Backing up current version...\n");
-            script.append("move /Y \"").append(currentJarPath).append("\" \"").append(backupJarPath).append("\" > nul 2>&1\n\n");
+            String script = replaceScriptPlaceholders(scriptTemplate, placeholders);
 
-            script.append("echo 正在安装新版本 / Installing new version...\n");
-            script.append("move /Y \"").append(downloadedJarPath).append("\" \"").append(currentJarPath).append("\"\n");
-            script.append("if errorlevel 1 (\n");
-            script.append("    echo 更新失败，正在恢复 / Update failed, restoring...\n");
-            script.append("    move /Y \"").append(backupJarPath).append("\" \"").append(currentJarPath).append("\"\n");
-            script.append("    goto END\n");
-            script.append(")\n\n");
-
-            // 启动新版本
-            script.append("echo 正在启动新版本 / Starting new version...\n");
-            script.append("start \"\" javaw -jar \"").append(currentJarPath).append("\"\n\n");
-
-            // 清理
-            script.append("timeout /t 2 /nobreak > nul\n");
-            script.append("del /F /Q \"").append(backupJarPath).append("\" > nul 2>&1\n");
-            script.append("del /F /Q \"%~f0\" > nul 2>&1\n\n");
-
-            script.append(":END\n");
-            script.append("exit\n");
-
-            // 写入脚本文件
-            Files.write(scriptFile.toPath(), script.toString().getBytes("GBK"));  // Windows 使用 GBK 编码
+            // 写入脚本文件（Windows 使用 GBK 编码）
+            Files.write(scriptFile.toPath(), script.getBytes("GBK"));
             log.info("Created Windows update script: {}", scriptFile.getAbsolutePath());
 
             return scriptFile;
@@ -203,82 +205,31 @@ public class JarUpdateManager {
             String downloadedJarPath = downloadedJar.getAbsolutePath();
             String backupJarPath = currentJarPath.replace(JAR_EXTENSION, OLD_JAR_SUFFIX + JAR_EXTENSION);
 
-            StringBuilder script = new StringBuilder();
-            script.append("#!/bin/bash\n\n");
-            script.append("echo \"EasyPostman 正在更新...\"\n");
-            script.append("echo \"Updating EasyPostman...\"\n\n");
+            // 加载脚本模板
+            String scriptTemplate = loadScriptTemplate(UNIX_SCRIPT_TEMPLATE);
 
-            // 等待当前进程结束（更可靠的检测方式）
-            script.append("# 等待当前进程结束\n");
-            script.append("CURRENT_PID=$$\n");
-            script.append("PARENT_PID=$PPID\n");
-            script.append("echo \"Update script PID: $CURRENT_PID, Parent PID: $PARENT_PID\"\n\n");
-
-            script.append("# 等待父进程结束（最多10秒）\n");
-            script.append("for i in {1..20}; do\n");
-            script.append("    if ! ps -p $PARENT_PID > /dev/null 2>&1; then\n");
-            script.append("        echo \"Parent process ended\"\n");
-            script.append("        break\n");
-            script.append("    fi\n");
-            script.append("    sleep 0.5\n");
-            script.append("done\n\n");
-
-            script.append("# 额外等待，确保所有资源释放\n");
-            script.append("sleep 1\n\n");
-
-            // 执行更新
-            script.append("echo \"正在备份当前版本 / Backing up current version...\"\n");
-            script.append("mv -f \"").append(currentJarPath).append("\" \"").append(backupJarPath).append("\" 2>/dev/null\n\n");
-
-            script.append("echo \"正在安装新版本 / Installing new version...\"\n");
-            script.append("mv -f \"").append(downloadedJarPath).append("\" \"").append(currentJarPath).append("\"\n");
-            script.append("if [ $? -ne 0 ]; then\n");
-            script.append("    echo \"更新失败，正在恢复 / Update failed, restoring...\"\n");
-            script.append("    mv -f \"").append(backupJarPath).append("\" \"").append(currentJarPath).append("\"\n");
-            script.append("    exit 1\n");
-            script.append("fi\n\n");
-
-            // 启动新版本
-            script.append("echo \"正在启动新版本 / Starting new version...\"\n");
-
-            // macOS 特殊处理：检查是否在 .app 包中运行
+            // 根据平台选择启动脚本
             String osName = System.getProperty("os.name").toLowerCase();
+            String platformStartScript;
             if (osName.contains("mac")) {
-                script.append("# macOS: 检测是否在 .app 包中运行\n");
-                script.append("if [[ \"").append(currentJarPath).append("\" == *\".app/Contents/\"* ]]; then\n");
-                script.append("    # 在 .app 包中，需要重启整个应用\n");
-                script.append("    APP_PATH=$(echo \"").append(currentJarPath).append("\" | sed 's|/Contents/.*||')\n");
-                script.append("    echo \"Restarting app bundle: $APP_PATH\"\n");
-                script.append("    open \"$APP_PATH\" &\n");
-                script.append("    APP_STARTED=$?\n");
-                script.append("else\n");
-                script.append("    # 独立 JAR 文件，直接启动\n");
-                script.append("    echo \"Starting standalone JAR\"\n");
-                script.append("    nohup java -jar \"").append(currentJarPath).append("\" > /dev/null 2>&1 &\n");
-                script.append("    APP_STARTED=$?\n");
-                script.append("fi\n\n");
+                platformStartScript = loadScriptTemplate(MACOS_START_TEMPLATE);
             } else {
-                // Linux
-                script.append("nohup java -jar \"").append(currentJarPath).append("\" > /dev/null 2>&1 &\n");
-                script.append("APP_STARTED=$?\n\n");
+                platformStartScript = loadScriptTemplate(LINUX_START_TEMPLATE);
             }
 
-            // 验证启动
-            script.append("if [ $APP_STARTED -eq 0 ]; then\n");
-            script.append("    echo \"新版本已启动 / New version started successfully\"\n");
-            script.append("else\n");
-            script.append("    echo \"启动失败 / Failed to start new version\"\n");
-            script.append("fi\n\n");
+            // 替换占位符
+            Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("CURRENT_JAR_PATH", currentJarPath);
+            placeholders.put("DOWNLOADED_JAR_PATH", downloadedJarPath);
+            placeholders.put("BACKUP_JAR_PATH", backupJarPath);
+            placeholders.put("SCRIPT_FILE_PATH", scriptFile.getAbsolutePath());
+            placeholders.put("PLATFORM_SPECIFIC_START", platformStartScript);
 
-            // 清理
-            script.append("sleep 2\n");
-            script.append("rm -f \"").append(backupJarPath).append("\" 2>/dev/null\n");
-            script.append("rm -f \"").append(scriptFile.getAbsolutePath()).append("\" 2>/dev/null\n\n");
-
-            script.append("exit 0\n");
+            String script = replaceScriptPlaceholders(scriptTemplate, placeholders);
+            script = replaceScriptPlaceholders(script, placeholders); // 二次替换，处理嵌套的占位符
 
             // 写入脚本文件
-            Files.writeString(scriptFile.toPath(), script.toString(), java.nio.charset.StandardCharsets.UTF_8);
+            Files.writeString(scriptFile.toPath(), script, StandardCharsets.UTF_8);
 
             // 设置执行权限
             if (!scriptFile.setExecutable(true, false)) {
@@ -338,5 +289,4 @@ public class JarUpdateManager {
             log.error("Failed to execute update script", e);
         }
     }
-
 }

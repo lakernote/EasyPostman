@@ -28,11 +28,19 @@ if errorlevel 1 (
 
 REM 启动新版本
 echo 正在启动新版本 / Starting new version...
-start "" javaw -jar "{{CURRENT_JAR_PATH}}"
 
-REM 清理并自动关闭控制台
-del /F /Q "{{BACKUP_JAR_PATH}}" > nul 2>&1
-(goto) 2>nul & del /F /Q "%~f0"
+REM 创建临时VBScript来启动应用并清理
+set "VBSCRIPT=%TEMP%\start_easypostman_%RANDOM%.vbs"
+echo Set WshShell = CreateObject("WScript.Shell") > "%VBSCRIPT%"
+echo WshShell.Run "javaw -jar ""{{CURRENT_JAR_PATH}}""", 0, False >> "%VBSCRIPT%"
+echo WScript.Sleep 2000 >> "%VBSCRIPT%"
+echo Set fso = CreateObject("Scripting.FileSystemObject") >> "%VBSCRIPT%"
+echo On Error Resume Next >> "%VBSCRIPT%"
+echo fso.DeleteFile "{{BACKUP_JAR_PATH}}", True >> "%VBSCRIPT%"
+echo fso.DeleteFile "{{SCRIPT_PATH}}", True >> "%VBSCRIPT%"
+echo fso.DeleteFile WScript.ScriptFullName, True >> "%VBSCRIPT%"
 
-:END
+REM 后台启动VBScript并立即退出
+start "" wscript.exe "%VBSCRIPT%"
+exit
 

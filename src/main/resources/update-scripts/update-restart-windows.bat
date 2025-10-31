@@ -4,19 +4,8 @@ echo EasyPostman 正在更新...
 echo Updating EasyPostman...
 echo.
 
-REM 等待当前进程结束（最多等待 5 秒）
-set COUNTER=0
-:WAIT_LOOP
-tasklist | find /i "java.exe" > nul
-if errorlevel 1 goto UPDATE
-set /a COUNTER+=1
-if %COUNTER% lss 10 (
-    timeout /t 1 /nobreak > nul
-    goto WAIT_LOOP
-)
-
-REM 执行更新
-:UPDATE
+REM 短暂等待确保文件句柄释放
+timeout /t 1 /nobreak > nul
 echo 正在备份当前版本 / Backing up current version...
 move /Y "{{CURRENT_JAR_PATH}}" "{{BACKUP_JAR_PATH}}" > nul 2>&1
 

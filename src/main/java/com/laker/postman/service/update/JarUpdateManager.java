@@ -353,6 +353,7 @@ public class JarUpdateManager {
             placeholders.put("CURRENT_JAR_PATH", currentJarPath);
             placeholders.put("DOWNLOADED_JAR_PATH", downloadedJarPath);
             placeholders.put("BACKUP_JAR_PATH", backupJarPath);
+            placeholders.put("SCRIPT_PATH", scriptFile.getAbsolutePath());
 
             String script = replaceScriptPlaceholders(scriptTemplate, placeholders);
 

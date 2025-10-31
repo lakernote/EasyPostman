@@ -25,10 +25,10 @@ public class ModernUpdateDialog extends JDialog {
 
         initComponents(updateInfo);
 
-        setSize(600, 520);
+        setSize(600, 380);
         setLocationRelativeTo(parent);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setResizable(false);
+        setResizable(true);
     }
 
     private void initComponents(UpdateInfo updateInfo) {

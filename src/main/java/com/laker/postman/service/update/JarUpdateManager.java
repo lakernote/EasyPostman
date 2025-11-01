@@ -357,8 +357,8 @@ public class JarUpdateManager {
 
             String script = replaceScriptPlaceholders(scriptTemplate, placeholders);
 
-            // 写入脚本文件（Windows 使用 GBK 编码）
-            Files.write(scriptFile.toPath(), script.getBytes("GBK"));
+            // Write script file (UTF-8 encoding, no Chinese characters to avoid encoding issues)
+            Files.writeString(scriptFile.toPath(), script, StandardCharsets.UTF_8);
             log.info("Created Windows update script: {}", scriptFile.getAbsolutePath());
 
             return scriptFile;

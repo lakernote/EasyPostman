@@ -68,7 +68,7 @@ public class RequestEditSubPanel extends JPanel {
     private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
-    private transient SwingWorker<Void, Void> currentWorker;
+    private transient SwingWorker<Void, Runnable> currentWorker;
     // 当前 SSE 事件源, 用于取消 SSE 请求
     private transient EventSource currentEventSource;
     // WebSocket连接对象
@@ -334,9 +334,18 @@ public class RequestEditSubPanel extends JPanel {
             HttpResponse resp;
 
             @Override
+            protected void process(List<Runnable> runnables) {
+                for(Runnable runnable: runnables) {
+                    runnable.run();
+                }
+            }
+
+            @Override
             protected Void doInBackground() {
                 try {
-                    responsePanel.setResponseTabButtonsEnable(true);
+                    publish(() -> {
+                        responsePanel.setResponseTabButtonsEnable(true);
+                    });
                     resp = RedirectHandler.executeWithRedirects(req, 10);
                     if (resp != null) {
                         statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
@@ -362,7 +371,7 @@ public class RequestEditSubPanel extends JPanel {
                 // 只有当前协议是 HTTP 且响应是 SSE 类型时，才提示切换到 SSE 协议
                 if (resp != null && resp.isSse && protocol == RequestItemProtocolEnum.HTTP) {
                     // 弹窗提示用户是否切换到SSE监听模式
-                    SwingUtilities.invokeLater(() -> SingletonFactory.getInstance(RequestEditPanel.class).switchCurrentTabToSseProtocol());
+                    SingletonFactory.getInstance(RequestEditPanel.class).switchCurrentTabToSseProtocol();
                 }
             }
         };
@@ -377,6 +386,13 @@ public class RequestEditSubPanel extends JPanel {
             long startTime;
 
             @Override
+            protected void process(List<Runnable> runnables) {
+                for(Runnable runnable: runnables) {
+                    runnable.run();
+                }
+            }
+
+            @Override
             protected Void doInBackground() {
                 try {
                     startTime = System.currentTimeMillis();
@@ -385,7 +401,7 @@ public class RequestEditSubPanel extends JPanel {
                     SseUiCallback callback = new SseUiCallback() {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 updateUIForResponse(String.valueOf(r.code), r);
                                 // 添加连接成功消息
                                 if (responsePanel.getSseResponsePanel() != null) {
@@ -397,7 +413,7 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onEvent(String id, String type, String data) {
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 // 使用 SSEResponsePanel 来显示 SSE 消息
                                 if (responsePanel.getSseResponsePanel() != null) {
                                     String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
@@ -409,7 +425,7 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onClosed(HttpResponse r) {
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 updateUIForResponse(String.valueOf(r.code), r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 添加连接关闭消息
@@ -424,7 +440,7 @@ public class RequestEditSubPanel extends JPanel {
 
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
                                 responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                                 updateUIForResponse(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg), r);
@@ -440,10 +456,12 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     };
                     currentEventSource = HttpSingleRequestExecutor.executeSSE(req, new SseEventListener(callback, resp, sseBodyBuilder, startTime));
-                    responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
+                    publish(() -> {
+                        responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
+                    });
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
-                    SwingUtilities.invokeLater(() -> {
+                    publish(() -> {
                         responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
                         responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                     });
@@ -473,6 +491,13 @@ public class RequestEditSubPanel extends JPanel {
             volatile boolean closed = false;
 
             @Override
+            protected void process(List<Runnable> runnables) {
+                for(Runnable runnable: runnables) {
+                    runnable.run();
+                }
+            }
+
+            @Override
             protected Void doInBackground() {
                 try {
                     startTime = System.currentTimeMillis();
@@ -498,7 +523,7 @@ public class RequestEditSubPanel extends JPanel {
                             resp.code = response.code();
                             resp.protocol = response.protocol().toString();
                             currentWebSocket = webSocket;
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 updateUIForResponse(String.valueOf(resp.code), resp);
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
@@ -552,7 +577,7 @@ public class RequestEditSubPanel extends JPanel {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             currentWebSocket = null;
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 updateUIForResponse("closed", resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 断开后禁用发送和定时按钮
@@ -571,7 +596,7 @@ public class RequestEditSubPanel extends JPanel {
                             appendWebSocketMessage(MessageType.WARNING, t.getMessage());
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
-                            SwingUtilities.invokeLater(() -> {
+                            publish(() -> {
                                 String statusMsg = response != null ? I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")")
                                         : I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
                                 responsePanel.getStatusCodeLabel().setText(statusMsg);
@@ -586,7 +611,7 @@ public class RequestEditSubPanel extends JPanel {
                     responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
-                    SwingUtilities.invokeLater(() -> {
+                    publish(() -> {
                         responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         responsePanel.getStatusCodeLabel().setForeground(Color.RED);
                         // 失败后禁用发送和定时按钮

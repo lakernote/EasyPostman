@@ -91,9 +91,42 @@ public class SplashWindow extends JWindow {
      * 创建Logo面板
      */
     private JLabel createLogoPanel() {
+        // 创建容器面板，用于绘制圆形背景
+        JPanel logoContainer = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                int size = 130;
+                int x = (getWidth() - size) / 2;
+                int y = (getHeight() - size) / 2;
+
+                // 绘制外层光晕
+                g2.setColor(new Color(255, 255, 255, 30));
+                g2.fillOval(x - 5, y - 5, size + 10, size + 10);
+
+                // 绘制圆形背景
+                g2.setColor(new Color(255, 255, 255, 90));
+                g2.fillOval(x, y, size, size);
+
+                // 绘制边框
+                g2.setColor(new Color(255, 255, 255, 120));
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawOval(x + 1, y + 1, size - 2, size - 2);
+
+                g2.dispose();
+            }
+        };
+        logoContainer.setOpaque(false);
+        logoContainer.setLayout(new BorderLayout());
+
         ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
         JLabel logoLabel = new JLabel(logoIcon);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        logoContainer.add(logoLabel, BorderLayout.CENTER);
+
         return logoLabel;
     }
 
@@ -107,13 +140,13 @@ public class SplashWindow extends JWindow {
         // 应用名称
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
         appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
-        appNameLabel.setForeground(new Color(60, 90, 180));
+        appNameLabel.setForeground(new Color(15, 23, 42)); // Slate-900
         infoPanel.add(appNameLabel);
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
-        versionLabel.setForeground(new Color(120, 130, 150));
+        versionLabel.setForeground(new Color(51, 65, 85)); // Slate-700
         infoPanel.add(versionLabel);
 
         return infoPanel;
@@ -169,17 +202,37 @@ public class SplashWindow extends JWindow {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
-                // 渐变色（可自定义颜色）
-                GradientPaint gp = new GradientPaint(0, 0, new Color(90, 155, 255), getWidth(), getHeight(), new Color(245, 247, 250));
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+                // 现代化渐变色（从深蓝到浅蓝）
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(99, 102, 241), // Indigo-500
+                    getWidth(), getHeight(), new Color(219, 234, 254) // Blue-100
+                );
                 g2d.setPaint(gp);
                 // 圆角背景
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 32, 32);
+
+                // 添加微妙的光泽效果
+                GradientPaint glossPaint = new GradientPaint(
+                    0, 0, new Color(255, 255, 255, 40),
+                    0, getHeight() / 2.0f, new Color(255, 255, 255, 0)
+                );
+                g2d.setPaint(glossPaint);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
+
+                // 添加边框高光
+                g2d.setColor(new Color(255, 255, 255, 80));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 32, 32);
+
                 g2d.dispose();
             }
         };
         content.setLayout(new BorderLayout(0, 10)); // 使用 BorderLayout 布局
         content.setOpaque(false); // 设置透明背景
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18)); // 设置内边距
+        content.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24)); // 设置内边距
         return content;
     }
 

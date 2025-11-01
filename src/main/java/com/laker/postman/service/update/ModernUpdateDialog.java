@@ -10,8 +10,6 @@ import com.laker.postman.util.MessageKeys;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 /**
  * 现代化更新对话框 - 简洁清晰的更新提示
@@ -54,12 +52,33 @@ public class ModernUpdateDialog extends JDialog {
     }
 
     private JPanel createHeaderPanel(UpdateInfo updateInfo) {
-        JPanel panel = new JPanel(new BorderLayout(16, 0));
-        panel.setBackground(new Color(247, 250, 252));
+        JPanel panel = new JPanel(new BorderLayout(16, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 绘制渐变背景
+                GradientPaint gradient = new GradientPaint(0, 0, new Color(239, 246, 255), // Blue-50
+                        getWidth(), getHeight(), new Color(224, 242, 254) // Sky-100
+                );
+                g2.setPaint(gradient);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+
+                // 绘制装饰性光晕
+                g2.setColor(new Color(59, 130, 246, 20)); // Blue-500 with opacity
+                g2.fillOval(-50, -50, 200, 200);
+                g2.fillOval(getWidth() - 150, getHeight() - 100, 200, 150);
+
+                g2.dispose();
+            }
+        };
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(24, 24, 24, 24));
 
-        // 图标
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 56, 56));
+        // 图标 - 使用更大的尺寸
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 64, 64));
         panel.add(iconLabel, BorderLayout.WEST);
 
         // 版本信息
@@ -68,39 +87,32 @@ public class ModernUpdateDialog extends JDialog {
         infoPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 18));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
+        titleLabel.setForeground(new Color(15, 23, 42)); // Slate-900
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel versionLabel = new JLabel(String.format(
-                "%s %s → %s",
-                I18nUtil.isChinese() ? "版本" : "Version",
-                updateInfo.getCurrentVersion(),
-                updateInfo.getLatestVersion()
-        ));
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 14));
-        versionLabel.setForeground(new Color(0, 122, 255));
+        JLabel versionLabel = new JLabel(String.format("%s %s → %s", I18nUtil.isChinese() ? "版本" : "Version", updateInfo.getCurrentVersion(), updateInfo.getLatestVersion()));
+        versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
+        versionLabel.setForeground(new Color(59, 130, 246)); // Blue-500
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 发布时间
-        String publishedAt = updateInfo.getReleaseInfo() != null ?
-                updateInfo.getReleaseInfo().getStr("published_at", "") : "";
+        String publishedAt = updateInfo.getReleaseInfo() != null ? updateInfo.getReleaseInfo().getStr("published_at", "") : "";
         if (!publishedAt.isEmpty()) {
             String dateStr = publishedAt.substring(0, 10); // 提取日期部分
-            JLabel dateLabel = new JLabel(
-                    (I18nUtil.isChinese() ? "发布于 " : "Released on ") + dateStr
-            );
+            JLabel dateLabel = new JLabel((I18nUtil.isChinese() ? "发布于 " : "Released on ") + dateStr);
             dateLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-            dateLabel.setForeground(new Color(150, 150, 150));
+            dateLabel.setForeground(new Color(100, 116, 139)); // Slate-500
             dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             infoPanel.add(titleLabel);
-            infoPanel.add(Box.createVerticalStrut(6));
+            infoPanel.add(Box.createVerticalStrut(8));
             infoPanel.add(versionLabel);
-            infoPanel.add(Box.createVerticalStrut(4));
+            infoPanel.add(Box.createVerticalStrut(6));
             infoPanel.add(dateLabel);
         } else {
             infoPanel.add(titleLabel);
-            infoPanel.add(Box.createVerticalStrut(8));
+            infoPanel.add(Box.createVerticalStrut(10));
             infoPanel.add(versionLabel);
         }
 
@@ -142,21 +154,16 @@ public class ModernUpdateDialog extends JDialog {
 
     private String extractChangelog(JSONObject releaseInfo) {
         if (releaseInfo == null) {
-            return I18nUtil.isChinese() ?
-                    "暂无详细更新说明，请访问发布页面查看。" :
-                    "No detailed release notes available.";
+            return I18nUtil.isChinese() ? "暂无详细更新说明，请访问发布页面查看。" : "No detailed release notes available.";
         }
 
         String body = releaseInfo.getStr("body");
         if (StrUtil.isBlank(body)) {
-            return I18nUtil.isChinese() ?
-                    "包含新功能、改进和错误修复。" :
-                    "Includes new features, improvements and bug fixes.";
+            return I18nUtil.isChinese() ? "包含新功能、改进和错误修复。" : "Includes new features, improvements and bug fixes.";
         }
 
         // 清理 Markdown 但保留基本结构
-        String cleaned = body.trim()
-                .replaceAll("^#{1,6}\\s+", "▸ ")  // 标题
+        String cleaned = body.trim().replaceAll("^#{1,6}\\s+", "▸ ")  // 标题
                 .replaceAll("(?m)^-\\s+", "  • ")  // 列表
                 .replaceAll("(?m)^\\*\\s+", "  • ")  // 列表
                 .replaceAll("\\*\\*(.+?)\\*\\*", "$1")  // 粗体
@@ -175,9 +182,7 @@ public class ModernUpdateDialog extends JDialog {
         panel.setBorder(new EmptyBorder(16, 24, 20, 24));
 
         // 左侧提示
-        JLabel tipLabel = new JLabel(I18nUtil.isChinese() ?
-                "💡 建议在更新前保存工作" :
-                "💡 Save your work before updating");
+        JLabel tipLabel = new JLabel(I18nUtil.isChinese() ? "💡 建议在更新前保存工作" : "💡 Save your work before updating");
         tipLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         tipLabel.setForeground(new Color(150, 150, 150));
         panel.add(tipLabel, BorderLayout.WEST);
@@ -198,9 +203,7 @@ public class ModernUpdateDialog extends JDialog {
             dispose();
         });
 
-        JButton autoButton = createPrimaryButton(
-                I18nUtil.isChinese() ? "立即更新" : "Update Now"
-        );
+        JButton autoButton = createPrimaryButton(I18nUtil.isChinese() ? "立即更新" : "Update Now");
         autoButton.addActionListener(e -> {
             userChoice = 1;
             dispose();
@@ -220,51 +223,13 @@ public class ModernUpdateDialog extends JDialog {
 
     private JButton createPrimaryButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
-        button.setForeground(Color.WHITE);
-        button.setBackground(new Color(0, 122, 255));
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setBorder(new EmptyBorder(8, 20, 8, 20));
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(0, 100, 220));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(0, 122, 255));
-            }
-        });
-
         return button;
     }
 
     private JButton createSecondaryButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
-        button.setForeground(new Color(100, 100, 100));
-        button.setBackground(new Color(248, 248, 248));
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setBorder(new EmptyBorder(8, 20, 8, 20));
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(238, 238, 238));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(248, 248, 248));
-            }
-        });
-
         return button;
     }
 

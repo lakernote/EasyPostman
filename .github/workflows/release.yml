@@ -665,11 +665,11 @@ jobs:
           path: dist/*.deb
           retention-days: 1
 
-  # 创建 Gitee Release
+  # 创建 Gitee Release（JAR 构建完成后立即创建，最快！）
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
     if: github.event_name == 'release'
-    needs: [ build-windows, build-macos-arm ]  # 只等待需要同步到 Gitee 的构建（Windows MSI + macOS ARM）
+    needs: [ build-jar ]  # 只等待 JAR 构建完成（最快，约 2-3 分钟）
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -695,7 +695,7 @@ jobs:
             RELEASE_BODY="EasyPostman ${VERSION} 发布版本，支持 Windows、macOS 和 Linux。详情：https://github.com/lakernote/easy-postman"
           fi
           
-          echo "Creating Gitee Release for tag: $TAG_NAME"
+          echo "🚀 Creating Gitee Release for tag: $TAG_NAME"
           
           curl -s -X POST \
             -F "access_token=${{ secrets.GITEE_TOKEN }}" \
@@ -728,34 +728,77 @@ jobs:
           fi
           
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
-          echo "Gitee Release created successfully with ID: $RELEASE_ID"
+          echo "✅ Gitee Release created successfully with ID: $RELEASE_ID"
 
-  # 并行上传到 Gitee（使用 matrix 策略）
-  sync-to-gitee:
+  # JAR 上传到 Gitee（最快，立即上传！）
+  sync-jar-to-gitee:
+    name: Upload JAR to Gitee（上传 JAR 到 Gitee）
+    if: github.event_name == 'release'
+    needs: [ create-gitee-release ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download JAR artifact（下载 JAR 产物）
+        uses: actions/download-artifact@v4
+        with:
+          name: release-jar
+          path: artifacts
+
+      - name: Upload JAR to Gitee（上传 JAR 到 Gitee）
+        run: |
+          RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
+          FILE=$(find artifacts -name "*.jar" | head -n 1)
+          
+          if [ -z "$FILE" ]; then
+            echo "❌ JAR file not found!"
+            exit 1
+          fi
+          
+          echo "☕ [Priority 1 - FASTEST] Uploading $(basename $FILE) to Gitee..."
+          
+          # 上传到 Gitee，带重试机制
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+              -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+              -F "file=@$FILE"; then
+              echo "✅ JAR uploaded successfully! (构建最快，已完成上传)"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Upload failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                sleep 5
+              fi
+            fi
+          done
+          
+          echo "❌ Failed to upload JAR after $MAX_RETRIES attempts"
+          exit 1
+
+  # MSI 和 macOS ARM 上传到 Gitee（等各自构建完成后上传）
+  sync-platform-to-gitee:
     name: Upload ${{ matrix.platform }} to Gitee（上传 ${{ matrix.platform }} 到 Gitee）
     if: github.event_name == 'release'
-    needs: [ create-gitee-release ]  # 等待 Gitee Release 创建完成
+    needs: [ create-gitee-release, build-windows, build-macos-arm ]
     runs-on: ubuntu-latest
     strategy:
       # 不因单个平台失败而取消其他上传任务
       fail-fast: false
       matrix:
         include:
-          - platform: 'Standalone JAR'
-            priority: 1
-            artifact_name: 'release-jar'
-            file_pattern: '*.jar'
-            emoji: '☕'
           - platform: 'Windows MSI'
-            priority: 2
             artifact_name: 'release-msi'
             file_pattern: '*.msi'
             emoji: '🪟'
+            priority: 2
           - platform: 'macOS Apple Silicon'
-            priority: 3
             artifact_name: 'release-dmg-arm64'
             file_pattern: '*-macos-arm64.dmg'
             emoji: '🍎'
+            priority: 3
 
     steps:
       - name: Download ${{ matrix.platform }} artifact（下载 ${{ matrix.platform }} 产物）
@@ -802,7 +845,7 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: github.event_name == 'release' && always()  # 即使有失败也执行
-    needs: [ create-gitee-release, sync-to-gitee ]
+    needs: [ create-gitee-release, sync-jar-to-gitee, sync-platform-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
@@ -811,16 +854,27 @@ jobs:
           echo "📊 Gitee Release 同步完成！"
           echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
           echo ""
-          echo "已同步到 Gitee 的平台："
-          echo "  ☕ Standalone JAR (跨平台)"
-          echo "  🪟 Windows MSI"
-          echo "  🍎 macOS Apple Silicon (ARM64)"
+          echo "⏱️  同步时间线（优化后）："
+          echo "  1️⃣  JAR 构建完成（最快，约 2-3 分钟） → 立即创建 Gitee Release → 立即上传 JAR ✅"
+          echo "  2️⃣  macOS ARM 构建完成（中等，约 5-6 分钟） → 上传 DMG ✅"
+          echo "  3️⃣  Windows MSI 构建完成（最慢，约 8-10 分钟） → 上传 MSI ✅"
+          echo ""
+          echo "已同步到 Gitee 的文件："
+          echo "  ☕ Standalone JAR (跨平台) - ${{ needs.sync-jar-to-gitee.result }}"
+          echo "  🪟 Windows MSI (x64) - ${{ needs.sync-platform-to-gitee.result }}"
+          echo "  🍎 macOS Apple Silicon (ARM64) - ${{ needs.sync-platform-to-gitee.result }}"
           echo ""
           echo "💡 其他平台（Windows Portable、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
-          if [ "${{ needs.sync-to-gitee.result }}" == "success" ]; then
+          JAR_STATUS="${{ needs.sync-jar-to-gitee.result }}"
+          PLATFORM_STATUS="${{ needs.sync-platform-to-gitee.result }}"
+          
+          if [ "$JAR_STATUS" == "success" ] && [ "$PLATFORM_STATUS" == "success" ]; then
             echo "✅ 所有配置平台均已成功上传到 Gitee！"
+            echo "🚀 性能优化：JAR 不再等待慢速的 MSI 构建，节省约 5-8 分钟！"
           else
             echo "⚠️ 部分平台上传可能失败，请检查上方日志"
+            echo "   JAR 上传: $JAR_STATUS"
+            echo "   平台上传: $PLATFORM_STATUS"
           fi
 

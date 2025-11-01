@@ -2,6 +2,7 @@ package com.laker.postman.common.component.tab;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -19,14 +20,6 @@ import java.awt.event.MouseEvent;
  * - 清晰的视觉层次
  */
 public class PlusPanel extends JPanel {
-    // 现代化配色方案
-    private static final Color PRIMARY_COLOR = new Color(99, 102, 241); // Indigo-500
-    private static final Color SECONDARY_COLOR = new Color(139, 92, 246); // Purple-500
-    private static final Color TEXT_PRIMARY = new Color(15, 23, 42); // Slate-900
-    private static final Color TEXT_SECONDARY = new Color(100, 116, 139); // Slate-500
-    private static final Color CARD_BG = new Color(255, 255, 255);
-    private static final Color SHADOW_COLOR = new Color(15, 23, 42, 20); // 柔和阴影
-
     // 圆角和间距
     private static final int CORNER_RADIUS = 24;
     private static final int CARD_PADDING = 40;
@@ -49,52 +42,68 @@ public class PlusPanel extends JPanel {
                 int width = getWidth();
                 int height = getHeight();
 
-                // 绘制多层阴影，创建深度感
-                drawLayeredShadow(g2, width, height);
+                // 绘制多层深度阴影
+                drawEnhancedShadow(g2, width, height);
 
                 // 绘制卡片背景
-                g2.setColor(CARD_BG);
+                g2.setColor(ModernColors.BG_WHITE);
                 g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
 
-                // 绘制顶部渐变装饰条
-                GradientPaint gradientStrip = new GradientPaint(
-                        0, 0, PRIMARY_COLOR,
-                        width, 0, SECONDARY_COLOR
+                // 绘制顶部装饰条 - 使用裁剪确保完美贴合
+                Shape oldClip = g2.getClip();
+                // 只裁剪顶部区域
+                g2.setClip(0, 0, width, 4);
+
+                // 绘制渐变装饰（静态，无动画）
+                GradientPaint topStrip = new GradientPaint(
+                        0, 0, ModernColors.PRIMARY,
+                        width, 0, ModernColors.SECONDARY
                 );
-                g2.setPaint(gradientStrip);
-                g2.fillRoundRect(0, 0, width, 6, CORNER_RADIUS, CORNER_RADIUS);
+                g2.setPaint(topStrip);
+                g2.fillRoundRect(0, 0, width, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS);
+
+                // 恢复裁剪区域
+                g2.setClip(oldClip);
 
                 // 绘制微妙的边框
-                g2.setColor(new Color(226, 232, 240, 100)); // Slate-200 with opacity
+                g2.setColor(new Color(ModernColors.BORDER_LIGHT.getRed(),
+                        ModernColors.BORDER_LIGHT.getGreen(),
+                        ModernColors.BORDER_LIGHT.getBlue(), 150));
                 g2.setStroke(new BasicStroke(1.5f));
                 g2.drawRoundRect(1, 1, width - 2, height - 2, CORNER_RADIUS, CORNER_RADIUS);
+
+                // 添加内发光效果
+                g2.setColor(ModernColors.whiteWithAlpha(40));
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRoundRect(2, 2, width - 4, height - 4, CORNER_RADIUS - 2, CORNER_RADIUS - 2);
 
                 g2.dispose();
                 super.paintComponent(g);
             }
 
-            private void drawLayeredShadow(Graphics2D g2, int width, int height) {
-                // 外层阴影（较大、较淡）
-                g2.setColor(new Color(15, 23, 42, 8));
-                g2.fillRoundRect(4, 4, width - 8, height - 8, CORNER_RADIUS + 2, CORNER_RADIUS + 2);
-
-                // 中层阴影
-                g2.setColor(new Color(15, 23, 42, 12));
-                g2.fillRoundRect(2, 2, width - 4, height - 4, CORNER_RADIUS + 1, CORNER_RADIUS + 1);
-
-                // 内层阴影（较小、较深）
-                g2.setColor(SHADOW_COLOR);
-                g2.fillRoundRect(1, 1, width - 2, height - 2, CORNER_RADIUS, CORNER_RADIUS);
+            private void drawEnhancedShadow(Graphics2D g2, int width, int height) {
+                // 创建更深层次的阴影效果
+                int shadowLayers = 5;
+                for (int i = shadowLayers; i > 0; i--) {
+                    int alpha = 25 - i * 3;
+                    int offset = i * 2;
+                    g2.setColor(new Color(ModernColors.TEXT_PRIMARY.getRed(),
+                            ModernColors.TEXT_PRIMARY.getGreen(),
+                            ModernColors.TEXT_PRIMARY.getBlue(), alpha));
+                    g2.fillRoundRect(offset, offset, width - offset, height - offset,
+                            CORNER_RADIUS + i, CORNER_RADIUS + i);
+                }
             }
         };
         contentPanel.setOpaque(false);
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(CARD_PADDING, CARD_PADDING, CARD_PADDING, CARD_PADDING));
 
+
         // 添加垂直弹性空间，使内容在垂直方向居中
         contentPanel.add(Box.createVerticalGlue());
 
-        // 创建图标容器，带有现代化的圆形背景
+        // 创建图标容器，简洁的圆形背景（无光晕）
         JPanel iconContainer = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -105,17 +114,18 @@ public class PlusPanel extends JPanel {
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
-                // 绘制渐变圆形背景
-                GradientPaint gradient = new GradientPaint(
-                        (float) x, (float) y, new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 30),
-                        (float) (x + size), (float) (y + size), new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 30)
-                );
-                g2.setPaint(gradient);
+                // 绘制简洁的圆形背景（浅色）
+                g2.setColor(new Color(ModernColors.PRIMARY.getRed(),
+                        ModernColors.PRIMARY.getGreen(),
+                        ModernColors.PRIMARY.getBlue(), 15)); // 极淡的紫色
                 g2.fillOval(x, y, size, size);
 
-                // 绘制外圈光晕
-                g2.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 15));
-                g2.fillOval(x - 10, y - 10, size + 20, size + 20);
+                // 绘制细边框（可选，增加层次感）
+                g2.setColor(new Color(ModernColors.PRIMARY.getRed(),
+                        ModernColors.PRIMARY.getGreen(),
+                        ModernColors.PRIMARY.getBlue(), 30));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
                 g2.dispose();
                 super.paintComponent(g);
@@ -141,20 +151,62 @@ public class PlusPanel extends JPanel {
         JLabel createRequestLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST));
         createRequestLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         createRequestLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        createRequestLabel.setForeground(TEXT_PRIMARY);
+        createRequestLabel.setForeground(ModernColors.TEXT_PRIMARY);
         createRequestLabel.setFont(createRequestLabel.getFont().deriveFont(Font.BOLD, 24f));
         contentPanel.add(createRequestLabel);
 
         // 主标题与提示间距
         contentPanel.add(Box.createVerticalStrut(12));
 
-        // 提示文本（国际化）
-        JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_HINT));
+        // 提示文本（国际化）- 设计为按钮样式
+        class HoverableLabel extends JLabel {
+            private boolean isHovered = false;
+
+            public HoverableLabel(String text) {
+                super(text);
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (isHovered) {
+                    // 绘制悬停背景
+                    GradientPaint gradient = new GradientPaint(
+                            0, 0, ModernColors.PRIMARY,
+                            getWidth(), 0, ModernColors.SECONDARY
+                    );
+                    g2.setPaint(gradient);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+
+                    // 添加高光
+                    GradientPaint highlight = new GradientPaint(
+                            0, 0, ModernColors.whiteWithAlpha(40),
+                            0, getHeight() / 2f, ModernColors.whiteWithAlpha(0)
+                    );
+                    g2.setPaint(highlight);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 20, 20);
+                }
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+
+            public void setHovered(boolean hovered) {
+                this.isHovered = hovered;
+                repaint();
+            }
+        }
+
+        HoverableLabel hintLabel = new HoverableLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_HINT));
         hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         hintLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        hintLabel.setForeground(TEXT_SECONDARY);
+        hintLabel.setForeground(ModernColors.TEXT_HINT);
         hintLabel.setFont(hintLabel.getFont().deriveFont(15f));
         hintLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        hintLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        hintLabel.setOpaque(false);
 
         // 点击触发和悬停效果
         MouseAdapter adapter = new MouseAdapter() {
@@ -167,14 +219,18 @@ public class PlusPanel extends JPanel {
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                hintLabel.setForeground(PRIMARY_COLOR);
+                hintLabel.setForeground(ModernColors.TEXT_INVERSE);
                 hintLabel.setFont(hintLabel.getFont().deriveFont(Font.BOLD));
+                hintLabel.setHovered(true);
+                contentPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                hintLabel.setForeground(TEXT_SECONDARY);
+                hintLabel.setForeground(ModernColors.TEXT_HINT);
                 hintLabel.setFont(hintLabel.getFont().deriveFont(Font.PLAIN));
+                hintLabel.setHovered(false);
+                contentPanel.setCursor(Cursor.getDefaultCursor());
             }
         };
         hintLabel.addMouseListener(adapter);
@@ -191,7 +247,7 @@ public class PlusPanel extends JPanel {
         JLabel shortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_SHORTCUT_DESC));
         shortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         shortcutDescLabel.setFont(shortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        shortcutDescLabel.setForeground(TEXT_SECONDARY);
+        shortcutDescLabel.setForeground(ModernColors.TEXT_HINT);
         shortcutPanel.add(shortcutDescLabel);
         shortcutPanel.add(Box.createVerticalStrut(8));
 
@@ -199,7 +255,7 @@ public class PlusPanel extends JPanel {
         JLabel saveShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT_DESC));
         saveShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         saveShortcutDescLabel.setFont(saveShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        saveShortcutDescLabel.setForeground(TEXT_SECONDARY);
+        saveShortcutDescLabel.setForeground(ModernColors.TEXT_HINT);
         shortcutPanel.add(saveShortcutDescLabel);
         shortcutPanel.add(Box.createVerticalStrut(8));
 
@@ -207,7 +263,7 @@ public class PlusPanel extends JPanel {
         JLabel exitShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.EXIT_SHORTCUT_DESC));
         exitShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         exitShortcutDescLabel.setFont(exitShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        exitShortcutDescLabel.setForeground(TEXT_SECONDARY);
+        exitShortcutDescLabel.setForeground(ModernColors.TEXT_HINT);
         shortcutPanel.add(exitShortcutDescLabel);
 
         contentPanel.add(shortcutPanel);

@@ -1,6 +1,7 @@
 package com.laker.postman.service.update;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -14,16 +15,26 @@ import java.util.function.Consumer;
 
 /**
  * 现代化更新通知 - 简洁优雅的右下角提示
+ * 特性：
+ * - 从右下角滑入/滑出动画
+ * - 现代化配色和圆角设计
+ * - 平滑的缓动效果
+ * - 自动关闭（5秒）
  */
 public class ModernUpdateNotification {
 
     private final JWindow window;
     private final Timer autoCloseTimer;
-    private final Timer slideInTimer;
+    private final Timer animationTimer;
     private int currentY;
     private int targetY;
-    private static final int ANIMATION_STEPS = 20;
-    private static final int ANIMATION_DELAY = 10;
+    private int screenHeight;
+    private boolean isSlideIn = true;
+
+    // 动画参数
+    private static final int ANIMATION_FPS = 60;
+    private static final int ANIMATION_DELAY = 1000 / ANIMATION_FPS; // ~16ms
+    private static final double EASING_FACTOR = 0.15; // 缓动系数，越小越平滑
 
     public ModernUpdateNotification(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
         window = new JWindow(parent);
@@ -33,6 +44,9 @@ public class ModernUpdateNotification {
         window.setContentPane(panel);
         window.pack();
 
+        // 获取屏幕高度
+        screenHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
+
         // 初始位置设在屏幕外（下方）
         positionWindowOffScreen(parent);
 
@@ -40,66 +54,161 @@ public class ModernUpdateNotification {
         autoCloseTimer = new Timer(5000, e -> slideOut());
         autoCloseTimer.setRepeats(false);
 
-        // 滑入动画
-        slideInTimer = new Timer(ANIMATION_DELAY, e -> animateSlideIn());
-        slideInTimer.setRepeats(true);
+        // 统一的动画定时器（用于滑入和滑出）
+        animationTimer = new Timer(ANIMATION_DELAY, e -> updateAnimation());
+        animationTimer.setRepeats(true);
     }
 
+    /**
+     * 定位窗口到应用主窗口的右下角外（准备滑入）
+     */
     private void positionWindowOffScreen(JFrame parent) {
-        Rectangle parentBounds = parent.getBounds();
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-        int x = Math.min(
-                parentBounds.x + parentBounds.width - window.getWidth() - 20,
-                screenSize.width - window.getWidth() - 20
-        );
+        int x, bottomY;
 
-        targetY = Math.min(
-                parentBounds.y + parentBounds.height - window.getHeight() - 60,
-                screenSize.height - window.getHeight() - 60
-        );
+        if (parent != null && parent.isVisible()) {
+            // 定位到应用主窗口的右下角
+            Rectangle parentBounds = parent.getBounds();
 
-        currentY = screenSize.height; // 从屏幕底部开始
+            // X位置：主窗口右边缘 - 通知窗口宽度 - 20px边距
+            x = parentBounds.x + parentBounds.width - window.getWidth() - 20;
+
+            // 确保不超出屏幕右边缘
+            if (x + window.getWidth() > screenSize.width) {
+                x = screenSize.width - window.getWidth() - 20;
+            }
+            // 确保不超出屏幕左边缘
+            if (x < 20) {
+                x = 20;
+            }
+
+            // 目标Y位置：主窗口底边 - 通知窗口高度 - 60px边距
+            targetY = parentBounds.y + parentBounds.height - window.getHeight() - 60;
+
+            // 确保不超出屏幕底部
+            if (targetY + window.getHeight() > screenSize.height) {
+                targetY = screenSize.height - window.getHeight() - 60;
+            }
+            // 确保不超出主窗口顶部
+            if (targetY < parentBounds.y + 60) {
+                targetY = parentBounds.y + 60;
+            }
+
+            // 初始Y位置：主窗口底部外（用于滑入动画）
+            bottomY = parentBounds.y + parentBounds.height;
+        } else {
+            // 如果没有父窗口或父窗口不可见，使用屏幕右下角
+            x = screenSize.width - window.getWidth() - 20;
+            targetY = screenSize.height - window.getHeight() - 60;
+            bottomY = screenSize.height;
+        }
+
+        currentY = bottomY;
+        screenHeight = bottomY; // 用于滑出动画
+
         window.setLocation(x, currentY);
     }
 
-    private void animateSlideIn() {
-        if (currentY > targetY) {
-            int step = Math.max(1, (currentY - targetY) / ANIMATION_STEPS);
-            currentY -= step;
-            window.setLocation(window.getX(), currentY);
+    /**
+     * 统一的动画更新方法（使用缓动函数）
+     */
+    private void updateAnimation() {
+        if (isSlideIn) {
+            // 滑入动画
+            if (Math.abs(currentY - targetY) > 1) {
+                // 使用缓动函数：差值 * 缓动系数
+                int distance = (int) ((targetY - currentY) * EASING_FACTOR);
+                if (distance == 0) {
+                    distance = currentY > targetY ? -1 : 1;
+                }
+                currentY += distance;
+                window.setLocation(window.getX(), currentY);
+            } else {
+                // 到达目标位置
+                currentY = targetY;
+                window.setLocation(window.getX(), currentY);
+                animationTimer.stop();
+            }
         } else {
-            currentY = targetY;
-            window.setLocation(window.getX(), currentY);
-            slideInTimer.stop();
+            // 滑出动画
+            if (currentY < screenHeight) {
+                // 使用缓动函数
+                int distance = (int) ((screenHeight - currentY) * EASING_FACTOR) + 1;
+                currentY += distance;
+                window.setLocation(window.getX(), currentY);
+            } else {
+                // 滑出完成，关闭窗口
+                animationTimer.stop();
+                window.dispose();
+            }
         }
     }
 
+    /**
+     * 开始滑出动画
+     */
     private void slideOut() {
-        Timer slideOutTimer = new Timer(ANIMATION_DELAY, null);
-        slideOutTimer.addActionListener(e -> {
-            currentY += (Toolkit.getDefaultToolkit().getScreenSize().height - currentY) / ANIMATION_STEPS + 1;
-            window.setLocation(window.getX(), currentY);
-
-            if (currentY >= Toolkit.getDefaultToolkit().getScreenSize().height) {
-                slideOutTimer.stop();
-                window.dispose();
-            }
-        });
-        slideOutTimer.start();
+        autoCloseTimer.stop();
+        isSlideIn = false;
+        targetY = screenHeight; // 滑出到屏幕外
+        if (!animationTimer.isRunning()) {
+            animationTimer.start();
+        }
     }
 
+    /**
+     * 创建现代化通知面板
+     */
     private JPanel createNotificationPanel(UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
-        JPanel panel = new JPanel(new BorderLayout(12, 8));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-                new EmptyBorder(16, 16, 16, 16)
-        ));
+        // 主面板 - 使用自定义绘制实现圆角和阴影
+        JPanel panel = new JPanel(new BorderLayout(12, 8)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                int width = getWidth();
+                int height = getHeight();
+
+                // 绘制阴影
+                for (int i = 4; i > 0; i--) {
+                    int alpha = 15 - i * 3;
+                    g2.setColor(new Color(0, 0, 0, alpha));
+                    g2.fillRoundRect(i, i, width - i * 2, height - i * 2, 16, 16);
+                }
+
+                // 绘制白色圆角背景
+                g2.setColor(ModernColors.BG_WHITE);
+                g2.fillRoundRect(0, 0, width, height, 12, 12);
+
+                // 绘制顶部装饰条（使用统一配色）
+                GradientPaint topStrip = new GradientPaint(
+                        0, 0, ModernColors.PRIMARY,
+                        width, 0, ModernColors.SECONDARY
+                );
+                g2.setPaint(topStrip);
+                // 使用裁剪确保圆角
+                Shape oldClip = g2.getClip();
+                g2.setClip(0, 0, width, 3);
+                g2.fillRoundRect(0, 0, width, 12, 12, 12);
+                g2.setClip(oldClip);
+
+                // 绘制边框
+                g2.setColor(ModernColors.BORDER_LIGHT);
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, width - 1, height - 1, 12, 12);
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        panel.setOpaque(false);
+        panel.setBorder(new EmptyBorder(18, 16, 16, 16));
         panel.setPreferredSize(new Dimension(380, 140));
 
         // 左侧图标
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 40, 40));
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 36, 36));
         panel.add(iconLabel, BorderLayout.WEST);
 
         // 中心内容
@@ -110,20 +219,21 @@ public class ModernUpdateNotification {
         // 标题
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
         titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
+        titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 版本信息
         JLabel versionLabel = new JLabel(String.format("%s → %s",
                 updateInfo.getCurrentVersion(), updateInfo.getLatestVersion()));
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        versionLabel.setForeground(new Color(0, 122, 255));
+        versionLabel.setForeground(ModernColors.PRIMARY);
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // 简短描述 - 使用JLabel单行显示，避免文本被遮盖
+        // 简短描述
         String summary = extractSummary(updateInfo);
         JLabel summaryLabel = new JLabel(summary);
         summaryLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        summaryLabel.setForeground(new Color(120, 120, 120));
+        summaryLabel.setForeground(ModernColors.TEXT_HINT);
         summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         contentPanel.add(titleLabel);
@@ -150,6 +260,7 @@ public class ModernUpdateNotification {
 
         JButton viewButton = createPrimaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_VIEW_DETAILS));
         viewButton.addActionListener(e -> {
+            animationTimer.stop();
             window.dispose();
             autoCloseTimer.stop();
             onViewDetails.accept(updateInfo);
@@ -168,6 +279,7 @@ public class ModernUpdateNotification {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
+                    animationTimer.stop();
                     window.dispose();
                     autoCloseTimer.stop();
                     onViewDetails.accept(updateInfo);
@@ -176,22 +288,26 @@ public class ModernUpdateNotification {
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                panel.setBackground(new Color(248, 249, 250));
+                // 微妙的悬停效果
+                panel.repaint();
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                panel.setBackground(Color.WHITE);
+                panel.repaint();
             }
         });
 
         return panel;
     }
 
+    /**
+     * 创建关闭按钮
+     */
     private JButton createCloseButton() {
         JButton button = new JButton("×");
-        button.setFont(new Font("Arial", Font.PLAIN, 20));
-        button.setForeground(new Color(150, 150, 150));
+        button.setFont(new Font("Arial", Font.PLAIN, 22));
+        button.setForeground(ModernColors.TEXT_HINT);
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
@@ -201,12 +317,12 @@ public class ModernUpdateNotification {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setForeground(Color.BLACK);
+                button.setForeground(ModernColors.TEXT_PRIMARY);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setForeground(new Color(150, 150, 150));
+                button.setForeground(ModernColors.TEXT_HINT);
             }
         });
 
@@ -218,52 +334,70 @@ public class ModernUpdateNotification {
         return button;
     }
 
+    /**
+     * 创建主按钮（查看详情）
+     */
     private JButton createPrimaryButton(String text) {
-        JButton button = new JButton(text);
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 绘制渐变背景
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, getModel().isRollover() ? ModernColors.PRIMARY_DARK : ModernColors.PRIMARY,
+                        getWidth(), 0, getModel().isRollover() ? ModernColors.SECONDARY_DARK : ModernColors.SECONDARY
+                );
+                g2.setPaint(gradient);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         button.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         button.setForeground(Color.WHITE);
-        button.setBackground(new Color(0, 122, 255));
+        button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(6, 16, 6, 16));
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(0, 100, 220));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(0, 122, 255));
-            }
-        });
+        button.setBorder(new EmptyBorder(8, 18, 8, 18));
+        button.setOpaque(false);
 
         return button;
     }
 
+    /**
+     * 创建次级按钮（稍后提醒）
+     */
     private JButton createSecondaryButton(String text) {
-        JButton button = new JButton(text);
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 绘制背景
+                if (getModel().isRollover()) {
+                    g2.setColor(ModernColors.HOVER_BG);
+                } else {
+                    g2.setColor(ModernColors.BG_LIGHT);
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         button.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        button.setForeground(new Color(100, 100, 100));
-        button.setBackground(new Color(245, 245, 245));
+        button.setForeground(ModernColors.TEXT_SECONDARY);
+        button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(6, 16, 6, 16));
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(235, 235, 235));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(245, 245, 245));
-            }
-        });
+        button.setBorder(new EmptyBorder(8, 18, 8, 18));
+        button.setOpaque(false);
 
         return button;
     }
@@ -307,15 +441,22 @@ public class ModernUpdateNotification {
         return cleaned;
     }
 
+    /**
+     * 显示通知（从右下角滑入）
+     */
     public void show() {
         window.setVisible(true);
-        slideInTimer.start();
+        isSlideIn = true;
+        animationTimer.start();
         autoCloseTimer.start();
     }
 
+    /**
+     * 关闭通知
+     */
     public void dispose() {
         autoCloseTimer.stop();
-        slideInTimer.stop();
+        animationTimer.stop();
         window.dispose();
     }
 }

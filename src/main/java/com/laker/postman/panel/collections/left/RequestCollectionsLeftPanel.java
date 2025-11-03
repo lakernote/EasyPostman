@@ -23,12 +23,8 @@ import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.service.postman.PostmanImport;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.service.postman.PostmanCollectionExporter;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -378,7 +374,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             if (GROUP.equals(obj[0])) {
                 // 重命名分组
                 Object result = JOptionPane.showInputDialog(
-                        this,
+                        SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_TITLE),
                         JOptionPane.PLAIN_MESSAGE,
@@ -393,12 +389,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         treeModel.nodeChanged(selectedNode);
                         saveRequestGroups();
                     } else if (newName.isEmpty()) {
-                        JOptionPane.showMessageDialog(
-                                this,
-                                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY),
-                                I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
-                                JOptionPane.WARNING_MESSAGE
-                        );
+                        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY));
                     }
                 }
             } else if (REQUEST.equals(obj[0])) {
@@ -406,7 +397,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 HttpRequestItem item = (HttpRequestItem) obj[1];
                 String oldName = item.getName();
                 Object result = JOptionPane.showInputDialog(
-                        this,
+                        SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE),
                         JOptionPane.PLAIN_MESSAGE,
@@ -438,12 +429,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             }
                         }
                     } else if (newName.isEmpty()) {
-                        JOptionPane.showMessageDialog(
-                                this,
-                                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY),
-                                I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
-                                JOptionPane.WARNING_MESSAGE
-                        );
+                        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY));
                     }
                 }
             }
@@ -483,7 +469,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         }
 
         int confirm = JOptionPane.showConfirmDialog(
-                this,
+                SingletonFactory.getInstance(MainFrame.class),
                 confirmMessage,
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM_TITLE),
                 JOptionPane.YES_NO_OPTION
@@ -771,18 +757,16 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(groupName + "-postman.json"));
-        int userSelection = fileChooser.showSaveDialog(this);
+        int userSelection = fileChooser.showSaveDialog(SingletonFactory.getInstance(MainFrame.class));
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
-                JSONObject postmanCollection = PostmanImport.buildPostmanCollectionFromTreeNode(groupNode, groupName);
+                JSONObject postmanCollection = PostmanCollectionExporter.buildPostmanCollectionFromTreeNode(groupNode, groupName);
                 FileUtil.writeUtf8String(postmanCollection.toStringPretty(), fileToSave);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export Postman error", ex);
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_FAIL, ex.getMessage()));
             }
         }
     }
@@ -1211,6 +1195,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     /**
      * 保存所有展开的路径
+     *
      * @return 所有展开路径的列表
      */
     private List<TreePath> saveExpandedPaths() {
@@ -1228,6 +1213,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     /**
      * 恢复展开的路径
      * 根据节点的userObject匹配来恢复展开状态
+     *
      * @param expandedPaths 之前保存的展开路径列表
      */
     private void restoreExpandedPaths(List<TreePath> expandedPaths) {
@@ -1246,6 +1232,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     /**
      * 根据旧路径的节点userObject查找匹配的新路径
+     *
      * @param oldPath 旧的树路径
      * @return 匹配的新路径，如果未找到返回null
      */
@@ -1289,6 +1276,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     /**
      * 判断两个节点的userObject是否表示同一个节点
+     *
      * @param obj1 第一个userObject
      * @param obj2 第二个userObject
      * @return 是否表示同一个节点

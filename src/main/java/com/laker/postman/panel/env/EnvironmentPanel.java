@@ -19,7 +19,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.postman.PostmanImport;
+import com.laker.postman.service.postman.PostmanEnvironmentParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -482,7 +482,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             java.io.File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                List<Environment> envs = PostmanImport.parsePostmanEnvironments(json);
+                List<Environment> envs = PostmanEnvironmentParser.parsePostmanEnvironments(json);
                 if (!envs.isEmpty()) {
                     // 导入新环境
                     refreshListAndComboFromAdd(envs);
@@ -664,7 +664,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 // 只导出当前环境为Postman格式
-                String postmanEnvJson = PostmanImport.toPostmanEnvironmentJson(env);
+                String postmanEnvJson = PostmanEnvironmentParser.toPostmanEnvironmentJson(env);
                 FileUtil.writeUtf8String(postmanEnvJson, fileToSave);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_SUCCESS));
             } catch (Exception ex) {

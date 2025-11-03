@@ -16,7 +16,7 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpUtil;
-import com.laker.postman.service.postman.PostmanImport;
+import com.laker.postman.service.postman.PostmanCollectionParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -203,31 +203,19 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                JSONObject postmanRoot = JSONUtil.parseObj(json);
-                if (postmanRoot.containsKey("info") && postmanRoot.containsKey("item")) {
-                    // 解析 collection 名称
-                    String collectionName = postmanRoot.getJSONObject("info").getStr("name", "Postman");
-                    JSONArray items = postmanRoot.getJSONArray("item");
-                    DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionName});
-                    java.util.List<DefaultMutableTreeNode> children = parsePostmanItemsToTree(items);
-                    for (DefaultMutableTreeNode child : children) {
-                        collectionNode.add(child);
-                    }
+                DefaultMutableTreeNode collectionNode = PostmanCollectionParser.parsePostmanCollection(json);
+                if (collectionNode != null) {
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
-                    JOptionPane.showMessageDialog(mainFrame,
-                            I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_INVALID),
-                            I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_INVALID));
                 }
             } catch (Exception ex) {
                 log.error("Import error", ex);
-                JOptionPane.showMessageDialog(mainFrame,
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()),
-                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
             }
         }
     }
@@ -336,36 +324,6 @@ public class LeftTopPanel extends SingletonBasePanel {
     }
 
 
-    // 递归解析Postman集合为树结构，返回标准分组/请求节点列表
-    private List<DefaultMutableTreeNode> parsePostmanItemsToTree(JSONArray items) {
-        List<DefaultMutableTreeNode> nodeList = new ArrayList<>();
-        for (Object obj : items) {
-            JSONObject item = (JSONObject) obj;
-            if (item.containsKey("item")) {
-                // 文件夹节点
-                String folderName = item.getStr("name", "default group");
-                DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(new Object[]{GROUP, folderName});
-                // 先处理自身 request
-                if (item.containsKey(REQUEST)) {
-                    HttpRequestItem req = PostmanImport.parsePostmanSingleItem(item);
-                    folderNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, req}));
-                }
-                // 递归处理子节点
-                JSONArray children = item.getJSONArray("item");
-                List<DefaultMutableTreeNode> childNodes = parsePostmanItemsToTree(children);
-                for (DefaultMutableTreeNode child : childNodes) {
-                    folderNode.add(child);
-                }
-                nodeList.add(folderNode);
-            } else if (item.containsKey(REQUEST)) {
-                // 纯请求节点
-                HttpRequestItem req = PostmanImport.parsePostmanSingleItem(item);
-                nodeList.add(new DefaultMutableTreeNode(new Object[]{REQUEST, req}));
-            }
-        }
-        return nodeList;
-    }
-
     // 导出请求集合到JSON文件
     private void exportRequestCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
@@ -454,4 +412,3 @@ public class LeftTopPanel extends SingletonBasePanel {
         }
     }
 }
-

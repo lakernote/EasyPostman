@@ -11,7 +11,6 @@ import com.laker.postman.panel.topmenu.setting.*;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.update.ChangelogDialog;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

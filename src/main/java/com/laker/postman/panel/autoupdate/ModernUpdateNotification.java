@@ -1,7 +1,8 @@
-package com.laker.postman.service.update;
+package com.laker.postman.panel.autoupdate;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

@@ -3,6 +3,10 @@ package com.laker.postman.service.update;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.panel.autoupdate.ModernProgressDialog;
+import com.laker.postman.panel.autoupdate.ModernUpdateDialog;
+import com.laker.postman.panel.autoupdate.ModernUpdateNotification;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

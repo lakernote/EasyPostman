@@ -1,4 +1,4 @@
-package com.laker.postman.service.update;
+package com.laker.postman.model;
 
 import cn.hutool.json.JSONObject;
 import lombok.Data;

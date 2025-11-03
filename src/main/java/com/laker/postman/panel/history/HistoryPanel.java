@@ -2,7 +2,7 @@ package com.laker.postman.panel.history;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.constants.EasyPostManColors;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
@@ -58,7 +58,7 @@ public class HistoryPanel extends SingletonBasePanel {
         title.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
         JButton clearBtn = new JButton(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setMargin(new Insets(0, 4, 0, 4));
-        clearBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
+        clearBtn.setBackground(ModernColors.PANEL_BACKGROUND);
         clearBtn.setBorder(BorderFactory.createEmptyBorder());
         clearBtn.setFocusPainted(false);
         clearBtn.addActionListener(e -> clearRequestHistory());

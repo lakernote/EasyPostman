@@ -1,6 +1,6 @@
 package com.laker.postman.util;
 
-import com.laker.postman.common.constants.EasyPostManColors;
+import com.laker.postman.common.constants.ModernColors;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -67,7 +67,7 @@ public class StyleUtils {
      */
     private static void addBackgroundColors(Map<String, Object> properties) {
         // 基础背景色设置
-        Color panelBg = EasyPostManColors.PANEL_BACKGROUND;
+        Color panelBg = ModernColors.PANEL_BACKGROUND;
         properties.put("Panel.background", panelBg);
         properties.put("ToolBar.background", panelBg);
         properties.put("TextArea.background", panelBg);
@@ -82,7 +82,7 @@ public class StyleUtils {
         properties.put("EditorPane.background", panelBg);
 
         // 菜单相关背景色
-        Color menuBg = EasyPostManColors.MENU_BACKGROUND;
+        Color menuBg = ModernColors.MENU_BACKGROUND;
         properties.put("MenuBar.background", menuBg);
         properties.put("Menu.background", menuBg);
         properties.put("MenuItem.background", menuBg);
@@ -94,9 +94,9 @@ public class StyleUtils {
         properties.put("TabbedPane.contentAreaColor", panelBg);
 
         // 选中背景色设置
-        properties.put("Menu.selectionBackground", EasyPostManColors.SELECTION_BACKGROUND);
-        properties.put("MenuItem.selectionBackground", EasyPostManColors.SELECTION_BACKGROUND);
-        properties.put("Table.selectionBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
+        properties.put("Menu.selectionBackground", ModernColors.SELECTION_BACKGROUND);
+        properties.put("MenuItem.selectionBackground", ModernColors.SELECTION_BACKGROUND);
+        properties.put("Table.selectionBackground", ModernColors.TABLE_SELECTION_BACKGROUND);
         properties.put("TextArea.selectionBackground", panelBg);
 
         // Dialog 样式增强
@@ -106,15 +106,15 @@ public class StyleUtils {
         properties.put("OptionPane.messageArea.background", panelBg);
 
         // 前景色设置
-        Color accentColor = EasyPostManColors.ACCENT_COLOR;
+        Color accentColor = ModernColors.ACCENT_COLOR;
         properties.put("TabbedPane.selectedForeground", accentColor);
         properties.put("TextArea.caretForeground", accentColor);
         properties.put("TextArea.selectionForeground", accentColor);
 
         // 特殊属性设置
-        properties.put("Table.gridColor", EasyPostManColors.TABLE_GRID_COLOR);
-        properties.put("TableHeader.background", EasyPostManColors.TABLE_HEADER_BACKGROUND);
-        properties.put("ScrollPane.border", BorderFactory.createLineBorder(EasyPostManColors.BORDER_COLOR));
+        properties.put("Table.gridColor", ModernColors.TABLE_GRID_COLOR);
+        properties.put("TableHeader.background", ModernColors.TABLE_HEADER_BACKGROUND);
+        properties.put("ScrollPane.border", BorderFactory.createLineBorder(ModernColors.BORDER_COLOR));
     }
 
     /**
@@ -135,10 +135,10 @@ public class StyleUtils {
      */
     private static void addSplitPaneStyles(Map<String, Object> properties) {
         properties.put("SplitPane.dividerSize", DIVIDER_SIZE);
-        properties.put("SplitPane.dividerFocusColor", EasyPostManColors.DIVIDER_FOCUS_COLOR);
-        properties.put("SplitPaneDivider.background", EasyPostManColors.DIVIDER_BACKGROUND);
+        properties.put("SplitPane.dividerFocusColor", ModernColors.DIVIDER_FOCUS_COLOR);
+        properties.put("SplitPaneDivider.background", ModernColors.DIVIDER_BACKGROUND);
         properties.put("SplitPaneDivider.border",
-                BorderFactory.createLineBorder(EasyPostManColors.DIVIDER_BORDER_COLOR, BORDER_WIDTH));
+                BorderFactory.createLineBorder(ModernColors.DIVIDER_BORDER_COLOR, BORDER_WIDTH));
     }
 
     /**
@@ -149,29 +149,29 @@ public class StyleUtils {
         properties.put("TitlePane.unifiedBackground", true);
         properties.put("TitlePane.showIcon", true);
         properties.put("TitlePane.centerTitle", true);
-        properties.put("TitlePane.buttonHoverBackground", EasyPostManColors.SELECTION_BACKGROUND);
-        properties.put("TitlePane.buttonPressedBackground", EasyPostManColors.TABLE_SELECTION_BACKGROUND);
+        properties.put("TitlePane.buttonHoverBackground", ModernColors.SELECTION_BACKGROUND);
+        properties.put("TitlePane.buttonPressedBackground", ModernColors.TABLE_SELECTION_BACKGROUND);
 
         // 菜单悬停效果
-        Color tableSelectionBg = EasyPostManColors.TABLE_SELECTION_BACKGROUND;
-        Color accentColor = EasyPostManColors.ACCENT_COLOR;
+        Color tableSelectionBg = ModernColors.TABLE_SELECTION_BACKGROUND;
+        Color accentColor = ModernColors.ACCENT_COLOR;
         properties.put("Menu.selectionBackground", tableSelectionBg);
         properties.put("MenuItem.selectionBackground", tableSelectionBg);
         properties.put("Menu.selectionForeground", accentColor);
         properties.put("MenuItem.selectionForeground", accentColor);
 
         // 按钮悬停效果
-        properties.put("Button.hoverBackground", EasyPostManColors.BUTTON_HOVER_BACKGROUND);
-        properties.put("Button.pressedBackground", EasyPostManColors.BUTTON_PRESSED_BACKGROUND);
+        properties.put("Button.hoverBackground", ModernColors.BUTTON_HOVER_BACKGROUND);
+        properties.put("Button.pressedBackground", ModernColors.BUTTON_PRESSED_BACKGROUND);
 
         // 滚动条样式
-        properties.put("ScrollBar.thumb", EasyPostManColors.SCROLLBAR_THUMB);
-        properties.put("ScrollBar.thumbHover", EasyPostManColors.SCROLLBAR_THUMB_HOVER);
-        properties.put("ScrollBar.track", EasyPostManColors.SCROLLBAR_TRACK);
+        properties.put("ScrollBar.thumb", ModernColors.SCROLLBAR_THUMB);
+        properties.put("ScrollBar.thumbHover", ModernColors.SCROLLBAR_THUMB_HOVER);
+        properties.put("ScrollBar.track", ModernColors.SCROLLBAR_TRACK);
 
         // 分隔符样式
-        properties.put("Separator.foreground", EasyPostManColors.SEPARATOR_FOREGROUND);
-        properties.put("Separator.background", EasyPostManColors.SEPARATOR_BACKGROUND);
+        properties.put("Separator.foreground", ModernColors.SEPARATOR_FOREGROUND);
+        properties.put("Separator.background", ModernColors.SEPARATOR_BACKGROUND);
     }
 
     /**

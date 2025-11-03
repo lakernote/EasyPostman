@@ -2,7 +2,7 @@ package com.laker.postman.common.component.tab;
 
 
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.constants.EasyPostManColors;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -163,7 +163,7 @@ public class ClosableTabComponent extends JPanel {
         int y = (getHeight() - r) / 2;
         if (hoverClose) {
             // 绘制关闭按钮
-            Color base = EasyPostManColors.TAB_SELECTED_BACKGROUND;
+            Color base = ModernColors.TAB_SELECTED_BACKGROUND;
             Color transparent = new Color(base.getRed(), base.getGreen(), base.getBlue(), 180); // 180透明度代表半透明
             g2.setColor(transparent);
             g2.fillOval(x, y, r, r);

@@ -393,7 +393,7 @@ public class ResponsePanel extends JPanel {
             JLabel content = new JLabel(html);
             content.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
             content.setOpaque(true);
-            // Use colors matching EasyPostManColors theme
+            // Use colors matching ModernColors theme
             content.setBackground(new Color(250, 251, 253)); // Very light background
             content.setForeground(new Color(51, 51, 51)); // Dark text for readability
             content.setBorder(new CompoundBorder(

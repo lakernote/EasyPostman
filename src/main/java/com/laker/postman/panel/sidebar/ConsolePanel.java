@@ -3,7 +3,7 @@ package com.laker.postman.panel.sidebar;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.constants.EasyPostManColors;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.SingletonBasePanel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -80,7 +80,7 @@ public class ConsolePanel extends SingletonBasePanel {
         closeBtn = new JButton();
         closeBtn.setIcon(new FlatSVGIcon("icons/close.svg", 20, 20));
         closeBtn.setBorder(BorderFactory.createEmptyBorder());
-        closeBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
+        closeBtn.setBackground(ModernColors.PANEL_BACKGROUND);
         // 关闭按钮事件由外部注册
 
         JButton clearBtn = getClearBtn();
@@ -114,7 +114,7 @@ public class ConsolePanel extends SingletonBasePanel {
         JButton clearBtn = new JButton();
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setBorder(BorderFactory.createEmptyBorder());
-        clearBtn.setBackground(EasyPostManColors.PANEL_BACKGROUND);
+        clearBtn.setBackground(ModernColors.PANEL_BACKGROUND);
         clearBtn.addActionListener(e -> {
             try {
                 consoleDoc.remove(0, consoleDoc.getLength());

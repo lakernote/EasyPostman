@@ -1,6 +1,7 @@
 package com.laker.postman.service.update;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -47,7 +48,7 @@ public class ModernProgressDialog {
 
     private JPanel createContentPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBackground(ModernColors.BG_WHITE);
         mainPanel.setBorder(new EmptyBorder(32, 40, 28, 40));
 
         JPanel contentPanel = new JPanel();
@@ -68,7 +69,7 @@ public class ModernProgressDialog {
 
         // 百分比
         percentLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 32));
-        percentLabel.setForeground(new Color(0, 122, 255));
+        percentLabel.setForeground(ModernColors.PRIMARY);
         percentLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(percentLabel);
         contentPanel.add(Box.createVerticalStrut(12));
@@ -77,8 +78,8 @@ public class ModernProgressDialog {
         progressBar.setPreferredSize(new Dimension(400, 8));
         progressBar.setMaximumSize(new Dimension(400, 8));
         progressBar.setStringPainted(false);
-        progressBar.setBackground(new Color(240, 240, 240));
-        progressBar.setForeground(new Color(0, 122, 255));
+        progressBar.setBackground(ModernColors.BG_MEDIUM);
+        progressBar.setForeground(ModernColors.PRIMARY);
         progressBar.setBorderPainted(false);
         progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(progressBar);
@@ -107,7 +108,7 @@ public class ModernProgressDialog {
         // 大小信息
         JLabel sizeTitle = new JLabel(I18nUtil.isChinese() ? "已下载" : "Downloaded");
         sizeTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        sizeTitle.setForeground(new Color(150, 150, 150));
+        sizeTitle.setForeground(ModernColors.TEXT_HINT);
         panel.add(sizeTitle);
 
         sizeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
@@ -117,7 +118,7 @@ public class ModernProgressDialog {
         // 速度信息
         JLabel speedTitle = new JLabel(I18nUtil.isChinese() ? "下载速度" : "Speed");
         speedTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        speedTitle.setForeground(new Color(150, 150, 150));
+        speedTitle.setForeground(ModernColors.TEXT_HINT);
         panel.add(speedTitle);
 
         speedLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
@@ -130,8 +131,8 @@ public class ModernProgressDialog {
     private JButton createCancelButton() {
         JButton button = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
         button.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
-        button.setForeground(new Color(100, 100, 100));
-        button.setBackground(new Color(248, 248, 248));
+        button.setForeground(ModernColors.TEXT_SECONDARY);
+        button.setBackground(ModernColors.BG_LIGHT);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -140,12 +141,12 @@ public class ModernProgressDialog {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(238, 238, 238));
+                button.setBackground(ModernColors.HOVER_BG);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(248, 248, 248));
+                button.setBackground(ModernColors.BG_LIGHT);
             }
         });
 

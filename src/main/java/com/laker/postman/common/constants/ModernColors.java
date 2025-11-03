@@ -7,9 +7,9 @@ import java.awt.*;
  * 统一的配色常量，确保整个应用的视觉一致性
  * <p>
  * 设计理念：
- * - 主色调：Indigo/Purple（专业、现代）
- * - 辅助色：Blue（信任、科技）
- * - 强调色：Pink（活力、突出）
+ * - 主色调：Blue（信任、专业、科技）
+ * - 辅助色：Sky Blue（清新、现代）
+ * - 强调色：Cyan（活力、突出）
  * - 中性色：Slate（优雅、易读）
  *
  */
@@ -18,68 +18,68 @@ public final class ModernColors {
     // ==================== 主色系 ====================
 
     /**
-     * 主色 - Indigo-500
+     * 主色 - Blue-500（iOS蓝）
      */
-    public static final Color PRIMARY = new Color(99, 102, 241);
+    public static final Color PRIMARY = new Color(0, 122, 255);
 
     /**
-     * 主色深色 - Indigo-600
+     * 主色深色 - Blue-600
      */
-    public static final Color PRIMARY_DARK = new Color(79, 70, 229);
+    public static final Color PRIMARY_DARK = new Color(0, 102, 221);
 
     /**
-     * 主色超深 - Indigo-700
+     * 主色超深 - Blue-700
      */
-    public static final Color PRIMARY_DARKER = new Color(67, 56, 202);
+    public static final Color PRIMARY_DARKER = new Color(0, 88, 191);
 
     /**
-     * 主色浅色 - Indigo-400
+     * 主色浅色 - Blue-400
      */
-    public static final Color PRIMARY_LIGHT = new Color(129, 140, 248);
+    public static final Color PRIMARY_LIGHT = new Color(51, 153, 255);
 
     /**
-     * 主色超浅 - Indigo-100
+     * 主色超浅 - Blue-100
      */
-    public static final Color PRIMARY_LIGHTER = new Color(224, 231, 255);
+    public static final Color PRIMARY_LIGHTER = new Color(219, 234, 254);
 
     // ==================== 辅助色系 ====================
 
     /**
-     * 辅助色 - Purple-500
+     * 辅助色 - Sky-500
      */
-    public static final Color SECONDARY = new Color(139, 92, 246);
+    public static final Color SECONDARY = new Color(14, 165, 233);
 
     /**
-     * 辅助色深色 - Purple-600
+     * 辅助色深色 - Sky-600
      */
-    public static final Color SECONDARY_DARK = new Color(124, 58, 237);
+    public static final Color SECONDARY_DARK = new Color(2, 132, 199);
 
     /**
-     * 辅助色浅色 - Purple-400
+     * 辅助色浅色 - Sky-400
      */
-    public static final Color SECONDARY_LIGHT = new Color(167, 139, 250);
+    public static final Color SECONDARY_LIGHT = new Color(56, 189, 248);
 
     /**
-     * 辅助色超浅 - Purple-100
+     * 辅助色超浅 - Sky-100
      */
-    public static final Color SECONDARY_LIGHTER = new Color(243, 232, 255);
+    public static final Color SECONDARY_LIGHTER = new Color(224, 242, 254);
 
     // ==================== 强调色系 ====================
 
     /**
-     * 强调色 - Pink-500
+     * 强调色 - Cyan-500
      */
-    public static final Color ACCENT = new Color(236, 72, 153);
+    public static final Color ACCENT = new Color(6, 182, 212);
 
     /**
-     * 强调色深色 - Pink-600
+     * 强调色深色 - Cyan-600
      */
-    public static final Color ACCENT_DARK = new Color(219, 39, 119);
+    public static final Color ACCENT_DARK = new Color(8, 145, 178);
 
     /**
-     * 强调色浅色 - Pink-400
+     * 强调色浅色 - Cyan-400
      */
-    public static final Color ACCENT_LIGHT = new Color(244, 114, 182);
+    public static final Color ACCENT_LIGHT = new Color(34, 211, 238);
 
     // ==================== 蓝色系 ====================
 

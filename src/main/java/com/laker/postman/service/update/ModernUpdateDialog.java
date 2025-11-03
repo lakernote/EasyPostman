@@ -3,6 +3,7 @@ package com.laker.postman.service.update;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -34,7 +35,7 @@ public class ModernUpdateDialog extends JDialog {
 
         // 主面板
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
-        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBackground(ModernColors.BG_WHITE);
 
         // 头部
         JPanel headerPanel = createHeaderPanel(updateInfo);
@@ -59,15 +60,15 @@ public class ModernUpdateDialog extends JDialog {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // 绘制渐变背景
-                GradientPaint gradient = new GradientPaint(0, 0, new Color(239, 246, 255), // Blue-50
-                        getWidth(), getHeight(), new Color(224, 242, 254) // Sky-100
+                // 绘制蓝色渐变背景
+                GradientPaint gradient = new GradientPaint(0, 0, ModernColors.PRIMARY_LIGHTER,
+                        getWidth(), getHeight(), ModernColors.SECONDARY_LIGHTER
                 );
                 g2.setPaint(gradient);
                 g2.fillRect(0, 0, getWidth(), getHeight());
 
-                // 绘制装饰性光晕
-                g2.setColor(new Color(59, 130, 246, 20)); // Blue-500 with opacity
+                // 绘制装饰性光晕（蓝色）
+                g2.setColor(ModernColors.primaryWithAlpha(20));
                 g2.fillOval(-50, -50, 200, 200);
                 g2.fillOval(getWidth() - 150, getHeight() - 100, 200, 150);
 
@@ -88,12 +89,12 @@ public class ModernUpdateDialog extends JDialog {
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
         titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
-        titleLabel.setForeground(new Color(15, 23, 42)); // Slate-900
+        titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel versionLabel = new JLabel(String.format("%s %s → %s", I18nUtil.isChinese() ? "版本" : "Version", updateInfo.getCurrentVersion(), updateInfo.getLatestVersion()));
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
-        versionLabel.setForeground(new Color(59, 130, 246)); // Blue-500
+        versionLabel.setForeground(ModernColors.PRIMARY);
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 发布时间
@@ -102,7 +103,7 @@ public class ModernUpdateDialog extends JDialog {
             String dateStr = publishedAt.substring(0, 10); // 提取日期部分
             JLabel dateLabel = new JLabel((I18nUtil.isChinese() ? "发布于 " : "Released on ") + dateStr);
             dateLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-            dateLabel.setForeground(new Color(100, 116, 139)); // Slate-500
+            dateLabel.setForeground(ModernColors.TEXT_HINT);
             dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             infoPanel.add(titleLabel);
@@ -123,7 +124,7 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createChangelogPanel(UpdateInfo updateInfo) {
         JPanel panel = new JPanel(new BorderLayout(0, 12));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ModernColors.BG_WHITE);
         panel.setBorder(new EmptyBorder(0, 24, 16, 24));
 
         // 标题
@@ -139,12 +140,12 @@ public class ModernUpdateDialog extends JDialog {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
-        textArea.setBackground(new Color(252, 252, 252));
+        textArea.setBackground(ModernColors.BG_LIGHT);
         textArea.setBorder(new EmptyBorder(12, 12, 12, 12));
         textArea.setCaretPosition(0);
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230), 1));
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -178,13 +179,13 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ModernColors.BG_WHITE);
         panel.setBorder(new EmptyBorder(16, 24, 20, 24));
 
         // 左侧提示
         JLabel tipLabel = new JLabel(I18nUtil.isChinese() ? "💡 建议在更新前保存工作" : "💡 Save your work before updating");
         tipLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        tipLabel.setForeground(new Color(150, 150, 150));
+        tipLabel.setForeground(ModernColors.TEXT_HINT);
         panel.add(tipLabel, BorderLayout.WEST);
 
         // 右侧按钮

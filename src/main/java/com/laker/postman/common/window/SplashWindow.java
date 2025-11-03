@@ -2,6 +2,7 @@ package com.laker.postman.common.window;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
@@ -104,15 +105,15 @@ public class SplashWindow extends JWindow {
                 int y = (getHeight() - size) / 2;
 
                 // 绘制外层光晕
-                g2.setColor(new Color(255, 255, 255, 30));
+                g2.setColor(ModernColors.whiteWithAlpha(30));
                 g2.fillOval(x - 5, y - 5, size + 10, size + 10);
 
                 // 绘制圆形背景
-                g2.setColor(new Color(255, 255, 255, 90));
+                g2.setColor(ModernColors.whiteWithAlpha(90));
                 g2.fillOval(x, y, size, size);
 
                 // 绘制边框
-                g2.setColor(new Color(255, 255, 255, 120));
+                g2.setColor(ModernColors.whiteWithAlpha(120));
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
@@ -140,13 +141,13 @@ public class SplashWindow extends JWindow {
         // 应用名称
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
         appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
-        appNameLabel.setForeground(new Color(15, 23, 42)); // Slate-900
+        appNameLabel.setForeground(ModernColors.TEXT_PRIMARY);
         infoPanel.add(appNameLabel);
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
-        versionLabel.setForeground(new Color(51, 65, 85)); // Slate-700
+        versionLabel.setForeground(ModernColors.TEXT_SECONDARY);
         infoPanel.add(versionLabel);
 
         return infoPanel;
@@ -160,7 +161,7 @@ public class SplashWindow extends JWindow {
         bottomPanel.setOpaque(false);
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
         statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 15));
-        statusLabel.setForeground(new Color(80, 120, 200));
+        statusLabel.setForeground(ModernColors.PRIMARY);
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
         return bottomPanel;
     }
@@ -205,10 +206,10 @@ public class SplashWindow extends JWindow {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-                // 现代化渐变色（从深蓝到浅蓝）
+                // 现代化蓝色渐变（从iOS蓝到浅蓝）
                 GradientPaint gp = new GradientPaint(
-                    0, 0, new Color(99, 102, 241), // Indigo-500
-                    getWidth(), getHeight(), new Color(219, 234, 254) // Blue-100
+                    0, 0, ModernColors.PRIMARY,
+                    getWidth(), getHeight(), ModernColors.PRIMARY_LIGHTER
                 );
                 g2d.setPaint(gp);
                 // 圆角背景
@@ -216,14 +217,14 @@ public class SplashWindow extends JWindow {
 
                 // 添加微妙的光泽效果
                 GradientPaint glossPaint = new GradientPaint(
-                    0, 0, new Color(255, 255, 255, 40),
-                    0, getHeight() / 2.0f, new Color(255, 255, 255, 0)
+                    0, 0, ModernColors.whiteWithAlpha(40),
+                    0, getHeight() / 2.0f, ModernColors.whiteWithAlpha(0)
                 );
                 g2d.setPaint(glossPaint);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
 
                 // 添加边框高光
-                g2d.setColor(new Color(255, 255, 255, 80));
+                g2d.setColor(ModernColors.whiteWithAlpha(80));
                 g2d.setStroke(new BasicStroke(2f));
                 g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 32, 32);
 

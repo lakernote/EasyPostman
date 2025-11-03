@@ -216,7 +216,7 @@ public class ModernUpdateNotification {
                 g2.setColor(ModernColors.BG_WHITE);
                 g2.fillRoundRect(0, 0, width, height, 12, 12);
 
-                // 绘制顶部装饰条（使用统一配色）
+                // 绘制顶部装饰条（使用蓝色渐变）
                 GradientPaint topStrip = new GradientPaint(
                         0, 0, ModernColors.PRIMARY,
                         width, 0, ModernColors.SECONDARY
@@ -378,7 +378,7 @@ public class ModernUpdateNotification {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // 绘制渐变背景
+                // 绘制蓝色渐变背景
                 GradientPaint gradient = new GradientPaint(
                         0, 0, getModel().isRollover() ? ModernColors.PRIMARY_DARK : ModernColors.PRIMARY,
                         getWidth(), 0, getModel().isRollover() ? ModernColors.SECONDARY_DARK : ModernColors.SECONDARY

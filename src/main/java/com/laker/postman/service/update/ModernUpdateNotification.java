@@ -26,8 +26,11 @@ public class ModernUpdateNotification {
     private final JWindow window;
     private final Timer autoCloseTimer;
     private final Timer animationTimer;
+    private int currentX;
     private int currentY;
+    private int targetX;
     private int targetY;
+    private int screenWidth;
     private int screenHeight;
     private boolean isSlideIn = true;
 
@@ -60,54 +63,51 @@ public class ModernUpdateNotification {
     }
 
     /**
-     * 定位窗口到应用主窗口的右下角外（准备滑入）
+     * 定位窗口 - 从电脑屏幕右下角飞出，停靠在应用主窗口的右下角
      */
     private void positionWindowOffScreen(JFrame parent) {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        screenWidth = screenSize.width;
+        screenHeight = screenSize.height;
 
-        int x, bottomY;
+        // 初始位置：屏幕右下角外
+        currentX = screenWidth - window.getWidth() - 20;
+        currentY = screenHeight;
 
         if (parent != null && parent.isVisible()) {
-            // 定位到应用主窗口的右下角
+            // 计算停靠位置：应用主窗口的右下角
             Rectangle parentBounds = parent.getBounds();
 
-            // X位置：主窗口右边缘 - 通知窗口宽度 - 20px边距
-            x = parentBounds.x + parentBounds.width - window.getWidth() - 20;
+            // 目标X位置：主窗口右边缘 - 通知宽度 - 20px边距
+            targetX = parentBounds.x + parentBounds.width - window.getWidth() - 20;
 
             // 确保不超出屏幕右边缘
-            if (x + window.getWidth() > screenSize.width) {
-                x = screenSize.width - window.getWidth() - 20;
+            if (targetX + window.getWidth() > screenWidth) {
+                targetX = screenWidth - window.getWidth() - 20;
             }
             // 确保不超出屏幕左边缘
-            if (x < 20) {
-                x = 20;
+            if (targetX < 20) {
+                targetX = 20;
             }
 
             // 目标Y位置：主窗口底边 - 通知窗口高度 - 60px边距
             targetY = parentBounds.y + parentBounds.height - window.getHeight() - 60;
 
             // 确保不超出屏幕底部
-            if (targetY + window.getHeight() > screenSize.height) {
-                targetY = screenSize.height - window.getHeight() - 60;
+            if (targetY + window.getHeight() > screenHeight) {
+                targetY = screenHeight - window.getHeight() - 60;
             }
             // 确保不超出主窗口顶部
             if (targetY < parentBounds.y + 60) {
                 targetY = parentBounds.y + 60;
             }
-
-            // 初始Y位置：主窗口底部外（用于滑入动画）
-            bottomY = parentBounds.y + parentBounds.height;
         } else {
             // 如果没有父窗口或父窗口不可见，使用屏幕右下角
-            x = screenSize.width - window.getWidth() - 20;
-            targetY = screenSize.height - window.getHeight() - 60;
-            bottomY = screenSize.height;
+            targetX = screenWidth - window.getWidth() - 20;
+            targetY = screenHeight - window.getHeight() - 60;
         }
 
-        currentY = bottomY;
-        screenHeight = bottomY; // 用于滑出动画
-
-        window.setLocation(x, currentY);
+        window.setLocation(currentX, currentY);
     }
 
     /**
@@ -115,28 +115,62 @@ public class ModernUpdateNotification {
      */
     private void updateAnimation() {
         if (isSlideIn) {
-            // 滑入动画
-            if (Math.abs(currentY - targetY) > 1) {
-                // 使用缓动函数：差值 * 缓动系数
-                int distance = (int) ((targetY - currentY) * EASING_FACTOR);
-                if (distance == 0) {
-                    distance = currentY > targetY ? -1 : 1;
+            // 滑入动画 - 同时移动X和Y
+            boolean xReached = Math.abs(currentX - targetX) <= 1;
+            boolean yReached = Math.abs(currentY - targetY) <= 1;
+
+            if (!xReached || !yReached) {
+                // X方向的缓动
+                if (!xReached) {
+                    int distanceX = (int) ((targetX - currentX) * EASING_FACTOR);
+                    if (distanceX == 0) {
+                        distanceX = currentX > targetX ? -1 : 1;
+                    }
+                    currentX += distanceX;
                 }
-                currentY += distance;
-                window.setLocation(window.getX(), currentY);
+
+                // Y方向的缓动
+                if (!yReached) {
+                    int distanceY = (int) ((targetY - currentY) * EASING_FACTOR);
+                    if (distanceY == 0) {
+                        distanceY = currentY > targetY ? -1 : 1;
+                    }
+                    currentY += distanceY;
+                }
+
+                window.setLocation(currentX, currentY);
             } else {
                 // 到达目标位置
+                currentX = targetX;
                 currentY = targetY;
-                window.setLocation(window.getX(), currentY);
+                window.setLocation(currentX, currentY);
                 animationTimer.stop();
             }
         } else {
-            // 滑出动画
-            if (currentY < screenHeight) {
-                // 使用缓动函数
-                int distance = (int) ((screenHeight - currentY) * EASING_FACTOR) + 1;
-                currentY += distance;
-                window.setLocation(window.getX(), currentY);
+            // 滑出动画 - 回到屏幕右下角外
+            int targetOutX = screenWidth - window.getWidth() - 20;
+            int targetOutY = screenHeight;
+
+            boolean xReached = currentX >= targetOutX || Math.abs(currentX - targetOutX) <= 1;
+            boolean yReached = currentY >= targetOutY;
+
+            if (!xReached || !yReached) {
+                // X方向的缓动（移动到屏幕右侧）
+                if (!xReached) {
+                    int distanceX = (int) ((targetOutX - currentX) * EASING_FACTOR);
+                    if (distanceX == 0) {
+                        distanceX = 1;
+                    }
+                    currentX += distanceX;
+                }
+
+                // Y方向的缓动（移动到屏幕底部外）
+                if (!yReached) {
+                    int distanceY = (int) ((targetOutY - currentY) * EASING_FACTOR) + 1;
+                    currentY += distanceY;
+                }
+
+                window.setLocation(currentX, currentY);
             } else {
                 // 滑出完成，关闭窗口
                 animationTimer.stop();

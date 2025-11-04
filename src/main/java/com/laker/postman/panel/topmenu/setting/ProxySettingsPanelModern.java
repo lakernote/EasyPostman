@@ -7,8 +7,8 @@ import com.laker.postman.util.NotificationUtil;
 import javax.swing.*;
 import java.awt.*;
 public class ProxySettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 12;
-    private static final int SECTION_SPACING = 16;
+    private static final int FIELD_SPACING = 8;
+    private static final int SECTION_SPACING = 12;
     private JCheckBox proxyEnabledCheckBox;
     private JComboBox<String> proxyTypeComboBox;
     private JTextField proxyHostField;

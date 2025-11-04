@@ -12,8 +12,8 @@ import java.awt.*;
  * 现代化系统设置面板 - 自动更新等系统级配置
  */
 public class SystemSettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 12;
-    private static final int SECTION_SPACING = 16;
+    private static final int FIELD_SPACING = 8;
+    private static final int SECTION_SPACING = 12;
 
     private JCheckBox autoUpdateCheckBox;
     private JTextField autoUpdateIntervalField;

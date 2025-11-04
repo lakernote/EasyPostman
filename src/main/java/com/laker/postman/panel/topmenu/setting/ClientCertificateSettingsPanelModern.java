@@ -21,7 +21,7 @@ import java.util.List;
  * 继承 ModernSettingsPanel 获得统一的现代化UI风格
  */
 public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
-    private static final int SECTION_SPACING = 16;
+    private static final int SECTION_SPACING = 12;
 
     private JTable certificateTable;
     private CertificateTableModel tableModel;
@@ -51,7 +51,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         // 操作按钮栏
         JPanel actionBar = createActionBar();
         tableSection.add(actionBar);
-        tableSection.add(Box.createVerticalStrut(12));
+        tableSection.add(Box.createVerticalStrut(8));
 
         // 表格
         JScrollPane scrollPane = createTablePanel();
@@ -131,7 +131,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
         actionBar.setBackground(ModernColors.BG_WHITE);
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
-        actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         addBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_ADD), true);
         editBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT), false);
@@ -139,11 +139,11 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         helpBtn = createIconButton("ℹ️", I18nUtil.getMessage(MessageKeys.CERT_HELP));
 
         actionBar.add(addBtn);
-        actionBar.add(Box.createHorizontalStrut(8));
+        actionBar.add(Box.createHorizontalStrut(6));
         actionBar.add(editBtn);
-        actionBar.add(Box.createHorizontalStrut(8));
+        actionBar.add(Box.createHorizontalStrut(6));
         actionBar.add(deleteBtn);
-        actionBar.add(Box.createHorizontalStrut(16));
+        actionBar.add(Box.createHorizontalStrut(12));
         actionBar.add(helpBtn);
         actionBar.add(Box.createHorizontalGlue());
 
@@ -157,7 +157,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         tableModel = new CertificateTableModel();
         certificateTable = new JTable(tableModel);
         certificateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        certificateTable.setRowHeight(32);
+        certificateTable.setRowHeight(28);
         certificateTable.setShowGrid(true);
         certificateTable.setGridColor(ModernColors.BORDER_LIGHT);
         certificateTable.setBackground(ModernColors.BG_WHITE);

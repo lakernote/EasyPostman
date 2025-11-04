@@ -33,11 +33,11 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel warningPanel;
     protected JLabel warningLabel;
 
-    private static final int SECTION_SPACING = 16;  // 节间距
-    private static final int FIELD_SPACING = 12;    // 字段间距
-    private static final int BORDER_RADIUS = 12;    // 圆角半径
-    private static final int LABEL_WIDTH = 200;     // 标签宽度
-    private static final int FIELD_WIDTH = 300;     // 字段宽度
+    private static final int SECTION_SPACING = 12;  // 节间距
+    private static final int FIELD_SPACING = 8;     // 字段间距
+    private static final int BORDER_RADIUS = 8;     // 圆角半径
+    private static final int LABEL_WIDTH = 180;     // 标签宽度
+    private static final int FIELD_WIDTH = 280;     // 字段宽度
 
     public ModernSettingsPanel() {
         initUI();
@@ -60,7 +60,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(ModernColors.BG_LIGHT);
-        contentPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
+        contentPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
         // 子类实现具体内容
         buildContent(contentPanel);
@@ -103,7 +103,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         section.setBackground(ModernColors.BG_WHITE);
         section.setBorder(new CompoundBorder(
                 new ModernRoundedBorder(),
-                new EmptyBorder(16, 16, 16, 16)
+                new EmptyBorder(12, 12, 12, 12)
         ));
         section.setAlignmentX(Component.LEFT_ALIGNMENT);
         // 修复横向滚动条：限制最大宽度，只允许高度自动扩展
@@ -120,13 +120,13 @@ public abstract class ModernSettingsPanel extends JPanel {
             JLabel descLabel = new JLabel("<html>" + description + "</html>");
             descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 13));
             descLabel.setForeground(ModernColors.TEXT_SECONDARY);
-            descLabel.setBorder(new EmptyBorder(6, 0, 12, 0));
+            descLabel.setBorder(new EmptyBorder(4, 0, 8, 0));
             descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             section.add(titleLabel);
             section.add(descLabel);
         } else {
-            titleLabel.setBorder(new EmptyBorder(0, 0, 12, 0));
+            titleLabel.setBorder(new EmptyBorder(0, 0, 8, 0));
             section.add(titleLabel);
         }
 
@@ -141,15 +141,15 @@ public abstract class ModernSettingsPanel extends JPanel {
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
         row.setBackground(ModernColors.BG_WHITE);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         // 标签
         JLabel label = new JLabel(labelText);
         label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 14));
         label.setForeground(ModernColors.TEXT_PRIMARY);
-        label.setPreferredSize(new Dimension(LABEL_WIDTH, 36));
-        label.setMinimumSize(new Dimension(LABEL_WIDTH, 36));
-        label.setMaximumSize(new Dimension(LABEL_WIDTH, 36));
+        label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
+        label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
+        label.setMaximumSize(new Dimension(LABEL_WIDTH, 32));
 
         if (tooltip != null && !tooltip.isEmpty()) {
             label.setToolTipText(tooltip);
@@ -157,8 +157,8 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 输入组件样式化
         styleInputComponent(inputComponent);
-        inputComponent.setPreferredSize(new Dimension(FIELD_WIDTH, 38));
-        inputComponent.setMaximumSize(new Dimension(FIELD_WIDTH, 38));
+        inputComponent.setPreferredSize(new Dimension(FIELD_WIDTH, 34));
+        inputComponent.setMaximumSize(new Dimension(FIELD_WIDTH, 34));
 
         row.add(label);
         row.add(Box.createHorizontalStrut(16));
@@ -176,7 +176,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
         row.setBackground(ModernColors.BG_WHITE);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         // 样式化复选框
         checkBox.setFont(new Font(checkBox.getFont().getName(), Font.PLAIN, 14));
@@ -256,11 +256,11 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建现代化的按钮栏
      */
     private JPanel createModernButtonBar() {
-        JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 18));
+        JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         buttonBar.setBackground(ModernColors.BG_WHITE);
         buttonBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.BORDER_LIGHT),
-                BorderFactory.createEmptyBorder(0, 20, 0, 20)
+                BorderFactory.createEmptyBorder(0, 16, 0, 16)
         ));
 
         cancelBtn = createModernButton(
@@ -337,7 +337,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 14));
         button.setForeground(isPrimary ? ModernColors.TEXT_INVERSE : ModernColors.TEXT_PRIMARY);
-        button.setPreferredSize(new Dimension(110, 38));
+        button.setPreferredSize(new Dimension(100, 34));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);

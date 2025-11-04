@@ -176,32 +176,33 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 11));
         certificateTable.setFont(new Font(certificateTable.getFont().getName(), Font.PLAIN, 11));
 
-        // 设置表格自动调整模式：自适应所有列
+        // 使用后续列调整模式，让表格填充满可用空间
         certificateTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 
-        // 设置列宽 - 固定某些列，其余列自适应
-        // Enabled 列 - 固定宽度
-        certificateTable.getColumnModel().getColumn(0).setPreferredWidth(60);
-        certificateTable.getColumnModel().getColumn(0).setMinWidth(60);
-        certificateTable.getColumnModel().getColumn(0).setMaxWidth(60);
+        // 设置列宽 - 前面几列固定，后面的列自动填充
+        // Enabled 列 - 固定
+        certificateTable.getColumnModel().getColumn(0).setPreferredWidth(70);
+        certificateTable.getColumnModel().getColumn(0).setMinWidth(65);
+        certificateTable.getColumnModel().getColumn(0).setMaxWidth(80);
 
-        // Name 列 - 可变宽度，最小宽度
-        certificateTable.getColumnModel().getColumn(1).setPreferredWidth(120);
-        certificateTable.getColumnModel().getColumn(1).setMinWidth(80);
+        // Name 列 - 固定
+        certificateTable.getColumnModel().getColumn(1).setPreferredWidth(90);
+        certificateTable.getColumnModel().getColumn(1).setMinWidth(70);
+        certificateTable.getColumnModel().getColumn(1).setMaxWidth(120);
 
-        // Host 列 - 可变宽度，最小宽度，会占据更多空间
-        certificateTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+        // Host 列 - 可变，会自动填充剩余空间
+        certificateTable.getColumnModel().getColumn(2).setPreferredWidth(180);
         certificateTable.getColumnModel().getColumn(2).setMinWidth(100);
 
-        // Port 列 - 固定宽度
+        // Port 列 - 固定
         certificateTable.getColumnModel().getColumn(3).setPreferredWidth(55);
-        certificateTable.getColumnModel().getColumn(3).setMinWidth(55);
-        certificateTable.getColumnModel().getColumn(3).setMaxWidth(55);
+        certificateTable.getColumnModel().getColumn(3).setMinWidth(50);
+        certificateTable.getColumnModel().getColumn(3).setMaxWidth(70);
 
-        // Type 列 - 固定宽度
-        certificateTable.getColumnModel().getColumn(4).setPreferredWidth(65);
-        certificateTable.getColumnModel().getColumn(4).setMinWidth(65);
-        certificateTable.getColumnModel().getColumn(4).setMaxWidth(65);
+        // Type 列 - 固定
+        certificateTable.getColumnModel().getColumn(4).setPreferredWidth(70);
+        certificateTable.getColumnModel().getColumn(4).setMinWidth(60);
+        certificateTable.getColumnModel().getColumn(4).setMaxWidth(85);
 
         // 居中显示某些列（但不包括第0列，让它使用默认的Boolean复选框渲染器）
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -227,10 +228,10 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
-        scrollPane.setPreferredSize(new Dimension(500, 280));
-        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 350));
-        scrollPane.setMinimumSize(new Dimension(400, 200));
-        // 通常不需要水平滚动条，因为列会自适应宽度
+        scrollPane.setPreferredSize(new Dimension(450, 280));
+        scrollPane.setMaximumSize(new Dimension(600, 350));
+        scrollPane.setMinimumSize(new Dimension(350, 200));
+        // 表格会自动填充空间，不需要横向滚动条
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 

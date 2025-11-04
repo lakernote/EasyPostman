@@ -3,9 +3,7 @@ package com.laker.postman.panel.topmenu;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
-import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
@@ -13,10 +11,7 @@ import com.laker.postman.panel.topmenu.setting.*;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -128,10 +123,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         for (Window window : Window.getWindows()) {
             SwingUtilities.updateComponentTreeUI(window);
         }
-        JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED),
-                I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
-                JOptionPane.INFORMATION_MESSAGE);
+        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
     }
 
     private void addSettingMenu() {

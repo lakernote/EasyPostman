@@ -205,7 +205,15 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setMaxHistoryCount(Integer.parseInt(maxHistoryCountField.getText().trim()));
             SettingManager.setMaxOpenedRequestsCount(Integer.parseInt(maxOpenedRequestsCountField.getText().trim()));
             SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
-            SettingManager.setSidebarExpanded(sidebarExpandedCheckBox.isSelected());
+
+            // 保存侧边栏展开设置并更新UI
+            boolean oldSidebarExpanded = SettingManager.isSidebarExpanded();
+            boolean newSidebarExpanded = sidebarExpandedCheckBox.isSelected();
+            SettingManager.setSidebarExpanded(newSidebarExpanded);
+            if (oldSidebarExpanded != newSidebarExpanded) {
+                // 通知 SidebarTabPanel 更新展开状态
+                updateSidebarExpansion();
+            }
 
             // 重新跟踪当前值
             originalValues.clear();
@@ -228,6 +236,22 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             }
         } catch (Exception ex) {
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
+        }
+    }
+
+    /**
+     * 更新侧边栏展开状态
+     */
+    private void updateSidebarExpansion() {
+        try {
+            // 获取 SidebarTabPanel 单例并更新
+            com.laker.postman.panel.sidebar.SidebarTabPanel sidebarPanel =
+                com.laker.postman.common.SingletonFactory.getInstance(
+                    com.laker.postman.panel.sidebar.SidebarTabPanel.class);
+            sidebarPanel.updateSidebarExpansion();
+        } catch (Exception ex) {
+            // 静默处理异常
+            ex.printStackTrace();
         }
     }
 }

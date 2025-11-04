@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.tree;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -35,8 +36,16 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
                 applyRequestRendering(item);
             }
         }
-        if (sel) setBackgroundSelectionColor(new Color(255, 230, 180));
-        else setBackgroundNonSelectionColor(getBackground());
+
+        // 优化选中效果：使用表格选中背景色，更加明显
+        if (sel) {
+            setBackgroundSelectionColor(ModernColors.TABLE_SELECTION_BACKGROUND);
+            setTextSelectionColor(ModernColors.TEXT_PRIMARY);
+            setBorderSelectionColor(null); // 去除边框
+        } else {
+            setBackgroundNonSelectionColor(getBackground());
+            setTextNonSelectionColor(ModernColors.TEXT_PRIMARY);
+        }
         return this;
     }
 

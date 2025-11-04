@@ -10,10 +10,10 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
+import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -43,6 +43,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private transient List<TabInfo> tabInfos;
     private JPanel consoleContainer;
     private JLabel consoleLabel;
+    private JLabel sidebarToggleLabel; // 侧边栏展开/收起按钮
     private JLabel cookieLabel;
     private JLabel versionLabel;
     private ConsolePanel consolePanel;
@@ -115,8 +116,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
-            // 左侧放 Console
-            consoleContainer.add(consoleLabel, BorderLayout.WEST);
+            // 左侧放 SidebarToggle 和 Console
+            JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            leftPanel.setOpaque(false);
+            leftPanel.add(sidebarToggleLabel);
+            leftPanel.add(consoleLabel);
+            consoleContainer.add(leftPanel, BorderLayout.WEST);
             // 右侧放 Cookies 和 Version
             JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             rightPanel.setOpaque(false);
@@ -133,9 +138,37 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 初始化底部栏，包括控制台标签和版本标签
      */
     private void initBottomBar() {
+        createSidebarToggleLabel();
         createConsoleLabel();
         createCookieLabel();
         createVersionLabel();
+    }
+
+    /**
+     * 创建侧边栏展开/收起按钮
+     */
+    private void createSidebarToggleLabel() {
+        sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20));
+        sidebarToggleLabel.setToolTipText("Toggle Sidebar");
+        sidebarToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
+        sidebarToggleLabel.setFocusable(true);
+        sidebarToggleLabel.setEnabled(true);
+        sidebarToggleLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                toggleSidebarExpansion();
+            }
+        });
+    }
+
+    /**
+     * 切换侧边栏展开/收起状态
+     */
+    private void toggleSidebarExpansion() {
+        sidebarExpanded = !sidebarExpanded;
+        SettingManager.setSidebarExpanded(sidebarExpanded);
+        recreateTabbedPane();
     }
 
     /**
@@ -146,7 +179,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
         consoleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         consoleLabel.setFocusable(true); // 让label可聚焦
         consoleLabel.setEnabled(true); // 确保label可用
         consoleLabel.addMouseListener(new MouseAdapter() {

@@ -35,7 +35,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         int maxBodySizeKB = SettingManager.getMaxBodySize() / 1024;
         maxBodySizeField.setText(String.valueOf(maxBodySizeKB));
         JPanel maxBodySizeRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_BODY_SIZE) + " (KB)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_BODY_SIZE),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_BODY_SIZE_TOOLTIP),
                 maxBodySizeField
         );
@@ -46,7 +46,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         requestTimeoutField = new JTextField(10);
         requestTimeoutField.setText(String.valueOf(SettingManager.getRequestTimeout()));
         JPanel requestTimeoutRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TIMEOUT) + " (seconds)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TIMEOUT),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TIMEOUT_TOOLTIP),
                 requestTimeoutField
         );
@@ -58,7 +58,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         int maxDownloadSizeMB = SettingManager.getMaxDownloadSize() / (1024 * 1024);
         maxDownloadSizeField.setText(String.valueOf(maxDownloadSizeMB));
         JPanel maxDownloadSizeRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE) + " (MB)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE_TOOLTIP),
                 maxDownloadSizeField
         );
@@ -92,7 +92,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
         setupValidators();
-        
+
         // 跟踪所有组件的初始值
         trackComponentValue(maxBodySizeField);
         trackComponentValue(requestTimeoutField);
@@ -157,7 +157,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         // 验证所有字段
         if (!validateAllFields()) {
             NotificationUtil.showError(
-            I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
 
@@ -175,7 +175,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
             // Clear client cache to apply new settings
             OkHttpClientManager.clearClientCache();
-            
+
             // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(maxBodySizeField);

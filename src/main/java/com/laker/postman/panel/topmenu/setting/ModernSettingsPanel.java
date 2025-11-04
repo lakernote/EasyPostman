@@ -36,8 +36,8 @@ public abstract class ModernSettingsPanel extends JPanel {
     private static final int SECTION_SPACING = 12;  // 节间距
     private static final int FIELD_SPACING = 8;     // 字段间距
     private static final int BORDER_RADIUS = 8;     // 圆角半径
-    private static final int LABEL_WIDTH = 180;     // 标签宽度
-    private static final int FIELD_WIDTH = 280;     // 字段宽度
+    private static final int LABEL_WIDTH = 220;     // 标签宽度
+    private static final int FIELD_WIDTH = 300;     // 字段宽度
 
     public ModernSettingsPanel() {
         initUI();
@@ -111,14 +111,14 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 标题
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 17));
+        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
         titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 描述（可选）
         if (description != null && !description.isEmpty()) {
             JLabel descLabel = new JLabel("<html>" + description + "</html>");
-            descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 13));
+            descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 11));
             descLabel.setForeground(ModernColors.TEXT_SECONDARY);
             descLabel.setBorder(new EmptyBorder(4, 0, 8, 0));
             descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -145,7 +145,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 标签
         JLabel label = new JLabel(labelText);
-        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 14));
+        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 12));
         label.setForeground(ModernColors.TEXT_PRIMARY);
         label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
         label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
@@ -179,7 +179,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         // 样式化复选框
-        checkBox.setFont(new Font(checkBox.getFont().getName(), Font.PLAIN, 14));
+        checkBox.setFont(new Font(checkBox.getFont().getName(), Font.PLAIN, 12));
         checkBox.setForeground(ModernColors.TEXT_PRIMARY);
         checkBox.setBackground(ModernColors.BG_WHITE);
         checkBox.setFocusPainted(false);
@@ -203,7 +203,6 @@ public abstract class ModernSettingsPanel extends JPanel {
             }
         });
 
-        row.add(Box.createHorizontalStrut(LABEL_WIDTH + 16));
         row.add(checkBox);
         row.add(Box.createHorizontalGlue());
 
@@ -215,7 +214,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 样式化输入组件
      */
     private void styleInputComponent(JComponent component) {
-        component.setFont(new Font(component.getFont().getName(), Font.PLAIN, 14));
+        component.setFont(new Font(component.getFont().getName(), Font.PLAIN, 12));
         component.setBackground(ModernColors.BG_WHITE);
         component.setForeground(ModernColors.TEXT_PRIMARY);
 
@@ -335,7 +334,7 @@ public abstract class ModernSettingsPanel extends JPanel {
             }
         };
 
-        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 14));
+        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 12));
         button.setForeground(isPrimary ? ModernColors.TEXT_INVERSE : ModernColors.TEXT_PRIMARY);
         button.setPreferredSize(new Dimension(100, 34));
         button.setContentAreaFilled(false);
@@ -579,11 +578,11 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 警告图标和文本
         JLabel iconLabel = new JLabel("⚠");
-        iconLabel.setFont(new Font(iconLabel.getFont().getName(), Font.BOLD, 16));
+        iconLabel.setFont(new Font(iconLabel.getFont().getName(), Font.BOLD, 14));
         iconLabel.setForeground(ModernColors.STATE_MODIFIED);
 
         warningLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UNSAVED_CHANGES_WARNING));
-        warningLabel.setFont(new Font(warningLabel.getFont().getName(), Font.PLAIN, 13));
+        warningLabel.setFont(new Font(warningLabel.getFont().getName(), Font.PLAIN, 11));
         warningLabel.setForeground(ModernColors.TEXT_PRIMARY);
 
         // 按钮面板
@@ -619,7 +618,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private JButton createSmallButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 12));
+        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 11));
         button.setForeground(ModernColors.TEXT_PRIMARY);
         button.setBackground(ModernColors.BG_WHITE);
         button.setBorder(new CompoundBorder(
@@ -793,7 +792,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 标签
         JLabel label = new JLabel(labelText);
-        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 13));
+        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 11));
         label.setForeground(ModernColors.TEXT_PRIMARY);
         label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
         label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
@@ -829,7 +828,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     protected JButton createIconButton(String icon, String tooltip) {
         JButton button = new JButton(icon);
-        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 14));
+        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 12));
         button.setForeground(ModernColors.ICON_RESET);
         button.setPreferredSize(new Dimension(28, 28));
         button.setMinimumSize(new Dimension(28, 28));
@@ -869,7 +868,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         JPanel row = createFieldRow(labelText, tooltip, inputField);
 
         // 验证反馈标签
-        validationLabel.setFont(new Font(validationLabel.getFont().getName(), Font.PLAIN, 11));
+        validationLabel.setFont(new Font(validationLabel.getFont().getName(), Font.PLAIN, 10));
         validationLabel.setForeground(ModernColors.VALIDATION_ERROR_ICON);
         validationLabel.setBorder(new EmptyBorder(2, LABEL_WIDTH + 12, 0, 0));
         validationLabel.setAlignmentX(Component.LEFT_ALIGNMENT);

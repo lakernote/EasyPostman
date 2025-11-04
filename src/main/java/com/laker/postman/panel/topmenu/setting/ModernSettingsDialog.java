@@ -25,7 +25,7 @@ public class ModernSettingsDialog extends JDialog {
     }
 
     private void initUI() {
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setResizable(true);
         setMinimumSize(new Dimension(600, 300));
         setPreferredSize(new Dimension(800, 550));

@@ -44,7 +44,7 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
         autoUpdateIntervalField = new JTextField(10);
         autoUpdateIntervalField.setText(String.valueOf(SettingManager.getAutoUpdateCheckIntervalHours()));
         JPanel intervalRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL) + " (hours)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL_TOOLTIP),
                 autoUpdateIntervalField
         );
@@ -55,7 +55,7 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
         autoUpdateStartupDelayField = new JTextField(10);
         autoUpdateStartupDelayField.setText(String.valueOf(SettingManager.getAutoUpdateStartupDelaySeconds()));
         JPanel startupDelayRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY) + " (seconds)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY_TOOLTIP),
                 autoUpdateStartupDelayField
         );

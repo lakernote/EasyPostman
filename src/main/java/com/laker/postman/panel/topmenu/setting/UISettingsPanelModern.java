@@ -49,7 +49,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         downloadProgressDialogThresholdField.setText(String.valueOf(thresholdMB));
 
         JPanel thresholdRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_THRESHOLD) + " (MB)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_THRESHOLD),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_DOWNLOAD_THRESHOLD_TOOLTIP),
                 downloadProgressDialogThresholdField
         );

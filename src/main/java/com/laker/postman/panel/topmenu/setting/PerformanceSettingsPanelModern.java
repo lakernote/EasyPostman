@@ -41,7 +41,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         jmeterKeepAliveField = new JTextField(10);
         jmeterKeepAliveField.setText(String.valueOf(SettingManager.getJmeterKeepAliveSeconds()));
         JPanel keepAliveRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE) + " (seconds)",
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP),
                 jmeterKeepAliveField
         );

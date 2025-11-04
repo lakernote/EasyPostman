@@ -7,7 +7,7 @@ import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;

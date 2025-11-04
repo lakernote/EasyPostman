@@ -1,6 +1,6 @@
 package com.laker.postman.service.update.source;
 
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;

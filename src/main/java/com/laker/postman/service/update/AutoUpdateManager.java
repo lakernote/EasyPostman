@@ -3,7 +3,7 @@ package com.laker.postman.service.update;
 import cn.hutool.system.OsInfo;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.model.UpdateInfo;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;

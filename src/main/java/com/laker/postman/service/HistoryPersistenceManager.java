@@ -3,7 +3,7 @@ package com.laker.postman.service;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;

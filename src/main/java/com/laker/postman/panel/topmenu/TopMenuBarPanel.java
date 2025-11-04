@@ -129,77 +129,51 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     private void addSettingMenu() {
         JMenu settingMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS));
 
-        // 请求设置
-        JMenuItem requestSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE));
-        requestSettingMenuItem.addActionListener(e -> showRequestSettingDialog());
-        settingMenu.add(requestSettingMenuItem);
+        // 统一设置（现代化设置对话框）
+        JMenuItem settingsMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_TITLE));
+        settingsMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        settingsMenuItem.addActionListener(e -> showModernSettingsDialog());
+        settingMenu.add(settingsMenuItem);
 
-        // 性能设置
-        JMenuItem performanceSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE));
-        performanceSettingMenuItem.addActionListener(e -> showPerformanceSettingDialog());
-        settingMenu.add(performanceSettingMenuItem);
+        settingMenu.addSeparator();
 
-        // 界面设置
-        JMenuItem uiSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_TITLE));
-        uiSettingMenuItem.addActionListener(e -> showUISettingDialog());
+        // 快捷访问各个设置标签页
+        JMenuItem uiSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_TITLE));
+        uiSettingMenuItem.addActionListener(e -> showModernSettingsDialog(0));
         settingMenu.add(uiSettingMenuItem);
 
-        // 网络代理设置
+        JMenuItem requestSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE));
+        requestSettingMenuItem.addActionListener(e -> showModernSettingsDialog(1));
+        settingMenu.add(requestSettingMenuItem);
+
         JMenuItem proxySettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TITLE));
-        proxySettingMenuItem.addActionListener(e -> showProxySettingDialog());
+        proxySettingMenuItem.addActionListener(e -> showModernSettingsDialog(2));
         settingMenu.add(proxySettingMenuItem);
 
-        // 客户端证书设置
-        JMenuItem clientCertMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
-        clientCertMenuItem.addActionListener(e -> showClientCertificateDialog());
-        settingMenu.add(clientCertMenuItem);
-
-        // 系统设置
         JMenuItem systemSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE));
-        systemSettingMenuItem.addActionListener(e -> showSystemSettingDialog());
+        systemSettingMenuItem.addActionListener(e -> showModernSettingsDialog(3));
         settingMenu.add(systemSettingMenuItem);
+
+        JMenuItem performanceSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE));
+        performanceSettingMenuItem.addActionListener(e -> showModernSettingsDialog(4));
+        settingMenu.add(performanceSettingMenuItem);
+
+        JMenuItem clientCertMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
+        clientCertMenuItem.addActionListener(e -> showModernSettingsDialog(5));
+        settingMenu.add(clientCertMenuItem);
 
         menuBar.add(settingMenu);
     }
 
 
-    private void showRequestSettingDialog() {
+    private void showModernSettingsDialog() {
         Window window = SwingUtilities.getWindowAncestor(this);
-        RequestSettingsDialog dialog = new RequestSettingsDialog(window);
-        dialog.setVisible(true);
+        ModernSettingsDialog.showSettings(window);
     }
 
-    private void showPerformanceSettingDialog() {
+    private void showModernSettingsDialog(int tabIndex) {
         Window window = SwingUtilities.getWindowAncestor(this);
-        PerformanceSettingsDialog dialog = new PerformanceSettingsDialog(window);
-        dialog.setVisible(true);
-    }
-
-    private void showUISettingDialog() {
-        Window window = SwingUtilities.getWindowAncestor(this);
-        UISettingsDialog dialog = new UISettingsDialog(window);
-        dialog.setVisible(true);
-    }
-
-    private void showSystemSettingDialog() {
-        Window window = SwingUtilities.getWindowAncestor(this);
-        SystemSettingsDialog dialog = new SystemSettingsDialog(window);
-        dialog.setVisible(true);
-    }
-
-    private void showProxySettingDialog() {
-        Window window = SwingUtilities.getWindowAncestor(this);
-        ProxySettingsDialog dialog = new ProxySettingsDialog(window);
-        dialog.setVisible(true);
-    }
-
-    private void showClientCertificateDialog() {
-        Window window = SwingUtilities.getWindowAncestor(this);
-        if (window instanceof Frame frame) {
-            ClientCertificateSettingsDialog.showDialog(frame);
-        } else {
-            log.warn("Cannot show client certificate dialog: parent is not a Frame");
-        }
+        ModernSettingsDialog.showSettings(window, tabIndex);
     }
 
     private void addHelpMenu() {

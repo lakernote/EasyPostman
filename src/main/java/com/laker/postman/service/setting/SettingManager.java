@@ -1,4 +1,4 @@
-package com.laker.postman.panel.topmenu.setting;
+package com.laker.postman.service.setting;
 
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.SystemUtil;

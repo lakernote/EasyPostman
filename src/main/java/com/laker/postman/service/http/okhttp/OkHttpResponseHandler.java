@@ -1,7 +1,7 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.component.DownloadProgressDialog;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

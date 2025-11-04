@@ -596,8 +596,22 @@ public final class MessageKeys {
 
     // ============ Settings Dialog related ============
     // Dialog title and labels
+    public static final String SETTINGS_DIALOG_TITLE = "settings.dialog.title";
     public static final String SETTINGS_DIALOG_SAVE = "settings.dialog.save";
     public static final String SETTINGS_DIALOG_CANCEL = "settings.dialog.cancel";
+    public static final String SETTINGS_DIALOG_APPLY = "settings.dialog.apply";
+
+    // Unsaved changes warnings
+    public static final String SETTINGS_UNSAVED_CHANGES_WARNING = "settings.unsaved_changes.warning";
+    public static final String SETTINGS_DISCARD_CHANGES = "settings.discard_changes";
+    public static final String SETTINGS_SAVE_NOW = "settings.save_now";
+    public static final String SETTINGS_CONFIRM_DISCARD_TITLE = "settings.confirm_discard.title";
+    public static final String SETTINGS_CONFIRM_DISCARD_MESSAGE = "settings.confirm_discard.message";
+    public static final String SETTINGS_RESET_TO_DEFAULT = "settings.reset_to_default";
+    public static final String SETTINGS_RESET_ALL_TO_DEFAULTS = "settings.reset_all_to_defaults";
+    public static final String SETTINGS_CONFIRM_RESET_TITLE = "settings.confirm_reset.title";
+    public static final String SETTINGS_CONFIRM_RESET_MESSAGE = "settings.confirm_reset.message";
+
 
     // Request settings section
     public static final String SETTINGS_REQUEST_TITLE = "settings.request.title";
@@ -642,6 +656,7 @@ public final class MessageKeys {
 
     // Validation messages
     public static final String SETTINGS_VALIDATION_ERROR_TITLE = "settings.validation.error.title";
+    public static final String SETTINGS_VALIDATION_ERROR_MESSAGE = "settings.validation.error.message";
     public static final String SETTINGS_VALIDATION_MAX_BODY_SIZE_ERROR = "settings.validation.max_body_size.error";
     public static final String SETTINGS_VALIDATION_TIMEOUT_ERROR = "settings.validation.timeout.error";
     public static final String SETTINGS_VALIDATION_MAX_DOWNLOAD_SIZE_ERROR = "settings.validation.max_download_size.error";
@@ -651,9 +666,18 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_INVALID_NUMBER = "settings.validation.invalid_number";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
+    public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";
+    public static final String SETTINGS_VALIDATION_UPDATE_INTERVAL_ERROR = "settings.validation.update_interval.error";
+    public static final String SETTINGS_VALIDATION_STARTUP_DELAY_ERROR = "settings.validation.startup_delay.error";
 
     // Success messages
     public static final String SETTINGS_SAVE_SUCCESS = "settings.save.success";
+    public static final String SETTINGS_SAVE_SUCCESS_TITLE = "settings.save.success.title";
+    public static final String SETTINGS_SAVE_SUCCESS_MESSAGE = "settings.save.success.message";
+
+    // Error messages
+    public static final String SETTINGS_SAVE_ERROR_TITLE = "settings.save.error.title";
+    public static final String SETTINGS_SAVE_ERROR_MESSAGE = "settings.save.error.message";
 
     // ============ 请求Body相关 ============
     public static final String REQUEST_BODY_TYPE = "request.body.type";
@@ -1381,6 +1405,11 @@ public final class MessageKeys {
     public static final String CERT_CLOSE = "cert.close";
     public static final String CERT_ERROR = "cert.error";
     public static final String CERT_DESCRIPTION = "cert.description";
+    public static final String CERT_LIST_TITLE = "cert.list.title";
+    public static final String CERT_ADD_SUCCESS = "cert.add.success";
+    public static final String CERT_EDIT_SUCCESS = "cert.edit.success";
+    public static final String CERT_DELETE_SUCCESS = "cert.delete.success";
+    public static final String CERT_STATUS_UPDATED = "cert.status.updated";
 
     // Client Certificate Console Logs
     public static final String CERT_CONSOLE_MATCHED = "cert.console.matched";

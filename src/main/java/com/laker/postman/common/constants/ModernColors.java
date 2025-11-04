@@ -371,6 +371,87 @@ public final class ModernColors {
      */
     public static final Color TAB_SELECTED_BACKGROUND = new Color(220, 230, 238);
 
+    // ==================== 验证状态色 ====================
+
+    /**
+     * 验证成功色
+     */
+    public static final Color VALIDATION_SUCCESS = SUCCESS_LIGHT;
+
+    /**
+     * 验证错误色
+     */
+    public static final Color VALIDATION_ERROR = ERROR_LIGHT;
+
+    /**
+     * 验证警告色
+     */
+    public static final Color VALIDATION_WARNING = WARNING_LIGHT;
+
+    /**
+     * 验证成功图标色
+     */
+    public static final Color VALIDATION_SUCCESS_ICON = SUCCESS;
+
+    /**
+     * 验证错误图标色
+     */
+    public static final Color VALIDATION_ERROR_ICON = ERROR;
+
+    // ==================== 设置面板专用色 ====================
+
+    /**
+     * 设置区域背景色
+     */
+    public static final Color SETTINGS_SECTION_BG = new Color(250, 251, 252);
+
+    /**
+     * 已修改状态指示色
+     */
+    public static final Color SETTINGS_MODIFIED_INDICATOR = new Color(255, 165, 0); // 橙色
+
+    /**
+     * 依赖项禁用色
+     */
+    public static final Color SETTINGS_DEPENDENCY_DISABLED = new Color(200, 200, 200);
+
+    /**
+     * 未保存更改警告背景色
+     */
+    public static final Color SETTINGS_UNSAVED_WARNING_BG = new Color(255, 243, 205);
+
+    /**
+     * 未保存更改警告边框色
+     */
+    public static final Color SETTINGS_UNSAVED_WARNING_BORDER = new Color(255, 193, 7);
+
+    // ==================== 交互状态色 ====================
+
+    /**
+     * 已修改状态
+     */
+    public static final Color STATE_MODIFIED = new Color(255, 193, 7); // 黄色
+
+    /**
+     * 已保存状态
+     */
+    public static final Color STATE_SAVED = SUCCESS; // 绿色
+
+    /**
+     * 错误状态
+     */
+    public static final Color STATE_ERROR = ERROR; // 红色
+
+    /**
+     * 重置图标颜色
+     */
+    public static final Color ICON_RESET = new Color(156, 163, 175); // 灰色
+
+    /**
+     * 重启需要图标颜色
+     */
+    public static final Color ICON_RESTART_REQUIRED = new Color(245, 158, 11); // 橙色
+
     // ==================== 透明度变体 ====================
 
     /**

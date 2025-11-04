@@ -9,7 +9,7 @@ import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;

@@ -11,7 +11,7 @@ import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

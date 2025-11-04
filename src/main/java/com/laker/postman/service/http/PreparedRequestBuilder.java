@@ -2,7 +2,7 @@ package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.EnvironmentService;
 
 import java.util.LinkedHashMap;

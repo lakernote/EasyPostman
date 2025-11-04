@@ -1,6 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
-import com.laker.postman.panel.topmenu.setting.SettingManager;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;

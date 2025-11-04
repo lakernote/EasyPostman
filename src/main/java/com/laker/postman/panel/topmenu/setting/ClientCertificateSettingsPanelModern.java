@@ -1,10 +1,11 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.service.ClientCertificateService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -13,12 +14,14 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.List;
 
 /**
- * 客户端证书设置面板
- * 优化后的版本：使用国际化常量、改进UI布局和交互体验
+ * 现代化客户端证书设置面板
+ * 继承 ModernSettingsPanel 获得统一的现代化UI风格
  */
-public class ClientCertificateSettingsPanel extends JPanel {
+public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
+    private static final int SECTION_SPACING = 32;
 
     private JTable certificateTable;
     private CertificateTableModel tableModel;
@@ -26,55 +29,145 @@ public class ClientCertificateSettingsPanel extends JPanel {
     private JButton editBtn;
     private JButton deleteBtn;
     private JButton helpBtn;
-    private JButton closeBtn;
     private Window parentWindow;
 
-    public ClientCertificateSettingsPanel(Window parentWindow) {
+    public ClientCertificateSettingsPanelModern(Window parentWindow) {
         this.parentWindow = parentWindow;
-        initUI();
-        registerListeners();
+    }
+
+    @Override
+    protected void buildContent(JPanel contentPanel) {
+        // 说明区域
+        JPanel descSection = createDescriptionSection();
+        contentPanel.add(descSection);
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
+        // 证书表格区域
+        JPanel tableSection = createModernSection(
+                I18nUtil.getMessage(MessageKeys.CERT_LIST_TITLE),
+                ""
+        );
+
+        // 操作按钮栏
+        JPanel actionBar = createActionBar();
+        tableSection.add(actionBar);
+        tableSection.add(Box.createVerticalStrut(12));
+
+        // 表格
+        JScrollPane scrollPane = createTablePanel();
+        scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tableSection.add(scrollPane);
+
+        contentPanel.add(tableSection);
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
+        setPreferredSize(new Dimension(700, 450));
+
+        // 加载证书数据
         loadCertificates();
     }
 
-    private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(new EmptyBorder(15, 15, 15, 15));
+    @Override
+    protected void registerListeners() {
+        // 证书设置面板不需要 Save/Apply/Cancel 按钮
+        // 直接隐藏父类的按钮栏
+        if (saveBtn != null) saveBtn.setVisible(false);
+        if (applyBtn != null) applyBtn.setVisible(false);
+        if (cancelBtn != null) {
+            cancelBtn.setText(I18nUtil.getMessage(MessageKeys.CERT_CLOSE));
+            cancelBtn.addActionListener(e -> {
+                if (parentWindow != null) {
+                    parentWindow.dispose();
+                }
+            });
+        }
 
-        // 顶部说明面板
-        add(createDescriptionPanel(), BorderLayout.NORTH);
+        addBtn.addActionListener(e -> showAddDialog());
+        editBtn.addActionListener(e -> showEditDialog());
+        deleteBtn.addActionListener(e -> deleteCertificate());
+        helpBtn.addActionListener(e -> showHelp());
 
-        // 表格面板
-        add(createTablePanel(), BorderLayout.CENTER);
+        certificateTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                updateButtonStates();
+            }
+        });
 
-        // 按钮面板
-        add(createButtonPanel(), BorderLayout.SOUTH);
+        updateButtonStates();
     }
 
-    private JPanel createDescriptionPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    /**
+     * 创建说明区域
+     */
+    private JPanel createDescriptionSection() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(ModernColors.BG_WHITE);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
+        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 18));
+        titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel descLabel = new JLabel("<html><body style='width: 600px'>" +
                 I18nUtil.getMessage(MessageKeys.CERT_DESCRIPTION) +
                 "</body></html>");
-        descLabel.setFont(descLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        descLabel.setForeground(Color.GRAY);
+        descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 13));
+        descLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        descLabel.setBorder(new EmptyBorder(8, 0, 0, 0));
+        descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(Box.createVerticalStrut(5), BorderLayout.CENTER);
-        panel.add(descLabel, BorderLayout.SOUTH);
+        panel.add(titleLabel);
+        panel.add(descLabel);
 
         return panel;
     }
 
+    /**
+     * 创建操作按钮栏
+     */
+    private JPanel createActionBar() {
+        JPanel actionBar = new JPanel();
+        actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
+        actionBar.setBackground(ModernColors.BG_WHITE);
+        actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
+        addBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_ADD), true);
+        editBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT), false);
+        deleteBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_DELETE), false);
+        helpBtn = createIconButton("ℹ️", I18nUtil.getMessage(MessageKeys.CERT_HELP));
+
+        actionBar.add(addBtn);
+        actionBar.add(Box.createHorizontalStrut(8));
+        actionBar.add(editBtn);
+        actionBar.add(Box.createHorizontalStrut(8));
+        actionBar.add(deleteBtn);
+        actionBar.add(Box.createHorizontalStrut(16));
+        actionBar.add(helpBtn);
+        actionBar.add(Box.createHorizontalGlue());
+
+        return actionBar;
+    }
+
+    /**
+     * 创建表格面板
+     */
     private JScrollPane createTablePanel() {
         tableModel = new CertificateTableModel();
         certificateTable = new JTable(tableModel);
         certificateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        certificateTable.setRowHeight(28);
+        certificateTable.setRowHeight(32);
+        certificateTable.setShowGrid(true);
+        certificateTable.setGridColor(ModernColors.BORDER_LIGHT);
+        certificateTable.setBackground(ModernColors.BG_WHITE);
+        certificateTable.setSelectionBackground(ModernColors.SELECTED_BG);
+        certificateTable.setSelectionForeground(ModernColors.TEXT_PRIMARY);
         certificateTable.getTableHeader().setReorderingAllowed(false);
+        certificateTable.getTableHeader().setBackground(ModernColors.BG_LIGHT);
+        certificateTable.getTableHeader().setForeground(ModernColors.TEXT_PRIMARY);
+        certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 12));
 
         // 设置列宽
         certificateTable.getColumnModel().getColumn(0).setPreferredWidth(60);  // Enabled
@@ -89,57 +182,16 @@ public class ClientCertificateSettingsPanel extends JPanel {
         // 居中显示某些列
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        certificateTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         certificateTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         certificateTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
+        scrollPane.setPreferredSize(new Dimension(650, 250));
+        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
+
         return scrollPane;
-    }
-
-    private JPanel createButtonPanel() {
-        JPanel buttonPanel = new JPanel(new BorderLayout());
-
-        // 左侧按钮组
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        addBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_ADD));
-        editBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT));
-        deleteBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_DELETE));
-        helpBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_HELP));
-        leftPanel.add(addBtn);
-        leftPanel.add(editBtn);
-        leftPanel.add(deleteBtn);
-        leftPanel.add(Box.createHorizontalStrut(20));
-        leftPanel.add(helpBtn);
-
-        // 右侧关闭按钮
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
-        closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_CLOSE));
-        rightPanel.add(closeBtn);
-
-        buttonPanel.add(leftPanel, BorderLayout.WEST);
-        buttonPanel.add(rightPanel, BorderLayout.EAST);
-
-        return buttonPanel;
-    }
-
-    private void registerListeners() {
-        addBtn.addActionListener(e -> showAddDialog());
-        editBtn.addActionListener(e -> showEditDialog());
-        deleteBtn.addActionListener(e -> deleteCertificate());
-        helpBtn.addActionListener(e -> showHelp());
-        closeBtn.addActionListener(e -> {
-            if (parentWindow != null) {
-                parentWindow.dispose();
-            }
-        });
-
-        certificateTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                updateButtonStates();
-            }
-        });
-
-        updateButtonStates();
     }
 
     private void updateButtonStates() {
@@ -161,6 +213,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         if (dialog.isConfirmed()) {
             ClientCertificateService.addCertificate(cert);
             loadCertificates();
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_ADD_SUCCESS));
         }
     }
 
@@ -176,6 +229,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         if (dialog.isConfirmed()) {
             ClientCertificateService.updateCertificate(cert);
             loadCertificates();
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_EDIT_SUCCESS));
         }
     }
 
@@ -202,17 +256,22 @@ public class ClientCertificateSettingsPanel extends JPanel {
             ClientCertificateService.deleteCertificate(cert.getId());
             loadCertificates();
             updateButtonStates();
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_DELETE_SUCCESS));
         }
     }
 
     private void showHelp() {
         String content = I18nUtil.getMessage(MessageKeys.CERT_HELP_CONTENT);
-        JTextArea textArea = new JTextArea(content, 18, 60);
+        JTextArea textArea = new JTextArea(content, 20, 60);
         textArea.setEditable(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        textArea.setBackground(ModernColors.BG_LIGHT);
+        textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
+
         JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(700, 400));
 
         JOptionPane.showMessageDialog(
                 this,
@@ -232,7 +291,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.CERT_PORT),
                 I18nUtil.getMessage(MessageKeys.CERT_CERT_TYPE)
         };
-        private java.util.List<ClientCertificate> certificates = new java.util.ArrayList<>();
+        private List<ClientCertificate> certificates = new java.util.ArrayList<>();
 
         public void loadCertificates() {
             certificates = ClientCertificateService.getAllCertificates();
@@ -291,24 +350,24 @@ public class ClientCertificateSettingsPanel extends JPanel {
                 cert.setEnabled((Boolean) aValue);
                 ClientCertificateService.updateCertificate(cert);
                 fireTableCellUpdated(rowIndex, columnIndex);
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_STATUS_UPDATED));
             }
         }
     }
 
     /**
      * 证书编辑对话框
-     * 优化后的版本：改进UI布局、表单验证和用户体验
      */
     private static class CertificateEditDialog extends JDialog {
         private final ClientCertificate certificate;
         private boolean confirmed = false;
 
-        private FlatTextField nameField;
-        private FlatTextField hostField;
-        private FlatTextField portField;
+        private JTextField nameField;
+        private JTextField hostField;
+        private JTextField portField;
         private JComboBox<String> certTypeCombo;
-        private FlatTextField certPathField;
-        private FlatTextField keyPathField;
+        private JTextField certPathField;
+        private JTextField keyPathField;
         private JPasswordField passwordField;
         private JCheckBox enabledCheckBox;
 
@@ -398,8 +457,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridx = 2;
             gbc.weightx = 0;
             JButton certPathBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));
-            certPathBtn.addActionListener(e -> selectFile(certPathField
-            ));
+            certPathBtn.addActionListener(e -> selectFile(certPathField));
             formPanel.add(certPathBtn, gbc);
             row++;
 
@@ -420,8 +478,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridx = 2;
             gbc.weightx = 0;
             JButton keyPathBtn = new JButton(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));
-            keyPathBtn.addActionListener(e -> selectFile(keyPathField
-            ));
+            keyPathBtn.addActionListener(e -> selectFile(keyPathField));
             formPanel.add(keyPathBtn, gbc);
             row++;
 
@@ -454,7 +511,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         }
 
         private void addFormRow(JPanel panel, GridBagConstraints gbc, int row,
-                                String label, FlatTextField field, boolean required) {
+                                String label, JTextField field, boolean required) {
             gbc.gridx = 0;
             gbc.gridy = row;
             gbc.weightx = 0;
@@ -471,11 +528,11 @@ public class ClientCertificateSettingsPanel extends JPanel {
             panel.add(field, gbc);
         }
 
-        private FlatTextField createTextField(int columns, String placeholder) {
-            FlatTextField field = new FlatTextField();
+        private JTextField createTextField(int columns, String placeholder) {
+            JTextField field = new JTextField();
             field.setColumns(columns);
             if (placeholder != null && !placeholder.isEmpty()) {
-                field.setPlaceholderText(placeholder);
+                field.setToolTipText(placeholder);
             }
             return field;
         }
@@ -522,7 +579,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             updateFieldVisibility();
         }
 
-        private void selectFile(FlatTextField targetField) {
+        private void selectFile(JTextField targetField) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));

@@ -4,10 +4,9 @@ package com.laker.postman.service.update;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.UpdateInfo;
-import com.laker.postman.panel.autoupdate.ModernProgressDialog;
-import com.laker.postman.panel.autoupdate.ModernUpdateDialog;
-import com.laker.postman.panel.autoupdate.ModernUpdateNotification;
-import com.laker.postman.util.FontsUtil;
+import com.laker.postman.panel.update.ModernProgressDialog;
+import com.laker.postman.panel.update.ModernUpdateDialog;
+import com.laker.postman.panel.update.ModernUpdateNotification;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -157,60 +156,15 @@ public class UpdateUIManager {
                 JOptionPane.QUESTION_MESSAGE);
 
         if (choice == JOptionPane.YES_OPTION) {
-            if (isJarUpdate) {
-                // JAR 更新：显示进度提示
-                showUpdatingMessage();
-            }
-
             downloader.installUpdate(installerFile, success -> {
                 if (!success) {
                     SwingUtilities.invokeLater(() -> {
-                        String errorMsg = isJarUpdate
-                                ? (I18nUtil.isChinese()
+                        NotificationUtil.showError(I18nUtil.isChinese()
                                 ? "更新失败，请手动下载最新版本。"
-                                : "Update failed. Please download the latest version manually.")
-                                : I18nUtil.getMessage(MessageKeys.UPDATE_OPEN_INSTALLER_FAILED, "Unknown error");
-
-                        JOptionPane.showMessageDialog(
-                                SingletonFactory.getInstance(MainFrame.class),
-                                errorMsg,
-                                I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
-                                JOptionPane.ERROR_MESSAGE);
+                                : "Update failed. Please download the latest version manually.");
                     });
                 }
             });
         }
-    }
-
-    /**
-     * 显示正在更新的消息
-     */
-    private void showUpdatingMessage() {
-        SwingUtilities.invokeLater(() -> {
-            JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
-                    I18nUtil.isChinese() ? "正在更新..." : "Updating...",
-                    false);
-
-            JPanel panel = new JPanel(new BorderLayout(10, 10));
-            panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-
-            JLabel messageLabel = new JLabel(
-                    I18nUtil.isChinese()
-                            ? "正在更新应用，请稍候..."
-                            : "Updating application, please wait...");
-            messageLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-
-            JProgressBar progressBar = new JProgressBar();
-            progressBar.setIndeterminate(true);
-
-            panel.add(messageLabel, BorderLayout.NORTH);
-            panel.add(progressBar, BorderLayout.CENTER);
-
-            dialog.setContentPane(panel);
-            dialog.pack();
-            dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
-            dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-            dialog.setVisible(true);
-        });
     }
 }

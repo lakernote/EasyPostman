@@ -8,6 +8,7 @@ import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.setting.*;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;

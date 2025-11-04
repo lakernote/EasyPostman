@@ -1,4 +1,4 @@
-package com.laker.postman.panel.autoupdate;
+package com.laker.postman.panel.update;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;

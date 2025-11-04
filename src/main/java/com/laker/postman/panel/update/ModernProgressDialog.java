@@ -1,4 +1,4 @@
-package com.laker.postman.panel.autoupdate;
+package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;

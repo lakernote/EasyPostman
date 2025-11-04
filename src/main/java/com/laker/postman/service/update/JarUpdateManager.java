@@ -77,8 +77,6 @@ import java.util.Map;
  * // 如果成功，应用会自动退出并重启到新版本
  * }</pre>
  *
- * @author GitHub Copilot
- * @since 3.1.7
  * @see UpdateDownloader
  */
 @Slf4j

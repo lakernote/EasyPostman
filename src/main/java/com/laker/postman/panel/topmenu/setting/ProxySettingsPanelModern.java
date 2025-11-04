@@ -7,8 +7,8 @@ import com.laker.postman.util.NotificationUtil;
 import javax.swing.*;
 import java.awt.*;
 public class ProxySettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 15;
-    private static final int SECTION_SPACING = 20;
+    private static final int FIELD_SPACING = 12;
+    private static final int SECTION_SPACING = 16;
     private JCheckBox proxyEnabledCheckBox;
     private JComboBox<String> proxyTypeComboBox;
     private JTextField proxyHostField;
@@ -31,7 +31,7 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_ENABLED_TOOLTIP)
         );
         proxySection.add(proxyEnabledRow);
-        proxySection.add(createVerticalSpace(18));
+        proxySection.add(createVerticalSpace(FIELD_SPACING));
         proxyTypeComboBox = new JComboBox<>(new String[]{
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TYPE_HTTP),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TYPE_SOCKS)
@@ -91,7 +91,6 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         proxySection.add(sslVerificationRow);
         contentPanel.add(proxySection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
-        setPreferredSize(new Dimension(650, 550));
         setupValidators();
 
         // 跟踪所有组件的初始值

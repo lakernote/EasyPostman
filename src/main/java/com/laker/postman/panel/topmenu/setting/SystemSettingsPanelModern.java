@@ -12,8 +12,8 @@ import java.awt.*;
  * 现代化系统设置面板 - 自动更新等系统级配置
  */
 public class SystemSettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 15;
-    private static final int SECTION_SPACING = 20;
+    private static final int FIELD_SPACING = 12;
+    private static final int SECTION_SPACING = 16;
 
     private JCheckBox autoUpdateCheckBox;
     private JTextField autoUpdateIntervalField;
@@ -38,7 +38,7 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_ENABLED_TOOLTIP)
         );
         autoUpdateSection.add(autoUpdateRow);
-        autoUpdateSection.add(createVerticalSpace(18));
+        autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 更新间隔
         autoUpdateIntervalField = new JTextField(10);
@@ -49,7 +49,7 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
                 autoUpdateIntervalField
         );
         autoUpdateSection.add(intervalRow);
-        autoUpdateSection.add(createVerticalSpace(18));
+        autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 启动时延迟
         autoUpdateStartupDelayField = new JTextField(10);
@@ -60,7 +60,7 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
                 autoUpdateStartupDelayField
         );
         autoUpdateSection.add(startupDelayRow);
-        autoUpdateSection.add(createVerticalSpace(18));
+        autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 更新源选择
         String[] sourceOptions = {
@@ -88,7 +88,6 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(autoUpdateSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        setPreferredSize(new Dimension(650, 350));
         setupValidators();
 
         // 跟踪所有组件的初始值

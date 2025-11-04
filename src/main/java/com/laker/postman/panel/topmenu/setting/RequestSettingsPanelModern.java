@@ -13,8 +13,8 @@ import java.awt.*;
  * 现代化请求设置面板
  */
 public class RequestSettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 16;
-    private static final int SECTION_SPACING = 24;
+    private static final int FIELD_SPACING = 12;
+    private static final int SECTION_SPACING = 16;
 
     private JTextField maxBodySizeField;
     private JTextField requestTimeoutField;
@@ -91,7 +91,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(requestSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        setPreferredSize(new Dimension(650, 450));
         setupValidators();
         
         // 跟踪所有组件的初始值

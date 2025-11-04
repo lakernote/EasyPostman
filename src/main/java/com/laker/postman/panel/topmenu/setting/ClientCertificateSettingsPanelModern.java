@@ -21,7 +21,7 @@ import java.util.List;
  * 继承 ModernSettingsPanel 获得统一的现代化UI风格
  */
 public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
-    private static final int SECTION_SPACING = 32;
+    private static final int SECTION_SPACING = 16;
 
     private JTable certificateTable;
     private CertificateTableModel tableModel;
@@ -61,7 +61,6 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(tableSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        setPreferredSize(new Dimension(700, 450));
 
         // 加载证书数据
         loadCertificates();
@@ -188,8 +187,8 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
-        scrollPane.setPreferredSize(new Dimension(650, 250));
-        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
+        scrollPane.setPreferredSize(new Dimension(650, 350));
+        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 450));
 
         return scrollPane;
     }

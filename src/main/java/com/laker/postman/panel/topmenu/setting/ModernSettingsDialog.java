@@ -27,8 +27,8 @@ public class ModernSettingsDialog extends JDialog {
     private void initUI() {
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         setResizable(true);
-        setMinimumSize(new Dimension(900, 650));
-        setPreferredSize(new Dimension(950, 700));
+        setMinimumSize(new Dimension(1000, 700));
+        setPreferredSize(new Dimension(1100, 750));
 
         // 主容器
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
@@ -101,9 +101,9 @@ public class ModernSettingsDialog extends JDialog {
             @Override
             protected void installDefaults() {
                 super.installDefaults();
-                tabAreaInsets = new Insets(20, 16, 20, 0);
+                tabAreaInsets = new Insets(10, 12, 10, 0);
                 contentBorderInsets = new Insets(0, 1, 0, 0);
-                tabInsets = new Insets(16, 24, 16, 24);
+                tabInsets = new Insets(12, 20, 12, 20);
                 selectedTabPadInsets = new Insets(0, 0, 0, 0);
             }
 

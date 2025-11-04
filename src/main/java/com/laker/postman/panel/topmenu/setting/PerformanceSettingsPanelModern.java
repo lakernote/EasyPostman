@@ -12,8 +12,8 @@ import java.awt.*;
  * 现代化性能设置面板 - JMeter相关配置
  */
 public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 15;
-    private static final int SECTION_SPACING = 20;
+    private static final int FIELD_SPACING = 12;
+    private static final int SECTION_SPACING = 16;
 
     private JTextField jmeterMaxIdleField;
     private JTextField jmeterKeepAliveField;
@@ -35,7 +35,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 jmeterMaxIdleField
         );
         jmeterSection.add(maxIdleRow);
-        jmeterSection.add(createVerticalSpace(18));
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 连接保活时间
         jmeterKeepAliveField = new JTextField(10);
@@ -50,7 +50,6 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(jmeterSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        setPreferredSize(new Dimension(650, 300));
         setupValidators();
 
         // 跟踪所有组件的初始值

@@ -33,10 +33,10 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel warningPanel;
     protected JLabel warningLabel;
 
-    private static final int SECTION_SPACING = 24;  // 节间距
-    private static final int FIELD_SPACING = 16;    // 字段间距
+    private static final int SECTION_SPACING = 16;  // 节间距
+    private static final int FIELD_SPACING = 12;    // 字段间距
     private static final int BORDER_RADIUS = 12;    // 圆角半径
-    private static final int LABEL_WIDTH = 220;     // 标签宽度
+    private static final int LABEL_WIDTH = 200;     // 标签宽度
     private static final int FIELD_WIDTH = 300;     // 字段宽度
 
     public ModernSettingsPanel() {
@@ -60,7 +60,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(ModernColors.BG_LIGHT);
-        contentPanel.setBorder(new EmptyBorder(28, 28, 28, 28));
+        contentPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         // 子类实现具体内容
         buildContent(contentPanel);
@@ -103,7 +103,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         section.setBackground(ModernColors.BG_WHITE);
         section.setBorder(new CompoundBorder(
                 new ModernRoundedBorder(),
-                new EmptyBorder(24, 24, 24, 24)
+                new EmptyBorder(16, 16, 16, 16)
         ));
         section.setAlignmentX(Component.LEFT_ALIGNMENT);
         // 修复横向滚动条：限制最大宽度，只允许高度自动扩展
@@ -120,13 +120,13 @@ public abstract class ModernSettingsPanel extends JPanel {
             JLabel descLabel = new JLabel("<html>" + description + "</html>");
             descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 13));
             descLabel.setForeground(ModernColors.TEXT_SECONDARY);
-            descLabel.setBorder(new EmptyBorder(6, 0, 16, 0));
+            descLabel.setBorder(new EmptyBorder(6, 0, 12, 0));
             descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             section.add(titleLabel);
             section.add(descLabel);
         } else {
-            titleLabel.setBorder(new EmptyBorder(0, 0, 16, 0));
+            titleLabel.setBorder(new EmptyBorder(0, 0, 12, 0));
             section.add(titleLabel);
         }
 

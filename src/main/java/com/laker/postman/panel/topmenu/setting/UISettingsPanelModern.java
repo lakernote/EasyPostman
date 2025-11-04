@@ -12,8 +12,8 @@ import java.awt.*;
  * 现代化界面设置面板 - 下载进度、历史记录等UI相关配置
  */
 public class UISettingsPanelModern extends ModernSettingsPanel {
-    private static final int FIELD_SPACING = 16;
-    private static final int SECTION_SPACING = 24;
+    private static final int FIELD_SPACING = 12;
+    private static final int SECTION_SPACING = 16;
 
     private JCheckBox showDownloadProgressCheckBox;
     private JTextField downloadProgressDialogThresholdField;
@@ -123,7 +123,6 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(generalSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        setPreferredSize(new Dimension(650, 500));
         setupValidators();
 
         // 跟踪所有组件的初始值

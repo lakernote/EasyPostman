@@ -1,6 +1,7 @@
 package com.laker.postman.service.update;
 
 import cn.hutool.system.OsInfo;
+import com.laker.postman.ioc.Component;
 import com.laker.postman.model.UpdateInfo;
 import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
@@ -20,15 +21,14 @@ import java.util.concurrent.TimeUnit;
  * 采用责任链模式和观察者模式，提供更优雅的更新解决方案
  */
 @Slf4j
+@Component
 public class AutoUpdateManager {
-
-    private static volatile AutoUpdateManager instance;
 
     private final VersionChecker versionChecker;
     private final UpdateUIManager uiManager;
     private final ScheduledExecutorService scheduler;
 
-    private AutoUpdateManager() {
+    public AutoUpdateManager() {
         this.versionChecker = new VersionChecker();
         this.uiManager = new UpdateUIManager();
         this.scheduler = new ScheduledThreadPoolExecutor(1, r -> {
@@ -36,20 +36,6 @@ public class AutoUpdateManager {
             t.setDaemon(true); // 设置为守护线程，不阻止JVM退出
             return t;
         });
-    }
-
-    /**
-     * 获取单例实例（使用双重检查锁定的安全实现）
-     */
-    public static AutoUpdateManager getInstance() {
-        if (instance == null) {
-            synchronized (AutoUpdateManager.class) {
-                if (instance == null) {
-                    instance = new AutoUpdateManager();
-                }
-            }
-        }
-        return instance;
     }
 
     /**

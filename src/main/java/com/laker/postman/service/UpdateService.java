@@ -1,5 +1,8 @@
 package com.laker.postman.service;
 
+import com.laker.postman.ioc.Autowired;
+import com.laker.postman.ioc.Component;
+import com.laker.postman.ioc.PreDestroy;
 import com.laker.postman.service.update.AutoUpdateManager;
 import lombok.extern.slf4j.Slf4j;
 
@@ -7,25 +10,11 @@ import lombok.extern.slf4j.Slf4j;
  * 版本更新服务
  */
 @Slf4j
+@Component
 public class UpdateService {
 
-    private static UpdateService instance;
-    private final AutoUpdateManager autoUpdateManager;
-
-    private UpdateService() {
-        this.autoUpdateManager = AutoUpdateManager.getInstance();
-    }
-
-    public static UpdateService getInstance() {
-        if (instance == null) {
-            synchronized (UpdateService.class) {
-                if (instance == null) {
-                    instance = new UpdateService();
-                }
-            }
-        }
-        return instance;
-    }
+    @Autowired
+    private AutoUpdateManager autoUpdateManager;
 
     /**
      * 启动时异步检查更新
@@ -51,6 +40,7 @@ public class UpdateService {
     /**
      * 停止自动更新服务
      */
+    @PreDestroy
     public void shutdown() {
         autoUpdateManager.stopBackgroundCheck();
     }

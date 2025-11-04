@@ -127,7 +127,7 @@ public class UpdateUIManager {
         });
 
         // 设置取消按钮的回调
-        progressDialog.setOnCancelListener(() -> downloader.cancel());
+        progressDialog.setOnCancelListener(downloader::cancel);
     }
 
     /**
@@ -178,7 +178,6 @@ public class UpdateUIManager {
                                 JOptionPane.ERROR_MESSAGE);
                     });
                 }
-                // 成功时：JAR 更新会自动退出；安装包更新需要用户手动操作
             });
         }
     }
@@ -210,7 +209,7 @@ public class UpdateUIManager {
             dialog.setContentPane(panel);
             dialog.pack();
             dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
-            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+            dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
             dialog.setVisible(true);
         });
     }

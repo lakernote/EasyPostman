@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.panel.topmenu.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
@@ -87,7 +88,7 @@ public class VersionChecker {
      */
     private static String detectBestSource() {
         // 检查用户的更新源偏好设置
-        String preference = com.laker.postman.panel.topmenu.setting.SettingManager.getUpdateSourcePreference();
+        String preference = SettingManager.getUpdateSourcePreference();
 
         // 如果用户指定了固定源，直接使用
         if ("github".equals(preference)) {

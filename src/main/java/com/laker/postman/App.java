@@ -4,9 +4,9 @@ import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
-import com.laker.postman.util.StyleUtils;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.StyleUtils;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +53,7 @@ public class App {
         registerShutdownHook();
 
         // 8. 启动后台版本检查
-        UpdateService.getInstance().checkUpdateOnStartup();
+        BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
     }
 
     /**

@@ -6,6 +6,7 @@ import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.setting.*;
 import com.laker.postman.service.ExitService;
@@ -357,6 +358,6 @@ public class TopMenuBarPanel extends SingletonBasePanel {
      * 检查更新
      */
     private void checkUpdate() {
-        UpdateService.getInstance().checkUpdateManually();
+        BeanFactory.getBean(UpdateService.class).checkUpdateManually();
     }
 }

@@ -105,16 +105,16 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 18));
+        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
         titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel descLabel = new JLabel("<html><body style='width: 600px'>" +
+        JLabel descLabel = new JLabel("<html>" +
                 I18nUtil.getMessage(MessageKeys.CERT_DESCRIPTION) +
-                "</body></html>");
-        descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 13));
+                "</html>");
+        descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 11));
         descLabel.setForeground(ModernColors.TEXT_SECONDARY);
-        descLabel.setBorder(new EmptyBorder(8, 0, 0, 0));
+        descLabel.setBorder(new EmptyBorder(6, 0, 0, 0));
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         panel.add(titleLabel);
@@ -131,19 +131,26 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
         actionBar.setBackground(ModernColors.BG_WHITE);
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
-        actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
         addBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_ADD), true);
         editBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT), false);
         deleteBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_DELETE), false);
-        helpBtn = createIconButton("ℹ️", I18nUtil.getMessage(MessageKeys.CERT_HELP));
+        helpBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_HELP), false);
+
+        // 减小按钮尺寸
+        Dimension btnSize = new Dimension(80, 28);
+        addBtn.setPreferredSize(btnSize);
+        editBtn.setPreferredSize(btnSize);
+        deleteBtn.setPreferredSize(btnSize);
+        helpBtn.setPreferredSize(btnSize);
 
         actionBar.add(addBtn);
-        actionBar.add(Box.createHorizontalStrut(6));
+        actionBar.add(Box.createHorizontalStrut(4));
         actionBar.add(editBtn);
-        actionBar.add(Box.createHorizontalStrut(6));
+        actionBar.add(Box.createHorizontalStrut(4));
         actionBar.add(deleteBtn);
-        actionBar.add(Box.createHorizontalStrut(12));
+        actionBar.add(Box.createHorizontalStrut(8));
         actionBar.add(helpBtn);
         actionBar.add(Box.createHorizontalGlue());
 
@@ -157,7 +164,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         tableModel = new CertificateTableModel();
         certificateTable = new JTable(tableModel);
         certificateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        certificateTable.setRowHeight(28);
+        certificateTable.setRowHeight(26);
         certificateTable.setShowGrid(true);
         certificateTable.setGridColor(ModernColors.BORDER_LIGHT);
         certificateTable.setBackground(ModernColors.BG_WHITE);
@@ -166,29 +173,66 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         certificateTable.getTableHeader().setReorderingAllowed(false);
         certificateTable.getTableHeader().setBackground(ModernColors.BG_LIGHT);
         certificateTable.getTableHeader().setForeground(ModernColors.TEXT_PRIMARY);
-        certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 12));
+        certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 11));
+        certificateTable.setFont(new Font(certificateTable.getFont().getName(), Font.PLAIN, 11));
 
-        // 设置列宽
-        certificateTable.getColumnModel().getColumn(0).setPreferredWidth(60);  // Enabled
-        certificateTable.getColumnModel().getColumn(0).setMaxWidth(80);
-        certificateTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Name
-        certificateTable.getColumnModel().getColumn(2).setPreferredWidth(250); // Host
-        certificateTable.getColumnModel().getColumn(3).setPreferredWidth(80);  // Port
-        certificateTable.getColumnModel().getColumn(3).setMaxWidth(100);
-        certificateTable.getColumnModel().getColumn(4).setPreferredWidth(80);  // Type
-        certificateTable.getColumnModel().getColumn(4).setMaxWidth(100);
+        // 设置表格自动调整模式：自适应所有列
+        certificateTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 
-        // 居中显示某些列
+        // 设置列宽 - 固定某些列，其余列自适应
+        // Enabled 列 - 固定宽度
+        certificateTable.getColumnModel().getColumn(0).setPreferredWidth(60);
+        certificateTable.getColumnModel().getColumn(0).setMinWidth(60);
+        certificateTable.getColumnModel().getColumn(0).setMaxWidth(60);
+
+        // Name 列 - 可变宽度，最小宽度
+        certificateTable.getColumnModel().getColumn(1).setPreferredWidth(120);
+        certificateTable.getColumnModel().getColumn(1).setMinWidth(80);
+
+        // Host 列 - 可变宽度，最小宽度，会占据更多空间
+        certificateTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+        certificateTable.getColumnModel().getColumn(2).setMinWidth(100);
+
+        // Port 列 - 固定宽度
+        certificateTable.getColumnModel().getColumn(3).setPreferredWidth(55);
+        certificateTable.getColumnModel().getColumn(3).setMinWidth(55);
+        certificateTable.getColumnModel().getColumn(3).setMaxWidth(55);
+
+        // Type 列 - 固定宽度
+        certificateTable.getColumnModel().getColumn(4).setPreferredWidth(65);
+        certificateTable.getColumnModel().getColumn(4).setMinWidth(65);
+        certificateTable.getColumnModel().getColumn(4).setMaxWidth(65);
+
+        // 居中显示某些列（但不包括第0列，让它使用默认的Boolean复选框渲染器）
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        certificateTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        // 第0列（Enabled）使用默认的Boolean复选框渲染器，不设置自定义渲染器
         certificateTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         certificateTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
 
+        // 添加双击编辑监听器
+        certificateTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = certificateTable.rowAtPoint(e.getPoint());
+                    int col = certificateTable.columnAtPoint(e.getPoint());
+                    // 如果双击的不是启用列（第0列），则打开编辑对话框
+                    if (row >= 0 && col != 0) {
+                        showEditDialog();
+                    }
+                }
+            }
+        });
+
         JScrollPane scrollPane = new JScrollPane(certificateTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
-        scrollPane.setPreferredSize(new Dimension(650, 350));
-        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 450));
+        scrollPane.setPreferredSize(new Dimension(500, 280));
+        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 350));
+        scrollPane.setMinimumSize(new Dimension(400, 200));
+        // 通常不需要水平滚动条，因为列会自适应宽度
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         return scrollPane;
     }
@@ -261,16 +305,16 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
     private void showHelp() {
         String content = I18nUtil.getMessage(MessageKeys.CERT_HELP_CONTENT);
-        JTextArea textArea = new JTextArea(content, 20, 60);
+        JTextArea textArea = new JTextArea(content, 18, 50);
         textArea.setEditable(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
         textArea.setBackground(ModernColors.BG_LIGHT);
         textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(700, 400));
+        scrollPane.setPreferredSize(new Dimension(600, 350));
 
         JOptionPane.showMessageDialog(
                 this,

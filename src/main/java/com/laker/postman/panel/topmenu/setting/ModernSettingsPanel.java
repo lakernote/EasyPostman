@@ -256,7 +256,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private JPanel createModernButtonBar() {
         JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
-        buttonBar.setBackground(ModernColors.BG_WHITE);
+        buttonBar.setBackground(ModernColors.BG_LIGHT);
         buttonBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.BORDER_LIGHT),
                 BorderFactory.createEmptyBorder(0, 16, 0, 16)

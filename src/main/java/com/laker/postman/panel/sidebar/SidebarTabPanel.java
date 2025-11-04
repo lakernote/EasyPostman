@@ -273,7 +273,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private JTabbedPane createModernTabbedPane() {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
-        pane.setBackground(ModernColors.BG_WHITE);
         pane.setForeground(ModernColors.TEXT_PRIMARY);
         pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, 14));
 
@@ -297,40 +296,14 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 if (isSelected) {
-                    // 绘制外部阴影（多层）
-                    for (int i = 3; i > 0; i--) {
-                        int alpha = 10 + (i * 5);
-                        g2.setColor(new Color(0, 0, 0, alpha));
-                        g2.fillRoundRect(x + 4 + i, y + 2 + i, w - 8, h - 4, 10, 10);
-                    }
-
-                    // 主背景 - 蓝色
-                    g2.setColor(ModernColors.PRIMARY);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 10, 10);
-
-                    // 顶部微妙的高光效果（内发光）
-                    GradientPaint topGlow = new GradientPaint(
-                            x + 4f, y + 2f,
-                            new Color(255, 255, 255, 35),
-                            x + 4f, y + 2f + (h - 4) / 3f,
-                            new Color(255, 255, 255, 0)
-                    );
-                    g2.setPaint(topGlow);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, (h - 4) / 2, 10, 10);
+                    // 扁平风格：柔和的浅蓝色背景，无指示条
+                    g2.setColor(ModernColors.TABLE_SELECTION_BACKGROUND);
+                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 6, 6);
 
                 } else if (getRolloverTab() == tabIndex) {
-                    // 悬停的标签 - 添加微妙阴影
-                    g2.setColor(new Color(0, 0, 0, 8));
-                    g2.fillRoundRect(x + 5, y + 3, w - 8, h - 4, 10, 10);
-
+                    // 悬停：浅灰色背景
                     g2.setColor(ModernColors.HOVER_BG);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 10, 10);
-
-                    // 悬停时的左侧细线提示
-                    g2.setColor(new Color(ModernColors.PRIMARY.getRed(),
-                            ModernColors.PRIMARY.getGreen(),
-                            ModernColors.PRIMARY.getBlue(), 60));
-                    g2.fillRoundRect(x + 5, y + 4, 2, h - 8, 2, 2);
+                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 6, 6);
                 }
                 // 普通标签不绘制背景
 

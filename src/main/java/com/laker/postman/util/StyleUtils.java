@@ -107,7 +107,7 @@ public class StyleUtils {
 
         // 前景色设置
         Color accentColor = ModernColors.ACCENT_COLOR;
-        properties.put("TabbedPane.selectedForeground", accentColor);
+//        properties.put("TabbedPane.selectedForeground", accentColor);
         properties.put("TextArea.caretForeground", accentColor);
         properties.put("TextArea.selectionForeground", accentColor);
 

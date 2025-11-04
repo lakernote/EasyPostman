@@ -1,12 +1,13 @@
 package com.laker.postman.service.update;
 
-
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.UpdateInfo;
 import com.laker.postman.panel.update.ModernProgressDialog;
 import com.laker.postman.panel.update.ModernUpdateDialog;
 import com.laker.postman.panel.update.ModernUpdateNotification;
+import com.laker.postman.service.update.source.UpdateSource;
+import com.laker.postman.service.update.source.UpdateSourceSelector;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -23,14 +24,14 @@ import java.net.URI;
 @Slf4j
 public class UpdateUIManager {
 
-    private static final String RELEASE_URL = "https://gitee.com/lakernote/easy-postman/releases";
-
     private final VersionChecker versionChecker;
     private final UpdateDownloader downloader;
+    private final UpdateSourceSelector sourceSelector;
 
     public UpdateUIManager() {
         this.versionChecker = new VersionChecker();
         this.downloader = new UpdateDownloader();
+        this.sourceSelector = new UpdateSourceSelector();
     }
 
     /**
@@ -70,12 +71,18 @@ public class UpdateUIManager {
     }
 
     /**
-     * 打开手动下载页面
+     * 打开手动下载页面 - 动态选择最佳更新源
      */
     private void openManualDownloadPage() {
         try {
-            Desktop.getDesktop().browse(new URI(RELEASE_URL));
+            // 选择最佳更新源
+            UpdateSource source = sourceSelector.selectBestSource();
+            String releaseUrl = source.getWebUrl();
+
+            log.info("Opening manual download page from {}: {}", source.getName(), releaseUrl);
+            Desktop.getDesktop().browse(new URI(releaseUrl));
         } catch (Exception ex) {
+            log.error("Failed to open manual download page", ex);
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
         }
     }

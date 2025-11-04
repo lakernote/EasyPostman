@@ -3,6 +3,7 @@ package com.laker.postman.service.update.changelog;
 import cn.hutool.json.JSONArray;
 import com.laker.postman.service.update.source.UpdateSource;
 import com.laker.postman.service.update.source.UpdateSourceSelector;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -11,6 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChangelogService {
 
+    /**
+     * -- GETTER --
+     *  获取更新源选择器（用于获取 Web URL）
+     */
+    @Getter
     private final UpdateSourceSelector sourceSelector;
     private final ChangelogFormatter formatter;
     private static final int DEFAULT_LIMIT = 10;
@@ -54,11 +60,5 @@ public class ChangelogService {
         return formatter.format(releases);
     }
 
-    /**
-     * 获取更新源选择器（用于获取 Web URL）
-     */
-    public UpdateSourceSelector getSourceSelector() {
-        return sourceSelector;
-    }
 }
 

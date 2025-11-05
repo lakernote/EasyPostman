@@ -10,10 +10,7 @@ import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.Workspace;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
@@ -161,7 +158,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             @Override
             public void mousePressed(MouseEvent e) { // pressed 而不是 clicked，更加灵敏
                 // 统一处理左键和右键点击
-                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) { // 左键单击 打开请求
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) { // 左键单击 打开请求或分组
                     int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
                     TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
                     // 如果点击位置没有直接命中节点，则获取最近的行
@@ -177,6 +174,19 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                             if (REQUEST.equals(obj[0])) {
                                 HttpRequestItem item = (HttpRequestItem) obj[1];
                                 SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+                            } else if (GROUP.equals(obj[0])) {
+                                // 点击分组，在右侧显示编辑面板
+                                Object groupData = obj[1];
+                                RequestGroup group;
+                                if (groupData instanceof RequestGroup) {
+                                    group = (RequestGroup) groupData;
+                                } else {
+                                    // 升级旧格式
+                                    group = new RequestGroup(String.valueOf(groupData));
+                                    obj[1] = group;
+                                }
+                                RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+                                editPanel.showGroupEditPanel(node, group);
                             }
                         }
                     }
@@ -239,6 +249,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     // 多选时禁用
                     addGroupItem.setEnabled(!isMultipleSelection);
                     menu.add(addGroupItem);
+
+                    // 编辑分组属性
+                    JMenuItem editGroupItem = new JMenuItem("Edit Group",
+                            new FlatSVGIcon("icons/edit.svg", 16, 16));
+                    editGroupItem.addActionListener(e -> editSelectedGroup());
+                    // 多选时禁用
+                    editGroupItem.setEnabled(!isMultipleSelection);
+                    menu.add(editGroupItem);
 
                     JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
@@ -336,7 +354,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         String groupName = JOptionPane.showInputDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT));
         if (groupName != null && !groupName.trim().isEmpty()) {
-            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, groupName});
+            RequestGroup group = new RequestGroup(groupName);
+            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, group});
             // Insert group before the first request child so that groups are always above requests (like Postman)
             int insertIdx = getGroupInsertIndex(rootTreeNode);
             if (insertIdx >= 0 && insertIdx <= rootTreeNode.getChildCount()) {
@@ -357,6 +376,34 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         showAddGroupDialog(selectedNode);
     }
 
+    /**
+     * 编辑选中的分组
+     * 在右侧面板显示分组编辑界面（参考 Postman）
+     */
+    private void editSelectedGroup() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+        if (selectedNode == null) return;
+
+        Object userObj = selectedNode.getUserObject();
+        if (userObj instanceof Object[] obj && GROUP.equals(obj[0])) {
+            Object groupData = obj[1];
+
+            // 确保使用RequestGroup对象
+            RequestGroup group;
+            if (groupData instanceof RequestGroup) {
+                group = (RequestGroup) groupData;
+            } else {
+                // 升级旧格式到新格式
+                group = new RequestGroup(String.valueOf(groupData));
+                obj[1] = group;
+            }
+
+            // 在右侧面板显示分组编辑界面
+            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            editPanel.showGroupEditPanel(selectedNode, group);
+        }
+    }
+
     private void saveRequestGroups() {
         persistence.saveRequestGroups();
     }
@@ -373,6 +420,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         if (userObj instanceof Object[] obj) {
             if (GROUP.equals(obj[0])) {
                 // 重命名分组
+                Object groupData = obj[1];
+                String oldName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
+
                 Object result = JOptionPane.showInputDialog(
                         SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT),
@@ -380,12 +430,18 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         JOptionPane.PLAIN_MESSAGE,
                         null,
                         null,
-                        obj[1]
+                        oldName
                 );
                 if (result != null) {
                     String newName = result.toString().trim();
-                    if (!newName.isEmpty() && !newName.equals(obj[1])) {
-                        obj[1] = newName;
+                    if (!newName.isEmpty() && !newName.equals(oldName)) {
+                        if (groupData instanceof RequestGroup group) {
+                            group.setName(newName);
+                        } else {
+                            // 升级旧格式到新格式
+                            RequestGroup group = new RequestGroup(newName);
+                            obj[1] = group;
+                        }
                         treeModel.nodeChanged(selectedNode);
                         saveRequestGroups();
                     } else if (newName.isEmpty()) {
@@ -571,14 +627,16 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     /**
      * 将请求保存到指定分组
      *
-     * @param group 分组信息，[type, name] 形式的数组
+     * @param group 分组信息，[type, name/RequestGroup] 形式的数组
      * @param item  请求项
      */
     public void saveRequestToGroup(Object[] group, HttpRequestItem item) {
         if (group == null || !GROUP.equals(group[0])) {
             return;
         }
-        DefaultMutableTreeNode groupNode = findGroupNode(rootTreeNode, (String) group[1]);
+        Object groupData = group[1];
+        String groupName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
+        DefaultMutableTreeNode groupNode = findGroupNode(rootTreeNode, groupName);
         if (groupNode == null) {
             return;
         }
@@ -596,8 +654,12 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         if (node == null) return null;
 
         Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj && GROUP.equals(obj[0]) && groupName.equals(obj[1])) {
-            return node;
+        if (userObj instanceof Object[] obj && GROUP.equals(obj[0])) {
+            Object groupData = obj[1];
+            String nodeName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
+            if (groupName.equals(nodeName)) {
+                return node;
+            }
         }
 
 
@@ -753,7 +815,16 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String groupName = String.valueOf(obj[1]);
+
+        // 获取分组名称（支持 RequestGroup 对象和 String）
+        Object groupData = obj[1];
+        String groupName;
+        if (groupData instanceof RequestGroup group) {
+            groupName = group.getName();
+        } else {
+            groupName = String.valueOf(groupData);
+        }
+
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(groupName + "-postman.json"));
@@ -879,7 +950,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             return;
         }
 
-        String collectionName = String.valueOf(obj[1]);
+        // 获取分组名称（支持 RequestGroup 对象和 String）
+        Object groupData = obj[1];
+        String collectionName;
+        if (groupData instanceof RequestGroup group) {
+            collectionName = group.getName();
+        } else {
+            collectionName = String.valueOf(groupData);
+        }
 
         try {
             // 获取所有工作区

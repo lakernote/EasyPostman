@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.tab;
 
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
@@ -81,7 +82,12 @@ public class ClosableTabComponent extends JPanel {
             }
         };
         label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        label.setIcon(protocol.getIcon());
+        if (protocol != null) {
+            label.setIcon(protocol.getIcon());
+        } else {
+            // 分组编辑tab
+            label.setIcon(new FlatSVGIcon("icons/group.svg", 16, 16));
+        }
         label.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, closeButtonSpace + 4)); // 右侧预留关闭按钮空间
         label.setHorizontalAlignment(SwingConstants.LEFT); // 改为左对齐，避免文本居中与按钮重叠
         label.setVerticalAlignment(SwingConstants.CENTER);
@@ -194,11 +200,13 @@ public class ClosableTabComponent extends JPanel {
             int firstDirtyIdx = -1;
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 Component comp = tabbedPane.getComponentAt(i);
-                if (comp instanceof RequestEditSubPanel && i != thisIdx) {
+                // 收集所有非当前、非 + Tab 的组件（包括 RequestEditSubPanel 和 GroupEditPanel）
+                if (i != thisIdx && !(comp instanceof PlusPanel)) {
                     toRemove.add(comp);
                 }
             }
             for (Component comp : toRemove) {
+                // 只对 RequestEditSubPanel 检查是否修改
                 if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
                     int idx = tabbedPane.indexOfComponent(comp);
                     if (firstDirtyIdx == -1) firstDirtyIdx = idx;
@@ -227,11 +235,13 @@ public class ClosableTabComponent extends JPanel {
             int firstDirtyIdx = -1;
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 Component comp = tabbedPane.getComponentAt(i);
-                if (comp instanceof RequestEditSubPanel) {
+                // 收集所有非 + Tab 的组件（包括 RequestEditSubPanel 和 GroupEditPanel）
+                if (!(comp instanceof PlusPanel)) {
                     toRemove.add(comp);
                 }
             }
             for (Component comp : toRemove) {
+                // 只对 RequestEditSubPanel 检查是否修改
                 if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
                     int idx = tabbedPane.indexOfComponent(comp);
                     if (firstDirtyIdx == -1) firstDirtyIdx = idx;
@@ -261,18 +271,23 @@ public class ClosableTabComponent extends JPanel {
     private void closeCurrent() {
         int idx = tabbedPane.indexOfTabComponent(this);
         if (idx >= 0) {
-            RequestEditSubPanel editSubPanel = (RequestEditSubPanel) tabbedPane.getComponentAt(idx);
-            if (editSubPanel.isModified()) {
-                int result = JOptionPane.showConfirmDialog(tabbedPane,
-                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
-                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
-                if (result == JOptionPane.CANCEL_OPTION) return;
-                if (result == JOptionPane.YES_OPTION) {
-                    SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
+            Component component = tabbedPane.getComponentAt(idx);
+
+            // 只有 RequestEditSubPanel 才需要检查是否修改
+            if (component instanceof RequestEditSubPanel editSubPanel) {
+                if (editSubPanel.isModified()) {
+                    int result = JOptionPane.showConfirmDialog(tabbedPane,
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
+                            I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+                    if (result == JOptionPane.CANCEL_OPTION) return;
+                    if (result == JOptionPane.YES_OPTION) {
+                        SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest();
+                    }
                 }
             }
+            // 对于其他类型的面板（如 GroupEditPanel），直接关闭
             tabbedPane.remove(idx);
             // 如果还有请求Tab，且没有选中Tab，则选中最后一个请求Tab
             int count = tabbedPane.getTabCount();

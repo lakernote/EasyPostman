@@ -657,5 +657,49 @@ public class RequestEditPanel extends SingletonBasePanel {
         // click send button
         newPanel.clickSendButton();
     }
-}
 
+    /**
+     * 显示分组编辑面板（参考 Postman，不使用弹窗）
+     * 如果已经打开了相同的分组，则直接切换到该 Tab
+     */
+    public void showGroupEditPanel(DefaultMutableTreeNode groupNode, RequestGroup group) {
+        // 先查找是否已经打开了相同的分组（使用 ID 判断）
+        String groupId = group.getId();
+        if (groupId != null && !groupId.isEmpty()) {
+            for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+                Component comp = tabbedPane.getComponentAt(i);
+                if (comp instanceof GroupEditPanel existingPanel) {
+                    // 比较分组 ID
+                    if (groupId.equals(existingPanel.getGroup().getId())) {
+                        // 已经打开，直接切换到该 Tab
+                        tabbedPane.setSelectedIndex(i);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 没有找到，创建新的分组编辑面板
+        // 先移除+Tab
+        if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
+            tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
+        }
+
+        // 创建分组编辑面板
+        GroupEditPanel groupEditPanel = new GroupEditPanel(groupNode, group, () -> {
+            // 保存回调
+            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            leftPanel.getTreeModel().nodeChanged(groupNode);
+            leftPanel.getPersistence().saveRequestGroups();
+        });
+
+        // 添加为新 Tab
+        String groupName = group.getName();
+        tabbedPane.addTab(groupName, groupEditPanel);
+        tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new ClosableTabComponent(groupName, null));
+        tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
+
+        // 恢复+Tab
+        addPlusTab();
+    }
+}

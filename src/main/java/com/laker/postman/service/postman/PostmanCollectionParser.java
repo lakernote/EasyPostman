@@ -43,8 +43,20 @@ public class PostmanCollectionParser {
             if (postmanRoot.containsKey("info") && postmanRoot.containsKey("item")) {
                 // 解析 collection 名称
                 String collectionName = postmanRoot.getJSONObject("info").getStr("name", "Postman");
+                RequestGroup collectionGroup = new RequestGroup(collectionName);
+
+                // 解析集合级别的认证
+                if (postmanRoot.containsKey("auth")) {
+                    parseAuthToGroup(postmanRoot.getJSONObject("auth"), collectionGroup);
+                }
+
+                // 解析集合级别的脚本
+                if (postmanRoot.containsKey("event")) {
+                    parseEventsToGroup(postmanRoot.getJSONArray("event"), collectionGroup);
+                }
+
                 JSONArray items = postmanRoot.getJSONArray("item");
-                DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionName});
+                DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionGroup});
                 // 递归解析树结构
                 List<DefaultMutableTreeNode> children = parsePostmanItemsToTree(items);
                 for (DefaultMutableTreeNode child : children) {
@@ -70,15 +82,29 @@ public class PostmanCollectionParser {
         List<DefaultMutableTreeNode> nodeList = new ArrayList<>();
         for (Object obj : items) {
             JSONObject item = (JSONObject) obj;
+
+            // 判断是文件夹还是请求
+            // 文件夹：有 item 字段
+            // 请求：有 request 字段
             if (item.containsKey("item")) {
                 // 文件夹节点
                 String folderName = item.getStr("name", "default group");
-                DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(new Object[]{GROUP, folderName});
-                // 先处理自身 request
-                if (item.containsKey(REQUEST)) {
-                    HttpRequestItem req = parsePostmanSingleItem(item);
-                    folderNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, req}));
+                RequestGroup group = new RequestGroup(folderName);
+
+                // 解析分组级别的认证
+                JSONObject auth = item.getJSONObject("auth");
+                if (auth != null) {
+                    parseAuthToGroup(auth, group);
                 }
+
+                // 解析分组级别的脚本
+                JSONArray events = item.getJSONArray("event");
+                if (events != null && !events.isEmpty()) {
+                    parseEventsToGroup(events, group);
+                }
+
+                DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(new Object[]{GROUP, group});
+
                 // 递归处理子节点
                 JSONArray children = item.getJSONArray("item");
                 List<DefaultMutableTreeNode> childNodes = parsePostmanItemsToTree(children);
@@ -93,6 +119,69 @@ public class PostmanCollectionParser {
             }
         }
         return nodeList;
+    }
+
+    /**
+     * 解析Postman的auth到RequestGroup
+     */
+    private static void parseAuthToGroup(JSONObject auth, RequestGroup group) {
+        String authType = auth.getStr("type", "");
+        if ("basic".equals(authType)) {
+            group.setAuthType(AUTH_TYPE_BASIC);
+            JSONArray basicArr = auth.getJSONArray("basic");
+            String username = null, password = null;
+            if (basicArr != null) {
+                for (Object o : basicArr) {
+                    JSONObject oObj = (JSONObject) o;
+                    if ("username".equals(oObj.getStr("key"))) username = oObj.getStr("value", "");
+                    if ("password".equals(oObj.getStr("key"))) password = oObj.getStr("value", "");
+                }
+            }
+            group.setAuthUsername(username);
+            group.setAuthPassword(password);
+        } else if ("bearer".equals(authType)) {
+            group.setAuthType(AUTH_TYPE_BEARER);
+            JSONArray bearerArr = auth.getJSONArray("bearer");
+            if (bearerArr != null && !bearerArr.isEmpty()) {
+                for (Object o : bearerArr) {
+                    JSONObject oObj = (JSONObject) o;
+                    if ("token".equals(oObj.getStr("key"))) {
+                        group.setAuthToken(oObj.getStr("value", ""));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 解析Postman的events到RequestGroup
+     */
+    private static void parseEventsToGroup(JSONArray events, RequestGroup group) {
+        StringBuilder testScript = new StringBuilder();
+        StringBuilder preScript = new StringBuilder();
+        for (Object e : events) {
+            JSONObject eObj = (JSONObject) e;
+            String listen = eObj.getStr("listen");
+            JSONObject script = eObj.getJSONObject("script");
+            if (script != null) {
+                JSONArray exec = script.getJSONArray("exec");
+                if (exec != null) {
+                    for (Object line : exec) {
+                        if ("test".equals(listen)) {
+                            testScript.append(line).append("\n");
+                        } else if ("prerequest".equals(listen)) {
+                            preScript.append(line).append("\n");
+                        }
+                    }
+                }
+            }
+        }
+        if (!preScript.isEmpty()) {
+            group.setPrescript(preScript.toString());
+        }
+        if (!testScript.isEmpty()) {
+            group.setPostscript(testScript.toString());
+        }
     }
 
     /**

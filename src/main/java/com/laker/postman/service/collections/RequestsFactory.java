@@ -24,7 +24,8 @@ public class RequestsFactory {
     // 创建默认请求组和测试请求
     public static void createDefaultRequestGroups(DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
         try {
-            DefaultMutableTreeNode defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", "Default Group"});
+            RequestGroup defaultGroup = new RequestGroup("Default Group");
+            DefaultMutableTreeNode defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", defaultGroup});
             rootTreeNode.add(defaultGroupNode);
             // Example: Environment variable + script
             HttpRequestItem example = HttpRequestFactory.createDefaultRequest();

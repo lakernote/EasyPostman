@@ -169,7 +169,8 @@ public class LeftTopPanel extends SingletonBasePanel {
                 String groupName = "EasyPostman";
                 DefaultMutableTreeNode easyPostmanGroup = leftPanel.findGroupNode(leftPanel.getRootTreeNode(), groupName);
                 if (easyPostmanGroup == null) {
-                    easyPostmanGroup = new DefaultMutableTreeNode(new Object[]{GROUP, groupName});
+                    com.laker.postman.model.RequestGroup group = new com.laker.postman.model.RequestGroup(groupName);
+                    easyPostmanGroup = new DefaultMutableTreeNode(new Object[]{GROUP, group});
                     leftPanel.getRootTreeNode().add(easyPostmanGroup);
                 }
                 // 读取并解析文件

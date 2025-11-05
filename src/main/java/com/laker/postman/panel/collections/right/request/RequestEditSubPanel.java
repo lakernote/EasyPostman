@@ -12,6 +12,7 @@ import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -307,9 +308,12 @@ public class RequestEditSubPanel extends JPanel {
             }
         }
 
-        PreparedRequest req = PreparedRequestBuilder.build(item);
+        // 应用分组级别的认证和脚本继承
+        HttpRequestItem effectiveItem = applyGroupInheritance(item);
+
+        PreparedRequest req = PreparedRequestBuilder.build(effectiveItem);
         Map<String, Object> bindings = prepareBindings(req);
-        if (!executePrescript(item, bindings)) return;
+        if (!executePrescript(effectiveItem, bindings)) return;
 
         // 前置脚本执行完成后，再进行变量替换
         PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
@@ -318,13 +322,45 @@ public class RequestEditSubPanel extends JPanel {
         updateUIForRequesting();
 
         // 协议分发 - 根据HttpRequestItem的protocol字段分发
+        // 注意：这里传递 effectiveItem 以便后置脚本能够正确执行分组级别的脚本
         if (protocol.isWebSocketProtocol()) {
-            handleWebSocketRequest(item, req, bindings);
+            handleWebSocketRequest(effectiveItem, req, bindings);
         } else if (protocol.isSseProtocol()) {
-            handleSseRequest(item, req, bindings);
+            handleSseRequest(effectiveItem, req, bindings);
         } else {
-            handleHttpRequest(item, req, bindings);
+            handleHttpRequest(effectiveItem, req, bindings);
         }
+    }
+
+    /**
+     * 应用分组级别的认证和脚本继承
+     * 查找请求所在的分组，合并分组级别的配置
+     */
+    private HttpRequestItem applyGroupInheritance(HttpRequestItem item) {
+        if (item == null || item.getId() == null) {
+            return item;
+        }
+
+        try {
+            // 获取集合树的根节点
+            com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel leftPanel =
+                SingletonFactory.getInstance(com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.class);
+            javax.swing.tree.DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
+
+            // 查找请求节点
+            javax.swing.tree.DefaultMutableTreeNode requestNode =
+                GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
+
+            if (requestNode != null) {
+                // 合并分组设置
+                return GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to apply group inheritance: {}", e.getMessage());
+        }
+
+        // 如果无法应用继承，返回原始请求
+        return item;
     }
 
     // 普通HTTP请求处理

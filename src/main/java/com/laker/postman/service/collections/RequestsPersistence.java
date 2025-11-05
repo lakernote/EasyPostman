@@ -4,6 +4,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -78,7 +79,35 @@ public class RequestsPersistence {
 
     public DefaultMutableTreeNode parseGroupNode(JSONObject groupJson) {
         String name = groupJson.getStr("name");
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", name});
+
+        // 创建RequestGroup对象
+        RequestGroup group = new RequestGroup(name);
+
+        // 解析分组ID（向后兼容：如果没有ID则自动生成）
+        if (groupJson.containsKey("id")) {
+            String id = groupJson.getStr("id");
+            if (id != null && !id.isEmpty()) {
+                group.setId(id);
+            }
+        }
+
+        // 解析分组级别的认证信息
+        if (groupJson.containsKey("authType")) {
+            group.setAuthType(groupJson.getStr("authType", ""));
+            group.setAuthUsername(groupJson.getStr("authUsername", ""));
+            group.setAuthPassword(groupJson.getStr("authPassword", ""));
+            group.setAuthToken(groupJson.getStr("authToken", ""));
+        }
+
+        // 解析分组级别的脚本
+        if (groupJson.containsKey("prescript")) {
+            group.setPrescript(groupJson.getStr("prescript", ""));
+        }
+        if (groupJson.containsKey("postscript")) {
+            group.setPostscript(groupJson.getStr("postscript", ""));
+        }
+
+        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
         JSONArray children = groupJson.getJSONArray("children");
         if (children != null) {
             for (Object child : children) {
@@ -110,7 +139,24 @@ public class RequestsPersistence {
         JSONObject groupJson = new JSONObject();
         Object[] obj = (Object[]) node.getUserObject();
         groupJson.set("type", "group");
-        groupJson.set("name", obj[1]);
+
+        // 处理分组名称和属性
+        Object groupData = obj[1];
+        if (groupData instanceof RequestGroup group) {
+            // 新格式：使用RequestGroup对象
+            groupJson.set("id", group.getId());
+            groupJson.set("name", group.getName());
+            groupJson.set("authType", group.getAuthType());
+            groupJson.set("authUsername", group.getAuthUsername());
+            groupJson.set("authPassword", group.getAuthPassword());
+            groupJson.set("authToken", group.getAuthToken());
+            groupJson.set("prescript", group.getPrescript());
+            groupJson.set("postscript", group.getPostscript());
+        } else if (groupData instanceof String name) {
+            // 旧格式兼容：字符串名称
+            groupJson.set("name", name);
+        }
+
         JSONArray children = new JSONArray();
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);

@@ -4,6 +4,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.*;
@@ -20,16 +21,71 @@ public class PostmanCollectionExporter {
      * 从树节点递归构建 Postman Collection v2.1 JSON
      *
      * @param groupNode 分组节点
-     * @param groupName 分组名
+     * @param groupName 分组名（如果根节点有 RequestGroup，会使用其名称）
      * @return Postman Collection v2.1 JSONObject
      */
     public static JSONObject buildPostmanCollectionFromTreeNode(DefaultMutableTreeNode groupNode, String groupName) {
         JSONObject collection = new JSONObject();
         JSONObject info = new JSONObject();
         info.put("_postman_id", UUID.randomUUID().toString());
+
+        // 检查根节点是否有 RequestGroup 对象
+        Object userObj = groupNode.getUserObject();
+        RequestGroup rootGroup = null;
+        if (userObj instanceof Object[] obj && "group".equals(obj[0])) {
+            Object groupData = obj[1];
+            if (groupData instanceof RequestGroup group) {
+                rootGroup = group;
+                groupName = group.getName(); // 使用 RequestGroup 的名称
+            }
+        }
+
         info.put("name", groupName);
         info.put("schema", "https://schema.getpostman.com/json/collection/v2.1.0/collection.json");
         collection.put("info", info);
+
+        // 导出集合级别的认证（从根节点）
+        if (rootGroup != null && rootGroup.hasAuth()) {
+            JSONObject auth = new JSONObject();
+            if (AUTH_TYPE_BASIC.equals(rootGroup.getAuthType())) {
+                auth.put("type", "basic");
+                JSONArray arr = new JSONArray();
+                arr.add(new JSONObject().put("key", "username").put("value", rootGroup.getAuthUsername()));
+                arr.add(new JSONObject().put("key", "password").put("value", rootGroup.getAuthPassword()));
+                auth.put("basic", arr);
+            } else if (AUTH_TYPE_BEARER.equals(rootGroup.getAuthType())) {
+                auth.put("type", "bearer");
+                JSONArray arr = new JSONArray();
+                arr.add(new JSONObject().put("key", "token").put("value", rootGroup.getAuthToken()));
+                auth.put("bearer", arr);
+            }
+            collection.put("auth", auth);
+        }
+
+        // 导出集合级别的脚本（从根节点）
+        if (rootGroup != null && (rootGroup.hasPreScript() || rootGroup.hasPostScript())) {
+            JSONArray events = new JSONArray();
+            if (rootGroup.hasPreScript()) {
+                JSONObject pre = new JSONObject();
+                pre.put("listen", "prerequest");
+                JSONObject script = new JSONObject();
+                script.put("type", "text/javascript");
+                script.put("exec", Arrays.asList(rootGroup.getPrescript().split("\n")));
+                pre.put("script", script);
+                events.add(pre);
+            }
+            if (rootGroup.hasPostScript()) {
+                JSONObject post = new JSONObject();
+                post.put("listen", "test");
+                JSONObject script = new JSONObject();
+                script.put("type", "text/javascript");
+                script.put("exec", Arrays.asList(rootGroup.getPostscript().split("\n")));
+                post.put("script", script);
+                events.add(post);
+            }
+            collection.put("event", events);
+        }
+
         collection.put("item", buildPostmanItemsFromNode(groupNode));
         return collection;
     }
@@ -44,9 +100,60 @@ public class PostmanCollectionExporter {
             Object userObj = child.getUserObject();
             if (userObj instanceof Object[] obj2) {
                 if ("group".equals(obj2[0])) {
-                    String subGroupName = String.valueOf(obj2[1]);
                     JSONObject folder = new JSONObject();
-                    folder.put("name", subGroupName);
+
+                    // 处理分组对象
+                    Object groupData = obj2[1];
+                    if (groupData instanceof RequestGroup group) {
+                        // 新格式：使用RequestGroup对象
+                        folder.put("name", group.getName());
+
+                        // 导出分组级别的认证
+                        if (group.hasAuth()) {
+                            JSONObject auth = new JSONObject();
+                            if (AUTH_TYPE_BASIC.equals(group.getAuthType())) {
+                                auth.put("type", "basic");
+                                JSONArray arr = new JSONArray();
+                                arr.add(new JSONObject().put("key", "username").put("value", group.getAuthUsername()));
+                                arr.add(new JSONObject().put("key", "password").put("value", group.getAuthPassword()));
+                                auth.put("basic", arr);
+                            } else if (AUTH_TYPE_BEARER.equals(group.getAuthType())) {
+                                auth.put("type", "bearer");
+                                JSONArray arr = new JSONArray();
+                                arr.add(new JSONObject().put("key", "token").put("value", group.getAuthToken()));
+                                auth.put("bearer", arr);
+                            }
+                            folder.put("auth", auth);
+                        }
+
+                        // 导出分组级别的脚本
+                        JSONArray events = new JSONArray();
+                        if (group.hasPreScript()) {
+                            JSONObject pre = new JSONObject();
+                            pre.put("listen", "prerequest");
+                            JSONObject script = new JSONObject();
+                            script.put("type", "text/javascript");
+                            script.put("exec", Arrays.asList(group.getPrescript().split("\n")));
+                            pre.put("script", script);
+                            events.add(pre);
+                        }
+                        if (group.hasPostScript()) {
+                            JSONObject post = new JSONObject();
+                            post.put("listen", "test");
+                            JSONObject script = new JSONObject();
+                            script.put("type", "text/javascript");
+                            script.put("exec", Arrays.asList(group.getPostscript().split("\n")));
+                            post.put("script", script);
+                            events.add(post);
+                        }
+                        if (!events.isEmpty()) {
+                            folder.put("event", events);
+                        }
+                    } else if (groupData instanceof String subGroupName) {
+                        // 旧格式兼容：字符串名称
+                        folder.put("name", subGroupName);
+                    }
+
                     folder.put("item", buildPostmanItemsFromNode(child));
                     items.add(folder);
                 } else if ("request".equals(obj2[0])) {

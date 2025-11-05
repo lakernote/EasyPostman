@@ -3,6 +3,7 @@ package com.laker.postman.common.component.tree;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.http.HttpUtil;
@@ -30,7 +31,9 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         if (userObject instanceof Object[] obj) {
             if (RequestCollectionsLeftPanel.GROUP.equals(obj[0])) {
                 setIcon(new FlatSVGIcon("icons/group.svg", ICON_SIZE, ICON_SIZE));
-                setText((String) obj[1]);
+                Object groupData = obj[1];
+                String groupName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
+                setText(groupName);
             } else if (RequestCollectionsLeftPanel.REQUEST.equals(obj[0])) {
                 HttpRequestItem item = (HttpRequestItem) obj[1];
                 applyRequestRendering(item);

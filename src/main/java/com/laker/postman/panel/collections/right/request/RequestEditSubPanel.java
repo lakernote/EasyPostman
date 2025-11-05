@@ -7,6 +7,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
@@ -34,6 +35,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
@@ -343,13 +345,13 @@ public class RequestEditSubPanel extends JPanel {
 
         try {
             // 获取集合树的根节点
-            com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel leftPanel =
-                SingletonFactory.getInstance(com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.class);
-            javax.swing.tree.DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
+            RequestCollectionsLeftPanel leftPanel =
+                    SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
 
             // 查找请求节点
-            javax.swing.tree.DefaultMutableTreeNode requestNode =
-                GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
+            DefaultMutableTreeNode requestNode =
+                    GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
 
             if (requestNode != null) {
                 // 合并分组设置

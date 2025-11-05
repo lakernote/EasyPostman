@@ -1,16 +1,21 @@
 package com.laker.postman.service.collections;
 
+import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_NONE;
 
 /**
- * 分组继承工具类
- * 负责处理分组级别的认证和脚本继承
+ * Group inheritance helper
+ * Handles authentication and script inheritance from parent groups
+ *
+ * Inheritance rules (follows Postman behavior):
+ * 1. Auth: Only inherit when request selects "Inherit auth from parent"
+ * 2. Pre-request scripts: Collection -> Folder -> Request (outer to inner)
+ * 3. Test scripts: Request -> Folder -> Collection (inner to outer)
  */
 public class GroupInheritanceHelper {
 
@@ -19,23 +24,21 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 合并分组级别的认证和脚本到请求
-     * 如果请求本身没有配置认证，则使用分组的认证
-     * 脚本会在请求脚本之前/之后执行
+     * Merge group-level auth and scripts into request
      *
-     * @param item 请求项
-     * @param requestNode 请求在树中的节点
-     * @return 合并后的请求项（新对象）
+     * @param item Request item
+     * @param requestNode Request node in tree
+     * @return Merged request item (new object)
      */
     public static HttpRequestItem mergeGroupSettings(HttpRequestItem item, DefaultMutableTreeNode requestNode) {
         if (item == null || requestNode == null) {
             return item;
         }
 
-        // 创建副本以避免修改原对象
+        // Create copy to avoid modifying original object
         HttpRequestItem mergedItem = cloneRequest(item);
 
-        // 查找父分组并合并设置
+        // Find parent group and merge settings
         TreeNode parent = requestNode.getParent();
         if (parent instanceof DefaultMutableTreeNode parentNode) {
             mergeGroupSettingsRecursive(mergedItem, parentNode);
@@ -45,7 +48,13 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 递归合并父分组的设置
+     * Recursively merge parent group settings
+     *
+     * Recursion order: Request -> Parent Folder -> ... -> Collection
+     *
+     * Auth: Only inherit when AUTH_TYPE_INHERIT (follows Postman)
+     * Pre-script concat: Collection + (Parent + Request) = C, P, R
+     * Post-script concat: (Request + Parent) + Collection = R, P, C
      */
     private static void mergeGroupSettingsRecursive(HttpRequestItem item, DefaultMutableTreeNode groupNode) {
         if (groupNode == null) {
@@ -56,15 +65,16 @@ public class GroupInheritanceHelper {
         if (userObj instanceof Object[] obj && "group".equals(obj[0])) {
             Object groupData = obj[1];
             if (groupData instanceof RequestGroup group) {
-                // 如果请求没有设置认证，使用分组的认证
-                if (AUTH_TYPE_NONE.equals(item.getAuthType()) && group.hasAuth()) {
+                // Only inherit auth when request explicitly selects "Inherit auth from parent"
+                // If request selects "No Auth" or specific auth type, don't inherit
+                if (AuthType.INHERIT.getConstant().equals(item.getAuthType()) && group.hasAuth()) {
                     item.setAuthType(group.getAuthType());
                     item.setAuthUsername(group.getAuthUsername());
                     item.setAuthPassword(group.getAuthPassword());
                     item.setAuthToken(group.getAuthToken());
                 }
 
-                // 合并前置脚本（分组脚本在前）
+                // Merge pre-request script (group script first)
                 if (group.hasPreScript()) {
                     String groupScript = group.getPrescript();
                     String requestScript = item.getPrescript();
@@ -75,7 +85,7 @@ public class GroupInheritanceHelper {
                     }
                 }
 
-                // 合并后置脚本（分组脚本在后）
+                // Merge post-response script (group script last)
                 if (group.hasPostScript()) {
                     String groupScript = group.getPostscript();
                     String requestScript = item.getPostscript();
@@ -88,7 +98,7 @@ public class GroupInheritanceHelper {
             }
         }
 
-        // 继续向上查找父分组
+        // Continue to parent group
         TreeNode parent = groupNode.getParent();
         if (parent instanceof DefaultMutableTreeNode parentNode &&
             !"root".equals(String.valueOf(parentNode.getUserObject()))) {
@@ -97,7 +107,7 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 克隆请求对象（浅拷贝，但足够用于临时合并）
+     * Clone request object (shallow copy, sufficient for temporary merge)
      */
     private static HttpRequestItem cloneRequest(HttpRequestItem item) {
         HttpRequestItem clone = new HttpRequestItem();
@@ -122,31 +132,32 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 查找请求在树中的节点
+     * Find request node in tree by request ID
      *
-     * @param rootNode 根节点
-     * @param requestId 请求ID
-     * @return 请求节点，如果未找到返回null
+     * @param root Root node of tree
+     * @param requestId Request ID to find
+     * @return Request node or null if not found
      */
-    public static DefaultMutableTreeNode findRequestNode(DefaultMutableTreeNode rootNode, String requestId) {
-        if (rootNode == null || requestId == null) {
+    public static DefaultMutableTreeNode findRequestNode(DefaultMutableTreeNode root, String requestId) {
+        if (root == null || requestId == null) {
             return null;
         }
 
-        Object userObj = rootNode.getUserObject();
+        // Check current node
+        Object userObj = root.getUserObject();
         if (userObj instanceof Object[] obj && "request".equals(obj[0])) {
-            HttpRequestItem item = (HttpRequestItem) obj[1];
-            if (requestId.equals(item.getId())) {
-                return rootNode;
+            com.laker.postman.model.HttpRequestItem req = (com.laker.postman.model.HttpRequestItem) obj[1];
+            if (requestId.equals(req.getId())) {
+                return root;
             }
         }
 
-        // 递归查找子节点
-        for (int i = 0; i < rootNode.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) rootNode.getChildAt(i);
-            DefaultMutableTreeNode found = findRequestNode(child, requestId);
-            if (found != null) {
-                return found;
+        // Search children recursively
+        for (int i = 0; i < root.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) root.getChildAt(i);
+            DefaultMutableTreeNode result = findRequestNode(child, requestId);
+            if (result != null) {
+                return result;
             }
         }
 

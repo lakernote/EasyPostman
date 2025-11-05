@@ -185,6 +185,11 @@ public final class MessageKeys {
 
     // ============ 认证相关 ============
     public static final String AUTH_TYPE_LABEL = "auth.type.label";
+    public static final String AUTH_TYPE_INHERIT = "auth.type.inherit";
+    public static final String AUTH_TYPE_NONE = "auth.type.none";
+    public static final String AUTH_TYPE_BASIC = "auth.type.basic";
+    public static final String AUTH_TYPE_BEARER = "auth.type.bearer";
+    public static final String AUTH_TYPE_INHERIT_DESC = "auth.type.inherit.desc";
     public static final String AUTH_TYPE_NONE_DESC = "auth.type.none.desc";
     public static final String AUTH_USERNAME = "auth.username";
     public static final String AUTH_PASSWORD = "auth.password";

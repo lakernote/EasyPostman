@@ -29,7 +29,7 @@ public class HttpRequestItem implements Serializable {
     private List<HttpParam> paramsList = new ArrayList<>();
     private List<HttpFormData> formDataList = new ArrayList<>();
     private List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-    private String authType = AUTH_TYPE_NONE; // 认证类型（none/basic/bearer）
+    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（inherit/none/basic/bearer），默认继承
     private String authUsername = ""; // Basic用户名
     private String authPassword = ""; // Basic密码
     private String authToken = "";    // Bearer Token

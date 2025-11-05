@@ -6,8 +6,6 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.UUID;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_NONE;
-
 /**
  * RequestGroup 类表示一个请求分组的配置项
  * 包含分组的名称、认证、脚本等信息
@@ -18,7 +16,7 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 public class RequestGroup implements Serializable {
     private String id = ""; // 唯一标识符
     private String name = ""; // 分组名称
-    private String authType = AUTH_TYPE_NONE; // 认证类型（none/basic/bearer）
+    private String authType = AuthType.NONE.getConstant(); // 认证类型（none/basic/bearer），分组默认无认证
     private String authUsername = ""; // Basic用户名
     private String authPassword = ""; // Basic密码
     private String authToken = "";    // Bearer Token
@@ -40,7 +38,7 @@ public class RequestGroup implements Serializable {
      * 判断分组是否有认证配置
      */
     public boolean hasAuth() {
-        return authType != null && !AUTH_TYPE_NONE.equals(authType);
+        return authType != null && !AuthType.NONE.getConstant().equals(authType);
     }
 
     /**

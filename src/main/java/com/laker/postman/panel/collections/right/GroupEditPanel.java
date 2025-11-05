@@ -123,12 +123,8 @@ public class GroupEditPanel extends JPanel {
         JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
         headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
-        // 左侧：标题和图标
+        // 左侧：标题
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-
-        JLabel iconLabel = new JLabel("📁");
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        leftPanel.add(iconLabel);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TITLE));
         titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 18));

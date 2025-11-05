@@ -1,6 +1,5 @@
 package com.laker.postman.service.postman;
 
-import cn.hutool.json.JSONUtil;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -41,7 +40,10 @@ public class PostmanCollectionParserTest {
         assertNotNull(collectionNode);
         Object[] userObject = (Object[]) collectionNode.getUserObject();
         assertEquals(userObject[0], "group");
-        assertEquals(userObject[1], "Test Collection");
+        // userObject[1] 现在是 RequestGroup 对象
+        assertTrue(userObject[1] instanceof com.laker.postman.model.RequestGroup);
+        com.laker.postman.model.RequestGroup group = (com.laker.postman.model.RequestGroup) userObject[1];
+        assertEquals(group.getName(), "Test Collection");
         assertEquals(collectionNode.getChildCount(), 1);
     }
 
@@ -88,7 +90,10 @@ public class PostmanCollectionParserTest {
         DefaultMutableTreeNode folderNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
         Object[] folderUserObject = (Object[]) folderNode.getUserObject();
         assertEquals(folderUserObject[0], "group");
-        assertEquals(folderUserObject[1], "User API");
+        // folderUserObject[1] 现在是 RequestGroup 对象
+        assertTrue(folderUserObject[1] instanceof com.laker.postman.model.RequestGroup);
+        com.laker.postman.model.RequestGroup folderGroup = (com.laker.postman.model.RequestGroup) folderUserObject[1];
+        assertEquals(folderGroup.getName(), "User API");
         assertEquals(folderNode.getChildCount(), 2);
     }
 
@@ -142,7 +147,10 @@ public class PostmanCollectionParserTest {
         DefaultMutableTreeNode authFolder = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
         Object[] authUserObject = (Object[]) authFolder.getUserObject();
         assertEquals(authUserObject[0], "group");
-        assertEquals(authUserObject[1], "Auth");
+        // authUserObject[1] 现在是 RequestGroup 对象
+        assertTrue(authUserObject[1] instanceof com.laker.postman.model.RequestGroup);
+        com.laker.postman.model.RequestGroup authGroup = (com.laker.postman.model.RequestGroup) authUserObject[1];
+        assertEquals(authGroup.getName(), "Auth");
         assertEquals(authFolder.getChildCount(), 1);
 
         // 验证第二个子节点（请求）
@@ -358,7 +366,10 @@ public class PostmanCollectionParserTest {
         // 验证结果
         assertNotNull(collectionNode);
         Object[] userObject = (Object[]) collectionNode.getUserObject();
-        assertEquals(userObject[1], "Empty Collection");
+        // userObject[1] 现在是 RequestGroup 对象
+        assertTrue(userObject[1] instanceof com.laker.postman.model.RequestGroup);
+        com.laker.postman.model.RequestGroup group = (com.laker.postman.model.RequestGroup) userObject[1];
+        assertEquals(group.getName(), "Empty Collection");
         assertEquals(collectionNode.getChildCount(), 0);
     }
 
@@ -388,7 +399,10 @@ public class PostmanCollectionParserTest {
         // 验证结果 - 应该使用默认名称
         assertNotNull(collectionNode);
         Object[] userObject = (Object[]) collectionNode.getUserObject();
-        assertEquals(userObject[1], "Postman");
+        // userObject[1] 现在是 RequestGroup 对象
+        assertTrue(userObject[1] instanceof com.laker.postman.model.RequestGroup);
+        com.laker.postman.model.RequestGroup group = (com.laker.postman.model.RequestGroup) userObject[1];
+        assertEquals(group.getName(), "Postman");
     }
 }
 

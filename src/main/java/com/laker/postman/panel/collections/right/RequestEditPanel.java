@@ -492,6 +492,18 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
+    /**
+     * 更新 GroupEditPanel 的 Tab 标题
+     */
+    public void updateGroupTabTitle(GroupEditPanel panel, String newTitle) {
+        int idx = tabbedPane.indexOfComponent(panel);
+        if (idx < 0) return;
+
+        // 重新创建 Tab 组件以更新标题
+        tabbedPane.setTabComponentAt(idx, new ClosableTabComponent(newTitle, null));
+        tabbedPane.setToolTipTextAt(idx, newTitle);
+    }
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());

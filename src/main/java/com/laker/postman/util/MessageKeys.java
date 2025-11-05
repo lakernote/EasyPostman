@@ -36,24 +36,16 @@ public final class MessageKeys {
     public static final String LANGUAGE_CHANGED = "language.changed";
 
     // ============ 更新相关 ============
-    public static final String UPDATE_NEW_VERSION_FOUND = "update.new_version_found";
     public static final String UPDATE_NEW_VERSION_AVAILABLE = "update.new_version_available";
     public static final String UPDATE_LATER = "update.later";
-    public static final String UPDATE_NOW = "update.now";
     public static final String UPDATE_VIEW_DETAILS = "update.view_details";
     public static final String UPDATE_MANUAL_DOWNLOAD = "update.manual_download";
-    public static final String UPDATE_AUTO_DOWNLOAD = "update.auto_download";
-    public static final String UPDATE_CANCEL = "update.cancel";
     public static final String UPDATE_DOWNLOADING = "update.downloading";
     public static final String UPDATE_CONNECTING = "update.connecting";
-    public static final String UPDATE_DOWNLOAD_PROGRESS = "update.download_progress";
-    public static final String UPDATE_DOWNLOAD_SPEED = "update.download_speed";
-    public static final String UPDATE_ESTIMATED_TIME = "update.estimated_time";
     public static final String UPDATE_CANCEL_DOWNLOAD = "update.cancel_download";
     public static final String UPDATE_DOWNLOAD_CANCELLED = "update.download_cancelled";
     public static final String UPDATE_DOWNLOAD_FAILED = "update.download_failed";
     public static final String UPDATE_INSTALL_PROMPT = "update.install_prompt";
-    public static final String UPDATE_OPEN_INSTALLER_FAILED = "update.open_installer_failed";
     public static final String UPDATE_NO_INSTALLER_FOUND = "update.no_installer_found";
 
     // ============ 版本检查器相关 ============
@@ -104,7 +96,6 @@ public final class MessageKeys {
     public static final String GENERAL_OK = "general.ok";
     public static final String GENERAL_CANCEL = "button.cancel";
     public static final String CONSOLE_TITLE = "console.title";
-    public static final String SIDEBAR_TOGGLE = "sidebar.toggle";
 
     // ============ 按钮 ============
     public static final String BUTTON_SEND = "button.send";
@@ -145,7 +136,6 @@ public final class MessageKeys {
     public static final String TAB_PARAMS = "tab.params";
     public static final String TAB_AUTHORIZATION = "tab.authorization";
     public static final String TAB_SCRIPTS = "tab.scripts";
-    public static final String TAB_COOKIES = "tab.cookies";
     public static final String TAB_TESTS = "tab.tests";
     public static final String TAB_NETWORK_LOG = "tab.network_log";
     public static final String TAB_REQUEST_HEADERS = "tab.request_headers";
@@ -500,6 +490,18 @@ public final class MessageKeys {
     public static final String COLLECTIONS_DELETE_BATCH_CONFIRM = "collections.delete.batch_confirm";
     public static final String COLLECTIONS_DELETE_CONFIRM_TITLE = "collections.delete.confirm_title";
 
+    // ============ Group Edit Panel 相关 ============
+    public static final String GROUP_EDIT_TITLE = "group.edit.title";
+    public static final String GROUP_EDIT_TAB_GENERAL = "group.edit.tab.general";
+    public static final String GROUP_EDIT_NAME_LABEL = "group.edit.name.label";
+    public static final String GROUP_EDIT_NAME_EMPTY = "group.edit.name.empty";
+    public static final String GROUP_EDIT_DESCRIPTION = "group.edit.description";
+    public static final String GROUP_EDIT_AUTH_INFO = "group.edit.auth.info";
+    public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
+    public static final String GROUP_EDIT_SAVE_SUCCESS = "group.edit.save.success";
+    public static final String GROUP_EDIT_SAVE_SUCCESS_TITLE = "group.edit.save.success.title";
+    public static final String GROUP_EDIT_VALIDATION_ERROR = "group.edit.validation.error";
+
     // ============ 功能测试执行结果相关 ============
     public static final String FUNCTIONAL_EXECUTION_RESULTS = "functional.execution.results";
     public static final String FUNCTIONAL_EXECUTION_HISTORY = "functional.execution.history";
@@ -615,10 +617,6 @@ public final class MessageKeys {
     public static final String SETTINGS_CONFIRM_DISCARD_TITLE = "settings.confirm_discard.title";
     public static final String SETTINGS_CONFIRM_DISCARD_MESSAGE = "settings.confirm_discard.message";
     public static final String SETTINGS_RESET_TO_DEFAULT = "settings.reset_to_default";
-    public static final String SETTINGS_RESET_ALL_TO_DEFAULTS = "settings.reset_all_to_defaults";
-    public static final String SETTINGS_CONFIRM_RESET_TITLE = "settings.confirm_reset.title";
-    public static final String SETTINGS_CONFIRM_RESET_MESSAGE = "settings.confirm_reset.message";
-
 
     // Request settings section
     public static final String SETTINGS_REQUEST_TITLE = "settings.request.title";
@@ -628,10 +626,8 @@ public final class MessageKeys {
     public static final String SETTINGS_REQUEST_TIMEOUT_TOOLTIP = "settings.request.timeout.tooltip";
     public static final String SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE = "settings.request.max_download_size";
     public static final String SETTINGS_REQUEST_MAX_DOWNLOAD_SIZE_TOOLTIP = "settings.request.max_download_size.tooltip";
-    public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS = "settings.request.follow_redirects";
     public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS_TOOLTIP = "settings.request.follow_redirects.tooltip";
     public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS_CHECKBOX = "settings.request.follow_redirects.checkbox";
-    public static final String SETTINGS_REQUEST_SSL_VERIFICATION = "settings.request.ssl_verification";
     public static final String SETTINGS_REQUEST_SSL_VERIFICATION_TOOLTIP = "settings.request.ssl_verification.tooltip";
     public static final String SETTINGS_REQUEST_SSL_VERIFICATION_CHECKBOX = "settings.request.ssl_verification.checkbox";
 
@@ -659,10 +655,8 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED = "settings.general.sidebar_expanded";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP = "settings.general.sidebar_expanded.tooltip";
-    public static final String SETTINGS_SIDEBAR_RESTART_REQUIRED = "settings.sidebar.restart.required";
 
     // Validation messages
-    public static final String SETTINGS_VALIDATION_ERROR_TITLE = "settings.validation.error.title";
     public static final String SETTINGS_VALIDATION_ERROR_MESSAGE = "settings.validation.error.message";
     public static final String SETTINGS_VALIDATION_MAX_BODY_SIZE_ERROR = "settings.validation.max_body_size.error";
     public static final String SETTINGS_VALIDATION_TIMEOUT_ERROR = "settings.validation.timeout.error";
@@ -671,19 +665,15 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_KEEP_ALIVE_ERROR = "settings.validation.keep_alive.error";
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
-    public static final String SETTINGS_VALIDATION_INVALID_NUMBER = "settings.validation.invalid_number";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";
     public static final String SETTINGS_VALIDATION_UPDATE_INTERVAL_ERROR = "settings.validation.update_interval.error";
     public static final String SETTINGS_VALIDATION_STARTUP_DELAY_ERROR = "settings.validation.startup_delay.error";
 
     // Success messages
-    public static final String SETTINGS_SAVE_SUCCESS = "settings.save.success";
-    public static final String SETTINGS_SAVE_SUCCESS_TITLE = "settings.save.success.title";
     public static final String SETTINGS_SAVE_SUCCESS_MESSAGE = "settings.save.success.message";
 
     // Error messages
-    public static final String SETTINGS_SAVE_ERROR_TITLE = "settings.save.error.title";
     public static final String SETTINGS_SAVE_ERROR_MESSAGE = "settings.save.error.message";
 
     // ============ 请求Body相关 ============
@@ -815,7 +805,6 @@ public final class MessageKeys {
 
     // ============ 自动更新设置相关 ============
     public static final String SETTINGS_AUTO_UPDATE_TITLE = "settings.auto_update.title";
-    public static final String SETTINGS_AUTO_UPDATE_ENABLED = "settings.auto_update.enabled";
     public static final String SETTINGS_AUTO_UPDATE_ENABLED_TOOLTIP = "settings.auto_update.enabled.tooltip";
     public static final String SETTINGS_AUTO_UPDATE_ENABLED_CHECKBOX = "settings.auto_update.enabled.checkbox";
     public static final String SETTINGS_AUTO_UPDATE_INTERVAL = "settings.auto_update.interval";
@@ -827,11 +816,8 @@ public final class MessageKeys {
     public static final String SETTINGS_UPDATE_SOURCE_AUTO = "settings.update_source.auto";
     public static final String SETTINGS_UPDATE_SOURCE_GITHUB = "settings.update_source.github";
     public static final String SETTINGS_UPDATE_SOURCE_GITEE = "settings.update_source.gitee";
-    public static final String SETTINGS_VALIDATION_AUTO_UPDATE_INTERVAL_ERROR = "settings.validation.auto_update_interval.error";
-    public static final String SETTINGS_VALIDATION_AUTO_UPDATE_STARTUP_DELAY_ERROR = "settings.validation.auto_update_startup_delay.error";
 
     // ============ UI设置相关 ============
-    public static final String SETTINGS_UI_TITLE = "settings.ui.title";
 
     // WebSocket面板相关
     public static final String WEBSOCKET_PANEL_LABEL_SEND_MESSAGE = "websocket.panel.label.send_message";
@@ -1149,7 +1135,6 @@ public final class MessageKeys {
 
     // 网络代理设置
     public static final String SETTINGS_PROXY_TITLE = "settings.proxy.title";
-    public static final String SETTINGS_PROXY_ENABLED = "settings.proxy.enabled";
     public static final String SETTINGS_PROXY_ENABLED_TOOLTIP = "settings.proxy.enabled.tooltip";
     public static final String SETTINGS_PROXY_ENABLED_CHECKBOX = "settings.proxy.enabled.checkbox";
     public static final String SETTINGS_PROXY_TYPE = "settings.proxy.type";
@@ -1164,10 +1149,8 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_USERNAME_TOOLTIP = "settings.proxy.username.tooltip";
     public static final String SETTINGS_PROXY_PASSWORD = "settings.proxy.password";
     public static final String SETTINGS_PROXY_PASSWORD_TOOLTIP = "settings.proxy.password.tooltip";
-    public static final String SETTINGS_PROXY_SSL_VERIFICATION = "settings.proxy.ssl.verification";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_TOOLTIP = "settings.proxy.ssl.verification.tooltip";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX = "settings.proxy.ssl.verification.checkbox";
-    public static final String SETTINGS_VALIDATION_PROXY_PORT_ERROR = "settings.validation.proxy_port.error";
 
     // ============ 工具箱相关 ============
     public static final String TOOLBOX_ENCODER = "toolbox.encoder";

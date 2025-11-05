@@ -34,8 +34,8 @@ public class AuthTabPanel extends JPanel {
     private final List<Runnable> dirtyListeners = new ArrayList<>();
 
     public AuthTabPanel() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(new EmptyBorder(15, 15, 15, 15));
+        setLayout(new BorderLayout(5, 5));
+        setBorder(new EmptyBorder(8, 10, 8, 10));
 
         // 初始化所有字段
         typeCombo = new JComboBox<>(AuthType.values());
@@ -52,7 +52,7 @@ public class AuthTabPanel extends JPanel {
         tokenField.setPreferredSize(new Dimension(250, 32));
 
         // 顶部：认证类型选择
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         JLabel typeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_LABEL));
         typeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
         typeLabel.setForeground(ModernColors.TEXT_PRIMARY);
@@ -112,12 +112,12 @@ public class AuthTabPanel extends JPanel {
      */
     private JPanel createInheritPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(15, 0, 0, 0));
+        panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
-                new EmptyBorder(12, 15, 12, 15)
+                new EmptyBorder(8, 12, 8, 12)
         ));
 
         JLabel iconLabel = new JLabel("ℹ");
@@ -141,12 +141,12 @@ public class AuthTabPanel extends JPanel {
      */
     private JPanel createNoAuthPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(15, 0, 0, 0));
+        panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ModernColors.BORDER_MEDIUM, 1),
-                new EmptyBorder(12, 15, 12, 15)
+                new EmptyBorder(8, 12, 8, 12)
         ));
 
         JLabel iconLabel = new JLabel("ℹ");
@@ -169,10 +169,35 @@ public class AuthTabPanel extends JPanel {
      * 创建 Basic Auth 面板
      */
     private JPanel createBasicAuthPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(15, 0, 0, 0));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        // 顶部：描述信息
+        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        infoPanel.add(iconLabel, BorderLayout.WEST);
+
+        JLabel textLabel = new JLabel(
+                "<html><div style='line-height: 1.5;'>" +
+                        "<b style='color: #0891b2; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC) + "</b><br>" +
+                        "<span style='color: #475569; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC) + "</span>" +
+                        "</div></html>"
+        );
+        infoPanel.add(textLabel, BorderLayout.CENTER);
+
+        panel.add(infoPanel, BorderLayout.NORTH);
+
+        // 中间：输入字段
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(4, 6, 4, 6);
         gbc.anchor = GridBagConstraints.WEST;
 
         // Username
@@ -183,18 +208,18 @@ public class AuthTabPanel extends JPanel {
         JLabel usernameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_USERNAME));
         usernameLabel.setFont(usernameLabel.getFont().deriveFont(13f));
         usernameLabel.setForeground(ModernColors.TEXT_SECONDARY);
-        panel.add(usernameLabel, gbc);
+        formPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(usernameField, gbc);
+        formPanel.add(usernameField, gbc);
 
         // 添加水平填充空间
         gbc.gridx = 2;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(Box.createHorizontalGlue(), gbc);
+        formPanel.add(Box.createHorizontalGlue(), gbc);
 
         // Password
         gbc.gridx = 0;
@@ -204,18 +229,18 @@ public class AuthTabPanel extends JPanel {
         JLabel passwordLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_PASSWORD));
         passwordLabel.setFont(passwordLabel.getFont().deriveFont(13f));
         passwordLabel.setForeground(ModernColors.TEXT_SECONDARY);
-        panel.add(passwordLabel, gbc);
+        formPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(passwordField, gbc);
+        formPanel.add(passwordField, gbc);
 
         // 添加水平填充空间
         gbc.gridx = 2;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(Box.createHorizontalGlue(), gbc);
+        formPanel.add(Box.createHorizontalGlue(), gbc);
 
         // 填充剩余垂直空间
         gbc.gridx = 0;
@@ -223,7 +248,9 @@ public class AuthTabPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        panel.add(Box.createGlue(), gbc);
+        formPanel.add(Box.createGlue(), gbc);
+
+        panel.add(formPanel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -232,10 +259,35 @@ public class AuthTabPanel extends JPanel {
      * 创建 Bearer Token 面板
      */
     private JPanel createBearerPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(15, 0, 0, 0));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        // 顶部：描述信息
+        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        infoPanel.add(iconLabel, BorderLayout.WEST);
+
+        JLabel textLabel = new JLabel(
+                "<html><div style='line-height: 1.5;'>" +
+                        "<b style='color: #0891b2; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER) + "</b><br>" +
+                        "<span style='color: #475569; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC) + "</span>" +
+                        "</div></html>"
+        );
+        infoPanel.add(textLabel, BorderLayout.CENTER);
+
+        panel.add(infoPanel, BorderLayout.NORTH);
+
+        // 中间：输入字段
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(4, 6, 4, 6);
         gbc.anchor = GridBagConstraints.WEST;
 
         // Token
@@ -246,18 +298,18 @@ public class AuthTabPanel extends JPanel {
         JLabel tokenLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TOKEN));
         tokenLabel.setFont(tokenLabel.getFont().deriveFont(13f));
         tokenLabel.setForeground(ModernColors.TEXT_SECONDARY);
-        panel.add(tokenLabel, gbc);
+        formPanel.add(tokenLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(tokenField, gbc);
+        formPanel.add(tokenField, gbc);
 
         // 添加水平填充空间
         gbc.gridx = 2;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(Box.createHorizontalGlue(), gbc);
+        formPanel.add(Box.createHorizontalGlue(), gbc);
 
         // 填充剩余垂直空间
         gbc.gridx = 0;
@@ -265,7 +317,9 @@ public class AuthTabPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        panel.add(Box.createGlue(), gbc);
+        formPanel.add(Box.createGlue(), gbc);
+
+        panel.add(formPanel, BorderLayout.CENTER);
 
         return panel;
     }

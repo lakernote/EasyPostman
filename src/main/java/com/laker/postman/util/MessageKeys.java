@@ -191,6 +191,8 @@ public final class MessageKeys {
     public static final String AUTH_TYPE_BEARER = "auth.type.bearer";
     public static final String AUTH_TYPE_INHERIT_DESC = "auth.type.inherit.desc";
     public static final String AUTH_TYPE_NONE_DESC = "auth.type.none.desc";
+    public static final String AUTH_TYPE_BASIC_DESC = "auth.type.basic.desc";
+    public static final String AUTH_TYPE_BEARER_DESC = "auth.type.bearer.desc";
     public static final String AUTH_USERNAME = "auth.username";
     public static final String AUTH_PASSWORD = "auth.password";
     public static final String AUTH_TOKEN = "auth.token";

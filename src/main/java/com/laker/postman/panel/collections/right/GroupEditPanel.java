@@ -61,7 +61,7 @@ public class GroupEditPanel extends JPanel {
         authInfoLabel.setForeground(Color.GRAY);
         authInfoPanel.add(authInfoLabel);
         authWrapperPanel.add(authInfoPanel, BorderLayout.SOUTH);
-        tabbedPane.addTab("Authorization", authWrapperPanel);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION), authWrapperPanel);
 
         // 复用 ScriptPanel
         scriptPanel = new ScriptPanel();
@@ -72,7 +72,7 @@ public class GroupEditPanel extends JPanel {
         scriptInfoLabel.setForeground(Color.GRAY);
         scriptInfoPanel.add(scriptInfoLabel);
         scriptWrapperPanel.add(scriptInfoPanel, BorderLayout.SOUTH);
-        tabbedPane.addTab("Scripts", scriptWrapperPanel);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptWrapperPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
 

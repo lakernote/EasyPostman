@@ -43,13 +43,13 @@ public class AuthTabPanel extends JPanel {
         typeCombo.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
 
         usernameField = new EasyPostmanTextField(20);
-        usernameField.setPreferredSize(new Dimension(350, 32));
+        usernameField.setPreferredSize(new Dimension(200, 32));
 
         passwordField = new EasyPostmanTextField(20);
-        passwordField.setPreferredSize(new Dimension(350, 32));
+        passwordField.setPreferredSize(new Dimension(200, 32));
 
         tokenField = new EasyPostmanTextField(30);
-        tokenField.setPreferredSize(new Dimension(450, 32));
+        tokenField.setPreferredSize(new Dimension(250, 32));
 
         // 顶部：认证类型选择
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
@@ -186,9 +186,15 @@ public class AuthTabPanel extends JPanel {
         panel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(usernameField, gbc);
+
+        // 添加水平填充空间
+        gbc.gridx = 2;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(usernameField, gbc);
+        panel.add(Box.createHorizontalGlue(), gbc);
 
         // Password
         gbc.gridx = 0;
@@ -201,14 +207,20 @@ public class AuthTabPanel extends JPanel {
         panel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
         panel.add(passwordField, gbc);
 
-        // 填充剩余空间
+        // 添加水平填充空间
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(Box.createHorizontalGlue(), gbc);
+
+        // 填充剩余垂直空间
         gbc.gridx = 0;
         gbc.gridy = 2;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         panel.add(Box.createGlue(), gbc);
@@ -237,14 +249,20 @@ public class AuthTabPanel extends JPanel {
         panel.add(tokenLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
         panel.add(tokenField, gbc);
 
-        // 填充剩余空间
+        // 添加水平填充空间
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(Box.createHorizontalGlue(), gbc);
+
+        // 填充剩余垂直空间
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         panel.add(Box.createGlue(), gbc);

@@ -237,9 +237,49 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-        tabbedPane.addChangeListener(e -> handleTabChange());
+        tabbedPane.addChangeListener(e -> {
+            handleTabChange();
+            updateTabTextColors(); // 更新所有 tab 的文字颜色
+        });
         // 懒加载第一个tab
-        SwingUtilities.invokeLater(() -> ensureTabComponentLoaded(0));
+        SwingUtilities.invokeLater(() -> {
+            ensureTabComponentLoaded(0);
+            updateTabTextColors(); // 初始化时更新颜色
+        });
+    }
+
+    /**
+     * 更新所有 tab 的文字颜色（仅在展开状态下）
+     */
+    private void updateTabTextColors() {
+        if (!sidebarExpanded) return;
+
+        int selectedIndex = tabbedPane.getSelectedIndex();
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            updateSingleTabTextColor(i, i == selectedIndex);
+        }
+    }
+
+    /**
+     * 更新单个 tab 的文字颜色
+     */
+    private void updateSingleTabTextColor(int tabIndex, boolean isSelected) {
+        Component tabComponent = tabbedPane.getTabComponentAt(tabIndex);
+        if (!(tabComponent instanceof JPanel panel)) return;
+
+        // 查找文字标签并更新颜色
+        for (Component comp : panel.getComponents()) {
+            if (comp instanceof JLabel label && label.getText() != null && !label.getText().isEmpty()) {
+                if (isSelected) {
+                    label.setForeground(ModernColors.PRIMARY);
+                    label.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+                } else {
+                    label.setForeground(ModernColors.TEXT_SECONDARY);
+                    label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+                }
+                break;
+            }
+        }
     }
 
     // Tab切换时才加载真正的面板内容
@@ -282,10 +322,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
             protected void installDefaults() {
                 super.installDefaults();
                 // 增加 tab 区域的上下边距，让 tab 之间有更多空间
-                tabAreaInsets = new Insets(10, 10, 10, 0);
-                contentBorderInsets = new Insets(0, 1, 0, 0);
-                // 使用较小的 tabInsets，因为自定义组件自己有边距
-                tabInsets = new Insets(3, 3, 3, 3);
+                tabAreaInsets = new Insets(12, 8, 12, 0);
+                contentBorderInsets = new Insets(0, 0, 0, 0);
+                // tab 之间的间距
+                tabInsets = new Insets(2, 2, 2, 2);
                 selectedTabPadInsets = new Insets(0, 0, 0, 0);
             }
 
@@ -296,16 +336,15 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 if (isSelected) {
-                    // 扁平风格：柔和的浅蓝色背景，无指示条
-                    g2.setColor(ModernColors.TABLE_SELECTION_BACKGROUND);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 6, 6);
+                    // 选中状态：只绘制左侧蓝色指示条
+                    int margin = 4;
+                    int indicatorWidth = 3;
+                    int indicatorRadius = 2;
 
-                } else if (getRolloverTab() == tabIndex) {
-                    // 悬停：浅灰色背景
-                    g2.setColor(ModernColors.HOVER_BG);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 6, 6);
+                    g2.setColor(ModernColors.PRIMARY);
+                    g2.fillRoundRect(x + margin, y + margin, indicatorWidth, h - margin * 2, indicatorRadius, indicatorRadius);
                 }
-                // 普通标签不绘制背景
+                // 不绘制悬停效果，避免卡顿
 
                 g2.dispose();
             }
@@ -344,14 +383,20 @@ public class SidebarTabPanel extends SingletonBasePanel {
         MouseAdapter tabClickListener = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                // 查找这个标签在 tabInfos 中的索引
-                for (int i = 0; i < tabInfos.size(); i++) {
-                    TabInfo info = tabInfos.get(i);
-                    if (info.title.equals(title)) {
-                        tabbedPane.setSelectedIndex(i);
-                        break;
-                    }
+                int tabIndex = getTabIndexByTitle(title);
+                if (tabIndex >= 0) {
+                    tabbedPane.setSelectedIndex(tabIndex);
                 }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                panel.setCursor(Cursor.getDefaultCursor());
             }
         };
 
@@ -361,16 +406,26 @@ public class SidebarTabPanel extends SingletonBasePanel {
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             JLabel titleLabel = new JLabel(title);
-            titleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+            // 根据当前是否选中设置初始颜色
+            int currentIndex = getTabIndexByTitle(title);
+            boolean isCurrentlySelected = currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
+
+            if (isCurrentlySelected) {
+                titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+                titleLabel.setForeground(ModernColors.PRIMARY);
+            } else {
+                titleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+                titleLabel.setForeground(ModernColors.TEXT_SECONDARY);
+            }
             titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            panel.add(Box.createVerticalStrut(4));
+            panel.add(Box.createVerticalStrut(6));
             panel.add(iconLabel);
-            panel.add(Box.createVerticalStrut(4));
+            panel.add(Box.createVerticalStrut(6));
             panel.add(titleLabel);
-            panel.add(Box.createVerticalStrut(4));
+            panel.add(Box.createVerticalStrut(6));
 
-            panel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            panel.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
 
             // 为图标和标题添加点击事件
             iconLabel.addMouseListener(tabClickListener);
@@ -386,7 +441,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.add(Box.createVerticalGlue());
 
             // 增加边距，尤其是上下间距，让图标之间不会挨在一起
-            panel.setBorder(BorderFactory.createEmptyBorder(12, 8, 12, 8));
+            panel.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
 
             // 为图标添加点击事件
             iconLabel.addMouseListener(tabClickListener);
@@ -396,6 +451,18 @@ public class SidebarTabPanel extends SingletonBasePanel {
         panel.addMouseListener(tabClickListener);
 
         return panel;
+    }
+
+    /**
+     * 根据标题获取 tab 索引
+     */
+    private int getTabIndexByTitle(String title) {
+        for (int i = 0; i < tabInfos.size(); i++) {
+            if (tabInfos.get(i).title.equals(title)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

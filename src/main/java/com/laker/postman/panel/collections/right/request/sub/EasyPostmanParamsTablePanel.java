@@ -109,7 +109,7 @@ public class EasyPostmanParamsTablePanel extends JPanel {
 
     private void initializeTableUI() {
         table.setFillsViewportHeight(true);
-        table.setRowHeight(24);
+        table.setRowHeight(28);
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
         table.getTableHeader().setBackground(new Color(240, 242, 245));

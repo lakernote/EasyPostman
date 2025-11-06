@@ -29,17 +29,17 @@ public class MainFrame extends JFrame {
     private static final int SCREEN_WIDTH_HD = 1280;
     private static final int SCREEN_WIDTH_THRESHOLD = 1366;
 
-    // 窗口尺寸常量
-    private static final int MIN_WIDTH_4K = 1600;
-    private static final int MIN_HEIGHT_4K = 1000;
-    private static final int MIN_WIDTH_2K = 1400;
-    private static final int MIN_HEIGHT_2K = 900;
-    private static final int MIN_WIDTH_FHD = 1280;
-    private static final int MIN_HEIGHT_FHD = 800;
-    private static final int MIN_WIDTH_HD = 1200;
-    private static final int MIN_HEIGHT_HD = 768;
-    private static final int MIN_WIDTH_WXGA = 960;
-    private static final int MIN_HEIGHT_WXGA = 640;
+    // 窗口尺寸常量（增大默认尺寸，适应现代屏幕）
+    private static final int MIN_WIDTH_4K = 1920;
+    private static final int MIN_HEIGHT_4K = 1200;
+    private static final int MIN_WIDTH_2K = 1600;
+    private static final int MIN_HEIGHT_2K = 1000;
+    private static final int MIN_WIDTH_FHD = 1400;
+    private static final int MIN_HEIGHT_FHD = 900;
+    private static final int MIN_WIDTH_HD = 1280;
+    private static final int MIN_HEIGHT_HD = 800;
+    private static final int MIN_WIDTH_WXGA = 1100;
+    private static final int MIN_HEIGHT_WXGA = 700;
 
     // 防抖延迟时间（毫秒）
     private static final int DEBOUNCE_DELAY = 500;
@@ -82,7 +82,11 @@ public class MainFrame extends JFrame {
             pack();
         }
 
-        setLocationRelativeTo(null);
+        // 只有在非最大化状态下才居中窗口，避免全屏时的闪烁
+        boolean isMaximized = (getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
+        if (!isMaximized) {
+            setLocationRelativeTo(null);
+        }
     }
 
     private void initWindowSize() {
@@ -106,10 +110,8 @@ public class MainFrame extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                // 停止防抖计时器，立即保存状态
-                if (saveStateTimer.isRunning()) {
-                    saveStateTimer.stop();
-                }
+                // 清理资源并保存状态
+                cleanup();
                 saveWindowState();
                 ExitService.exit();
             }
@@ -167,16 +169,31 @@ public class MainFrame extends JFrame {
                 height = Math.max(size.height, minSize.height);
             } else {
                 // 最大化时，保存上次的非最大化尺寸
-                Integer savedWidth = UserSettingsUtil.getWindowWidth();
-                Integer savedHeight = UserSettingsUtil.getWindowHeight();
-                width = savedWidth != null ? Math.max(savedWidth, minSize.width) : minSize.width;
-                height = savedHeight != null ? Math.max(savedHeight, minSize.height) : minSize.height;
+                // 避免重复 I/O，如果已有保存值就复用
+                if (UserSettingsUtil.hasWindowState()) {
+                    Integer savedWidth = UserSettingsUtil.getWindowWidth();
+                    Integer savedHeight = UserSettingsUtil.getWindowHeight();
+                    width = (savedWidth != null && savedWidth > 0) ? Math.max(savedWidth, minSize.width) : minSize.width;
+                    height = (savedHeight != null && savedHeight > 0) ? Math.max(savedHeight, minSize.height) : minSize.height;
+                } else {
+                    width = minSize.width;
+                    height = minSize.height;
+                }
             }
 
             UserSettingsUtil.saveWindowState(width, height, isMaximized);
             log.debug("窗口状态已保存: width={}, height={}, maximized={}", width, height, isMaximized);
         } catch (Exception e) {
             log.warn("保存窗口状态失败", e);
+        }
+    }
+
+    /**
+     * 清理资源（在窗口关闭时调用）
+     */
+    private void cleanup() {
+        if (saveStateTimer != null && saveStateTimer.isRunning()) {
+            saveStateTimer.stop();
         }
     }
 
@@ -187,17 +204,22 @@ public class MainFrame extends JFrame {
                 Integer height = UserSettingsUtil.getWindowHeight();
                 boolean isMaximized = UserSettingsUtil.isWindowMaximized();
 
+                Dimension minSize = getMinWindowSize();
+                int actualWidth = (width != null && width > 0) ? Math.max(width, minSize.width) : minSize.width;
+                int actualHeight = (height != null && height > 0) ? Math.max(height, minSize.height) : minSize.height;
+
                 if (isMaximized) {
-                    // 如果是最大化状态，直接设置扩展状态即可
-                    // 不需要先设置尺寸，避免窗口先显示为普通大小再最大化的闪烁
+                    // 最大化状态：先设置尺寸（用于退出最大化时的尺寸），但不显示，然后直接设置最大化
+                    // 这样可以避免窗口先显示为普通尺寸再最大化的闪烁
+                    setBounds(0, 0, actualWidth, actualHeight);
                     setExtendedState(Frame.MAXIMIZED_BOTH);
                 } else {
-                    // 非最大化状态，设置尺寸
-                    setSize(new Dimension(width, height));
+                    // 非最大化状态：正常设置尺寸
+                    setSize(new Dimension(actualWidth, actualHeight));
                 }
 
                 log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
-                        width, height, isMaximized);
+                        actualWidth, actualHeight, isMaximized);
             }
         } catch (Exception e) {
             log.warn("恢复窗口状态失败", e);

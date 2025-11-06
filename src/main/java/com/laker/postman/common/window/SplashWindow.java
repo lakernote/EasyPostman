@@ -137,7 +137,6 @@ public class SplashWindow extends JWindow {
         // 调整容器尺寸（100 + 12 = 112，设为 120 留边距）
         logoContainer.setPreferredSize(new Dimension(120, 120));
 
-        // 优化：使用 SCALE_FAST 避免阻塞 EDT，对于启动窗口来说速度更重要
         Image scaledImage = Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_SMOOTH);
         ImageIcon logoIcon = new ImageIcon(scaledImage);
         JLabel logoLabel = new JLabel(logoIcon);
@@ -316,6 +315,10 @@ public class SplashWindow extends JWindow {
                         setStatus(MessageKeys.SPLASH_STATUS_DONE);
                         MainFrame mainFrame = get();
 
+                        // 在显示主窗口之前取消 SplashWindow 的置顶状态
+                        // 这样可以让主窗口自然地显示在前面，实现更平滑的过渡
+                        cancelAlwaysOnTop();
+
                         // 启动渐隐动画关闭 SplashWindow
                         startFadeOutAnimation(mainFrame);
 
@@ -361,21 +364,37 @@ public class SplashWindow extends JWindow {
     }
 
     /**
+     * 取消窗口置顶状态
+     */
+    private void cancelAlwaysOnTop() {
+        try {
+            setAlwaysOnTop(false);
+        } catch (Exception e) {
+            log.warn("取消窗口置顶失败", e);
+        }
+    }
+
+    /**
      * 启动渐隐动画
      */
     private void startFadeOutAnimation(MainFrame mainFrame) {
         if (isDisposed) return;
 
-        // 在开始渐隐动画之前就显示主窗口，实现重叠效果
-        SwingUtilities.invokeLater(() -> {
-            if (mainFrame != null) {
-                mainFrame.setVisible(true);
-                // 确保主窗口在前面
-                mainFrame.toFront();
-                mainFrame.requestFocus();
-            }
-        });
+        // 显示主窗口（已经在 EDT 中，不需要再次 invokeLater）
+        if (mainFrame != null) {
+            mainFrame.setVisible(true);
+            mainFrame.toFront();
+            mainFrame.requestFocus();
 
+            // 主窗口显示后，启动 SplashWindow 的渐隐动画
+            startFadeOutTimer();
+        }
+    }
+    
+    /**
+     * 启动渐隐计时器
+     */
+    private void startFadeOutTimer() {
         fadeOutListener = createFadeOutListener();
         fadeOutTimer = new Timer(FADE_TIMER_DELAY, fadeOutListener);
         fadeOutTimer.start();
@@ -447,9 +466,12 @@ public class SplashWindow extends JWindow {
      * 安全释放资源
      */
     private void disposeSafely() {
-        if (isDisposed) return;
+        // 使用同步确保线程安全
+        synchronized (this) {
+            if (isDisposed) return;
+            isDisposed = true;
+        }
 
-        isDisposed = true;
         stopFadeOutAnimation();
 
         // 取消 SwingWorker，防止内存泄漏

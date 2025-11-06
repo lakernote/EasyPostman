@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
@@ -17,16 +18,11 @@ import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
+import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -285,20 +281,15 @@ public class RequestEditPanel extends SingletonBasePanel {
         Runnable okAction = () -> {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME),
-                        I18nUtil.getMessage(MessageKeys.TIP),
-                        JOptionPane.WARNING_MESSAGE);
+                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME));
                 nameField.requestFocusInWindow();
                 return;
             }
 
-            javax.swing.tree.TreePath selectedPath = groupTree.getSelectionPath();
+            TreePath selectedPath = groupTree.getSelectionPath();
             if (selectedPath == null) {
-                JOptionPane.showMessageDialog(dialog,
-                        I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP),
-                        I18nUtil.getMessage(MessageKeys.TIP),
-                        JOptionPane.WARNING_MESSAGE);
+                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP));
+                groupTree.requestFocusInWindow();
                 return;
             }
 
@@ -312,10 +303,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             }
 
             if (groupObj == null) {
-                JOptionPane.showMessageDialog(dialog,
-                        I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP),
-                        I18nUtil.getMessage(MessageKeys.TIP),
-                        JOptionPane.WARNING_MESSAGE);
+                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP));
                 return;
             }
 
@@ -430,10 +418,10 @@ public class RequestEditPanel extends SingletonBasePanel {
                 super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
                 if (value instanceof DefaultMutableTreeNode node) {
                     Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
-                        setText(String.valueOf(arr[1]));
+                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0]) && arr[1] instanceof RequestGroup group) {
+                        setText(group.getName());
                         // 橙色实心文件夹，模拟Postman分组
-                        setIcon(IconFontSwing.buildIcon(FontAwesome.FOLDER_O, 14, new Color(255, 140, 0)));
+                        setIcon(new FlatSVGIcon("icons/group.svg", 16, 16));
                     } else {
                         setText("");
                         setIcon(null);

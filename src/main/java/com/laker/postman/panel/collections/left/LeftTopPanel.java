@@ -355,7 +355,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         if (userObj instanceof Object[] obj) {
             String type = String.valueOf(obj[0]);
             if (GROUP.equals(type)) {
-                String groupName = String.valueOf(obj[1]);
+                String groupName = obj[1] instanceof RequestGroup group ? group.getName() : String.valueOf(obj[1]);
                 DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(obj.clone());
                 boolean childMatched = false;
                 for (int i = 0; i < src.getChildCount(); i++) {

@@ -22,33 +22,81 @@ import java.awt.event.WindowEvent;
 @Slf4j
 public class MainFrame extends JFrame {
 
+    // 屏幕尺寸常量
+    private static final int SCREEN_WIDTH_4K = 3840;
+    private static final int SCREEN_WIDTH_2K = 2560;
+    private static final int SCREEN_WIDTH_FHD = 1920;
+    private static final int SCREEN_WIDTH_HD = 1280;
+    private static final int SCREEN_WIDTH_THRESHOLD = 1366;
+
+    // 窗口尺寸常量
+    private static final int MIN_WIDTH_4K = 1600;
+    private static final int MIN_HEIGHT_4K = 1000;
+    private static final int MIN_WIDTH_2K = 1400;
+    private static final int MIN_HEIGHT_2K = 900;
+    private static final int MIN_WIDTH_FHD = 1280;
+    private static final int MIN_HEIGHT_FHD = 800;
+    private static final int MIN_WIDTH_HD = 1200;
+    private static final int MIN_HEIGHT_HD = 768;
+    private static final int MIN_WIDTH_WXGA = 960;
+    private static final int MIN_HEIGHT_WXGA = 640;
+
+    // 防抖延迟时间（毫秒）
+    private static final int DEBOUNCE_DELAY = 500;
+
+    // 缓存字段，避免重复计算
+    private transient Dimension cachedMinWindowSize;
+    private final transient Dimension cachedScreenSize;
+
+    // 防抖计时器（final 避免重复赋值）
+    private final transient Timer saveStateTimer;
+
     // 单例模式，确保只有一个实例
     private MainFrame() {
-        super(); // 调用父类构造函数
-        setName(I18nUtil.getMessage(MessageKeys.APP_NAME)); // 设置窗口名称
-        setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME)); // 设置窗口标题
-        setIconImage(Icons.LOGO.getImage()); // 设置窗口图标
+        super();
+        // 初始化屏幕尺寸缓存（避免重复系统调用）
+        cachedScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
+        // 初始化防抖计时器（只创建一次，避免重复创建对象）
+        saveStateTimer = new Timer(DEBOUNCE_DELAY, e -> saveWindowState());
+        saveStateTimer.setRepeats(false);
+
+        setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
+        setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
+        setIconImage(Icons.LOGO.getImage());
     }
 
     public void initComponents() {
-        setContentPane(SingletonFactory.getInstance(MainPanel.class)); // 设置主面板为内容面板
-        initWindowSize(); // 初始化窗口大小
-        initWindowCloseListener(); // 初始化窗口关闭监听器
-        initWindowStateListener(); // 初始化窗口状态监听器
-        pack(); // 调整窗口大小以适应内容
-        setLocationRelativeTo(null); // 设置窗口居中显示
+        setContentPane(SingletonFactory.getInstance(MainPanel.class));
+
+        // 设置最小窗口尺寸，防止窗口被拖得太小
+        Dimension minSize = getMinWindowSize();
+        setMinimumSize(minSize);
+
+        initWindowSize();
+        initWindowCloseListener();
+        initWindowStateListener();
+
+        // 如果没有保存的窗口状态，使用 pack() 自适应组件大小
+        if (!UserSettingsUtil.hasWindowState()) {
+            pack();
+        }
+
+        setLocationRelativeTo(null);
     }
 
     private void initWindowSize() {
-        // 如果已有保存的窗口状态，则跳过默认大小设置
+        // 如果已有保存的窗口状态，则恢复上次的窗口状态
         if (UserSettingsUtil.hasWindowState()) {
-            restoreWindowState(); // 恢复上次的窗口状态
+            restoreWindowState();
             return;
         }
 
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setPreferredSize(getMinWindowSize()); // 设置最小窗口大小
-        if (screenSize.getWidth() <= 1366) {
+        // 设置默认窗口大小（使用缓存的屏幕尺寸）
+        setSize(getMinWindowSize());
+
+        // 小屏幕默认最大化
+        if (cachedScreenSize.getWidth() <= SCREEN_WIDTH_THRESHOLD) {
             setExtendedState(Frame.MAXIMIZED_BOTH);
         }
     }
@@ -57,66 +105,76 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosing(WindowEvent e) { // 当窗口关闭时触发
-                saveWindowState(); // 保存窗口状态
+            public void windowClosing(WindowEvent e) {
+                // 停止防抖计时器，立即保存状态
+                if (saveStateTimer.isRunning()) {
+                    saveStateTimer.stop();
+                }
+                saveWindowState();
                 ExitService.exit();
             }
 
             @Override
-            public void windowStateChanged(WindowEvent e) { // 当窗口状态改变时触发
-                // 当窗口最大化/最小化状态改变时保存状态
-                log.info("windowStateChanged");
-                saveWindowState();
+            public void windowStateChanged(WindowEvent e) {
+                // 窗口最大化/最小化状态改变时也使用防抖保存
+                scheduleSaveWindowState();
             }
         });
     }
 
     private void initWindowStateListener() {
-        // 监听窗口大小和位置变化
+        // 监听窗口大小和位置变化，使用防抖机制避免频繁保存
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                // 窗口大小改变时保存状态
                 if (isVisible()) {
-                    saveWindowState();
+                    scheduleSaveWindowState();
                 }
             }
 
             @Override
             public void componentMoved(ComponentEvent e) {
-                // 窗口位置改变时保存状态
                 if (isVisible()) {
-                    saveWindowState();
+                    scheduleSaveWindowState();
                 }
             }
         });
+    }
+
+    /**
+     * 延迟保存窗口状态（防抖）
+     * 在用户拖动窗口或调整大小时，避免频繁写入磁盘
+     */
+    private void scheduleSaveWindowState() {
+        // 使用预创建的 Timer，避免重复创建对象
+        if (saveStateTimer.isRunning()) {
+            saveStateTimer.restart();
+        } else {
+            saveStateTimer.start();
+        }
     }
 
     private void saveWindowState() {
         try {
             boolean isMaximized = (getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
             Dimension minSize = getMinWindowSize();
+
+            int width;
+            int height;
             if (!isMaximized) {
                 Dimension size = getSize();
-                int width = Math.max(size.width, minSize.width);
-                int height = Math.max(size.height, minSize.height);
-                UserSettingsUtil.saveWindowState(
-                        width,
-                        height,
-                        false
-                );
+                width = Math.max(size.width, minSize.width);
+                height = Math.max(size.height, minSize.height);
             } else {
+                // 最大化时，保存上次的非最大化尺寸
                 Integer savedWidth = UserSettingsUtil.getWindowWidth();
                 Integer savedHeight = UserSettingsUtil.getWindowHeight();
-                int width = savedWidth != null ? Math.max(savedWidth, minSize.width) : minSize.width;
-                int height = savedHeight != null ? Math.max(savedHeight, minSize.height) : minSize.height;
-                UserSettingsUtil.saveWindowState(
-                        width,
-                        height,
-                        true
-                );
+                width = savedWidth != null ? Math.max(savedWidth, minSize.width) : minSize.width;
+                height = savedHeight != null ? Math.max(savedHeight, minSize.height) : minSize.height;
             }
-            log.debug("窗口状态已保存");
+
+            UserSettingsUtil.saveWindowState(width, height, isMaximized);
+            log.debug("窗口状态已保存: width={}, height={}, maximized={}", width, height, isMaximized);
         } catch (Exception e) {
             log.warn("保存窗口状态失败", e);
         }
@@ -128,10 +186,16 @@ public class MainFrame extends JFrame {
                 Integer width = UserSettingsUtil.getWindowWidth();
                 Integer height = UserSettingsUtil.getWindowHeight();
                 boolean isMaximized = UserSettingsUtil.isWindowMaximized();
-                setPreferredSize(new Dimension(width, height));
+
                 if (isMaximized) {
+                    // 如果是最大化状态，直接设置扩展状态即可
+                    // 不需要先设置尺寸，避免窗口先显示为普通大小再最大化的闪烁
                     setExtendedState(Frame.MAXIMIZED_BOTH);
+                } else {
+                    // 非最大化状态，设置尺寸
+                    setSize(new Dimension(width, height));
                 }
+
                 log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
                         width, height, isMaximized);
             }
@@ -141,13 +205,35 @@ public class MainFrame extends JFrame {
     }
 
     private Dimension getMinWindowSize() {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        if (screenSize.getWidth() > 1280) {
-            return new Dimension(1280, 800);
-        } else if (screenSize.getWidth() > 1024) {
-            return new Dimension(1200, 768);
-        } else {
-            return new Dimension(960, 640);
+        // 使用缓存避免重复计算
+        if (cachedMinWindowSize != null) {
+            return cachedMinWindowSize;
         }
+
+        // 使用缓存的屏幕尺寸，根据不同分辨率设置合理的窗口大小
+        double screenWidth = cachedScreenSize.getWidth();
+
+        if (screenWidth >= SCREEN_WIDTH_4K) {
+            // 4K 及以上分辨率
+            cachedMinWindowSize = new Dimension(MIN_WIDTH_4K, MIN_HEIGHT_4K);
+        } else if (screenWidth >= SCREEN_WIDTH_2K) {
+            // 2K 分辨率
+            cachedMinWindowSize = new Dimension(MIN_WIDTH_2K, MIN_HEIGHT_2K);
+        } else if (screenWidth >= SCREEN_WIDTH_FHD) {
+            // Full HD 分辨率
+            cachedMinWindowSize = new Dimension(MIN_WIDTH_FHD, MIN_HEIGHT_FHD);
+        } else if (screenWidth >= SCREEN_WIDTH_HD) {
+            // HD 分辨率
+            cachedMinWindowSize = new Dimension(MIN_WIDTH_HD, MIN_HEIGHT_HD);
+        } else {
+            // 小屏幕
+            cachedMinWindowSize = new Dimension(MIN_WIDTH_WXGA, MIN_HEIGHT_WXGA);
+        }
+
+        log.debug("计算最小窗口尺寸: {}x{} (屏幕: {}x{})",
+                cachedMinWindowSize.width, cachedMinWindowSize.height,
+                (int)cachedScreenSize.getWidth(), (int)cachedScreenSize.getHeight());
+
+        return cachedMinWindowSize;
     }
 }

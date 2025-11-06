@@ -110,10 +110,8 @@ public class MainFrame extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                // 停止防抖计时器，立即保存状态
-                if (saveStateTimer.isRunning()) {
-                    saveStateTimer.stop();
-                }
+                // 清理资源并保存状态
+                cleanup();
                 saveWindowState();
                 ExitService.exit();
             }
@@ -171,16 +169,31 @@ public class MainFrame extends JFrame {
                 height = Math.max(size.height, minSize.height);
             } else {
                 // 最大化时，保存上次的非最大化尺寸
-                Integer savedWidth = UserSettingsUtil.getWindowWidth();
-                Integer savedHeight = UserSettingsUtil.getWindowHeight();
-                width = savedWidth != null ? Math.max(savedWidth, minSize.width) : minSize.width;
-                height = savedHeight != null ? Math.max(savedHeight, minSize.height) : minSize.height;
+                // 避免重复 I/O，如果已有保存值就复用
+                if (UserSettingsUtil.hasWindowState()) {
+                    Integer savedWidth = UserSettingsUtil.getWindowWidth();
+                    Integer savedHeight = UserSettingsUtil.getWindowHeight();
+                    width = (savedWidth != null && savedWidth > 0) ? Math.max(savedWidth, minSize.width) : minSize.width;
+                    height = (savedHeight != null && savedHeight > 0) ? Math.max(savedHeight, minSize.height) : minSize.height;
+                } else {
+                    width = minSize.width;
+                    height = minSize.height;
+                }
             }
 
             UserSettingsUtil.saveWindowState(width, height, isMaximized);
             log.debug("窗口状态已保存: width={}, height={}, maximized={}", width, height, isMaximized);
         } catch (Exception e) {
             log.warn("保存窗口状态失败", e);
+        }
+    }
+
+    /**
+     * 清理资源（在窗口关闭时调用）
+     */
+    private void cleanup() {
+        if (saveStateTimer != null && saveStateTimer.isRunning()) {
+            saveStateTimer.stop();
         }
     }
 

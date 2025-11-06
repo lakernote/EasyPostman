@@ -137,7 +137,6 @@ public class SplashWindow extends JWindow {
         // 调整容器尺寸（100 + 12 = 112，设为 120 留边距）
         logoContainer.setPreferredSize(new Dimension(120, 120));
 
-        // 优化：使用 SCALE_FAST 避免阻塞 EDT，对于启动窗口来说速度更重要
         Image scaledImage = Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_SMOOTH);
         ImageIcon logoIcon = new ImageIcon(scaledImage);
         JLabel logoLabel = new JLabel(logoIcon);
@@ -381,19 +380,15 @@ public class SplashWindow extends JWindow {
     private void startFadeOutAnimation(MainFrame mainFrame) {
         if (isDisposed) return;
 
-        // 显示主窗口，实现平滑过渡
-        SwingUtilities.invokeLater(() -> {
-            if (mainFrame != null) {
-                // 显示主窗口
-                mainFrame.setVisible(true);
-                // 确保主窗口在前面
-                mainFrame.toFront();
-                mainFrame.requestFocus();
-                
-                // 主窗口显示后，再启动 SplashWindow 的渐隐动画
-                startFadeOutTimer();
-            }
-        });
+        // 显示主窗口（已经在 EDT 中，不需要再次 invokeLater）
+        if (mainFrame != null) {
+            mainFrame.setVisible(true);
+            mainFrame.toFront();
+            mainFrame.requestFocus();
+
+            // 主窗口显示后，启动 SplashWindow 的渐隐动画
+            startFadeOutTimer();
+        }
     }
     
     /**
@@ -471,9 +466,12 @@ public class SplashWindow extends JWindow {
      * 安全释放资源
      */
     private void disposeSafely() {
-        if (isDisposed) return;
+        // 使用同步确保线程安全
+        synchronized (this) {
+            if (isDisposed) return;
+            isDisposed = true;
+        }
 
-        isDisposed = true;
         stopFadeOutAnimation();
 
         // 取消 SwingWorker，防止内存泄漏

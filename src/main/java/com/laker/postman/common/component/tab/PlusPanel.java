@@ -144,7 +144,6 @@ public class PlusPanel extends JPanel {
         iconContainer.setPreferredSize(new Dimension(ICON_SIZE + 48, ICON_SIZE + 48));
 
         JLabel plusIcon = new JLabel();
-        // 使用 SCALE_FAST 提升性能
         Image scaledImage = Icons.LOGO.getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_SMOOTH);
         ImageIcon logoIcon = new ImageIcon(scaledImage);
         plusIcon.setIcon(logoIcon);

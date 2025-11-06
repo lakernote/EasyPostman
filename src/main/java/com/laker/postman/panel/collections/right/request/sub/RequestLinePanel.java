@@ -153,15 +153,24 @@ public class RequestLinePanel extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                // 从 ClientProperty 读取颜色，如果没有则使用默认蓝色
+                Color baseColor = (Color) getClientProperty("baseColor");
+                Color hoverColor = (Color) getClientProperty("hoverColor");
+                Color pressColor = (Color) getClientProperty("pressColor");
+
+                if (baseColor == null) baseColor = ModernColors.PRIMARY;
+                if (hoverColor == null) hoverColor = ModernColors.PRIMARY_DARK;
+                if (pressColor == null) pressColor = ModernColors.PRIMARY_DARKER;
+
                 // 背景颜色
                 if (!isEnabled()) {
                     g2.setColor(ModernColors.TEXT_DISABLED);
                 } else if (getModel().isPressed()) {
-                    g2.setColor(ModernColors.PRIMARY_DARKER);
+                    g2.setColor(pressColor);
                 } else if (getModel().isRollover()) {
-                    g2.setColor(ModernColors.PRIMARY_DARK);
+                    g2.setColor(hoverColor);
                 } else {
-                    g2.setColor(ModernColors.PRIMARY);
+                    g2.setColor(baseColor);
                 }
 
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
@@ -303,6 +312,41 @@ public class RequestLinePanel extends JPanel {
 
 
     /**
+     * 动态更新按钮样式（颜色）
+     */
+    private void updateButtonStyle(JButton button, Color baseColor, Color hoverColor, Color pressColor) {
+        // 移除旧的鼠标监听器
+        for (java.awt.event.MouseListener ml : button.getMouseListeners()) {
+            if (ml instanceof java.awt.event.MouseAdapter) {
+                button.removeMouseListener(ml);
+            }
+        }
+
+        // 重新设置按钮颜色
+        button.putClientProperty("baseColor", baseColor);
+        button.putClientProperty("hoverColor", hoverColor);
+        button.putClientProperty("pressColor", pressColor);
+
+        // 添加新的鼠标监听器
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.repaint();
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.repaint();
+            }
+        });
+
+        // 强制刷新
+        button.repaint();
+    }
+
+    /**
      * 切换按钮为 Send 状态
      */
     public void setSendButtonToSend(ActionListener sendAction) {
@@ -322,6 +366,10 @@ public class RequestLinePanel extends JPanel {
 
         sendButton.setEnabled(true);
 
+        // 重置为默认蓝色
+        updateButtonStyle(sendButton, ModernColors.PRIMARY, ModernColors.PRIMARY_DARK,
+                ModernColors.PRIMARY_DARKER);
+
         // 添加新监听器
         sendButton.addActionListener(sendAction);
     }
@@ -340,6 +388,10 @@ public class RequestLinePanel extends JPanel {
         sendButton.setIcon(new FlatSVGIcon("icons/cancel.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
 
+        // 改变按钮为警告色（橙色）
+        updateButtonStyle(sendButton, ModernColors.WARNING, ModernColors.WARNING_DARK,
+                ModernColors.WARNING_DARKER);
+
         // 添加新监听器
         sendButton.addActionListener(cancelAction);
     }
@@ -357,6 +409,10 @@ public class RequestLinePanel extends JPanel {
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
         sendButton.setIcon(new FlatSVGIcon("icons/close.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
+
+        // 改变按钮为中性灰色
+        updateButtonStyle(sendButton, ModernColors.NEUTRAL, ModernColors.NEUTRAL_DARK,
+                ModernColors.NEUTRAL_DARKER);
 
         // 添加新监听器
         sendButton.addActionListener(closeAction);

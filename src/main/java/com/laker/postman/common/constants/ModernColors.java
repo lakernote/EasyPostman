@@ -126,6 +126,11 @@ public final class ModernColors {
     public static final Color ERROR_DARK = new Color(220, 38, 38);
 
     /**
+     * 错误超深 - Red-700
+     */
+    public static final Color ERROR_DARKER = new Color(185, 28, 28);
+
+    /**
      * 错误浅色 - Red-100
      */
     public static final Color ERROR_LIGHT = new Color(254, 226, 226);
@@ -141,6 +146,11 @@ public final class ModernColors {
     public static final Color WARNING_DARK = new Color(217, 119, 6);
 
     /**
+     * 警告超深 - Amber-700
+     */
+    public static final Color WARNING_DARKER = new Color(180, 83, 9);
+
+    /**
      * 警告浅色 - Amber-100
      */
     public static final Color WARNING_LIGHT = new Color(254, 243, 199);
@@ -154,6 +164,23 @@ public final class ModernColors {
      * 信息浅色 - Cyan-100
      */
     public static final Color INFO_LIGHT = new Color(207, 250, 254);
+
+    // ==================== 中性色系（用于 Close 等操作）====================
+
+    /**
+     * 中性 - Slate-500
+     */
+    public static final Color NEUTRAL = new Color(100, 116, 139);
+
+    /**
+     * 中性深色 - Slate-600
+     */
+    public static final Color NEUTRAL_DARK = new Color(71, 85, 105);
+
+    /**
+     * 中性超深 - Slate-700
+     */
+    public static final Color NEUTRAL_DARKER = new Color(51, 65, 85);
 
     // ==================== 中性色系 - 文字 ====================
 

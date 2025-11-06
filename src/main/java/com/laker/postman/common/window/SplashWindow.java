@@ -25,7 +25,7 @@ import java.io.Serial;
 public class SplashWindow extends JWindow {
     @Serial
     private static final long serialVersionUID = 1L; // 添加序列化ID
-    public static final int MIN_TIME = 1000; // 最小显示时间，避免闪屏
+    public static final int MIN_TIME = 1500; // 最小显示时间，避免闪屏
     private static final float FADE_STEP = 0.08f; // 渐隐步长
     private static final float MIN_OPACITY = 0.05f; // 最小透明度
     private static final int FADE_TIMER_DELAY = 15; // 渐隐定时器延迟
@@ -91,7 +91,7 @@ public class SplashWindow extends JWindow {
     /**
      * 创建Logo面板
      */
-    private JLabel createLogoPanel() {
+    private JPanel createLogoPanel() {
         // 创建容器面板，用于绘制圆形背景
         JPanel logoContainer = new JPanel() {
             @Override
@@ -100,20 +100,28 @@ public class SplashWindow extends JWindow {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int size = 130;
+                int size = 100; // 缩小圆形尺寸
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
                 // 绘制外层光晕
-                g2.setColor(ModernColors.whiteWithAlpha(30));
-                g2.fillOval(x - 5, y - 5, size + 10, size + 10);
+                g2.setColor(ModernColors.whiteWithAlpha(25));
+                g2.fillOval(x - 6, y - 6, size + 12, size + 12);
+
+                // 绘制中层光晕
+                g2.setColor(ModernColors.whiteWithAlpha(40));
+                g2.fillOval(x - 4, y - 4, size + 8, size + 8);
 
                 // 绘制圆形背景
-                g2.setColor(ModernColors.whiteWithAlpha(90));
+                g2.setColor(ModernColors.whiteWithAlpha(95));
                 g2.fillOval(x, y, size, size);
 
-                // 绘制边框
-                g2.setColor(ModernColors.whiteWithAlpha(120));
+                // 绘制内部微妙阴影，增加立体感
+                g2.setColor(ModernColors.whiteWithAlpha(15));
+                g2.fillOval(x + 2, y + 2, size - 4, size - 4);
+
+                // 绘制边框高光
+                g2.setColor(Color.WHITE);
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
@@ -122,32 +130,35 @@ public class SplashWindow extends JWindow {
         };
         logoContainer.setOpaque(false);
         logoContainer.setLayout(new BorderLayout());
+        // 调整容器尺寸（100 + 12 = 112，设为 120 留边距）
+        logoContainer.setPreferredSize(new Dimension(120, 120));
 
-        ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
+        ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_SMOOTH));
         JLabel logoLabel = new JLabel(logoIcon);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         logoContainer.add(logoLabel, BorderLayout.CENTER);
 
-        return logoLabel;
+        return logoContainer;
     }
 
     /**
      * 创建应用信息面板
      */
     private JPanel createInfoPanel() {
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 3));
         infoPanel.setOpaque(false);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
 
-        // 应用名称
+        // 应用名称 - 使用白色文字在蓝色背景上更清晰
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
-        appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
-        appNameLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 24));
+        appNameLabel.setForeground(Color.WHITE);
         infoPanel.add(appNameLabel);
 
-        // 版本号
+        // 版本号 - 使用半透明白色，形成层次感
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
-        versionLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        versionLabel.setForeground(ModernColors.whiteWithAlpha(220));
         infoPanel.add(versionLabel);
 
         return infoPanel;
@@ -159,10 +170,13 @@ public class SplashWindow extends JWindow {
     private JPanel createStatusPanel() {
         JPanel bottomPanel = new JPanel(new BorderLayout(0, 5));
         bottomPanel.setOpaque(false);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 15));
-        statusLabel.setForeground(ModernColors.PRIMARY);
+        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        statusLabel.setForeground(ModernColors.whiteWithAlpha(200));
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
+
         return bottomPanel;
     }
 
@@ -171,7 +185,7 @@ public class SplashWindow extends JWindow {
      */
     private void initializeWindow(JPanel content) {
         setContentPane(content);
-        setSize(350, 240); // 设置窗口大小
+        setSize(380, 260); // 精致小巧的尺寸，参考主流应用（IntelliJ IDEA, Postman 等）的启动窗口标准
         setLocationRelativeTo(null);  // 居中显示
 
         // 安全设置透明度和置顶
@@ -208,8 +222,8 @@ public class SplashWindow extends JWindow {
 
                 // 现代化蓝色渐变（从iOS蓝到浅蓝）
                 GradientPaint gp = new GradientPaint(
-                    0, 0, ModernColors.PRIMARY,
-                    getWidth(), getHeight(), ModernColors.PRIMARY_LIGHTER
+                        0, 0, ModernColors.PRIMARY,
+                        getWidth(), getHeight(), ModernColors.PRIMARY_LIGHTER
                 );
                 g2d.setPaint(gp);
                 // 圆角背景
@@ -217,8 +231,8 @@ public class SplashWindow extends JWindow {
 
                 // 添加微妙的光泽效果
                 GradientPaint glossPaint = new GradientPaint(
-                    0, 0, ModernColors.whiteWithAlpha(40),
-                    0, getHeight() / 2.0f, ModernColors.whiteWithAlpha(0)
+                        0, 0, ModernColors.whiteWithAlpha(40),
+                        0, getHeight() / 2.0f, ModernColors.whiteWithAlpha(0)
                 );
                 g2d.setPaint(glossPaint);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
@@ -231,9 +245,9 @@ public class SplashWindow extends JWindow {
                 g2d.dispose();
             }
         };
-        content.setLayout(new BorderLayout(0, 10)); // 使用 BorderLayout 布局
+        content.setLayout(new BorderLayout(0, 8)); // 使用 BorderLayout 布局，紧凑布局减小间距
         content.setOpaque(false); // 设置透明背景
-        content.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24)); // 设置内边距
+        content.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24)); // 紧凑布局：上下边距缩小到 20px
         return content;
     }
 

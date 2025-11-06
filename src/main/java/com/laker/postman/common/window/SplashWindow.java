@@ -25,14 +25,15 @@ import java.io.Serial;
 public class SplashWindow extends JWindow {
     @Serial
     private static final long serialVersionUID = 1L; // 添加序列化ID
-    public static final int MIN_TIME = 1500; // 最小显示时间，避免闪屏
+    public static final int MIN_TIME = 1000; // 最小显示时间，避免闪屏
     private static final float FADE_STEP = 0.08f; // 渐隐步长
     private static final float MIN_OPACITY = 0.05f; // 最小透明度
-    private static final int FADE_TIMER_DELAY = 15; // 渐隐定时器延迟
+    private static final int FADE_TIMER_DELAY = 16; // 渐隐定时器延迟(约60fps，匹配显示器刷新率)
 
     private JLabel statusLabel; // 状态标签，用于显示加载状态
     private transient Timer fadeOutTimer; // 渐隐计时器
     private transient ActionListener fadeOutListener; // 渐隐监听器，用于防止内存泄漏
+    private transient SwingWorker<MainFrame, String> loadingWorker; // 主窗口加载器，用于取消加载
     private volatile boolean isDisposed = false; // 标记窗口是否已释放
 
 
@@ -94,6 +95,9 @@ public class SplashWindow extends JWindow {
     private JPanel createLogoPanel() {
         // 创建容器面板，用于绘制圆形背景
         JPanel logoContainer = new JPanel() {
+            @Serial
+            private static final long serialVersionUID = 1L;
+
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -133,7 +137,9 @@ public class SplashWindow extends JWindow {
         // 调整容器尺寸（100 + 12 = 112，设为 120 留边距）
         logoContainer.setPreferredSize(new Dimension(120, 120));
 
-        ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_SMOOTH));
+        // 优化：使用 SCALE_FAST 避免阻塞 EDT，对于启动窗口来说速度更重要
+        Image scaledImage = Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_FAST);
+        ImageIcon logoIcon = new ImageIcon(scaledImage);
         JLabel logoLabel = new JLabel(logoIcon);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         logoContainer.add(logoLabel, BorderLayout.CENTER);
@@ -213,6 +219,9 @@ public class SplashWindow extends JWindow {
 
     private static JPanel getJPanel() {
         JPanel content = new JPanel() { // 自定义面板，绘制渐变背景和圆角
+            @Serial
+            private static final long serialVersionUID = 1L;
+
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -267,7 +276,7 @@ public class SplashWindow extends JWindow {
     }
 
     public void initMainFrame() {
-        SwingWorker<MainFrame, String> worker = new SwingWorker<>() {
+        loadingWorker = new SwingWorker<>() {
             @Override
             protected MainFrame doInBackground() {
                 long start = System.currentTimeMillis();
@@ -316,7 +325,7 @@ public class SplashWindow extends JWindow {
                 });
             }
         };
-        worker.execute();
+        loadingWorker.execute();
     }
 
     /**
@@ -442,6 +451,12 @@ public class SplashWindow extends JWindow {
 
         isDisposed = true;
         stopFadeOutAnimation();
+
+        // 取消 SwingWorker，防止内存泄漏
+        if (loadingWorker != null && !loadingWorker.isDone()) {
+            loadingWorker.cancel(true);
+            loadingWorker = null;
+        }
 
         SwingUtilities.invokeLater(() -> {
             setVisible(false);

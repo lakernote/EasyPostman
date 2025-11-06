@@ -316,6 +316,10 @@ public class SplashWindow extends JWindow {
                         setStatus(MessageKeys.SPLASH_STATUS_DONE);
                         MainFrame mainFrame = get();
 
+                        // 在显示主窗口之前取消 SplashWindow 的置顶状态
+                        // 这样可以让主窗口自然地显示在前面，实现更平滑的过渡
+                        cancelAlwaysOnTop();
+
                         // 启动渐隐动画关闭 SplashWindow
                         startFadeOutAnimation(mainFrame);
 
@@ -361,21 +365,41 @@ public class SplashWindow extends JWindow {
     }
 
     /**
+     * 取消窗口置顶状态
+     */
+    private void cancelAlwaysOnTop() {
+        try {
+            setAlwaysOnTop(false);
+        } catch (Exception e) {
+            log.warn("取消窗口置顶失败", e);
+        }
+    }
+
+    /**
      * 启动渐隐动画
      */
     private void startFadeOutAnimation(MainFrame mainFrame) {
         if (isDisposed) return;
 
-        // 在开始渐隐动画之前就显示主窗口，实现重叠效果
+        // 显示主窗口，实现平滑过渡
         SwingUtilities.invokeLater(() -> {
             if (mainFrame != null) {
+                // 显示主窗口
                 mainFrame.setVisible(true);
                 // 确保主窗口在前面
                 mainFrame.toFront();
                 mainFrame.requestFocus();
+                
+                // 主窗口显示后，再启动 SplashWindow 的渐隐动画
+                startFadeOutTimer();
             }
         });
-
+    }
+    
+    /**
+     * 启动渐隐计时器
+     */
+    private void startFadeOutTimer() {
         fadeOutListener = createFadeOutListener();
         fadeOutTimer = new Timer(FADE_TIMER_DELAY, fadeOutListener);
         fadeOutTimer.start();

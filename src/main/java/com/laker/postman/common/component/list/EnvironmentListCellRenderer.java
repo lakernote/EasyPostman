@@ -1,7 +1,6 @@
 package com.laker.postman.common.component.list;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
@@ -31,15 +30,6 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
             label.setIconTextGap(8); // 增大icon和文字间距
             label.setHorizontalAlignment(SwingConstants.LEFT); // 左对齐
             label.setHorizontalTextPosition(SwingConstants.RIGHT); // icon在左，文字在右
-        }
-
-        // 优化选中效果：使用表格选中背景色，文字保持深色，无边框
-        if (isSelected) {
-            setBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
-            setForeground(ModernColors.TEXT_PRIMARY);
-        } else {
-            setBackground(list.getBackground());
-            setForeground(ModernColors.TEXT_PRIMARY);
         }
 
         return label;

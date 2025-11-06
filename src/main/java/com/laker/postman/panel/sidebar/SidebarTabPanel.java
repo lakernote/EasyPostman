@@ -149,7 +149,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createSidebarToggleLabel() {
         sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20));
-        sidebarToggleLabel.setToolTipText("Toggle Sidebar");
         sidebarToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);
@@ -522,7 +521,13 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
 
         // 重新注册监听器
-        tabbedPane.addChangeListener(e -> handleTabChange());
+        tabbedPane.addChangeListener(e -> {
+            handleTabChange();
+            updateTabTextColors(); // 更新所有 tab 的文字颜色
+        });
+
+        // 更新初始文字颜色
+        updateTabTextColors();
 
         // 刷新UI
         revalidate();

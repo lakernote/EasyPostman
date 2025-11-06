@@ -96,8 +96,16 @@ public class StyleUtils {
         // 选中背景色设置
         properties.put("Menu.selectionBackground", ModernColors.SELECTION_BACKGROUND);
         properties.put("MenuItem.selectionBackground", ModernColors.SELECTION_BACKGROUND);
-        properties.put("Table.selectionBackground", ModernColors.TABLE_SELECTION_BACKGROUND);
         properties.put("TextArea.selectionBackground", panelBg);
+
+        // Table 选中效果：使用表格选中背景色，更加明显
+        properties.put("Table.selectionBackground", ModernColors.TABLE_SELECTION_BACKGROUND);
+
+        // List 选中效果：使用表格选中背景色，更加明显
+        properties.put("List.selectionBackground", ModernColors.TABLE_SELECTION_BACKGROUND);
+
+        // Tree 选中效果：使用表格选中背景色，更加明显
+        properties.put("Tree.selectionBackground", ModernColors.TABLE_SELECTION_BACKGROUND);
 
         // Dialog 样式增强
         properties.put("Dialog.background", panelBg);
@@ -107,7 +115,6 @@ public class StyleUtils {
 
         // 前景色设置
         Color accentColor = ModernColors.ACCENT_COLOR;
-//        properties.put("TabbedPane.selectedForeground", accentColor);
         properties.put("TextArea.caretForeground", accentColor);
         properties.put("TextArea.selectionForeground", accentColor);
 

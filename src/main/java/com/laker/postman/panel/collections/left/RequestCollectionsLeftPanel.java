@@ -250,14 +250,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     addGroupItem.setEnabled(!isMultipleSelection);
                     menu.add(addGroupItem);
 
-                    // 编辑分组属性
-                    JMenuItem editGroupItem = new JMenuItem("Edit Group",
-                            new FlatSVGIcon("icons/edit.svg", 16, 16));
-                    editGroupItem.addActionListener(e -> editSelectedGroup());
-                    // 多选时禁用
-                    editGroupItem.setEnabled(!isMultipleSelection);
-                    menu.add(editGroupItem);
-
                     JMenuItem duplicateGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
                     duplicateGroupItem.addActionListener(e -> duplicateSelectedGroup());
@@ -374,34 +366,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         if (selectedNode == null) return;
         showAddGroupDialog(selectedNode);
-    }
-
-    /**
-     * 编辑选中的分组
-     * 在右侧面板显示分组编辑界面（参考 Postman）
-     */
-    private void editSelectedGroup() {
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-        if (selectedNode == null) return;
-
-        Object userObj = selectedNode.getUserObject();
-        if (userObj instanceof Object[] obj && GROUP.equals(obj[0])) {
-            Object groupData = obj[1];
-
-            // 确保使用RequestGroup对象
-            RequestGroup group;
-            if (groupData instanceof RequestGroup) {
-                group = (RequestGroup) groupData;
-            } else {
-                // 升级旧格式到新格式
-                group = new RequestGroup(String.valueOf(groupData));
-                obj[1] = group;
-            }
-
-            // 在右侧面板显示分组编辑界面
-            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-            editPanel.showGroupEditPanel(selectedNode, group);
-        }
     }
 
     private void saveRequestGroups() {

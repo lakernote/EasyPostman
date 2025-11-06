@@ -145,7 +145,7 @@ public class PlusPanel extends JPanel {
 
         JLabel plusIcon = new JLabel();
         // 使用 SCALE_FAST 提升性能
-        Image scaledImage = Icons.LOGO.getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_FAST);
+        Image scaledImage = Icons.LOGO.getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_SMOOTH);
         ImageIcon logoIcon = new ImageIcon(scaledImage);
         plusIcon.setIcon(logoIcon);
         plusIcon.setHorizontalAlignment(SwingConstants.CENTER);

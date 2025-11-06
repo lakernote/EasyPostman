@@ -138,7 +138,7 @@ public class SplashWindow extends JWindow {
         logoContainer.setPreferredSize(new Dimension(120, 120));
 
         // 优化：使用 SCALE_FAST 避免阻塞 EDT，对于启动窗口来说速度更重要
-        Image scaledImage = Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_FAST);
+        Image scaledImage = Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_SMOOTH);
         ImageIcon logoIcon = new ImageIcon(scaledImage);
         JLabel logoLabel = new JLabel(logoIcon);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);

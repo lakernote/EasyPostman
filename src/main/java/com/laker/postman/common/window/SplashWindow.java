@@ -28,12 +28,11 @@ public class SplashWindow extends JWindow {
     public static final int MIN_TIME = 1000; // 最小显示时间，避免闪屏
     private static final float FADE_STEP = 0.08f; // 渐隐步长
     private static final float MIN_OPACITY = 0.05f; // 最小透明度
-    private static final int FADE_TIMER_DELAY = 16; // 渐隐定时器延迟(约60fps，匹配显示器刷新率)
+    private static final int FADE_TIMER_DELAY = 15; // 渐隐定时器延迟
 
     private JLabel statusLabel; // 状态标签，用于显示加载状态
     private transient Timer fadeOutTimer; // 渐隐计时器
     private transient ActionListener fadeOutListener; // 渐隐监听器，用于防止内存泄漏
-    private transient SwingWorker<MainFrame, String> loadingWorker; // 主窗口加载器，用于取消加载
     private volatile boolean isDisposed = false; // 标记窗口是否已释放
 
 
@@ -92,40 +91,29 @@ public class SplashWindow extends JWindow {
     /**
      * 创建Logo面板
      */
-    private JPanel createLogoPanel() {
+    private JLabel createLogoPanel() {
         // 创建容器面板，用于绘制圆形背景
         JPanel logoContainer = new JPanel() {
-            @Serial
-            private static final long serialVersionUID = 1L;
-
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int size = 100; // 缩小圆形尺寸
+                int size = 130;
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
                 // 绘制外层光晕
-                g2.setColor(ModernColors.whiteWithAlpha(25));
-                g2.fillOval(x - 6, y - 6, size + 12, size + 12);
-
-                // 绘制中层光晕
-                g2.setColor(ModernColors.whiteWithAlpha(40));
-                g2.fillOval(x - 4, y - 4, size + 8, size + 8);
+                g2.setColor(ModernColors.whiteWithAlpha(30));
+                g2.fillOval(x - 5, y - 5, size + 10, size + 10);
 
                 // 绘制圆形背景
-                g2.setColor(ModernColors.whiteWithAlpha(95));
+                g2.setColor(ModernColors.whiteWithAlpha(90));
                 g2.fillOval(x, y, size, size);
 
-                // 绘制内部微妙阴影，增加立体感
-                g2.setColor(ModernColors.whiteWithAlpha(15));
-                g2.fillOval(x + 2, y + 2, size - 4, size - 4);
-
-                // 绘制边框高光
-                g2.setColor(Color.WHITE);
+                // 绘制边框
+                g2.setColor(ModernColors.whiteWithAlpha(120));
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
@@ -134,36 +122,32 @@ public class SplashWindow extends JWindow {
         };
         logoContainer.setOpaque(false);
         logoContainer.setLayout(new BorderLayout());
-        // 调整容器尺寸（100 + 12 = 112，设为 120 留边距）
-        logoContainer.setPreferredSize(new Dimension(120, 120));
 
-        Image scaledImage = Icons.LOGO.getImage().getScaledInstance(75, 75, Image.SCALE_SMOOTH);
-        ImageIcon logoIcon = new ImageIcon(scaledImage);
+        ImageIcon logoIcon = new ImageIcon(Icons.LOGO.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
         JLabel logoLabel = new JLabel(logoIcon);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         logoContainer.add(logoLabel, BorderLayout.CENTER);
 
-        return logoContainer;
+        return logoLabel;
     }
 
     /**
      * 创建应用信息面板
      */
     private JPanel createInfoPanel() {
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 3));
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 2));
         infoPanel.setOpaque(false);
-        infoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
 
-        // 应用名称 - 使用白色文字在蓝色背景上更清晰
+        // 应用名称
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
-        appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 24));
-        appNameLabel.setForeground(Color.WHITE);
+        appNameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
+        appNameLabel.setForeground(ModernColors.TEXT_PRIMARY);
         infoPanel.add(appNameLabel);
 
-        // 版本号 - 使用半透明白色，形成层次感
+        // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
-        versionLabel.setForeground(ModernColors.whiteWithAlpha(220));
+        versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
+        versionLabel.setForeground(ModernColors.TEXT_SECONDARY);
         infoPanel.add(versionLabel);
 
         return infoPanel;
@@ -175,13 +159,10 @@ public class SplashWindow extends JWindow {
     private JPanel createStatusPanel() {
         JPanel bottomPanel = new JPanel(new BorderLayout(0, 5));
         bottomPanel.setOpaque(false);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        statusLabel.setForeground(ModernColors.whiteWithAlpha(200));
+        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 15));
+        statusLabel.setForeground(ModernColors.PRIMARY);
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
-
         return bottomPanel;
     }
 
@@ -190,7 +171,7 @@ public class SplashWindow extends JWindow {
      */
     private void initializeWindow(JPanel content) {
         setContentPane(content);
-        setSize(380, 260); // 精致小巧的尺寸，参考主流应用（IntelliJ IDEA, Postman 等）的启动窗口标准
+        setSize(350, 240); // 设置窗口大小
         setLocationRelativeTo(null);  // 居中显示
 
         // 安全设置透明度和置顶
@@ -218,9 +199,6 @@ public class SplashWindow extends JWindow {
 
     private static JPanel getJPanel() {
         JPanel content = new JPanel() { // 自定义面板，绘制渐变背景和圆角
-            @Serial
-            private static final long serialVersionUID = 1L;
-
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -230,8 +208,8 @@ public class SplashWindow extends JWindow {
 
                 // 现代化蓝色渐变（从iOS蓝到浅蓝）
                 GradientPaint gp = new GradientPaint(
-                        0, 0, ModernColors.PRIMARY,
-                        getWidth(), getHeight(), ModernColors.PRIMARY_LIGHTER
+                    0, 0, ModernColors.PRIMARY,
+                    getWidth(), getHeight(), ModernColors.PRIMARY_LIGHTER
                 );
                 g2d.setPaint(gp);
                 // 圆角背景
@@ -239,8 +217,8 @@ public class SplashWindow extends JWindow {
 
                 // 添加微妙的光泽效果
                 GradientPaint glossPaint = new GradientPaint(
-                        0, 0, ModernColors.whiteWithAlpha(40),
-                        0, getHeight() / 2.0f, ModernColors.whiteWithAlpha(0)
+                    0, 0, ModernColors.whiteWithAlpha(40),
+                    0, getHeight() / 2.0f, ModernColors.whiteWithAlpha(0)
                 );
                 g2d.setPaint(glossPaint);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
@@ -253,9 +231,9 @@ public class SplashWindow extends JWindow {
                 g2d.dispose();
             }
         };
-        content.setLayout(new BorderLayout(0, 8)); // 使用 BorderLayout 布局，紧凑布局减小间距
+        content.setLayout(new BorderLayout(0, 10)); // 使用 BorderLayout 布局
         content.setOpaque(false); // 设置透明背景
-        content.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24)); // 紧凑布局：上下边距缩小到 20px
+        content.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24)); // 设置内边距
         return content;
     }
 
@@ -275,7 +253,7 @@ public class SplashWindow extends JWindow {
     }
 
     public void initMainFrame() {
-        loadingWorker = new SwingWorker<>() {
+        SwingWorker<MainFrame, String> worker = new SwingWorker<>() {
             @Override
             protected MainFrame doInBackground() {
                 long start = System.currentTimeMillis();
@@ -315,10 +293,6 @@ public class SplashWindow extends JWindow {
                         setStatus(MessageKeys.SPLASH_STATUS_DONE);
                         MainFrame mainFrame = get();
 
-                        // 在显示主窗口之前取消 SplashWindow 的置顶状态
-                        // 这样可以让主窗口自然地显示在前面，实现更平滑的过渡
-                        cancelAlwaysOnTop();
-
                         // 启动渐隐动画关闭 SplashWindow
                         startFadeOutAnimation(mainFrame);
 
@@ -328,7 +302,7 @@ public class SplashWindow extends JWindow {
                 });
             }
         };
-        loadingWorker.execute();
+        worker.execute();
     }
 
     /**
@@ -364,37 +338,21 @@ public class SplashWindow extends JWindow {
     }
 
     /**
-     * 取消窗口置顶状态
-     */
-    private void cancelAlwaysOnTop() {
-        try {
-            setAlwaysOnTop(false);
-        } catch (Exception e) {
-            log.warn("取消窗口置顶失败", e);
-        }
-    }
-
-    /**
      * 启动渐隐动画
      */
     private void startFadeOutAnimation(MainFrame mainFrame) {
         if (isDisposed) return;
 
-        // 显示主窗口（已经在 EDT 中，不需要再次 invokeLater）
-        if (mainFrame != null) {
-            mainFrame.setVisible(true);
-            mainFrame.toFront();
-            mainFrame.requestFocus();
+        // 在开始渐隐动画之前就显示主窗口，实现重叠效果
+        SwingUtilities.invokeLater(() -> {
+            if (mainFrame != null) {
+                mainFrame.setVisible(true);
+                // 确保主窗口在前面
+                mainFrame.toFront();
+                mainFrame.requestFocus();
+            }
+        });
 
-            // 主窗口显示后，启动 SplashWindow 的渐隐动画
-            startFadeOutTimer();
-        }
-    }
-    
-    /**
-     * 启动渐隐计时器
-     */
-    private void startFadeOutTimer() {
         fadeOutListener = createFadeOutListener();
         fadeOutTimer = new Timer(FADE_TIMER_DELAY, fadeOutListener);
         fadeOutTimer.start();
@@ -466,19 +424,10 @@ public class SplashWindow extends JWindow {
      * 安全释放资源
      */
     private void disposeSafely() {
-        // 使用同步确保线程安全
-        synchronized (this) {
-            if (isDisposed) return;
-            isDisposed = true;
-        }
+        if (isDisposed) return;
 
+        isDisposed = true;
         stopFadeOutAnimation();
-
-        // 取消 SwingWorker，防止内存泄漏
-        if (loadingWorker != null && !loadingWorker.isDone()) {
-            loadingWorker.cancel(true);
-            loadingWorker = null;
-        }
 
         SwingUtilities.invokeLater(() -> {
             setVisible(false);

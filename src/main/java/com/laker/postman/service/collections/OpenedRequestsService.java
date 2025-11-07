@@ -4,8 +4,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
+import com.laker.postman.common.exception.CancelException;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
@@ -70,7 +71,7 @@ public class OpenedRequestsService {
                     I18nUtil.getMessage(MessageKeys.EXIT_DISCARD_ALL), // "全部不保存"
                     I18nUtil.getMessage(MessageKeys.EXIT_CANCEL) // "取消"
             };
-            int result = JOptionPane.showOptionDialog(tabbedPane,
+            int result = JOptionPane.showOptionDialog(SingletonFactory.getInstance(MainFrame.class),
                     I18nUtil.getMessage(MessageKeys.EXIT_UNSAVED_CHANGES),
                     I18nUtil.getMessage(MessageKeys.EXIT_UNSAVED_CHANGES_TITLE),
                     JOptionPane.DEFAULT_OPTION,

@@ -4,15 +4,10 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.TabInfo;
-import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
-import com.laker.postman.panel.functional.FunctionalPanel;
-import com.laker.postman.panel.history.HistoryPanel;
-import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
-import com.laker.postman.panel.toolbox.ToolboxPanel;
-import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -24,12 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.laker.postman.util.MessageKeys.MENU_FUNCTIONAL;
 
 /**
  * 左侧标签页面板
@@ -42,6 +38,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
     @Getter
     private transient List<TabInfo> tabInfos;
     private JPanel consoleContainer;
+    private JPanel bottomLeftPanel;  // 底部栏左侧面板缓存
+    private JPanel bottomRightPanel; // 底部栏右侧面板缓存
     private JLabel consoleLabel;
     private JLabel sidebarToggleLabel; // 侧边栏展开/收起按钮
     private JLabel cookieLabel;
@@ -49,29 +47,32 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
     private CookieManagerDialog cookieManagerDialog; // Cookie管理器对话框实例
+    private int lastSelectedIndex = -1; // 记录上一次选中的索引，用于优化颜色更新
+
+    // 字体缓存，避免重复创建
+    private Font normalFont;      // PLAIN 12 - Tab文本和版本号共用
+    private Font boldFont;        // BOLD 12 - Tab文本选中态和底部栏共用
+    private Font bottomBarFont;   // BOLD 12 - 底部栏字体（与boldFont相同，为了语义清晰保留）
 
     @Override
     protected void initUI() {
+        // 初始化字体缓存
+        normalFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);  // Tab文本和版本号共用
+        boldFont = FontsUtil.getDefaultFont(Font.BOLD, 12);     // Tab选中态共用
+        bottomBarFont = boldFont; // 底部栏使用相同的 BOLD 12 字体
+
         // 先读取侧边栏展开状态
         sidebarExpanded = SettingManager.isSidebarExpanded();
         setLayout(new BorderLayout());
+
         // 1. 创建标签页
         tabbedPane = createModernTabbedPane();
         tabInfos = new ArrayList<>();
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_COLLECTIONS), new FlatSVGIcon("icons/collections.svg", 20, 20),
-                () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS), new FlatSVGIcon("icons/environments.svg", 20, 20),
-                () -> SingletonFactory.getInstance(EnvironmentPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_WORKSPACES), new FlatSVGIcon("icons/workspace.svg", 20, 20),
-                () -> SingletonFactory.getInstance(WorkspacePanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MENU_FUNCTIONAL), new FlatSVGIcon("icons/functional.svg", 20, 20),
-                () -> SingletonFactory.getInstance(FunctionalPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_PERFORMANCE), new FlatSVGIcon("icons/performance.svg", 20, 20),
-                () -> SingletonFactory.getInstance(PerformancePanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_TOOLBOX), new FlatSVGIcon("icons/tools.svg", 20, 20),
-                () -> SingletonFactory.getInstance(ToolboxPanel.class)));
-        tabInfos.add(new TabInfo(I18nUtil.getMessage(MessageKeys.MENU_HISTORY), new FlatSVGIcon("icons/history.svg", 20, 20),
-                () -> SingletonFactory.getInstance(HistoryPanel.class)));
+
+        // 使用枚举初始化所有 Tab，简化代码并集中管理
+        for (SidebarTab tab : SidebarTab.values()) {
+            tabInfos.add(tab.toTabInfo());
+        }
 
         // Add tabs to the JTabbedPane
         for (int i = 0; i < tabInfos.size(); i++) {
@@ -116,18 +117,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
-            // 左侧放 SidebarToggle 和 Console
-            JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            leftPanel.setOpaque(false);
-            leftPanel.add(sidebarToggleLabel);
-            leftPanel.add(consoleLabel);
-            consoleContainer.add(leftPanel, BorderLayout.WEST);
-            // 右侧放 Cookies 和 Version
-            JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-            rightPanel.setOpaque(false);
-            rightPanel.add(cookieLabel);
-            rightPanel.add(versionLabel);
-            consoleContainer.add(rightPanel, BorderLayout.EAST);
+            // 使用缓存的面板，避免重复创建
+            consoleContainer.add(bottomLeftPanel, BorderLayout.WEST);
+            consoleContainer.add(bottomRightPanel, BorderLayout.EAST);
             add(consoleContainer, BorderLayout.SOUTH);
             revalidate();
             repaint();
@@ -142,6 +134,17 @@ public class SidebarTabPanel extends SingletonBasePanel {
         createConsoleLabel();
         createCookieLabel();
         createVersionLabel();
+
+        // 初始化底部栏面板，避免每次展开/收起时重复创建
+        bottomLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        bottomLeftPanel.setOpaque(false);
+        bottomLeftPanel.add(sidebarToggleLabel);
+        bottomLeftPanel.add(consoleLabel);
+
+        bottomRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        bottomRightPanel.setOpaque(false);
+        bottomRightPanel.add(cookieLabel);
+        bottomRightPanel.add(versionLabel);
     }
 
     /**
@@ -176,11 +179,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createConsoleLabel() {
         consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
         consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
-        consoleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        consoleLabel.setFont(bottomBarFont); // 使用缓存的字体
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-        consoleLabel.setFocusable(true); // 让label可聚焦
-        consoleLabel.setEnabled(true); // 确保label可用
+        consoleLabel.setFocusable(true);
+        consoleLabel.setEnabled(true);
         consoleLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -195,7 +198,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createCookieLabel() {
         cookieLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
         cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
-        cookieLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        cookieLabel.setFont(bottomBarFont); // 使用缓存的字体
         cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         cookieLabel.setFocusable(true);
@@ -230,7 +233,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        versionLabel.setFont(normalFont); // 使用缓存的字体（与normalFont共用）
         versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
     }
 
@@ -243,20 +246,75 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 懒加载第一个tab
         SwingUtilities.invokeLater(() -> {
             ensureTabComponentLoaded(0);
-            updateTabTextColors(); // 初始化时更新颜色
+            initializeAllTabColors(); // 初始化时更新所有 tab 的颜色
         });
+
+        // 注册快捷键
+        registerTabShortcuts();
     }
 
     /**
-     * 更新所有 tab 的文字颜色（仅在展开状态下）
+     * 注册 Tab 快捷键
+     * Ctrl/Cmd + 1-7 切换到对应的 Tab
      */
-    private void updateTabTextColors() {
+    private void registerTabShortcuts() {
+        int modifier = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx(); // Mac用Cmd，Windows用Ctrl
+
+        // 为每个 Tab 注册快捷键 Ctrl/Cmd + 数字
+        for (int i = 0; i < Math.min(tabInfos.size(), 9); i++) {
+            final int tabIndex = i;
+            int keyCode = KeyEvent.VK_1 + i; // VK_1 到 VK_9
+
+            // 注册快捷键到输入映射
+            String actionKey = "switchToTab" + (i + 1);
+            getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                    KeyStroke.getKeyStroke(keyCode, modifier), actionKey
+            );
+            getActionMap().put(actionKey, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (tabIndex < tabbedPane.getTabCount()) {
+                        tabbedPane.setSelectedIndex(tabIndex);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * 初始化所有 tab 的文字颜色（仅在首次加载时调用）
+     */
+    private void initializeAllTabColors() {
         if (!sidebarExpanded) return;
 
         int selectedIndex = tabbedPane.getSelectedIndex();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             updateSingleTabTextColor(i, i == selectedIndex);
         }
+        lastSelectedIndex = selectedIndex;
+    }
+
+    /**
+     * 更新所有 tab 的文字颜色（仅在展开状态下）
+     * 优化：只更新当前和之前选中的 tab，避免遍历所有 tab
+     */
+    private void updateTabTextColors() {
+        if (!sidebarExpanded) return;
+
+        int selectedIndex = tabbedPane.getSelectedIndex();
+
+        // 更新之前选中的 tab（如果存在）
+        if (lastSelectedIndex >= 0 && lastSelectedIndex < tabbedPane.getTabCount()) {
+            updateSingleTabTextColor(lastSelectedIndex, false);
+        }
+
+        // 更新当前选中的 tab
+        if (selectedIndex >= 0 && selectedIndex < tabbedPane.getTabCount()) {
+            updateSingleTabTextColor(selectedIndex, true);
+        }
+
+        // 记录当前选中的索引
+        lastSelectedIndex = selectedIndex;
     }
 
     /**
@@ -271,10 +329,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
             if (comp instanceof JLabel label && label.getText() != null && !label.getText().isEmpty()) {
                 if (isSelected) {
                     label.setForeground(ModernColors.PRIMARY);
-                    label.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+                    label.setFont(boldFont); // 使用缓存的字体
                 } else {
                     label.setForeground(ModernColors.TEXT_SECONDARY);
-                    label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+                    label.setFont(normalFont); // 使用缓存的字体
                 }
                 break;
             }
@@ -321,7 +379,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             protected void installDefaults() {
                 super.installDefaults();
                 // 增加 tab 区域的上下边距，让 tab 之间有更多空间
-                tabAreaInsets = new Insets(12, 8, 12, 0);
+                tabAreaInsets = new Insets(8, 6, 8, 0);
                 contentBorderInsets = new Insets(0, 0, 0, 0);
                 // tab 之间的间距
                 tabInsets = new Insets(2, 2, 2, 2);
@@ -374,12 +432,67 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建自定义 Tab 组件（图标在上，文本在下）
      */
     private Component createTabComponent(String title, Icon icon) {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension size = super.getPreferredSize();
+                // 设置最小宽度，保证所有 tab 宽度一致
+                if (sidebarExpanded) {
+                    // 展开状态：使用所有 tab 中最宽的宽度
+                    size.width = Math.max(size.width, 75);
+                } else {
+                    // 收起状态：固定宽度
+                    size.width = 48;
+                }
+                return size;
+            }
+        };
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
 
-        // 创建鼠标监听器，用于处理 tab 切换
-        MouseAdapter tabClickListener = new MouseAdapter() {
+        if (sidebarExpanded) {
+            // 展开状态：图标在上，文本在下
+            JLabel iconLabel = new JLabel(icon);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JLabel titleLabel = new JLabel(title);
+            // 根据当前是否选中设置初始颜色
+            int currentIndex = getTabIndexByTitle(title);
+            boolean isCurrentlySelected = currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
+
+            if (isCurrentlySelected) {
+                titleLabel.setFont(boldFont);
+                titleLabel.setForeground(ModernColors.PRIMARY);
+            } else {
+                titleLabel.setFont(normalFont);
+                titleLabel.setForeground(ModernColors.TEXT_SECONDARY);
+            }
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            panel.add(Box.createVerticalStrut(5));
+            panel.add(iconLabel);
+            panel.add(Box.createVerticalStrut(4));
+            panel.add(titleLabel);
+            panel.add(Box.createVerticalStrut(5));
+
+            panel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        } else {
+            // 收起状态：只显示图标，居中，增加上下左右间距
+            JLabel iconLabel = new JLabel(icon);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            // 设置 tooltip 在 panel 上而非 label 上
+            panel.setToolTipText(title);
+
+            panel.add(Box.createVerticalGlue());
+            panel.add(iconLabel);
+            panel.add(Box.createVerticalGlue());
+
+            // 增加边距，尤其是上下间距，让图标之间不会挨在一起
+            panel.setBorder(BorderFactory.createEmptyBorder(12, 8, 12, 8));
+        }
+
+        // 只为 panel 添加一个鼠标监听器
+        panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 int tabIndex = getTabIndexByTitle(title);
@@ -397,57 +510,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             public void mouseExited(MouseEvent e) {
                 panel.setCursor(Cursor.getDefaultCursor());
             }
-        };
-
-        if (sidebarExpanded) {
-            // 展开状态：图标在上，文本在下
-            JLabel iconLabel = new JLabel(icon);
-            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            JLabel titleLabel = new JLabel(title);
-            // 根据当前是否选中设置初始颜色
-            int currentIndex = getTabIndexByTitle(title);
-            boolean isCurrentlySelected = currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
-
-            if (isCurrentlySelected) {
-                titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
-                titleLabel.setForeground(ModernColors.PRIMARY);
-            } else {
-                titleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-                titleLabel.setForeground(ModernColors.TEXT_SECONDARY);
-            }
-            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            panel.add(Box.createVerticalStrut(6));
-            panel.add(iconLabel);
-            panel.add(Box.createVerticalStrut(6));
-            panel.add(titleLabel);
-            panel.add(Box.createVerticalStrut(6));
-
-            panel.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-
-            // 为图标和标题添加点击事件
-            iconLabel.addMouseListener(tabClickListener);
-            titleLabel.addMouseListener(tabClickListener);
-        } else {
-            // 收起状态：只显示图标，居中，增加上下左右间距
-            JLabel iconLabel = new JLabel(icon);
-            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setToolTipText(title); // 悬停显示标题
-
-            panel.add(Box.createVerticalGlue());
-            panel.add(iconLabel);
-            panel.add(Box.createVerticalGlue());
-
-            // 增加边距，尤其是上下间距，让图标之间不会挨在一起
-            panel.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
-
-            // 为图标添加点击事件
-            iconLabel.addMouseListener(tabClickListener);
-        }
-
-        // 为整个 panel 也添加鼠标监听器，确保点击任何地方都能触发
-        panel.addMouseListener(tabClickListener);
+        });
 
         return panel;
     }
@@ -501,11 +564,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 创建新的 TabbedPane
         tabbedPane = createModernTabbedPane();
 
-        // 恢复所有 tab
+        // 恢复所有 tab - 重用 tabInfos 中缓存的图标
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
             tabbedPane.addTab(info.title, loadedPanels.get(i));
-            // 设置自定义 tab 组件以实现图标在上、文本在下的布局
+            // 设置自定义 tab 组件 - icon 从 tabInfos 获取，已经缓存
             tabbedPane.setTabComponentAt(i, createTabComponent(info.title, info.icon));
         }
 
@@ -523,11 +586,14 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 重新注册监听器
         tabbedPane.addChangeListener(e -> {
             handleTabChange();
-            updateTabTextColors(); // 更新所有 tab 的文字颜色
+            updateTabTextColors();
         });
 
+        // 重置 lastSelectedIndex 避免 bug
+        lastSelectedIndex = -1;
+
         // 更新初始文字颜色
-        updateTabTextColors();
+        initializeAllTabColors();
 
         // 刷新UI
         revalidate();

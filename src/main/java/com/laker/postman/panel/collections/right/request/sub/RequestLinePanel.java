@@ -25,7 +25,7 @@ import java.awt.event.ActionListener;
 public class RequestLinePanel extends JPanel {
     // 尺寸常量
     private static final int ICON_SIZE = 14;
-    private static final int COMPONENT_HEIGHT = 28;
+    private static final int COMPONENT_HEIGHT = 32;
     private static final int METHOD_COMBO_WIDTH = 85;
     private static final int PANEL_PADDING = 4;
 
@@ -148,29 +148,44 @@ public class RequestLinePanel extends JPanel {
      */
     private JButton createPrimaryButton(String text, String iconPath) {
         JButton button = new JButton(text) {
+            // 缓存颜色，避免每次 paintComponent 都查询 ClientProperty
+            private Color cachedBaseColor = ModernColors.PRIMARY;
+            private Color cachedHoverColor = ModernColors.PRIMARY_DARK;
+            private Color cachedPressColor = ModernColors.PRIMARY_DARKER;
+            private boolean colorsInitialized = false;
+
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // 从 ClientProperty 读取颜色，如果没有则使用默认蓝色
-                Color baseColor = (Color) getClientProperty("baseColor");
-                Color hoverColor = (Color) getClientProperty("hoverColor");
-                Color pressColor = (Color) getClientProperty("pressColor");
+                // 检查是否需要重新读取颜色（从外部 ClientProperty 获取标志）
+                Boolean shouldReload = (Boolean) getClientProperty("colorsInitialized");
+                if (shouldReload != null && !shouldReload) {
+                    colorsInitialized = false;
+                }
 
-                if (baseColor == null) baseColor = ModernColors.PRIMARY;
-                if (hoverColor == null) hoverColor = ModernColors.PRIMARY_DARK;
-                if (pressColor == null) pressColor = ModernColors.PRIMARY_DARKER;
+                // 只在第一次或颜色变更时读取 ClientProperty
+                if (!colorsInitialized) {
+                    Color baseColor = (Color) getClientProperty("baseColor");
+                    Color hoverColor = (Color) getClientProperty("hoverColor");
+                    Color pressColor = (Color) getClientProperty("pressColor");
+
+                    if (baseColor != null) cachedBaseColor = baseColor;
+                    if (hoverColor != null) cachedHoverColor = hoverColor;
+                    if (pressColor != null) cachedPressColor = pressColor;
+                    colorsInitialized = true;
+                }
 
                 // 背景颜色
                 if (!isEnabled()) {
                     g2.setColor(ModernColors.TEXT_DISABLED);
                 } else if (getModel().isPressed()) {
-                    g2.setColor(pressColor);
+                    g2.setColor(cachedPressColor);
                 } else if (getModel().isRollover()) {
-                    g2.setColor(hoverColor);
+                    g2.setColor(cachedHoverColor);
                 } else {
-                    g2.setColor(baseColor);
+                    g2.setColor(cachedBaseColor);
                 }
 
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
@@ -193,19 +208,12 @@ public class RequestLinePanel extends JPanel {
         button.setFocusPainted(false);
         button.setOpaque(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(5, 12, 5, 12));
+        button.setBorder(new EmptyBorder(6, 12, 6, 12));
 
-        // 悬停动画
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                if (button.isEnabled()) {
-                    button.repaint();
-                }
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
+        // 悬停动画 - 优化：减少不必要的 repaint
+        button.getModel().addChangeListener(e -> {
+            // 只在状态真正改变时才 repaint
+            if (button.isEnabled()) {
                 button.repaint();
             }
         });
@@ -260,19 +268,11 @@ public class RequestLinePanel extends JPanel {
         button.setFocusPainted(false);
         button.setOpaque(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(5, 12, 5, 12));
+        button.setBorder(new EmptyBorder(6, 12, 6, 12));
 
-        // 悬停动画
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                if (button.isEnabled()) {
-                    button.repaint();
-                }
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
+        // 悬停动画 - 优化：使用 ChangeListener 替代 MouseListener
+        button.getModel().addChangeListener(e -> {
+            if (button.isEnabled()) {
                 button.repaint();
             }
         });
@@ -315,32 +315,13 @@ public class RequestLinePanel extends JPanel {
      * 动态更新按钮样式（颜色）
      */
     private void updateButtonStyle(JButton button, Color baseColor, Color hoverColor, Color pressColor) {
-        // 移除旧的鼠标监听器
-        for (java.awt.event.MouseListener ml : button.getMouseListeners()) {
-            if (ml instanceof java.awt.event.MouseAdapter) {
-                button.removeMouseListener(ml);
-            }
-        }
-
-        // 重新设置按钮颜色
+        // 设置按钮颜色到 ClientProperty
         button.putClientProperty("baseColor", baseColor);
         button.putClientProperty("hoverColor", hoverColor);
         button.putClientProperty("pressColor", pressColor);
 
-        // 添加新的鼠标监听器
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                if (button.isEnabled()) {
-                    button.repaint();
-                }
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                button.repaint();
-            }
-        });
+        // 重置缓存标志，强制下次绘制时重新读取颜色
+        button.putClientProperty("colorsInitialized", false);
 
         // 强制刷新
         button.repaint();

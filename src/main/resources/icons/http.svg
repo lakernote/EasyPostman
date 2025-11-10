@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#4CAF50" d="M4 8v8h1.5v-3H7v3h1.5V8H7v2.5H5.5V8zm4 0v1.5h2V16h1.5V9.5h2V8zm5 0v1.5h2V16h1.5V9.5h2V8zm5 0v8h1.5v-3h1.5c.828 0 1.5-.672 1.5-1.5v-2c0-.828-.672-1.5-1.5-1.5zm1.5 1.5h1.5v2h-1.5z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <!-- 绿色背景 -->
+    <rect x="2" y="6" width="20" height="12" rx="2.5" fill="#4CAF50"/>
+    <!-- H -->
+    <path d="M4.5 9.5h1v2h1.5v-2h1v5h-1v-2h-1.5v2h-1z" fill="#FFFFFF"/>
+    <!-- T -->
+    <path d="M9 9.5h3.5v1h-1.25v4h-1v-4H9z" fill="#FFFFFF"/>
+    <!-- T -->
+    <path d="M13 9.5h3.5v1h-1.25v4h-1v-4H13z" fill="#FFFFFF"/>
+    <!-- P -->
+    <path d="M17 9.5h2c.55 0 1 .45 1 1v1c0 .55-.45 1-1 1h-1v1.5h-1zm1 2h1v-1h-1z" fill="#FFFFFF"/>
+</svg>

@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#FF9800" d="M4 8h12v2H4zm0 4h12v2H4zm0 4h8v2H4zm12 0v2h-2v2h2v2l4-3z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 橙色背景 -->
+  <rect x="2" y="6" width="20" height="12" rx="2.5" fill="#FF9800"/>
+  <!-- 数据流线条 + 向右箭头（表示服务端推送） -->
+  <path d="M5 9h9v1.2H5z" fill="#FFFFFF"/>
+  <path d="M5 11.4h11v1.2H5z" fill="#FFFFFF"/>
+  <path d="M5 13.8h8v1.2H5z" fill="#FFFFFF"/>
+  <!-- 箭头指向右侧 -->
+  <path d="M15.5 9.5l3.5 2.5-3.5 2.5z" fill="#FFFFFF"/>
+</svg>

@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#2196F3" d="M4 11v2h6l-2 2 1.5 1.5L14 12l-4.5-4.5L8 9l2 2zm16 2v-2h-6l2-2-1.5-1.5L10 12l4.5 4.5L16 15l-2-2z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 蓝色背景 -->
+  <rect x="2" y="6" width="20" height="12" rx="2.5" fill="#2196F3"/>
+  <!-- 双向箭头表示实时通信 -->
+  <!-- 向右箭头 -->
+  <path d="M5 10.5h6v1.5H5z" fill="#FFFFFF"/>
+  <path d="M10 9l3.5 3-3.5 3z" fill="#FFFFFF"/>
+  <!-- 向左箭头 -->
+  <path d="M19 13.5h-6v-1.5h6z" fill="#FFFFFF"/>
+  <path d="M14 15l-3.5-3 3.5-3z" fill="#FFFFFF"/>
+</svg>

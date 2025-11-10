@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.service.ClientCertificateService;
 import com.laker.postman.util.I18nUtil;
@@ -255,7 +256,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            ClientCertificateService.addCertificate(cert);
+            BeanFactory.getBean(ClientCertificateService.class).addCertificate(cert);
             loadCertificates();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_ADD_SUCCESS));
         }
@@ -271,7 +272,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            ClientCertificateService.updateCertificate(cert);
+            BeanFactory.getBean(ClientCertificateService.class).updateCertificate(cert);
             loadCertificates();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_EDIT_SUCCESS));
         }
@@ -297,7 +298,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
                 JOptionPane.WARNING_MESSAGE);
 
         if (result == JOptionPane.YES_OPTION) {
-            ClientCertificateService.deleteCertificate(cert.getId());
+            BeanFactory.getBean(ClientCertificateService.class).deleteCertificate(cert.getId());
             loadCertificates();
             updateButtonStates();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_DELETE_SUCCESS));
@@ -338,7 +339,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         private List<ClientCertificate> certificates = new java.util.ArrayList<>();
 
         public void loadCertificates() {
-            certificates = ClientCertificateService.getAllCertificates();
+            certificates = BeanFactory.getBean(ClientCertificateService.class).getAllCertificates();
             fireTableDataChanged();
         }
 
@@ -392,7 +393,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             if (columnIndex == 0) {
                 ClientCertificate cert = certificates.get(rowIndex);
                 cert.setEnabled((Boolean) aValue);
-                ClientCertificateService.updateCertificate(cert);
+                BeanFactory.getBean(ClientCertificateService.class).updateCertificate(cert);
                 fireTableCellUpdated(rowIndex, columnIndex);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_STATUS_UPDATED));
             }

@@ -2,6 +2,7 @@ package com.laker.postman.frame;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.util.I18nUtil;
@@ -113,7 +114,7 @@ public class MainFrame extends JFrame {
                 // 清理资源并保存状态
                 cleanup();
                 saveWindowState();
-                ExitService.exit();
+                BeanFactory.getBean(ExitService.class).exit();
             }
 
             @Override
@@ -254,7 +255,7 @@ public class MainFrame extends JFrame {
 
         log.debug("计算最小窗口尺寸: {}x{} (屏幕: {}x{})",
                 cachedMinWindowSize.width, cachedMinWindowSize.height,
-                (int)cachedScreenSize.getWidth(), (int)cachedScreenSize.getHeight());
+                (int) cachedScreenSize.getWidth(), (int) cachedScreenSize.getHeight());
 
         return cachedMinWindowSize;
     }

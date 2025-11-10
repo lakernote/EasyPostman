@@ -3,19 +3,18 @@ package com.laker.postman.service;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.ioc.Component;
 import com.laker.postman.service.collections.OpenedRequestsService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Component
 public class ExitService {
-    private ExitService() {
-        throw new IllegalStateException("Utility class");
-    }
 
     /**
      * 显示退出确认对话框，处理未保存内容。
      */
-    public static void exit() {
+    public void exit() {
 
         // 保存所有打开的请求（包括未保存的和已保存的）
         try {

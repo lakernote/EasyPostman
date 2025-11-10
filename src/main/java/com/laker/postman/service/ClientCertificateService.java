@@ -3,6 +3,8 @@ package com.laker.postman.service;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.ioc.Component;
+import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.util.I18nUtil;
@@ -22,22 +24,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * 负责管理 mTLS 客户端证书配置
  */
 @Slf4j
+@Component
 public class ClientCertificateService {
     private static final String CERT_CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "client_certificates.json";
     private static final List<ClientCertificate> certificates = new CopyOnWriteArrayList<>();
 
-    private ClientCertificateService() {
-        throw new AssertionError("Utility class should not be instantiated");
-    }
-
-    static {
-        load();
-    }
 
     /**
      * 从文件加载证书配置
      */
-    public static void load() {
+    @PostConstruct
+    public void load() {
         File file = new File(CERT_CONFIG_FILE);
         if (!file.exists()) {
             log.info("Client certificate config file not found, creating new one");
@@ -61,7 +58,7 @@ public class ClientCertificateService {
     /**
      * 保存证书配置到文件
      */
-    public static void save() {
+    public void save() {
         try {
             File file = new File(CERT_CONFIG_FILE);
             File parent = file.getParentFile();
@@ -82,14 +79,14 @@ public class ClientCertificateService {
     /**
      * 获取所有证书配置
      */
-    public static List<ClientCertificate> getAllCertificates() {
+    public List<ClientCertificate> getAllCertificates() {
         return new ArrayList<>(certificates);
     }
 
     /**
      * 添加证书配置
      */
-    public static void addCertificate(ClientCertificate cert) {
+    public void addCertificate(ClientCertificate cert) {
         String id = cert.getId();
         if (id == null || id.isEmpty()) {
             cert.setId(UUID.randomUUID().toString());
@@ -104,7 +101,7 @@ public class ClientCertificateService {
     /**
      * 更新证书配置
      */
-    public static void updateCertificate(ClientCertificate cert) {
+    public void updateCertificate(ClientCertificate cert) {
         for (int i = 0; i < certificates.size(); i++) {
             if (certificates.get(i).getId().equals(cert.getId())) {
                 cert.setUpdatedAt(System.currentTimeMillis());
@@ -119,7 +116,7 @@ public class ClientCertificateService {
     /**
      * 删除证书配置
      */
-    public static void deleteCertificate(String id) {
+    public void deleteCertificate(String id) {
         certificates.removeIf(cert -> cert.getId().equals(id));
         save();
         log.info("Deleted client certificate: {}", id);
@@ -129,7 +126,7 @@ public class ClientCertificateService {
      * 根据主机名和端口查找匹配的证书
      * 返回第一个匹配的启用证书
      */
-    public static ClientCertificate findMatchingCertificate(String host, int port) {
+    public ClientCertificate findMatchingCertificate(String host, int port) {
         for (ClientCertificate cert : certificates) {
             if (cert.matches(host, port)) {
                 log.debug("Found matching certificate for {}:{} - {}", host, port, cert.getName());
@@ -153,7 +150,7 @@ public class ClientCertificateService {
     /**
      * 验证证书文件是否存在且可读
      */
-    public static boolean validateCertificatePaths(ClientCertificate cert) {
+    public boolean validateCertificatePaths(ClientCertificate cert) {
         if (cert.getCertPath() == null || cert.getCertPath().trim().isEmpty()) {
             String message = MessageFormat.format(
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),

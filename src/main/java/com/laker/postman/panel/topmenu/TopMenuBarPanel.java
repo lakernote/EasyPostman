@@ -7,7 +7,7 @@ import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
-import com.laker.postman.panel.topmenu.setting.*;
+import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
@@ -50,7 +50,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler((e) -> ExitService.exit());
+        FlatDesktop.setQuitHandler((e) -> BeanFactory.getBean(ExitService.class).exit());
     }
 
     /**
@@ -94,11 +94,11 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
         // 使用 ShortcutManager 获取退出快捷键
         KeyStroke exitKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-            com.laker.postman.service.setting.ShortcutManager.EXIT_APP);
+                com.laker.postman.service.setting.ShortcutManager.EXIT_APP);
         if (exitKey != null) {
             exitMenuItem.setAccelerator(exitKey);
         }
-        exitMenuItem.addActionListener(e -> ExitService.exit());
+        exitMenuItem.addActionListener(e -> BeanFactory.getBean(ExitService.class).exit());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);

@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.ssl;
 
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.ClientCertificateService;
@@ -87,7 +88,7 @@ public class SSLConfigurationUtil {
      * @param port    目标端口（用于匹配客户端证书）
      */
     public static void configureSSL(OkHttpClient.Builder builder, SSLVerificationMode mode,
-                                   String host, int port) {
+                                    String host, int port) {
         try {
             // 查找并加载匹配的客户端证书
             KeyManager[] keyManagers = loadClientCertificate(host, port);
@@ -132,9 +133,9 @@ public class SSLConfigurationUtil {
         if (host == null || host.isEmpty()) {
             return new KeyManager[0];
         }
-
-        ClientCertificate clientCert = ClientCertificateService.findMatchingCertificate(host, port);
-        if (clientCert == null || !ClientCertificateService.validateCertificatePaths(clientCert)) {
+        ClientCertificateService clientCertificateService = BeanFactory.getBean(ClientCertificateService.class);
+        ClientCertificate clientCert = clientCertificateService.findMatchingCertificate(host, port);
+        if (clientCert == null || !clientCertificateService.validateCertificatePaths(clientCert)) {
             return new KeyManager[0];
         }
 
@@ -144,11 +145,11 @@ public class SSLConfigurationUtil {
 
             // 输出到控制台：证书加载成功
             String certName = clientCert.getName() != null && !clientCert.getName().isEmpty()
-                ? clientCert.getName()
-                : clientCert.getCertPath();
+                    ? clientCert.getName()
+                    : clientCert.getCertPath();
             String message = MessageFormat.format(
-                I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOADED),
-                certName
+                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOADED),
+                    certName
             );
             ConsolePanel.appendLog(message, ConsolePanel.LogType.SUCCESS);
 
@@ -158,11 +159,11 @@ public class SSLConfigurationUtil {
 
             // 输出到控制台：证书加载失败
             String certName = clientCert.getName() != null && !clientCert.getName().isEmpty()
-                ? clientCert.getName()
-                : clientCert.getCertPath();
+                    ? clientCert.getName()
+                    : clientCert.getCertPath();
             String message = MessageFormat.format(
-                I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
-                certName, e.getMessage()
+                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
+                    certName, e.getMessage()
             );
             ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
 
@@ -172,6 +173,7 @@ public class SSLConfigurationUtil {
 
     /**
      * 配置 TrustManager
+     *
      * @return TrustManager 或 null（表示使用默认配置）
      */
     private static X509TrustManager configureTrustManager(SSLVerificationMode mode, KeyManager[] keyManagers)

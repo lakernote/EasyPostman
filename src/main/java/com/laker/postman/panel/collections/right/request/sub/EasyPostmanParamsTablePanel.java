@@ -196,34 +196,50 @@ public class EasyPostmanParamsTablePanel extends JPanel {
 
         if (reverse) {
             // Move backwards
+            int attempts = 0;
+            int maxAttempts = columnCount + table.getRowCount() * columnCount;
             do {
                 nextColumn--;
+                attempts++;
                 if (nextColumn < 0) {
                     // Move to previous row, last editable column
                     if (currentRow > 0) {
                         currentRow--;
                         nextColumn = COL_VALUE; // Last editable column
                     } else {
-                        nextColumn = 0; // Stay at first position
+                        nextColumn = COL_KEY; // Stay at first editable column
+                        break;
                     }
+                }
+                if (attempts >= maxAttempts) {
+                    // Safety break to prevent infinite loop
+                    nextColumn = COL_KEY;
                     break;
                 }
-            } while (nextColumn >= 0 && !isCellEditable(currentRow, nextColumn));
+            } while (!isCellEditable(currentRow, nextColumn));
         } else {
             // Move forwards
+            int attempts = 0;
+            int maxAttempts = columnCount + table.getRowCount() * columnCount;
             do {
                 nextColumn++;
+                attempts++;
                 if (nextColumn >= columnCount) {
                     // Move to next row, first editable column
                     if (currentRow < table.getRowCount() - 1) {
                         currentRow++;
                         nextColumn = COL_KEY; // First editable column
                     } else {
-                        nextColumn = columnCount - 1; // Stay at last position
+                        nextColumn = COL_VALUE; // Stay at last editable column
+                        break;
                     }
+                }
+                if (attempts >= maxAttempts) {
+                    // Safety break to prevent infinite loop
+                    nextColumn = COL_KEY;
                     break;
                 }
-            } while (nextColumn < columnCount && !isCellEditable(currentRow, nextColumn));
+            } while (!isCellEditable(currentRow, nextColumn));
         }
 
         // Select and start editing the next cell

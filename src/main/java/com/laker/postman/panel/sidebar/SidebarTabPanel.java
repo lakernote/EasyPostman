@@ -151,7 +151,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建侧边栏展开/收起按钮
      */
     private void createSidebarToggleLabel() {
-        sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20));
+        sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 16, 16));
         sidebarToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);

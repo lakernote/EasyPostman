@@ -88,7 +88,7 @@ public enum SidebarTab {
      */
     public Icon getIcon() {
         if (icon == null) {
-            icon = new FlatSVGIcon(iconPath, 20, 20);
+            icon = new FlatSVGIcon(iconPath, 22, 22);
         }
         return icon;
     }

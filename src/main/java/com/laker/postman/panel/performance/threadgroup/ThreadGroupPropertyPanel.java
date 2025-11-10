@@ -611,10 +611,11 @@ public class ThreadGroupPropertyPanel extends JPanel {
             }
             // 防止niceStep为0或过小，避免死循环
             if (niceStep < 1) niceStep = 1;
+            int niceStepInt = (int) niceStep; // Convert to int to avoid implicit narrowing in compound assignment
             int niceMin = (int) (Math.floor(min / niceStep) * niceStep);
             int niceMax = (int) (Math.ceil(max / niceStep) * niceStep);
             int maxLoop = 1000; // 最大循环次数保护
-            for (int v = niceMin, count = 0; v <= niceMax && count < maxLoop; v += niceStep, count++) {
+            for (int v = niceMin, count = 0; v <= niceMax && count < maxLoop; v += niceStepInt, count++) {
                 if (v >= min && v <= max) {
                     ticks.add(v);
                 }

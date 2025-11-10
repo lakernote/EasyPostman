@@ -15,8 +15,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -227,8 +226,9 @@ public class SnippetDialog extends JDialog {
         });
 
         // 列表双击事件
-        snippetList.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+        snippetList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent evt) {
                 if (evt.getClickCount() == 2) { // 双击事件
                     selectedSnippet = snippetList.getSelectedValue();
                     if (selectedSnippet != null) {
@@ -275,12 +275,23 @@ public class SnippetDialog extends JDialog {
             }
         });
 
-        closeBtn.addActionListener(e -> dispose());
+        closeBtn.addActionListener(e -> {
+            selectedSnippet = null;
+            dispose();
+        });
 
         // 初始化状态
         if (listModel.getSize() > 0) {
             snippetList.setSelectedIndex(0);
         }
+
+        // 添加窗口关闭监听器，处理点击 X 按钮的情况
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                selectedSnippet = null;
+            }
+        });
 
         // 设置对话框属性
         setSize(800, 600);

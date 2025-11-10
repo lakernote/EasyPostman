@@ -255,6 +255,24 @@ public class UpdateDownloader {
             // 其他文件类型（DMG、MSI、DEB、ZIP 等）使用系统默认方式打开
             log.info("Opening installer with default application: {}", installerFile.getAbsolutePath());
             Desktop.getDesktop().open(installerFile);
+
+            // 全量更新：打开安装程序后，延迟退出当前应用
+            // 给安装程序一些时间启动，然后关闭当前应用
+            Thread exitThread = new Thread(() -> {
+                try {
+                    // 等待安装程序完全启动
+                    Thread.sleep(1000);
+                    log.info("Exiting application for full update installation...");
+                    System.exit(0);
+                } catch (InterruptedException e) {
+                    log.warn("Sleep interrupted during exit countdown", e);
+                    Thread.currentThread().interrupt();
+                }
+            }, "UpdateExitThread");
+            exitThread.setDaemon(true); // 设置为守护线程，确保不会阻止 JVM 退出
+            exitThread.start();
+
+            // 在启动退出线程后立即回调成功
             callback.accept(true);
         } catch (Exception e) {
             log.error("Failed to open installer", e);

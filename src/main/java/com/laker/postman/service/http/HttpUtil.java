@@ -52,38 +52,6 @@ public class HttpUtil {
     }
 
 
-    /**
-     * 判断headers中是否已包含指定Content-Type（忽略大小写和内容）
-     */
-    public static boolean containsContentType(Map<String, String> headers, String targetType) {
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            if ("Content-Type".equalsIgnoreCase(entry.getKey()) &&
-                    entry.getValue() != null &&
-                    entry.getValue().toLowerCase().contains(targetType.toLowerCase())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 将字节数转换为人类可读的格式
-     *
-     * @param bytes 字节数
-     * @return 格式化后的字符串，例如 "1.5 MB" 或 "512 KB"
-     */
-    public static String getSizeText(long bytes) {
-        String sizeText;
-        if (bytes < 1024) {
-            sizeText = String.format("%d B", bytes);
-        } else if (bytes < 1024 * 1024) {
-            sizeText = String.format("%.2f KB", bytes / 1024.0);
-        } else {
-            sizeText = String.format("%.2f MB", bytes / (1024.0 * 1024.0));
-        }
-        return sizeText;
-    }
-
     // 判断是否为SSE请求
     public static boolean isSSERequest(PreparedRequest req) {
         if (req == null || req.headers == null) {
@@ -261,36 +229,6 @@ public class HttpUtil {
             return confirm == JOptionPane.YES_OPTION;
         }
         return true;
-    }
-
-    public static Map<String, String> getMergedParams(Map<String, String> params, String url) {
-        Map<String, String> urlParams = new LinkedHashMap<>();
-        if (url != null && url.contains("?")) {
-            int idx = url.indexOf('?');
-            String paramStr = url.substring(idx + 1);
-            // 拆解参数并urldecode
-            int last = 0;
-            while (last < paramStr.length()) {
-                int amp = paramStr.indexOf('&', last);
-                String pair = (amp == -1) ? paramStr.substring(last) : paramStr.substring(last, amp);
-                int eqIdx = pair.indexOf('=');
-                if (eqIdx > 0) {
-                    String k = pair.substring(0, eqIdx);
-                    String v = pair.substring(eqIdx + 1);
-                    urlParams.put(k, v);
-                } else if (!pair.isEmpty()) {
-                    urlParams.put(pair, "");
-                }
-                if (amp == -1) break;
-                last = amp + 1;
-            }
-        }
-        // 合并 params，item.getParams() 优先生效
-        Map<String, String> mergedParams = new LinkedHashMap<>(urlParams);
-        if (params != null) {
-            mergedParams.putAll(params);
-        }
-        return mergedParams;
     }
 
 

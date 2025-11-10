@@ -6,6 +6,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.model.SnippetType;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -126,10 +127,12 @@ public class SnippetDialog extends JDialog {
 
         previewArea = new JTextArea(8, 40);
         previewArea.setEditable(false);
-        previewArea.setLineWrap(true);
-        previewArea.setWrapStyleWord(true);
+        previewArea.setLineWrap(false);  // 代码不应该自动换行
         previewArea.setBackground(new Color(245, 245, 245));
+        previewArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        previewArea.setTabSize(4);  // 设置 Tab 缩进为 4 个空格
         JScrollPane previewScrollPane = new JScrollPane(previewArea);
+        previewScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         previewPanel.add(previewScrollPane, BorderLayout.CENTER);
 
         // 描述标签
@@ -185,7 +188,7 @@ public class SnippetDialog extends JDialog {
         categoryCombo.addActionListener(e -> {
             String category = (String) categoryCombo.getSelectedItem();
             if (category != null) {
-                if (category.equals("全部分类")) {
+                if (category.equals(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ALL))) {
                     loadSnippets(snippets);
                 } else {
                     loadSnippets(snippetCategories.get(category));
@@ -242,12 +245,13 @@ public class SnippetDialog extends JDialog {
         searchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_UP) {
                     // 按下方向键时，转移焦点到列表并选择第一项
                     snippetList.requestFocusInWindow();
                     if (listModel.getSize() > 0 && snippetList.getSelectedIndex() == -1) {
                         snippetList.setSelectedIndex(0);
                     }
+                    e.consume();  // 消费事件，防止其他组件处理
                 }
             }
         });
@@ -261,6 +265,10 @@ public class SnippetDialog extends JDialog {
                     if (selectedSnippet != null) {
                         dispose();
                     }
+                } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    // ESC 键取消并关闭对话框
+                    selectedSnippet = null;
+                    dispose();
                 }
             }
         });
@@ -283,6 +291,13 @@ public class SnippetDialog extends JDialog {
         // 初始化状态
         if (listModel.getSize() > 0) {
             snippetList.setSelectedIndex(0);
+            // 显示第一项的预览
+            selectedSnippet = snippetList.getSelectedValue();
+            if (selectedSnippet != null) {
+                previewArea.setText(selectedSnippet.code);
+                previewArea.setCaretPosition(0);
+                descriptionLabel.setText(selectedSnippet.desc);
+            }
         }
 
         // 添加窗口关闭监听器，处理点击 X 按钮的情况
@@ -290,6 +305,12 @@ public class SnippetDialog extends JDialog {
             @Override
             public void windowClosing(WindowEvent e) {
                 selectedSnippet = null;
+            }
+
+            @Override
+            public void windowOpened(WindowEvent e) {
+                // 对话框打开时，搜索框自动获得焦点
+                searchField.requestFocusInWindow();
             }
         });
 

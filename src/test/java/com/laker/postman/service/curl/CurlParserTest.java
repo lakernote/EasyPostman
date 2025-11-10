@@ -629,7 +629,7 @@ public class CurlParserTest {
         assertTrue(result.body.contains("\"memberId\":"), "Body should contain memberId field");
         assertTrue(result.body.contains("\"pageNum\": 1"), "Body should contain pageNum field");
         assertTrue(result.body.contains("\"pageSize\": 10"), "Body should contain pageSize field");
-        assertTrue(!result.body.contains("\\n"), "Body should not contain literal \\n");
+        assertFalse(result.body.contains("\\n"), "Body should not contain literal \\n");
     }
 
     @Test(description = "测试真实的Bash curl命令")
@@ -639,5 +639,360 @@ public class CurlParserTest {
                 "  --data-raw '{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}'";
         CurlRequest result = CurlParser.parse(curl);
         assertEquals(result.body, "{\"messages\":[{\"content\":\"{\\\"text\\\":\\\"1\\\"}\",\"content_type\":2001}],\"conversation_id\":\"24642138855619074\"}");
+    }
+
+
+    @Test(description = "测试 -G 选项：GET 请求与 data-urlencode")
+    public void testForceGetWithDataUrlencode() {
+        // 测试您提供的第一个 curl 命令
+        String curl = "curl -G 'http://localhost:8086/query?db=mydb' " +
+                "--data-urlencode 'q=SELECT * FROM my_measurement LIMIT 5'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "GET", "使用 -G 选项时应该强制使用 GET 方法");
+        assertEquals(result.url, "http://localhost:8086/query?db=mydb");
+        assertEquals(result.params.get("q"), "SELECT * FROM my_measurement LIMIT 5",
+                "使用 -G 时，data 参数应该被添加到查询参数中");
+        assertNull(result.body, "使用 -G 时，不应该有请求体");
+    }
+
+    @Test(description = "测试 -XPOST 与 data-urlencode")
+    public void testPostWithDataUrlencode() {
+        // 测试您提供的第二个 curl 命令
+        String curl = "curl -XPOST 'http://localhost:8086/query?db=mydb' " +
+                "--data-urlencode 'q=SELECT * FROM my_measurement LIMIT 5'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "POST", "使用 -XPOST 时应该使用 POST 方法");
+        assertEquals(result.url, "http://localhost:8086/query?db=mydb");
+        // 查询参数应该只包含 URL 中的参数
+        assertEquals(result.params.get("db"), "mydb");
+        assertNull(result.params.get("q"), "不使用 -G 时，data 参数不应该在查询参数中");
+        // 应该自动设置 Content-Type
+        assertEquals(result.headers.get("Content-Type"), "application/x-www-form-urlencoded",
+                "使用 data-urlencode 时应该自动设置 Content-Type");
+        // data-urlencode 的数据应该解析到 urlencoded map 中
+        assertEquals(result.urlencoded.get("q"), "SELECT * FROM my_measurement LIMIT 5",
+                "使用 data-urlencode 时，数据应该解析到 urlencoded map 中");
+        // body 应该为 null，因为数据在 urlencoded map 中
+        assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
+    }
+
+    @Test(description = "测试 POST 与多个 data-urlencode 参数")
+    public void testPostWithMultipleDataUrlencode() {
+        String curl = "curl -XPOST 'http://localhost:8086/query' " +
+                "--data-urlencode 'db=mydb' " +
+                "--data-urlencode 'q=SELECT * FROM my_measurement'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "POST");
+        assertEquals(result.headers.get("Content-Type"), "application/x-www-form-urlencoded");
+        assertEquals(result.urlencoded.get("db"), "mydb",
+                "多个 data-urlencode 参数应该都解析到 urlencoded map 中");
+        assertEquals(result.urlencoded.get("q"), "SELECT * FROM my_measurement",
+                "多个 data-urlencode 参数应该都解析到 urlencoded map 中");
+        assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
+    }
+
+    @Test(description = "测试 -G 选项与多个 data 参数")
+    public void testForceGetWithMultipleDataParams() {
+        String curl = "curl -G 'http://localhost:8086/query' " +
+                "--data-urlencode 'db=mydb' " +
+                "--data-urlencode 'q=SELECT * FROM my_measurement'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "GET");
+        assertEquals(result.params.get("db"), "mydb");
+        assertEquals(result.params.get("q"), "SELECT * FROM my_measurement");
+        assertNull(result.body);
+    }
+
+    @Test(description = "测试 --get 长格式选项")
+    public void testGetLongFormatOption() {
+        String curl = "curl --get 'http://localhost:8086/query' " +
+                "-d 'key=value' " +
+                "-d 'param=data'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "GET");
+        assertEquals(result.params.get("key"), "value");
+        assertEquals(result.params.get("param"), "data");
+        assertNull(result.body);
+    }
+
+    @Test(description = "测试没有 -G 的普通 POST 请求")
+    public void testPostWithoutForceGet() {
+        String curl = "curl -X POST 'http://localhost:8086/query' " +
+                "-d 'key=value' " +
+                "-d 'param=data'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "POST");
+        assertEquals(result.headers.get("Content-Type"), "application/x-www-form-urlencoded",
+                "使用 -d 时应该自动设置 Content-Type 为 application/x-www-form-urlencoded");
+        // 多个 -d 参数应该解析到 urlencoded map 中
+        assertEquals(result.urlencoded.get("key"), "value");
+        assertEquals(result.urlencoded.get("param"), "data");
+        assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
+        assertTrue(result.params.isEmpty());
+    }
+
+    @Test(description = "测试没有等号的 data 参数")
+    public void testDataParamWithoutEquals() {
+        String curl = "curl -X POST 'http://localhost:8086/query' " +
+                "-d 'rawdata'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "POST");
+        assertEquals(result.body, "rawdata", "没有等号的 data 参数应该作为原始 body");
+    }
+
+    @Test(description = "测试混合 JSON Content-Type 和 data 参数")
+    public void testJsonContentTypeWithDataParams() {
+        String curl = "curl -X POST 'http://localhost:8086/api' " +
+                "-H 'Content-Type: application/json' " +
+                "-d '{\"key\":\"value\"}'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "POST");
+        assertEquals(result.headers.get("Content-Type"), "application/json");
+        assertEquals(result.body, "{\"key\":\"value\"}", "JSON body 应该保持原样");
+        assertTrue(result.urlencoded.isEmpty(), "JSON 格式不应该解析为 urlencoded");
+    }
+
+    @Test(description = "测试 -G 与无值参数")
+    public void testForceGetWithEmptyValueParam() {
+        String curl = "curl -G 'http://localhost:8086/query' " +
+                "-d 'flag'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "GET");
+        assertEquals(result.params.get("flag"), "", "无值参数应该设置为空字符串");
+    }
+
+    @Test(description = "测试 ws:// 协议的 WebSocket URL")
+    public void testWebSocketWithWsProtocol() {
+        String curl = "curl 'ws://localhost:8080/socket' " +
+                "-H 'Sec-WebSocket-Key: test123' " +
+                "-H 'Custom-Header: value'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.url, "ws://localhost:8080/socket");
+        assertNull(result.headers.get("Sec-WebSocket-Key"), "ws:// 协议也应该过滤 WebSocket 头部");
+        assertEquals(result.headers.get("Custom-Header"), "value", "自定义头部应该保留");
+    }
+
+    @Test(description = "测试 Host 头部在 WebSocket 中被过滤")
+    public void testWebSocketHostHeaderFiltering() {
+        String curl = "curl 'wss://example.com/socket' " +
+                "-H 'Host: example.com' " +
+                "-H 'Custom-Header: value'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertNull(result.headers.get("Host"), "Host 头部应该在 WebSocket 中被过滤");
+        assertEquals(result.headers.get("Custom-Header"), "value");
+    }
+
+    @Test(description = "测试双引号包含单引号")
+    public void testDoubleQuoteWithSingleQuote() {
+        String curl = "curl -d \"data with 'single' quotes\" https://example.com";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.body, "data with 'single' quotes");
+    }
+
+    @Test(description = "测试多个 URL 参数（取最后一个）")
+    public void testMultipleUrlParameters() {
+        String curl = "curl https://first.com --url https://second.com";
+        CurlRequest result = CurlParser.parse(curl);
+
+        // 应该使用最后一个 URL
+        assertEquals(result.url, "https://second.com");
+    }
+
+    @Test(description = "测试 PreparedRequest 转 cURL 时的空值处理")
+    public void testToCurlWithEmptyBody() {
+        PreparedRequest req = new PreparedRequest();
+        req.method = "GET";
+        req.url = "https://example.com";
+        req.body = "";
+
+        String curl = CurlParser.toCurl(req);
+
+        assertFalse(curl.contains("--data"), "空 body 不应该生成 --data 参数");
+    }
+
+    @Test(description = "测试转义字符在单引号中不生效")
+    public void testEscapeInSingleQuote() {
+        String curl = "curl -d 'test\\ndata' https://example.com";
+        CurlRequest result = CurlParser.parse(curl);
+
+        // 单引号中的转义字符不应该被处理
+        assertEquals(result.body, "test\\ndata");
+    }
+
+    @Test(description = "测试带 boundary 的 multipart/form-data")
+    public void testMultipartFormDataWithBoundary() {
+        String curl = "curl -X POST 'http://example.com/upload' " +
+                "-H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundary' " +
+                "-d '------WebKitFormBoundary\r\n" +
+                "Content-Disposition: form-data; name=\"field1\"\r\n\r\n" +
+                "value1\r\n" +
+                "------WebKitFormBoundary--'";
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.method, "POST");
+        assertEquals(result.headers.get("Content-Type"), "multipart/form-data; boundary=----WebKitFormBoundary");
+        // 由于 parseMultipartFormData 会被调用
+        assertNotNull(result.body);
+    }
+
+    @Test(description = "测试 -XPOST 连写格式")
+    public void testDashXMethodCombinedFormat() {
+        String curl1 = "curl -XPOST 'http://example.com/api'";
+        CurlRequest result1 = CurlParser.parse(curl1);
+        assertEquals(result1.method, "POST", "-XPOST 应该被正确解析为 POST");
+
+        String curl2 = "curl -XGET 'http://example.com/api'";
+        CurlRequest result2 = CurlParser.parse(curl2);
+        assertEquals(result2.method, "GET", "-XGET 应该被正确解析为 GET");
+
+        String curl3 = "curl -XPUT 'http://example.com/api'";
+        CurlRequest result3 = CurlParser.parse(curl3);
+        assertEquals(result3.method, "PUT", "-XPUT 应该被正确解析为 PUT");
+
+        String curl4 = "curl -XDELETE 'http://example.com/api'";
+        CurlRequest result4 = CurlParser.parse(curl4);
+        assertEquals(result4.method, "DELETE", "-XDELETE 应该被正确解析为 DELETE");
+    }
+
+    @Test(description = "测试多个 URL 参数（应该使用最后一个）")
+    public void testMultipleUrlsUsesLast() {
+        String curl = "curl https://first.com https://second.com";
+        CurlRequest result = CurlParser.parse(curl);
+
+        // curl 实际行为是使用最后一个 URL
+        assertEquals(result.url, "https://second.com", "应该使用最后一个出现的 URL（符合 curl 实际行为）");
+    }
+
+    @Test(description = "测试 toCurl 支持 urlencoded 字段")
+    public void testToCurlWithUrlencoded() {
+        PreparedRequest req = new PreparedRequest();
+        req.method = "POST";
+        req.url = "https://example.com/api";
+        req.urlencoded = new LinkedHashMap<>();
+        req.urlencoded.put("username", "admin");
+        req.urlencoded.put("password", "secret123");
+
+        String curl = CurlParser.toCurl(req);
+
+        assertTrue(curl.contains("--data-urlencode 'username=admin'"),
+                "应该包含 urlencoded 参数");
+        assertTrue(curl.contains("--data-urlencode 'password=secret123'"),
+                "应该包含 urlencoded 参数");
+    }
+
+    @Test(description = "测试转义字符 \\a \\v \\0 在 $'...' 格式中")
+    public void testAdditionalEscapeCharacters() {
+        String curl = "curl -d $'line1\\aline2\\vline3' https://example.com";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertTrue(result.body.contains("\u0007"), "应该包含 alert 字符");
+        assertTrue(result.body.contains("\u000B"), "应该包含 vertical tab 字符");
+    }
+
+    @Test(description = "测试往返转换：urlencoded 字段")
+    public void testRoundTripWithUrlencoded() {
+        PreparedRequest original = new PreparedRequest();
+        original.method = "POST";
+        original.url = "https://example.com/api";
+        original.urlencoded = new LinkedHashMap<>();
+        original.urlencoded.put("key1", "value1");
+        original.urlencoded.put("key2", "value2");
+
+        String curlCommand = CurlParser.toCurl(original);
+        CurlRequest parsed = CurlParser.parse(curlCommand);
+
+        assertEquals(parsed.method, original.method);
+        assertEquals(parsed.url, original.url);
+        assertEquals(parsed.urlencoded.get("key1"), "value1");
+        assertEquals(parsed.urlencoded.get("key2"), "value2");
+    }
+
+    @Test(description = "测试空值和 null 的边界情况")
+    public void testEdgeCasesWithNullValues() {
+        // 测试没有参数的 -H
+        String curl1 = "curl https://example.com -H";
+        CurlRequest result1 = CurlParser.parse(curl1);
+        assertEquals(result1.url, "https://example.com");
+
+        // 测试没有参数的 -d
+        String curl2 = "curl https://example.com -d";
+        CurlRequest result2 = CurlParser.parse(curl2);
+        assertEquals(result2.url, "https://example.com");
+    }
+
+    @Test(description = "测试 URL 中特殊字符的处理")
+    public void testUrlWithSpecialCharacters() {
+        String curl = "curl 'https://example.com/api?name=John%20Doe&age=30&tags=a,b,c'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.url, "https://example.com/api?name=John%20Doe&age=30&tags=a,b,c");
+        assertEquals(result.params.get("name"), "John%20Doe");
+        assertEquals(result.params.get("age"), "30");
+        assertEquals(result.params.get("tags"), "a,b,c");
+    }
+
+    @Test(description = "测试大小写混合的 HTTP 方法")
+    public void testMixedCaseHttpMethods() {
+        String curl = "curl -X pOsT https://example.com";
+        CurlRequest result = CurlParser.parse(curl);
+        assertEquals(result.method, "POST", "HTTP 方法应该转换为大写");
+    }
+
+    @Test(description = "测试 followRedirects 标志的各种格式")
+    public void testFollowRedirectsVariations() {
+        // 短格式
+        String curl1 = "curl -L https://example.com";
+        CurlRequest result1 = CurlParser.parse(curl1);
+        assertTrue(result1.followRedirects);
+
+        // 长格式
+        String curl2 = "curl --location https://example.com";
+        CurlRequest result2 = CurlParser.parse(curl2);
+        assertTrue(result2.followRedirects);
+
+        // 没有重定向标志
+        String curl3 = "curl https://example.com";
+        CurlRequest result3 = CurlParser.parse(curl3);
+        assertFalse(result3.followRedirects);
+    }
+
+    @Test(description = "测试复杂的查询参数解析")
+    public void testComplexQueryParameterParsing() {
+        String curl = "curl 'https://api.example.com/search?q=java+programming&sort=date&filter=&limit=10'";
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(result.params.get("q"), "java+programming");
+        assertEquals(result.params.get("sort"), "date");
+        assertEquals(result.params.get("filter"), "");
+        assertEquals(result.params.get("limit"), "10");
+    }
+
+    @Test(description = "测试同时使用 body 和 urlencoded（body 优先）")
+    public void testBodyAndUrlencodedConflict() {
+        PreparedRequest req = new PreparedRequest();
+        req.method = "POST";
+        req.url = "https://example.com/api";
+        req.body = "{\"raw\":\"json\"}";
+        req.urlencoded = new LinkedHashMap<>();
+        req.urlencoded.put("key", "value");
+
+        String curl = CurlParser.toCurl(req);
+
+        // body 应该优先
+        assertTrue(curl.contains("--data"));
+        assertTrue(curl.contains("{\"raw\":\"json\"}"));
     }
 }

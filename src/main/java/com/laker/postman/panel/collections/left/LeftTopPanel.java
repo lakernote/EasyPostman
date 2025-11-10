@@ -266,7 +266,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                 item.setParamsList(paramsList);
             }
 
-            // Convert formData and formFiles maps to list
+            // Convert formData and formFiles maps to list (for multipart/form-data)
             if ((curlRequest.formData != null && !curlRequest.formData.isEmpty()) ||
                     (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
                 List<HttpFormData> formDataList = new ArrayList<>();
@@ -281,6 +281,15 @@ public class LeftTopPanel extends SingletonBasePanel {
                     }
                 }
                 item.setFormDataList(formDataList);
+            }
+
+            // Convert urlencoded map to list (for application/x-www-form-urlencoded)
+            if (curlRequest.urlencoded != null && !curlRequest.urlencoded.isEmpty()) {
+                List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+                for (Map.Entry<String, String> entry : curlRequest.urlencoded.entrySet()) {
+                    urlencodedList.add(new HttpFormUrlencoded(true, entry.getKey(), entry.getValue()));
+                }
+                item.setUrlencodedList(urlencodedList);
             }
 
             if (HttpUtil.isSSERequest(item.getHeaders())) {

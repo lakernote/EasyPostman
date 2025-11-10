@@ -16,6 +16,18 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CurlParser {
 
+    private static final String CONTENT_TYPE = "Content-Type";
+
+    // 受限制的 WebSocket 头部列表（静态常量，避免重复创建）
+    private static final List<String> RESTRICTED_WEBSOCKET_HEADERS = List.of(
+            "Connection",
+            "Host",
+            "Upgrade",
+            "Sec-WebSocket-Key",
+            "Sec-WebSocket-Version",
+            "Sec-WebSocket-Extensions"
+    );
+
     private CurlParser() {
         // 私有构造函数，防止实例化
     }
@@ -42,18 +54,28 @@ public class CurlParser {
         // 去除换行符和多余空格
         List<String> tokens = tokenize(curl);
 
+        // 用于跟踪是否使用了 -G 选项
+        boolean forceGet = false;
+        // 临时存储 data 参数，以便在发现 -G 时转换为查询参数
+        List<String> dataParams = new ArrayList<>();
+
         for (int i = 0; i < tokens.size(); i++) {
             String token = tokens.get(i);
             // 跳过curl
             if ("curl".equals(token)) continue;
             // 跳过引号
             if (("\"").equals(token)) continue;
+            // 处理 -G 或 --get 选项
+            if (token.equals("-G") || token.equals("--get")) {
+                forceGet = true;
+                continue;
+            }
             // 1. 自动跟随重定向
             if (token.equals("--location") || token.equals("-L")) {
                 req.followRedirects = true;
                 continue;
             }
-            // 1. URL 处理
+            // 1. URL 处理 (使用最后一个 URL，符合 curl 实际行为)
             if (token.equals("--url") && i + 1 < tokens.size()) {
                 req.url = tokens.get(++i);
             } else if (token.startsWith("http") || token.startsWith("ws://") || token.startsWith("wss://")) {
@@ -63,6 +85,10 @@ public class CurlParser {
             // 2. 方法
             else if (token.equals("-X") || token.equals("--request")) {
                 if (i + 1 < tokens.size()) req.method = tokens.get(++i).toUpperCase();
+            }
+            // 支持 -XPOST, -XGET 等连写格式
+            else if (token.startsWith("-X") && token.length() > 2) {
+                req.method = token.substring(2).toUpperCase();
             }
 
             // 3. Header
@@ -91,17 +117,13 @@ public class CurlParser {
 
             // 5. Body
             else if (token.equals("-d") || token.equals("--data")
-                     || token.equals("--data-raw") || token.equals("--data-binary")) {
+                    || token.equals("--data-raw") || token.equals("--data-binary")
+                    || token.equals("--data-urlencode")) {
                 if (i + 1 < tokens.size()) {
                     String rawBody = tokens.get(++i);
-                    // tokenize 方法已经处理了 shell 层面的转义，不需要再次 unescape
-                    req.body = rawBody;
+                    // 暂存到 dataParams，稍后根据 forceGet 决定如何处理
+                    dataParams.add(rawBody);
                     if (req.method == null) req.method = "POST"; // 有 body 默认 POST
-                    String contentType = req.headers.getOrDefault("Content-Type", "");
-                    // 如果是 multipart/form-data 格式，解析表单数据
-                    if (contentType.startsWith("multipart/form-data")) {
-                        parseMultipartFormData(req, req.body);
-                    }
                 }
             }
             // 6. Form (multipart/form-data)
@@ -122,12 +144,67 @@ public class CurlParser {
                     }
                     if (req.method == null) req.method = "POST";
                     // 设置 Content-Type
-                    if (!req.headers.containsKey("Content-Type")) {
-                        req.headers.put("Content-Type", "multipart/form-data");
+                    if (!req.headers.containsKey(CONTENT_TYPE)) {
+                        req.headers.put(CONTENT_TYPE, "multipart/form-data");
                     }
                 }
             }
         }
+
+        // 处理 -G 选项：将 data 参数转换为 URL 查询参数
+        if (forceGet) {
+            req.method = "GET";
+            // 将 dataParams 添加到 URL 查询参数
+            for (String dataParam : dataParams) {
+                String[] kv = dataParam.split("=", 2);
+                if (kv.length == 2) {
+                    req.params.put(kv[0], kv[1]);
+                } else if (kv.length == 1) {
+                    req.params.put(kv[0], "");
+                }
+            }
+        } else {
+            // 不是 -G 模式，将 dataParams 作为请求体
+            if (!dataParams.isEmpty()) {
+                // 如果没有设置 Content-Type，默认设置为 application/x-www-form-urlencoded
+                if (!req.headers.containsKey(CONTENT_TYPE)) {
+                    req.headers.put(CONTENT_TYPE, "application/x-www-form-urlencoded");
+                }
+                String contentType = req.headers.getOrDefault(CONTENT_TYPE, "");
+
+                // 检查所有 dataParams 是否都是 key=value 格式
+                boolean allKeyValue = true;
+                for (String dataParam : dataParams) {
+                    if (!dataParam.contains("=")) {
+                        allKeyValue = false;
+                        break;
+                    }
+                }
+
+                // 如果是 application/x-www-form-urlencoded 格式且所有参数都是 key=value 格式，解析为 key-value 对
+                if (contentType.startsWith("application/x-www-form-urlencoded") && allKeyValue) {
+                    for (String dataParam : dataParams) {
+                        String[] kv = dataParam.split("=", 2);
+                        if (kv.length == 2) {
+                            req.urlencoded.put(kv[0], kv[1]);
+                        } else if (kv.length == 1) {
+                            req.urlencoded.put(kv[0], "");
+                        }
+                    }
+                }
+                // 如果是 multipart/form-data 格式，解析表单数据
+                else if (contentType.startsWith("multipart/form-data")) {
+                    // 合并所有 data 参数为请求体
+                    req.body = String.join("&", dataParams);
+                    parseMultipartFormData(req, req.body);
+                }
+                // 其他情况（包括非 key=value 格式），保持为原始 body 字符串
+                else {
+                    req.body = String.join("&", dataParams);
+                }
+            }
+        }
+
         if (req.method == null) req.method = "GET"; // 默认 GET
 
         // 解析 URL 查询参数到 params
@@ -156,7 +233,7 @@ public class CurlParser {
     private static void parseMultipartFormData(CurlRequest req, String data) {
         try {
             // 从 Content-Type 提取 boundary
-            String contentType = req.headers.get("Content-Type");
+            String contentType = req.headers.get(CONTENT_TYPE);
             if (contentType == null || !contentType.contains("boundary=")) {
                 throw new IllegalArgumentException("Content-Type 缺失或无效");
             }
@@ -254,6 +331,18 @@ public class CurlParser {
                         currentToken.append('\'');
                         i++;
                         continue;
+                    } else if (next == 'a') {
+                        currentToken.append('\u0007'); // alert (bell)
+                        i++;
+                        continue;
+                    } else if (next == 'v') {
+                        currentToken.append('\u000B'); // vertical tab
+                        i++;
+                        continue;
+                    } else if (next == '0') {
+                        currentToken.append('\0'); // null character
+                        i++;
+                        continue;
                     }
                 }
                 currentToken.append(c);
@@ -338,6 +427,12 @@ public class CurlParser {
         if (preparedRequest.body != null && !preparedRequest.body.isEmpty()) {
             sb.append(" --data ").append(escapeShellArg(preparedRequest.body));
         }
+        // urlencoded (application/x-www-form-urlencoded)
+        if (preparedRequest.urlencoded != null && !preparedRequest.urlencoded.isEmpty()) {
+            for (var entry : preparedRequest.urlencoded.entrySet()) {
+                sb.append(" --data-urlencode ").append(escapeShellArg(entry.getKey() + "=" + entry.getValue()));
+            }
+        }
         // form-data
         if (preparedRequest.formData != null && !preparedRequest.formData.isEmpty()) {
             for (var entry : preparedRequest.formData.entrySet()) {
@@ -397,15 +492,6 @@ public class CurlParser {
      * @return 如果是受限制的头部，返回 true；否则返回 false
      */
     private static boolean isRestrictedWebSocketHeader(String headerName) {
-        // 受限制的 WebSocket 头部列表
-        List<String> restrictedHeaders = List.of(
-                "Connection",
-                "Host",
-                "Upgrade",
-                "Sec-WebSocket-Key",
-                "Sec-WebSocket-Version",
-                "Sec-WebSocket-Extensions"
-        );
-        return restrictedHeaders.contains(headerName);
+        return RESTRICTED_WEBSOCKET_HEADERS.contains(headerName);
     }
 }

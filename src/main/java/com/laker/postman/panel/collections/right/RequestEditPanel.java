@@ -160,7 +160,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 保存快捷键
         KeyStroke saveKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-            com.laker.postman.service.setting.ShortcutManager.SAVE_REQUEST);
+                com.laker.postman.service.setting.ShortcutManager.SAVE_REQUEST);
         if (saveKey != null) {
             inputMap.put(saveKey, ACTION_SAVE_REQUEST);
             actionMap.put(ACTION_SAVE_REQUEST, new AbstractAction() {
@@ -173,7 +173,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 新建标签页快捷键
         KeyStroke newTabKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-            com.laker.postman.service.setting.ShortcutManager.NEW_REQUEST);
+                com.laker.postman.service.setting.ShortcutManager.NEW_REQUEST);
         if (newTabKey != null) {
             inputMap.put(newTabKey, ACTION_NEW_REQUEST_TAB);
             actionMap.put(ACTION_NEW_REQUEST_TAB, new AbstractAction() {
@@ -186,7 +186,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 关闭当前标签页快捷键
         KeyStroke closeCurrentKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-            com.laker.postman.service.setting.ShortcutManager.CLOSE_CURRENT_TAB);
+                com.laker.postman.service.setting.ShortcutManager.CLOSE_CURRENT_TAB);
         if (closeCurrentKey != null) {
             inputMap.put(closeCurrentKey, ACTION_CLOSE_CURRENT_TAB);
             actionMap.put(ACTION_CLOSE_CURRENT_TAB, new AbstractAction() {
@@ -199,7 +199,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 关闭其他标签页快捷键
         KeyStroke closeOthersKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-            com.laker.postman.service.setting.ShortcutManager.CLOSE_OTHER_TABS);
+                com.laker.postman.service.setting.ShortcutManager.CLOSE_OTHER_TABS);
         if (closeOthersKey != null) {
             inputMap.put(closeOthersKey, ACTION_CLOSE_OTHER_TABS);
             actionMap.put(ACTION_CLOSE_OTHER_TABS, new AbstractAction() {
@@ -212,7 +212,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 关闭所有标签页快捷键
         KeyStroke closeAllKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-            com.laker.postman.service.setting.ShortcutManager.CLOSE_ALL_TABS);
+                com.laker.postman.service.setting.ShortcutManager.CLOSE_ALL_TABS);
         if (closeAllKey != null) {
             inputMap.put(closeAllKey, ACTION_CLOSE_ALL_TABS);
             actionMap.put(ACTION_CLOSE_ALL_TABS, new AbstractAction() {
@@ -617,7 +617,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                                         item.setParamsList(paramsList);
                                     }
 
-                                    // Convert formData and formFiles maps to list
+                                    // Convert formData and formFiles maps to list (for multipart/form-data)
                                     if ((curlRequest.formData != null && !curlRequest.formData.isEmpty()) ||
                                             (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
                                         List<HttpFormData> formDataList = new ArrayList<>();
@@ -632,6 +632,15 @@ public class RequestEditPanel extends SingletonBasePanel {
                                             }
                                         }
                                         item.setFormDataList(formDataList);
+                                    }
+
+                                    // Convert urlencoded map to list (for application/x-www-form-urlencoded)
+                                    if (curlRequest.urlencoded != null && !curlRequest.urlencoded.isEmpty()) {
+                                        List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+                                        for (Map.Entry<String, String> entry : curlRequest.urlencoded.entrySet()) {
+                                            urlencodedList.add(new HttpFormUrlencoded(true, entry.getKey(), entry.getValue()));
+                                        }
+                                        item.setUrlencodedList(urlencodedList);
                                     }
 
                                     if (HttpUtil.isSSERequest(item.getHeaders())) {

@@ -3,12 +3,13 @@ package com.laker.postman.panel.history;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
-import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.service.HistoryPersistenceManager;
+import com.laker.postman.service.HistoryPersistenceService;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -282,7 +283,7 @@ public class HistoryPanel extends SingletonBasePanel {
     public void addRequestHistory(PreparedRequest req, HttpResponse resp) {
         long requestTime = System.currentTimeMillis();
         // 添加到持久化管理器
-        HistoryPersistenceManager.getInstance().addHistory(req, resp, requestTime);
+        BeanFactory.getBean(HistoryPersistenceService.class).addHistory(req, resp, requestTime);
 
         // 优化：增量更新UI，而不是完全重新加载
         RequestHistoryItem newItem = new RequestHistoryItem(req, resp, requestTime);
@@ -367,7 +368,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
     private void clearRequestHistory() {
         // 清空持久化的历史记录
-        HistoryPersistenceManager.getInstance().clearHistory();
+        BeanFactory.getBean(HistoryPersistenceService.class).clearHistory();
 
         // 清空UI列表
         isUpdating = true;
@@ -392,7 +393,7 @@ public class HistoryPanel extends SingletonBasePanel {
         SwingWorker<List<Object>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<Object> doInBackground() {
-                List<RequestHistoryItem> persistedHistory = HistoryPersistenceManager.getInstance().getHistory();
+                List<RequestHistoryItem> persistedHistory = BeanFactory.getBean(HistoryPersistenceService.class).getHistory();
                 List<Object> result = new ArrayList<>();
 
                 // 按天分组

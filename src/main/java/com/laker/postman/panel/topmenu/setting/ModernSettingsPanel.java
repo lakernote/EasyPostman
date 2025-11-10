@@ -231,18 +231,24 @@ public abstract class ModernSettingsPanel extends JPanel {
             field.addFocusListener(new FocusAdapter() {
                 @Override
                 public void focusGained(FocusEvent e) {
-                    field.setBorder(new CompoundBorder(
-                            new RoundedLineBorder(ModernColors.PRIMARY, 2, 8),
-                            new EmptyBorder(7, 13, 7, 13)
-                    ));
+                    // 检查是否有验证错误
+                    if (!hasValidationError(field)) {
+                        field.setBorder(new CompoundBorder(
+                                new RoundedLineBorder(ModernColors.PRIMARY, 2, 8),
+                                new EmptyBorder(7, 13, 7, 13)
+                        ));
+                    }
                 }
 
                 @Override
                 public void focusLost(FocusEvent e) {
-                    field.setBorder(new CompoundBorder(
-                            new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 8),
-                            new EmptyBorder(8, 14, 8, 14)
-                    ));
+                    // 检查是否有验证错误
+                    if (!hasValidationError(field)) {
+                        field.setBorder(new CompoundBorder(
+                                new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 8),
+                                new EmptyBorder(8, 14, 8, 14)
+                        ));
+                    }
                 }
             });
         } else if (component instanceof JComboBox) {
@@ -397,15 +403,23 @@ public abstract class ModernSettingsPanel extends JPanel {
                 boolean valid = text.isEmpty() || validator.test(text);
 
                 if (valid) {
-                    field.setBorder(new CompoundBorder(
-                            new RoundedLineBorder(ModernColors.BORDER_LIGHT, 1, 8),
-                            new EmptyBorder(6, 12, 6, 12)
-                    ));
+                    // 根据焦点状态设置不同的边框
+                    if (field.hasFocus()) {
+                        field.setBorder(new CompoundBorder(
+                                new RoundedLineBorder(ModernColors.PRIMARY, 2, 8),
+                                new EmptyBorder(7, 13, 7, 13)
+                        ));
+                    } else {
+                        field.setBorder(new CompoundBorder(
+                                new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 8),
+                                new EmptyBorder(8, 14, 8, 14)
+                        ));
+                    }
                     field.setToolTipText(null);
                 } else {
                     field.setBorder(new CompoundBorder(
                             new RoundedLineBorder(ModernColors.ERROR, 2, 8),
-                            new EmptyBorder(5, 11, 5, 11)
+                            new EmptyBorder(7, 13, 7, 13)
                     ));
                     field.setToolTipText(errorMessage);
                 }
@@ -570,7 +584,19 @@ public abstract class ModernSettingsPanel extends JPanel {
     }
 
     protected boolean isPositiveInteger(String s) {
-        return isInteger(s) && Integer.parseInt(s) > 0;
+        return isInteger(s) && Integer.parseInt(s) >= 0;
+    }
+
+    /**
+     * 检查字段是否有验证错误
+     */
+    protected boolean hasValidationError(JTextField field) {
+        Predicate<String> validator = validators.get(field);
+        if (validator == null) {
+            return false;
+        }
+        String text = field.getText().trim();
+        return !text.isEmpty() && !validator.test(text);
     }
 
     // ==================== 状态管理方法 ====================

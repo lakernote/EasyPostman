@@ -151,7 +151,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建侧边栏展开/收起按钮
      */
     private void createSidebarToggleLabel() {
-        sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 16, 16));
+        sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20));
         sidebarToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);
@@ -178,7 +178,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createConsoleLabel() {
         consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-        consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
+        consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 20, 20));
         consoleLabel.setFont(bottomBarFont); // 使用缓存的字体
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
@@ -197,7 +197,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createCookieLabel() {
         cookieLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
-        cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
+        cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 20, 20));
         cookieLabel.setFont(bottomBarFont); // 使用缓存的字体
         cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));

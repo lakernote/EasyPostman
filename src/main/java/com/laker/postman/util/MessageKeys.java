@@ -45,7 +45,6 @@ public final class MessageKeys {
     public static final String UPDATE_CANCEL_DOWNLOAD = "update.cancel_download";
     public static final String UPDATE_DOWNLOAD_CANCELLED = "update.download_cancelled";
     public static final String UPDATE_DOWNLOAD_FAILED = "update.download_failed";
-    public static final String UPDATE_INSTALL_PROMPT = "update.install_prompt";
     public static final String UPDATE_NO_INSTALLER_FOUND = "update.no_installer_found";
 
     // ============ 更新类型相关 ============
@@ -533,8 +532,6 @@ public final class MessageKeys {
     public static final String GROUP_EDIT_DESCRIPTION = "group.edit.description";
     public static final String GROUP_EDIT_AUTH_INFO = "group.edit.auth.info";
     public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
-    public static final String GROUP_EDIT_SAVE_SUCCESS = "group.edit.save.success";
-    public static final String GROUP_EDIT_SAVE_SUCCESS_TITLE = "group.edit.save.success.title";
     public static final String GROUP_EDIT_VALIDATION_ERROR = "group.edit.validation.error";
 
     // ============ 功能测试执行结果相关 ============
@@ -1441,4 +1438,3 @@ public final class MessageKeys {
     public static final String CERT_CONSOLE_FILE_NOT_FOUND = "cert.console.file_not_found";
 
 }
-

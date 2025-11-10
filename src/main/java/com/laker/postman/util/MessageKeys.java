@@ -480,6 +480,11 @@ public final class MessageKeys {
     public static final String COLLECTIONS_MENU_COPY_SUFFIX = "collections.menu.copy_suffix";
     public static final String COLLECTIONS_MENU_COPY_CURL_SUCCESS = "collections.menu.copy_curl.success";
     public static final String COLLECTIONS_MENU_COPY_CURL_FAIL = "collections.menu.copy_curl.fail";
+    public static final String COLLECTIONS_MENU_COPY = "collections.menu.copy";
+    public static final String COLLECTIONS_MENU_PASTE = "collections.menu.paste";
+    public static final String COLLECTIONS_COPY_SUCCESS = "collections.copy_success";
+    public static final String COLLECTIONS_COPIED_TO_CLIPBOARD = "collections.copied_to_clipboard";
+    public static final String COLLECTIONS_PASTE_SUCCESS = "collections.paste_success";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP = "collections.menu.export_postman.select_group";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE = "collections.menu.export_postman.dialog_title";
     public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE = "collections.menu.move_to_workspace";

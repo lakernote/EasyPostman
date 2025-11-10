@@ -68,6 +68,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     @Getter
     private transient RequestsPersistence persistence;
 
+    // 剪贴板：存储复制的请求列表（用于跨分组粘贴）
+    private transient List<HttpRequestItem> copiedRequests = new ArrayList<>();
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -138,6 +141,21 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                 boolean isMultipleSelection = selectedPaths.length > 1;
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+
+                // Ctrl+C 或 Cmd+C 复制
+                int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+                if (e.getKeyCode() == KeyEvent.VK_C && (e.getModifiersEx() & cmdMask) != 0) {
+                    copySelectedRequests();
+                    e.consume();
+                    return;
+                }
+
+                // Ctrl+V 或 Cmd+V 粘贴
+                if (e.getKeyCode() == KeyEvent.VK_V && (e.getModifiersEx() & cmdMask) != 0) {
+                    pasteRequests();
+                    e.consume();
+                    return;
+                }
 
                 if (selectedNode != null && selectedNode != rootTreeNode) {
                     if (e.getKeyCode() == KeyEvent.VK_F2) {
@@ -277,12 +295,19 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 }
                 // 请求节点右键菜单增加"复制"
                 if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
+                    // 复制（直接在当前位置下方创建副本，支持多选）
                     JMenuItem duplicateItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
-                    duplicateItem.addActionListener(e -> duplicateSelectedRequest());
-                    // 多选时禁用
-                    duplicateItem.setEnabled(!isMultipleSelection);
+                    duplicateItem.addActionListener(e -> duplicateSelectedRequests());
                     menu.add(duplicateItem);
+
+                    // 复制到剪贴板（用于跨分组粘贴，支持多选）
+                    JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY),
+                            new FlatSVGIcon("icons/duplicate.svg", 16, 16));
+                    int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+                    copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, cmdMask));
+                    copyItem.addActionListener(e -> copySelectedRequests());
+                    menu.add(copyItem);
 
                     // 复制为cURL命令
                     JMenuItem copyAsCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_CURL),
@@ -291,6 +316,17 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     // 多选时禁用
                     copyAsCurlItem.setEnabled(!isMultipleSelection);
                     menu.add(copyAsCurlItem);
+                    menu.addSeparator();
+                }
+
+                // 粘贴（分组或请求都可以粘贴）
+                if (!copiedRequests.isEmpty()) {
+                    JMenuItem pasteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_PASTE),
+                            new FlatSVGIcon("icons/duplicate.svg", 16, 16));
+                    int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+                    pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, cmdMask));
+                    pasteItem.addActionListener(e -> pasteRequests());
+                    menu.add(pasteItem);
                     menu.addSeparator();
                 }
                 // 只有非根节点才显示重命名/删除
@@ -685,25 +721,124 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         return treeModel;
     }
 
-    // 复制请求方法
-    private void duplicateSelectedRequest() {
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-        if (selectedNode == null) return;
-        Object userObj = selectedNode.getUserObject();
-        if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
-            HttpRequestItem item = (HttpRequestItem) obj[1];
-            // 深拷贝请求项（假设HttpRequestItem有clone或可用JSON序列化实现深拷贝）
-            HttpRequestItem copy = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
-            copy.setId(java.util.UUID.randomUUID().toString());
-            copy.setName(item.getName() + " " + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
-            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
-            DefaultMutableTreeNode copyNode = new DefaultMutableTreeNode(new Object[]{REQUEST, copy});
-            int idx = parent.getIndex(selectedNode) + 1;
-            parent.insert(copyNode, idx);
-            treeModel.reload(parent);
-            requestTree.expandPath(new TreePath(parent.getPath()));
-            persistence.saveRequestGroups();
+    // 复制请求方法（支持多选，在当前位置创建副本）
+    private void duplicateSelectedRequests() {
+        TreePath[] selectedPaths = requestTree.getSelectionPaths();
+        if (selectedPaths == null || selectedPaths.length == 0) return;
+
+        // 收集所有要复制的请求
+        List<RequestCopyInfo> copyInfos = new ArrayList<>();
+        for (TreePath path : selectedPaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            Object userObj = node.getUserObject();
+            if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
+                HttpRequestItem item = (HttpRequestItem) obj[1];
+                DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+                int idx = parent.getIndex(node);
+                copyInfos.add(new RequestCopyInfo(item, parent, idx));
+            }
         }
+
+        // 批量创建副本
+        for (RequestCopyInfo info : copyInfos) {
+            HttpRequestItem copy = JSONUtil.toBean(JSONUtil.parse(info.item).toString(), HttpRequestItem.class);
+            copy.setId(java.util.UUID.randomUUID().toString());
+            copy.setName(info.item.getName() + " " + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
+            DefaultMutableTreeNode copyNode = new DefaultMutableTreeNode(new Object[]{REQUEST, copy});
+            info.parent.insert(copyNode, info.index + 1);
+            treeModel.reload(info.parent);
+            requestTree.expandPath(new TreePath(info.parent.getPath()));
+        }
+
+        if (!copyInfos.isEmpty()) {
+            persistence.saveRequestGroups();
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_COPY_SUCCESS, copyInfos.size()));
+        }
+    }
+
+    // 辅助类：存储复制信息
+    private static class RequestCopyInfo {
+        final HttpRequestItem item;
+        final DefaultMutableTreeNode parent;
+        final int index;
+
+        RequestCopyInfo(HttpRequestItem item, DefaultMutableTreeNode parent, int index) {
+            this.item = item;
+            this.parent = parent;
+            this.index = index;
+        }
+    }
+
+    /**
+     * 复制选中的请求到剪贴板（支持多选，用于跨分组粘贴）
+     */
+    private void copySelectedRequests() {
+        TreePath[] selectedPaths = requestTree.getSelectionPaths();
+        if (selectedPaths == null || selectedPaths.length == 0) return;
+
+        copiedRequests.clear();
+        for (TreePath path : selectedPaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            Object userObj = node.getUserObject();
+            if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
+                HttpRequestItem item = (HttpRequestItem) obj[1];
+                // 深拷贝
+                HttpRequestItem copy = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
+                copiedRequests.add(copy);
+            }
+        }
+
+        if (!copiedRequests.isEmpty()) {
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_COPIED_TO_CLIPBOARD, copiedRequests.size()));
+        }
+    }
+
+    /**
+     * 粘贴请求到选中的分组或请求的父分组
+     */
+    private void pasteRequests() {
+        if (copiedRequests.isEmpty()) return;
+
+        DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
+        if (targetNode == null) {
+            targetNode = rootTreeNode; // 默认粘贴到根节点
+        }
+
+        // 确定目标父节点
+        DefaultMutableTreeNode targetParent;
+        Object userObj = targetNode.getUserObject();
+
+        if (targetNode == rootTreeNode || ROOT.equals(userObj)) {
+            targetParent = rootTreeNode;
+        } else if (userObj instanceof Object[] obj) {
+            if (GROUP.equals(obj[0])) {
+                // 粘贴到分组内
+                targetParent = targetNode;
+            } else if (REQUEST.equals(obj[0])) {
+                // 粘贴到请求的父分组
+                targetParent = (DefaultMutableTreeNode) targetNode.getParent();
+            } else {
+                targetParent = rootTreeNode;
+            }
+        } else {
+            targetParent = rootTreeNode;
+        }
+
+        // 批量粘贴
+        for (HttpRequestItem copiedItem : copiedRequests) {
+            HttpRequestItem pasteItem = JSONUtil.toBean(JSONUtil.parse(copiedItem).toString(), HttpRequestItem.class);
+            pasteItem.setId(java.util.UUID.randomUUID().toString());
+            pasteItem.setName(copiedItem.getName() + " " + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
+
+            DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(new Object[]{REQUEST, pasteItem});
+            targetParent.add(newNode);
+        }
+
+        treeModel.reload(targetParent);
+        requestTree.expandPath(new TreePath(targetParent.getPath()));
+        persistence.saveRequestGroups();
+
+        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_PASTE_SUCCESS, copiedRequests.size()));
     }
 
     // 复制请求为cUrl方法

@@ -814,6 +814,9 @@ public class RequestEditPanel extends SingletonBasePanel {
             return;
         }
 
+        // 保存当前组件的引用，因为在删除其他标签后索引会改变
+        Component currentComponent = tabbedPane.getComponentAt(currentIndex);
+
         List<Component> toRemove = new ArrayList<>();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component comp = tabbedPane.getComponentAt(i);
@@ -844,8 +847,8 @@ public class RequestEditPanel extends SingletonBasePanel {
             tabbedPane.remove(comp);
         }
 
-        // 操作完成后，定位到当前tab
-        int idx = tabbedPane.indexOfComponent(tabbedPane.getComponentAt(currentIndex));
+        // 操作完成后，定位到当前tab（使用保存的组件引用而不是旧的索引）
+        int idx = tabbedPane.indexOfComponent(currentComponent);
         if (idx >= 0) tabbedPane.setSelectedIndex(idx);
     }
 

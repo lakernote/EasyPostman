@@ -4,6 +4,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -274,28 +275,19 @@ public class PlusPanel extends JPanel {
         shortcutPanel.setOpaque(false);
         shortcutPanel.setLayout(new BoxLayout(shortcutPanel, BoxLayout.Y_AXIS));
 
-        // 新建请求快捷键描述
-        JLabel shortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_SHORTCUT_DESC));
-        shortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        shortcutDescLabel.setFont(shortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        shortcutDescLabel.setForeground(ModernColors.TEXT_HINT);
-        shortcutPanel.add(shortcutDescLabel);
-        shortcutPanel.add(Box.createVerticalStrut(8));
-
-        // 保存快捷键描述
-        JLabel saveShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SAVE_SHORTCUT_DESC));
-        saveShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        saveShortcutDescLabel.setFont(saveShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        saveShortcutDescLabel.setForeground(ModernColors.TEXT_HINT);
-        shortcutPanel.add(saveShortcutDescLabel);
-        shortcutPanel.add(Box.createVerticalStrut(8));
-
-        // 退出快捷键描述
-        JLabel exitShortcutDescLabel = new JLabel(I18nUtil.getMessage(MessageKeys.EXIT_SHORTCUT_DESC));
-        exitShortcutDescLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        exitShortcutDescLabel.setFont(exitShortcutDescLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        exitShortcutDescLabel.setForeground(ModernColors.TEXT_HINT);
-        shortcutPanel.add(exitShortcutDescLabel);
+        // 动态显示快捷键，使用 ShortcutManager
+        addShortcutLabel(shortcutPanel, I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
+                ShortcutManager.NEW_REQUEST);
+        addShortcutLabel(shortcutPanel, I18nUtil.getMessage(MessageKeys.SAVE_REQUEST),
+                ShortcutManager.SAVE_REQUEST);
+        addShortcutLabel(shortcutPanel, I18nUtil.getMessage(MessageKeys.TAB_CLOSE_CURRENT),
+                ShortcutManager.CLOSE_CURRENT_TAB);
+        addShortcutLabel(shortcutPanel, I18nUtil.getMessage(MessageKeys.TAB_CLOSE_OTHERS),
+                ShortcutManager.CLOSE_OTHER_TABS);
+        addShortcutLabel(shortcutPanel, I18nUtil.getMessage(MessageKeys.TAB_CLOSE_ALL),
+                ShortcutManager.CLOSE_ALL_TABS);
+        addShortcutLabel(shortcutPanel, I18nUtil.getMessage(MessageKeys.EXIT_APP),
+                ShortcutManager.EXIT_APP);
 
         contentPanel.add(shortcutPanel);
 
@@ -304,5 +296,22 @@ public class PlusPanel extends JPanel {
 
         // 将内容面板添加到中心位置
         add(contentPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * 添加快捷键标签的辅助方法
+     */
+    private void addShortcutLabel(JPanel panel, String actionName, String shortcutId) {
+        String shortcutText = com.laker.postman.service.setting.ShortcutManager.getShortcutText(shortcutId);
+
+        // 使用国际化格式化标签文本
+        String labelText = I18nUtil.getMessage(MessageKeys.SHORTCUT_LABEL_FORMAT, actionName, shortcutText);
+
+        JLabel label = new JLabel(labelText);
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        label.setFont(label.getFont().deriveFont(Font.PLAIN, 13f));
+        label.setForeground(ModernColors.TEXT_HINT);
+        panel.add(label);
+        panel.add(Box.createVerticalStrut(8));
     }
 }

@@ -53,6 +53,28 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         FlatDesktop.setQuitHandler((e) -> ExitService.exit());
     }
 
+    /**
+     * 重新加载快捷键（快捷键设置修改后调用）
+     */
+    public void reloadShortcuts() {
+        // 移除旧的菜单栏
+        remove(menuBar);
+
+        // 重新创建菜单栏
+        menuBar = new JMenuBar();
+        menuBar.setBorder(BorderFactory.createEmptyBorder());
+        addFileMenu();
+        addLanguageMenu();
+        addSettingMenu();
+        addHelpMenu();
+        addAboutMenu();
+        add(menuBar, BorderLayout.WEST);
+
+        // 刷新界面
+        revalidate();
+        repaint();
+    }
+
     private void initComponents() {
         menuBar = new JMenuBar();
         menuBar.setBorder(BorderFactory.createEmptyBorder());
@@ -70,8 +92,12 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem logMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG));
         logMenuItem.addActionListener(e -> openLogDirectory());
         JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
-        // 快捷键绑定为 Command+Q（macOS）或 Ctrl+Q（Windows/Linux
-        exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        // 使用 ShortcutManager 获取退出快捷键
+        KeyStroke exitKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
+            com.laker.postman.service.setting.ShortcutManager.EXIT_APP);
+        if (exitKey != null) {
+            exitMenuItem.setAccelerator(exitKey);
+        }
         exitMenuItem.addActionListener(e -> ExitService.exit());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
@@ -161,6 +187,10 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem clientCertMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
         clientCertMenuItem.addActionListener(e -> showModernSettingsDialog(5));
         settingMenu.add(clientCertMenuItem);
+
+        JMenuItem shortcutMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_SHORTCUTS_TITLE));
+        shortcutMenuItem.addActionListener(e -> showModernSettingsDialog(6));
+        settingMenu.add(shortcutMenuItem);
 
         menuBar.add(settingMenu);
     }

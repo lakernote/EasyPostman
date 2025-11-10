@@ -68,6 +68,11 @@ public class ModernSettingsDialog extends JDialog {
                 new ClientCertificateSettingsPanelModern(this)
         );
 
+        tabbedPane.addTab(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_SHORTCUTS_TITLE),
+                new ShortcutSettingsPanel()
+        );
+
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
         setContentPane(mainPanel);

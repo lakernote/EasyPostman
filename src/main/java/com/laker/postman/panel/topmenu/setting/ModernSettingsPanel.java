@@ -11,7 +11,10 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -33,7 +36,6 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel warningPanel;
     protected JLabel warningLabel;
 
-    private static final int SECTION_SPACING = 12;  // 节间距
     private static final int FIELD_SPACING = 8;     // 字段间距
     private static final int BORDER_RADIUS = 8;     // 圆角半径
     private static final int LABEL_WIDTH = 220;     // 标签宽度
@@ -376,11 +378,19 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         field.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) { validateField(); }
+            public void insertUpdate(DocumentEvent e) {
+                validateField();
+            }
+
             @Override
-            public void removeUpdate(DocumentEvent e) { validateField(); }
+            public void removeUpdate(DocumentEvent e) {
+                validateField();
+            }
+
             @Override
-            public void changedUpdate(DocumentEvent e) { validateField(); }
+            public void changedUpdate(DocumentEvent e) {
+                validateField();
+            }
 
             private void validateField() {
                 String text = field.getText().trim();
@@ -653,11 +663,19 @@ public abstract class ModernSettingsPanel extends JPanel {
             originalValues.put(component, ((JTextField) component).getText());
             ((JTextField) component).getDocument().addDocumentListener(new DocumentListener() {
                 @Override
-                public void insertUpdate(DocumentEvent e) { checkForChanges(); }
+                public void insertUpdate(DocumentEvent e) {
+                    checkForChanges();
+                }
+
                 @Override
-                public void removeUpdate(DocumentEvent e) { checkForChanges(); }
+                public void removeUpdate(DocumentEvent e) {
+                    checkForChanges();
+                }
+
                 @Override
-                public void changedUpdate(DocumentEvent e) { checkForChanges(); }
+                public void changedUpdate(DocumentEvent e) {
+                    checkForChanges();
+                }
             });
         } else if (component instanceof JCheckBox) {
             originalValues.put(component, ((JCheckBox) component).isSelected());
@@ -783,7 +801,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建带重置按钮的字段行
      */
     protected JPanel createFieldRowWithReset(String labelText, String tooltip,
-                                            JTextField inputField, String defaultValue) {
+                                             JTextField inputField, String defaultValue) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
         row.setBackground(ModernColors.BG_WHITE);
@@ -858,7 +876,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建带验证反馈的字段行（增强版）
      */
     protected JPanel createValidatedFieldRow(String labelText, String tooltip,
-                                            JTextField inputField, JLabel validationLabel) {
+                                             JTextField inputField, JLabel validationLabel) {
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBackground(ModernColors.BG_WHITE);

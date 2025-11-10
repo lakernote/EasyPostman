@@ -132,6 +132,24 @@ public class RequestEditPanel extends SingletonBasePanel {
     // 快捷键 action 名称常量
     private static final String ACTION_SAVE_REQUEST = "saveRequest";
     private static final String ACTION_NEW_REQUEST_TAB = "newRequestTab";
+    private static final String ACTION_CLOSE_CURRENT_TAB = "closeCurrentTab";
+    private static final String ACTION_CLOSE_OTHER_TABS = "closeOtherTabs";
+    private static final String ACTION_CLOSE_ALL_TABS = "closeAllTabs";
+
+    /**
+     * 重新加载快捷键（快捷键设置修改后调用）
+     */
+    public void reloadShortcuts() {
+        // 清除所有现有的快捷键绑定
+        InputMap inputMap = this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = this.getActionMap();
+
+        inputMap.clear();
+        actionMap.clear();
+
+        // 重新注册快捷键
+        registerShortcuts();
+    }
 
     /**
      * 统一注册所有快捷键
@@ -140,25 +158,70 @@ public class RequestEditPanel extends SingletonBasePanel {
         InputMap inputMap = this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = this.getActionMap();
 
-        // 保存快捷键 Ctrl+S / Cmd+S
-        KeyStroke saveKey = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
-        inputMap.put(saveKey, ACTION_SAVE_REQUEST);
-        actionMap.put(ACTION_SAVE_REQUEST, new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveCurrentRequest();
-            }
-        });
+        // 保存快捷键
+        KeyStroke saveKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
+            com.laker.postman.service.setting.ShortcutManager.SAVE_REQUEST);
+        if (saveKey != null) {
+            inputMap.put(saveKey, ACTION_SAVE_REQUEST);
+            actionMap.put(ACTION_SAVE_REQUEST, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    saveCurrentRequest();
+                }
+            });
+        }
 
-        // 新建标签页快捷键 Ctrl+N / Cmd+N
-        KeyStroke newTabKey = KeyStroke.getKeyStroke('N', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
-        inputMap.put(newTabKey, ACTION_NEW_REQUEST_TAB);
-        actionMap.put(ACTION_NEW_REQUEST_TAB, new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                addNewTab(null);
-            }
-        });
+        // 新建标签页快捷键
+        KeyStroke newTabKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
+            com.laker.postman.service.setting.ShortcutManager.NEW_REQUEST);
+        if (newTabKey != null) {
+            inputMap.put(newTabKey, ACTION_NEW_REQUEST_TAB);
+            actionMap.put(ACTION_NEW_REQUEST_TAB, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    addNewTab(null);
+                }
+            });
+        }
+
+        // 关闭当前标签页快捷键
+        KeyStroke closeCurrentKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
+            com.laker.postman.service.setting.ShortcutManager.CLOSE_CURRENT_TAB);
+        if (closeCurrentKey != null) {
+            inputMap.put(closeCurrentKey, ACTION_CLOSE_CURRENT_TAB);
+            actionMap.put(ACTION_CLOSE_CURRENT_TAB, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    closeCurrentTab();
+                }
+            });
+        }
+
+        // 关闭其他标签页快捷键
+        KeyStroke closeOthersKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
+            com.laker.postman.service.setting.ShortcutManager.CLOSE_OTHER_TABS);
+        if (closeOthersKey != null) {
+            inputMap.put(closeOthersKey, ACTION_CLOSE_OTHER_TABS);
+            actionMap.put(ACTION_CLOSE_OTHER_TABS, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    closeOtherTabs();
+                }
+            });
+        }
+
+        // 关闭所有标签页快捷键
+        KeyStroke closeAllKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
+            com.laker.postman.service.setting.ShortcutManager.CLOSE_ALL_TABS);
+        if (closeAllKey != null) {
+            inputMap.put(closeAllKey, ACTION_CLOSE_ALL_TABS);
+            actionMap.put(ACTION_CLOSE_ALL_TABS, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    closeAllTabs();
+                }
+            });
+        }
     }
 
     /**
@@ -701,5 +764,123 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 恢复+Tab
         addPlusTab();
+    }
+
+    /**
+     * 关闭当前标签页
+     */
+    public void closeCurrentTab() {
+        int currentIndex = tabbedPane.getSelectedIndex();
+        if (currentIndex < 0 || isPlusTab(currentIndex)) {
+            return;
+        }
+
+        Component component = tabbedPane.getComponentAt(currentIndex);
+
+        // 只有 RequestEditSubPanel 才需要检查是否修改
+        if (component instanceof RequestEditSubPanel editSubPanel) {
+            if (editSubPanel.isModified()) {
+                int result = JOptionPane.showConfirmDialog(tabbedPane,
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+                if (result == JOptionPane.CANCEL_OPTION) return;
+                if (result == JOptionPane.YES_OPTION) {
+                    saveCurrentRequest();
+                }
+            }
+        }
+
+        // 对于其他类型的面板（如 GroupEditPanel），直接关闭
+        tabbedPane.remove(currentIndex);
+
+        // 如果还有请求Tab，且没有选中Tab，则选中最后一个请求Tab
+        int count = tabbedPane.getTabCount();
+        if (count > 1) { // 还有请求Tab和+Tab
+            int selected = tabbedPane.getSelectedIndex();
+            if (selected == -1 || selected == count - 1) { // 没有选中或选中的是+Tab
+                tabbedPane.setSelectedIndex(count - 2); // 选中最后一个请求Tab
+            }
+        }
+    }
+
+    /**
+     * 关闭其他标签页
+     */
+    public void closeOtherTabs() {
+        int currentIndex = tabbedPane.getSelectedIndex();
+        if (currentIndex < 0 || isPlusTab(currentIndex)) {
+            return;
+        }
+
+        List<Component> toRemove = new ArrayList<>();
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            // 收集所有非当前、非 + Tab 的组件（包括 RequestEditSubPanel 和 GroupEditPanel）
+            if (i != currentIndex && !(comp instanceof PlusPanel)) {
+                toRemove.add(comp);
+            }
+        }
+
+        for (Component comp : toRemove) {
+            // 只对 RequestEditSubPanel 检查是否修改
+            if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
+                int idx = tabbedPane.indexOfComponent(comp);
+                int result = JOptionPane.showConfirmDialog(tabbedPane,
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_OTHERS),
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+                if (result == JOptionPane.CANCEL_OPTION) {
+                    tabbedPane.setSelectedIndex(idx);
+                    return;
+                }
+                if (result == JOptionPane.YES_OPTION) {
+                    tabbedPane.setSelectedIndex(idx);
+                    saveCurrentRequest();
+                }
+            }
+            tabbedPane.remove(comp);
+        }
+
+        // 操作完成后，定位到当前tab
+        int idx = tabbedPane.indexOfComponent(tabbedPane.getComponentAt(currentIndex));
+        if (idx >= 0) tabbedPane.setSelectedIndex(idx);
+    }
+
+    /**
+     * 关闭所有标签页
+     */
+    public void closeAllTabs() {
+        List<Component> toRemove = new ArrayList<>();
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            // 收集所有非 + Tab 的组件（包括 RequestEditSubPanel 和 GroupEditPanel）
+            if (!(comp instanceof PlusPanel)) {
+                toRemove.add(comp);
+            }
+        }
+
+        for (Component comp : toRemove) {
+            // 只对 RequestEditSubPanel 检查是否修改
+            if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
+                int idx = tabbedPane.indexOfComponent(comp);
+                int result = JOptionPane.showConfirmDialog(tabbedPane,
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_ALL),
+                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+                if (result == JOptionPane.CANCEL_OPTION) {
+                    tabbedPane.setSelectedIndex(idx);
+                    return;
+                }
+                if (result == JOptionPane.YES_OPTION) {
+                    tabbedPane.setSelectedIndex(idx);
+                    saveCurrentRequest();
+                }
+            }
+            tabbedPane.remove(comp);
+        }
     }
 }

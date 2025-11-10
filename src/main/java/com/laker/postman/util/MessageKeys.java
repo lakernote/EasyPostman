@@ -160,6 +160,26 @@ public final class MessageKeys {
     public static final String TAB_UNSAVED_CHANGES_TITLE = "tab.unsaved_changes.title";
     public static final String TAB_CLOSE_CURRENT = "tab.close_current";
 
+    // ============ 快捷键设置 ============
+    public static final String SHORTCUT_SETTINGS_TITLE = "shortcut.settings.title";
+    public static final String SHORTCUT_ACTION = "shortcut.action";
+    public static final String SHORTCUT_KEY = "shortcut.key";
+    public static final String SHORTCUT_EDIT = "shortcut.edit";
+    public static final String SHORTCUT_RESET = "shortcut.reset";
+    public static final String SHORTCUT_SELECT_FIRST = "shortcut.select_first";
+    public static final String SHORTCUT_EDIT_TITLE = "shortcut.edit_title";
+    public static final String SHORTCUT_CURRENT = "shortcut.current";
+    public static final String SHORTCUT_NEW = "shortcut.new";
+    public static final String SHORTCUT_PRESS_KEY = "shortcut.press_key";
+    public static final String SHORTCUT_CONFLICT = "shortcut.conflict";
+    public static final String SHORTCUT_NOT_SET = "shortcut.not_set";
+    public static final String SHORTCUT_RESET_CONFIRM = "shortcut.reset_confirm";
+    public static final String SHORTCUT_RESET_SUCCESS = "shortcut.reset_success";
+    public static final String EXIT_APP = "exit.app";
+    public static final String SETTINGS_SHORTCUTS_TITLE = "settings.shortcuts.title";
+    public static final String SHORTCUT_LABEL_FORMAT = "shortcut.label.format";
+    public static final String SHORTCUT_DOUBLE_CLICK_HINT = "shortcut.double_click_hint";
+
     // ============ 状态相关 ============
     public static final String STATUS_CANCELED = "status.canceled";
     public static final String STATUS_REQUESTING = "status.requesting";
@@ -858,9 +878,6 @@ public final class MessageKeys {
 
     // ============ PLUS_PANEL_HINT ============
     public static final String PLUS_PANEL_HINT = "plus.panel.hint";
-    public static final String PLUS_PANEL_SHORTCUT_DESC = "plus.panel.shortcut.desc";
-    public static final String SAVE_SHORTCUT_DESC = "save.shortcut.desc";
-    public static final String EXIT_SHORTCUT_DESC = "exit.shortcut.desc";
 
     // ============ 代码片段弹窗（SnippetDialog）相关 ============
     public static final String SNIPPET_DIALOG_TITLE = "snippet.dialog.title";

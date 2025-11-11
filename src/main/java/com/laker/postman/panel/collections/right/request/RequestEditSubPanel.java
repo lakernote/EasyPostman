@@ -760,6 +760,9 @@ public class RequestEditSubPanel extends JPanel {
         scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
         // 设置原始数据用于脏检测
         setOriginalRequestItem(item);
+
+        // 根据请求类型智能选择默认Tab
+        selectDefaultTabByRequestType(item);
     }
 
     /**
@@ -998,6 +1001,63 @@ public class RequestEditSubPanel extends JPanel {
             return List.of();
         }
         return List.of();
+    }
+
+    /**
+     * 根据请求类型智能选择默认Tab
+     * 优化用户体验，根据请求的特点自动切换到最相关的Tab
+     */
+    private void selectDefaultTabByRequestType(HttpRequestItem item) {
+        if (item == null) {
+            return;
+        }
+
+        String method = item.getMethod();
+        String bodyType = item.getBodyType();
+
+        // WebSocket协议：默认选择Body Tab（用于发送消息）
+        if (protocol.isWebSocketProtocol()) {
+            reqTabs.setSelectedComponent(requestBodyPanel);
+            return;
+        }
+
+        // SSE协议：默认选择Params Tab（SSE通常通过URL参数配置）
+        if (protocol.isSseProtocol()) {
+            reqTabs.setSelectedComponent(paramsPanel);
+            return;
+        }
+
+        // HTTP协议智能判断
+        // 1. 如果有Body内容（非空且非none类型），优先显示Body Tab
+        if (CharSequenceUtil.isNotBlank(item.getBody())
+                && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
+            reqTabs.setSelectedComponent(requestBodyPanel);
+            return;
+        }
+
+        // 2. 如果有form-data或urlencoded数据，显示Body Tab
+        if (CollUtil.isNotEmpty(item.getFormDataList())
+                || CollUtil.isNotEmpty(item.getUrlencodedList())) {
+            reqTabs.setSelectedComponent(requestBodyPanel);
+            return;
+        }
+
+        // 3. POST/PUT/PATCH请求：默认显示Body Tab（这些方法通常需要发送数据）
+        if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
+            reqTabs.setSelectedComponent(requestBodyPanel);
+            return;
+        }
+
+
+        // 4. GET/DELETE/HEAD/OPTIONS等查询类请求：默认显示Params Tab
+        if ("GET".equals(method) || "DELETE".equals(method)
+                || "HEAD".equals(method) || "OPTIONS".equals(method)) {
+            reqTabs.setSelectedComponent(paramsPanel);
+            return;
+        }
+
+        // 5. 默认情况：显示Params Tab（最常用）
+        reqTabs.setSelectedComponent(paramsPanel);
     }
 
     /**

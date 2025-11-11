@@ -230,7 +230,7 @@ public class SettingManager {
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
-        return false; // 默认不自动格式化
+        return true; // 默认自动格式化，提升用户体验
     }
 
     public static void setAutoFormatResponse(boolean autoFormat) {

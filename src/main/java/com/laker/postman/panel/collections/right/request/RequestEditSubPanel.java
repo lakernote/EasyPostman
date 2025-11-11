@@ -154,8 +154,8 @@ public class RequestEditSubPanel extends JPanel {
         // 3. 响应面板
         responsePanel = new ResponsePanel(protocol);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
-        splitPane.setDividerSize(2); // 设置分割条的宽度
-        splitPane.setResizeWeight(0.3); // 设置分割线位置，表示请求部分占40%
+        splitPane.setDividerSize(5); // 设置分割条的宽度（增大以提高拖拽灵敏度）
+        splitPane.setResizeWeight(0.4); // 设置分割线位置，请求和响应各占40%（降低响应面板默认高度）
         add(splitPane, BorderLayout.CENTER);
 
         if (protocol.isWebSocketProtocol()) {

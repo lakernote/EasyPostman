@@ -94,8 +94,7 @@ public class JsonToolPanel extends JPanel {
 
         // 输入区域 - 使用RSyntaxTextArea
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        JLabel inputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_INPUT) + " (JSON)");
-        inputLabel.setFont(inputLabel.getFont().deriveFont(Font.BOLD));
+        JLabel inputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_INPUT));
         inputPanel.add(inputLabel, BorderLayout.NORTH);
 
         inputArea = createJsonTextArea();
@@ -106,8 +105,7 @@ public class JsonToolPanel extends JPanel {
 
         // 输出区域 - 使用RSyntaxTextArea
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        JLabel outputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_OUTPUT) + " (JSON)");
-        outputLabel.setFont(outputLabel.getFont().deriveFont(Font.BOLD));
+        JLabel outputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_OUTPUT));
         outputPanel.add(outputLabel, BorderLayout.NORTH);
 
         outputArea = createJsonTextArea();

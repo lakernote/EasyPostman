@@ -104,7 +104,21 @@ public final class MessageKeys {
     public static final String GENERAL_TIP = "general.tip";
     public static final String GENERAL_OK = "general.ok";
     public static final String GENERAL_CANCEL = "button.cancel";
+    public static final String GENERAL_SEARCH = "general.search";
     public static final String CONSOLE_TITLE = "console.title";
+
+    // ============ 工作区选择对话框 ============
+    public static final String WORKSPACE_SELECT_HINT = "workspace.select.hint";
+    public static final String WORKSPACE_SELECT_REQUIRED = "workspace.select.required";
+    public static final String WORKSPACE_NO_OTHER_AVAILABLE = "workspace.no_other_available";
+
+    // ============ 工作区转移统一消息键 ============
+    public static final String WORKSPACE_TRANSFER_MENU_ITEM = "workspace.transfer.menu_item";
+    public static final String WORKSPACE_TRANSFER_SELECT_DIALOG_TITLE = "workspace.transfer.select_dialog_title";
+    public static final String WORKSPACE_TRANSFER_CONFIRM_MESSAGE = "workspace.transfer.confirm_message";
+    public static final String WORKSPACE_TRANSFER_CONFIRM_TITLE = "workspace.transfer.confirm_title";
+    public static final String WORKSPACE_TRANSFER_SUCCESS = "workspace.transfer.success";
+    public static final String WORKSPACE_TRANSFER_FAIL = "workspace.transfer.fail";
 
     // ============ 按钮 ============
     public static final String BUTTON_SEND = "button.send";
@@ -287,14 +301,6 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_EXPORT_POSTMAN_TITLE = "env.dialog.export_postman.title";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_SUCCESS = "env.dialog.export_postman.success";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_FAIL = "env.dialog.export_postman.fail";
-
-    // 环境转移到其他工作区相关
-    public static final String ENV_MENU_MOVE_TO_WORKSPACE = "env.menu.move_to_workspace";
-    public static final String ENV_MENU_MOVE_TO_WORKSPACE_SELECT = "env.menu.move_to_workspace.select";
-    public static final String ENV_MENU_MOVE_TO_WORKSPACE_SUCCESS = "env.menu.move_to_workspace.success";
-    public static final String ENV_MENU_MOVE_TO_WORKSPACE_FAIL = "env.menu.move_to_workspace.fail";
-    public static final String ENV_MENU_MOVE_TO_WORKSPACE_CONFIRM = "env.menu.move_to_workspace.confirm";
-    public static final String ENV_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE = "env.menu.move_to_workspace.confirm_title";
 
     // ============ 功能测试相关 ============
     public static final String FUNCTIONAL_TAB_REQUEST_CONFIG = "functional.tab.request_config";
@@ -486,11 +492,6 @@ public final class MessageKeys {
     public static final String COLLECTIONS_PASTE_SUCCESS = "collections.paste_success";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP = "collections.menu.export_postman.select_group";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE = "collections.menu.export_postman.dialog_title";
-    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE = "collections.menu.move_to_workspace";
-    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_SELECT = "collections.menu.move_to_workspace.select";
-    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_FAIL = "collections.menu.move_to_workspace.fail";
-    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM = "collections.menu.move_to_workspace.confirm";
-    public static final String COLLECTIONS_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE = "collections.menu.move_to_workspace.confirm_title";
 
     // ============ 集合导出导入相关 ============
     public static final String COLLECTIONS_EXPORT_DIALOG_TITLE = "collections.export.dialog_title";

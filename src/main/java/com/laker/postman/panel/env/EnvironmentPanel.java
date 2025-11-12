@@ -11,15 +11,14 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
-import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBarPanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
+import com.laker.postman.service.workspace.WorkspaceTransferHelper;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -276,7 +275,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         envListMenu.add(exportPostmanItem);
 
         // 转移到其他工作区
-        JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE), new FlatSVGIcon("icons/workspace.svg", 16, 16));
+        JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_MENU_ITEM), new FlatSVGIcon("icons/workspace.svg", 16, 16));
         moveToWorkspaceItem.addActionListener(e -> moveEnvironmentToWorkspace());
         envListMenu.add(moveToWorkspaceItem);
 
@@ -721,127 +720,14 @@ public class EnvironmentPanel extends SingletonBasePanel {
         }
 
         Environment environment = selectedItem.getEnvironment();
-        String environmentName = environment.getName();
 
-        try {
-            // 获取所有工作区
-            WorkspaceService workspaceService = WorkspaceService.getInstance();
-            List<Workspace> allWorkspaces = workspaceService.getAllWorkspaces();
-            Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
-
-            // 过滤掉当前工作区
-            List<Workspace> availableWorkspaces = allWorkspaces.stream()
-                    .filter(w -> currentWorkspace == null || !w.getId().equals(currentWorkspace.getId()))
-                    .toList();
-
-            if (availableWorkspaces.isEmpty()) {
-                JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                        "没有其他可用的工作区",
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // 创建工作区选择对话框
-            Workspace selectedWorkspace = showWorkspaceSelectionDialog(availableWorkspaces);
-            if (selectedWorkspace == null) {
-                return; // 用户取消选择
-            }
-
-            // 确认转移操作
-            int confirm = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
-                    I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE_CONFIRM,
-                            environmentName, selectedWorkspace.getName()),
-                    I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE_CONFIRM_TITLE),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
-
-            if (confirm != JOptionPane.YES_OPTION) {
-                return;
-            }
-
-            // 执行转移操作
-            performEnvironmentMove(environment, selectedWorkspace);
-
-            // 显示成功消息
-            JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                    I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE_SUCCESS, selectedWorkspace.getName()),
-                    I18nUtil.getMessage(MessageKeys.SUCCESS),
-                    JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (Exception ex) {
-            log.error("Move environment to workspace failed", ex);
-            JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                    I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE_FAIL, ex.getMessage()),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                    JOptionPane.ERROR_MESSAGE);
-        }
+        // 使用工作区转移辅助类（显示成功消息）
+        WorkspaceTransferHelper.transferToWorkspace(
+                environment.getName(),
+                (targetWorkspace, itemName) -> performEnvironmentMove(environment, targetWorkspace)
+        );
     }
 
-    /**
-     * 显示工作区选择对话框
-     */
-    private Workspace showWorkspaceSelectionDialog(List<Workspace> workspaces) {
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.ENV_MENU_MOVE_TO_WORKSPACE_SELECT), true);
-        dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
-        dialog.setLayout(new BorderLayout());
-
-        // 创建工作区列表
-        DefaultListModel<Workspace> listModel = new DefaultListModel<>();
-        for (Workspace workspace : workspaces) {
-            listModel.addElement(workspace);
-        }
-
-        JList<Workspace> workspaceList = new JList<>(listModel);
-        workspaceList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        workspaceList.setCellRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                          boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Workspace workspace) {
-                    setText(workspace.getName());
-                    setIcon(new FlatSVGIcon("icons/workspace.svg", 16, 16));
-                    setToolTipText(workspace.getDescription());
-                }
-                return this;
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(workspaceList);
-        dialog.add(scrollPane, BorderLayout.CENTER);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
-
-        final Workspace[] selectedWorkspace = {null};
-
-        okButton.addActionListener(e -> {
-            Workspace selected = workspaceList.getSelectedValue();
-            if (selected == null) {
-                JOptionPane.showMessageDialog(dialog,
-                        "请选择一个工作区",
-                        I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            selectedWorkspace[0] = selected;
-            dialog.dispose();
-        });
-
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(okButton);
-        buttonPanel.add(cancelButton);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        dialog.setVisible(true);
-        return selectedWorkspace[0];
-    }
 
     /**
      * 执行环境转移操作

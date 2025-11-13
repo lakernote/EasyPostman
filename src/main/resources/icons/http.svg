@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <!-- 绿色背景 -->
-    <rect x="2" y="6" width="20" height="12" rx="2.5" fill="#4CAF50"/>
-    <!-- H -->
-    <path d="M4.5 9.5h1v2h1.5v-2h1v5h-1v-2h-1.5v2h-1z" fill="#FFFFFF"/>
-    <!-- T -->
-    <path d="M9 9.5h3.5v1h-1.25v4h-1v-4H9z" fill="#FFFFFF"/>
-    <!-- T -->
-    <path d="M13 9.5h3.5v1h-1.25v4h-1v-4H13z" fill="#FFFFFF"/>
-    <!-- P -->
-    <path d="M17 9.5h2c.55 0 1 .45 1 1v1c0 .55-.45 1-1 1h-1v1.5h-1zm1 2h1v-1h-1z" fill="#FFFFFF"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#388e3c;stop-opacity:1"/><stop offset="50%" style="stop-color:#4caf50;stop-opacity:1"/><stop offset="100%" style="stop-color:#81c784;stop-opacity:1"/></linearGradient></defs><rect x="1" y="5" width="22" height="14" rx="3" fill="url(#a)"/><rect x="1" y="5" width="22" height="14" rx="3" stroke="rgba(255,255,255,0.2)"/><path d="M4.5 9.5h1v2H7v-2h1v5H7v-2H5.5v2h-1zm4.5 0h3.5v1h-1.25v4h-1v-4H9zm4 0h3.5v1h-1.25v4h-1v-4H13zm4 0h2c.55 0 1 .45 1 1v1c0 .55-.45 1-1 1h-1V14h-1zm1 2h1v-1h-1z" fill="#fff"/></svg>

@@ -20,16 +20,31 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
             label.setText(ellipsisText(envName, list));  // 超出宽度显示省略号
             label.setToolTipText(envName); // 超出显示tip
             Environment active = EnvironmentService.getActiveEnvironment();
-            // Postman风格：激活环境加粗+主色icon，普通环境灰icon，选中高亮
-            if (active != null && active.getId().equals(item.getEnvironment().getId())) {
+
+            // 判断是否是激活环境
+            boolean isActive = active != null && active.getId().equals(item.getEnvironment().getId());
+
+            // 设置图标和样式
+            if (isActive) {
                 label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
+                // 激活环境使用加粗字体
+                label.setFont(label.getFont().deriveFont(Font.BOLD));
             } else {
                 label.setIcon(new FlatSVGIcon("icons/nocheck.svg", 16, 16));
+                // 普通环境使用常规字体
+                label.setFont(label.getFont().deriveFont(Font.PLAIN));
             }
-            label.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 2)); // 设置内边距
-            label.setIconTextGap(8); // 增大icon和文字间距
-            label.setHorizontalAlignment(SwingConstants.LEFT); // 左对齐
-            label.setHorizontalTextPosition(SwingConstants.RIGHT); // icon在左，文字在右
+
+            // 设置边距和对齐
+            label.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            label.setIconTextGap(10); // 增大icon和文字间距
+            label.setHorizontalAlignment(SwingConstants.LEFT);
+            label.setHorizontalTextPosition(SwingConstants.RIGHT);
+
+            // 选中状态的样式增强
+            if (isSelected) {
+                label.setOpaque(true);
+            }
         }
 
         return label;

@@ -239,7 +239,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                 // 无论何时都提供"创建root分组"的选项
                 JMenuItem addRootGroupItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_ROOT_GROUP),
-                        new FlatSVGIcon("icons/group.svg", 16, 16));
+                        new FlatSVGIcon("icons/root_group.svg", 16, 16));
                 addRootGroupItem.addActionListener(e -> showAddGroupDialog(rootTreeNode));
                 menu.add(addRootGroupItem);
 
@@ -278,7 +278,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                     // 导出为Postman
                     JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN),
-                            new FlatSVGIcon("icons/export.svg", 16, 16));
+                            new FlatSVGIcon("icons/postman.svg", 16, 16));
                     exportPostmanItem.addActionListener(e -> exportGroupAsPostman(selectedNode));
                     // 多选时禁用
                     exportPostmanItem.setEnabled(!isMultipleSelection);
@@ -304,7 +304,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
                     // 复制到剪贴板（用于跨分组粘贴，支持多选）
                     JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY),
-                            new FlatSVGIcon("icons/duplicate.svg", 16, 16));
+                            new FlatSVGIcon("icons/copy.svg", 16, 16));
                     int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
                     copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, cmdMask));
                     copyItem.addActionListener(e -> copySelectedRequests());
@@ -323,7 +323,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 // 粘贴（分组或请求都可以粘贴）
                 if (!copiedRequests.isEmpty()) {
                     JMenuItem pasteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_PASTE),
-                            new FlatSVGIcon("icons/duplicate.svg", 16, 16));
+                            new FlatSVGIcon("icons/paste.svg", 16, 16));
                     int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
                     pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, cmdMask));
                     pasteItem.addActionListener(e -> pasteRequests());

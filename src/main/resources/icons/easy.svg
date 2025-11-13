@@ -1,1 +1,11 @@
-<svg width="24" height="24" viewBox="0 0 1.44 1.44" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" fill-opacity=".01" d="M0 0h1.44v1.44H0z"/><path d="M.227 1.063A.6.6 0 0 1 .12.72a.6.6 0 1 1 .6.6.6.6 0 0 1-.343-.107m-.15-.15a.6.6 0 0 0 .15.15m-.15-.15L.48.81m-.103.403L.63.96M.48.81.6.69l.15.15-.12.12M.48.81l.15.15M.51.42h.12M.57.36v.12m.27.03h.18M.93.42V.6m.03.27h.12M1.02.81v.12" stroke="#000" stroke-width=".12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="easyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764BA2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="12" cy="12" r="11" stroke="url(#easyGradient)" stroke-width="2" fill="none"/>
+  <path d="M2.54 21.26L8.4 15.8M2.54 21.26a11 11 0 0 0 3.6 3M6.14 24.26L12.6 18.2M8.4 15.8l2.4-2.4 3 3-2.4 2.4M8.4 15.8l3 3M9.8 7.8h2.4M10.6 6.6v2.4m5.4.6h3.6M17.8 7.8v3.6m.6 5.4h2.4M19.4 15.8v2.4" stroke="url(#easyGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+

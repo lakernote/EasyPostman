@@ -51,6 +51,9 @@ public class StyleUtils {
             // 应用FlatLaf增强设置
             addFlatLafEnhancements(allProperties);
 
+            // 应用CheckBox样式设置
+            addCheckBoxStyles(allProperties);
+
             // 批量设置所有属性
             setUIProperties(allProperties);
 
@@ -179,6 +182,53 @@ public class StyleUtils {
         // 分隔符样式
         properties.put("Separator.foreground", ModernColors.SEPARATOR_FOREGROUND);
         properties.put("Separator.background", ModernColors.SEPARATOR_BACKGROUND);
+    }
+
+    /**
+     * 添加 CheckBox 样式设置
+     * 参考 FlatLaf CheckBox 文档：https://www.formdev.com/flatlaf/components/checkbox/
+     * https://www.formdev.com/flatlaf/components/icons/#checkboxicon
+     */
+    private static void addCheckBoxStyles(Map<String, Object> properties) {
+        // CheckBox 基础样式 - 根据文档，style 应该设置为 "filled"
+        // 当设置为 "filled" 时，FlatLaf 会使用 CheckBox.icon[filled]. 前缀的属性（如果定义了的话）
+        properties.put("CheckBox.icon.style", "filled");
+
+        // CheckBox 选中背景色（使用主色调）
+        properties.put("CheckBox.icon.checkmarkColor", ModernColors.CHECKBOX_ICON);
+        properties.put("CheckBox.icon.selectedBackground", ModernColors.CHECKBOX_BACKGROUND);
+        properties.put("CheckBox.icon.selectedBorderColor", ModernColors.CHECKBOX_BACKGROUND);
+
+        // CheckBox 悬停效果（使用主色深色）
+        properties.put("CheckBox.icon.hoverBackground", ModernColors.BUTTON_HOVER_BACKGROUND);
+        properties.put("CheckBox.icon.hoverBorderColor", ModernColors.CHECKBOX_HOVER_BACKGROUND);
+        properties.put("CheckBox.icon.hoverSelectedBackground", ModernColors.CHECKBOX_HOVER_BACKGROUND);
+        properties.put("CheckBox.icon.hoverSelectedBorderColor", ModernColors.CHECKBOX_HOVER_BACKGROUND);
+
+        // CheckBox 聚焦效果（使用主色）
+        properties.put("CheckBox.icon.focusedBackground", ModernColors.BG_WHITE);
+        properties.put("CheckBox.icon.focusedBorderColor", ModernColors.CHECKBOX_FOCUSED_BORDER);
+        properties.put("CheckBox.icon.focusedSelectedBackground", ModernColors.CHECKBOX_FOCUSED_BACKGROUND);
+        properties.put("CheckBox.icon.focusedSelectedBorderColor", ModernColors.CHECKBOX_FOCUSED_BACKGROUND);
+
+        // CheckBox 按下效果
+        properties.put("CheckBox.icon.pressedBackground", ModernColors.BUTTON_PRESSED_BACKGROUND);
+        properties.put("CheckBox.icon.pressedSelectedBackground", ModernColors.PRIMARY_DARK);
+        properties.put("CheckBox.icon.pressedSelectedBorderColor", ModernColors.PRIMARY_DARK);
+
+        // CheckBox 边框颜色
+        properties.put("CheckBox.icon.borderColor", ModernColors.CHECKBOX_BORDER);
+
+        // CheckBox 禁用状态
+        properties.put("CheckBox.icon.disabledBackground", ModernColors.BG_MEDIUM);
+        properties.put("CheckBox.icon.disabledBorderColor", ModernColors.BORDER_LIGHT);
+        properties.put("CheckBox.icon.disabledSelectedBackground", ModernColors.BG_MEDIUM);
+        properties.put("CheckBox.icon.disabledSelectedBorderColor", ModernColors.BORDER_LIGHT);
+        properties.put("CheckBox.icon.disabledCheckmarkColor", ModernColors.TEXT_DISABLED);
+
+        // CheckBox 圆角
+        properties.put("CheckBox.arc", 4);
+        properties.put("CheckBox.icon.borderWidth", 1.5f);
     }
 
     /**

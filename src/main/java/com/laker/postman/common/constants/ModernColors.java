@@ -398,6 +398,38 @@ public final class ModernColors {
      */
     public static final Color TAB_SELECTED_BACKGROUND = new Color(220, 230, 238);
 
+    // ==================== CheckBox 相关颜色 ====================
+
+    /**
+     * CheckBox 选中背景色 (使用主色调)
+     */
+    public static final Color CHECKBOX_BACKGROUND = PRIMARY;
+
+    /**
+     * CheckBox 悬停背景色 (使用主色深色)
+     */
+    public static final Color CHECKBOX_HOVER_BACKGROUND = PRIMARY_DARK;
+
+    /**
+     * CheckBox 聚焦背景色 (使用主色)
+     */
+    public static final Color CHECKBOX_FOCUSED_BACKGROUND = PRIMARY;
+
+    /**
+     * CheckBox 选中图标颜色 (白色勾选标记)
+     */
+    public static final Color CHECKBOX_ICON = Color.WHITE;
+
+    /**
+     * CheckBox 边框颜色
+     */
+    public static final Color CHECKBOX_BORDER = BORDER_MEDIUM;
+
+    /**
+     * CheckBox 聚焦边框颜色
+     */
+    public static final Color CHECKBOX_FOCUSED_BORDER = PRIMARY;
+
     // ==================== 验证状态色 ====================
 
     /**

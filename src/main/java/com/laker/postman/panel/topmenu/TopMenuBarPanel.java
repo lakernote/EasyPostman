@@ -285,6 +285,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JComboBox<Workspace> comboBox = new JComboBox<>();
         comboBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         comboBox.setMaximumRowCount(10);
+        comboBox.setFocusable(false);
         comboBox.setPreferredSize(new Dimension(150, 28));
 
         // 自定义渲染器，只显示名称（不显示图标，因为外面已有图标）

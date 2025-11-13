@@ -3,6 +3,7 @@ package com.laker.postman.common.component.combobox;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.util.FontsUtil;
 import lombok.Setter;
 
 import javax.swing.*;
@@ -17,8 +18,9 @@ public class EnvironmentComboBox extends JComboBox<EnvironmentItem> {
 
     public EnvironmentComboBox() {
         setRenderer(new EnvironmentItemRenderer());
-        setPreferredSize(new Dimension(140, 28));
-        setMaximumSize(new Dimension(140, 28));
+        setPreferredSize(new Dimension(150, 28));
+        setMaximumSize(new Dimension(150, 28));
+        setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         setFocusable(false);
         addActionListener(e -> {
             if (isUpdating) return;

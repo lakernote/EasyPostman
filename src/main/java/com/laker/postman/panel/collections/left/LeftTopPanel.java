@@ -272,12 +272,12 @@ public class LeftTopPanel extends SingletonBasePanel {
                 List<HttpFormData> formDataList = new ArrayList<>();
                 if (curlRequest.formData != null) {
                     for (Map.Entry<String, String> entry : curlRequest.formData.entrySet()) {
-                        formDataList.add(new HttpFormData(true, entry.getKey(), "text", entry.getValue()));
+                        formDataList.add(new HttpFormData(true, entry.getKey(), HttpFormData.TYPE_TEXT, entry.getValue()));
                     }
                 }
                 if (curlRequest.formFiles != null) {
                     for (Map.Entry<String, String> entry : curlRequest.formFiles.entrySet()) {
-                        formDataList.add(new HttpFormData(true, entry.getKey(), "file", entry.getValue()));
+                        formDataList.add(new HttpFormData(true, entry.getKey(), HttpFormData.TYPE_FILE, entry.getValue()));
                     }
                 }
                 item.setFormDataList(formDataList);

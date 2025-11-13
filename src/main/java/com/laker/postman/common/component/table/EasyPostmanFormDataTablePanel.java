@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.laker.postman.common.component.table.TableUIConstants.SELECT_FILE_TEXT;
+import static com.laker.postman.model.HttpFormData.TYPE_FILE;
+import static com.laker.postman.model.HttpFormData.TYPE_TEXT;
 
 /**
  * Form-Data 表格面板组件
@@ -51,9 +53,8 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
     private static final int COL_VALUE = 3;
     private static final int COL_DELETE = 4;
 
-    private static final String[] TYPE_OPTIONS = {"Text", "File"};
-    private static final String TYPE_TEXT = "Text";
-    private static final String TYPE_FILE = "File";
+    // Use constants from HttpFormData to avoid duplication
+    private static final String[] TYPE_OPTIONS = {HttpFormData.TYPE_TEXT, HttpFormData.TYPE_FILE};
 
     /**
      * 构造函数，创建默认的 Form-Data 表格面板
@@ -571,7 +572,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
                     if (lastRowHasContent) {
                         suppressAutoAppendRow = true;
                         try {
-                            tableModel.addRow(new Object[]{true, "", TYPE_TEXT, "", ""});
+                            tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
                         } finally {
                             suppressAutoAppendRow = false;
                         }
@@ -605,7 +606,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         try {
             tableModel.setRowCount(0);
             // Add an empty row after clearing
-            tableModel.addRow(new Object[]{true, "", TYPE_TEXT, "", ""});
+            tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
         } finally {
             suppressAutoAppendRow = false;
         }
@@ -618,7 +619,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
      */
     private void addRow(Object... values) {
         if (values == null || values.length == 0) {
-            tableModel.addRow(new Object[]{true, "", TYPE_TEXT, "", ""});
+            tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
         } else if (values.length == 3) {
             // Legacy support: key, type, value
             tableModel.addRow(new Object[]{true, values[0], values[1], values[2], ""});
@@ -734,7 +735,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
                     Object key = row.get("Key");
                     Object type = row.get("Type");
                     if (type == null) {
-                        type = TYPE_TEXT;
+                        type = HttpFormData.TYPE_TEXT;
                     }
                     Object value = row.get("Value");
 
@@ -744,7 +745,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
             // Ensure there's always an empty row at the end
             if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", TYPE_TEXT, "", ""});
+                tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
             }
         } finally {
             suppressAutoAppendRow = false;
@@ -767,10 +768,10 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
             boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
             String key = keyObj == null ? "" : keyObj.toString().trim();
-            String type = typeObj == null ? TYPE_TEXT : typeObj.toString();
+            String type = typeObj == null ? HttpFormData.TYPE_TEXT : typeObj.toString();
             String value = valueObj == null ? "" : valueObj.toString();
 
-            if (enabled && !key.isEmpty() && TYPE_TEXT.equals(type)) {
+            if (enabled && !key.isEmpty() && HttpFormData.TYPE_TEXT.equalsIgnoreCase(type)) {
                 formData.put(key, value);
             }
         }
@@ -793,10 +794,10 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
             boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
             String key = keyObj == null ? "" : keyObj.toString().trim();
-            String type = typeObj == null ? TYPE_TEXT : typeObj.toString();
+            String type = typeObj == null ? HttpFormData.TYPE_TEXT : typeObj.toString();
             String value = valueObj == null ? "" : valueObj.toString();
 
-            if (enabled && !key.isEmpty() && TYPE_FILE.equals(type) && !value.isEmpty() && !value.equals(SELECT_FILE_TEXT)) {
+            if (enabled && !key.isEmpty() && HttpFormData.TYPE_FILE.equalsIgnoreCase(type) && !value.isEmpty() && !value.equals(SELECT_FILE_TEXT)) {
                 formFiles.put(key, value);
             }
         }
@@ -816,12 +817,14 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
             boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
             String key = keyObj == null ? "" : keyObj.toString().trim();
-            String type = typeObj == null ? TYPE_TEXT : typeObj.toString();
+            String type = typeObj == null ? HttpFormData.TYPE_TEXT : typeObj.toString();
             String value = valueObj == null ? "" : valueObj.toString();
 
             // Only add non-empty params
             if (!key.isEmpty()) {
-                dataList.add(new HttpFormData(enabled, key, type, value));
+                // Normalize type to ensure consistency
+                String normalizedType = HttpFormData.normalizeType(type);
+                dataList.add(new HttpFormData(enabled, key, normalizedType, value));
             }
         }
         return dataList;
@@ -839,10 +842,12 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
             tableModel.setRowCount(0);
             if (dataList != null) {
                 for (HttpFormData param : dataList) {
+                    // Normalize type to ensure consistency (Text/File with capital first letter)
+                    String normalizedType = HttpFormData.normalizeType(param.getType());
                     tableModel.addRow(new Object[]{
                             param.isEnabled(),
                             param.getKey(),
-                            param.getType(),
+                            normalizedType,
                             param.getValue(),
                             ""
                     });
@@ -851,7 +856,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
             // Ensure there's always an empty row at the end
             if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", TYPE_TEXT, "", ""});
+                tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
             }
         } finally {
             suppressAutoAppendRow = false;
@@ -884,7 +889,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         suppressAutoAppendRow = true;
         try {
             if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", TYPE_TEXT, "", ""});
+                tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
             }
         } finally {
             suppressAutoAppendRow = false;

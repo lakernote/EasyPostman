@@ -2,6 +2,7 @@ package com.laker.postman.service.postman;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import com.laker.postman.model.HttpFormData;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import org.testng.annotations.Test;
@@ -132,10 +133,10 @@ public class PostmanCollectionExporterTest {
         item.setUrl("https://api.example.com/upload");
 
         // 通过List添加formData
-        List<com.laker.postman.model.HttpFormData> formDataList = new java.util.ArrayList<>();
-        formDataList.add(new com.laker.postman.model.HttpFormData(true, "field1", "text", "value1"));
-        formDataList.add(new com.laker.postman.model.HttpFormData(true, "field2", "text", "value2"));
-        formDataList.add(new com.laker.postman.model.HttpFormData(true, "file", "file", "/path/to/file.pdf"));
+        List<HttpFormData> formDataList = new java.util.ArrayList<>();
+        formDataList.add(new HttpFormData(true, "field1", com.laker.postman.model.HttpFormData.TYPE_TEXT, "value1"));
+        formDataList.add(new HttpFormData(true, "field2", com.laker.postman.model.HttpFormData.TYPE_TEXT, "value2"));
+        formDataList.add(new HttpFormData(true, "file", com.laker.postman.model.HttpFormData.TYPE_FILE, "/path/to/file.pdf"));
         item.setFormDataList(formDataList);
 
         // 执行导出

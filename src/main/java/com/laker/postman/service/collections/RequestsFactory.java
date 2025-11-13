@@ -88,8 +88,8 @@ public class RequestsFactory {
             formDataHeaders.add(new HttpHeader(true, CONTENT_TYPE, "multipart/form-data"));
             postFormData.setHeadersList(formDataHeaders);
             postFormData.setFormDataList(List.of(
-                    new HttpFormData(true, "key1", "text", "value1"),
-                    new HttpFormData(true, "key2", "text", "value2")
+                    new HttpFormData(true, "key1", HttpFormData.TYPE_TEXT, "value1"),
+                    new HttpFormData(true, "key2", HttpFormData.TYPE_TEXT, "value2")
             ));
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, postFormData}));
 

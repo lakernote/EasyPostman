@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_NONE;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -138,7 +137,7 @@ public class HttpRequestItem implements Serializable {
     public Map<String, String> getFormData() {
         return formDataList.stream()
                 .filter(HttpFormData::isEnabled)
-                .filter(data -> "text".equals(data.getType()))
+                .filter(HttpFormData::isText)
                 .collect(toMap(
                         HttpFormData::getKey,
                         HttpFormData::getValue,
@@ -150,7 +149,7 @@ public class HttpRequestItem implements Serializable {
     public Map<String, String> getFormFiles() {
         return formDataList.stream()
                 .filter(HttpFormData::isEnabled)
-                .filter(data -> "file".equals(data.getType()))
+                .filter(HttpFormData::isFile)
                 .collect(toMap(
                         HttpFormData::getKey,
                         HttpFormData::getValue,

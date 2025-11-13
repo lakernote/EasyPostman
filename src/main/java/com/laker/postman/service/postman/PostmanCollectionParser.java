@@ -271,9 +271,9 @@ public class PostmanCollectionParser {
                             String key = oObj.getStr("key", "");
                             boolean enabled = !oObj.getBool("disabled", false);
                             if ("file".equals(formType)) {
-                                formDataList.add(new HttpFormData(enabled, key, "file", oObj.getStr("src", "")));
+                                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, oObj.getStr("src", "")));
                             } else {
-                                formDataList.add(new HttpFormData(enabled, key, "text", oObj.getStr("value", "")));
+                                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, oObj.getStr("value", "")));
                             }
                         }
                         req.setFormDataList(formDataList);

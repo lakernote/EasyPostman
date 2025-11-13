@@ -201,6 +201,8 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             refreshWorkspaceList();
+            // 更新顶部菜单栏的工作区下拉框
+            SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
         }
     }
 

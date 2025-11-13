@@ -3,9 +3,12 @@ package com.laker.postman.panel.topmenu;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
 import com.laker.postman.service.ExitService;
@@ -21,6 +24,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
@@ -28,8 +32,7 @@ import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 public class TopMenuBarPanel extends SingletonBasePanel {
     @Getter
     private EnvironmentComboBox environmentComboBox;
-
-    private JLabel workspaceLabel;
+    private JComboBox<Workspace> workspaceComboBox;
     private JMenuBar menuBar;
 
     @Override
@@ -50,7 +53,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler((e) -> BeanFactory.getBean(ExitService.class).exit());
+        FlatDesktop.setQuitHandler(e -> BeanFactory.getBean(ExitService.class).exit());
     }
 
     /**
@@ -84,7 +87,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         addHelpMenu();
         addAboutMenu();
         add(menuBar, BorderLayout.WEST);
-        addEnvironmentComboBox();
+        addRightLableAndComboBox();
     }
 
     private void addFileMenu() {
@@ -242,56 +245,160 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         menuBar.add(aboutMenu);
     }
 
-    private void addEnvironmentComboBox() {
+    private void addRightLableAndComboBox() {
         if (environmentComboBox == null) {
             environmentComboBox = new EnvironmentComboBox();
         } else {
             environmentComboBox.reload();
         }
 
-        // 创建工作区显示标签
-        if (workspaceLabel == null) {
-            workspaceLabel = new JLabel();
-            workspaceLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-            workspaceLabel.setForeground(new Color(70, 70, 70));
-            workspaceLabel.setIcon(new FlatSVGIcon("icons/workspace.svg", 20, 20));
-            workspaceLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        // 创建工作区下拉框
+        if (workspaceComboBox == null) {
+            workspaceComboBox = createWorkspaceComboBox();
+        } else {
+            updateWorkspaceComboBox();
         }
-        updateWorkspaceDisplay();
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
         rightPanel.setOpaque(false);
-        rightPanel.add(workspaceLabel);
+
+        // 添加工作区图标和下拉框
+        JLabel workspaceIconLabel = new JLabel(new FlatSVGIcon("icons/workspace.svg", 20, 20));
+        rightPanel.add(workspaceIconLabel);
+        rightPanel.add(workspaceComboBox);
+
+        // 添加分隔间距
+        rightPanel.add(Box.createHorizontalStrut(2));
+
+        // 添加环境变量图标和下拉框
+        JLabel envIconLabel = new JLabel(new FlatSVGIcon("icons/environments.svg", 20, 20));
+        rightPanel.add(envIconLabel);
         rightPanel.add(environmentComboBox);
+
         add(rightPanel, BorderLayout.EAST);
     }
 
     /**
-     * 更新工作区显示
+     * 创建工作区下拉框
      */
-    public void updateWorkspaceDisplay() {
-        if (workspaceLabel == null) {
+    private JComboBox<Workspace> createWorkspaceComboBox() {
+        JComboBox<Workspace> comboBox = new JComboBox<>();
+        comboBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        comboBox.setMaximumRowCount(10);
+        comboBox.setPreferredSize(new Dimension(150, 28));
+
+        // 自定义渲染器，只显示名称（不显示图标，因为外面已有图标）
+        comboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Workspace workspace) {
+                    setText(workspace.getName());
+                    // 如果名称太长，使用tooltip显示完整名称
+                    if (workspace.getName().length() > 15) {
+                        setToolTipText(workspace.getName());
+                    }
+                }
+                return this;
+            }
+        });
+
+        // 添加选择监听器
+        comboBox.addActionListener(e -> {
+            Workspace selectedWorkspace = (Workspace) comboBox.getSelectedItem();
+            if (selectedWorkspace != null) {
+                switchToWorkspace(selectedWorkspace);
+            }
+        });
+
+        // 先初始化数据，再返回
+        loadWorkspaceComboBoxData(comboBox);
+        return comboBox;
+    }
+
+    /**
+     * 加载工作区下拉框数据
+     */
+    private void loadWorkspaceComboBoxData(JComboBox<Workspace> comboBox) {
+        try {
+            WorkspaceService workspaceService = WorkspaceService.getInstance();
+            List<Workspace> workspaces = workspaceService.getAllWorkspaces();
+            Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
+
+            // 移除监听器，避免触发切换事件
+            var listeners = comboBox.getActionListeners();
+            for (var listener : listeners) {
+                comboBox.removeActionListener(listener);
+            }
+
+            // 加载数据
+            comboBox.removeAllItems();
+            for (Workspace workspace : workspaces) {
+                comboBox.addItem(workspace);
+            }
+
+            // 设置当前选中的工作区
+            if (currentWorkspace != null) {
+                comboBox.setSelectedItem(currentWorkspace);
+            }
+
+            // 重新添加监听器
+            for (var listener : listeners) {
+                comboBox.addActionListener(listener);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load workspace combobox data", e);
+        }
+    }
+
+    /**
+     * 更新工作区下拉框内容
+     */
+    private void updateWorkspaceComboBox() {
+        if (workspaceComboBox == null) {
             return;
         }
+        loadWorkspaceComboBoxData(workspaceComboBox);
+    }
 
+    /**
+     * 切换到指定工作区
+     */
+    private void switchToWorkspace(Workspace workspace) {
         try {
             WorkspaceService workspaceService = WorkspaceService.getInstance();
             Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
 
-            if (currentWorkspace != null) {
-                String displayText = currentWorkspace.getName();
-                // 如果工作区名称太长，截断显示
-                if (displayText.length() > 20) {
-                    displayText = displayText.substring(0, 15) + "...";
-                }
-                workspaceLabel.setText(displayText);
-            } else {
-                workspaceLabel.setText("No Workspace");
+            // 如果选中的就是当前工作区，不做任何操作
+            if (currentWorkspace != null && currentWorkspace.getId().equals(workspace.getId())) {
+                return;
             }
+
+            workspaceService.switchWorkspace(workspace.getId());
+
+            // 切换环境变量文件
+            SingletonFactory.getInstance(EnvironmentPanel.class)
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+
+            // 切换请求集合文件
+            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+
+            // 只记录日志，不显示通知弹窗
+            log.info("Switched to workspace: {}", workspace.getName());
         } catch (Exception e) {
-            log.warn("Failed to update workspace display", e);
-            workspaceLabel.setText("No Workspace");
+            log.error("Failed to switch workspace", e);
+            // 只有出错时才显示通知
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_FAILED_DETAIL, e.getMessage()));
         }
+    }
+
+    /**
+     * 更新工作区显示（保留此方法以保持向后兼容）
+     */
+    public void updateWorkspaceDisplay() {
+        updateWorkspaceComboBox();
     }
 
     private void aboutActionPerformed() {

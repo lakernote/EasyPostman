@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-  <!-- 工作空间窗口布局 -->
-  <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
-  <!-- 侧边栏 -->
-  <path d="M3 9h18M9 9v11" stroke="currentColor" stroke-width="1.5"/>
-  <!-- 标签页指示 -->
-  <circle cx="6" cy="6.5" r="1" fill="currentColor" opacity=".6"/>
-  <path d="M12 13h6m-6 3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 8h20M8 8v14" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1" fill="currentColor" opacity=".6"/><path d="M11 13h9m-9 4h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>

@@ -222,15 +222,47 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setResponseTime(long ms) {
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION), TimeDisplayUtil.formatElapsedTime(ms)));
+        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION, TimeDisplayUtil.formatElapsedTime(ms))));
     }
 
-    public void setResponseSize(long bytes) {
-        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
+    public void setResponseSizeRequesting() {
+        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, "..."));
+        responseSizeLabel.setForeground(Color.BLACK);
     }
 
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
-        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE).replace("--", getSizeText(bytes)));
+        // Check if response is compressed
+        boolean isCompressed = httpEventInfo != null && bytes > 0 &&
+                httpEventInfo.getBodyBytesReceived() > 0 &&
+                bytes != httpEventInfo.getBodyBytesReceived();
+
+        // Calculate compression ratio and saved bytes
+        double compressionRatio = 0;
+        long savedBytes = 0;
+        if (isCompressed) {
+            compressionRatio = (1 - (double) httpEventInfo.getBodyBytesReceived() / bytes) * 100;
+            savedBytes = bytes - httpEventInfo.getBodyBytesReceived();
+        }
+
+        // Build label text with compression info
+        String sizeText;
+        if (isCompressed) {
+            // Show compressed size with compression indicator (simple text to avoid wrapping)
+            String sizeLabel = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(httpEventInfo.getBodyBytesReceived()));
+            sizeText = String.format("%s 📦%.0f%%",
+                    sizeLabel,
+                    compressionRatio);
+            // Set teal/green color to indicate optimization/compression (#009688)
+            responseSizeLabel.setForeground(new Color(0, 150, 136));
+        } else {
+            sizeText = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(bytes));
+            // Reset to default color for non-compressed responses
+            responseSizeLabel.setForeground(Color.BLACK);
+        }
+        responseSizeLabel.setText(sizeText);
+
+        // Set cursor to hand when hovering to indicate it's interactive
+        responseSizeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         // Remove default tooltip
         responseSizeLabel.setToolTipText(null);
@@ -243,28 +275,62 @@ public class ResponsePanel extends JPanel {
 
         // Add custom tooltip behavior
         if (httpEventInfo != null) {
-            String tooltip = String.format("<html>" +
-                            "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 9px; width: 160px; padding: 1px;'>" +
-                            "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>🔽 Response Size</div>" +
-                            "<div style='margin-left: 6px; line-height: 1.1;'>" +
-                            "<div style='color: #555555; margin-bottom: 1px;'>🏷️ Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                            "<div style='color: #555555; margin-bottom: 1px;'>📦 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                            "<div style='margin-left: 6px; color: #777777; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: #555555;'>%s</span></div>" +
-                            "</div>" +
-                            "<div style='border-top: 1px solid #E3E8F0; margin: 1px 0;'></div>" +
-                            "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin: 0px; padding: 0px;'>🔼 Request Size</div>" +
-                            "<div style='margin-left: 6px; line-height: 1.1;'>" +
-                            "<div style='color: #555555; margin-bottom: 1px;'>📋 Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                            "<div style='color: #555555;'>📝 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                            "</div>" +
-                            "</div>" +
-                            "</html>",
-                    getSizeText(httpEventInfo.getHeaderBytesReceived()),
-                    getSizeText(httpEventInfo.getBodyBytesReceived()),
-                    getSizeText(bytes),
-                    getSizeText(httpEventInfo.getHeaderBytesSent()),
-                    getSizeText(httpEventInfo.getBodyBytesSent())
-            );
+            String tooltip;
+            if (isCompressed) {
+                // Enhanced tooltip for compressed responses
+                tooltip = String.format("<html>" +
+                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 9px; width: 200px; padding: 1px;'>" +
+                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>🔽 Response Size</div>" +
+                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
+                                "<div style='color: #555555; margin-bottom: 1px;'>🏷️ Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='color: #555555; margin-bottom: 1px;'>📦 Body (Compressed): <span style='font-weight: 600; color: #009688;'>%s</span></div>" +
+                                "<div style='margin-left: 6px; color: #777777; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: #555555;'>%s</span></div>" +
+                                "<div style='margin: 2px 0; padding: 2px; background: #E8F5E9; border-radius: 2px;'>" +
+                                "<div style='color: #009688; font-weight: 600; font-size: 9px;'>✨ Compression Ratio: <span style='color: #00796B;'>%.1f%%</span></div>" +
+                                "<div style='color: #009688; font-weight: 600; font-size: 9px;'>💾 Saved: <span style='color: #00796B;'>%s</span></div>" +
+                                "</div>" +
+                                "</div>" +
+                                "<div style='border-top: 1px solid #E3E8F0; margin: 1px 0;'></div>" +
+                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin: 0px; padding: 0px;'>🔼 Request Size</div>" +
+                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
+                                "<div style='color: #555555; margin-bottom: 1px;'>📋 Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='color: #555555;'>📝 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "</div>" +
+                                "</div>" +
+                                "</html>",
+                        getSizeText(httpEventInfo.getHeaderBytesReceived()),
+                        getSizeText(httpEventInfo.getBodyBytesReceived()),
+                        getSizeText(bytes),
+                        compressionRatio,
+                        getSizeText(savedBytes),
+                        getSizeText(httpEventInfo.getHeaderBytesSent()),
+                        getSizeText(httpEventInfo.getBodyBytesSent())
+                );
+            } else {
+                // Standard tooltip for non-compressed responses
+                tooltip = String.format("<html>" +
+                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 9px; width: 160px; padding: 1px;'>" +
+                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>🔽 Response Size</div>" +
+                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
+                                "<div style='color: #555555; margin-bottom: 1px;'>🏷️ Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='color: #555555; margin-bottom: 1px;'>📦 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='margin-left: 6px; color: #777777; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: #555555;'>%s</span></div>" +
+                                "</div>" +
+                                "<div style='border-top: 1px solid #E3E8F0; margin: 1px 0;'></div>" +
+                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin: 0px; padding: 0px;'>🔼 Request Size</div>" +
+                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
+                                "<div style='color: #555555; margin-bottom: 1px;'>📋 Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='color: #555555;'>📝 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "</div>" +
+                                "</div>" +
+                                "</html>",
+                        getSizeText(httpEventInfo.getHeaderBytesReceived()),
+                        getSizeText(httpEventInfo.getBodyBytesReceived()),
+                        getSizeText(bytes),
+                        getSizeText(httpEventInfo.getHeaderBytesSent()),
+                        getSizeText(httpEventInfo.getBodyBytesSent())
+                );
+            }
 
             responseSizeLabel.addMouseListener(new MouseAdapter() {
                 private Timer showTimer;

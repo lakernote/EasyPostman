@@ -902,7 +902,7 @@ public class RequestEditSubPanel extends JPanel {
     private void updateUIForRequesting() {
         responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_REQUESTING), new Color(255, 140, 0));
         responsePanel.setResponseTime(0);
-        responsePanel.setResponseSize(0);
+        responsePanel.setResponseSizeRequesting();
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
         if (protocol.isHttpProtocol()) {
             responsePanel.getNetworkLogPanel().clearLog();

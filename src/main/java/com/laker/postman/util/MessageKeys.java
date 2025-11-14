@@ -774,11 +774,9 @@ public final class MessageKeys {
     public static final String CSV_CREATE_MANUAL_COLUMN_COUNT = "csv.create_manual.column_count";
     public static final String CSV_CREATE_MANUAL_ROW_COUNT = "csv.create_manual.row_count";
     public static final String CSV_CREATE_MANUAL_COLUMN_HEADERS = "csv.create_manual.column_headers";
-    public static final String CSV_CREATE_MANUAL_COLUMN_HEADERS_PLACEHOLDER = "csv.create_manual.column_headers_placeholder";
     public static final String CSV_CREATE_MANUAL_INVALID_COLUMN_COUNT = "csv.create_manual.invalid_column_count";
     public static final String CSV_CREATE_MANUAL_INVALID_ROW_COUNT = "csv.create_manual.invalid_row_count";
     public static final String CSV_CREATE_MANUAL_HEADERS_MISMATCH = "csv.create_manual.headers_mismatch";
-    public static final String CSV_CREATE_MANUAL_SUCCESS = "csv.create_manual.success";
 
     // ============ OkHttpResponseHandler ============
     public static final String DOWNLOAD_PROGRESS_TITLE = "download.progress.title";

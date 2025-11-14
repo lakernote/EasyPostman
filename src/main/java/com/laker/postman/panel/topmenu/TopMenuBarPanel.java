@@ -145,13 +145,6 @@ public class TopMenuBarPanel extends SingletonBasePanel {
 
     private void switchLanguage(String languageCode) {
         I18nUtil.setLocale(languageCode);
-        // 重新初始化菜单栏以应用新语言
-        menuBar.removeAll();
-        initComponents();
-        // 重新绘制所有窗口
-        for (Window window : Window.getWindows()) {
-            SwingUtilities.updateComponentTreeUI(window);
-        }
         NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
     }
 

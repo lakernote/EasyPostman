@@ -220,7 +220,7 @@ public class NotificationUtil {
      * 显示错误通知（4秒后自动关闭）
      */
     public static void showError(String message) {
-        showCloseable(message, NotificationType.ERROR, 4);
+        showCloseable(message, NotificationType.ERROR, 3);
     }
 
     /**
@@ -310,6 +310,7 @@ public class NotificationUtil {
         private final NotificationType type;
         private final NotificationPosition position;
         private final String fullMessage;
+        private final boolean hasCloseButton;
 
         private int stackOffset = 0;
         private boolean isHovered = false;
@@ -329,6 +330,7 @@ public class NotificationUtil {
             this.parentWindow = parentWindow;
             this.type = type;
             this.position = position;
+            this.hasCloseButton = closeable;
             this.fullMessage = message;
 
             setAlwaysOnTop(true);
@@ -415,11 +417,19 @@ public class NotificationUtil {
                 JPanel centerPanel = new JPanel(new BorderLayout());
                 centerPanel.setOpaque(false);
                 centerPanel.add(messageLabel, BorderLayout.CENTER);
+                // 添加右侧间距，为关闭按钮留出充足空间，防止多行文本被遮挡
+                centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 4));
 
                 JButton closeButton = createCloseButton();
+
+                // 将关闭按钮包装在面板中并设置为顶部对齐，防止遮挡多行文本
+                JPanel closePanel = new JPanel(new BorderLayout());
+                closePanel.setOpaque(false);
+                closePanel.add(closeButton, BorderLayout.NORTH);
+
                 topPanel.add(iconLabel, BorderLayout.WEST);
                 topPanel.add(centerPanel, BorderLayout.CENTER);
-                topPanel.add(closeButton, BorderLayout.EAST);
+                topPanel.add(closePanel, BorderLayout.EAST);
             } else {
                 topPanel.add(iconLabel, BorderLayout.WEST);
                 topPanel.add(messageLabel, BorderLayout.CENTER);
@@ -480,7 +490,9 @@ public class NotificationUtil {
             // 处理换行
             String[] lines = escaped.split("\n");
             StringBuilder html = new StringBuilder("<html><body style='width: ");
-            html.append(MAX_WIDTH - 100).append("px;'>");
+            // 如果有关闭按钮，需要减少更多宽度以留出充足空间，防止多行文本被遮挡（图标24px + 额外缓冲46px = 70px）
+            int availableWidth = MAX_WIDTH - 100 - (hasCloseButton ? 72 : 0);
+            html.append(availableWidth).append("px;'>");
 
             if (!expanded && lines.length > COLLAPSED_MAX_LINES) {
                 // 折叠模式：只显示前几行

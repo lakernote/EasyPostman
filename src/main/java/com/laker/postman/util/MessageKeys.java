@@ -728,6 +728,7 @@ public final class MessageKeys {
     public static final String CSV_MANUAL_CREATED = "csv.manual_created";
     public static final String CSV_BUTTON_CLEAR_TOOLTIP = "csv.button.clear.tooltip";
     public static final String CSV_MENU_IMPORT_FILE = "csv.menu.import_file";
+    public static final String CSV_MENU_CREATE_MANUAL = "csv.menu.create_manual";
     public static final String CSV_MENU_MANAGE_DATA = "csv.menu.manage_data";
     public static final String CSV_MENU_CLEAR_DATA = "csv.menu.clear_data";
     public static final String CSV_DATA_CLEARED = "csv.data.cleared";
@@ -768,6 +769,16 @@ public final class MessageKeys {
     public static final String CSV_FILE_NOT_EXIST = "csv.file_not_exist";
     public static final String CSV_FILE_NOT_VALID = "csv.file_not_valid";
     public static final String CSV_FILE_NOT_CSV = "csv.file_not_csv";
+    public static final String CSV_CREATE_MANUAL_DIALOG_TITLE = "csv.create_manual.dialog_title";
+    public static final String CSV_CREATE_MANUAL_DESCRIPTION = "csv.create_manual.description";
+    public static final String CSV_CREATE_MANUAL_COLUMN_COUNT = "csv.create_manual.column_count";
+    public static final String CSV_CREATE_MANUAL_ROW_COUNT = "csv.create_manual.row_count";
+    public static final String CSV_CREATE_MANUAL_COLUMN_HEADERS = "csv.create_manual.column_headers";
+    public static final String CSV_CREATE_MANUAL_COLUMN_HEADERS_PLACEHOLDER = "csv.create_manual.column_headers_placeholder";
+    public static final String CSV_CREATE_MANUAL_INVALID_COLUMN_COUNT = "csv.create_manual.invalid_column_count";
+    public static final String CSV_CREATE_MANUAL_INVALID_ROW_COUNT = "csv.create_manual.invalid_row_count";
+    public static final String CSV_CREATE_MANUAL_HEADERS_MISMATCH = "csv.create_manual.headers_mismatch";
+    public static final String CSV_CREATE_MANUAL_SUCCESS = "csv.create_manual.success";
 
     // ============ OkHttpResponseHandler ============
     public static final String DOWNLOAD_PROGRESS_TITLE = "download.progress.title";

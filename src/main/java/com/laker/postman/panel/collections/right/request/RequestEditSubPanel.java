@@ -22,6 +22,7 @@ import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.XmlUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -385,7 +386,8 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                    statusText = ex.getMessage();
+                    statusText = "Error";
+                    NotificationUtil.showError(ex.getMessage());
                 }
                 return null;
             }
@@ -901,7 +903,7 @@ public class RequestEditSubPanel extends JPanel {
     // UI状态：请求中
     private void updateUIForRequesting() {
         responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_REQUESTING), new Color(255, 140, 0));
-        responsePanel.setResponseTime(0);
+        responsePanel.setResponseTimeRequesting();
         responsePanel.setResponseSizeRequesting();
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
         if (protocol.isHttpProtocol()) {

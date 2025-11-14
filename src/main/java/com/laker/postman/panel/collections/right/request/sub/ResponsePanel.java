@@ -221,6 +221,10 @@ public class ResponsePanel extends JPanel {
         statusCodeLabel.setForeground(color);
     }
 
+    public void setResponseTimeRequesting() {
+        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION, "...")));
+    }
+
     public void setResponseTime(long ms) {
         responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION, TimeDisplayUtil.formatElapsedTime(ms))));
     }
@@ -249,7 +253,7 @@ public class ResponsePanel extends JPanel {
         if (isCompressed) {
             // Show compressed size with compression indicator (simple text to avoid wrapping)
             String sizeLabel = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(httpEventInfo.getBodyBytesReceived()));
-            sizeText = String.format("%s 📦%.0f%%",
+            sizeText = String.format("%s 📦 %.0f%%",
                     sizeLabel,
                     compressionRatio);
             // Set teal/green color to indicate optimization/compression (#009688)

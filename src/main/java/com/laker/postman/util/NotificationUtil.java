@@ -118,9 +118,9 @@ import java.util.List;
  * </ul>
  *
  * @author laker
- * @since 1.0
  * @see NotificationType
  * @see NotificationPosition
+ * @since 1.0
  */
 public class NotificationUtil {
 
@@ -206,21 +206,21 @@ public class NotificationUtil {
      * 显示信息通知（3秒后自动关闭）
      */
     public static void showInfo(String message) {
-        showToast(message, NotificationType.INFO, 3);
+        showToast(message, NotificationType.INFO, 2);
     }
 
     /**
      * 显示警告通知（3秒后自动关闭）
      */
     public static void showWarning(String message) {
-        showToast(message, NotificationType.WARNING, 3);
+        showCloseable(message, NotificationType.WARNING, 3);
     }
 
     /**
      * 显示错误通知（4秒后自动关闭）
      */
     public static void showError(String message) {
-        showToast(message, NotificationType.ERROR, 4);
+        showCloseable(message, NotificationType.ERROR, 4);
     }
 
     /**

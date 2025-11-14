@@ -195,10 +195,9 @@ public final class MessageKeys {
 
     // ============ 状态相关 ============
     public static final String STATUS_CANCELED = "status.canceled";
-    public static final String STATUS_REQUESTING = "status.requesting";
+    public static final String STATUS_STATUS = "status.status";
     public static final String STATUS_DURATION = "status.duration";
     public static final String STATUS_RESPONSE_SIZE = "status.response_size";
-    public static final String STATUS_PREFIX = "status.prefix";
 
     // ============ WebSocket相关 ============
     public static final String WEBSOCKET_FAILED = "websocket.failed";

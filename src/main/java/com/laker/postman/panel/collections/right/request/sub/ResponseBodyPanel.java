@@ -8,6 +8,7 @@ import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -173,7 +174,7 @@ public class ResponseBodyPanel extends JPanel {
                     out.write(buffer, 0, len);
                 }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "保存文件失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.showError("Save File Error: " + ex.getMessage());
             }
         }
     }
@@ -190,20 +191,8 @@ public class ResponseBodyPanel extends JPanel {
         }
 
         String contentType = getCurrentContentTypeFromHeaders();
-        int textSize = text.getBytes().length;
-
-        // 大文件警告
-        if (textSize > MAX_AUTO_FORMAT_SIZE) {
-            int result = JOptionPane.showConfirmDialog(this,
-                    String.format("响应体较大 (%.2f MB)，格式化可能需要一些时间，确定要继续吗？", textSize / 1024.0 / 1024.0),
-                    "确认", JOptionPane.YES_NO_OPTION);
-            if (result != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
 
         formatButton.setEnabled(false);
-        formatButton.setToolTipText("Formatting...");
 
         // 异步格式化
         currentFormatTask = CompletableFuture.runAsync(() -> {
@@ -224,14 +213,9 @@ public class ResponseBodyPanel extends JPanel {
                     });
                 }
             } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(this, "格式化失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                });
+                SwingUtilities.invokeLater(() -> NotificationUtil.showError("Format Error: " + ex.getMessage()));
             } finally {
-                SwingUtilities.invokeLater(() -> {
-                    formatButton.setEnabled(true);
-                    formatButton.setToolTipText("Format");
-                });
+                SwingUtilities.invokeLater(() -> formatButton.setEnabled(true));
             }
         });
     }
@@ -429,4 +413,3 @@ public class ResponseBodyPanel extends JPanel {
         if (nextButton != null) nextButton.setEnabled(enabled);
     }
 }
-

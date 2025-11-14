@@ -216,8 +216,13 @@ public class ResponsePanel extends JPanel {
         timelinePanel.setHttpEventInfo(info);
     }
 
+    public void setStatusRequesting() {
+        statusCodeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_STATUS, "...")));
+        statusCodeLabel.setForeground(new Color(255, 140, 0));
+    }
+
     public void setStatus(String statusText, Color color) {
-        statusCodeLabel.setText(statusText);
+        statusCodeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_STATUS, statusText)));
         statusCodeLabel.setForeground(color);
     }
 

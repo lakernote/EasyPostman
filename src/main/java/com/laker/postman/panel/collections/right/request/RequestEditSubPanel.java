@@ -902,7 +902,7 @@ public class RequestEditSubPanel extends JPanel {
 
     // UI状态：请求中
     private void updateUIForRequesting() {
-        responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_REQUESTING), new Color(255, 140, 0));
+        responsePanel.setStatusRequesting();
         responsePanel.setResponseTimeRequesting();
         responsePanel.setResponseSizeRequesting();
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
@@ -917,7 +917,7 @@ public class RequestEditSubPanel extends JPanel {
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, HttpResponse resp) {
         if (resp == null) {
-            responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), Color.RED);
+            responsePanel.setStatus(statusText, Color.RED);
             if (protocol.isHttpProtocol()) {
                 responsePanel.getResponseBodyPanel().setEnabled(true);
             }
@@ -930,7 +930,7 @@ public class RequestEditSubPanel extends JPanel {
             responsePanel.getResponseBodyPanel().setEnabled(true);
         }
         Color statusColor = getStatusColor(resp.code);
-        responsePanel.setStatus(I18nUtil.getMessage(MessageKeys.STATUS_PREFIX, statusText), statusColor);
+        responsePanel.setStatus(statusText, statusColor);
         responsePanel.setResponseTime(resp.costMs);
         responsePanel.setResponseSize(resp.bodySize, resp.httpEventInfo);
     }

@@ -6,8 +6,8 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.service.setting.SettingManager;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -18,6 +18,7 @@ import java.awt.*;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 响应体面板，展示响应体内容和格式化按钮
@@ -35,27 +36,42 @@ public class ResponseBodyPanel extends JPanel {
     private final JButton prevButton;
     private final JButton nextButton;
     RTextScrollPane scrollPane;
+    private CompletableFuture<Void> currentFormatTask;
+    private static final int LARGE_RESPONSE_THRESHOLD = 500 * 1024; // 500KB threshold
+    private static final int MAX_AUTO_FORMAT_SIZE = 1024 * 1024; // 1MB max for auto-format
+    private final JLabel sizeWarningLabel;
 
     public ResponseBodyPanel() {
         setLayout(new BorderLayout());
         responseBodyPane = new RSyntaxTextArea();
         responseBodyPane.setEditable(false);
         responseBodyPane.setCodeFoldingEnabled(true);
-        responseBodyPane.setLineWrap(true);
+        responseBodyPane.setLineWrap(false); // 禁用自动换行以提升大文本性能
         responseBodyPane.setHighlightCurrentLine(false); // 关闭选中行高亮
         scrollPane = new RTextScrollPane(responseBodyPane);
+        scrollPane.setLineNumbersEnabled(true); // 显示行号
         add(scrollPane, BorderLayout.CENTER);
+
         // 顶部工具栏优化：左侧为搜索，右侧为格式化、语法下拉、下载
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setLayout(new BorderLayout());
+
         // 左侧操作区
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
         syntaxComboBox = new JComboBox<>(new String[]{
                 "Auto Detect", "JSON", "XML", "HTML", "JavaScript", "CSS", "Plain Text"
         });
         leftPanel.add(syntaxComboBox);
+
+        // 添加大小提示标签
+        sizeWarningLabel = new JLabel();
+        sizeWarningLabel.setForeground(new Color(200, 100, 0));
+        sizeWarningLabel.setVisible(false);
+        leftPanel.add(sizeWarningLabel);
+
         toolBar.add(leftPanel, BorderLayout.WEST);
+
         // 右侧搜索区
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         searchField = new SearchTextField();
@@ -75,6 +91,7 @@ public class ResponseBodyPanel extends JPanel {
         rightPanel.add(downloadButton);
         toolBar.add(rightPanel, BorderLayout.EAST);
         add(toolBar, BorderLayout.NORTH);
+
         downloadButton.addActionListener(e -> saveFile());
         formatButton.addActionListener(e -> formatContent());
         searchField.addActionListener(e -> search(true));
@@ -166,21 +183,57 @@ public class ResponseBodyPanel extends JPanel {
         if (text == null || text.isEmpty()) {
             return;
         }
-        String contentType = getCurrentContentTypeFromHeaders();
-        try {
-            if (contentType.contains("json")) {
-                JSON json = JSONUtil.parse(text); // 确保是有效的 JSON
-                String pretty = JSONUtil.toJsonPrettyStr(json);
-                responseBodyPane.setText(pretty);
-            } else if (contentType.contains("xml")) {
-                String pretty = XmlUtil.format(text);
-                responseBodyPane.setText(pretty);
-            } else {
-                // 其他类型不处理
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "格式化失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+
+        // 取消之前的格式化任务
+        if (currentFormatTask != null && !currentFormatTask.isDone()) {
+            currentFormatTask.cancel(true);
         }
+
+        String contentType = getCurrentContentTypeFromHeaders();
+        int textSize = text.getBytes().length;
+
+        // 大文件警告
+        if (textSize > MAX_AUTO_FORMAT_SIZE) {
+            int result = JOptionPane.showConfirmDialog(this,
+                    String.format("响应体较大 (%.2f MB)，格式化可能需要一些时间，确定要继续吗？", textSize / 1024.0 / 1024.0),
+                    "确认", JOptionPane.YES_NO_OPTION);
+            if (result != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        formatButton.setEnabled(false);
+        formatButton.setToolTipText("Formatting...");
+
+        // 异步格式化
+        currentFormatTask = CompletableFuture.runAsync(() -> {
+            try {
+                String formatted = null;
+                if (contentType.contains("json")) {
+                    JSON json = JSONUtil.parse(text);
+                    formatted = JSONUtil.toJsonPrettyStr(json);
+                } else if (contentType.contains("xml")) {
+                    formatted = XmlUtil.format(text);
+                }
+
+                if (formatted != null) {
+                    final String finalFormatted = formatted;
+                    SwingUtilities.invokeLater(() -> {
+                        responseBodyPane.setText(finalFormatted);
+                        responseBodyPane.setCaretPosition(0);
+                    });
+                }
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this, "格式化失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                });
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    formatButton.setEnabled(true);
+                    formatButton.setToolTipText("Format");
+                });
+            }
+        });
     }
 
     private String getCurrentContentTypeFromHeaders() {
@@ -198,6 +251,11 @@ public class ResponseBodyPanel extends JPanel {
     }
 
     public void setBodyText(HttpResponse resp) {
+        // 取消之前的格式化任务
+        if (currentFormatTask != null && !currentFormatTask.isDone()) {
+            currentFormatTask.cancel(true);
+        }
+
         if (resp == null) {
             responseBodyPane.setText("");
             currentFilePath = null;
@@ -208,14 +266,17 @@ public class ResponseBodyPanel extends JPanel {
             responseBodyPane.setCaretPosition(0);
             searchField.setText("");
             syntaxComboBox.setSelectedIndex(0);
+            sizeWarningLabel.setVisible(false);
             return;
         }
+
         this.currentFilePath = resp.filePath;
         this.fileName = resp.fileName;
         this.lastHeaders = resp.headers;
         String filePath = resp.filePath;
         String text = resp.body;
         String contentType = "";
+
         if (resp.headers != null) {
             for (String key : resp.headers.keySet()) {
                 if (key != null && key.equalsIgnoreCase("Content-Type")) {
@@ -227,9 +288,21 @@ public class ResponseBodyPanel extends JPanel {
                 }
             }
         }
-        responseBodyPane.setText(text);
-        // 动态选择高亮类型，参考 postman
+
+        int textSize = text != null ? text.getBytes().length : 0;
+        boolean isLargeResponse = textSize > LARGE_RESPONSE_THRESHOLD;
+
+        // 显示大小信息
+        if (isLargeResponse) {
+            sizeWarningLabel.setText(String.format("  [%.2f MB]", textSize / 1024.0 / 1024.0));
+            sizeWarningLabel.setVisible(true);
+        } else {
+            sizeWarningLabel.setVisible(false);
+        }
+
+        // 动态选择高亮类型
         String syntax = detectSyntax(text, contentType);
+
         // 自动匹配下拉框选项
         int syntaxIndex = 0;
         if (SyntaxConstants.SYNTAX_STYLE_JSON.equals(syntax)) {
@@ -246,18 +319,27 @@ public class ResponseBodyPanel extends JPanel {
             syntaxIndex = 6;
         }
         syntaxComboBox.setSelectedIndex(syntaxIndex);
-        responseBodyPane.setSyntaxEditingStyle(syntax);
 
-        // 根据设置决定是否自动格式化
-        if (SettingManager.isAutoFormatResponse()) {
-            autoFormatIfPossible(text, contentType);
-        }
-
-        if (filePath != null && !filePath.isEmpty()) {
-            downloadButton.setVisible(true);
+        // 对于大文件，先禁用语法高亮再设置文本，然后再启用
+        if (isLargeResponse) {
+            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            responseBodyPane.setText(text);
+            // 异步启用语法高亮
+            SwingUtilities.invokeLater(() -> responseBodyPane.setSyntaxEditingStyle(syntax));
         } else {
-            downloadButton.setVisible(false);
+            responseBodyPane.setSyntaxEditingStyle(syntax);
+            responseBodyPane.setText(text);
         }
+
+        // 根据设置和大小决定是否自动格式化
+        if (SettingManager.isAutoFormatResponse() && textSize < MAX_AUTO_FORMAT_SIZE) {
+            autoFormatIfPossible(text, contentType);
+        } else if (SettingManager.isAutoFormatResponse() && textSize >= MAX_AUTO_FORMAT_SIZE) {
+            // 大文件不自动格式化，提示用户手动格式化
+            sizeWarningLabel.setText(sizeWarningLabel.getText() + " Skip auto-format for large response.");
+        }
+
+        downloadButton.setVisible(filePath != null && !filePath.isEmpty());
         responseBodyPane.setCaretPosition(0);
     }
 
@@ -290,20 +372,50 @@ public class ResponseBodyPanel extends JPanel {
         if (text == null || text.isEmpty()) {
             return;
         }
-        try {
-            if (contentType != null && contentType.toLowerCase().contains("json")) {
-                JSON json = JSONUtil.parse(text);
-                String pretty = JSONUtil.toJsonPrettyStr(json);
-                responseBodyPane.setText(pretty);
-            } else if (contentType != null && contentType.toLowerCase().contains("xml")) {
-                String pretty = XmlUtil.format(text);
-                responseBodyPane.setText(pretty);
+
+        int textSize = text.getBytes().length;
+
+        // 小文件直接格式化
+        if (textSize < LARGE_RESPONSE_THRESHOLD) {
+            try {
+                if (contentType != null && contentType.toLowerCase().contains("json")) {
+                    JSON json = JSONUtil.parse(text);
+                    String pretty = JSONUtil.toJsonPrettyStr(json);
+                    responseBodyPane.setText(pretty);
+                } else if (contentType != null && contentType.toLowerCase().contains("xml")) {
+                    String pretty = XmlUtil.format(text);
+                    responseBodyPane.setText(pretty);
+                }
+            } catch (Exception ex) {
+                // 格式化失败时静默忽略，保持原始内容
             }
-        } catch (Exception ex) {
-            // 格式化失败时静默忽略，保持原始内容
+        } else {
+            // 大文件异步格式化
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String formatted = null;
+                    if (contentType != null && contentType.toLowerCase().contains("json")) {
+                        JSON json = JSONUtil.parse(text);
+                        formatted = JSONUtil.toJsonPrettyStr(json);
+                    } else if (contentType != null && contentType.toLowerCase().contains("xml")) {
+                        formatted = XmlUtil.format(text);
+                    }
+
+                    if (formatted != null) {
+                        final String finalFormatted = formatted;
+                        SwingUtilities.invokeLater(() -> {
+                            responseBodyPane.setText(finalFormatted);
+                            responseBodyPane.setCaretPosition(0);
+                        });
+                    }
+                } catch (Exception ex) {
+                    // 格式化失败时静默忽略，保持原始内容
+                }
+            });
         }
     }
 
+    @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
         responseBodyPane.setEnabled(enabled);

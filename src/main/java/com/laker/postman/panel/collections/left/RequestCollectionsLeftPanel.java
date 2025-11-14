@@ -1040,6 +1040,19 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
         // 新增一个空白请求Tab
         SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+        // 自动展开第一个分组
+        expandFirstGroup();
+    }
+
+    /**
+     * 展开第一个分组
+     */
+    public void expandFirstGroup() {
+        if (rootTreeNode != null && rootTreeNode.getChildCount() > 0) {
+            DefaultMutableTreeNode firstChild = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);
+            TreePath path = new TreePath(firstChild.getPath());
+            requestTree.expandPath(path);
+        }
     }
 
     /**

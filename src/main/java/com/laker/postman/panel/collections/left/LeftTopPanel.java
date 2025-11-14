@@ -15,6 +15,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.curl.CurlParser;
+import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.postman.PostmanCollectionParser;
 import com.laker.postman.util.I18nUtil;
@@ -236,7 +237,7 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                DefaultMutableTreeNode collectionNode = com.laker.postman.service.har.HarParser.parseHar(json);
+                DefaultMutableTreeNode collectionNode = HarParser.parseHar(json);
                 if (collectionNode != null) {
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();

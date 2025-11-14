@@ -1,5 +1,6 @@
 package com.laker.postman.service.har;
 
+import cn.hutool.core.lang.Pair;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -7,9 +8,11 @@ import com.laker.postman.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +24,6 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
  */
 @Slf4j
 public class HarParser {
-
     // 常量定义
     private static final String GROUP = "group";
     private static final String REQUEST = "request";
@@ -114,7 +116,7 @@ public class HarParser {
             } else {
                 // 从 URL 提取名称
                 try {
-                    java.net.URI uri = new java.net.URI(url);
+                    URI uri = new URI(url);
                     String path = uri.getPath();
                     if (path != null && !path.isEmpty()) {
                         String[] parts = path.split("/");
@@ -143,14 +145,21 @@ public class HarParser {
                     if ("Authorization".equalsIgnoreCase(name)) {
                         if (value.startsWith("Basic ")) {
                             req.setAuthType(AUTH_TYPE_BASIC);
-                            // Basic 认证需要解析 base64，这里简化处理
-                            // 实际使用时用户可能需要重新输入
+                            Pair<String, String> basicAuth = parseBasicAuth(value);
+                            if (basicAuth != null) {
+                                req.setAuthUsername(basicAuth.getKey());
+                                req.setAuthPassword(basicAuth.getValue());
+                            }
                         } else if (value.startsWith("Bearer ")) {
                             req.setAuthType(AUTH_TYPE_BEARER);
                             req.setAuthToken(value.substring(7));
+                        } else {
+                            req.setAuthType(AUTH_TYPE_NONE);
+                            headersList.add(new HttpHeader(true, name, value));
                         }
+                    } else {
+                        headersList.add(new HttpHeader(true, name, value));
                     }
-                    headersList.add(new HttpHeader(true, name, value));
                 }
                 req.setHeadersList(headersList);
             }
@@ -223,10 +232,33 @@ public class HarParser {
                     req.setBodyType("raw");
                 }
             }
-
             return req;
         } catch (Exception e) {
             log.error("解析HAR entry失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 解析 Basic Auth
+     *
+     * @param value Basic Auth 值，格式为 "Basic base64(username:password)"
+     * @return 包含用户名和密码的 Pair 对象
+     */
+    private static Pair<String, String> parseBasicAuth(String value) {
+        String credentials = value.substring(6).trim();
+        String decoded;
+        try {
+            decoded = new String(Base64.getDecoder().decode(credentials));
+        } catch (IllegalArgumentException e) {
+            log.error("解析 Basic auth 信息失败 value: {}", value, e);
+            return null;
+        }
+        String[] parts = decoded.split(":", 2);
+        if (parts.length == 2) {
+            return new Pair<>(parts[0], parts[1]);
+        } else {
+            log.error("解析 Basic auth 信息失败 value: {}", value);
             return null;
         }
     }

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.util.List;
@@ -89,6 +90,14 @@ public class RequestCollectionsService {
         // 用JTree展示集合树，支持多选
         JTree tree = requestCollectionsLeftPanel.createRequestSelectionTree();
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+
+        // 默认展开第一个group
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) tree.getModel().getRoot();
+        if (root != null && root.getChildCount() > 0) {
+            DefaultMutableTreeNode firstChild = (DefaultMutableTreeNode) root.getChildAt(0);
+            tree.expandPath(new TreePath(firstChild.getPath()));
+        }
+
         JScrollPane treeScroll = new JScrollPane(tree);
         dialog.add(treeScroll, BorderLayout.CENTER);
 

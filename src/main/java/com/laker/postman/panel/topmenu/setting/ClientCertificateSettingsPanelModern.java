@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.ClientCertificate;
@@ -7,6 +8,7 @@ import com.laker.postman.service.ClientCertificateService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -30,7 +32,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JButton editBtn;
     private JButton deleteBtn;
     private JButton helpBtn;
-    private Window parentWindow;
+    private final Window parentWindow;
 
     public ClientCertificateSettingsPanelModern(Window parentWindow) {
         this.parentWindow = parentWindow;
@@ -137,21 +139,20 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         addBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_ADD), true);
         editBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT), false);
         deleteBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_DELETE), false);
-        helpBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_HELP), false);
-
+        helpBtn = new JButton(new FlatSVGIcon("icons/help.svg", 16, 16));
+        helpBtn.setBorder(new EmptyBorder(0, 0, 0, 0));
         // 减小按钮尺寸
         Dimension btnSize = new Dimension(80, 28);
         addBtn.setPreferredSize(btnSize);
         editBtn.setPreferredSize(btnSize);
         deleteBtn.setPreferredSize(btnSize);
-        helpBtn.setPreferredSize(btnSize);
 
         actionBar.add(addBtn);
         actionBar.add(Box.createHorizontalStrut(4));
         actionBar.add(editBtn);
         actionBar.add(Box.createHorizontalStrut(4));
         actionBar.add(deleteBtn);
-        actionBar.add(Box.createHorizontalStrut(8));
+        actionBar.add(Box.createHorizontalStrut(4));
         actionBar.add(helpBtn);
         actionBar.add(Box.createHorizontalGlue());
 
@@ -165,7 +166,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         tableModel = new CertificateTableModel();
         certificateTable = new JTable(tableModel);
         certificateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        certificateTable.setRowHeight(26);
+        certificateTable.setRowHeight(28);
         certificateTable.setShowGrid(true);
         certificateTable.setGridColor(ModernColors.BORDER_LIGHT);
         certificateTable.setBackground(ModernColors.BG_WHITE);
@@ -207,7 +208,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
         // 居中显示某些列（但不包括第0列，让它使用默认的Boolean复选框渲染器）
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         // 第0列（Enabled）使用默认的Boolean复选框渲染器，不设置自定义渲染器
         certificateTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         certificateTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
@@ -233,8 +234,8 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         scrollPane.setMaximumSize(new Dimension(600, 350));
         scrollPane.setMinimumSize(new Dimension(350, 200));
         // 表格会自动填充空间，不需要横向滚动条
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         return scrollPane;
     }
@@ -405,6 +406,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
      */
     private static class CertificateEditDialog extends JDialog {
         private final ClientCertificate certificate;
+        @Getter
         private boolean confirmed = false;
 
         private JTextField nameField;
@@ -712,9 +714,5 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
                     JOptionPane.ERROR_MESSAGE);
         }
 
-        public boolean isConfirmed() {
-            return confirmed;
-        }
     }
 }
-

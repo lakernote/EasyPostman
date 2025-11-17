@@ -470,8 +470,9 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL_TITLE = "collections.import.curl.title";
     public static final String COLLECTIONS_IMPORT_EASY = "collections.import.easy";
     public static final String COLLECTIONS_IMPORT_POSTMAN = "collections.import.postman";
-    public static final String COLLECTIONS_IMPORT_HAR = "collections.import.har";
     public static final String COLLECTIONS_IMPORT_CURL = "collections.import.curl";
+    public static final String COLLECTIONS_IMPORT_HAR = "collections.import.har";
+    public static final String COLLECTIONS_IMPORT_HTTP = "collections.import.http";
 
     // ============ 集合菜单相关 ============
     public static final String COLLECTIONS_MENU_ADD_GROUP = "collections.menu.add_group";
@@ -508,6 +509,8 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT = "collections.import.curl.dialog_prompt";
     public static final String COLLECTIONS_IMPORT_CURL_PARSE_FAIL = "collections.import.curl.parse_fail";
     public static final String COLLECTIONS_IMPORT_CURL_PARSE_ERROR = "collections.import.curl.parse_error";
+    public static final String COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE = "collections.import.http.dialog_title";
+    public static final String COLLECTIONS_IMPORT_HTTP_INVALID = "collections.import.http.invalid";
 
     // ============ 集合对话框相关 ============
     public static final String COLLECTIONS_DIALOG_ADD_GROUP_PROMPT = "collections.dialog.add_group.prompt";

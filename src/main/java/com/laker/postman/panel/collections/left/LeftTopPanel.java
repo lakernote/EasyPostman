@@ -17,6 +17,7 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.service.httpfile.HttpFileParser;
 import com.laker.postman.service.postman.PostmanCollectionParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -149,12 +150,16 @@ public class LeftTopPanel extends SingletonBasePanel {
         JMenuItem importHarItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HAR),
                 new FlatSVGIcon("icons/har.svg", 20, 20));
         importHarItem.addActionListener(e -> importHarCollection());
+        JMenuItem importHttpItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP),
+                new FlatSVGIcon("icons/http.svg", 20, 20));
+        importHttpItem.addActionListener(e -> importHttpFile());
         JMenuItem importCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL),
                 new FlatSVGIcon("icons/curl.svg", 20, 20));
         importCurlItem.addActionListener(e -> importCurlToCollection(null));
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
         importMenu.add(importHarItem);
+        importMenu.add(importHttpItem);
         importMenu.add(importCurlItem);
         return importMenu;
     }
@@ -249,6 +254,47 @@ public class LeftTopPanel extends SingletonBasePanel {
                 }
             } catch (Exception ex) {
                 log.error("Import HAR error", ex);
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
+            }
+        }
+    }
+
+    // 导入HTTP文件
+    private void importHttpFile() {
+        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE));
+        // 设置文件过滤器，只显示 .http 文件
+        javax.swing.filechooser.FileFilter httpFilter = new javax.swing.filechooser.FileFilter() {
+            @Override
+            public boolean accept(File f) {
+                return f.isDirectory() || f.getName().toLowerCase().endsWith(".http");
+            }
+
+            @Override
+            public String getDescription() {
+                return "HTTP Files (*.http)";
+            }
+        };
+        fileChooser.setFileFilter(httpFilter);
+        int userSelection = fileChooser.showOpenDialog(mainFrame);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToOpen = fileChooser.getSelectedFile();
+            try {
+                String content = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
+                DefaultMutableTreeNode collectionNode = HttpFileParser.parseHttpFile(content);
+                if (collectionNode != null) {
+                    leftPanel.getRootTreeNode().add(collectionNode);
+                    leftPanel.getTreeModel().reload();
+                    leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
+                    NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
+                } else {
+                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_INVALID));
+                }
+            } catch (Exception ex) {
+                log.error("Import HTTP file error", ex);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
             }
         }

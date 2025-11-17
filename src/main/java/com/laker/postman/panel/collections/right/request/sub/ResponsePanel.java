@@ -240,10 +240,18 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
-        // Check if response is compressed
+        // 检查响应是否被压缩
+        // bytes = 解压后的响应体大小（从 body.bytes() 获取，OkHttp 自动解压）
+        // bodyBytesReceived = 网络层实际接收的字节数（从 OkHttp 事件监听器获取）
+        //
+        // 必须确保 bytes > bodyBytesReceived 才认为是压缩，原因如下：
+        // 1. Chunked 编码：bodyBytesReceived 包含 chunk 头部元数据（如 "1a\r\n...data...\r\n"），可能大于实际内容
+        // 2. HTTP/2 协议：bodyBytesReceived 包含 frame 头部开销，可能大于实际 payload
+        // 3. 统计方式差异：事件监听器可能统计了额外的协议层开销
+        // 如果 bodyBytesReceived > bytes，则 savedBytes 会变成负数，这是不合理的
         boolean isCompressed = httpEventInfo != null && bytes > 0 &&
                 httpEventInfo.getBodyBytesReceived() > 0 &&
-                bytes != httpEventInfo.getBodyBytesReceived();
+                bytes > httpEventInfo.getBodyBytesReceived();
 
         // Calculate compression ratio and saved bytes
         double compressionRatio = 0;

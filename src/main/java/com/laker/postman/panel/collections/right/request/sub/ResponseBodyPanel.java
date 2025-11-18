@@ -34,9 +34,6 @@ import java.util.Map;
  * - 下载响应内容
  * - 大文件优化处理
  * </p>
- *
- * @author laker
- * @since 2024-11-18
  */
 public class ResponseBodyPanel extends JPanel {
     @Getter

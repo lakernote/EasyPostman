@@ -5,7 +5,9 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.NotificationUtil;
@@ -17,6 +19,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -93,7 +96,6 @@ public class ResponseBodyPanel extends JPanel {
         rightPanel.add(formatButton);
         downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE));
         downloadButton.setToolTipText("Download");
-        downloadButton.setVisible(false);
         rightPanel.add(downloadButton);
         toolBar.add(rightPanel, BorderLayout.EAST);
         add(toolBar, BorderLayout.NORTH);
@@ -180,24 +182,126 @@ public class ResponseBodyPanel extends JPanel {
     }
 
     private void saveFile() {
-        if (currentFilePath == null) return;
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save File");
-        fileChooser.setSelectedFile(new File(fileName));
-        int userSelection = fileChooser.showSaveDialog(this);
+
+        // 智能设置文件名和扩展名
+        String defaultFileName = generateFileName();
+        fileChooser.setSelectedFile(new File(defaultFileName));
+
+        int userSelection = fileChooser.showSaveDialog(SingletonFactory.getInstance(MainFrame.class));
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File destFile = fileChooser.getSelectedFile();
-            try (InputStream in = new FileInputStream(currentFilePath);
-                 OutputStream out = new FileOutputStream(destFile)) {
-                byte[] buffer = new byte[BUFFER_SIZE];
-                int len;
-                while ((len = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, len);
+            try {
+                if (currentFilePath != null && !currentFilePath.isEmpty()) {
+                    // 如果是文件下载（如二进制文件），从临时文件复制
+                    try (InputStream in = new FileInputStream(currentFilePath);
+                         OutputStream out = new FileOutputStream(destFile)) {
+                        byte[] buffer = new byte[BUFFER_SIZE];
+                        int len;
+                        while ((len = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, len);
+                        }
+                    }
+                } else {
+                    // 如果是文本响应，直接保存文本内容
+                    String content = responseBodyPane.getText();
+                    if (content != null && !content.isEmpty()) {
+                        try (OutputStreamWriter writer = new OutputStreamWriter(
+                                new FileOutputStream(destFile), StandardCharsets.UTF_8)) {
+                            writer.write(content);
+                        }
+                    }
                 }
+                NotificationUtil.showInfo("File saved successfully: " + destFile.getAbsolutePath());
             } catch (Exception ex) {
                 NotificationUtil.showError("Save File Error: " + ex.getMessage());
             }
         }
+    }
+
+    /**
+     * 智能生成文件名，根据内容类型添加合适的扩展名
+     */
+    private String generateFileName() {
+        // 如果有明确的文件名（来自 Content-Disposition），使用它
+        if (fileName != null && !fileName.equals(DEFAULT_FILE_NAME) && !fileName.isEmpty()) {
+            return fileName;
+        }
+
+        // 否则根据内容类型生成文件名
+        String contentType = getCurrentContentTypeFromHeaders();
+        String extension = getFileExtensionFromContentType(contentType);
+
+        // 使用时间戳作为文件名
+        long timestamp = System.currentTimeMillis();
+        return "response_" + timestamp + extension;
+    }
+
+    /**
+     * 根据 Content-Type 获取文件扩展名
+     */
+    private String getFileExtensionFromContentType(String contentType) {
+        if (contentType == null || contentType.isEmpty()) {
+            return ".txt";
+        }
+
+        contentType = contentType.toLowerCase();
+
+        // JSON
+        if (contentType.contains("json")) {
+            return ".json";
+        }
+        // XML
+        if (contentType.contains("xml")) {
+            return ".xml";
+        }
+        // HTML
+        if (contentType.contains("html")) {
+            return ".html";
+        }
+        // JavaScript
+        if (contentType.contains("javascript")) {
+            return ".js";
+        }
+        // CSS
+        if (contentType.contains("css")) {
+            return ".css";
+        }
+        // Plain text
+        if (contentType.contains("text/plain")) {
+            return ".txt";
+        }
+        // CSV
+        if (contentType.contains("csv")) {
+            return ".csv";
+        }
+        // PDF
+        if (contentType.contains("pdf")) {
+            return ".pdf";
+        }
+        // Images
+        if (contentType.contains("image/png")) {
+            return ".png";
+        }
+        if (contentType.contains("image/jpeg") || contentType.contains("image/jpg")) {
+            return ".jpg";
+        }
+        if (contentType.contains("image/gif")) {
+            return ".gif";
+        }
+        if (contentType.contains("image/svg")) {
+            return ".svg";
+        }
+        // Zip/Archive
+        if (contentType.contains("zip")) {
+            return ".zip";
+        }
+        if (contentType.contains("gzip")) {
+            return ".gz";
+        }
+        // Default
+        return ".txt";
     }
 
     private void formatContent() {
@@ -249,7 +353,6 @@ public class ResponseBodyPanel extends JPanel {
         this.currentFilePath = resp.filePath;
         this.fileName = resp.fileName;
         this.lastHeaders = resp.headers;
-        String filePath = resp.filePath;
         String text = resp.body;
         String contentType = extractContentType(resp.headers);
 
@@ -278,7 +381,6 @@ public class ResponseBodyPanel extends JPanel {
             sizeWarningLabel.setText(sizeWarningLabel.getText() + SKIP_AUTO_FORMAT_MESSAGE);
         }
 
-        downloadButton.setVisible(filePath != null && !filePath.isEmpty());
         responseBodyPane.setCaretPosition(0);
     }
 
@@ -356,7 +458,6 @@ public class ResponseBodyPanel extends JPanel {
         currentFilePath = null;
         fileName = DEFAULT_FILE_NAME;
         lastHeaders = null;
-        downloadButton.setVisible(false);
         responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         responseBodyPane.setCaretPosition(0);
         searchField.setText("");

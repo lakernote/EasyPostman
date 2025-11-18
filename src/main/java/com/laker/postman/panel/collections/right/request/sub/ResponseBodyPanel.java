@@ -10,6 +10,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.FileExtensionUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -24,7 +25,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 响应体面板，展示响应体内容和格式化按钮
+ * 响应体面板，展示 HTTP 响应体内容
+ * <p>
+ * 主要功能：
+ * - 语法高亮显示（JSON、XML、HTML、JavaScript、CSS 等）
+ * - 自动/手动格式化
+ * - 文本搜索
+ * - 下载响应内容
+ * - 大文件优化处理
+ * </p>
+ *
+ * @author laker
+ * @since 2024-11-18
  */
 public class ResponseBodyPanel extends JPanel {
     @Getter
@@ -108,22 +120,31 @@ public class ResponseBodyPanel extends JPanel {
         syntaxComboBox.addActionListener(e -> onSyntaxComboChanged());
     }
 
+    /**
+     * 语法类型下拉框改变事件处理
+     * 根据用户选择的语法类型更新编辑器的语法高亮
+     */
     private void onSyntaxComboChanged() {
         int idx = syntaxComboBox.getSelectedIndex();
         SyntaxType syntaxType = SyntaxType.getByIndex(idx);
 
         String syntax;
         if (syntaxType == SyntaxType.AUTO_DETECT) {
-            // 自动检测
+            // 自动检测语法类型
             syntax = detectSyntax(responseBodyPane.getText(), getCurrentContentTypeFromHeaders());
         } else {
-            // 从枚举中获取语法样式
+            // 使用用户选择的语法类型
             syntax = syntaxType.getSyntaxStyle();
         }
 
         responseBodyPane.setSyntaxEditingStyle(syntax);
     }
 
+    /**
+     * 搜索关键字
+     *
+     * @param forward true 表示向前搜索，false 表示向后搜索
+     */
     private void search(boolean forward) {
         String keyword = searchField.getText();
         if (keyword == null || keyword.isEmpty()) {
@@ -142,6 +163,13 @@ public class ResponseBodyPanel extends JPanel {
         }
     }
 
+    /**
+     * 向前搜索关键字
+     *
+     * @param text    文本内容
+     * @param keyword 搜索关键字
+     * @return 找到的位置，未找到返回 -1
+     */
     private int searchForward(String text, String keyword) {
         int caret = responseBodyPane.getCaretPosition();
         int start = caret;
@@ -154,6 +182,13 @@ public class ResponseBodyPanel extends JPanel {
         return pos == -1 ? text.indexOf(keyword) : pos;
     }
 
+    /**
+     * 向后搜索关键字
+     *
+     * @param text    文本内容
+     * @param keyword 搜索关键字
+     * @return 找到的位置，未找到返回 -1
+     */
     private int searchBackward(String text, String keyword) {
         int caret = responseBodyPane.getCaretPosition();
         int start = caret - 1;
@@ -170,22 +205,42 @@ public class ResponseBodyPanel extends JPanel {
         return pos == -1 ? text.lastIndexOf(keyword) : pos;
     }
 
+    /**
+     * 检查当前选中的文本是否为搜索关键字
+     *
+     * @param keyword 搜索关键字
+     * @return 如果选中的文本等于关键字返回 true，否则返回 false
+     */
     private boolean isKeywordSelected(String keyword) {
         String selectedText = responseBodyPane.getSelectedText();
         return selectedText != null && selectedText.equals(keyword);
     }
 
+    /**
+     * 选中并聚焦到指定位置的文本
+     *
+     * @param pos    起始位置
+     * @param length 长度
+     */
     private void selectAndFocusText(int pos, int length) {
         responseBodyPane.setCaretPosition(pos);
         responseBodyPane.select(pos, pos + length);
         responseBodyPane.requestFocusInWindow();
     }
 
+    /**
+     * 保存文件
+     * <p>
+     * 支持两种保存模式：
+     * 1. 如果有临时文件路径（大文件或二进制文件），从临时文件复制
+     * 2. 否则直接保存编辑器中的文本内容
+     * </p>
+     */
     private void saveFile() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save File");
 
-        // 智能设置文件名和扩展名
+        // 智能设置默认文件名和扩展名
         String defaultFileName = generateFileName();
         fileChooser.setSelectedFile(new File(defaultFileName));
 
@@ -231,79 +286,21 @@ public class ResponseBodyPanel extends JPanel {
 
         // 否则根据内容类型生成文件名
         String contentType = getCurrentContentTypeFromHeaders();
-        String extension = getFileExtensionFromContentType(contentType);
+        String extension = FileExtensionUtil.guessExtension(contentType);
 
-        // 使用时间戳作为文件名
-        long timestamp = System.currentTimeMillis();
-        return "response_" + timestamp + extension;
+        // 使用统一的智能文件名生成逻辑
+        if (extension == null) {
+            extension = ".txt";
+        }
+        return FileExtensionUtil.generateSmartFileName(extension);
     }
+
+
 
     /**
-     * 根据 Content-Type 获取文件扩展名
+     * 格式化内容
+     * 根据 Content-Type 对 JSON 或 XML 进行格式化美化
      */
-    private String getFileExtensionFromContentType(String contentType) {
-        if (contentType == null || contentType.isEmpty()) {
-            return ".txt";
-        }
-
-        contentType = contentType.toLowerCase();
-
-        // JSON
-        if (contentType.contains("json")) {
-            return ".json";
-        }
-        // XML
-        if (contentType.contains("xml")) {
-            return ".xml";
-        }
-        // HTML
-        if (contentType.contains("html")) {
-            return ".html";
-        }
-        // JavaScript
-        if (contentType.contains("javascript")) {
-            return ".js";
-        }
-        // CSS
-        if (contentType.contains("css")) {
-            return ".css";
-        }
-        // Plain text
-        if (contentType.contains("text/plain")) {
-            return ".txt";
-        }
-        // CSV
-        if (contentType.contains("csv")) {
-            return ".csv";
-        }
-        // PDF
-        if (contentType.contains("pdf")) {
-            return ".pdf";
-        }
-        // Images
-        if (contentType.contains("image/png")) {
-            return ".png";
-        }
-        if (contentType.contains("image/jpeg") || contentType.contains("image/jpg")) {
-            return ".jpg";
-        }
-        if (contentType.contains("image/gif")) {
-            return ".gif";
-        }
-        if (contentType.contains("image/svg")) {
-            return ".svg";
-        }
-        // Zip/Archive
-        if (contentType.contains("zip")) {
-            return ".zip";
-        }
-        if (contentType.contains("gzip")) {
-            return ".gz";
-        }
-        // Default
-        return ".txt";
-    }
-
     private void formatContent() {
         String text = responseBodyPane.getText();
         if (text == null || text.isEmpty()) {
@@ -330,6 +327,11 @@ public class ResponseBodyPanel extends JPanel {
         }
     }
 
+    /**
+     * 从响应头中获取 Content-Type
+     *
+     * @return Content-Type 的值，如果不存在则返回空字符串
+     */
     private String getCurrentContentTypeFromHeaders() {
         if (lastHeaders != null) {
             for (Map.Entry<String, List<String>> entry : lastHeaders.entrySet()) {
@@ -344,6 +346,17 @@ public class ResponseBodyPanel extends JPanel {
         return "";
     }
 
+    /**
+     * 设置响应体内容
+     * <p>
+     * 该方法会：
+     * 1. 自动检测语法类型并设置高亮
+     * 2. 显示文件大小警告（如果超过阈值）
+     * 3. 根据设置决定是否自动格式化
+     * </p>
+     *
+     * @param resp HTTP 响应对象
+     */
     public void setBodyText(HttpResponse resp) {
         if (resp == null) {
             clearResponseBody();
@@ -384,7 +397,18 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setCaretPosition(0);
     }
 
-    // 动态检测内容类型
+    /**
+     * 动态检测语法类型
+     * <p>
+     * 检测策略：
+     * 1. 优先根据 Content-Type 响应头判断
+     * 2. 其次根据内容特征判断（如 JSON 的 {} 或 []，XML 的 < >）
+     * </p>
+     *
+     * @param text        文本内容
+     * @param contentType Content-Type 响应头
+     * @return 语法类型常量（来自 SyntaxConstants）
+     */
     private String detectSyntax(String text, String contentType) {
         if (contentType != null) contentType = contentType.toLowerCase();
         if (contentType != null) {
@@ -408,7 +432,18 @@ public class ResponseBodyPanel extends JPanel {
         return SyntaxConstants.SYNTAX_STYLE_NONE;
     }
 
-    // 自动格式化（如果可能）
+    /**
+     * 自动格式化内容（如果可能）
+     * <p>
+     * 只有在满足以下条件时才会自动格式化：
+     * 1. 用户开启了自动格式化设置
+     * 2. 文件大小小于阈值（500KB）
+     * 3. 内容类型为 JSON 或 XML
+     * </p>
+     *
+     * @param text        文本内容
+     * @param contentType Content-Type 响应头
+     */
     private void autoFormatIfPossible(String text, String contentType) {
         if (text == null || text.isEmpty()) {
             return;

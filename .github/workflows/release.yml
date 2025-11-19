@@ -31,7 +31,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Extract version（提取版本号）
         id: extract_version
@@ -55,7 +55,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Build with Maven（使用 Maven 构建 Fat JAR）
         run: mvn -B clean package -DskipTests
@@ -84,7 +84,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -209,7 +209,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -387,7 +387,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -488,7 +488,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -620,7 +620,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          check-latest: false  # 禁用检查最新版本，避免 GitHub API 速率限制
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4

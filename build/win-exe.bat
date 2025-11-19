@@ -166,10 +166,11 @@ if not exist "%ISS_SCRIPT%" (
     exit /b 1
 )
 
+:: 注意：路径相对于 ISS 脚本位置（build 目录），所以需要 ..\
 iscc ^
     /DMyAppVersion=%VERSION% ^
-    /DMyAppSourceDir=target\%APP_NAME% ^
-    /DMyOutputDir=%OUTPUT_DIR% ^
+    /DMyAppSourceDir=..\target\%APP_NAME% ^
+    /DMyOutputDir=..\%OUTPUT_DIR% ^
     /DMyArch=%ARCH% ^
     %ISS_SCRIPT%
 

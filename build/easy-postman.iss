@@ -31,7 +31,6 @@ AppId={{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}}
 ; 应用基本信息
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppSupportURL}
@@ -61,8 +60,8 @@ SetupIconFile=..\assets\win\EasyPostman.ico
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-; 可选任务：创建桌面快捷方式（默认不选中）
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+; 可选任务：创建桌面快捷方式（默认选中）
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 ; 复制 jpackage 生成的所有文件到安装目录

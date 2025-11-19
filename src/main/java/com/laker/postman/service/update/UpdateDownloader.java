@@ -86,9 +86,9 @@ public class UpdateDownloader {
         // GitHub -> Gitee
         if (originalUrl.contains(GITHUB_COM) || originalUrl.contains("githubusercontent.com")) {
             // GitHub Release 下载链接格式:
-            // https://github.com/lakernote/easy-postman/releases/download/v1.0.0/EasyPostman-1.0.0.msi
+            // https://github.com/lakernote/easy-postman/releases/download/v1.0.0/EasyPostman-1.0.0.exe
             // Gitee Release 下载链接格式:
-            // https://gitee.com/lakernote/easy-postman/releases/download/v1.0.0/EasyPostman-1.0.0.msi
+            // https://gitee.com/lakernote/easy-postman/releases/download/v1.0.0/EasyPostman-1.0.0.exe
 
             String giteeUrl = originalUrl
                     .replace(GITHUB_COM, GITEE_COM)

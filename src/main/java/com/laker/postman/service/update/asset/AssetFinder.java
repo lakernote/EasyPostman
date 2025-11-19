@@ -39,7 +39,7 @@ public class AssetFinder {
      * 根据扩展名查找资源
      *
      * @param assets 资源列表
-     * @param extension 文件扩展名（如 ".dmg", ".msi"）
+     * @param extension 文件扩展名（如 ".dmg", ".exe"）
      * @return 下载 URL，未找到返回 null
      */
     public String findByExtension(JSONArray assets, String extension) {

@@ -61,8 +61,8 @@ public class PlatformDownloadUrlResolver {
             log.warn("Portable ZIP not found, update not available for portable version");
             return null;
         } else {
-            log.info("Detected installed version, looking for .msi");
-            return assetFinder.findByExtension(assets, ".msi");
+            log.info("Detected installed version, looking for .exe");
+            return assetFinder.findByExtension(assets, ".exe");
         }
     }
 

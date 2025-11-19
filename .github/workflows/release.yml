@@ -357,7 +357,8 @@ jobs:
           $iscc = Get-Command iscc -ErrorAction SilentlyContinue
           if ($iscc) {
             Write-Host "✅ Inno Setup installed: $($iscc.Source)"
-            & iscc "//version"
+            # 显示版本信息（iscc 不带参数会显示版本和帮助）
+            & iscc 2>&1 | Select-Object -First 5
           } else {
             Write-Error "❌ Inno Setup installation failed"
             exit 1

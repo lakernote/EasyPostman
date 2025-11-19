@@ -105,18 +105,23 @@ jobs:
           name: app-jar
           path: target
 
-      - name: Install WiX Toolset
+      - name: Install Inno Setup
         shell: pwsh
         run: |
-          Write-Host "📦 Installing WiX Toolset..."
-          choco install wixtoolset -y
-          if (Get-Command refreshenv -ErrorAction SilentlyContinue) { 
-            refreshenv 
+          Write-Host "📦 Installing Inno Setup..."
+          choco install innosetup -y --no-progress
+          
+          # 刷新环境变量
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          
+          # 验证安装
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+          if ($iscc) {
+            Write-Host "✅ Inno Setup installed: $($iscc.Source)"
           } else {
-            $refreshScript = "$env:ChocolateyInstall\lib\refreshenv\tools\RefreshEnv.ps1"
-            if (Test-Path $refreshScript) { & $refreshScript }
+            Write-Error "❌ Inno Setup installation failed"
+            exit 1
           }
-          Write-Host "✅ WiX installed"
 
       - name: Create runtime with jlink
         shell: pwsh
@@ -149,95 +154,87 @@ jobs:
           Copy-Item "target\$jarNameWithVersion" -Destination "$distInputDir\$jarName"
           Write-Host "✅ Prepared dist-input with fixed JAR name: $jarName"
 
-      - name: Create Windows MSI installer
+      - name: Create app-image with jpackage
         shell: pwsh
         run: |
-          Write-Host "📦 Creating Windows MSI installer..."
+          Write-Host "📦 Creating app-image for Inno Setup..."
           $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman.jar"
-          $outDir = "target\msi-test"
           
-          if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
-          
+          # 解析 Java 选项
           $javaOpts = $env:JAVA_OPTIONS -split '\|'
           
-          # 创建 Windows MSI 安装包
-          # Note: jpackage output is captured for better error reporting
-          try {
-            jpackage `
-              --type msi `
-              --input target\dist-input `
-              --main-jar $jarName `
-              --main-class com.laker.postman.App `
-              --runtime-image target\runtime `
-              --dest $outDir `
-              --icon assets\win\EasyPostman.ico `
-              --name EasyPostman `
-              --app-version $version `
-              --vendor "Laker" `
-              --copyright "© 2025 Laker" `
-              --win-shortcut `
-              --win-menu `
-              --description "A modern API testing tool similar to Postman" `
-              --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" `
-              --win-dir-chooser `
-              --win-per-user-install `
-              --win-menu-group "EasyTools" `
-              --win-help-url "https://gitee.com/lakernote/easy-postman" `
-              --java-options $javaOpts[0] `
-              --java-options $javaOpts[1] `
-              --java-options $javaOpts[2] `
-              --java-options "-Djavax.accessibility.assistive_technologies=" `
-              --verbose
+          # 创建应用镜像（供 Inno Setup 使用）
+          jpackage `
+            --type app-image `
+            --input target\dist-input `
+            --main-jar $jarName `
+            --main-class com.laker.postman.App `
+            --runtime-image target\runtime `
+            --dest target `
+            --icon assets\win\EasyPostman.ico `
+            --name EasyPostman `
+            --app-version $version `
+            --vendor "Laker" `
+            --copyright "© 2025 Laker" `
+            --java-options $javaOpts[0] `
+            --java-options $javaOpts[1] `
+            --java-options $javaOpts[2] `
+            --java-options "-Djavax.accessibility.assistive_technologies="
           
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ jpackage failed with exit code: $LASTEXITCODE"
-              Write-Host "💡 Checking for WiX compilation logs..."
-          
-              # Look for WiX log files in temp directories
-              $tempDirs = @(
-                "$env:TEMP\jdk.jpackage*",
-                "C:\Users\*\AppData\Local\Temp\jdk.jpackage*"
-              )
-          
-              foreach ($pattern in $tempDirs) {
-                $dirs = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue
-                foreach ($dir in $dirs) {
-                  Write-Host "📂 Checking $dir"
-                  $logFiles = Get-ChildItem -Path $dir -Recurse -Include "*.log" -ErrorAction SilentlyContinue
-                  foreach ($log in $logFiles) {
-                    Write-Host "📄 Log file: $($log.FullName)"
-                    Get-Content $log -ErrorAction SilentlyContinue | Select-Object -Last 50
-                  }
-                }
-              }
-          
-              exit 1
-            }
-          
-            Write-Host "✅ MSI installer created successfully"
-          } catch {
-            Write-Host "❌ Exception during jpackage execution:"
-            Write-Host $_.Exception.Message
-            Write-Host $_.ScriptStackTrace
-            exit 1
-          }
+          Write-Host "✅ App image created at: target\EasyPostman"
 
-      - name: Verify MSI installer
+      - name: Create EXE with Inno Setup
         shell: pwsh
         run: |
-          Write-Host "🔍 Verifying MSI installer..."
+          Write-Host "🔨 Creating EXE installer with Inno Setup..."
           $version = "${{ needs.get-version.outputs.version }}"
-          $msiFile = "target\msi-test\EasyPostman-$version.msi"
+          $issScript = "build\easy-postman.iss"
+          $arch = "x64"
           
-          if (-not (Test-Path $msiFile)) {
-            Write-Host "❌ MSI file not found: $msiFile"
+          # 确保输出目录存在
+          if (-not (Test-Path "dist")) { 
+            New-Item -ItemType Directory -Path "dist" | Out-Null 
+          }
+          
+          # 验证源目录存在
+          if (-not (Test-Path "target\EasyPostman")) {
+            Write-Error "❌ Source directory not found: target\EasyPostman"
             exit 1
           }
           
-          $fileSize = (Get-Item $msiFile).Length / 1MB
-          Write-Host "✅ MSI installer exists: $msiFile ($([math]::Round($fileSize, 2)) MB)"
-          Write-Host "✅ MSI installer verification passed"
+          # 运行 Inno Setup 编译器
+          & iscc `
+            "/DMyAppVersion=$version" `
+            "/DMyAppSourceDir=..\target\EasyPostman" `
+            "/DMyOutputDir=..\dist" `
+            "/DMyArch=$arch" `
+            $issScript
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ Inno Setup compilation failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+          
+          Write-Host "✅ EXE installer created successfully"
+
+      - name: Verify EXE installer
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Verifying EXE installer..."
+          $version = "${{ needs.get-version.outputs.version }}"
+          $exeFile = "dist\EasyPostman-$version-windows-x64.exe"
+          
+          if (-not (Test-Path $exeFile)) {
+            Write-Host "❌ EXE file not found: $exeFile"
+            Write-Host "Files in dist folder:"
+            Get-ChildItem "dist" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  - $($_.Name)" }
+            exit 1
+          }
+          
+          $fileSize = (Get-Item $exeFile).Length / 1MB
+          Write-Host "✅ EXE installer exists: $exeFile ($([math]::Round($fileSize, 2)) MB)"
+          Write-Host "✅ EXE installer verification passed"
 
 
       - name: Create Windows portable version
@@ -631,7 +628,7 @@ jobs:
           
           # Windows 打包测试结果
           if [[ "${{ needs.test-windows-package.result }}" == "success" ]]; then
-            echo "| 🪟 Windows 打包 | ✅ 通过 | 便携版打包成功，启动测试通过 |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🪟 Windows 打包 | ✅ 通过 | EXE 安装包和便携版打包成功，启动测试通过 |" >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ needs.test-windows-package.result }}" == "skipped" ]]; then
             echo "| 🪟 Windows 打包 | ⏭️ 跳过 | 因前置任务失败而跳过 |" >> $GITHUB_STEP_SUMMARY
           else

@@ -101,9 +101,10 @@
 
 **构建内容**:
 - 📦 **跨平台 Fat JAR** - 使用 Maven 构建，适用于所有平台
-- 🪟 **Windows MSI** - 使用 jpackage 和 WiX 工具集创建安装包
+- 🪟 **Windows EXE** - 使用 jpackage 和 Inno Setup 创建安装包
+- 📦 **Windows 便携版** - 绿色免安装版本，解压即用
 - 🍎 **macOS DMG** - 为 Intel 和 Apple Silicon (M1、M2、M3、M4) 创建安装包
-- 🐧 **Linux DEB/RPM** - 创建 Debian 和 RedHat 系列发行版安装包
+- 🐧 **Linux DEB** - 创建 Debian/Ubuntu 系列发行版安装包
 
 **特性**:
 - ✅ 使用 jlink 创建精简 JRE，减小安装包体积

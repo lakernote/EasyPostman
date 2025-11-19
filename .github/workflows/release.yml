@@ -365,6 +365,14 @@ jobs:
           path: dist/*.exe
           retention-days: 7
 
+      - name: Upload EXE for Gitee sync（上传 EXE 供 Gitee 同步使用）
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-exe
+          path: dist/*.exe
+          retention-days: 1
+
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
     runs-on: macos-13  # Intel x86_64
@@ -708,7 +716,7 @@ jobs:
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
     if: github.event_name == 'release'
-    needs: [ build-windows-portable ]  # 等待 Windows 绿色版构建完成
+    needs: [ build-windows-portable, build-windows-exe ]  # 等待 Windows 绿色版和 EXE 构建完成
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -817,6 +825,53 @@ jobs:
           echo "❌ Failed to upload Windows Portable after $MAX_RETRIES attempts"
           exit 1
 
+  # Windows EXE 上传到 Gitee
+  sync-windows-exe-to-gitee:
+    name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
+    if: github.event_name == 'release'
+    needs: [ create-gitee-release ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows EXE artifact（下载 Windows EXE 产物）
+        uses: actions/download-artifact@v4
+        with:
+          name: release-exe
+          path: artifacts
+
+      - name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
+        run: |
+          RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
+          FILE=$(find artifacts -name "*.exe" | head -n 1)
+          
+          if [ -z "$FILE" ]; then
+            echo "❌ Windows EXE file not found!"
+            exit 1
+          fi
+          
+          echo "📦 [Priority 2] Uploading $(basename $FILE) to Gitee..."
+          
+          # 上传到 Gitee，带重试机制
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+              -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+              -F "file=@$FILE"; then
+              echo "✅ Windows EXE uploaded successfully!"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Upload failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                sleep 5
+              fi
+            fi
+          done
+          
+          echo "❌ Failed to upload Windows EXE after $MAX_RETRIES attempts"
+          exit 1
 
   # macOS ARM 上传到 Gitee（macOS 构建完成后立即上传）
   sync-macos-to-gitee:
@@ -873,7 +928,7 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: github.event_name == 'release' && always()  # 即使有失败也执行
-    needs: [ create-gitee-release, sync-windows-portable-to-gitee, sync-macos-to-gitee ]
+    needs: [ create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
@@ -883,21 +938,23 @@ jobs:
           echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
           echo ""
           echo "⏱️  同步时间线（完全并行）："
-          echo "  1️⃣  Windows Portable 构建完成 → 立即创建 Gitee Release → 立即上传绿色版 ✅"
+          echo "  1️⃣  Windows Portable 和 EXE 构建完成 → 立即创建 Gitee Release → 立即上传绿色版和 EXE ✅"
           echo "  2️⃣  macOS ARM 构建完成 → 立即上传 DMG ✅"
           echo ""
           echo "已同步到 Gitee 的文件："
           echo "  📦 Windows Portable (绿色版) - ${{ needs.sync-windows-portable-to-gitee.result }}"
+          echo "  🪟 Windows EXE (安装包) - ${{ needs.sync-windows-exe-to-gitee.result }}"
           echo "  🍎 macOS Apple Silicon (ARM64) - ${{ needs.sync-macos-to-gitee.result }}"
           echo ""
-          echo "💡 其他平台（Windows EXE、Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
+          echo "💡 其他平台（Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
           PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
+          EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.result }}"
           MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
           
-          if [ "$PORTABLE_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ]; then
+          if [ "$PORTABLE_STATUS" == "success" ] && [ "$EXE_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ]; then
             echo "✅ 所有配置平台均已成功上传到 Gitee！"
             echo "🚀 优化："
-            echo "   • Windows 提供绿色版（解压即用），EXE 安装包在 GitHub 提供"
+            echo "   • Windows 提供绿色版（解压即用）和 EXE 安装包（支持自动升级）"
             echo "   • macOS ARM 原生支持，性能更优"
             echo "   • 各平台完全并行上传，快速发布"

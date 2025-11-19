@@ -264,7 +264,6 @@ public class UpdateDownloader {
 
     /**
      * 安装 Windows EXE 安装包（支持静默安装）
-     * 参考 Termora 的实现：如果已安装，则使用静默安装 + 自动启动
      */
     private void installWindowsExe(File exeFile, Consumer<Boolean> callback) {
         try {

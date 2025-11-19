@@ -8,18 +8,17 @@ import java.io.InputStreamReader;
 /**
  * Windows 注册表工具类
  * 用于检查应用是否已安装（通过注册表）
- * 参考 Termora 的实现，但不依赖 JNA 库
  */
 @Slf4j
 public class WindowsRegistryChecker {
 
     // 64位注册表路径（默认）
     private static final String UNINSTALL_KEY_PATH_64 =
-        "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1";
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1";
 
     // 32位注册表路径（在64位系统上的WOW6432Node）
     private static final String UNINSTALL_KEY_PATH_32 =
-        "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1";
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1";
 
     // 用于其他方法的默认路径
     private static final String UNINSTALL_KEY_PATH = UNINSTALL_KEY_PATH_64;
@@ -98,9 +97,9 @@ public class WindowsRegistryChecker {
      */
     private static boolean findAppByDisplayName() {
         String[] searchPaths = {
-            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
-            "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
-            "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+                "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+                "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+                "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
         };
 
         for (String basePath : searchPaths) {
@@ -154,7 +153,7 @@ public class WindowsRegistryChecker {
 
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                "reg", "query", keyPath, "/v", "DisplayVersion"
+                    "reg", "query", keyPath, "/v", "DisplayVersion"
             );
             pb.redirectErrorStream(true);
 

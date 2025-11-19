@@ -3,14 +3,15 @@
 
 ; ==================== 外部传入的变量 ====================
 ; 这些变量可以通过命令行传入：iscc /DMyAppVersion=4.0.9 easy-postman.iss
+; 注意：路径是相对于 ISS 脚本位置（build 目录），所以需要 ..\ 返回上级
 #ifndef MyAppVersion
   #define MyAppVersion "4.0.9"
 #endif
 #ifndef MyAppSourceDir
-  #define MyAppSourceDir "target\EasyPostman"
+  #define MyAppSourceDir "..\target\EasyPostman"
 #endif
 #ifndef MyOutputDir
-  #define MyOutputDir "dist"
+  #define MyOutputDir "..\dist"
 #endif
 #ifndef MyArch
   #define MyArch "x64"

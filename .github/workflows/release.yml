@@ -108,7 +108,7 @@ jobs:
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=zip-9 `
+            --compress=2 `
             --verbose `
             --output $runtimeDir
           
@@ -260,7 +260,7 @@ jobs:
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=zip-9 `
+            --compress=2 `
             --verbose `
             --output $runtimeDir
           
@@ -423,7 +423,7 @@ jobs:
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=zip-9 \
+            --compress=2 \
             --verbose \
             --output target/runtime
           
@@ -530,7 +530,7 @@ jobs:
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=zip-9 \
+            --compress=2 \
             --verbose \
             --output target/runtime
           

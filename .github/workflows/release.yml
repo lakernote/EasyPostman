@@ -11,7 +11,10 @@ on:
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'jetbrains'  # 使用 JetBrains Runtime（JBR），为 Swing 应用优化
-  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
+  # 精简后的模块配置（已移除未使用的模块，预计减少 10-15 MB）
+  # 移除：java.naming（无JNDI）、java.net.http（用OkHttp）、java.prefs（无Preferences API）
+  #       java.security.sasl（无SASL）、java.management.rmi（桌面应用）、jdk.crypto.cryptoki（无硬件加密）
+  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.sql,java.security.jgss,jdk.crypto.ec,java.management'
   JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
 
 jobs:

@@ -776,15 +776,61 @@ jobs:
           fi
           
           echo "🚀 Creating Gitee Release for tag: $TAG_NAME"
+          echo "📝 Release Body: $RELEASE_BODY"
           
-          curl -s -X POST \
-            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-            -F "tag_name=$TAG_NAME" \
-            -F "name=$TAG_NAME" \
-            -F "body=$RELEASE_BODY" \
-            -F "prerelease=false" \
-            -F "target_commitish=master" \
-            "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" > /tmp/release.json
+          # 重试机制
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
+            echo "⏳ Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
+            
+            # 使用更健壮的 curl 选项
+            # --retry 3: curl 内部重试 3 次
+            # --retry-delay 2: 重试间隔 2 秒
+            # --connect-timeout 30: 连接超时 30 秒
+            # --max-time 60: 整体超时 60 秒
+            set +e  # 临时禁用 exit on error
+            HTTP_CODE=$(curl -w "%{http_code}" \
+              --retry 3 \
+              --retry-delay 2 \
+              --connect-timeout 30 \
+              --max-time 60 \
+              -S -X POST \
+              -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+              -F "tag_name=$TAG_NAME" \
+              -F "name=$TAG_NAME" \
+              -F "body=$RELEASE_BODY" \
+              -F "prerelease=false" \
+              -F "target_commitish=master" \
+              "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" \
+              -o /tmp/release.json 2>&1 | tail -n1)
+            CURL_EXIT_CODE=$?
+            set -e  # 重新启用 exit on error
+            
+            echo "curl exit code: $CURL_EXIT_CODE"
+            echo "HTTP Status Code: $HTTP_CODE"
+            
+            if [ $CURL_EXIT_CODE -eq 0 ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              SUCCESS=true
+              echo "✅ API call successful!"
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Failed (curl: $CURL_EXIT_CODE, HTTP: $HTTP_CODE), retrying in 5 seconds..."
+                sleep 5
+              fi
+            fi
+          done
+          
+          if [ "$SUCCESS" = false ]; then
+            echo "❌ Failed to create Gitee Release after $MAX_RETRIES attempts"
+            echo "Last curl exit code: $CURL_EXIT_CODE"
+            echo "Last HTTP code: $HTTP_CODE"
+            cat /tmp/release.json 2>/dev/null || echo "No response file"
+            exit 1
+          fi
           
           echo "API Response:"
           cat /tmp/release.json
@@ -803,7 +849,7 @@ jobs:
           fi
           
           if [ -z "$RELEASE_ID" ]; then
-            echo "Error: Failed to create release or extract release ID"
+            echo "❌ Error: Failed to extract release ID from response"
             exit 1
           fi
           

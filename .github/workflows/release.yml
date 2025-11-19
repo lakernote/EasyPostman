@@ -322,6 +322,174 @@ jobs:
           path: dist/*-portable.zip
           retention-days: 1
 
+
+  build-windows-exe:
+    name: Build Windows EXE Installer（构建 Windows EXE 安装程序）
+    runs-on: windows-latest
+    needs: [ get-version, build-jar-artifact ]
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Install Inno Setup（安装 Inno Setup）
+        shell: pwsh
+        run: |
+          Write-Host "📦 Installing Inno Setup..."
+          choco install innosetup -y --no-progress
+          
+          # 刷新环境变量
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          
+          # 验证安装
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+          if ($iscc) {
+            Write-Host "✅ Inno Setup installed: $($iscc.Source)"
+            & iscc "//version"
+          } else {
+            Write-Error "❌ Inno Setup installation failed"
+            exit 1
+          }
+
+      - name: Create runtime with jlink（使用 jlink 创建 Windows 精简 JRE）
+        shell: pwsh
+        run: |
+          $runtimeDir = "target\runtime"
+          if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
+          
+          jlink `
+            --add-modules $env:JLINK_MODULES `
+            --strip-debug `
+            --no-header-files `
+            --no-man-pages `
+            --compress=2 `
+            --output $runtimeDir
+
+      - name: Prepare dist-input（准备打包输入目录）
+        shell: pwsh
+        run: |
+          $version = "${{ needs.get-version.outputs.version }}"
+          $jarNameWithVersion = "easy-postman-$version.jar"
+          $jarName = "easy-postman.jar"
+          
+          $distInputDir = "target\dist-input"
+          if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
+          New-Item -ItemType Directory -Path $distInputDir | Out-Null
+          
+          # 重命名 JAR 为固定名称（去除版本号）
+          Copy-Item "target\$jarNameWithVersion" -Destination "$distInputDir\$jarName"
+
+      - name: Create app-image with jpackage（创建应用镜像）
+        shell: pwsh
+        run: |
+          $version = "${{ needs.get-version.outputs.version }}"
+          $jarName = "easy-postman.jar"
+          
+          # 解析 Java 选项
+          $javaOpts = $env:JAVA_OPTIONS -split '\|'
+          
+          # 创建应用镜像（供 Inno Setup 使用）
+          jpackage `
+            --type app-image `
+            --input target\dist-input `
+            --main-jar $jarName `
+            --main-class com.laker.postman.App `
+            --runtime-image target\runtime `
+            --dest target `
+            --icon assets\win\EasyPostman.ico `
+            --name EasyPostman `
+            --app-version $version `
+            --vendor "Laker" `
+            --copyright "© 2025 Laker" `
+            --java-options $javaOpts[0] `
+            --java-options $javaOpts[1] `
+            --java-options $javaOpts[2] `
+            --java-options "-Djavax.accessibility.assistive_technologies="
+          
+          Write-Host "✅ App image created at: target\EasyPostman"
+
+      - name: Create EXE with Inno Setup（使用 Inno Setup 创建 EXE 安装程序）
+        shell: pwsh
+        run: |
+          $version = "${{ needs.get-version.outputs.version }}"
+          $issScript = "build\easy-postman.iss"
+          $arch = "x64"  # 当前构建为 x64，未来可扩展为 arm64
+          
+          # 确保输出目录存在
+          if (-not (Test-Path "dist")) { 
+            New-Item -ItemType Directory -Path "dist" | Out-Null 
+          }
+          
+          Write-Host "🔨 Building EXE installer with Inno Setup..."
+          Write-Host "   Version: $version"
+          Write-Host "   Architecture: $arch"
+          Write-Host "   Script: $issScript"
+          Write-Host "   Source: target\EasyPostman"
+          
+          # 验证源目录存在
+          if (-not (Test-Path "target\EasyPostman")) {
+            Write-Error "❌ Source directory not found: target\EasyPostman"
+            exit 1
+          }
+          
+          # 运行 Inno Setup 编译器
+          & iscc `
+            "/DMyAppVersion=$version" `
+            "/DMyAppSourceDir=target\EasyPostman" `
+            "/DMyOutputDir=dist" `
+            "/DMyArch=$arch" `
+            $issScript
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ Inno Setup compilation failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+          
+          # 验证 EXE 文件
+          $expectedExeName = "EasyPostman-$version-windows-$arch.exe"
+          $exeFile = Get-Item "dist\$expectedExeName" -ErrorAction SilentlyContinue
+          
+          if ($exeFile) {
+            Write-Host "✅ EXE installer created successfully!"
+            Write-Host "   File: $($exeFile.Name)"
+            Write-Host "   Size: $([math]::Round($exeFile.Length / 1MB, 2)) MB"
+            Write-Host "   Path: $($exeFile.FullName)"
+          } else {
+            Write-Error "❌ Expected EXE file not found: $expectedExeName"
+            Write-Host "Files in dist folder:"
+            Get-ChildItem "dist" | ForEach-Object { Write-Host "  - $($_.Name)" }
+            exit 1
+          }
+
+      - name: Upload to Release（上传到 GitHub Release）
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as Artifact（手动触发时上传为构建产物）
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-Windows-EXE
+          path: dist/*.exe
+          retention-days: 7
+
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
     runs-on: macos-13  # Intel x86_64

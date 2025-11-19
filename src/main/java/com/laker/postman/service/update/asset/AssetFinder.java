@@ -12,33 +12,11 @@ public class AssetFinder {
 
     private static final String BROWSER_DOWNLOAD_URL = "browser_download_url";
 
-    /**
-     * 查找 Fat JAR 资源
-     *
-     * @param assets 资源列表
-     * @return 下载 URL，未找到返回 null
-     */
-    public String findFatJar(JSONArray assets) {
-        for (int i = 0; i < assets.size(); i++) {
-            JSONObject asset = assets.getJSONObject(i);
-            String name = asset.getStr("name");
-            if (name != null && name.startsWith("easy-postman-") &&
-                    name.endsWith(".jar") &&
-                    !name.contains("-sources") &&
-                    !name.contains("-javadoc")) {
-                String url = asset.getStr(BROWSER_DOWNLOAD_URL);
-                log.debug("Found fat JAR asset: {} -> {}", name, url);
-                return url;
-            }
-        }
-        log.debug("No fat JAR asset found in release");
-        return null;
-    }
 
     /**
      * 根据扩展名查找资源
      *
-     * @param assets 资源列表
+     * @param assets    资源列表
      * @param extension 文件扩展名（如 ".dmg", ".exe"）
      * @return 下载 URL，未找到返回 null
      */
@@ -58,7 +36,7 @@ public class AssetFinder {
     /**
      * 根据模式查找资源
      *
-     * @param assets 资源列表
+     * @param assets  资源列表
      * @param pattern 匹配模式（如 "-portable.zip"）
      * @return 下载 URL，未找到返回 null
      */
@@ -98,4 +76,3 @@ public class AssetFinder {
         return null;
     }
 }
-

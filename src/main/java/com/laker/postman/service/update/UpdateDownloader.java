@@ -174,7 +174,7 @@ public class UpdateDownloader {
      * 执行实际的下载操作
      */
     private long performDownload(InputStream in, FileOutputStream out, long totalSize,
-                                  DownloadProgressCallback callback) throws IOException {
+                                 DownloadProgressCallback callback) throws IOException {
         byte[] buffer = new byte[8192];
         long downloaded = 0;
         int bytesRead;
@@ -276,11 +276,11 @@ public class UpdateDownloader {
                 // 已安装：使用静默安装 + 自动启动 + 强制关闭占用文件的应用
                 log.info("App is already installed, using silent install with auto-start");
                 pb = new ProcessBuilder(
-                    exeFile.getAbsolutePath(),
-                    "/VERYSILENT",      // 静默安装（不显示任何界面）
-                    "/AUTOSTART",       // 安装完成后自动启动（自定义参数）
-                    "/NORESTART",       // 不重启系统
-                    "/FORCECLOSEAPPLICATIONS"  // 强制关闭占用文件的应用
+                        exeFile.getAbsolutePath(),
+                        "/VERYSILENT",      // 静默安装（不显示任何界面）
+                        "/AUTOSTART",       // 安装完成后自动启动（自定义参数）
+                        "/NORESTART",       // 不重启系统
+                        "/FORCECLOSEAPPLICATIONS"  // 强制关闭占用文件的应用
                 );
             } else {
                 // 未安装：使用交互式安装
@@ -311,23 +311,7 @@ public class UpdateDownloader {
             }
             return true;
         }
-
-        // 备用方案：检查当前应用是否从 Program Files 运行
-        try {
-            String appPath = System.getProperty("user.dir");
-            String programFiles = System.getenv("ProgramFiles");
-            String programFilesX86 = System.getenv("ProgramFiles(x86)");
-
-            boolean installedInProgramFiles =
-                (programFiles != null && appPath.toLowerCase().contains(programFiles.toLowerCase())) ||
-                (programFilesX86 != null && appPath.toLowerCase().contains(programFilesX86.toLowerCase()));
-
-            log.debug("App installation check - Path: {}, Installed: {}", appPath, installedInProgramFiles);
-            return installedInProgramFiles;
-        } catch (Exception e) {
-            log.warn("Failed to check installation status: {}", e.getMessage());
-            return false;
-        }
+        return false;
     }
 
     /**

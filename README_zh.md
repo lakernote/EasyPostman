@@ -240,6 +240,22 @@ EasyPostman
 - 内存：至少 512MB 可用内存
 - 磁盘：至少 100MB 可用空间
 
+> 💡 **开发和打包建议**：推荐使用 **[JetBrains Runtime (JBR)](https://github.com/JetBrains/JetBrainsRuntime)**，这是 JetBrains 为 Swing 应用优化的 JDK 发行版，提供：
+> - ✨ 更好的 Swing/AWT 渲染性能
+> - 🎨 改进的字体渲染和 HiDPI 支持
+> - 🐛 修复了标准 JDK 中的 Swing 相关 bug
+> - 🚀 针对 IDE 和桌面应用优化的 GC 和性能调优
+> 
+> **下载地址**：[JetBrains Runtime Releases](https://github.com/JetBrains/JetBrainsRuntime/releases)
+> 
+> 使用 JBR 构建和运行：
+> ```bash
+> # 设置 JAVA_HOME 为 JBR 路径
+> export JAVA_HOME=/path/to/jbr
+> # 或在 Windows 中
+> set JAVA_HOME=C:\path\to\jbr
+> ```
+
 ### 从源码构建
 
 ```bash

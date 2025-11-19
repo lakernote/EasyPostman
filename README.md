@@ -242,6 +242,22 @@ EasyPostman
 - Memory: at least 512MB available
 - Disk: at least 100MB available
 
+> 💡 **Development and Packaging Recommendation**: We recommend using **[JetBrains Runtime (JBR)](https://github.com/JetBrains/JetBrainsRuntime)**, a JDK distribution optimized by JetBrains for Swing applications, providing:
+> - ✨ Better Swing/AWT rendering performance
+> - 🎨 Improved font rendering and HiDPI support
+> - 🐛 Fixes for Swing-related bugs in standard JDK
+> - 🚀 Optimized GC and performance tuning for IDEs and desktop applications
+> 
+> **Download**: [JetBrains Runtime Releases](https://github.com/JetBrains/JetBrainsRuntime/releases)
+> 
+> Build and run with JBR:
+> ```bash
+> # Set JAVA_HOME to JBR path
+> export JAVA_HOME=/path/to/jbr
+> # Or on Windows
+> set JAVA_HOME=C:\path\to\jbr
+> ```
+
 ### Build from Source
 
 ```bash

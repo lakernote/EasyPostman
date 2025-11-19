@@ -27,7 +27,7 @@
 
 [Setup]
 ; AppId 是应用的唯一标识符（GUID），不要修改！用于支持升级安装
-AppId={{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}}
+AppId={8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}
 ; 应用基本信息
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}

@@ -50,6 +50,13 @@ public class WindowsRegistryChecker {
             return true;
         }
 
+        // 尝试通过搜索 DisplayName 查找应用
+        log.info("Registry key not found, trying to search by DisplayName...");
+        if (findAppByDisplayName()) {
+            log.info("✓ App is INSTALLED (found by DisplayName search)");
+            return true;
+        }
+
         log.info("✗ App is NOT INSTALLED (not found in registry)");
         return false;
     }
@@ -74,13 +81,94 @@ public class WindowsRegistryChecker {
             }
 
             int exitCode = process.waitFor();
-            log.debug("  Exit code: {}", exitCode);
+            log.info("  Exit code: {}", exitCode);
             return exitCode == 0;
 
         } catch (Exception e) {
             log.warn("Failed to check registry path {}: {}", keyPath, e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * 通过搜索 DisplayName 查找应用
+     * 搜索 Uninstall 注册表下所有子键，查找 DisplayName 为 "EasyPostman" 的应用
+     *
+     * @return true 如果找到应用，false 否则
+     */
+    private static boolean findAppByDisplayName() {
+        String[] searchPaths = {
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+            "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+        };
+
+        for (String basePath : searchPaths) {
+            try {
+                // 列出所有子键
+                ProcessBuilder pb = new ProcessBuilder("reg", "query", basePath);
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), "GBK"))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.startsWith("HKEY_")) {
+                            // 检查这个子键的 DisplayName
+                            if (checkDisplayName(line, "EasyPostman")) {
+                                actualKeyPath = line;
+                                log.info("Found app at: {}", line);
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                process.waitFor();
+
+            } catch (Exception e) {
+                log.info("Failed to search registry path {}: {}", basePath, e.getMessage());
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 检查指定注册表路径的 DisplayName 是否匹配
+     */
+    private static boolean checkDisplayName(String keyPath, String expectedName) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("reg", "query", keyPath, "/v", "DisplayName");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), "GBK"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("DisplayName") && line.contains("REG_SZ")) {
+                        // 解析: DisplayName    REG_SZ    EasyPostman
+                        String[] parts = line.trim().split("REG_SZ");
+                        if (parts.length >= 2) {
+                            String displayName = parts[1].trim();
+                            if (expectedName.equals(displayName)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            process.waitFor();
+
+        } catch (Exception e) {
+            log.info("Failed to check DisplayName at {}: {}", keyPath, e.getMessage());
+        }
+
+        return false;
     }
 
     /**
@@ -109,7 +197,7 @@ public class WindowsRegistryChecker {
                         String[] parts = line.trim().split("\\s+");
                         if (parts.length >= 3) {
                             String version = parts[parts.length - 1];
-                            log.debug("Installed version from registry: {}", version);
+                            log.info("Installed version from registry: {}", version);
                             return version;
                         }
                     }

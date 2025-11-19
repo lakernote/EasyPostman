@@ -13,13 +13,13 @@ import java.io.InputStreamReader;
 public class WindowsRegistryChecker {
 
     // 64位注册表路径（默认）
-    // 注意：Inno Setup 的 AppId={{GUID}} 会生成注册表键 {GUID}_is1（单花括号）
+    // 注意：Inno Setup 的 AppId=GUID 会生成注册表键 GUID_is1（不带花括号）
     private static final String UNINSTALL_KEY_PATH_64 =
-        "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1";
+        "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1";
 
     // 32位注册表路径（在64位系统上的WOW6432Node）
     private static final String UNINSTALL_KEY_PATH_32 =
-        "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1";
+        "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1";
 
     // 用于其他方法的默认路径
     private static final String UNINSTALL_KEY_PATH = UNINSTALL_KEY_PATH_64;

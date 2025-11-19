@@ -27,8 +27,8 @@
 
 [Setup]
 ; AppId 是应用的唯一标识符（GUID），不要修改！用于支持升级安装
-; 注意：AppId 直接使用 GUID（不带花括号），Inno Setup 会自动添加花括号和 _is1 后缀生成注册表键
-; 最终注册表路径: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E}_is1
+; 注意：AppId 直接使用 GUID（不带花括号），Inno Setup 会自动添加 _is1 后缀生成注册表键
+; 最终注册表路径: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1
 AppId=8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E
 ; 应用基本信息
 AppName={#MyAppName}

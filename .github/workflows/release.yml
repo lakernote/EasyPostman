@@ -100,11 +100,18 @@ jobs:
           
           jlink `
             --add-modules $env:JLINK_MODULES `
+            --strip-java-debug-attributes `
+            --strip-native-commands `
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=2 `
+            --compress=zip-9 `
+            --verbose `
             --output $runtimeDir
+          
+          # 验证 JRE 大小
+          $size = (Get-ChildItem -Path $runtimeDir -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+          Write-Host "✅ JRE 创建成功，大小: $([math]::Round($size, 2)) MB"
 
       - name: Prepare dist-input（准备打包输入目录）
         shell: pwsh
@@ -245,11 +252,18 @@ jobs:
           
           jlink `
             --add-modules $env:JLINK_MODULES `
+            --strip-java-debug-attributes `
+            --strip-native-commands `
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=2 `
+            --compress=zip-9 `
+            --verbose `
             --output $runtimeDir
+          
+          # 验证 JRE 大小
+          $size = (Get-ChildItem -Path $runtimeDir -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+          Write-Host "✅ JRE 创建成功，大小: $([math]::Round($size, 2)) MB"
 
       - name: Prepare dist-input（准备打包输入目录）
         shell: pwsh
@@ -401,11 +415,17 @@ jobs:
           # 创建 macOS Intel 平台的 JRE
           jlink \
             --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-java-debug-attributes \
+            --strip-native-commands \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=2 \
+            --compress=zip-9 \
+            --verbose \
             --output target/runtime
+          
+          # 验证 JRE 大小
+          echo "✅ JRE 创建成功，大小: $(du -sh target/runtime | cut -f1)"
 
       - name: Prepare dist-input（准备打包输入目录）
         run: |
@@ -502,11 +522,17 @@ jobs:
           # 创建 macOS ARM 平台的 JRE
           jlink \
             --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-java-debug-attributes \
+            --strip-native-commands \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=2 \
+            --compress=zip-9 \
+            --verbose \
             --output target/runtime
+          
+          # 验证 JRE 大小
+          echo "✅ JRE 创建成功，大小: $(du -sh target/runtime | cut -f1)"
 
       - name: Prepare dist-input（准备打包输入目录）
         run: |

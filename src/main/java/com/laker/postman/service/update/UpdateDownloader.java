@@ -236,47 +236,116 @@ public class UpdateDownloader {
     }
 
     /**
-     * 安装下载的文件
+     * 安装下载的文件（静默安装）
      */
     public void installUpdate(File installerFile, Consumer<Boolean> callback) {
         try {
             String fileName = installerFile.getName().toLowerCase();
 
-            // 检查是否为 JAR 文件
-            if (fileName.endsWith(".jar")) {
-                log.info("Installing JAR update: {}", installerFile.getAbsolutePath());
-                JarUpdateManager jarUpdateManager = new JarUpdateManager();
-                boolean success = jarUpdateManager.installJarUpdate(installerFile);
-                callback.accept(success);
-                // 注意：如果成功，JarUpdateManager 会自动重启应用并退出当前进程
+            // Windows EXE 安装包 - 支持静默安装
+            if (fileName.endsWith(".exe")) {
+                installWindowsExe(installerFile, callback);
                 return;
             }
 
-            // 其他文件类型（DMG、MSI、DEB、ZIP 等）使用系统默认方式打开
+
+            // 其他文件类型（DMG、DEB、ZIP 等）使用系统默认方式打开
             log.info("Opening installer with default application: {}", installerFile.getAbsolutePath());
             Desktop.getDesktop().open(installerFile);
 
             // 全量更新：打开安装程序后，延迟退出当前应用
-            // 给安装程序一些时间启动，然后关闭当前应用
-            Thread exitThread = new Thread(() -> {
-                try {
-                    // 等待安装程序完全启动
-                    Thread.sleep(1000);
-                    log.info("Exiting application for full update installation...");
-                    System.exit(0);
-                } catch (InterruptedException e) {
-                    log.warn("Sleep interrupted during exit countdown", e);
-                    Thread.currentThread().interrupt();
-                }
-            }, "UpdateExitThread");
-            exitThread.setDaemon(true); // 设置为守护线程，确保不会阻止 JVM 退出
-            exitThread.start();
-
-            // 在启动退出线程后立即回调成功
+            scheduleApplicationExit();
             callback.accept(true);
         } catch (Exception e) {
             log.error("Failed to open installer", e);
             callback.accept(false);
         }
+    }
+
+    /**
+     * 安装 Windows EXE 安装包（支持静默安装）
+     * 参考 Termora 的实现：如果已安装，则使用静默安装 + 自动启动
+     */
+    private void installWindowsExe(File exeFile, Consumer<Boolean> callback) {
+        try {
+            // 检查应用是否已安装（通过注册表）
+            boolean isInstalled = checkIfAppInstalled();
+
+            ProcessBuilder pb;
+            if (isInstalled) {
+                // 已安装：使用静默安装 + 自动启动 + 强制关闭占用文件的应用
+                log.info("App is already installed, using silent install with auto-start");
+                pb = new ProcessBuilder(
+                    exeFile.getAbsolutePath(),
+                    "/VERYSILENT",      // 静默安装（不显示任何界面）
+                    "/AUTOSTART",       // 安装完成后自动启动（自定义参数）
+                    "/NORESTART",       // 不重启系统
+                    "/FORCECLOSEAPPLICATIONS"  // 强制关闭占用文件的应用
+                );
+            } else {
+                // 未安装：使用交互式安装
+                log.info("App is not installed, using interactive install");
+                pb = new ProcessBuilder(exeFile.getAbsolutePath());
+            }
+
+            pb.start();
+            log.info("Started EXE installer: {}", exeFile.getAbsolutePath());
+
+            // 延迟退出当前应用，让安装程序接管
+            scheduleApplicationExit();
+            callback.accept(true);
+        } catch (Exception e) {
+            log.error("Failed to start EXE installer", e);
+            callback.accept(false);
+        }
+    }
+
+    private boolean checkIfAppInstalled() {
+        // 优先使用注册表检查（最准确）
+        boolean installedInRegistry = WindowsRegistryChecker.isAppInstalled();
+        if (installedInRegistry) {
+            log.info("App is installed (verified via registry)");
+            String installedVersion = WindowsRegistryChecker.getInstalledVersion();
+            if (installedVersion != null) {
+                log.info("Currently installed version: {}", installedVersion);
+            }
+            return true;
+        }
+
+        // 备用方案：检查当前应用是否从 Program Files 运行
+        try {
+            String appPath = System.getProperty("user.dir");
+            String programFiles = System.getenv("ProgramFiles");
+            String programFilesX86 = System.getenv("ProgramFiles(x86)");
+
+            boolean installedInProgramFiles =
+                (programFiles != null && appPath.toLowerCase().contains(programFiles.toLowerCase())) ||
+                (programFilesX86 != null && appPath.toLowerCase().contains(programFilesX86.toLowerCase()));
+
+            log.debug("App installation check - Path: {}, Installed: {}", appPath, installedInProgramFiles);
+            return installedInProgramFiles;
+        } catch (Exception e) {
+            log.warn("Failed to check installation status: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 调度应用退出（给安装程序时间启动）
+     */
+    private void scheduleApplicationExit() {
+        Thread exitThread = new Thread(() -> {
+            try {
+                // 等待安装程序完全启动
+                Thread.sleep(1000);
+                log.info("Exiting application for update installation...");
+                System.exit(0);
+            } catch (InterruptedException e) {
+                log.warn("Sleep interrupted during exit countdown", e);
+                Thread.currentThread().interrupt();
+            }
+        }, "UpdateExitThread");
+        exitThread.setDaemon(true);
+        exitThread.start();
     }
 }

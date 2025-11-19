@@ -446,10 +446,11 @@ jobs:
           }
           
           # 运行 Inno Setup 编译器
+          # 注意：路径相对于 ISS 脚本位置（build 目录），所以需要 ..\
           & iscc `
             "/DMyAppVersion=$version" `
-            "/DMyAppSourceDir=target\EasyPostman" `
-            "/DMyOutputDir=dist" `
+            "/DMyAppSourceDir=..\target\EasyPostman" `
+            "/DMyOutputDir=..\dist" `
             "/DMyArch=$arch" `
             $issScript
           

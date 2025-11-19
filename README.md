@@ -33,15 +33,13 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
     - 🌏 **China Mirror**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
         - ⚠️ Due to storage limitations, China mirror only provides:
             - `EasyPostman-{version}-macos-arm64.dmg`
-            - `EasyPostman-{version}-windows-x64.msi`
+            - `EasyPostman-{version}-windows-x64.exe`
             - `EasyPostman-{version}-windows-x64-portable.zip` (Portable version)
         - 💡 For other platforms (macOS Intel, Ubuntu DEB, Cross-platform JAR), please visit GitHub Releases
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{version}-macos-arm64.dmg`
     - 🍏 Mac (Intel Chip): `EasyPostman-{version}-macos-x86_64.dmg`
     - 🪟 Windows: 
-        - **MSI Installer**: `EasyPostman-{version}-windows-x64.msi` - Install to system with desktop shortcut, supports auto-update
-          - ⚠️ **Important**: Please use the default installation directory. Changing the installation path may cause issues with uninstallation and upgrades
-          - If you need a custom installation location, use the portable version instead
+        - **EXE Installer**: `EasyPostman-{version}-windows-x64.exe` - Install to system with desktop shortcut, supports auto-update
         - **Portable ZIP**: `EasyPostman-{version}-windows-x64-portable.zip` - Extract and run, no installation required, fully portable, can be placed in any directory
     - 🐧 Ubuntu/Debian: `easypostman_{version}_amd64.deb`
     - ☕ Cross-platform JAR: `easy-postman-{version}.jar` - Requires Java 17+ runtime
@@ -49,7 +47,7 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 > ⚠️ **Security Notice**:
 > 
 > **Windows Users**: When running for the first time, Windows SmartScreen may show "Windows protected your PC" warning. This is because the app is not code-signed (code signing certificates cost $100-400/year). The app is completely open-source and safe. You can:
-> - **MSI Installer**: Click "More info" → "Run anyway", after installation it supports auto-update
+> - **EXE Installer**: Click "More info" → "Run anyway", after installation it supports auto-update
 > - **Portable ZIP**: Extract and run EasyPostman.exe directly, may still trigger SmartScreen, simply click "More info" → "Run anyway"
 > - 💡 Both methods are equally safe, SmartScreen warning will gradually disappear as download count increases
 > 
@@ -437,6 +435,7 @@ Thanks to the following open-source projects:
 - [FlatLaf](https://github.com/JFormDesigner/FlatLaf) - Modern Swing theme
 - [RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea) - Syntax highlighting editor
 - [OkHttp](https://github.com/square/okhttp) - HTTP client
+- [Termora](https://github.com/TermoraDev/termora) - Excellent terminal emulator
 
 ---
 

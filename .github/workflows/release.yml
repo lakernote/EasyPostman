@@ -65,138 +65,7 @@ jobs:
           path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
           retention-days: 1
 
-  build-windows:
-    name: Build Windows MSI（构建 Windows 安装包）
-    runs-on: windows-latest
-    needs: [ get-version, build-jar-artifact ]
 
-    steps:
-      - name: Checkout（检出代码）
-        uses: actions/checkout@v4
-
-      - name: Setup Java（配置 Java）
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Download Fat JAR（下载跨平台 Fat JAR）
-        uses: actions/download-artifact@v4
-        with:
-          name: app-jar
-          path: target
-
-      - name: Install WiX (for jpackage)（安装 WiX 工具集，用于创建 MSI）
-        shell: pwsh
-        run: |
-          choco install wixtoolset -y
-          if (Get-Command refreshenv -ErrorAction SilentlyContinue) { 
-            refreshenv 
-          } else {
-            $refreshScript = "$env:ChocolateyInstall\lib\refreshenv\tools\RefreshEnv.ps1"
-            if (Test-Path $refreshScript) { & $refreshScript }
-          }
-
-      - name: Create runtime with jlink（使用 jlink 创建 Windows 精简 JRE）
-        shell: pwsh
-        run: |
-          $runtimeDir = "target\runtime"
-          if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
-          
-          # 创建 Windows 平台的 JRE
-          jlink `
-            --add-modules $env:JLINK_MODULES `
-            --strip-debug `
-            --no-header-files `
-            --no-man-pages `
-            --compress=2 `
-            --output $runtimeDir
-
-      - name: Prepare dist-input（准备打包输入目录）
-        shell: pwsh
-        run: |
-          $version = "${{ needs.get-version.outputs.version }}"
-          $jarNameWithVersion = "easy-postman-$version.jar"
-          $jarName = "easy-postman.jar"
-          
-          $distInputDir = "target\dist-input"
-          if (Test-Path $distInputDir) { Remove-Item -Recurse -Force $distInputDir }
-          New-Item -ItemType Directory -Path $distInputDir | Out-Null
-          
-          # 重命名 JAR 为固定名称（去除版本号）
-          Copy-Item "target\$jarNameWithVersion" -Destination "$distInputDir\$jarName"
-
-
-      - name: Create MSI with jpackage（使用 jpackage 创建 MSI 安装包）
-        shell: pwsh
-        run: |
-          $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman.jar"
-          $outDir = "dist"
-          
-          if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
-          
-          # 解析 Java 选项
-          $javaOpts = $env:JAVA_OPTIONS -split '\|'
-          
-          # 创建 Windows MSI 安装包
-          jpackage `
-            --type msi `
-            --input target\dist-input `
-            --main-jar $jarName `
-            --main-class com.laker.postman.App `
-            --runtime-image target\runtime `
-            --dest $outDir `
-            --icon assets\win\EasyPostman.ico `
-            --name EasyPostman `
-            --app-version $version `
-            --vendor "Laker" `
-            --copyright "© 2025 Laker" `
-            --win-shortcut `
-            --win-menu `
-            --description "A modern API testing tool similar to Postman" `
-            --win-upgrade-uuid "28607609-97b7-4212-9285-04ef64a4946c" `
-            --win-dir-chooser `
-            --win-per-user-install `
-            --win-menu-group "EasyTools" `
-            --win-help-url "https://gitee.com/lakernote/easy-postman" `
-            --java-options $javaOpts[0] `
-            --java-options $javaOpts[1] `
-            --java-options $javaOpts[2] `
-            --java-options "-Djavax.accessibility.assistive_technologies="
-          
-          # 重命名添加平台和架构标识（符合命名规范）
-          $oldMsiName = "EasyPostman-$version.msi"
-          $newMsiName = "EasyPostman-$version-windows-x64.msi"
-          if (Test-Path "dist\$oldMsiName") {
-            Rename-Item -Path "dist\$oldMsiName" -NewName $newMsiName
-            Write-Host "✅ Renamed to: $newMsiName"
-          }
-
-      - name: Upload to Release（上传到 GitHub Release）
-        if: github.event_name == 'release'  # 只在 Release 触发时上传
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.msi
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload as Artifact（手动触发时上传为构建产物）
-        if: github.event_name == 'workflow_dispatch'  # 只在手动触发时上传为 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: EasyPostman-Windows-MSI
-          path: dist/*.msi
-          retention-days: 7  # 保留 7 天
-
-      - name: Upload MSI for Gitee sync（上传 MSI 供 Gitee 同步使用）
-        if: github.event_name == 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-msi
-          path: dist/*.msi
-          retention-days: 1
 
 
   build-windows-portable:
@@ -941,53 +810,6 @@ jobs:
           echo "❌ Failed to upload Windows Portable after $MAX_RETRIES attempts"
           exit 1
 
-  # Windows MSI 上传到 Gitee
-  sync-windows-msi-to-gitee:
-    name: Upload Windows MSI to Gitee（上传 Windows MSI 到 Gitee）
-    if: github.event_name == 'release'
-    needs: [ create-gitee-release, build-windows ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download Windows MSI artifact（下载 Windows MSI 产物）
-        uses: actions/download-artifact@v4
-        with:
-          name: release-msi
-          path: artifacts
-
-      - name: Upload Windows MSI to Gitee（上传 Windows MSI 到 Gitee）
-        run: |
-          RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
-          FILE=$(find artifacts -name "*.msi" | head -n 1)
-          
-          if [ -z "$FILE" ]; then
-            echo "❌ Windows MSI file not found!"
-            exit 1
-          fi
-          
-          echo "🪟 [Priority 2] Uploading $(basename $FILE) to Gitee..."
-          
-          # 上传到 Gitee，带重试机制
-          MAX_RETRIES=3
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
-              -F "access_token=${{ secrets.GITEE_TOKEN }}" \
-              -F "file=@$FILE"; then
-              echo "✅ Windows MSI uploaded successfully!"
-              exit 0
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⚠️ Upload failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
-                sleep 5
-              fi
-            fi
-          done
-          
-          echo "❌ Failed to upload Windows MSI after $MAX_RETRIES attempts"
-          exit 1
 
   # macOS ARM 上传到 Gitee（macOS 构建完成后立即上传）
   sync-macos-to-gitee:
@@ -1044,7 +866,7 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: github.event_name == 'release' && always()  # 即使有失败也执行
-    needs: [ create-gitee-release, sync-windows-portable-to-gitee, sync-windows-msi-to-gitee, sync-macos-to-gitee ]
+    needs: [ create-gitee-release, sync-windows-portable-to-gitee, sync-macos-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
@@ -1055,30 +877,20 @@ jobs:
           echo ""
           echo "⏱️  同步时间线（完全并行）："
           echo "  1️⃣  Windows Portable 构建完成 → 立即创建 Gitee Release → 立即上传绿色版 ✅"
-          echo "  2️⃣  Windows MSI 构建完成 → 立即上传 MSI ✅"
-          echo "  3️⃣  macOS ARM 构建完成 → 立即上传 DMG ✅"
+          echo "  2️⃣  macOS ARM 构建完成 → 立即上传 DMG ✅"
           echo ""
           echo "已同步到 Gitee 的文件："
           echo "  📦 Windows Portable (绿色版) - ${{ needs.sync-windows-portable-to-gitee.result }}"
-          echo "  🪟 Windows MSI (安装包) - ${{ needs.sync-windows-msi-to-gitee.result }}"
           echo "  🍎 macOS Apple Silicon (ARM64) - ${{ needs.sync-macos-to-gitee.result }}"
           echo ""
-          echo "💡 其他平台（Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
+          echo "💡 其他平台（Windows EXE、Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
           PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
-          MSI_STATUS="${{ needs.sync-windows-msi-to-gitee.result }}"
           MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
           
-          if [ "$PORTABLE_STATUS" == "success" ] && [ "$MSI_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ]; then
+          if [ "$PORTABLE_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ]; then
             echo "✅ 所有配置平台均已成功上传到 Gitee！"
             echo "🚀 优化："
-            echo "   • Windows 提供绿色版（解压即用）和 MSI（标准安装）两种选择"
+            echo "   • Windows 提供绿色版（解压即用），EXE 安装包在 GitHub 提供"
             echo "   • macOS ARM 原生支持，性能更优"
             echo "   • 各平台完全并行上传，快速发布"
-          else
-            echo "⚠️ 部分平台上传可能失败，请检查上方日志"
-            echo "   Windows Portable 上传: $PORTABLE_STATUS"
-            echo "   Windows MSI 上传: $MSI_STATUS"
-            echo "   macOS ARM 上传: $MACOS_STATUS"
-          fi
-

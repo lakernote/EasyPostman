@@ -31,6 +31,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract version（提取版本号）
         id: extract_version
@@ -54,6 +55,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build with Maven（使用 Maven 构建 Fat JAR）
         run: mvn -B clean package -DskipTests
@@ -82,6 +84,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -206,6 +209,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -375,6 +379,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -475,6 +480,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4
@@ -606,6 +612,7 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download Fat JAR（下载跨平台 Fat JAR）
         uses: actions/download-artifact@v4

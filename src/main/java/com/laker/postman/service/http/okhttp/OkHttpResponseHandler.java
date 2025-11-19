@@ -1,8 +1,9 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.component.DownloadProgressDialog;
-import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.FileExtensionUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -20,18 +21,52 @@ import java.util.Map;
 
 /**
  * OkHttp 响应处理工具类
+ * <p>
+ * 负责处理 HTTP 响应，包括：
+ * - 区分文本和二进制响应
+ * - 处理大文件下载
+ * - 解析文件名
+ * - 字符集检测
+ * - 临时文件管理
+ * </p>
  */
 @Slf4j
 public class OkHttpResponseHandler {
 
+    // 常量定义
+    private static final String CONTENT_TYPE_HEADER = "Content-Type";
+    private static final String CONTENT_LENGTH_HEADER = "Content-Length";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    private static final String SSE_CONTENT_TYPE = "text/event-stream";
+
+    /**
+     * 私有构造函数，防止实例化
+     */
+    private OkHttpResponseHandler() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    }
+
+    /**
+     * 获取最大响应体大小设置（字节）
+     */
     private static int getMaxBodySize() {
         return SettingManager.getMaxBodySize();
     }
 
+    /**
+     * 获取最大下载大小设置（字节）
+     */
     private static int getMaxDownloadSize() {
         return SettingManager.getMaxDownloadSize();
     }
 
+    /**
+     * 处理 HTTP 响应，将 OkHttp Response 转换为内部 HttpResponse 对象
+     *
+     * @param okResponse OkHttp 的响应对象
+     * @param response   内部响应对象（用于填充数据）
+     * @throws IOException 读取响应体时可能抛出的异常
+     */
     public static void handleResponse(Response okResponse, HttpResponse response) throws IOException {
         response.code = okResponse.code();
         response.message = okResponse.message();
@@ -45,12 +80,12 @@ public class OkHttpResponseHandler {
         response.headersSize = response.httpEventInfo != null ? response.httpEventInfo.getHeaderBytesReceived() : 0;
         response.threadName = Thread.currentThread().getName();
         response.protocol = okResponse.protocol().toString();
-        String contentType = okResponse.header("Content-Type", "");
-        int contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
+        String contentType = okResponse.header(CONTENT_TYPE_HEADER, "");
+        int contentLengthHeader = parseContentLength(okResponse.header(CONTENT_LENGTH_HEADER));
 
         if (isSSEContent(contentType)) {
-            handleSseResponse(okResponse, response);
-        } else if (isBinaryContent(contentType)) {
+            handleSseResponse(response);
+        } else if (FileExtensionUtil.isBinaryType(contentType)) {
             handleBinaryResponse(okResponse, response);
         } else {
             handleTextResponse(okResponse, response, contentLengthHeader);
@@ -61,77 +96,62 @@ public class OkHttpResponseHandler {
         okResponse.close();
     }
 
-    private static void handleSseResponse(Response okResponse, HttpResponse response) {
+    /**
+     * 处理 SSE（Server-Sent Events）类型的响应
+     * SSE 是流式响应，不读取完整内容
+     *
+     * @param response 内部响应对象
+     */
+    private static void handleSseResponse(HttpResponse response) {
         response.body = I18nUtil.getMessage(MessageKeys.SSE_STREAM_UNSUPPORTED);
         response.bodySize = 0;
         response.isSse = true;
-        if (okResponse.body() != null) {
-            okResponse.body().close();
-        }
-        okResponse.close();
+        // 不在这里关闭，统一在 handleResponse 方法中关闭
     }
 
+    /**
+     * 解析 Content-Length 响应头
+     *
+     * @param contentLengthStr Content-Length 响应头的值
+     * @return 内容长度（字节），如果无法解析则返回 -1
+     */
     private static int parseContentLength(String contentLengthStr) {
         if (contentLengthStr != null) {
             try {
                 return Integer.parseInt(contentLengthStr);
             } catch (NumberFormatException ignore) {
+                // 忽略解析失败，返回-1表示未知长度
             }
         }
         return -1;
     }
 
+    /**
+     * 判断是否为 SSE（Server-Sent Events）类型的响应
+     *
+     * @param contentType Content-Type 响应头的值
+     * @return 如果是 SSE 类型返回 true，否则返回 false
+     */
     private static boolean isSSEContent(String contentType) {
         if (contentType == null) return false;
         String ct = contentType.toLowerCase();
-        return ct.contains("text/event-stream");
+        return ct.contains(SSE_CONTENT_TYPE);
     }
 
-
-    private static boolean isBinaryContent(String contentType) {
-        if (contentType == null) return false;
-        String ct = contentType.toLowerCase();
-        // 常见二进制类型判断
-        return ct.contains("application/octet-stream")
-                || ct.contains("application/pdf")
-                || ct.contains("image/")
-                || ct.contains("audio/")
-                || ct.contains("video/")
-                || ct.contains("application/zip")
-                || ct.contains("application/x-zip-compressed")
-                || ct.contains("application/msword")
-                || ct.contains("application/vnd.openxml")
-                || ct.contains("application/vnd.ms-excel")
-                || ct.contains("application/vnd.ms-powerpoint")
-                || ct.contains("application/x-tar")
-                || ct.contains("application/gtar") // tar 变体
-                || ct.contains("application/gzip")
-                || ct.contains("application/x-7z-compressed")
-                || ct.contains("application/x-rar-compressed")
-                || ct.contains("application/vnd.android.package-archive")
-                || ct.contains("application/x-bzip2") // bz2
-                || ct.contains("application/x-xz") // xz
-                || ct.contains("application/x-apple-diskimage") // dmg
-                || ct.contains("application/x-iso9660-image") // iso
-                || ct.contains("application/x-msdownload") // exe/dll
-                || ct.contains("application/x-cpio") // cpio
-                || ct.contains("application/x-debian-package") // deb
-                || ct.contains("application/x-redhat-package-manager") // rpm
-                || ct.contains("application/x-shockwave-flash") // swf
-                // 以 application/x- 开头但不是常见文本类型的，视为二进制
-                || (ct.startsWith("application/x-")
-                && !ct.contains("x-www-form-urlencoded")
-                && !ct.contains("x-javascript")
-                && !ct.contains("x-json")
-                && !ct.contains("x-shellscript")
-                && !ct.contains("x-sh")
-                && !ct.contains("x-python")
-                && !ct.contains("x-java"));
-    }
 
     /**
      * 保存输入流到临时文件，返回文件对象和写入的字节数
-     * 优先从响应头获取 Content-Length
+     * <p>
+     * 该方法会显示下载进度对话框，支持用户取消下载。
+     * 如果下载被取消或发生异常，会自动删除临时文件。
+     * </p>
+     *
+     * @param is                  输入流
+     * @param prefix              临时文件名前缀
+     * @param suffix              临时文件名后缀（扩展名）
+     * @param contentLengthHeader Content-Length 响应头的值（用于显示进度）
+     * @return FileAndSize 对象，包含临时文件和实际写入的字节数
+     * @throws IOException 读写文件时可能抛出的异常
      */
     private static FileAndSize saveInputStreamToTempFile(InputStream is, String prefix, String suffix, int contentLengthHeader) throws IOException {
         File tempFile = File.createTempFile(prefix, suffix);
@@ -143,11 +163,10 @@ public class OkHttpResponseHandler {
         DownloadProgressDialog progressDialog = new DownloadProgressDialog(I18nUtil.getMessage(MessageKeys.DOWNLOAD_PROGRESS_TITLE));
         progressDialog.startDownload(contentLength);
 
-        // 只需调用此方法即可自动节流和切换线程
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile), 64 * 1024)) {
             while ((len = is.read(buf)) != -1) {
                 if (progressDialog.isCancelled()) {
-                    if (tempFile.exists()) tempFile.delete();
+                    deleteTempFile(tempFile);
                     throw new IOException(I18nUtil.getMessage(MessageKeys.DOWNLOAD_CANCELLED));
                 }
                 bos.write(buf, 0, len);
@@ -155,15 +174,37 @@ public class OkHttpResponseHandler {
                 progressDialog.updateProgress(len);
             }
         } catch (IOException e) {
-            if (tempFile.exists()) tempFile.delete();
+            deleteTempFile(tempFile);
             throw e;
         } finally {
-            // 结束下载
             progressDialog.finishDownload();
         }
         return new FileAndSize(tempFile, totalBytes);
     }
 
+    /**
+     * 安全删除临时文件
+     *
+     * @param tempFile 要删除的临时文件
+     */
+    private static void deleteTempFile(File tempFile) {
+        if (tempFile != null && tempFile.exists()) {
+            boolean deleted = tempFile.delete();
+            if (!deleted) {
+                log.warn("Failed to delete temp file: {}", tempFile.getAbsolutePath());
+                // 标记为退出时删除
+                tempFile.deleteOnExit();
+            }
+        }
+    }
+
+    /**
+     * 获取内容长度，优先使用响应头中的值，其次尝试从流中获取
+     *
+     * @param is                  输入流
+     * @param contentLengthHeader Content-Length 响应头的值
+     * @return 内容长度（字节），如果无法确定则返回 -1
+     */
     private static int getContentLength(InputStream is, int contentLengthHeader) {
         int contentLength = contentLengthHeader;
 
@@ -172,18 +213,33 @@ public class OkHttpResponseHandler {
             try {
                 contentLength = Math.toIntExact(((FileInputStream) is).getChannel().size());
             } catch (IOException ignored) {
+                // 无法获取文件大小，继续尝试其他方法
             }
         }
         if (contentLength < 0) {
             try {
                 contentLength = is.available();
             } catch (IOException ignored) {
+                // 无法获取可用字节数，返回当前的contentLength（可能是-1）
             }
         }
         return contentLength;
     }
 
 
+    /**
+     * 处理二进制类型的响应（图片、PDF、压缩包等）
+     * <p>
+     * 二进制响应会被保存到临时文件，文件名按以下优先级获取：
+     * 1. Content-Disposition 响应头中的文件名
+     * 2. URL 路径中的文件名
+     * 3. 根据 Content-Type 智能生成
+     * </p>
+     *
+     * @param okResponse OkHttp 的响应对象
+     * @param response   内部响应对象
+     * @throws IOException 读取响应体时可能抛出的异常
+     */
     private static void handleBinaryResponse(Response okResponse, HttpResponse response) throws IOException {
         InputStream is = okResponse.body() != null ? okResponse.body().byteStream() : null;
         String fileName = null;
@@ -209,17 +265,20 @@ public class OkHttpResponseHandler {
                 fileName = rawName.substring(0, cut);
             }
         }
-        // 再次 Content-Type 猜扩展名
-        if ((fileName == null || !fileName.contains(".")) && okResponse.header("Content-Type") != null) {
-            String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
-            if (fileName == null) fileName = "downloaded_file";
-            if (ext != null && !fileName.endsWith(ext)) fileName += ext;
+        // 如果没有获取到文件名，或者文件名没有扩展名，尝试补充
+        String ext = FileExtensionUtil.guessExtension(okResponse.header(CONTENT_TYPE_HEADER));
+        if (fileName == null) {
+            // 完全没有文件名，使用智能生成（根据 Content-Type）
+            fileName = FileExtensionUtil.generateSmartFileName(ext);
+        } else if (!fileName.contains(".") && ext != null) {
+            // 有文件名但没有扩展名，根据 Content-Type 添加扩展名
+            fileName += ext;
         }
-        // 最后默认名
-        if (fileName == null) fileName = "downloaded_file";
         response.fileName = fileName;
+
+        // 检查文件大小限制
         int maxDownloadSize = getMaxDownloadSize();
-        int contentLengthHeader = parseContentLength(okResponse.header("Content-Length"));
+        int contentLengthHeader = parseContentLength(okResponse.header(CONTENT_LENGTH_HEADER));
         if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
             if (is != null) is.close();
             SwingUtilities.invokeLater(() -> {
@@ -243,36 +302,27 @@ public class OkHttpResponseHandler {
         }
     }
 
-    private static String guessExtensionFromContentType(String contentType) {
-        if (contentType == null) return null;
-        String ct = contentType.toLowerCase();
-        if (ct.contains("pdf")) return ".pdf";
-        if (ct.contains("zip")) return ".zip";
-        if (ct.contains("msword")) return ".doc";
-        if (ct.contains("officedocument.wordprocessingml.document")) return ".docx";
-        if (ct.contains("ms-excel")) return ".xls";
-        if (ct.contains("officedocument.spreadsheetml.sheet")) return ".xlsx";
-        if (ct.contains("ms-powerpoint")) return ".ppt";
-        if (ct.contains("officedocument.presentationml.presentation")) return ".pptx";
-        if (ct.contains("image/png")) return ".png";
-        if (ct.contains("image/jpeg")) return ".jpg";
-        if (ct.contains("image/gif")) return ".gif";
-        if (ct.contains("image/bmp")) return ".bmp";
-        if (ct.contains("image/webp")) return ".webp";
-        if (ct.contains("audio/")) return ".mp3";
-        if (ct.contains("video/")) return ".mp4";
-        if (ct.contains("gzip")) return ".gz";
-        if (ct.contains("x-tar")) return ".tar";
-        if (ct.contains("x-7z-compressed")) return ".7z";
-        if (ct.contains("x-rar-compressed")) return ".rar";
-        if (ct.contains("apk")) return ".apk";
-        return null;
-    }
 
+    /**
+     * 处理文本类型的响应（JSON、XML、HTML、纯文本等）
+     * <p>
+     * 文本响应的处理策略：
+     * 1. 如果内容超过最大下载大小限制，显示警告并拒绝加载
+     * 2. 如果内容超过最大显示大小限制，保存到临时文件
+     * 3. 否则直接显示在编辑器中
+     * </p>
+     *
+     * @param okResponse          OkHttp 的响应对象
+     * @param response            内部响应对象
+     * @param contentLengthHeader Content-Length 响应头的值
+     * @throws IOException 读取响应体时可能抛出的异常
+     */
     private static void handleTextResponse(Response okResponse, HttpResponse response, int contentLengthHeader) throws IOException {
-        String ext = guessExtensionFromContentType(okResponse.header("Content-Type"));
+        String ext = FileExtensionUtil.guessExtension(okResponse.header(CONTENT_TYPE_HEADER));
         int maxDownloadSize = getMaxDownloadSize();
         ResponseBody body = okResponse.body();
+
+        // 检查是否超过最大下载大小
         if (maxDownloadSize > 0 && contentLengthHeader > maxDownloadSize) {
             if (body != null) body.close();
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null,
@@ -287,19 +337,28 @@ public class OkHttpResponseHandler {
             byte[] bytes = body.bytes();
             response.bodySize = bytes.length;
             if (bytes.length > getMaxBodySize()) { // 如果解压后内容超过设置值，保存为临时文件
-                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bytes), "easyPostman_text_download_", ext != null ? ext : ".txt", contentLengthHeader);
+                String extension = ext != null ? ext : ".txt";
+                FileAndSize fs = saveInputStreamToTempFile(new ByteArrayInputStream(bytes), "easyPostman_text_download_", extension, contentLengthHeader);
                 response.filePath = fs.file.getAbsolutePath();
-                response.fileName = "downloaded_text" + (ext != null ? ext : ".txt");
+                // 智能生成文件名：根据扩展名生成更友好的名称
+                response.fileName = FileExtensionUtil.generateSmartFileName(extension);
                 int maxBodySizeKB = getMaxBodySize() / 1024;
                 response.body = I18nUtil.getMessage(MessageKeys.BODY_TOO_LARGE_SAVED, maxBodySizeKB);
             } else {
-                MediaType mediaType = body.contentType();
+                // 确定字符集
                 Charset charset = StandardCharsets.UTF_8; // 默认使用 UTF-8
-                if (mediaType != null && mediaType.charset() != null) {
-                    charset = mediaType.charset();
+                MediaType mediaType = body.contentType();
+                if (mediaType != null) {
+                    Charset detectedCharset = mediaType.charset();
+                    if (detectedCharset != null) {
+                        charset = detectedCharset;
+                    }
                 }
                 response.body = new String(bytes, charset);
                 response.filePath = null;
+                // 即使不保存为文件，也设置一个默认文件名，方便用户下载
+                String extension = ext != null ? ext : ".txt";
+                response.fileName = FileExtensionUtil.generateSmartFileName(extension);
             }
         } else {
             response.body = "";
@@ -309,45 +368,74 @@ public class OkHttpResponseHandler {
     }
 
     /**
-     * 从响应头中提取Content-Disposition字段
+     * 从响应头中提取 Content-Disposition 字段
+     * <p>
+     * Content-Disposition 响应头通常包含文件下载时的文件名信息
+     * </p>
+     *
+     * @param headers 响应头 Map
+     * @return Content-Disposition 的值，如果不存在则返回 null
      */
     public static String getContentDisposition(Map<String, List<String>> headers) {
         if (headers == null) return null;
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-            if (entry.getKey() != null && "Content-Disposition".equalsIgnoreCase(entry.getKey())) {
-                return entry.getValue().get(0);
+            if (entry.getKey() != null && CONTENT_DISPOSITION_HEADER.equalsIgnoreCase(entry.getKey())) {
+                List<String> values = entry.getValue();
+                // 修复：检查 list 不为空，避免 IndexOutOfBoundsException
+                if (values != null && !values.isEmpty()) {
+                    return values.get(0);
+                }
             }
         }
         return null;
     }
 
     /**
-     * 从Content-Disposition中解析文件名
+     * 从 Content-Disposition 响应头中解析文件名
+     * <p>
+     * 支持两种格式：
+     * 1. filename*=UTF-8''filename.txt (RFC 5987 编码格式)
+     * 2. filename="filename.txt" (普通格式)
+     * </p>
+     *
+     * @param contentDisposition Content-Disposition 响应头的值
+     * @return 解析出的文件名，如果无法解析则返回 null
      */
     public static String parseFileNameFromContentDisposition(String contentDisposition) {
         if (contentDisposition == null) return null;
         String lower = contentDisposition.toLowerCase();
+
+        // 优先解析 filename*= (RFC 5987 编码格式)
         int idxStar = lower.indexOf("filename*=");
         if (idxStar >= 0) {
-            String fn = contentDisposition.substring(idxStar + 9).trim();
+            // 修复：偏移量应该是 10 ("filename*=" 的长度)
+            String fn = contentDisposition.substring(idxStar + 10).trim();
+            // 跳过编码声明部分 (如 UTF-8'')
             int firstQuote = fn.indexOf("''");
             if (firstQuote >= 0) {
                 fn = fn.substring(firstQuote + 2);
             } else {
+                // 如果没有编码声明，直接去除分号后的内容
                 int semi = fn.indexOf(';');
                 if (semi > 0) fn = fn.substring(0, semi);
             }
+            // 再次去除可能的分号
             int semi = fn.indexOf(';');
             if (semi > 0) fn = fn.substring(0, semi);
             return fn.trim();
         }
+
+        // 解析普通的 filename= 格式
         int idx = lower.indexOf("filename=");
         if (idx >= 0) {
             String fn = contentDisposition.substring(idx + 9).trim();
+            // 去除引号
             if (fn.startsWith("\"")) fn = fn.substring(1);
             int end = fn.indexOf('"');
-            if (end >= 0) fn = fn.substring(0, end);
-            else {
+            if (end >= 0) {
+                fn = fn.substring(0, end);
+            } else {
+                // 没有引号，去除分号后的内容
                 int semi = fn.indexOf(';');
                 if (semi > 0) fn = fn.substring(0, semi);
             }
@@ -356,11 +444,26 @@ public class OkHttpResponseHandler {
         return null;
     }
 
-    // 文件和大小的简单封装
+    /**
+     * 文件和大小的简单封装类
+     * 用于 saveInputStreamToTempFile 方法的返回值
+     */
     private static class FileAndSize {
-        File file;
-        int size;
+        /**
+         * 临时文件
+         */
+        final File file;
+        /**
+         * 实际写入的字节数
+         */
+        final int size;
 
+        /**
+         * 构造函数
+         *
+         * @param file 临时文件
+         * @param size 实际写入的字节数
+         */
         FileAndSize(File file, int size) {
             this.file = file;
             this.size = size;

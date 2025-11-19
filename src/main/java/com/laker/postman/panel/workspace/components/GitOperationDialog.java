@@ -13,6 +13,7 @@ import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -903,11 +904,8 @@ public class GitOperationDialog extends JDialog {
                         get();
                         updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", new Color(34, 139, 34));
 
-                        JOptionPane.showMessageDialog(
-                                GitOperationDialog.this,
-                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_MESSAGE, operation.getDisplayName()),
-                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_TITLE),
-                                JOptionPane.INFORMATION_MESSAGE
+                        NotificationUtil.showSuccess(
+                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_MESSAGE, operation.getDisplayName())
                         );
 
                         SwingUtilities.invokeLater(GitOperationDialog.this::dispose);
@@ -921,11 +919,8 @@ public class GitOperationDialog extends JDialog {
                             errorMessage = ex.getCause().getMessage();
                         }
 
-                        JOptionPane.showMessageDialog(
-                                GitOperationDialog.this,
-                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED_MESSAGE, errorMessage),
-                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED_TITLE),
-                                JOptionPane.ERROR_MESSAGE
+                        NotificationUtil.showError(
+                                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED_MESSAGE, errorMessage)
                         );
                     }
                 }
@@ -1019,11 +1014,8 @@ public class GitOperationDialog extends JDialog {
             if (operation == GitOperation.COMMIT) {
                 String message = commitMessageArea.getText().trim();
                 if (message.isEmpty()) {
-                    JOptionPane.showMessageDialog(
-                            GitOperationDialog.this,
-                            I18nUtil.getMessage(MessageKeys.GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY),
-                            I18nUtil.getMessage(MessageKeys.GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_TITLE),
-                            JOptionPane.WARNING_MESSAGE
+                    NotificationUtil.showWarning(
+                            I18nUtil.getMessage(MessageKeys.GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY)
                     );
                     return false;
                 }

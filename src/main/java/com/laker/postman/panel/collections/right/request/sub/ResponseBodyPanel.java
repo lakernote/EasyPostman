@@ -5,9 +5,12 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.FileExtensionUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -17,19 +20,27 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
- * 响应体面板，展示响应体内容和格式化按钮
+ * 响应体面板，展示 HTTP 响应体内容
+ * <p>
+ * 主要功能：
+ * - 语法高亮显示（JSON、XML、HTML、JavaScript、CSS 等）
+ * - 自动/手动格式化
+ * - 文本搜索
+ * - 下载响应内容
+ * - 大文件优化处理
+ * </p>
  */
 public class ResponseBodyPanel extends JPanel {
     @Getter
     private final RSyntaxTextArea responseBodyPane;
     private final JButton downloadButton;
     private String currentFilePath;
-    private String fileName = "downloaded_file"; // 默认下载文件名
+    private String fileName = DEFAULT_FILE_NAME; // 默认下载文件名
     private final FlatTextField searchField;
     private Map<String, List<String>> lastHeaders;
     private final JComboBox<String> syntaxComboBox;
@@ -37,9 +48,17 @@ public class ResponseBodyPanel extends JPanel {
     private final JButton prevButton;
     private final JButton nextButton;
     RTextScrollPane scrollPane;
-    private CompletableFuture<Void> currentFormatTask;
+
+    // 常量定义
     private static final int LARGE_RESPONSE_THRESHOLD = 500 * 1024; // 500KB threshold
     private static final int MAX_AUTO_FORMAT_SIZE = 1024 * 1024; // 1MB max for auto-format
+    private static final int ICON_SIZE = 16;
+    private static final int BUFFER_SIZE = 8192;
+    private static final String DEFAULT_FILE_NAME = "downloaded_file";
+    private static final String CONTENT_TYPE_HEADER = "Content-Type";
+    private static final String SKIP_AUTO_FORMAT_MESSAGE = " Skip auto-format for large response.";
+
+
     private final JLabel sizeWarningLabel;
 
     public ResponseBodyPanel() {
@@ -60,9 +79,7 @@ public class ResponseBodyPanel extends JPanel {
 
         // 左侧操作区
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
-        syntaxComboBox = new JComboBox<>(new String[]{
-                "Auto Detect", "JSON", "XML", "HTML", "JavaScript", "CSS", "Plain Text"
-        });
+        syntaxComboBox = new JComboBox<>(SyntaxType.getDisplayNames());
         leftPanel.add(syntaxComboBox);
 
         // 添加大小提示标签
@@ -76,19 +93,18 @@ public class ResponseBodyPanel extends JPanel {
         // 右侧搜索区
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         searchField = new SearchTextField();
-        prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
+        prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", ICON_SIZE, ICON_SIZE));
         prevButton.setToolTipText("Previous");
-        nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+        nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", ICON_SIZE, ICON_SIZE));
         nextButton.setToolTipText("Next");
         rightPanel.add(searchField);
         rightPanel.add(prevButton);
         rightPanel.add(nextButton);
-        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 16, 16));
+        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", ICON_SIZE, ICON_SIZE));
         formatButton.setToolTipText("Format");
         rightPanel.add(formatButton);
-        downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", 16, 16));
+        downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE));
         downloadButton.setToolTipText("Download");
-        downloadButton.setVisible(false);
         rightPanel.add(downloadButton);
         toolBar.add(rightPanel, BorderLayout.EAST);
         add(toolBar, BorderLayout.NORTH);
@@ -101,130 +117,223 @@ public class ResponseBodyPanel extends JPanel {
         syntaxComboBox.addActionListener(e -> onSyntaxComboChanged());
     }
 
+    /**
+     * 语法类型下拉框改变事件处理
+     * 根据用户选择的语法类型更新编辑器的语法高亮
+     */
     private void onSyntaxComboChanged() {
         int idx = syntaxComboBox.getSelectedIndex();
-        if (idx == 0) { // 自动识别
-            String syntax = detectSyntax(responseBodyPane.getText(), getCurrentContentTypeFromHeaders());
-            responseBodyPane.setSyntaxEditingStyle(syntax);
-        } else if (idx == 1) {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
-        } else if (idx == 2) {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
-        } else if (idx == 3) {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML);
-        } else if (idx == 4) {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-        } else if (idx == 5) {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_CSS);
+        SyntaxType syntaxType = SyntaxType.getByIndex(idx);
+
+        String syntax;
+        if (syntaxType == SyntaxType.AUTO_DETECT) {
+            // 自动检测语法类型
+            syntax = detectSyntax(responseBodyPane.getText(), getCurrentContentTypeFromHeaders());
         } else {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            // 使用用户选择的语法类型
+            syntax = syntaxType.getSyntaxStyle();
         }
+
+        responseBodyPane.setSyntaxEditingStyle(syntax);
     }
 
+    /**
+     * 搜索关键字
+     *
+     * @param forward true 表示向前搜索，false 表示向后搜索
+     */
     private void search(boolean forward) {
         String keyword = searchField.getText();
-        if (keyword == null || keyword.isEmpty()) return;
-        String text = responseBodyPane.getText();
-        if (text == null || text.isEmpty()) return;
-        int caret = responseBodyPane.getCaretPosition();
-        int pos = -1;
-        if (forward) {
-            // 向后查找
-            int start = caret;
-            if (responseBodyPane.getSelectedText() != null && responseBodyPane.getSelectedText().equals(keyword)) {
-                start = caret + 1;
-            }
-            pos = text.indexOf(keyword, start);
-            if (pos == -1) {
-                // 循环查找
-                pos = text.indexOf(keyword);
-            }
-        } else {
-            // 向前查找
-            int start = caret - 1;
-            if (responseBodyPane.getSelectedText() != null && responseBodyPane.getSelectedText().equals(keyword)) {
-                start = caret - keyword.length() - 1;
-            }
-            if (start < 0) start = text.length() - 1;
-            pos = text.lastIndexOf(keyword, start);
-            if (pos == -1) {
-                pos = text.lastIndexOf(keyword);
-            }
+        if (keyword == null || keyword.isEmpty()) {
+            return;
         }
+
+        String text = responseBodyPane.getText();
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+
+        int pos = forward ? searchForward(text, keyword) : searchBackward(text, keyword);
+
         if (pos != -1) {
-            responseBodyPane.setCaretPosition(pos);
-            responseBodyPane.select(pos, pos + keyword.length());
-            responseBodyPane.requestFocusInWindow();
+            selectAndFocusText(pos, keyword.length());
         }
     }
 
+    /**
+     * 向前搜索关键字
+     *
+     * @param text    文本内容
+     * @param keyword 搜索关键字
+     * @return 找到的位置，未找到返回 -1
+     */
+    private int searchForward(String text, String keyword) {
+        int caret = responseBodyPane.getCaretPosition();
+        int start = caret;
+
+        if (isKeywordSelected(keyword)) {
+            start = caret + 1;
+        }
+
+        int pos = text.indexOf(keyword, start);
+        return pos == -1 ? text.indexOf(keyword) : pos;
+    }
+
+    /**
+     * 向后搜索关键字
+     *
+     * @param text    文本内容
+     * @param keyword 搜索关键字
+     * @return 找到的位置，未找到返回 -1
+     */
+    private int searchBackward(String text, String keyword) {
+        int caret = responseBodyPane.getCaretPosition();
+        int start = caret - 1;
+
+        if (isKeywordSelected(keyword)) {
+            start = caret - keyword.length() - 1;
+        }
+
+        if (start < 0) {
+            start = text.length() - 1;
+        }
+
+        int pos = text.lastIndexOf(keyword, start);
+        return pos == -1 ? text.lastIndexOf(keyword) : pos;
+    }
+
+    /**
+     * 检查当前选中的文本是否为搜索关键字
+     *
+     * @param keyword 搜索关键字
+     * @return 如果选中的文本等于关键字返回 true，否则返回 false
+     */
+    private boolean isKeywordSelected(String keyword) {
+        String selectedText = responseBodyPane.getSelectedText();
+        return selectedText != null && selectedText.equals(keyword);
+    }
+
+    /**
+     * 选中并聚焦到指定位置的文本
+     *
+     * @param pos    起始位置
+     * @param length 长度
+     */
+    private void selectAndFocusText(int pos, int length) {
+        responseBodyPane.setCaretPosition(pos);
+        responseBodyPane.select(pos, pos + length);
+        responseBodyPane.requestFocusInWindow();
+    }
+
+    /**
+     * 保存文件
+     * <p>
+     * 支持两种保存模式：
+     * 1. 如果有临时文件路径（大文件或二进制文件），从临时文件复制
+     * 2. 否则直接保存编辑器中的文本内容
+     * </p>
+     */
     private void saveFile() {
-        if (currentFilePath == null) return;
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save File");
-        fileChooser.setSelectedFile(new File(fileName));
-        int userSelection = fileChooser.showSaveDialog(this);
+
+        // 智能设置默认文件名和扩展名
+        String defaultFileName = generateFileName();
+        fileChooser.setSelectedFile(new File(defaultFileName));
+
+        int userSelection = fileChooser.showSaveDialog(SingletonFactory.getInstance(MainFrame.class));
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File destFile = fileChooser.getSelectedFile();
-            try (InputStream in = new FileInputStream(currentFilePath);
-                 OutputStream out = new FileOutputStream(destFile)) {
-                byte[] buffer = new byte[8192];
-                int len;
-                while ((len = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, len);
+            try {
+                if (currentFilePath != null && !currentFilePath.isEmpty()) {
+                    // 如果是文件下载（如二进制文件），从临时文件复制
+                    try (InputStream in = new FileInputStream(currentFilePath);
+                         OutputStream out = new FileOutputStream(destFile)) {
+                        byte[] buffer = new byte[BUFFER_SIZE];
+                        int len;
+                        while ((len = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, len);
+                        }
+                    }
+                } else {
+                    // 如果是文本响应，直接保存文本内容
+                    String content = responseBodyPane.getText();
+                    if (content != null && !content.isEmpty()) {
+                        try (OutputStreamWriter writer = new OutputStreamWriter(
+                                new FileOutputStream(destFile), StandardCharsets.UTF_8)) {
+                            writer.write(content);
+                        }
+                    }
                 }
+                NotificationUtil.showInfo("File saved successfully: " + destFile.getAbsolutePath());
             } catch (Exception ex) {
                 NotificationUtil.showError("Save File Error: " + ex.getMessage());
             }
         }
     }
 
+    /**
+     * 智能生成文件名，根据内容类型添加合适的扩展名
+     */
+    private String generateFileName() {
+        // 如果有明确的文件名（来自 Content-Disposition），使用它
+        if (fileName != null && !fileName.equals(DEFAULT_FILE_NAME) && !fileName.isEmpty()) {
+            return fileName;
+        }
+
+        // 否则根据内容类型生成文件名
+        String contentType = getCurrentContentTypeFromHeaders();
+        String extension = FileExtensionUtil.guessExtension(contentType);
+
+        // 使用统一的智能文件名生成逻辑
+        if (extension == null) {
+            extension = ".txt";
+        }
+        return FileExtensionUtil.generateSmartFileName(extension);
+    }
+
+
+
+    /**
+     * 格式化内容
+     * 根据 Content-Type 对 JSON 或 XML 进行格式化美化
+     */
     private void formatContent() {
         String text = responseBodyPane.getText();
         if (text == null || text.isEmpty()) {
             return;
         }
 
-        // 取消之前的格式化任务
-        if (currentFormatTask != null && !currentFormatTask.isDone()) {
-            currentFormatTask.cancel(true);
-        }
-
         String contentType = getCurrentContentTypeFromHeaders();
 
-        formatButton.setEnabled(false);
-
-        // 异步格式化
-        currentFormatTask = CompletableFuture.runAsync(() -> {
-            try {
-                String formatted = null;
-                if (contentType.contains("json")) {
-                    JSON json = JSONUtil.parse(text);
-                    formatted = JSONUtil.toJsonPrettyStr(json);
-                } else if (contentType.contains("xml")) {
-                    formatted = XmlUtil.format(text);
-                }
-
-                if (formatted != null) {
-                    final String finalFormatted = formatted;
-                    SwingUtilities.invokeLater(() -> {
-                        responseBodyPane.setText(finalFormatted);
-                        responseBodyPane.setCaretPosition(0);
-                    });
-                }
-            } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> NotificationUtil.showError("Format Error: " + ex.getMessage()));
-            } finally {
-                SwingUtilities.invokeLater(() -> formatButton.setEnabled(true));
+        try {
+            String formatted = null;
+            if (contentType.contains("json")) {
+                JSON json = JSONUtil.parse(text);
+                formatted = JSONUtil.toJsonPrettyStr(json);
+            } else if (contentType.contains("xml")) {
+                formatted = XmlUtil.format(text);
             }
-        });
+
+            if (formatted != null) {
+                responseBodyPane.setText(formatted);
+                responseBodyPane.setCaretPosition(0);
+            }
+        } catch (Exception ex) {
+            NotificationUtil.showError("Format Error: " + ex.getMessage());
+        }
     }
 
+    /**
+     * 从响应头中获取 Content-Type
+     *
+     * @return Content-Type 的值，如果不存在则返回空字符串
+     */
     private String getCurrentContentTypeFromHeaders() {
         if (lastHeaders != null) {
-            for (String key : lastHeaders.keySet()) {
-                if (key != null && key.equalsIgnoreCase("Content-Type")) {
-                    java.util.List<String> values = lastHeaders.get(key);
+            for (Map.Entry<String, List<String>> entry : lastHeaders.entrySet()) {
+                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(CONTENT_TYPE_HEADER)) {
+                    List<String> values = entry.getValue();
                     if (values != null && !values.isEmpty()) {
                         return values.get(0);
                     }
@@ -234,100 +343,69 @@ public class ResponseBodyPanel extends JPanel {
         return "";
     }
 
+    /**
+     * 设置响应体内容
+     * <p>
+     * 该方法会：
+     * 1. 自动检测语法类型并设置高亮
+     * 2. 显示文件大小警告（如果超过阈值）
+     * 3. 根据设置决定是否自动格式化
+     * </p>
+     *
+     * @param resp HTTP 响应对象
+     */
     public void setBodyText(HttpResponse resp) {
-        // 取消之前的格式化任务
-        if (currentFormatTask != null && !currentFormatTask.isDone()) {
-            currentFormatTask.cancel(true);
-        }
-
         if (resp == null) {
-            responseBodyPane.setText("");
-            currentFilePath = null;
-            fileName = "downloaded_file";
-            lastHeaders = null;
-            downloadButton.setVisible(false);
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
-            responseBodyPane.setCaretPosition(0);
-            searchField.setText("");
-            syntaxComboBox.setSelectedIndex(0);
-            sizeWarningLabel.setVisible(false);
+            clearResponseBody();
             return;
         }
 
         this.currentFilePath = resp.filePath;
         this.fileName = resp.fileName;
         this.lastHeaders = resp.headers;
-        String filePath = resp.filePath;
         String text = resp.body;
-        String contentType = "";
-
-        if (resp.headers != null) {
-            for (String key : resp.headers.keySet()) {
-                if (key != null && key.equalsIgnoreCase("Content-Type")) {
-                    java.util.List<String> values = resp.headers.get(key);
-                    if (values != null && !values.isEmpty()) {
-                        contentType = values.get(0);
-                        break;
-                    }
-                }
-            }
-        }
+        String contentType = extractContentType(resp.headers);
 
         int textSize = text != null ? text.getBytes().length : 0;
         boolean isLargeResponse = textSize > LARGE_RESPONSE_THRESHOLD;
 
         // 显示大小信息
-        if (isLargeResponse) {
-            sizeWarningLabel.setText(String.format("  [%.2f MB]", textSize / 1024.0 / 1024.0));
-            sizeWarningLabel.setVisible(true);
-        } else {
-            sizeWarningLabel.setVisible(false);
-        }
+        updateSizeWarning(textSize, isLargeResponse);
 
         // 动态选择高亮类型
         String syntax = detectSyntax(text, contentType);
 
         // 自动匹配下拉框选项
-        int syntaxIndex = 0;
-        if (SyntaxConstants.SYNTAX_STYLE_JSON.equals(syntax)) {
-            syntaxIndex = 1;
-        } else if (SyntaxConstants.SYNTAX_STYLE_XML.equals(syntax)) {
-            syntaxIndex = 2;
-        } else if (SyntaxConstants.SYNTAX_STYLE_HTML.equals(syntax)) {
-            syntaxIndex = 3;
-        } else if (SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT.equals(syntax)) {
-            syntaxIndex = 4;
-        } else if (SyntaxConstants.SYNTAX_STYLE_CSS.equals(syntax)) {
-            syntaxIndex = 5;
-        } else if (SyntaxConstants.SYNTAX_STYLE_NONE.equals(syntax)) {
-            syntaxIndex = 6;
-        }
+        int syntaxIndex = SyntaxType.getBySyntaxStyle(syntax).getIndex();
         syntaxComboBox.setSelectedIndex(syntaxIndex);
 
-        // 对于大文件，先禁用语法高亮再设置文本，然后再启用
-        if (isLargeResponse) {
-            responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
-            responseBodyPane.setText(text);
-            // 异步启用语法高亮
-            SwingUtilities.invokeLater(() -> responseBodyPane.setSyntaxEditingStyle(syntax));
-        } else {
-            responseBodyPane.setSyntaxEditingStyle(syntax);
-            responseBodyPane.setText(text);
-        }
+        // 设置语法高亮和文本
+        responseBodyPane.setSyntaxEditingStyle(syntax);
+        responseBodyPane.setText(text);
 
         // 根据设置和大小决定是否自动格式化
         if (SettingManager.isAutoFormatResponse() && textSize < MAX_AUTO_FORMAT_SIZE) {
             autoFormatIfPossible(text, contentType);
         } else if (SettingManager.isAutoFormatResponse() && textSize >= MAX_AUTO_FORMAT_SIZE) {
             // 大文件不自动格式化，提示用户手动格式化
-            sizeWarningLabel.setText(sizeWarningLabel.getText() + " Skip auto-format for large response.");
+            sizeWarningLabel.setText(sizeWarningLabel.getText() + SKIP_AUTO_FORMAT_MESSAGE);
         }
 
-        downloadButton.setVisible(filePath != null && !filePath.isEmpty());
         responseBodyPane.setCaretPosition(0);
     }
 
-    // 动态检测内容类型
+    /**
+     * 动态检测语法类型
+     * <p>
+     * 检测策略：
+     * 1. 优先根据 Content-Type 响应头判断
+     * 2. 其次根据内容特征判断（如 JSON 的 {} 或 []，XML 的 < >）
+     * </p>
+     *
+     * @param text        文本内容
+     * @param contentType Content-Type 响应头
+     * @return 语法类型常量（来自 SyntaxConstants）
+     */
     private String detectSyntax(String text, String contentType) {
         if (contentType != null) contentType = contentType.toLowerCase();
         if (contentType != null) {
@@ -351,7 +429,18 @@ public class ResponseBodyPanel extends JPanel {
         return SyntaxConstants.SYNTAX_STYLE_NONE;
     }
 
-    // 自动格式化（如果可能）
+    /**
+     * 自动格式化内容（如果可能）
+     * <p>
+     * 只有在满足以下条件时才会自动格式化：
+     * 1. 用户开启了自动格式化设置
+     * 2. 文件大小小于阈值（500KB）
+     * 3. 内容类型为 JSON 或 XML
+     * </p>
+     *
+     * @param text        文本内容
+     * @param contentType Content-Type 响应头
+     */
     private void autoFormatIfPossible(String text, String contentType) {
         if (text == null || text.isEmpty()) {
             return;
@@ -373,30 +462,8 @@ public class ResponseBodyPanel extends JPanel {
             } catch (Exception ex) {
                 // 格式化失败时静默忽略，保持原始内容
             }
-        } else {
-            // 大文件异步格式化
-            CompletableFuture.runAsync(() -> {
-                try {
-                    String formatted = null;
-                    if (contentType != null && contentType.toLowerCase().contains("json")) {
-                        JSON json = JSONUtil.parse(text);
-                        formatted = JSONUtil.toJsonPrettyStr(json);
-                    } else if (contentType != null && contentType.toLowerCase().contains("xml")) {
-                        formatted = XmlUtil.format(text);
-                    }
-
-                    if (formatted != null) {
-                        final String finalFormatted = formatted;
-                        SwingUtilities.invokeLater(() -> {
-                            responseBodyPane.setText(finalFormatted);
-                            responseBodyPane.setCaretPosition(0);
-                        });
-                    }
-                } catch (Exception ex) {
-                    // 格式化失败时静默忽略，保持原始内容
-                }
-            });
         }
+        // 大文件不自动格式化
     }
 
     @Override
@@ -412,4 +479,51 @@ public class ResponseBodyPanel extends JPanel {
         if (prevButton != null) prevButton.setEnabled(enabled);
         if (nextButton != null) nextButton.setEnabled(enabled);
     }
+
+    // ========== 辅助方法 ==========
+
+    /**
+     * 清空响应体内容
+     */
+    private void clearResponseBody() {
+        responseBodyPane.setText("");
+        currentFilePath = null;
+        fileName = DEFAULT_FILE_NAME;
+        lastHeaders = null;
+        responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        responseBodyPane.setCaretPosition(0);
+        searchField.setText("");
+        syntaxComboBox.setSelectedIndex(SyntaxType.AUTO_DETECT.getIndex());
+        sizeWarningLabel.setVisible(false);
+    }
+
+    /**
+     * 从响应头中提取 Content-Type
+     */
+    private String extractContentType(Map<String, List<String>> headers) {
+        if (headers != null) {
+            for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(CONTENT_TYPE_HEADER)) {
+                    List<String> values = entry.getValue();
+                    if (values != null && !values.isEmpty()) {
+                        return values.get(0);
+                    }
+                }
+            }
+        }
+        return "";
+    }
+
+    /**
+     * 更新大小警告标签
+     */
+    private void updateSizeWarning(int textSize, boolean isLargeResponse) {
+        if (isLargeResponse) {
+            sizeWarningLabel.setText(String.format("  [%.2f MB]", textSize / 1024.0 / 1024.0));
+            sizeWarningLabel.setVisible(true);
+        } else {
+            sizeWarningLabel.setVisible(false);
+        }
+    }
+
 }

@@ -52,8 +52,8 @@ Compression=lzma2/max
 SolidCompression=yes
 ; 安装向导界面风格：modern（现代扁平化）
 WizardStyle=modern
-; 安装程序的图标
-SetupIconFile=assets\win\EasyPostman.ico
+; 安装程序的图标（相对于 ISS 脚本的路径）
+SetupIconFile=..\assets\win\EasyPostman.ico
 
 [Languages]
 ; 安装向导语言

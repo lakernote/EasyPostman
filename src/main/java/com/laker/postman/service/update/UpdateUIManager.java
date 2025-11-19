@@ -4,7 +4,6 @@ import cn.hutool.json.JSONArray;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.UpdateInfo;
-import com.laker.postman.model.UpdateType;
 import com.laker.postman.panel.update.ModernProgressDialog;
 import com.laker.postman.panel.update.ModernUpdateDialog;
 import com.laker.postman.panel.update.ModernUpdateNotification;
@@ -91,12 +90,11 @@ public class UpdateUIManager {
     }
 
     /**
-     * 显示更新类型选择对话框并开始更新
+     * 开始全量静默升级
      */
     private void showUpdateTypeSelectionAndStart(UpdateInfo updateInfo) {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
 
-        // 检查可用的更新类型
+        // 检查可用的安装包
         JSONArray assets = updateInfo.getReleaseInfo() != null ?
             updateInfo.getReleaseInfo().getJSONArray("assets") : null;
 
@@ -105,110 +103,24 @@ public class UpdateUIManager {
             return;
         }
 
-        // 检查哪些更新类型可用
-        String jarUrl = downloadUrlResolver.resolveDownloadUrl(assets, UpdateType.INCREMENTAL);
-        String installerUrl = downloadUrlResolver.resolveDownloadUrl(assets, UpdateType.FULL);
+        // 获取平台特定的安装包下载链接
+        String installerUrl = downloadUrlResolver.resolveDownloadUrl(assets);
 
-        if (jarUrl == null && installerUrl == null) {
+        if (installerUrl == null) {
             NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
             return;
         }
 
-        // 如果两种更新方式都可用，让用户选择
-        UpdateType selectedType;
-        if (jarUrl != null && installerUrl != null) {
-            selectedType = showUpdateTypeDialog(mainFrame);
-            if (selectedType == null) {
-                // 用户取消选择
-                return;
-            }
-        } else if (jarUrl != null) {
-            // 只有增量更新可用
-            selectedType = UpdateType.INCREMENTAL;
-            // 显示警告
-            String warningMessage = "<html><body style='width: 350px; padding: 10px;'>" +
-                    "<p style='color: #FF6B00; font-size: 11px; margin-bottom: 10px;'>" +
-                    "<b>" + I18nUtil.getMessage(MessageKeys.UPDATE_INCREMENTAL_WARNING) + "</b>" +
-                    "</p>" +
-                    "<p style='font-size: 11px;'>" +
-                    I18nUtil.getMessage(MessageKeys.UPDATE_TYPE_SELECT_MESSAGE) +
-                    "</p>" +
-                    "</body></html>";
-
-            int confirm = JOptionPane.showConfirmDialog(
-                mainFrame,
-                warningMessage,
-                I18nUtil.getMessage(MessageKeys.UPDATE_TYPE_SELECT_TITLE),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE
-            );
-            if (confirm != JOptionPane.OK_OPTION) {
-                return;
-            }
-        } else {
-            // 只有全量更新可用
-            selectedType = UpdateType.FULL;
-        }
-
-        // 获取对应类型的下载URL并开始更新
-        String downloadUrl = selectedType == UpdateType.INCREMENTAL ? jarUrl : installerUrl;
-        startAutomaticUpdate(downloadUrl, selectedType);
-    }
-
-    /**
-     * 显示更新类型选择对话框
-     *
-     * @return 选择的更新类型，如果用户取消则返回 null
-     */
-    private UpdateType showUpdateTypeDialog(MainFrame parent) {
-        String[] options = {
-            I18nUtil.getMessage(MessageKeys.UPDATE_TYPE_INCREMENTAL),
-            I18nUtil.getMessage(MessageKeys.UPDATE_TYPE_FULL)
-        };
-
-        // 使用 HTML 格式来优化显示效果
-        String warningText = I18nUtil.getMessage(MessageKeys.UPDATE_INCREMENTAL_WARNING);
-        String recommendedText = I18nUtil.getMessage(MessageKeys.UPDATE_FULL_RECOMMENDED);
-
-        String htmlMessage = "<html><body style='width: 400px; padding: 10px;'>" +
-                             "<p style='font-size: 12px; margin-bottom: 15px;'>" +
-                             I18nUtil.getMessage(MessageKeys.UPDATE_TYPE_SELECT_MESSAGE) +
-                             "</p>" +
-                             "<p style='font-size: 11px; color: #FF6B00; margin-bottom: 10px;'>" +
-                             "<b>" + warningText + "</b>" +
-                             "</p>" +
-                             "<p style='font-size: 11px; color: #008000; margin-bottom: 5px;'>" +
-                             "<b>" + recommendedText + "</b>" +
-                             "</p>" +
-                             "</body></html>";
-
-        int choice = JOptionPane.showOptionDialog(
-            parent,
-            htmlMessage,
-            I18nUtil.getMessage(MessageKeys.UPDATE_TYPE_SELECT_TITLE),
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            options,
-            options[1] // 默认选择全量更新
-        );
-
-        if (choice == 0) {
-            return UpdateType.INCREMENTAL;
-        } else if (choice == 1) {
-            return UpdateType.FULL;
-        } else {
-            return null; // 用户取消
-        }
+        // 直接开始全量更新
+        startAutomaticUpdate(installerUrl);
     }
 
     /**
      * 启动自动更新 - 使用现代化进度对话框
      *
      * @param downloadUrl 下载链接
-     * @param updateType 更新类型
      */
-    private void startAutomaticUpdate(String downloadUrl, UpdateType updateType) {
+    private void startAutomaticUpdate(String downloadUrl) {
         if (downloadUrl == null) {
             NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
             return;
@@ -228,7 +140,7 @@ public class UpdateUIManager {
             public void onCompleted(File downloadedFile) {
                 SwingUtilities.invokeLater(() -> {
                     progressDialog.hide();
-                    showInstallPrompt(downloadedFile, updateType);
+                    showInstallPrompt(downloadedFile);
                 });
             }
 
@@ -242,10 +154,8 @@ public class UpdateUIManager {
 
             @Override
             public void onCancelled() {
-                SwingUtilities.invokeLater(() -> {
-                    progressDialog.hide();
-                    NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED));
-                });
+                SwingUtilities.invokeLater(() -> progressDialog.hide());
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED));
             }
         });
 
@@ -254,40 +164,27 @@ public class UpdateUIManager {
     }
 
     /**
-     * 显示安装提示
+     * 显示安装提示并静默安装
      *
-     * @param installerFile 下载的文件
-     * @param updateType 更新类型
+     * @param installerFile 下载的安装包文件
      */
-    private void showInstallPrompt(File installerFile, UpdateType updateType) {
-        String fileName = installerFile.getName().toLowerCase();
-        boolean isJarUpdate = fileName.endsWith(".jar") || updateType == UpdateType.INCREMENTAL;
-
-        // 根据更新类型显示不同的提示消息
-        String message;
-        if (isJarUpdate) {
-            // JAR 增量更新：自动替换并重启，带警告
-            message = I18nUtil.getMessage(MessageKeys.UPDATE_JAR_INSTALL_PROMPT);
-        } else {
-            // 安装包全量更新：需要手动安装
-            message = I18nUtil.getMessage(MessageKeys.UPDATE_INSTALLER_INSTALL_PROMPT);
-        }
+    private void showInstallPrompt(File installerFile) {
+        // 安装包全量更新：静默安装
+        String message = I18nUtil.getMessage(MessageKeys.UPDATE_INSTALLER_INSTALL_PROMPT);
 
         int choice = JOptionPane.showConfirmDialog(
                 SingletonFactory.getInstance(MainFrame.class),
                 message,
                 I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
                 JOptionPane.YES_NO_OPTION,
-                isJarUpdate ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE);
+                JOptionPane.QUESTION_MESSAGE);
 
         if (choice == JOptionPane.YES_OPTION) {
             downloader.installUpdate(installerFile, success -> {
                 if (!success) {
-                    SwingUtilities.invokeLater(() -> {
-                        NotificationUtil.showError(I18nUtil.isChinese()
-                                ? "更新失败，请手动下载最新版本。"
-                                : "Update failed. Please download the latest version manually.");
-                    });
+                    SwingUtilities.invokeLater(() -> NotificationUtil.showError(I18nUtil.isChinese()
+                            ? "更新失败，请手动下载最新版本。"
+                            : "Update failed. Please download the latest version manually."));
                 }
             });
         }

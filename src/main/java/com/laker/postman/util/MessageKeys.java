@@ -47,14 +47,7 @@ public final class MessageKeys {
     public static final String UPDATE_DOWNLOAD_FAILED = "update.download_failed";
     public static final String UPDATE_NO_INSTALLER_FOUND = "update.no_installer_found";
 
-    // ============ 更新类型相关 ============
-    public static final String UPDATE_TYPE_INCREMENTAL = "update.type.incremental";
-    public static final String UPDATE_TYPE_FULL = "update.type.full";
-    public static final String UPDATE_TYPE_SELECT_TITLE = "update.type.select.title";
-    public static final String UPDATE_TYPE_SELECT_MESSAGE = "update.type.select.message";
-    public static final String UPDATE_INCREMENTAL_WARNING = "update.incremental.warning";
-    public static final String UPDATE_FULL_RECOMMENDED = "update.full.recommended";
-    public static final String UPDATE_JAR_INSTALL_PROMPT = "update.jar.install.prompt";
+    // ============ 全量静默更新相关 ============
     public static final String UPDATE_INSTALLER_INSTALL_PROMPT = "update.installer.install.prompt";
 
     // ============ 版本检查器相关 ============

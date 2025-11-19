@@ -1,7 +1,6 @@
 package com.laker.postman.service.update.asset;
 
 import cn.hutool.json.JSONArray;
-import com.laker.postman.model.UpdateType;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,43 +16,12 @@ public class PlatformDownloadUrlResolver {
     }
 
     /**
-     * 根据当前平台和更新类型获取下载 URL
-     *
-     * @param assets 资源列表
-     * @param updateType 更新类型（增量/全量）
-     * @return 下载 URL，未找到返回 null
-     */
-    public String resolveDownloadUrl(JSONArray assets, UpdateType updateType) {
-        if (updateType == UpdateType.INCREMENTAL) {
-            // 增量更新：查找 Fat JAR
-            String jarUrl = assetFinder.findFatJar(assets);
-            if (jarUrl != null) {
-                log.info("Found fat JAR for incremental update: {}", jarUrl);
-                return jarUrl;
-            }
-            log.warn("Fat JAR not found for incremental update");
-            return null;
-        } else {
-            // 全量更新：查找平台特定的安装包
-            return resolvePlatformInstallerUrl(assets);
-        }
-    }
-
-    /**
-     * 根据当前平台获取下载 URL（兼容旧方法，默认优先 JAR）
+     * 根据当前平台获取安装包下载 URL
      *
      * @param assets 资源列表
      * @return 下载 URL，未找到返回 null
      */
     public String resolveDownloadUrl(JSONArray assets) {
-        // 首先尝试查找 Fat JAR
-        String jarUrl = assetFinder.findFatJar(assets);
-        if (jarUrl != null) {
-            log.info("Found fat JAR download URL: {}", jarUrl);
-            return jarUrl;
-        }
-
-        log.warn("Fat JAR not found, falling back to platform-specific installer");
         return resolvePlatformInstallerUrl(assets);
     }
 

@@ -236,23 +236,13 @@ public class UpdateDownloader {
     }
 
     /**
-     * 安装下载的文件
+     * 安装下载的文件（静默安装）
      */
     public void installUpdate(File installerFile, Consumer<Boolean> callback) {
         try {
             String fileName = installerFile.getName().toLowerCase();
 
-            // 检查是否为 JAR 文件
-            if (fileName.endsWith(".jar")) {
-                log.info("Installing JAR update: {}", installerFile.getAbsolutePath());
-                JarUpdateManager jarUpdateManager = new JarUpdateManager();
-                boolean success = jarUpdateManager.installJarUpdate(installerFile);
-                callback.accept(success);
-                // 注意：如果成功，JarUpdateManager 会自动重启应用并退出当前进程
-                return;
-            }
-
-            // Windows EXE 安装包 - 支持静默安装（参考 Termora）
+            // Windows EXE 安装包 - 支持静默安装
             if (fileName.endsWith(".exe")) {
                 installWindowsExe(installerFile, callback);
                 return;

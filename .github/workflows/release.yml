@@ -551,13 +551,6 @@ jobs:
           path: dist/*.jar
           retention-days: 7
 
-      - name: Upload JAR for Gitee sync（上传 JAR 供 Gitee 同步使用）
-        if: github.event_name == 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-jar
-          path: dist/*.jar
-          retention-days: 1
 
 
   build-ubuntu:
@@ -665,11 +658,11 @@ jobs:
           path: dist/*.deb
           retention-days: 1
 
-  # 创建 Gitee Release（JAR 构建完成后立即创建，最快！）
+  # 创建 Gitee Release（Windows 绿色版构建完成后立即创建）
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
     if: github.event_name == 'release'
-    needs: [ build-jar ]  # 只等待 JAR 构建完成（最快，约 2-3 分钟）
+    needs: [ build-windows-portable ]  # 等待 Windows 绿色版构建完成
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -730,31 +723,31 @@ jobs:
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
           echo "✅ Gitee Release created successfully with ID: $RELEASE_ID"
 
-  # JAR 上传到 Gitee（最快，立即上传！）
-  sync-jar-to-gitee:
-    name: Upload JAR to Gitee（上传 JAR 到 Gitee）
+  # Windows 绿色版上传到 Gitee
+  sync-windows-portable-to-gitee:
+    name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
     if: github.event_name == 'release'
     needs: [ create-gitee-release ]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download JAR artifact（下载 JAR 产物）
+      - name: Download Windows Portable artifact（下载 Windows 绿色版产物）
         uses: actions/download-artifact@v4
         with:
-          name: release-jar
+          name: release-portable-zip
           path: artifacts
 
-      - name: Upload JAR to Gitee（上传 JAR 到 Gitee）
+      - name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
-          FILE=$(find artifacts -name "*.jar" | head -n 1)
+          FILE=$(find artifacts -name "*-portable.zip" | head -n 1)
           
           if [ -z "$FILE" ]; then
-            echo "❌ JAR file not found!"
+            echo "❌ Windows Portable ZIP file not found!"
             exit 1
           fi
           
-          echo "☕ [Priority 1 - FASTEST] Uploading $(basename $FILE) to Gitee..."
+          echo "📦 [Priority 1] Uploading $(basename $FILE) to Gitee..."
           
           # 上传到 Gitee，带重试机制
           MAX_RETRIES=3
@@ -764,7 +757,7 @@ jobs:
             if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
-              echo "✅ JAR uploaded successfully! (构建最快，已完成上传)"
+              echo "✅ Windows Portable uploaded successfully!"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -775,17 +768,13 @@ jobs:
             fi
           done
           
-          echo "❌ Failed to upload JAR after $MAX_RETRIES attempts"
+          echo "❌ Failed to upload Windows Portable after $MAX_RETRIES attempts"
           exit 1
 
-  # Windows MSI 上传到 Gitee（Windows 构建完成后立即上传）
-  sync-windows-to-gitee:
+  # Windows MSI 上传到 Gitee
+  sync-windows-msi-to-gitee:
     name: Upload Windows MSI to Gitee（上传 Windows MSI 到 Gitee）
     if: github.event_name == 'release'
-    # ✅ 只等待 2 个条件：
-    # 1. create-gitee-release 完成（获得 release_id）
-    # 2. build-windows 完成（MSI 文件准备好）
-    # 不需要等待 macOS ARM 构建完成，提高并行效率
     needs: [ create-gitee-release, build-windows ]
     runs-on: ubuntu-latest
 
@@ -816,7 +805,7 @@ jobs:
             if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
-              echo "✅ Windows MSI uploaded successfully! (约 10 分钟完成)"
+              echo "✅ Windows MSI uploaded successfully!"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -830,14 +819,13 @@ jobs:
           echo "❌ Failed to upload Windows MSI after $MAX_RETRIES attempts"
           exit 1
 
-  # macOS ARM 上传到 Gitee（macOS 构建完成后立即上传，不等 Windows！）
+  # macOS ARM 上传到 Gitee（macOS 构建完成后立即上传）
   sync-macos-to-gitee:
     name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
     if: github.event_name == 'release'
     # ✅ 只等待 2 个条件：
     # 1. create-gitee-release 完成（获得 release_id）
     # 2. build-macos-arm 完成（DMG 文件准备好）
-    # 不需要等待 Windows MSI 构建完成，macOS 5 分钟就能上传！
     needs: [ create-gitee-release, build-macos-arm ]
     runs-on: ubuntu-latest
 
@@ -868,7 +856,7 @@ jobs:
             if curl -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
-              echo "✅ macOS ARM uploaded successfully! (约 6 分钟完成，不等 Windows)"
+              echo "✅ macOS ARM uploaded successfully!"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -886,7 +874,7 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: github.event_name == 'release' && always()  # 即使有失败也执行
-    needs: [ create-gitee-release, sync-jar-to-gitee, sync-windows-to-gitee, sync-macos-to-gitee ]
+    needs: [ create-gitee-release, sync-windows-portable-to-gitee, sync-windows-msi-to-gitee, sync-macos-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
@@ -895,32 +883,32 @@ jobs:
           echo "📊 Gitee Release 同步完成！"
           echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
           echo ""
-          echo "⏱️  同步时间线（优化后 - 完全并行）："
-          echo "  1️⃣  JAR 构建完成（最快，约 41 秒）→ 立即创建 Gitee Release → 立即上传 JAR ✅ (~1 分钟)"
-          echo "  2️⃣  macOS ARM 构建完成（中等，约 5 分钟）→ 立即上传 DMG ✅ (~6 分钟，不等 Windows)"
-          echo "  3️⃣  Windows MSI 构建完成（最慢，约 8-10 分钟）→ 立即上传 MSI ✅ (~11 分钟)"
+          echo "⏱️  同步时间线（完全并行）："
+          echo "  1️⃣  Windows Portable 构建完成 → 立即创建 Gitee Release → 立即上传绿色版 ✅"
+          echo "  2️⃣  Windows MSI 构建完成 → 立即上传 MSI ✅"
+          echo "  3️⃣  macOS ARM 构建完成 → 立即上传 DMG ✅"
           echo ""
           echo "已同步到 Gitee 的文件："
-          echo "  ☕ Standalone JAR (跨平台) - ${{ needs.sync-jar-to-gitee.result }}"
+          echo "  📦 Windows Portable (绿色版) - ${{ needs.sync-windows-portable-to-gitee.result }}"
+          echo "  🪟 Windows MSI (安装包) - ${{ needs.sync-windows-msi-to-gitee.result }}"
           echo "  🍎 macOS Apple Silicon (ARM64) - ${{ needs.sync-macos-to-gitee.result }}"
-          echo "  🪟 Windows MSI (x64) - ${{ needs.sync-windows-to-gitee.result }}"
           echo ""
-          echo "💡 其他平台（Windows Portable、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
+          echo "💡 其他平台（Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
-          JAR_STATUS="${{ needs.sync-jar-to-gitee.result }}"
+          PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
+          MSI_STATUS="${{ needs.sync-windows-msi-to-gitee.result }}"
           MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
-          WINDOWS_STATUS="${{ needs.sync-windows-to-gitee.result }}"
           
-          if [ "$JAR_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ] && [ "$WINDOWS_STATUS" == "success" ]; then
+          if [ "$PORTABLE_STATUS" == "success" ] && [ "$MSI_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ]; then
             echo "✅ 所有配置平台均已成功上传到 Gitee！"
-            echo "🚀 性能优化："
-            echo "   • JAR 不等待慢速的 MSI 构建，1 分钟即可下载"
-            echo "   • macOS ARM 不等待 Windows MSI，6 分钟即可下载"
-            echo "   • 各平台完全并行上传，总节省约 5-8 分钟！"
+            echo "🚀 优化："
+            echo "   • Windows 提供绿色版（解压即用）和 MSI（标准安装）两种选择"
+            echo "   • macOS ARM 原生支持，性能更优"
+            echo "   • 各平台完全并行上传，快速发布"
           else
             echo "⚠️ 部分平台上传可能失败，请检查上方日志"
-            echo "   JAR 上传: $JAR_STATUS"
+            echo "   Windows Portable 上传: $PORTABLE_STATUS"
+            echo "   Windows MSI 上传: $MSI_STATUS"
             echo "   macOS ARM 上传: $MACOS_STATUS"
-            echo "   Windows MSI 上传: $WINDOWS_STATUS"
           fi
 

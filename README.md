@@ -34,12 +34,15 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
         - ⚠️ Due to storage limitations, China mirror only provides:
             - `EasyPostman-{version}-macos-arm64.dmg`
             - `EasyPostman-{version}-windows-x64.msi`
-        - 💡 For other platforms, please visit GitHub Releases
+            - `EasyPostman-{version}-windows-x64-portable.zip` (Portable version)
+        - 💡 For other platforms (macOS Intel, Ubuntu DEB, Cross-platform JAR), please visit GitHub Releases
     - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{version}-macos-arm64.dmg`
     - 🍏 Mac (Intel Chip): `EasyPostman-{version}-macos-x86_64.dmg`
     - 🪟 Windows: 
         - **MSI Installer**: `EasyPostman-{version}-windows-x64.msi` - Install to system with desktop shortcut, supports auto-update
-        - **Portable ZIP**: `EasyPostman-{version}-windows-x64-portable.zip` - Extract and run, no installation required, fully portable
+          - ⚠️ **Important**: Please use the default installation directory. Changing the installation path may cause issues with uninstallation and upgrades
+          - If you need a custom installation location, use the portable version instead
+        - **Portable ZIP**: `EasyPostman-{version}-windows-x64-portable.zip` - Extract and run, no installation required, fully portable, can be placed in any directory
     - 🐧 Ubuntu/Debian: `easypostman_{version}_amd64.deb`
     - ☕ Cross-platform JAR: `easy-postman-{version}.jar` - Requires Java 17+ runtime
 

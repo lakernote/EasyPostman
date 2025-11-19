@@ -92,7 +92,7 @@ public class WindowsRegistryChecker {
 
     /**
      * 通过搜索 DisplayName 查找应用
-     * 搜索 Uninstall 注册表下所有子键，查找 DisplayName 为 "EasyPostman" 的应用
+     * 使用 reg query /s /f 命令高效搜索注册表
      *
      * @return true 如果找到应用，false 否则
      */
@@ -105,23 +105,29 @@ public class WindowsRegistryChecker {
 
         for (String basePath : searchPaths) {
             try {
-                // 列出所有子键
-                ProcessBuilder pb = new ProcessBuilder("reg", "query", basePath);
+                // 使用 /s 搜索子键, /f 查找指定字符串
+                ProcessBuilder pb = new ProcessBuilder("reg", "query", basePath, "/s", "/f", "EasyPostman");
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
 
+                String foundKeyPath = null;
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(process.getInputStream(), "GBK"))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         line = line.trim();
-                        if (line.startsWith("HKEY_")) {
-                            // 检查这个子键的 DisplayName
-                            if (checkDisplayName(line, "EasyPostman")) {
-                                actualKeyPath = line;
-                                log.info("Found app at: {}", line);
-                                return true;
-                            }
+                        log.info("  Search output: {}", line);
+
+                        // 找到包含 HKEY 的行（注册表键路径）
+                        if (line.startsWith("HKEY_") && line.contains("Uninstall")) {
+                            foundKeyPath = line;
+                        }
+
+                        // 确认找到的是 DisplayName
+                        if (foundKeyPath != null && line.contains("DisplayName") && line.contains("EasyPostman")) {
+                            actualKeyPath = foundKeyPath;
+                            log.info("✓ Found app at: {}", foundKeyPath);
+                            return true;
                         }
                     }
                 }
@@ -136,40 +142,6 @@ public class WindowsRegistryChecker {
         return false;
     }
 
-    /**
-     * 检查指定注册表路径的 DisplayName 是否匹配
-     */
-    private static boolean checkDisplayName(String keyPath, String expectedName) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("reg", "query", keyPath, "/v", "DisplayName");
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream(), "GBK"))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("DisplayName") && line.contains("REG_SZ")) {
-                        // 解析: DisplayName    REG_SZ    EasyPostman
-                        String[] parts = line.trim().split("REG_SZ");
-                        if (parts.length >= 2) {
-                            String displayName = parts[1].trim();
-                            if (expectedName.equals(displayName)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            process.waitFor();
-
-        } catch (Exception e) {
-            log.info("Failed to check DisplayName at {}: {}", keyPath, e.getMessage());
-        }
-
-        return false;
-    }
 
     /**
      * 获取已安装应用的版本

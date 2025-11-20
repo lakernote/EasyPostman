@@ -698,8 +698,6 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";
-    public static final String SETTINGS_VALIDATION_UPDATE_INTERVAL_ERROR = "settings.validation.update_interval.error";
-    public static final String SETTINGS_VALIDATION_STARTUP_DELAY_ERROR = "settings.validation.startup_delay.error";
 
     // Success messages
     public static final String SETTINGS_SAVE_SUCCESS_MESSAGE = "settings.save.success.message";

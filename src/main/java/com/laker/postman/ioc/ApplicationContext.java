@@ -417,33 +417,71 @@ public class ApplicationContext {
 
     /**
      * 实例化Bean（使用构造函数）
+     * 支持以下策略：
+     * 1. 如果有@Autowired注解的构造函数，优先使用
+     * 2. 如果只有一个构造函数（且有参数），自动使用该构造函数进行依赖注入
+     * 3. 如果有多个构造函数，尝试使用无参构造函数
+     * 4. 如果没有无参构造函数且没有@Autowired标注的构造函数，抛出异常
      */
     private Object instantiateBean(Class<?> beanClass) throws Exception {
-        // 查找带@Autowired的构造函数
-        Constructor<?> targetConstructor = null;
         Constructor<?>[] constructors = beanClass.getDeclaredConstructors();
+        Constructor<?> targetConstructor = null;
 
+        // 策略1: 查找带@Autowired的构造函数
         for (Constructor<?> constructor : constructors) {
             if (constructor.isAnnotationPresent(Autowired.class)) {
                 targetConstructor = constructor;
+                log.debug("Found @Autowired constructor for {}", beanClass.getSimpleName());
                 break;
             }
         }
 
+        // 策略2: 如果没有@Autowired标注的构造函数，但只有一个构造函数（且有参数），自动使用
+        if (targetConstructor == null && constructors.length == 1 && constructors[0].getParameterCount() > 0) {
+            targetConstructor = constructors[0];
+            log.debug("Using single constructor with parameters for {}", beanClass.getSimpleName());
+        }
+
+        // 使用找到的构造函数进行依赖注入
         if (targetConstructor != null) {
-            // 使用带@Autowired的构造函数
             Class<?>[] paramTypes = targetConstructor.getParameterTypes();
             Object[] params = new Object[paramTypes.length];
 
             for (int i = 0; i < paramTypes.length; i++) {
-                params[i] = getBean(paramTypes[i]);
+                try {
+                    params[i] = getBean(paramTypes[i]);
+                    log.debug("Resolved constructor parameter {} for {}: {}",
+                            i, beanClass.getSimpleName(), paramTypes[i].getSimpleName());
+                } catch (NoSuchBeanException e) {
+                    throw new BeanCreationException(
+                            beanClass.getSimpleName(),
+                            "Failed to resolve constructor parameter [" + i + "] of type '" +
+                                    paramTypes[i].getName() + "': " + e.getMessage(),
+                            e
+                    );
+                }
             }
 
             targetConstructor.setAccessible(true);
             return targetConstructor.newInstance(params);
-        } else {
-            // 使用无参构造函数
-            return beanClass.getDeclaredConstructor().newInstance();
+        }
+
+        // 策略3: 使用无参构造函数
+        try {
+            Constructor<?> defaultConstructor = beanClass.getDeclaredConstructor();
+            defaultConstructor.setAccessible(true);
+            log.debug("Using default no-arg constructor for {}", beanClass.getSimpleName());
+            return defaultConstructor.newInstance();
+        } catch (NoSuchMethodException e) {
+            // 策略4: 如果没有找到合适的构造函数，抛出异常
+            throw new BeanCreationException(
+                    beanClass.getSimpleName(),
+                    "No suitable constructor found. Please provide either: " +
+                            "1) a no-arg constructor, " +
+                            "2) a single constructor with parameters, or " +
+                            "3) a constructor annotated with @Autowired",
+                    e
+            );
         }
     }
 

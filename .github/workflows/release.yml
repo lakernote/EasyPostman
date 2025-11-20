@@ -1044,3 +1044,4 @@ jobs:
             echo "   • Windows 提供绿色版（解压即用）和 EXE 安装包（支持自动升级）"
             echo "   • macOS ARM 原生支持，性能更优"
             echo "   • 各平台完全并行上传，快速发布"
+          fi

@@ -11,10 +11,7 @@ on:
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'jetbrains'  # 使用 JetBrains Runtime（JBR），为 Swing 应用优化
-  # 精简后的模块配置（已移除未使用的模块，预计减少 10-15 MB）
-  # 移除：java.naming（无JNDI）、java.net.http（用OkHttp）、java.prefs（无Preferences API）
-  #       java.security.sasl（无SASL）、java.management.rmi（桌面应用）、jdk.crypto.cryptoki（无硬件加密）
-  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.sql,java.security.jgss,jdk.crypto.ec,java.management'
+  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
   JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
 
 jobs:
@@ -795,7 +792,7 @@ jobs:
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = false ]; do
             echo "⏳ Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
-            
+          
             # 使用更健壮的 curl 选项
             # --retry 3: curl 内部重试 3 次
             # --retry-delay 2: 重试间隔 2 秒
@@ -818,10 +815,10 @@ jobs:
               -o /tmp/release.json 2>&1 | tail -n1)
             CURL_EXIT_CODE=$?
             set -e  # 重新启用 exit on error
-            
+          
             echo "curl exit code: $CURL_EXIT_CODE"
             echo "HTTP Status Code: $HTTP_CODE"
-            
+          
             if [ $CURL_EXIT_CODE -eq 0 ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
               SUCCESS=true
               echo "✅ API call successful!"

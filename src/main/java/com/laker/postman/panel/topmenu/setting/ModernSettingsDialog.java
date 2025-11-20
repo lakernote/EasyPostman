@@ -15,250 +15,228 @@ import java.awt.event.WindowEvent;
  * 集成所有设置到一个标签页界面中
  */
 public class ModernSettingsDialog extends JDialog {
-    private JTabbedPane tabbedPane;
+
+    // UI 常量
+    private static final int MIN_WIDTH = 600;
+    private static final int MIN_HEIGHT = 300;
+    private static final int PREFERRED_WIDTH = 800;
+    private static final int PREFERRED_HEIGHT = 550;
+    private static final int TAB_FONT_SIZE = 13;
+    private static final int CORNER_RADIUS = 6;
+    private static final int TAB_MARGIN = 2;
+    private static final int TAB_PADDING = 4;
+
+    private final JTabbedPane tabbedPane;
 
     public ModernSettingsDialog(Window parent) {
         super(parent, I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_TITLE), ModalityType.APPLICATION_MODAL);
+        this.tabbedPane = createModernTabbedPane();
         initUI();
         pack();
         setLocationRelativeTo(parent);
     }
 
     private void initUI() {
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        configureDialog();
+        addSettingTabs();
+        setupMainPanel();
+        setupIcon();
+    }
+
+    private void configureDialog() {
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setResizable(true);
-        setMinimumSize(new Dimension(600, 300));
-        setPreferredSize(new Dimension(800, 550));
-
-        // 主容器
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
-        mainPanel.setBackground(ModernColors.BG_LIGHT);
-
-        // 创建现代化标签页
-        tabbedPane = createModernTabbedPane();
-
-        // 添加各个设置面板
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_TITLE),
-                new UISettingsPanelModern()
-        );
-
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE),
-                new RequestSettingsPanelModern()
-        );
-
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TITLE),
-                new ProxySettingsPanelModern()
-        );
-
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE),
-                new SystemSettingsPanelModern()
-        );
-
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE),
-                new PerformanceSettingsPanelModern()
-        );
-
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.CERT_TITLE),
-                new ClientCertificateSettingsPanelModern(this)
-        );
-
-        tabbedPane.addTab(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_SHORTCUTS_TITLE),
-                new ShortcutSettingsPanel()
-        );
-
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);
-
-        setContentPane(mainPanel);
-
+        setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
+        setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 handleWindowClosing();
             }
         });
+    }
 
+    private void addSettingTabs() {
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_TITLE),
+                new UISettingsPanelModern());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE),
+                new RequestSettingsPanelModern());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TITLE),
+                new ProxySettingsPanelModern());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE),
+                new SystemSettingsPanelModern());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE),
+                new PerformanceSettingsPanelModern());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.CERT_TITLE),
+                new ClientCertificateSettingsPanelModern(this));
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_SHORTCUTS_TITLE),
+                new ShortcutSettingsPanel());
+    }
+
+    private void setupMainPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(ModernColors.BG_LIGHT);
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        setContentPane(mainPanel);
+    }
+
+    private void setupIcon() {
         try {
-            setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/icon.png")));
+            setIconImage(Toolkit.getDefaultToolkit()
+                    .getImage(getClass().getResource("/icons/icon.png")));
         } catch (Exception e) {
-            // ignore
+            // Icon loading failed, continue without icon
         }
     }
 
     /**
-     * 创建现代化标签页
+     * 创建简洁的标签页
      */
     private JTabbedPane createModernTabbedPane() {
-        JTabbedPane pane = new JTabbedPane(JTabbedPane.LEFT);
+        JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT);
         pane.setBackground(ModernColors.BG_WHITE);
         pane.setForeground(ModernColors.TEXT_PRIMARY);
-        pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, 14));
+        pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, TAB_FONT_SIZE));
         pane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-
-        // 自定义标签页UI
-        pane.setUI(new BasicTabbedPaneUI() {
-            @Override
-            protected void installDefaults() {
-                super.installDefaults();
-                tabAreaInsets = new Insets(8, 10, 8, 0);
-                contentBorderInsets = new Insets(0, 1, 0, 0);
-                tabInsets = new Insets(10, 16, 10, 16);
-                selectedTabPadInsets = new Insets(0, 0, 0, 0);
-            }
-
-            @Override
-            protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
-                                              int x, int y, int w, int h, boolean isSelected) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                if (isSelected) {
-                    // 绘制外部阴影（多层）
-                    for (int i = 3; i > 0; i--) {
-                        int alpha = 10 + (i * 5);
-                        g2.setColor(new Color(0, 0, 0, alpha));
-                        g2.fillRoundRect(x + 4 + i, y + 2 + i, w - 8, h - 4, 10, 10);
-                    }
-
-                    // 主背景 - 蓝色
-                    g2.setColor(ModernColors.PRIMARY);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 10, 10);
-
-                    // 顶部微妙的高光效果（内发光）
-                    GradientPaint topGlow = new GradientPaint(
-                            x + 4, y + 2,
-                            new Color(255, 255, 255, 35),
-                            x + 4, y + 2 + (h - 4) / 3,
-                            new Color(255, 255, 255, 0)
-                    );
-                    g2.setPaint(topGlow);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, (h - 4) / 2, 10, 10);
-
-
-                } else if (getRolloverTab() == tabIndex) {
-                    // 悬停的标签 - 添加微妙阴影
-                    g2.setColor(new Color(0, 0, 0, 8));
-                    g2.fillRoundRect(x + 5, y + 3, w - 8, h - 4, 10, 10);
-
-                    g2.setColor(ModernColors.HOVER_BG);
-                    g2.fillRoundRect(x + 4, y + 2, w - 8, h - 4, 10, 10);
-
-                    // 悬停时的左侧细线提示
-                    g2.setColor(new Color(ModernColors.PRIMARY.getRed(),
-                            ModernColors.PRIMARY.getGreen(),
-                            ModernColors.PRIMARY.getBlue(), 60));
-                    g2.fillRoundRect(x + 5, y + 4, 2, h - 8, 2, 2);
-                }
-                // 普通标签不绘制背景
-
-                g2.dispose();
-            }
-
-            @Override
-            protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
-                                          int x, int y, int w, int h, boolean isSelected) {
-                // 不绘制任何边框
-            }
-
-            @Override
-            protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
-                                               int tabIndex, Rectangle iconRect, Rectangle textRect,
-                                               boolean isSelected) {
-                // 不绘制焦点指示器（虚线框）
-            }
-
-            @Override
-            protected void paintText(Graphics g, int tabPlacement, Font font, FontMetrics metrics,
-                                     int tabIndex, String title, Rectangle textRect, boolean isSelected) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                        RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-                g2.setRenderingHint(RenderingHints.KEY_RENDERING,
-                        RenderingHints.VALUE_RENDER_QUALITY);
-
-                if (isSelected) {
-                    // 选中标签 - 白色文字，带微妙阴影增强可读性
-                    g2.setColor(new Color(0, 0, 0, 30));
-                    g2.setFont(font.deriveFont(Font.BOLD, 14f));
-                    g2.drawString(title, textRect.x, textRect.y + metrics.getAscent() + 1);
-
-                    g2.setColor(ModernColors.TEXT_INVERSE);
-                    g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
-                } else {
-                    g2.setColor(ModernColors.TEXT_PRIMARY);
-                    g2.setFont(font.deriveFont(Font.PLAIN, 13f));
-                    g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
-                }
-
-                g2.dispose();
-            }
-
-            @Override
-            protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-                // 不绘制内容区边框和分隔线
-            }
-        });
-
+        pane.setUI(new SimpleTabbedPaneUI());
         return pane;
     }
 
+    /**
+     * 简洁的标签页 UI
+     */
+    private static class SimpleTabbedPaneUI extends BasicTabbedPaneUI {
+
+        @Override
+        protected void installDefaults() {
+            super.installDefaults();
+            tabAreaInsets = new Insets(5, 5, 5, 0);
+            contentBorderInsets = new Insets(0, 0, 0, 0);
+            tabInsets = new Insets(8, 12, 8, 12);
+            selectedTabPadInsets = new Insets(0, 0, 0, 0);
+        }
+
+        @Override
+        protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
+                                          int x, int y, int w, int h, boolean isSelected) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (isSelected) {
+                    g2.setColor(ModernColors.PRIMARY);
+                    g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
+                            w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
+                } else if (getRolloverTab() == tabIndex) {
+                    g2.setColor(ModernColors.HOVER_BG);
+                    g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
+                            w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
+                }
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
+        protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
+                                      int x, int y, int w, int h, boolean isSelected) {
+            // 不绘制边框
+        }
+
+        @Override
+        protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
+                                           int tabIndex, Rectangle iconRect, Rectangle textRect,
+                                           boolean isSelected) {
+            // 不绘制焦点指示器
+        }
+
+        @Override
+        protected void paintText(Graphics g, int tabPlacement, Font font, FontMetrics metrics,
+                                 int tabIndex, String title, Rectangle textRect, boolean isSelected) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                        RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                g2.setColor(isSelected ? Color.WHITE : ModernColors.TEXT_PRIMARY);
+                g2.setFont(isSelected ? font.deriveFont(Font.BOLD) : font);
+                g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
+        protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
+            // 不绘制内容区边框
+        }
+    }
 
     /**
      * 处理窗口关闭事件
      */
     private void handleWindowClosing() {
-        // 检查当前选中的面板是否有未保存的更改
-        Component selectedComponent = tabbedPane.getSelectedComponent();
-        if (selectedComponent instanceof ModernSettingsPanel) {
-            ModernSettingsPanel panel = (ModernSettingsPanel) selectedComponent;
-            if (panel.hasUnsavedChanges()) {
-                if (!panel.confirmDiscardChanges()) {
-                    return; // 用户选择不关闭
-                }
-            }
+        if (checkCurrentPanelUnsavedChanges() && checkAllPanelsUnsavedChanges()) {
+            dispose();
         }
+    }
 
-        // 检查所有标签页是否有未保存的更改
+    /**
+     * 检查当前选中面板的未保存更改
+     */
+    private boolean checkCurrentPanelUnsavedChanges() {
+        Component selectedComponent = tabbedPane.getSelectedComponent();
+        if (selectedComponent instanceof ModernSettingsPanel panel) {
+            return !panel.hasUnsavedChanges() || panel.confirmDiscardChanges();
+        }
+        return true;
+    }
+
+    /**
+     * 检查所有面板的未保存更改
+     */
+    private boolean checkAllPanelsUnsavedChanges() {
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component component = tabbedPane.getComponentAt(i);
-            if (component instanceof ModernSettingsPanel) {
-                ModernSettingsPanel panel = (ModernSettingsPanel) component;
-                if (panel.hasUnsavedChanges()) {
-                    // 切换到有未保存更改的标签页
-                    tabbedPane.setSelectedIndex(i);
-                    if (!panel.confirmDiscardChanges()) {
-                        return; // 用户选择不关闭
-                    }
+            if (component instanceof ModernSettingsPanel panel && panel.hasUnsavedChanges()) {
+                tabbedPane.setSelectedIndex(i);
+                if (!panel.confirmDiscardChanges()) {
+                    return false;
                 }
             }
         }
-
-        dispose();
+        return true;
     }
 
     /**
      * 显示设置对话框
+     *
+     * @param parent 父窗口
      */
     public static void showSettings(Window parent) {
-        ModernSettingsDialog dialog = new ModernSettingsDialog(parent);
-        dialog.setVisible(true);
+        showSettings(parent, 0);
     }
 
     /**
      * 显示设置对话框并打开指定的标签页
+     *
+     * @param parent   父窗口
+     * @param tabIndex 要打开的标签页索引
      */
     public static void showSettings(Window parent, int tabIndex) {
         ModernSettingsDialog dialog = new ModernSettingsDialog(parent);
-        if (tabIndex >= 0 && tabIndex < dialog.tabbedPane.getTabCount()) {
-            dialog.tabbedPane.setSelectedIndex(tabIndex);
-        }
+        dialog.selectTab(tabIndex);
         dialog.setVisible(true);
     }
-}
 
+    /**
+     * 选择指定的标签页
+     *
+     * @param tabIndex 标签页索引
+     */
+    private void selectTab(int tabIndex) {
+        if (tabIndex >= 0 && tabIndex < tabbedPane.getTabCount()) {
+            tabbedPane.setSelectedIndex(tabIndex);
+        }
+    }
+}

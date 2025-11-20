@@ -197,7 +197,7 @@ public class ModernUpdateNotification {
      */
     private JPanel createNotificationPanel(UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
         // 主面板 - 使用自定义绘制实现圆角和阴影
-        JPanel panel = new JPanel(new BorderLayout(12, 8)) {
+        JPanel panel = new JPanel(new BorderLayout(0, 0)) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -239,14 +239,18 @@ public class ModernUpdateNotification {
             }
         };
         panel.setOpaque(false);
-        panel.setBorder(new EmptyBorder(18, 16, 16, 16));
-        panel.setPreferredSize(new Dimension(380, 140));
+        panel.setBorder(new EmptyBorder(16, 16, 16, 16));
+        panel.setPreferredSize(new Dimension(380, 160));
+
+        // 顶部区域：包含图标、内容和关闭按钮
+        JPanel topPanel = new JPanel(new BorderLayout(12, 0));
+        topPanel.setOpaque(false);
 
         // 左侧图标
         JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 36, 36));
-        panel.add(iconLabel, BorderLayout.WEST);
+        topPanel.add(iconLabel, BorderLayout.WEST);
 
-        // 中心内容
+        // 中心内容区域
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
@@ -266,7 +270,7 @@ public class ModernUpdateNotification {
 
         // 简短描述
         String summary = extractSummary(updateInfo);
-        JLabel summaryLabel = new JLabel(summary);
+        JLabel summaryLabel = new JLabel("<html><body style='width: 260px'>" + summary + "</body></html>");
         summaryLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
         summaryLabel.setForeground(ModernColors.TEXT_HINT);
         summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -277,18 +281,21 @@ public class ModernUpdateNotification {
         contentPanel.add(Box.createVerticalStrut(6));
         contentPanel.add(summaryLabel);
 
-        panel.add(contentPanel, BorderLayout.CENTER);
+        topPanel.add(contentPanel, BorderLayout.CENTER);
 
-        // 右侧关闭按钮
+        // 右上角关闭按钮
         JButton closeButton = createCloseButton();
-        JPanel topRightPanel = new JPanel(new BorderLayout());
-        topRightPanel.setOpaque(false);
-        topRightPanel.add(closeButton, BorderLayout.NORTH);
-        panel.add(topRightPanel, BorderLayout.EAST);
+        JPanel closePanel = new JPanel(new BorderLayout());
+        closePanel.setOpaque(false);
+        closePanel.add(closeButton, BorderLayout.NORTH);
+        topPanel.add(closePanel, BorderLayout.EAST);
 
-        // 底部按钮
+        panel.add(topPanel, BorderLayout.CENTER);
+
+        // 底部按钮区域
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(new EmptyBorder(12, 0, 0, 0));
 
         JButton laterButton = createSecondaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_LATER));
         laterButton.addActionListener(e -> slideOut());
@@ -304,13 +311,11 @@ public class ModernUpdateNotification {
         buttonPanel.add(laterButton);
         buttonPanel.add(viewButton);
 
-        // 添加底部按钮到内容面板
-        contentPanel.add(Box.createVerticalStrut(8));
-        contentPanel.add(buttonPanel);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
 
-        // 点击面板也可以查看详情
-        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        panel.addMouseListener(new MouseAdapter() {
+        // 点击面板也可以查看详情（但不包括按钮区域）
+        topPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        topPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
@@ -324,12 +329,12 @@ public class ModernUpdateNotification {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 微妙的悬停效果
-                panel.repaint();
+                topPanel.setOpaque(false);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                panel.repaint();
+                topPanel.setOpaque(false);
             }
         });
 

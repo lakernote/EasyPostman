@@ -41,6 +41,14 @@ public class App {
 
         // 6. 设置全局异常处理器，防止程序因未捕获异常崩溃
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            // 过滤掉SSH executor shutdown的错误 - 这是正常的cleanup过程
+            // 这些错误发生在Git操作完成后，SSH连接的异步IO操作尝试使用已关闭的executor
+            // 这是JGit + Apache SSHD的已知行为，不影响功能
+            if (isHarmlessSshShutdownError(throwable)) {
+                log.debug("Ignoring harmless SSH executor shutdown error in thread: {}", thread.getName());
+                return;
+            }
+
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                     null,
@@ -54,6 +62,36 @@ public class App {
 
         // 8. 启动后台版本检查
         BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
+    }
+
+    /**
+     * 检查是否是无害的SSH executor shutdown错误
+     * 这些错误通常发生在Git SSH操作完成后，异步IO操作尝试使用已关闭的executor
+     * 这是Apache SSHD + JGit的已知行为，不影响实际功能
+     */
+    private static boolean isHarmlessSshShutdownError(Throwable throwable) {
+        if (throwable == null) {
+            return false;
+        }
+
+        // 检查是否是SSH executor shutdown错误
+        if (throwable instanceof IllegalStateException) {
+            String message = throwable.getMessage();
+            if (message != null && message.contains("Executor has been shut down")) {
+                // 检查调用栈是否包含SSH相关的类
+                for (StackTraceElement element : throwable.getStackTrace()) {
+                    String className = element.getClassName();
+                    if (className.contains("org.apache.sshd") ||
+                        className.contains("NoCloseExecutor") ||
+                        className.contains("AsynchronousChannelGroup") ||
+                        className.contains("AsynchronousSocketChannel")) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

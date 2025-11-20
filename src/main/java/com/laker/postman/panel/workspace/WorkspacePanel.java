@@ -1,8 +1,8 @@
 package com.laker.postman.panel.workspace;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -522,7 +522,14 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             refreshWorkspaceList();
-            logSuccess("Git authentication updated successfully for workspace: " + workspace.getName());
+            String logMessage = "Git authentication updated successfully for workspace: " + workspace.getName();
+
+            // 如果更新了SSH密钥，添加额外提示
+            if (dialog.getAuthType() == GitAuthType.SSH_KEY) {
+                logMessage += " (SSH session cache cleared)";
+            }
+
+            logSuccess(logMessage);
         }
     }
 

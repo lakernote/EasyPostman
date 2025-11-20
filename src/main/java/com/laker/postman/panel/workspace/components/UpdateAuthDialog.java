@@ -3,6 +3,7 @@ package com.laker.postman.panel.workspace.components;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -141,6 +142,17 @@ public class UpdateAuthDialog extends JDialog {
             // 获取 SSH 认证信息
             String sshKeyPath = gitAuthPanel.getSshKeyPath();
             String sshPassphrase = gitAuthPanel.getSshPassphrase();
+
+            // 如果更新了SSH密钥，清除旧的SSH会话工厂缓存
+            if (authType == GitAuthType.SSH_KEY && workspace.getSshPrivateKeyPath() != null) {
+                // 如果SSH密钥路径发生了变化，清除旧密钥的缓存
+                if (!workspace.getSshPrivateKeyPath().equals(sshKeyPath)) {
+                    SshCredentialsProvider.clearCache(workspace.getSshPrivateKeyPath());
+                } else {
+                    // 即使路径相同，密码可能变化了，也清除缓存
+                    SshCredentialsProvider.clearCache(sshKeyPath);
+                }
+            }
 
             // 调用 WorkspaceService 更新认证信息
             WorkspaceService workspaceService = WorkspaceService.getInstance();

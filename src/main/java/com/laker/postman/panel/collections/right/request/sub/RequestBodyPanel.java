@@ -9,9 +9,9 @@ import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.util.VariableUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.VariableUtil;
 import com.laker.postman.util.XmlUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -106,15 +106,13 @@ public class RequestBodyPanel extends JPanel {
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         boolean showFormatControls = isBodyTypeRAW();
         rawTypeComboBox.setVisible(showFormatControls);
-//        formatLabel.setVisible(showFormatControls);
-//        topPanel.add(formatLabel);
         topPanel.add(rawTypeComboBox);
 
         // 搜索区控件
         SearchTextField searchField = new SearchTextField();
-        JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
+        JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 18, 18));
         prevButton.setToolTipText("Previous");
-        JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+        JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 18, 18));
         nextButton.setToolTipText("Next");
         topPanel.add(searchField);
         topPanel.add(prevButton);

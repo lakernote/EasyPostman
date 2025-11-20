@@ -237,37 +237,15 @@ jobs:
           Write-Host "✅ EXE installer verification passed"
 
 
-      - name: Create Windows portable version
+      - name: Mark as portable version
         shell: pwsh
         run: |
-          Write-Host "📦 Creating Windows portable version..."
-          $version = "${{ needs.get-version.outputs.version }}"
-          $jarName = "easy-postman.jar"
-          
-          $javaOpts = $env:JAVA_OPTIONS -split '\|'
-          
-          # 创建 app-image（便携版，不需要安装）
-          jpackage `
-            --type app-image `
-            --input target\dist-input `
-            --main-jar $jarName `
-            --main-class com.laker.postman.App `
-            --runtime-image target\runtime `
-            --dest target `
-            --icon assets\win\EasyPostman.ico `
-            --name EasyPostman `
-            --app-version $version `
-            --vendor "Laker" `
-            --copyright "© 2025 Laker" `
-            --java-options $javaOpts[0] `
-            --java-options $javaOpts[1] `
-            --java-options $javaOpts[2] `
-            --java-options "-Djavax.accessibility.assistive_technologies="
-          
-          # 创建 .portable 标识文件
+          Write-Host "📦 Marking as portable version..."
           $appDir = "target\EasyPostman"
+          
+          # 创建 .portable 标识文件（app-image 已在 Inno Setup 步骤中创建）
           "This is a portable version" | Out-File -FilePath "$appDir\.portable" -Encoding UTF8
-          Write-Host "✅ Portable version created"
+          Write-Host "✅ Portable version marker created"
 
       - name: Verify Windows package
         shell: pwsh

@@ -41,7 +41,7 @@ public class RequestsPersistence {
     public void initRequestGroupsFromFile() {
         File file = new File(filePath);
         if (!file.exists()) { // 如果文件不存在，则创建默认请求组
-            RequestsFactory.createDefaultRequestGroups(rootTreeNode, treeModel); // 创建默认请求组
+            DefaultRequestsFactory.create(rootTreeNode, treeModel); // 创建默认请求组
             saveRequestGroups(); // 保存默认请求组到文件
             log.info("File not found, created default request groups.");
             return;

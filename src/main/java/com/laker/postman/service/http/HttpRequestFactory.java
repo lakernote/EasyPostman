@@ -8,8 +8,8 @@ import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
 
 import java.util.List;
 
-import static com.laker.postman.service.collections.RequestsFactory.APPLICATION_JSON;
-import static com.laker.postman.service.collections.RequestsFactory.CONTENT_TYPE;
+import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
+import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
 
 public class HttpRequestFactory {
     public static final String TEXT_EVENT_STREAM = "text/event-stream";

@@ -10,19 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class RequestsFactory {
+public class DefaultRequestsFactory {
 
     public static final String REQUEST = "request";
     public static final String APPLICATION_JSON = "application/json";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String HTTPS_HTTPBIN_ORG_POST = "https://httpbin.org/post";
 
-    private RequestsFactory() {
+    private DefaultRequestsFactory() {
         throw new IllegalStateException("Utility class");
     }
 
     // 创建默认请求组和测试请求
-    public static void createDefaultRequestGroups(DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
+    public static void create(DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
         try {
             RequestGroup defaultGroup = new RequestGroup("Default Group");
             DefaultMutableTreeNode defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", defaultGroup});
@@ -58,9 +58,11 @@ public class RequestsFactory {
                     new HttpParam(true, "filter", "active")
             ));
             getExample.setPostscript("""
-                    pm.test('Response status is 200', function () {
-                        pm.response.to.have.status(200);
-                    });""");
+                    pm.test('JSON value check', function () {
+                        var jsonData = pm.response.json();
+                        pm.expect(jsonData.args.size).to.eql("10");
+                    });
+                    """);
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, getExample}));
 
             // POST JSON Example
@@ -77,6 +79,12 @@ public class RequestsFactory {
                         "key2": "value2",
                         "key3": "value3"
                     }""");
+            postJson.setPostscript("""
+                    pm.test('JSON value check', function () {
+                        var jsonData = pm.response.json();
+                        pm.expect(jsonData.json.key1).to.eql("value1");
+                    });
+                    """);
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, postJson}));
 
             // POST form-data Example
@@ -91,6 +99,12 @@ public class RequestsFactory {
                     new HttpFormData(true, "key1", HttpFormData.TYPE_TEXT, "value1"),
                     new HttpFormData(true, "key2", HttpFormData.TYPE_TEXT, "value2")
             ));
+            postFormData.setPostscript("""
+                    pm.test('JSON value check', function () {
+                        var jsonData = pm.response.json();
+                        pm.expect(jsonData.form.key1).to.eql("value1");
+                    });
+                    """);
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, postFormData}));
 
             // POST x-www-form-urlencoded Example
@@ -105,6 +119,12 @@ public class RequestsFactory {
                     new HttpFormUrlencoded(true, "key1", "value1"),
                     new HttpFormUrlencoded(true, "key2", "value2")
             ));
+            postUrl.setPostscript("""
+                    pm.test('JSON value check', function () {
+                        var jsonData = pm.response.json();
+                        pm.expect(jsonData.form.key1).to.eql("value1");
+                    });
+                    """);
             defaultGroupNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, postUrl}));
 
             // PUT Example

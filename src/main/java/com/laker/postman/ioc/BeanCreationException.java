@@ -17,4 +17,3 @@ public class BeanCreationException extends BeanException {
         super("Failed to create bean '" + beanName + "': " + message, cause);
     }
 }
-

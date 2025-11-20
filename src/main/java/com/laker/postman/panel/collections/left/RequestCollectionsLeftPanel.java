@@ -43,8 +43,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.laker.postman.service.collections.RequestsFactory.APPLICATION_JSON;
-import static com.laker.postman.service.collections.RequestsFactory.CONTENT_TYPE;
+import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
+import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
 import static com.laker.postman.service.http.HttpRequestFactory.*;
 
 /**

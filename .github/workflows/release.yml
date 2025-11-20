@@ -752,11 +752,41 @@ jobs:
           path: dist/*.deb
           retention-days: 1
 
-  # 创建 Gitee Release（Windows 绿色版构建完成后立即创建）
+  # 检查是否至少有一个构建成功
+  check-any-build-success:
+    name: Check Any Build Success（检查至少一个构建成功）
+    if: github.event_name == 'release' && always()
+    needs: [ build-windows-portable, build-windows-exe, build-macos-arm ]
+    runs-on: ubuntu-latest
+    outputs:
+      should_create_release: ${{ steps.check.outputs.should_create }}
+
+    steps:
+      - name: Check if any build succeeded（检查是否有任何构建成功）
+        id: check
+        run: |
+          echo "📊 检查构建状态..."
+          echo "  Windows Portable: ${{ needs.build-windows-portable.result }}"
+          echo "  Windows EXE: ${{ needs.build-windows-exe.result }}"
+          echo "  macOS ARM: ${{ needs.build-macos-arm.result }}"
+          
+          # 只要有一个成功就创建 Release
+          if [ "${{ needs.build-windows-portable.result }}" == "success" ] || \
+             [ "${{ needs.build-windows-exe.result }}" == "success" ] || \
+             [ "${{ needs.build-macos-arm.result }}" == "success" ]; then
+            echo "✅ 至少有一个构建成功，可以创建 Gitee Release"
+            echo "should_create=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ 所有构建都失败，跳过创建 Gitee Release"
+            echo "should_create=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # 创建 Gitee Release（至少一个构建成功后创建）
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
-    if: github.event_name == 'release'
-    needs: [ build-windows-portable, build-windows-exe ]  # 等待 Windows 绿色版和 EXE 构建完成
+    if: github.event_name == 'release' && needs.check-any-build-success.outputs.should_create_release == 'true'
+    needs: [ get-version, check-any-build-success ]
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -866,9 +896,10 @@ jobs:
   # Windows 绿色版上传到 Gitee
   sync-windows-portable-to-gitee:
     name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
-    if: github.event_name == 'release'
-    needs: [ create-gitee-release ]
+    if: github.event_name == 'release' && needs.build-windows-portable.result == 'success'
+    needs: [ create-gitee-release, build-windows-portable ]  # 等待 Release 创建和构建完成
     runs-on: ubuntu-latest
+    continue-on-error: true  # 上传失败不影响其他任务
 
     steps:
       - name: Download Windows Portable artifact（下载 Windows 绿色版产物）
@@ -914,9 +945,10 @@ jobs:
   # Windows EXE 上传到 Gitee
   sync-windows-exe-to-gitee:
     name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
-    if: github.event_name == 'release'
-    needs: [ create-gitee-release ]
+    if: github.event_name == 'release' && needs.build-windows-exe.result == 'success'
+    needs: [ create-gitee-release, build-windows-exe ]  # 等待 Release 创建和构建完成
     runs-on: ubuntu-latest
+    continue-on-error: true  # 上传失败不影响其他任务
 
     steps:
       - name: Download Windows EXE artifact（下载 Windows EXE 产物）
@@ -962,12 +994,13 @@ jobs:
   # macOS ARM 上传到 Gitee（macOS 构建完成后立即上传）
   sync-macos-to-gitee:
     name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && needs.build-macos-arm.result == 'success'
     # ✅ 只等待 2 个条件：
     # 1. create-gitee-release 完成（获得 release_id）
     # 2. build-macos-arm 完成（DMG 文件准备好）
     needs: [ create-gitee-release, build-macos-arm ]
     runs-on: ubuntu-latest
+    continue-on-error: true  # 上传失败不影响其他任务
 
     steps:
       - name: Download macOS ARM artifact（下载 macOS ARM 产物）
@@ -1014,18 +1047,30 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: github.event_name == 'release' && always()  # 即使有失败也执行
-    needs: [ create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
+    needs: [ check-any-build-success, create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
       - name: Summary（汇总）
         run: |
           echo "📊 Gitee Release 同步完成！"
-          echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
+          
+          CHECK_STATUS="${{ needs.check-any-build-success.result }}"
+          RELEASE_STATUS="${{ needs.create-gitee-release.result }}"
+          
           echo ""
-          echo "⏱️  同步时间线（完全并行）："
-          echo "  1️⃣  Windows Portable 和 EXE 构建完成 → 立即创建 Gitee Release → 立即上传绿色版和 EXE ✅"
-          echo "  2️⃣  macOS ARM 构建完成 → 立即上传 DMG ✅"
+          echo "🔍 构建检查结果: $CHECK_STATUS"
+          echo "📝 Gitee Release 创建: $RELEASE_STATUS"
+          
+          if [ "$RELEASE_STATUS" == "success" ]; then
+            echo "📍 Release URL: https://gitee.com/lakernote/easy-postman/releases/${{ needs.create-gitee-release.outputs.tag_name }}"
+          fi
+          
+          echo ""
+          echo "⏱️  同步时间线（智能触发）："
+          echo "  1️⃣  各平台并行构建"
+          echo "  2️⃣  任意一个构建成功 → 立即创建 Gitee Release ⚡"
+          echo "  3️⃣  成功的平台 → 立即上传到 Gitee"
           echo ""
           echo "已同步到 Gitee 的文件："
           echo "  📦 Windows Portable (绿色版) - ${{ needs.sync-windows-portable-to-gitee.result }}"
@@ -1034,14 +1079,28 @@ jobs:
           echo ""
           echo "💡 其他平台（Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
+          
           PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
           EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.result }}"
           MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
           
-          if [ "$PORTABLE_STATUS" == "success" ] && [ "$EXE_STATUS" == "success" ] && [ "$MACOS_STATUS" == "success" ]; then
-            echo "✅ 所有配置平台均已成功上传到 Gitee！"
-            echo "🚀 优化："
-            echo "   • Windows 提供绿色版（解压即用）和 EXE 安装包（支持自动升级）"
-            echo "   • macOS ARM 原生支持，性能更优"
-            echo "   • 各平台完全并行上传，快速发布"
+          SUCCESS_COUNT=0
+          [ "$PORTABLE_STATUS" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [ "$EXE_STATUS" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [ "$MACOS_STATUS" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          
+          echo "📈 成功上传: $SUCCESS_COUNT 个平台"
+          
+          if [ "$CHECK_STATUS" == "failure" ]; then
+            echo "❌ 所有构建都失败，未创建 Gitee Release"
+            exit 1
+          elif [ $SUCCESS_COUNT -eq 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
+            echo "⚠️  Gitee Release 已创建，但所有文件上传失败"
+            echo "💡 可以手动上传文件到 Gitee Release"
+          elif [ $SUCCESS_COUNT -gt 0 ]; then
+            echo "✅ Gitee Release 创建成功，已上传 $SUCCESS_COUNT 个平台的文件"
+            echo "🚀 优化亮点："
+            echo "   • 任意一个构建成功即可创建 Release（无需等待全部）"
+            echo "   • 各平台完全并行上传，互不阻塞"
+            echo "   • 失败的构建不影响其他平台发布"
           fi

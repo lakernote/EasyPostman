@@ -44,17 +44,11 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
     - 🐧 Ubuntu/Debian: `easypostman_{version}_amd64.deb`
     - ☕ Cross-platform JAR: `easy-postman-{version}.jar` - Requires Java 17+ runtime
 
-> ⚠️ **Security Notice**:
+> ⚠️ **First Run Notice**:
 > 
-> **Windows Users**: When running for the first time, Windows SmartScreen may show "Windows protected your PC" warning. This is because the app is not code-signed (code signing certificates cost $100-400/year). The app is completely open-source and safe. You can:
-> - **EXE Installer**: Click "More info" → "Run anyway", after installation it supports auto-update
-> - **Portable ZIP**: Extract and run EasyPostman.exe directly, may still trigger SmartScreen, simply click "More info" → "Run anyway"
-> - 💡 Both methods are equally safe, SmartScreen warning will gradually disappear as download count increases
+> **Windows Users**: If you see a SmartScreen warning, click "More info" → "Run anyway". The app is completely open-source and safe.
 > 
-> **macOS Users**: When opening for the first time, macOS may show "cannot be opened because the developer cannot be verified". This is also due to not purchasing an Apple Developer certificate ($99/year). The app is safe and open-source. Solutions:
-> - Method 1: Right-click the app → Select "Open" → Click "Open" in the dialog
-> - Method 2: System Settings → Privacy & Security → Find the blocked app at the bottom → Click "Open Anyway"
-> - Method 3: Run in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
+> **macOS Users**: If prompted "cannot be opened", right-click the app → Select "Open" → Click "Open" in the dialog.
 
 - 💬 WeChat: **lakernote**
 
@@ -403,6 +397,18 @@ A: In the Collections view, click Import and select a Postman v2.1 JSON file.
 ### Q: Are performance test results accurate?
 
 A: Based on Java multithreading, results are for reference. For critical scenarios, compare with professional tools.
+
+### Q: Why does Windows/macOS show "unsafe" or "cannot be verified" warnings?
+
+A: This is because the app is not code-signed. This is common for open-source software:
+- **Windows SmartScreen**: Not purchasing a code signing certificate (~$100-400/year) triggers warnings
+  - Solution: Click "More info" → "Run anyway"
+  - As download count increases (200-500 times), warnings will gradually decrease
+- **macOS Gatekeeper**: Not purchasing an Apple Developer certificate ($99/year) + notarization triggers warnings
+  - Solution: Right-click the app → Select "Open"
+  - Or run in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
+
+**Note**: This project is completely open-source, and the code can be reviewed on GitHub. Most individual open-source software is distributed this way.
 
 ### Q: Does it support team collaboration?
 

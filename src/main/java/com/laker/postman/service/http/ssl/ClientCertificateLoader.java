@@ -3,14 +3,13 @@ package com.laker.postman.service.http.ssl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.ClientCertificate;
+import com.laker.postman.util.PemUtil;
 import lombok.extern.slf4j.Slf4j;
-import nl.altindag.ssl.pem.util.PemUtils;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.X509ExtendedKeyManager;
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 
 /**
@@ -64,15 +63,12 @@ public class ClientCertificateLoader {
      * 从 PEM 文件创建 KeyManager
      */
     private static KeyManager[] createKeyManagersFromPEM(ClientCertificate cert) throws Exception {
+        String certPem = FileUtil.readString(cert.getCertPath(), StandardCharsets.UTF_8);
+        String keyPem = FileUtil.readString(cert.getKeyPath(), StandardCharsets.UTF_8);
+
+        KeyManager[] keyManagers = PemUtil.createKeyManagers(certPem, keyPem, CharSequenceUtil.trimToNull(cert.getKeyPassword()));
+
         log.debug("Loaded PEM certificate from: {} and key from: {}", cert.getCertPath(), cert.getKeyPath());
-        try (BufferedInputStream certInputStream = FileUtil.getInputStream(cert.getCertPath());
-             BufferedInputStream keyInputStream = FileUtil.getInputStream(cert.getKeyPath())) {
-
-            X509ExtendedKeyManager keyManager = CharSequenceUtil.isNotBlank(cert.getKeyPassword())
-                    ? PemUtils.loadIdentityMaterial(certInputStream, keyInputStream, cert.getKeyPassword().toCharArray())
-                    : PemUtils.loadIdentityMaterial(certInputStream, keyInputStream);
-
-            return new KeyManager[]{keyManager};
-        }
+        return keyManagers;
     }
 }

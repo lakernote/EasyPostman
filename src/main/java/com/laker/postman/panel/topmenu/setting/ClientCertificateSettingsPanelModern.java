@@ -614,13 +614,14 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
             if (ClientCertificate.CERT_TYPE_PEM.equals(certificate.getCertType())) {
                 certTypeCombo.setSelectedItem(I18nUtil.getMessage(MessageKeys.CERT_TYPE_PEM));
+                passwordField.setText(certificate.getKeyPassword() != null ? certificate.getKeyPassword() : "");
             } else {
                 certTypeCombo.setSelectedItem(I18nUtil.getMessage(MessageKeys.CERT_TYPE_PFX));
+                passwordField.setText(certificate.getCertPassword() != null ? certificate.getCertPassword() : "");
             }
 
             certPathField.setText(certificate.getCertPath() != null ? certificate.getCertPath() : "");
             keyPathField.setText(certificate.getKeyPath() != null ? certificate.getKeyPath() : "");
-            passwordField.setText(certificate.getCertPassword() != null ? certificate.getCertPassword() : "");
             enabledCheckBox.setSelected(certificate.isEnabled());
 
             updateFieldVisibility();
@@ -701,7 +702,11 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             certificate.setCertType(isPEM ? ClientCertificate.CERT_TYPE_PEM : ClientCertificate.CERT_TYPE_PFX);
             certificate.setCertPath(certPath);
             certificate.setKeyPath(isPEM ? keyPath : null);
-            certificate.setCertPassword(new String(passwordField.getPassword()));
+            if (isPEM) {
+                certificate.setKeyPassword(new String(passwordField.getPassword()));
+            } else {
+                certificate.setCertPassword(new String(passwordField.getPassword()));
+            }
             certificate.setEnabled(enabledCheckBox.isSelected());
 
             confirmed = true;

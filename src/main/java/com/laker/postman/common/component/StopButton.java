@@ -14,6 +14,6 @@ public class StopButton extends JButton {
     public StopButton() {
         super(I18nUtil.getMessage(MessageKeys.BUTTON_STOP));
         setIcon(new FlatSVGIcon("icons/stop.svg"));
-        setPreferredSize(new Dimension(90, 28));
+        setPreferredSize(new Dimension(95, 28));
     }
 }

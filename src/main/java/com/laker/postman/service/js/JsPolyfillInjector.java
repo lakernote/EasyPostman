@@ -1,7 +1,7 @@
 package com.laker.postman.service.js;
 
-import cn.hutool.crypto.digest.DigestUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
@@ -44,7 +44,7 @@ public class JsPolyfillInjector {
     private static void injectMD5(Context context) {
         context.getBindings("js").putMember("MD5", (ProxyExecutable) args -> {
             String str = args[0].asString();
-            return DigestUtil.md5Hex(str);
+            return DigestUtils.md5Hex(str);
         });
     }
 
@@ -54,7 +54,7 @@ public class JsPolyfillInjector {
     private static void injectSHA256(Context context) {
         context.getBindings("js").putMember("SHA256", (ProxyExecutable) args -> {
             String str = args[0].asString();
-            return DigestUtil.sha256Hex(str);
+            return DigestUtils.sha256Hex(str);
         });
     }
 }

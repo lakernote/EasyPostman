@@ -27,6 +27,7 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 💬 讨论区: [https://github.com/lakernote/easy-postman/discussions](https://github.com/lakernote/easy-postman/discussions) - 社区问答与交流
+- 👥 **微信交流群**: 添加微信 **lakernote** 拉你进群，与开发者和用户直接交流
 - 📦 **下载地址**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
     - 🌏 **国内镜像**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
         - ⚠️ 由于存储空间限制，国内镜像仅提供以下版本：
@@ -48,7 +49,6 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 > 
 > **macOS 用户**: 如提示"无法打开"，右键点击应用 → 选择"打开" → 在弹窗中点击"打开"即可。
 
-- 💬 微信：**lakernote**
 
 ---
 
@@ -438,6 +438,7 @@ A: 可以！通过 Git 工作区功能，你可以在不同设备上克隆同一
 - 🍴 Fork 项目参与贡献
 - 📢 向朋友推荐本项目
 - ☕ 请作者喝杯咖啡
+- 💬 微信交流：**lakernote**
 
 ---
 

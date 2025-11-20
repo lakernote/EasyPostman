@@ -29,6 +29,7 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 - 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
 - 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
 - 💬 Discussions: [https://github.com/lakernote/easy-postman/discussions](https://github.com/lakernote/easy-postman/discussions) - Community Q&A and discussions
+- 👥 **WeChat Group**: Add WeChat **lakernote** to join the community and chat with developers and users
 - 📦 **Download**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
     - 🌏 **China Mirror**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
         - ⚠️ Due to storage limitations, China mirror only provides:
@@ -50,7 +51,6 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 > 
 > **macOS Users**: If prompted "cannot be opened", right-click the app → Select "Open" → Click "Open" in the dialog.
 
-- 💬 WeChat: **lakernote**
 
 ---
 
@@ -441,6 +441,7 @@ If you find this project helpful, please:
 - 🍴 Fork and contribute
 - 📢 Recommend to friends
 - ☕ Buy the author a coffee
+- 💬 WeChat: **lakernote**
 
 ---
 

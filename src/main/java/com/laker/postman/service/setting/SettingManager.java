@@ -273,42 +273,44 @@ public class SettingManager {
     }
 
     /**
-     * 自动检查更新的间隔时间（小时）
+     * 获取更新检查频率
+     * 支持的值：startup（每次启动）、daily（每日）、weekly（每周）、monthly（每月）
      */
-    public static long getAutoUpdateCheckIntervalHours() {
-        String val = props.getProperty("auto_update_check_interval_hours");
-        if (val != null) {
-            try {
-                return Long.parseLong(val);
-            } catch (NumberFormatException e) {
-                return 24L;
-            }
+    public static String getAutoUpdateCheckFrequency() {
+        String val = props.getProperty("auto_update_check_frequency");
+        if (val != null && (val.equals("startup") || val.equals("daily") || val.equals("weekly") || val.equals("monthly"))) {
+            return val;
         }
-        return 24L; // 默认24小时
+        return "daily"; // 默认每日
     }
 
-    public static void setAutoUpdateCheckIntervalHours(long hours) {
-        props.setProperty("auto_update_check_interval_hours", String.valueOf(hours));
-        save();
+    public static void setAutoUpdateCheckFrequency(String frequency) {
+        if (frequency != null && (frequency.equals("startup") || frequency.equals("daily") || frequency.equals("weekly") || frequency.equals("monthly"))) {
+            props.setProperty("auto_update_check_frequency", frequency);
+            save();
+        }
     }
 
     /**
-     * 启动时延迟检查更新的时间（秒）
+     * 获取上次检查更新的时间戳（毫秒）
      */
-    public static long getAutoUpdateStartupDelaySeconds() {
-        String val = props.getProperty("auto_update_startup_delay_seconds");
+    public static long getLastUpdateCheckTime() {
+        String val = props.getProperty("last_update_check_time");
         if (val != null) {
             try {
                 return Long.parseLong(val);
             } catch (NumberFormatException e) {
-                return 2L;
+                return 0L;
             }
         }
-        return 2L; // 默认2秒
+        return 0L; // 0表示从未检查过
     }
 
-    public static void setAutoUpdateStartupDelaySeconds(long seconds) {
-        props.setProperty("auto_update_startup_delay_seconds", String.valueOf(seconds));
+    /**
+     * 设置上次检查更新的时间戳（毫秒）
+     */
+    public static void setLastUpdateCheckTime(long timestamp) {
+        props.setProperty("last_update_check_time", String.valueOf(timestamp));
         save();
     }
 

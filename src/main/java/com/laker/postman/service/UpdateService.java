@@ -37,11 +37,4 @@ public class UpdateService {
                 });
     }
 
-    /**
-     * 停止自动更新服务
-     */
-    @PreDestroy
-    public void shutdown() {
-        autoUpdateManager.stopBackgroundCheck();
-    }
 }

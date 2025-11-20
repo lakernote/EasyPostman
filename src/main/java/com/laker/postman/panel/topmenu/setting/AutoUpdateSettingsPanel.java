@@ -7,17 +7,18 @@ import com.laker.postman.util.NotificationUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
- * 现代化系统设置面板 - 自动更新等系统级配置
+ * 自动更新设置面板
  */
-public class SystemSettingsPanelModern extends ModernSettingsPanel {
+public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
     private static final int FIELD_SPACING = 8;
     private static final int SECTION_SPACING = 12;
 
     private JCheckBox autoUpdateCheckBox;
-    private JTextField autoUpdateIntervalField;
-    private JTextField autoUpdateStartupDelayField;
+    private JComboBox<String> updateFrequencyComboBox;
     private JComboBox<String> updateSourceComboBox;
 
     @Override
@@ -40,26 +41,46 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
         autoUpdateSection.add(autoUpdateRow);
         autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 更新间隔
-        autoUpdateIntervalField = new JTextField(10);
-        autoUpdateIntervalField.setText(String.valueOf(SettingManager.getAutoUpdateCheckIntervalHours()));
-        JPanel intervalRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_INTERVAL_TOOLTIP),
-                autoUpdateIntervalField
+        // 检查频率
+        String[] frequencyOptions = {
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY_STARTUP),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY_DAILY),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY_WEEKLY),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY_MONTHLY)
+        };
+        updateFrequencyComboBox = new JComboBox<>(frequencyOptions);
+
+        // 根据当前设置选择对应的选项
+        String currentFrequency = SettingManager.getAutoUpdateCheckFrequency();
+        switch (currentFrequency) {
+            case "startup" -> updateFrequencyComboBox.setSelectedIndex(0);
+            case "daily" -> updateFrequencyComboBox.setSelectedIndex(1);
+            case "weekly" -> updateFrequencyComboBox.setSelectedIndex(2);
+            case "monthly" -> updateFrequencyComboBox.setSelectedIndex(3);
+            default -> updateFrequencyComboBox.setSelectedIndex(1); // daily
+        }
+
+        JPanel frequencyRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY_TOOLTIP),
+                updateFrequencyComboBox
         );
-        autoUpdateSection.add(intervalRow);
+        autoUpdateSection.add(frequencyRow);
         autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 启动时延迟
-        autoUpdateStartupDelayField = new JTextField(10);
-        autoUpdateStartupDelayField.setText(String.valueOf(SettingManager.getAutoUpdateStartupDelaySeconds()));
-        JPanel startupDelayRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_STARTUP_DELAY_TOOLTIP),
-                autoUpdateStartupDelayField
+        // 上次检查时间
+        long lastCheckTime = SettingManager.getLastUpdateCheckTime();
+        String lastCheckTimeStr = lastCheckTime > 0
+                ? new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(lastCheckTime))
+                : I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_NEVER_CHECKED);
+
+        JLabel lastCheckTimeLabel = new JLabel(lastCheckTimeStr);
+        JPanel lastCheckRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_LAST_CHECK_TIME),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_LAST_CHECK_TIME_TOOLTIP),
+                lastCheckTimeLabel
         );
-        autoUpdateSection.add(startupDelayRow);
+        autoUpdateSection.add(lastCheckRow);
         autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 更新源选择
@@ -88,26 +109,10 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(autoUpdateSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        setupValidators();
-
         // 跟踪所有组件的初始值
         trackComponentValue(autoUpdateCheckBox);
-        trackComponentValue(autoUpdateIntervalField);
-        trackComponentValue(autoUpdateStartupDelayField);
+        trackComponentValue(updateFrequencyComboBox);
         trackComponentValue(updateSourceComboBox);
-    }
-
-    private void setupValidators() {
-        setupValidator(
-                autoUpdateIntervalField,
-                this::isPositiveInteger,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_UPDATE_INTERVAL_ERROR)
-        );
-        setupValidator(
-                autoUpdateStartupDelayField,
-                s -> isInteger(s) && Integer.parseInt(s) >= 0,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_STARTUP_DELAY_ERROR)
-        );
     }
 
     @Override
@@ -145,18 +150,19 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
     }
 
     private void saveSettings(boolean closeAfterSave) {
-        // 验证所有字段
-        if (!validateAllFields()) {
-            NotificationUtil.showError(
-            I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
-            return;
-        }
-
         try {
             // 保存自动更新设置
             SettingManager.setAutoUpdateCheckEnabled(autoUpdateCheckBox.isSelected());
-            SettingManager.setAutoUpdateCheckIntervalHours(Integer.parseInt(autoUpdateIntervalField.getText().trim()));
-            SettingManager.setAutoUpdateStartupDelaySeconds(Integer.parseInt(autoUpdateStartupDelayField.getText().trim()));
+
+            // 保存检查频率
+            String selectedFrequency = switch (updateFrequencyComboBox.getSelectedIndex()) {
+                case 0 -> "startup";
+                case 1 -> "daily";
+                case 2 -> "weekly";
+                case 3 -> "monthly";
+                default -> "daily";
+            };
+            SettingManager.setAutoUpdateCheckFrequency(selectedFrequency);
 
             // 保存更新源设置
             String selectedSource = switch (updateSourceComboBox.getSelectedIndex()) {
@@ -169,8 +175,7 @@ public class SystemSettingsPanelModern extends ModernSettingsPanel {
             // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(autoUpdateCheckBox);
-            trackComponentValue(autoUpdateIntervalField);
-            trackComponentValue(autoUpdateStartupDelayField);
+            trackComponentValue(updateFrequencyComboBox);
             trackComponentValue(updateSourceComboBox);
             setHasUnsavedChanges(false);
 

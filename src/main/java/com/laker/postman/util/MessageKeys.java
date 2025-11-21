@@ -304,6 +304,7 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED = "functional.status.pre_script_failed";
     public static final String FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED = "functional.status.sse_batch_not_supported";
     public static final String FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED = "functional.status.ws_batch_not_supported";
+    public static final String FUNCTIONAL_STATUS_SKIPPED = "functional.status.skipped";
 
     // ============ 工作区相关 ============
     public static final String WORKSPACE_NEW = "workspace.new";
@@ -486,6 +487,19 @@ public final class MessageKeys {
     public static final String COLLECTIONS_PASTE_SUCCESS = "collections.paste_success";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP = "collections.menu.export_postman.select_group";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE = "collections.menu.export_postman.dialog_title";
+    public static final String COLLECTIONS_MENU_ADD_TO_FUNCTIONAL = "collections.menu.add_to_functional";
+
+    // Functional Test Table
+    public static final String FUNCTIONAL_TABLE_COLUMN_SELECT = "functional.table.column.select";
+    public static final String FUNCTIONAL_TABLE_COLUMN_NAME = "functional.table.column.name";
+    public static final String FUNCTIONAL_TABLE_COLUMN_URL = "functional.table.column.url";
+    public static final String FUNCTIONAL_TABLE_COLUMN_METHOD = "functional.table.column.method";
+    public static final String FUNCTIONAL_TABLE_COLUMN_STATUS = "functional.table.column.status";
+    public static final String FUNCTIONAL_TABLE_COLUMN_TIME = "functional.table.column.time";
+    public static final String FUNCTIONAL_TABLE_COLUMN_RESULT = "functional.table.column.result";
+    public static final String FUNCTIONAL_MENU_VIEW_DETAIL = "functional.menu.view_detail";
+    public static final String FUNCTIONAL_MENU_REMOVE = "functional.menu.remove";
+    public static final String FUNCTIONAL_MENU_REMOVE_SELECTED = "functional.menu.remove_selected";
 
     // ============ 集合导出导入相关 ============
     public static final String COLLECTIONS_EXPORT_DIALOG_TITLE = "collections.export.dialog_title";

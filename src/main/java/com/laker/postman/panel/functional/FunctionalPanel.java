@@ -1,15 +1,19 @@
 package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
-import com.laker.postman.panel.functional.table.RunnerTableModel;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
 import com.laker.postman.panel.sidebar.ConsolePanel;
+import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
@@ -25,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -32,7 +38,7 @@ import java.util.stream.IntStream;
 @Slf4j
 public class FunctionalPanel extends SingletonBasePanel {
     private JTable table;
-    private RunnerTableModel tableModel;
+    private FunctionalRunnerTableModel tableModel;
     private StartButton runBtn;
     private StopButton stopBtn;    // 停止按钮
     private JLabel timeLabel;     // 执行时间标签
@@ -57,9 +63,11 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
-        mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
+        // 添加内边距
+        executionPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
         mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_REQUEST_CONFIG), new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
@@ -72,7 +80,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 12));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
         // 初始化 CSV 数据面板
         csvDataPanel = new CsvDataPanel();
@@ -202,7 +210,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         clearRunResults(rowCount);
         runBtn.setEnabled(false);
 
-
         progressLabel.setText("0/" + totalExecutions);
 
         startTime = System.currentTimeMillis(); // 记录开始时间
@@ -292,7 +299,37 @@ public class FunctionalPanel extends SingletonBasePanel {
     private int executeAndRecordRequest(RunnerRowData row, Map<String, String> currentCsvRow,
                                         IterationResult iterationResult, int totalFinished,
                                         int selectedCount, int iterations) {
+        // 找到当前行的索引
+        int rowIndex = -1;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            if (tableModel.getRow(i) == row) {
+                rowIndex = i;
+                break;
+            }
+        }
+
+        // 高亮当前执行的行
+        final int currentRowIndex = rowIndex;
+        if (currentRowIndex >= 0) {
+            SwingUtilities.invokeLater(() -> {
+                table.setRowSelectionInterval(currentRowIndex, currentRowIndex);
+                table.scrollRectToVisible(table.getCellRect(currentRowIndex, 0, true));
+            });
+        }
+
         BatchResult result = executeSingleRequestWithCsv(row, currentCsvRow);
+
+        // 更新表格中的执行结果
+        if (currentRowIndex >= 0) {
+            row.status = result.status;
+            row.cost = result.cost;
+            row.assertion = result.assertion;
+            row.response = result.resp;
+
+            SwingUtilities.invokeLater(() -> {
+                tableModel.fireTableRowsUpdated(currentRowIndex, currentRowIndex);
+            });
+        }
 
         // 记录请求结果到执行历史
         RequestResult requestResult = new RequestResult(
@@ -326,6 +363,9 @@ public class FunctionalPanel extends SingletonBasePanel {
             // 如果执行完成，切换到结果面板
             if (!isStopped) {
                 mainTabbedPane.setSelectedIndex(1); // 切换到执行结果面板
+
+                // 自动选择第一个迭代节点并展开详细信息
+                SwingUtilities.invokeLater(() -> resultsPanel.selectFirstIteration());
             }
         });
     }
@@ -381,9 +421,11 @@ public class FunctionalPanel extends SingletonBasePanel {
         if (!preOk) {
             status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED);
         } else if (HttpUtil.isSSERequest(req)) {
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED);
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+            assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED);
         } else if (item.getProtocol().isWebSocketProtocol()) {
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED);
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+            assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED);
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
@@ -477,7 +519,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     }
 
     private JScrollPane createTablePanel() {
-        tableModel = new RunnerTableModel();
+        tableModel = new FunctionalRunnerTableModel();
         table = new JTable(tableModel) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -487,17 +529,33 @@ public class FunctionalPanel extends SingletonBasePanel {
         table.setRowHeight(28);
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+
+        // 添加表头点击监听器，点击"选择"列表头时全选/反选
+        table.getTableHeader().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int column = table.columnAtPoint(e.getPoint());
+                if (column == 0) { // 点击选择列
+                    boolean hasSelected = tableModel.hasSelectedRows();
+                    tableModel.setAllSelected(!hasSelected);
+                }
+            }
+        });
+
         setTableColumnWidths();
         setTableRenderers();
-        table.setGridColor(new Color(220, 220, 220));
-        table.setSelectionBackground(new Color(220, 235, 252));
-        table.setSelectionForeground(Color.BLACK);
+
+        // 使用 ModernColors 统一配色
+        table.setGridColor(ModernColors.TABLE_GRID_COLOR);
+        table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
+        table.setSelectionForeground(ModernColors.TEXT_PRIMARY);
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setFillsViewportHeight(true);
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
         table.setTransferHandler(new TableRowTransferHandler(table));
+
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         return scrollPane;
@@ -505,17 +563,33 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     private void setTableColumnWidths() {
         if (table.getColumnModel().getColumnCount() > 0) {
+            // Select column
             table.getColumnModel().getColumn(0).setMinWidth(50);
             table.getColumnModel().getColumn(0).setMaxWidth(60);
             table.getColumnModel().getColumn(0).setPreferredWidth(55);
+            // Method column
             table.getColumnModel().getColumn(3).setMinWidth(60);
             table.getColumnModel().getColumn(3).setMaxWidth(80);
             table.getColumnModel().getColumn(3).setPreferredWidth(70);
+            // Status column
+            table.getColumnModel().getColumn(4).setMinWidth(60);
+            table.getColumnModel().getColumn(4).setMaxWidth(80);
+            table.getColumnModel().getColumn(4).setPreferredWidth(70);
+            // Time column
+            table.getColumnModel().getColumn(5).setMinWidth(70);
+            table.getColumnModel().getColumn(5).setMaxWidth(100);
+            table.getColumnModel().getColumn(5).setPreferredWidth(80);
+            // Result column - 只显示 emoji，可以更窄
+            table.getColumnModel().getColumn(6).setMinWidth(50);
+            table.getColumnModel().getColumn(6).setMaxWidth(70);
+            table.getColumnModel().getColumn(6).setPreferredWidth(60);
         }
     }
 
     private void setTableRenderers() {
         table.getColumnModel().getColumn(3).setCellRenderer(createMethodRenderer());
+        table.getColumnModel().getColumn(4).setCellRenderer(createStatusRenderer());
+        table.getColumnModel().getColumn(6).setCellRenderer(createResultRenderer());
     }
 
     private DefaultTableCellRenderer createMethodRenderer() {
@@ -532,10 +606,175 @@ public class FunctionalPanel extends SingletonBasePanel {
         };
     }
 
+    private DefaultTableCellRenderer createStatusRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                if (value != null && !"-".equals(value)) {
+                    applyStatusColors(c, value.toString());
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    /**
+     * 根据状态码应用颜色 - 只设置文字颜色
+     */
+    private void applyStatusColors(Component c, String status) {
+        Color foreground = ModernColors.TEXT_PRIMARY;
+
+        // 检查是否是"跳过"状态
+        String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+        if (skippedText.equals(status)) {
+            foreground = ModernColors.TEXT_HINT;
+        } else {
+            // 尝试解析状态码
+            try {
+                int code = Integer.parseInt(status);
+                if (code >= 200 && code < 300) {
+                    // 成功：使用绿色
+                    foreground = ModernColors.SUCCESS_DARK;
+                } else if (code >= 400 && code < 500) {
+                    // 客户端错误：使用警告色
+                    foreground = ModernColors.WARNING_DARKER;
+                } else if (code >= 500) {
+                    // 服务器错误：使用错误色
+                    foreground = ModernColors.ERROR_DARKER;
+                }
+            } catch (NumberFormatException e) {
+                // 非数字状态（如错误消息）
+                foreground = ModernColors.ERROR_DARK;
+            }
+        }
+
+        // 只设置文字颜色
+        c.setForeground(foreground);
+    }
+
+    private DefaultTableCellRenderer createResultRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                // 获取状态列的值来判断是否跳过
+                String status = "";
+                try {
+                    Object statusValue = table.getValueAt(row, 4); // 状态列是第4列
+                    if (statusValue != null) {
+                        status = statusValue.toString();
+                    }
+                } catch (Exception e) {
+                    // 忽略异常
+                }
+
+                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
+                if (value != null && !"-".equals(value)) {
+                    // 检查状态列是否为"跳过"
+                    if (skippedText.equals(status)) {
+                        setText("💨"); // 跳过符号
+                        c.setForeground(ModernColors.TEXT_HINT); // 使用统一的灰色
+                    } else if ("Pass".equalsIgnoreCase(value.toString()) || value.toString().isEmpty()) {
+                        setText("✅");
+                    } else {
+                        setText("❌");
+                    }
+                } else {
+                    c.setForeground(ModernColors.TEXT_DISABLED);
+                }
+
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
     @Override
     protected void registerListeners() {
-        // No listeners to register for this panel
-        // Event handling is done through button action listeners in createButtonPanel()
+        // 添加表格鼠标监听器
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) { // 双击
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        showRequestDetail(row);
+                    }
+                } else if (SwingUtilities.isRightMouseButton(e)) { // 右键
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        table.setRowSelectionInterval(row, row);
+                        showTableContextMenu(e, row);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 显示请求详情
+     */
+    private void showRequestDetail(int rowIndex) {
+        RunnerRowData row = tableModel.getRow(rowIndex);
+        if (row != null && row.requestItem != null) {
+            // 打开请求编辑面板
+            RequestEditPanel editPanel =
+                    SingletonFactory.getInstance(RequestEditPanel.class);
+            editPanel.showOrCreateTab(row.requestItem);
+
+            // 切换到Collections标签
+            SidebarTabPanel sidebarPanel =
+                    SingletonFactory.getInstance(SidebarTabPanel.class);
+            sidebarPanel.getTabbedPane().setSelectedIndex(0);
+        }
+    }
+
+    /**
+     * 显示表格右键菜单
+     */
+    private void showTableContextMenu(java.awt.event.MouseEvent e, int rowIndex) {
+        JPopupMenu menu = new JPopupMenu();
+
+        // 查看详情
+        JMenuItem viewItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_VIEW_DETAIL));
+        viewItem.setIcon(new FlatSVGIcon("icons/detail.svg", 16, 16));
+        viewItem.addActionListener(evt -> showRequestDetail(rowIndex));
+        menu.add(viewItem);
+
+        menu.addSeparator();
+
+        // 移除当前行
+        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_REMOVE));
+        deleteItem.setIcon(new FlatSVGIcon("icons/close.svg", 16, 16));
+        deleteItem.addActionListener(evt -> {
+            tableModel.removeRow(rowIndex);
+            if (tableModel.getRowCount() == 0) {
+                runBtn.setEnabled(false);
+            }
+        });
+        menu.add(deleteItem);
+
+        // 移除选中项（如果有选中的行）
+        if (tableModel.hasSelectedRows()) {
+            JMenuItem deleteSelectedItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_REMOVE_SELECTED));
+            deleteSelectedItem.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+            deleteSelectedItem.addActionListener(evt -> {
+                int removed = tableModel.removeSelectedRows();
+                if (removed > 0) {
+                    if (tableModel.getRowCount() == 0) {
+                        runBtn.setEnabled(false);
+                    }
+                }
+            });
+            menu.add(deleteSelectedItem);
+        }
+
+        menu.show(e.getComponent(), e.getX(), e.getY());
     }
 
     // 弹出选择请求/分组对话框

@@ -1,9 +1,11 @@
 package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.BatchExecutionHistory;
 import com.laker.postman.model.IterationResult;
 import com.laker.postman.model.RequestResult;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -11,6 +13,7 @@ import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -31,7 +34,6 @@ public class ExecutionResultsPanel extends JPanel {
     private JTabbedPane detailTabs;
     private transient BatchExecutionHistory executionHistory; // 当前执行历史记录
     private TreePath lastSelectedPath; // 保存最后选中的路径
-    private JLabel statusLabel; // 状态标签
     private int lastSelectedRequestDetailTabIndex = 0; // 记住用户在RequestDetail中选择的tab索引
 
     public ExecutionResultsPanel() {
@@ -50,12 +52,18 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // 添加复合边框：内部间距 + 外部边框
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 8, 8, 8), // 内边距
+                BorderFactory.createMatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY) // 外边框
+        ));
 
         // 创建分割面板
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(330);
-        splitPane.setResizeWeight(0.3);
+        splitPane.setDividerLocation(350);
+        splitPane.setResizeWeight(0.35);
+        splitPane.setDividerSize(6);
+        splitPane.setBorder(null);
 
         // 左侧：结果树
         createResultsTree();
@@ -66,9 +74,6 @@ public class ExecutionResultsPanel extends JPanel {
         splitPane.setRightComponent(detailPanel);
 
         add(splitPane, BorderLayout.CENTER);
-
-        // 添加状态栏
-        createStatusBar();
     }
 
     private void createResultsTree() {
@@ -79,7 +84,7 @@ public class ExecutionResultsPanel extends JPanel {
         resultsTree.setShowsRootHandles(true);
         resultsTree.setCellRenderer(new ExecutionResultTreeCellRenderer());
         resultsTree.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        resultsTree.setRowHeight(24);
+        resultsTree.setRowHeight(26);
         resultsTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
         // 启用工具提示
@@ -88,40 +93,52 @@ public class ExecutionResultsPanel extends JPanel {
 
     private JPanel createTreePanel() {
         JPanel treePanel = new JPanel(new BorderLayout());
-        treePanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY)));
+        treePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        // 添加标题栏（包含标题和工具按钮）
+        JPanel headerPanel = createTreeHeaderPanel();
+        treePanel.add(headerPanel, BorderLayout.NORTH);
 
         JScrollPane treeScrollPane = new JScrollPane(resultsTree);
-        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16); // 改善滚动体验
+        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        treeScrollPane.setBorder(BorderFactory.createEmptyBorder());
         treePanel.add(treeScrollPane, BorderLayout.CENTER);
-
-        // 添加工具栏
-        JPanel toolBar = createToolBar();
-        treePanel.add(toolBar, BorderLayout.SOUTH);
 
         return treePanel;
     }
 
+    private JPanel createTreeHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+
+        // 左侧标题
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        // 右侧工具按钮
+        JPanel toolBar = createToolBar();
+        headerPanel.add(toolBar, BorderLayout.EAST);
+
+        return headerPanel;
+    }
+
     private JPanel createToolBar() {
-        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
         toolBar.setOpaque(false);
 
-        JButton expandAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_EXPAND_ALL));
-        expandAllBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        expandAllBtn.setIcon(new FlatSVGIcon("icons/expand.svg", 12, 12));
+        // 只使用图标按钮，更简洁
+        JButton expandAllBtn = createIconButton("icons/expand.svg",
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
         expandAllBtn.addActionListener(e -> expandAll());
-        expandAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
 
-        JButton collapseAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_COLLAPSE_ALL));
-        collapseAllBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        collapseAllBtn.setIcon(new FlatSVGIcon("icons/collapse.svg", 12, 12));
+        JButton collapseAllBtn = createIconButton("icons/collapse.svg",
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
         collapseAllBtn.addActionListener(e -> collapseAll());
-        collapseAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
 
-        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        refreshBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 12, 12));
+        JButton refreshBtn = createIconButton("icons/refresh.svg",
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
         refreshBtn.addActionListener(e -> refreshData());
-        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
 
         toolBar.add(expandAllBtn);
         toolBar.add(collapseAllBtn);
@@ -130,14 +147,24 @@ public class ExecutionResultsPanel extends JPanel {
         return toolBar;
     }
 
+    private JButton createIconButton(String iconPath, String tooltip) {
+        JButton button = new JButton(new FlatSVGIcon(iconPath, 14, 14));
+        button.setToolTipText(tooltip);
+        button.setPreferredSize(new Dimension(24, 24));
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        return button;
+    }
+
     private void createDetailPanel() {
         detailPanel = new JPanel(new BorderLayout());
-        detailPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_INFO)));
+        detailPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         // 创建详情选项卡
         detailTabs = new JTabbedPane();
         detailTabs.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        detailTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT); // 支持滚动标签
+        detailTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
         // 默认显示欢迎页面
         showWelcomePanel();
@@ -157,19 +184,6 @@ public class ExecutionResultsPanel extends JPanel {
         });
     }
 
-    private void createStatusBar() {
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        statusBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
-                BorderFactory.createEmptyBorder(2, 5, 2, 5)
-        ));
-
-        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_READY));
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        statusBar.add(statusLabel);
-
-        add(statusBar, BorderLayout.SOUTH);
-    }
 
     private void registerListeners() {
         // 鼠标事件 - 优化灵敏度
@@ -203,7 +217,6 @@ public class ExecutionResultsPanel extends JPanel {
             TreePath newPath = e.getNewLeadSelectionPath();
             if (newPath != null) {
                 lastSelectedPath = newPath;
-                updateStatus();
                 // 延迟显示详情，避免频繁刷新
                 SwingUtilities.invokeLater(() -> {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) newPath.getLastPathComponent();
@@ -257,32 +270,16 @@ public class ExecutionResultsPanel extends JPanel {
         }
     }
 
-    private void updateStatus() {
-        if (lastSelectedPath != null) {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) lastSelectedPath.getLastPathComponent();
-            Object userObject = node.getUserObject();
-
-            if (userObject instanceof IterationNodeData) {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_ITERATION_SELECTED));
-            } else if (userObject instanceof RequestNodeData) {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REQUEST_SELECTED));
-            } else {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_OVERVIEW_SELECTED));
-            }
-        }
-    }
 
     /**
      * 更新执行历史数据
      */
     public void updateExecutionHistory(BatchExecutionHistory history) {
         SwingUtilities.invokeLater(() -> {
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_UPDATING));
             this.executionHistory = history;
             // 重置tab索引为第一个，因为这是新的执行历史数据
             lastSelectedRequestDetailTabIndex = 0;
             rebuildTree();
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_UPDATED));
         });
     }
 
@@ -325,6 +322,25 @@ public class ExecutionResultsPanel extends JPanel {
         restoreSelection();
     }
 
+    /**
+     * 选择根节点（执行结果摘要）并展开详细信息
+     * 用于执行完成后自动显示结果
+     */
+    public void selectFirstIteration() {
+        SwingUtilities.invokeLater(() -> {
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+            if (root.getChildCount() > 0) {
+                // 选中根节点（显示总耗时、迭代数等摘要信息）
+                TreePath rootPath = new TreePath(root);
+
+                // 选中并展开根节点
+                resultsTree.setSelectionPath(rootPath);
+                resultsTree.scrollPathToVisible(rootPath);
+                resultsTree.expandPath(rootPath);
+            }
+        });
+    }
+
     private void restoreSelection() {
         if (lastSelectedPath != null) {
             // 尝试找到相同的节点路径并选中
@@ -348,14 +364,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void refreshData() {
         if (executionHistory != null) {
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REFRESHING));
-            // 模拟刷新延迟
-            Timer timer = new Timer(100, e -> {
-                rebuildTree();
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REFRESHED));
-            });
-            timer.setRepeats(false);
-            timer.start();
+            rebuildTree();
         }
     }
 
@@ -537,13 +546,11 @@ public class ExecutionResultsPanel extends JPanel {
 
         @Override
         public String toString() {
-            String status = "Pass".equals(request.getAssertion()) ? "✓" : "✗";
-            return String.format("%s %s %s (%s, %dms)",
-                    status,
-                    request.getMethod(),
+
+            return String.format("%s | %s | %s",
                     request.getRequestName(),
-                    request.getStatus(),
-                    request.getCost());
+                    request.getMethod(),
+                    request.getStatus());
         }
     }
 
@@ -560,14 +567,21 @@ public class ExecutionResultsPanel extends JPanel {
             if (userObject instanceof IterationNodeData) {
                 setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
             } else if (userObject instanceof RequestNodeData requestData) {
-                // 根据断言结果设置前景色和图标
-                if ("Pass".equals(requestData.request.getAssertion())) {
-                    // 成功：绿色文字和绿色勾选图标
+                // 检查是否是跳过状态
+                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
+                if (skippedText.equals(requestData.request.getStatus())) {
+                    // 跳过状态：灰色文字
+                    if (!sel) {
+                        setForeground(ModernColors.TEXT_HINT); // 灰色
+                    }
+                } else if ("Pass".equals(requestData.request.getAssertion())) {
+                    // 成功：绿色文字
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(40, 167, 69)); // 绿色
                     }
                 } else if (requestData.request.getAssertion() != null && !requestData.request.getAssertion().isEmpty()) {
-                    // 失败：红色文字和红色取消图标
+                    // 失败：红色文字
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(220, 53, 69)); // 红色
                     }
@@ -633,34 +647,195 @@ public class ExecutionResultsPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_METHOD),
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_STATUS),
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_TIME),
-                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION),
-                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_TIMESTAMP)
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_COLUMN_RESULT)
         };
 
         java.util.List<Object[]> tableData = new java.util.ArrayList<>();
         for (IterationResult iteration : executionHistory.getIterations()) {
             for (RequestResult request : iteration.getRequestResults()) {
                 Object[] row = {
-                        I18nUtil.getMessage("functional.iteration.round.prefix") + (iteration.getIterationIndex() + 1) + I18nUtil.getMessage("functional.iteration.round.suffix"),
+                        "#" + (iteration.getIterationIndex() + 1),
                         request.getRequestName(),
                         request.getMethod(),
                         request.getStatus(),
-                        request.getCost() + "ms",
-                        request.getAssertion(),
-                        formatTimestamp(request.getTimestamp())
+                        request.getCost(), // 保存原始数值，渲染器会格式化
+                        request.getAssertion()
                 };
                 tableData.add(row);
             }
         }
 
         Object[][] data = tableData.toArray(new Object[0][]);
-        JTable table = new JTable(data, columnNames);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
-        table.setRowHeight(22);
+        JTable table = new JTable(data, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // 所有单元格都不可编辑
+            }
+        };
+
+        // 应用 ModernColors 配色方案
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        table.setRowHeight(28);
+        table.setGridColor(ModernColors.TABLE_GRID_COLOR);
+        table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
+        table.setSelectionForeground(ModernColors.TEXT_PRIMARY);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
+        // 设置列宽
+        setTableColumnWidths(table);
+
+        // 设置渲染器
+        setTableRenderers(table);
+
         return table;
+    }
+
+    private void setTableColumnWidths(JTable table) {
+        if (table.getColumnModel().getColumnCount() > 0) {
+            // 迭代列
+            table.getColumnModel().getColumn(0).setMinWidth(50);
+            table.getColumnModel().getColumn(0).setMaxWidth(70);
+            table.getColumnModel().getColumn(0).setPreferredWidth(60);
+            // 方法列
+            table.getColumnModel().getColumn(2).setMinWidth(60);
+            table.getColumnModel().getColumn(2).setMaxWidth(80);
+            table.getColumnModel().getColumn(2).setPreferredWidth(70);
+            // 状态列
+            table.getColumnModel().getColumn(3).setMinWidth(60);
+            table.getColumnModel().getColumn(3).setMaxWidth(80);
+            table.getColumnModel().getColumn(3).setPreferredWidth(70);
+            // 耗时列
+            table.getColumnModel().getColumn(4).setMinWidth(70);
+            table.getColumnModel().getColumn(4).setMaxWidth(100);
+            table.getColumnModel().getColumn(4).setPreferredWidth(85);
+            // 结果列
+            table.getColumnModel().getColumn(5).setMinWidth(50);
+            table.getColumnModel().getColumn(5).setMaxWidth(70);
+            table.getColumnModel().getColumn(5).setPreferredWidth(60);
+        }
+    }
+
+    private void setTableRenderers(JTable table) {
+        // 方法列渲染器
+        table.getColumnModel().getColumn(2).setCellRenderer(createMethodRenderer());
+        // 状态列渲染器
+        table.getColumnModel().getColumn(3).setCellRenderer(createStatusRenderer());
+        // 耗时列渲染器
+        table.getColumnModel().getColumn(4).setCellRenderer(createTimeRenderer());
+        // 结果列渲染器
+        table.getColumnModel().getColumn(5).setCellRenderer(createResultRenderer());
+    }
+
+    private DefaultTableCellRenderer createMethodRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null) {
+                    String color = HttpUtil.getMethodColor(value.toString());
+                    c.setForeground(Color.decode(color));
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    private DefaultTableCellRenderer createStatusRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                                                                    boolean isSelected, boolean hasFocus, int row, int column) {
+                java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null && !"-".equals(value)) {
+                    applyStatusColors(c, value.toString());
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    private void applyStatusColors(java.awt.Component c, String status) {
+        java.awt.Color foreground = ModernColors.TEXT_PRIMARY;
+
+        // 检查是否是"跳过"状态
+        String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+        if (skippedText.equals(status)) {
+            foreground = ModernColors.TEXT_HINT;
+        } else {
+            try {
+                int code = Integer.parseInt(status);
+                if (code >= 200 && code < 300) {
+                    foreground = ModernColors.SUCCESS_DARK;
+                } else if (code >= 400 && code < 500) {
+                    foreground = ModernColors.WARNING_DARKER;
+                } else if (code >= 500) {
+                    foreground = ModernColors.ERROR_DARKER;
+                }
+            } catch (NumberFormatException e) {
+                foreground = ModernColors.ERROR_DARK;
+            }
+        }
+        c.setForeground(foreground);
+    }
+
+    private DefaultTableCellRenderer createTimeRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                                                                    boolean isSelected, boolean hasFocus, int row, int column) {
+                if (value instanceof Long) {
+                    long cost = (Long) value;
+                    value = TimeDisplayUtil.formatElapsedTime(cost);
+                }
+                java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    private DefaultTableCellRenderer createResultRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                // 获取状态列的值
+                String status = "";
+                try {
+                    Object statusValue = table.getValueAt(row, 3);
+                    if (statusValue != null) {
+                        status = statusValue.toString();
+                    }
+                } catch (Exception e) {
+                    // 忽略
+                }
+
+                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
+                if (value != null && !"-".equals(value)) {
+                    if (skippedText.equals(status)) {
+                        setText("💨");
+                        c.setForeground(ModernColors.TEXT_HINT);
+                    } else if ("Pass".equalsIgnoreCase(value.toString()) || value.toString().isEmpty()) {
+                        setText("✅");
+                    } else {
+                        setText("❌");
+                    }
+                } else {
+                    c.setForeground(ModernColors.TEXT_DISABLED);
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
     }
 
     private JPanel createCsvDataPanel(java.util.Map<String, String> csvData) {

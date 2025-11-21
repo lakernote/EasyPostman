@@ -14,6 +14,8 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
+import com.laker.postman.panel.functional.FunctionalPanel;
+import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsPersistence;
@@ -253,6 +255,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
                     menu.addSeparator();
 
+                    // 添加到功能测试（可以添加整个分组）
+                    JMenuItem addToFunctionalItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_TO_FUNCTIONAL),
+                            new FlatSVGIcon("icons/functional.svg", 16, 16));
+                    addToFunctionalItem.addActionListener(e -> addSelectedRequestsToFunctionalTest());
+                    menu.add(addToFunctionalItem);
+
+                    menu.addSeparator();
+
                     // 新增请求放在第一位（更高频的操作）
                     JMenuItem addRequestItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
                             new FlatSVGIcon("icons/request.svg", 16, 16));
@@ -296,6 +306,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 }
                 // 请求节点右键菜单增加"复制"
                 if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
+                    // 添加到功能测试（支持多选）
+                    JMenuItem addToFunctionalItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_TO_FUNCTIONAL),
+                            new FlatSVGIcon("icons/functional.svg", 16, 16));
+                    addToFunctionalItem.addActionListener(e -> addSelectedRequestsToFunctionalTest());
+                    menu.add(addToFunctionalItem);
+                    menu.addSeparator();
+
                     // 复制（直接在当前位置下方创建副本，支持多选）
                     JMenuItem duplicateItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                             new FlatSVGIcon("icons/duplicate.svg", 16, 16));
@@ -1404,5 +1421,43 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         }
 
         return false;
+    }
+
+    /**
+     * 将选中的请求添加到功能测试面板
+     * 支持多选
+     */
+    private void addSelectedRequestsToFunctionalTest() {
+        TreePath[] selectedPaths = requestTree.getSelectionPaths();
+        if (selectedPaths == null || selectedPaths.length == 0) {
+            return;
+        }
+
+        List<HttpRequestItem> requestsToAdd = new ArrayList<>();
+        for (TreePath path : selectedPaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            collectRequestsRecursively(node, requestsToAdd);
+        }
+
+        if (requestsToAdd.isEmpty()) {
+            return;
+        }
+
+        // 添加到功能测试面板
+        try {
+            FunctionalPanel functionalPanel =
+                    SingletonFactory.getInstance(FunctionalPanel.class);
+            functionalPanel.loadRequests(requestsToAdd);
+
+            // 切换到功能测试Tab
+            SidebarTabPanel sidebarPanel =
+                    SingletonFactory.getInstance(SidebarTabPanel.class);
+            JTabbedPane tabbedPane = sidebarPanel.getTabbedPane();
+            // 功能测试Tab索引：0=集合, 1=环境, 2=工作区, 3=功能测试
+            tabbedPane.setSelectedIndex(3);
+
+        } catch (Exception e) {
+            log.error("添加请求到功能测试失败", e);
+        }
     }
 }

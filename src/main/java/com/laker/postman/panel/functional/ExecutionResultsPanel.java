@@ -93,7 +93,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private JPanel createTreePanel() {
         JPanel treePanel = new JPanel(new BorderLayout());
-        treePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
+        treePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 添加标题栏（包含标题和工具按钮）
         JPanel headerPanel = createTreeHeaderPanel();

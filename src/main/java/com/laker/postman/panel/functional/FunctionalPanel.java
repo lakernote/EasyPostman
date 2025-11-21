@@ -6,6 +6,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
@@ -62,7 +63,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
-        mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
@@ -415,9 +416,11 @@ public class FunctionalPanel extends SingletonBasePanel {
         if (!preOk) {
             status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED);
         } else if (HttpUtil.isSSERequest(req)) {
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED);
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+            assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED);
         } else if (item.getProtocol().isWebSocketProtocol()) {
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED);
+            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+            assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED);
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
@@ -536,15 +539,18 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         setTableColumnWidths();
         setTableRenderers();
-        table.setGridColor(new Color(220, 220, 220));
-        table.setSelectionBackground(new Color(220, 235, 252));
-        table.setSelectionForeground(Color.BLACK);
+
+        // 使用 ModernColors 统一配色
+        table.setGridColor(ModernColors.TABLE_GRID_COLOR);
+        table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
+        table.setSelectionForeground(ModernColors.TEXT_PRIMARY);
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setFillsViewportHeight(true);
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
         table.setTransferHandler(new TableRowTransferHandler(table));
+
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         return scrollPane;
@@ -568,10 +574,10 @@ public class FunctionalPanel extends SingletonBasePanel {
             table.getColumnModel().getColumn(5).setMinWidth(70);
             table.getColumnModel().getColumn(5).setMaxWidth(100);
             table.getColumnModel().getColumn(5).setPreferredWidth(80);
-            // Result column
-            table.getColumnModel().getColumn(6).setMinWidth(80);
-            table.getColumnModel().getColumn(6).setMaxWidth(150);
-            table.getColumnModel().getColumn(6).setPreferredWidth(100);
+            // Result column - 只显示 emoji，可以更窄
+            table.getColumnModel().getColumn(6).setMinWidth(50);
+            table.getColumnModel().getColumn(6).setMaxWidth(70);
+            table.getColumnModel().getColumn(6).setPreferredWidth(60);
         }
     }
 
@@ -602,7 +608,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                 if (value != null && !"-".equals(value)) {
-                    applyStatusColors(c, value.toString(), isSelected);
+                    applyStatusColors(c, value.toString());
                 }
                 setHorizontalAlignment(CENTER);
                 return c;
@@ -611,25 +617,37 @@ public class FunctionalPanel extends SingletonBasePanel {
     }
 
     /**
-     * 根据状态码应用颜色
+     * 根据状态码应用颜色 - 只设置文字颜色
      */
-    private void applyStatusColors(Component c, String status, boolean isSelected) {
-        try {
-            int code = Integer.parseInt(status);
-            if (code >= 200 && code < 300) {
-                c.setForeground(new Color(34, 139, 34));
-                if (!isSelected) c.setBackground(new Color(240, 255, 240));
-            } else if (code >= 400 && code < 500) {
-                c.setForeground(new Color(255, 140, 0));
-                if (!isSelected) c.setBackground(new Color(255, 250, 230));
-            } else if (code >= 500) {
-                c.setForeground(new Color(220, 20, 60));
-                if (!isSelected) c.setBackground(new Color(255, 240, 245));
+    private void applyStatusColors(Component c, String status) {
+        Color foreground = ModernColors.TEXT_PRIMARY;
+
+        // 检查是否是"跳过"状态
+        String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+        if (skippedText.equals(status)) {
+            foreground = ModernColors.TEXT_HINT;
+        } else {
+            // 尝试解析状态码
+            try {
+                int code = Integer.parseInt(status);
+                if (code >= 200 && code < 300) {
+                    // 成功：使用绿色
+                    foreground = ModernColors.SUCCESS_DARK;
+                } else if (code >= 400 && code < 500) {
+                    // 客户端错误：使用警告色
+                    foreground = ModernColors.WARNING_DARKER;
+                } else if (code >= 500) {
+                    // 服务器错误：使用错误色
+                    foreground = ModernColors.ERROR_DARKER;
+                }
+            } catch (NumberFormatException e) {
+                // 非数字状态（如错误消息）
+                foreground = ModernColors.ERROR_DARK;
             }
-        } catch (NumberFormatException e) {
-            c.setForeground(Color.RED);
-            if (!isSelected) c.setBackground(new Color(255, 240, 245));
         }
+
+        // 只设置文字颜色
+        c.setForeground(foreground);
     }
 
     private DefaultTableCellRenderer createResultRenderer() {
@@ -637,15 +655,32 @@ public class FunctionalPanel extends SingletonBasePanel {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (value != null && !"-".equals(value)) {
-                    String result = value.toString();
-                    if ("Pass".equalsIgnoreCase(result) || result.isEmpty()) {
-                        c.setForeground(new Color(34, 139, 34)); // Green for Pass
-                        setText("✓ Pass");
-                    } else {
-                        c.setForeground(new Color(220, 20, 60)); // Red for Fail
-                        setText("✗ Fail");
+
+                // 获取状态列的值来判断是否跳过
+                String status = "";
+                try {
+                    Object statusValue = table.getValueAt(row, 4); // 状态列是第4列
+                    if (statusValue != null) {
+                        status = statusValue.toString();
                     }
+                } catch (Exception e) {
+                    // 忽略异常
+                }
+
+                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
+                if (value != null && !"-".equals(value)) {
+                    // 检查状态列是否为"跳过"
+                    if (skippedText.equals(status)) {
+                        setText("💨"); // 跳过符号
+                        c.setForeground(ModernColors.TEXT_HINT); // 使用统一的灰色
+                    } else if ("Pass".equalsIgnoreCase(value.toString()) || value.toString().isEmpty()) {
+                        setText("✅");
+                    } else {
+                        setText("❌");
+                    }
+                } else {
+                    c.setForeground(ModernColors.TEXT_DISABLED);
                 }
 
                 setHorizontalAlignment(CENTER);
@@ -683,12 +718,12 @@ public class FunctionalPanel extends SingletonBasePanel {
         RunnerRowData row = tableModel.getRow(rowIndex);
         if (row != null && row.requestItem != null) {
             // 打开请求编辑面板
-           RequestEditPanel editPanel =
+            RequestEditPanel editPanel =
                     SingletonFactory.getInstance(RequestEditPanel.class);
             editPanel.showOrCreateTab(row.requestItem);
 
             // 切换到Collections标签
-           SidebarTabPanel sidebarPanel =
+            SidebarTabPanel sidebarPanel =
                     SingletonFactory.getInstance(SidebarTabPanel.class);
             sidebarPanel.getTabbedPane().setSelectedIndex(0);
         }

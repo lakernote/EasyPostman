@@ -2,6 +2,7 @@ package com.laker.postman.panel.functional.table;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
             case 2 -> row.url;
             case 3 -> row.method;
             case 4 -> row.status != null && !row.status.isEmpty() ? row.status : "-";
-            case 5 -> row.cost > 0 ? row.cost + " ms" : "-";
+            case 5 -> row.cost > 0 ? TimeDisplayUtil.formatElapsedTime(row.cost) : "-";
             case 6 -> row.assertion != null && !row.assertion.isEmpty() ? row.assertion : "-";
             default -> null;
         };

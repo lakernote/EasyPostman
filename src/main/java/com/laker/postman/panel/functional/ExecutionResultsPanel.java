@@ -31,7 +31,6 @@ public class ExecutionResultsPanel extends JPanel {
     private JTabbedPane detailTabs;
     private transient BatchExecutionHistory executionHistory; // 当前执行历史记录
     private TreePath lastSelectedPath; // 保存最后选中的路径
-    private JLabel statusLabel; // 状态标签
     private int lastSelectedRequestDetailTabIndex = 0; // 记住用户在RequestDetail中选择的tab索引
 
     public ExecutionResultsPanel() {
@@ -54,8 +53,10 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 创建分割面板
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(330);
-        splitPane.setResizeWeight(0.3);
+        splitPane.setDividerLocation(350);
+        splitPane.setResizeWeight(0.35);
+        splitPane.setDividerSize(6);
+        splitPane.setBorder(null);
 
         // 左侧：结果树
         createResultsTree();
@@ -66,9 +67,6 @@ public class ExecutionResultsPanel extends JPanel {
         splitPane.setRightComponent(detailPanel);
 
         add(splitPane, BorderLayout.CENTER);
-
-        // 添加状态栏
-        createStatusBar();
     }
 
     private void createResultsTree() {
@@ -79,7 +77,7 @@ public class ExecutionResultsPanel extends JPanel {
         resultsTree.setShowsRootHandles(true);
         resultsTree.setCellRenderer(new ExecutionResultTreeCellRenderer());
         resultsTree.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        resultsTree.setRowHeight(24);
+        resultsTree.setRowHeight(26);
         resultsTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
         // 启用工具提示
@@ -88,40 +86,52 @@ public class ExecutionResultsPanel extends JPanel {
 
     private JPanel createTreePanel() {
         JPanel treePanel = new JPanel(new BorderLayout());
-        treePanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY)));
+        treePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
+
+        // 添加标题栏（包含标题和工具按钮）
+        JPanel headerPanel = createTreeHeaderPanel();
+        treePanel.add(headerPanel, BorderLayout.NORTH);
 
         JScrollPane treeScrollPane = new JScrollPane(resultsTree);
-        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16); // 改善滚动体验
+        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        treeScrollPane.setBorder(BorderFactory.createEmptyBorder());
         treePanel.add(treeScrollPane, BorderLayout.CENTER);
-
-        // 添加工具栏
-        JPanel toolBar = createToolBar();
-        treePanel.add(toolBar, BorderLayout.SOUTH);
 
         return treePanel;
     }
 
+    private JPanel createTreeHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+
+        // 左侧标题
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        // 右侧工具按钮
+        JPanel toolBar = createToolBar();
+        headerPanel.add(toolBar, BorderLayout.EAST);
+
+        return headerPanel;
+    }
+
     private JPanel createToolBar() {
-        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
         toolBar.setOpaque(false);
 
-        JButton expandAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_EXPAND_ALL));
-        expandAllBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        expandAllBtn.setIcon(new FlatSVGIcon("icons/expand.svg", 12, 12));
+        // 只使用图标按钮，更简洁
+        JButton expandAllBtn = createIconButton("icons/expand.svg",
+            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
         expandAllBtn.addActionListener(e -> expandAll());
-        expandAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
 
-        JButton collapseAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_COLLAPSE_ALL));
-        collapseAllBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        collapseAllBtn.setIcon(new FlatSVGIcon("icons/collapse.svg", 12, 12));
+        JButton collapseAllBtn = createIconButton("icons/collapse.svg",
+            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
         collapseAllBtn.addActionListener(e -> collapseAll());
-        collapseAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
 
-        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        refreshBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 12, 12));
+        JButton refreshBtn = createIconButton("icons/refresh.svg",
+            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
         refreshBtn.addActionListener(e -> refreshData());
-        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
 
         toolBar.add(expandAllBtn);
         toolBar.add(collapseAllBtn);
@@ -130,14 +140,24 @@ public class ExecutionResultsPanel extends JPanel {
         return toolBar;
     }
 
+    private JButton createIconButton(String iconPath, String tooltip) {
+        JButton button = new JButton(new FlatSVGIcon(iconPath, 14, 14));
+        button.setToolTipText(tooltip);
+        button.setPreferredSize(new Dimension(24, 24));
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        return button;
+    }
+
     private void createDetailPanel() {
         detailPanel = new JPanel(new BorderLayout());
-        detailPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_INFO)));
+        detailPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         // 创建详情选项卡
         detailTabs = new JTabbedPane();
         detailTabs.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        detailTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT); // 支持滚动标签
+        detailTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
         // 默认显示欢迎页面
         showWelcomePanel();
@@ -157,19 +177,6 @@ public class ExecutionResultsPanel extends JPanel {
         });
     }
 
-    private void createStatusBar() {
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        statusBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
-                BorderFactory.createEmptyBorder(2, 5, 2, 5)
-        ));
-
-        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_READY));
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        statusBar.add(statusLabel);
-
-        add(statusBar, BorderLayout.SOUTH);
-    }
 
     private void registerListeners() {
         // 鼠标事件 - 优化灵敏度
@@ -258,18 +265,7 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private void updateStatus() {
-        if (lastSelectedPath != null) {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) lastSelectedPath.getLastPathComponent();
-            Object userObject = node.getUserObject();
-
-            if (userObject instanceof IterationNodeData) {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_ITERATION_SELECTED));
-            } else if (userObject instanceof RequestNodeData) {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REQUEST_SELECTED));
-            } else {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_OVERVIEW_SELECTED));
-            }
-        }
+        // 状态栏已移除，此方法保留用于未来扩展
     }
 
     /**
@@ -277,12 +273,10 @@ public class ExecutionResultsPanel extends JPanel {
      */
     public void updateExecutionHistory(BatchExecutionHistory history) {
         SwingUtilities.invokeLater(() -> {
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_UPDATING));
             this.executionHistory = history;
             // 重置tab索引为第一个，因为这是新的执行历史数据
             lastSelectedRequestDetailTabIndex = 0;
             rebuildTree();
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_UPDATED));
         });
     }
 
@@ -367,14 +361,7 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void refreshData() {
         if (executionHistory != null) {
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REFRESHING));
-            // 模拟刷新延迟
-            Timer timer = new Timer(100, e -> {
-                rebuildTree();
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_REFRESHED));
-            });
-            timer.setRepeats(false);
-            timer.start();
+            rebuildTree();
         }
     }
 

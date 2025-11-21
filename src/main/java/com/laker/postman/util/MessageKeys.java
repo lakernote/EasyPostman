@@ -549,21 +549,10 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_EXECUTION_HISTORY = "functional.execution.history";
     public static final String FUNCTIONAL_EXECUTION_RESULTS_NO_DATA = "functional.execution.results.no_data";
     public static final String FUNCTIONAL_EXECUTION_RESULTS_SUMMARY = "functional.execution.results.summary";
-    public static final String FUNCTIONAL_BUTTON_EXPAND_ALL = "functional.button.expand_all";
-    public static final String FUNCTIONAL_BUTTON_COLLAPSE_ALL = "functional.button.collapse_all";
     public static final String FUNCTIONAL_TOOLTIP_EXPAND_ALL = "functional.tooltip.expand_all";
     public static final String FUNCTIONAL_TOOLTIP_COLLAPSE_ALL = "functional.tooltip.collapse_all";
     public static final String FUNCTIONAL_TOOLTIP_REFRESH = "functional.tooltip.refresh";
-    public static final String FUNCTIONAL_DETAIL_INFO = "functional.detail.info";
     public static final String FUNCTIONAL_TAB_OVERVIEW = "functional.tab.overview";
-    public static final String FUNCTIONAL_STATUS_READY = "functional.status.ready";
-    public static final String FUNCTIONAL_STATUS_UPDATING = "functional.status.updating";
-    public static final String FUNCTIONAL_STATUS_UPDATED = "functional.status.updated";
-    public static final String FUNCTIONAL_STATUS_REFRESHING = "functional.status.refreshing";
-    public static final String FUNCTIONAL_STATUS_REFRESHED = "functional.status.refreshed";
-    public static final String FUNCTIONAL_STATUS_ITERATION_SELECTED = "functional.status.iteration_selected";
-    public static final String FUNCTIONAL_STATUS_REQUEST_SELECTED = "functional.status.request_selected";
-    public static final String FUNCTIONAL_STATUS_OVERVIEW_SELECTED = "functional.status.overview_selected";
 
     // ============ 功能测试详情页面相关 ============
     public static final String FUNCTIONAL_DETAIL_OVERVIEW = "functional.detail.overview";
@@ -592,7 +581,6 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_TABLE_STATUS = "functional.table.status";
     public static final String FUNCTIONAL_TABLE_TIME = "functional.table.time";
     public static final String FUNCTIONAL_TABLE_ASSERTION = "functional.table.assertion";
-    public static final String FUNCTIONAL_TABLE_TIMESTAMP = "functional.table.timestamp";
 
     // ============ 功能测试迭代相关 ============
     public static final String FUNCTIONAL_ITERATION_ROUND = "functional.iteration.round";
@@ -766,7 +754,6 @@ public final class MessageKeys {
     public static final String CSV_USAGE_TEXT = "csv.usage_text";
     public static final String CSV_NO_VALID_DATA_ROWS = "csv.no_valid_data_rows";
     public static final String CSV_DATA_SAVED = "csv.data_saved";
-    public static final String CSV_SAVE_SUCCESS = "csv.save_success";
     public static final String CSV_SAVE_FAILED = "csv.save_failed";
     public static final String CSV_SELECT_FILE = "csv.select_file";
     public static final String CSV_FILE_FILTER = "csv.file_filter";
@@ -1064,10 +1051,8 @@ public final class MessageKeys {
     // 操作执行相关
     public static final String GIT_DIALOG_OPERATION_COMPLETED = "git.dialog.operation.completed";
     public static final String GIT_DIALOG_OPERATION_SUCCESS_MESSAGE = "git.dialog.operation.successMessage";
-    public static final String GIT_DIALOG_OPERATION_SUCCESS_TITLE = "git.dialog.operation.successTitle";
     public static final String GIT_DIALOG_OPERATION_FAILED = "git.dialog.operation.failed";
     public static final String GIT_DIALOG_OPERATION_FAILED_MESSAGE = "git.dialog.operation.failedMessage";
-    public static final String GIT_DIALOG_OPERATION_FAILED_TITLE = "git.dialog.operation.failedTitle";
     public static final String GIT_DIALOG_OPERATION_EXECUTING = "git.dialog.operation.executing";
     public static final String GIT_DIALOG_OPERATION_EXECUTING_PROGRESS = "git.dialog.operation.executingProgress";
 
@@ -1090,7 +1075,6 @@ public final class MessageKeys {
 
     // 验证相关
     public static final String GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY = "git.dialog.validation.commitMessage.empty";
-    public static final String GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_TITLE = "git.dialog.validation.commitMessage.title";
 
     // ============ GitConflictDetector 国际化 ============
     // 基本检查错误消息
@@ -1440,7 +1424,6 @@ public final class MessageKeys {
     public static final String CERT_VALIDATION_FILE_NOT_FOUND = "cert.validation.file_not_found";
     public static final String CERT_SAVE = "cert.save";
     public static final String CERT_CANCEL = "cert.cancel";
-    public static final String CERT_HELP = "cert.help";
     public static final String CERT_HELP_TITLE = "cert.help.title";
     public static final String CERT_HELP_CONTENT = "cert.help.content";
     public static final String CERT_CLOSE = "cert.close";

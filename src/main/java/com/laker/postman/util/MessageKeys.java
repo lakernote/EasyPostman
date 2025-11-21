@@ -1,16 +1,13 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * 国际化消息键常量类
  * 统一管理所有的国际化消息键，避免硬编码字符串
  */
+@UtilityClass
 public final class MessageKeys {
-
-
-    // 私有构造函数，防止实例化
-    private MessageKeys() {
-        throw new AssertionError("Utility class should not be instantiated");
-    }
 
     // ============ 菜单相关 ============
     public static final String MENU_FILE = "menu.file";

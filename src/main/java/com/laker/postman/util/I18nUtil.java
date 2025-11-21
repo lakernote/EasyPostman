@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.MessageFormat;
@@ -11,15 +12,11 @@ import java.util.ResourceBundle;
  * 国际化工具类
  */
 @Slf4j
+@UtilityClass
 public class I18nUtil {
     private static final String BUNDLE_NAME = "messages";
     private static ResourceBundle resourceBundle;
     private static Locale currentLocale;
-
-    // 私有构造函数，防止实例化
-    private I18nUtil() {
-        // 工具类不应该被实例化
-    }
 
     static {
         // 从用户设置中读取语言设置，默认使用系统语言

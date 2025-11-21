@@ -1,6 +1,7 @@
 package com.laker.postman.util;
 
 import com.laker.postman.common.constants.ModernColors;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -13,6 +14,7 @@ import java.util.Map;
  * 用于集中设置 FlatLaf/Swing 全局 UI 属性（如圆角、背景色等）
  */
 @Slf4j
+@UtilityClass
 public class StyleUtils {
 
     // 圆角常量定义
@@ -23,11 +25,6 @@ public class StyleUtils {
     // 分割线常量
     private static final int DIVIDER_SIZE = 6;
     private static final int BORDER_WIDTH = 1;
-
-    // 私有构造函数，防止工具类被实例化
-    private StyleUtils() {
-        throw new UnsupportedOperationException("Utility class cannot be instantiated");
-    }
 
     /**
      * 应用风格（圆角、背景色等）

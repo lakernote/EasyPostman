@@ -1,14 +1,13 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * 文件扩展名工具类
  * 统一管理根据 Content-Type 推断文件扩展名的逻辑
  */
+@UtilityClass
 public class FileExtensionUtil {
-
-    private FileExtensionUtil() {
-        // 工具类不允许实例化
-    }
 
     /**
      * 根据 Content-Type 推断文件扩展名

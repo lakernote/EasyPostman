@@ -1,16 +1,15 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
+
 import javax.swing.*;
 import java.awt.*;
 
 /**
  * 字体工具类，提供系统默认字体，保留完整的字体降级链以支持 emoji 等特殊字符
  */
+@UtilityClass
 public class FontsUtil {
-    // 私有构造函数，防止实例化工具类
-    private FontsUtil() {
-        throw new UnsupportedOperationException("Utility class cannot be instantiated");
-    }
 
     /**
      * 获取默认字体，从 UIManager 派生以保留降级链，支持 emoji 等特殊字符

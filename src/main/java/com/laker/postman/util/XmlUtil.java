@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
 import org.w3c.dom.Document;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -12,6 +13,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import org.xml.sax.InputSource;
 
+@UtilityClass
 public class XmlUtil {
     /**
      * 判断字符串是否为合法 XML

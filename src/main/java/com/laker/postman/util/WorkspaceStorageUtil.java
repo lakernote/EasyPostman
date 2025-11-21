@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -18,6 +19,7 @@ import java.util.Map;
  * 负责工作区数据的 JSON 文件持久化
  */
 @Slf4j
+@UtilityClass
 public class WorkspaceStorageUtil {
 
     private static final String WORKSPACES_FILE = "workspaces.json";
@@ -29,10 +31,6 @@ public class WorkspaceStorageUtil {
     private static final String DEFAULT_WORKSPACE_ID = "default-workspace";
     private static final String DEFAULT_WORKSPACE_NAME = I18nUtil.getMessage(MessageKeys.WORKSPACE_DEFAULT_NAME);
     private static final String DEFAULT_WORKSPACE_DESCRIPTION = I18nUtil.getMessage(MessageKeys.WORKSPACE_DEFAULT_DESCRIPTION);
-
-    private WorkspaceStorageUtil() {
-        // 私有构造函数，禁止实例化
-    }
 
     /**
      * 判断是否为默认工作区

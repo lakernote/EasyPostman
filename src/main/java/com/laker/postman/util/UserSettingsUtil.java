@@ -2,6 +2,7 @@ package com.laker.postman.util;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONUtil;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -11,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
+@UtilityClass
 public class UserSettingsUtil {
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
@@ -19,10 +21,6 @@ public class UserSettingsUtil {
     private static final String SETTINGS_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "user_settings.json";
     private static final Object lock = new Object();
     private static Map<String, Object> settingsCache = null;
-
-    private UserSettingsUtil() {
-        // 私有构造函数，禁止实例化
-    }
 
     private static Map<String, Object> readSettings() {
         synchronized (lock) {

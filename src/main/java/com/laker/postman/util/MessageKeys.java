@@ -414,6 +414,21 @@ public final class MessageKeys {
     public static final String PERFORMANCE_THREAD_GROUP = "performance.thread_group";
     public static final String PERFORMANCE_DEFAULT_REQUEST = "performance.default_request";
 
+    // ============ 性能报表列相关 ============
+    public static final String PERFORMANCE_REPORT_COLUMN_API_NAME = "performance.report.column.api_name";
+    public static final String PERFORMANCE_REPORT_COLUMN_TOTAL = "performance.report.column.total";
+    public static final String PERFORMANCE_REPORT_COLUMN_SUCCESS = "performance.report.column.success";
+    public static final String PERFORMANCE_REPORT_COLUMN_FAIL = "performance.report.column.fail";
+    public static final String PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE = "performance.report.column.success_rate";
+    public static final String PERFORMANCE_REPORT_COLUMN_QPS = "performance.report.column.qps";
+    public static final String PERFORMANCE_REPORT_COLUMN_AVG = "performance.report.column.avg";
+    public static final String PERFORMANCE_REPORT_COLUMN_MIN = "performance.report.column.min";
+    public static final String PERFORMANCE_REPORT_COLUMN_MAX = "performance.report.column.max";
+    public static final String PERFORMANCE_REPORT_COLUMN_P90 = "performance.report.column.p90";
+    public static final String PERFORMANCE_REPORT_COLUMN_P95 = "performance.report.column.p95";
+    public static final String PERFORMANCE_REPORT_COLUMN_P99 = "performance.report.column.p99";
+    public static final String PERFORMANCE_REPORT_TOTAL_ROW = "performance.report.total_row";
+
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";
     public static final String PERFORMANCE_TREND_RESPONSE_TIME_MS = "performance.trend.response_time_ms";

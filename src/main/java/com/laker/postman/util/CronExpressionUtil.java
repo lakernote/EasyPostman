@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.SimpleDateFormat;
@@ -11,6 +12,7 @@ import java.util.*;
  * 支持标准6位和7位Cron表达式：Second Minute Hour Day Month Week [Year]
  */
 @Slf4j
+@UtilityClass
 public class CronExpressionUtil {
 
     /**

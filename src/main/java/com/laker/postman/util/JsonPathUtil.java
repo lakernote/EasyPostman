@@ -3,12 +3,10 @@ package com.laker.postman.util;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import lombok.experimental.UtilityClass;
 
+@UtilityClass
 public class JsonPathUtil {
-
-    private JsonPathUtil() {
-        // 私有构造函数，防止实例化
-    }
 
     /**
      * 从JSON对象中提取指定路径的值，支持简单的$.a.b[0].c格式

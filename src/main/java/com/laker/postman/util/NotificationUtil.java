@@ -3,6 +3,9 @@ package com.laker.postman.util;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
 import java.awt.*;
@@ -122,11 +125,8 @@ import java.util.List;
  * @see NotificationPosition
  * @since 1.0
  */
+@UtilityClass
 public class NotificationUtil {
-
-    private NotificationUtil() {
-        // 工具类，隐藏构造函数
-    }
 
     /**
      * 获取 MainFrame 实例
@@ -140,6 +140,8 @@ public class NotificationUtil {
     }
 
     // 通知类型枚举
+    @Getter
+    @RequiredArgsConstructor
     public enum NotificationType {
         SUCCESS(ModernColors.SUCCESS, "✓"),      // 绿色 - 成功
         INFO(ModernColors.INFO, "ℹ"),            // 蓝色 - 信息
@@ -149,18 +151,6 @@ public class NotificationUtil {
         private final Color color;
         private final String icon;
 
-        NotificationType(Color color, String icon) {
-            this.color = color;
-            this.icon = icon;
-        }
-
-        public Color getColor() {
-            return color;
-        }
-
-        public String getIcon() {
-            return icon;
-        }
     }
 
     // 通知位置枚举

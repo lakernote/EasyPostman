@@ -5,6 +5,7 @@ import cn.hutool.core.text.csv.CsvData;
 import cn.hutool.core.text.csv.CsvReader;
 import cn.hutool.core.text.csv.CsvRow;
 import cn.hutool.core.text.csv.CsvUtil;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -18,11 +19,8 @@ import java.util.Map;
  * CSV 数据处理工具类
  */
 @Slf4j
+@UtilityClass
 public class CsvDataUtil {
-
-    private CsvDataUtil() {
-        // 私有构造函数，防止实例化
-    }
 
     /**
      * 读取 CSV 文件数据

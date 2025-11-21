@@ -1,6 +1,7 @@
 package com.laker.postman.util;
 
 import com.laker.postman.model.Workspace;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
@@ -8,15 +9,35 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 
 @Slf4j
+@UtilityClass
 public class SystemUtil {
+    /**
+     * 系统信息
+     */
+    private static final String OS_VERSION = System.getProperty("os.version");
+    private static final String OS_ARCH = System.getProperty("os.arch");
+    private static final String OS_NAME = System.getProperty("os.name");
+    private static final String FILE_SEPARATOR = FileSystems.getDefault().getSeparator();
+    private static final String LINE_SEPARATOR = System.lineSeparator();
+    private static final String PATH_SEPARATOR = File.pathSeparator;
+    /**
+     * 日志目录
+     */
     public static final String LOG_DIR = getUserHomeEasyPostmanPath() + "logs" + File.separator;
+    /**
+     * 默认工作空间路径
+     */
     private static final String COLLECTION_PATH = getUserHomeEasyPostmanPath() + "collections.json";
+    /**
+     * 默认环境变量路径
+     */
     private static final String ENV_PATH = getUserHomeEasyPostmanPath() + "environments.json";
 
     public static String getUserHomeEasyPostmanPath() {
@@ -40,7 +61,7 @@ public class SystemUtil {
         try {
             Path pom = Paths.get("pom.xml");
             if (Files.exists(pom)) {
-                String xml = java.nio.file.Files.readString(pom);
+                String xml = Files.readString(pom);
                 int idx = xml.indexOf("<version>");
                 if (idx > 0) {
                     int start = idx + "<version>".length();
@@ -89,4 +110,19 @@ public class SystemUtil {
         }
         return ws.getPath() + File.separator + "collections.json";
     }
+
+    /**
+     * 获取操作系统信息
+     */
+    public static String getOsInfo() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("OS Name:        ").append(OS_NAME).append('\n');
+        sb.append("OS Arch:        ").append(OS_ARCH).append('\n');
+        sb.append("OS Version:     ").append(OS_VERSION).append('\n');
+        sb.append("Path Separator: ").append(PATH_SEPARATOR).append('\n');
+        sb.append("File Separator: ").append(FILE_SEPARATOR).append('\n');
+        sb.append("Line Separator: ").append(LINE_SEPARATOR);
+        return sb.toString();
+    }
+
 }

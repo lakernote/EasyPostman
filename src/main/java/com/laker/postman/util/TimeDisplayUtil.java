@@ -1,9 +1,12 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * 时间显示工具类
  * 提供将毫秒时间转换为更友好的显示格式
  */
+@UtilityClass
 public class TimeDisplayUtil {
 
     /**

@@ -1,12 +1,12 @@
 package com.laker.postman.util;
 
+import lombok.experimental.UtilityClass;
+
 import javax.swing.*;
 import java.awt.*;
 
+@UtilityClass
 public class JComponentUtils {
-    private JComponentUtils() {
-        // 私有构造函数，防止实例化
-    }
 
     /**
      * 超出宽度显示省略号（...）。默认icon/padding宽度为30px，最小宽度为200px。

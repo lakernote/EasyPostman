@@ -3,8 +3,9 @@ package com.laker.postman.util;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.EnvironmentService;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.codec.digest.DigestUtils;
 
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -14,6 +15,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@UtilityClass
 public class VariableUtil {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
     private static final Random RANDOM = new Random();
@@ -272,18 +274,6 @@ public class VariableUtil {
     }
 
     private static String generateMD5Hash(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(input.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (Exception e) {
-            return UUID.randomUUID().toString().replace("-", "");
-        }
+        return DigestUtils.md5Hex(input);
     }
 }

@@ -217,7 +217,6 @@ public class ExecutionResultsPanel extends JPanel {
             TreePath newPath = e.getNewLeadSelectionPath();
             if (newPath != null) {
                 lastSelectedPath = newPath;
-                updateStatus();
                 // 延迟显示详情，避免频繁刷新
                 SwingUtilities.invokeLater(() -> {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) newPath.getLastPathComponent();
@@ -271,9 +270,6 @@ public class ExecutionResultsPanel extends JPanel {
         }
     }
 
-    private void updateStatus() {
-        // 状态栏已移除，此方法保留用于未来扩展
-    }
 
     /**
      * 更新执行历史数据
@@ -550,13 +546,11 @@ public class ExecutionResultsPanel extends JPanel {
 
         @Override
         public String toString() {
-            String status = "Pass".equals(request.getAssertion()) ? "✓" : "✗";
-            return String.format("%s %s %s (%s, %dms)",
-                    status,
-                    request.getMethod(),
+
+            return String.format("%s | %s | %s",
                     request.getRequestName(),
-                    request.getStatus(),
-                    request.getCost());
+                    request.getMethod(),
+                    request.getStatus());
         }
     }
 
@@ -573,14 +567,21 @@ public class ExecutionResultsPanel extends JPanel {
             if (userObject instanceof IterationNodeData) {
                 setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
             } else if (userObject instanceof RequestNodeData requestData) {
-                // 根据断言结果设置前景色和图标
-                if ("Pass".equals(requestData.request.getAssertion())) {
-                    // 成功：绿色文字和绿色勾选图标
+                // 检查是否是跳过状态
+                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
+                if (skippedText.equals(requestData.request.getStatus())) {
+                    // 跳过状态：灰色文字
+                    if (!sel) {
+                        setForeground(ModernColors.TEXT_HINT); // 灰色
+                    }
+                } else if ("Pass".equals(requestData.request.getAssertion())) {
+                    // 成功：绿色文字
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(40, 167, 69)); // 绿色
                     }
                 } else if (requestData.request.getAssertion() != null && !requestData.request.getAssertion().isEmpty()) {
-                    // 失败：红色文字和红色取消图标
+                    // 失败：红色文字
                     if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
                         setForeground(new Color(220, 53, 69)); // 红色
                     }

@@ -361,6 +361,9 @@ public class FunctionalPanel extends SingletonBasePanel {
             // 如果执行完成，切换到结果面板
             if (!isStopped) {
                 mainTabbedPane.setSelectedIndex(1); // 切换到执行结果面板
+
+                // 自动选择第一个迭代节点并展开详细信息
+                SwingUtilities.invokeLater(() -> resultsPanel.selectFirstIteration());
             }
         });
     }

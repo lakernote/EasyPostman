@@ -325,6 +325,25 @@ public class ExecutionResultsPanel extends JPanel {
         restoreSelection();
     }
 
+    /**
+     * 选择根节点（执行结果摘要）并展开详细信息
+     * 用于执行完成后自动显示结果
+     */
+    public void selectFirstIteration() {
+        SwingUtilities.invokeLater(() -> {
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+            if (root.getChildCount() > 0) {
+                // 选中根节点（显示总耗时、迭代数等摘要信息）
+                TreePath rootPath = new TreePath(root);
+
+                // 选中并展开根节点
+                resultsTree.setSelectionPath(rootPath);
+                resultsTree.scrollPathToVisible(rootPath);
+                resultsTree.expandPath(rootPath);
+            }
+        });
+    }
+
     private void restoreSelection() {
         if (lastSelectedPath != null) {
             // 尝试找到相同的节点路径并选中

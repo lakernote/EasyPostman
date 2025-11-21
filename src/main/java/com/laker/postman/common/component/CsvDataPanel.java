@@ -795,9 +795,8 @@ public class CsvDataPanel extends JPanel {
 
                 updateCsvStatus();
 
-                JOptionPane.showMessageDialog(manageDialog,
-                        I18nUtil.getMessage(MessageKeys.CSV_DATA_SAVED, newCsvData.size(), currentHeaders.size()),
-                        I18nUtil.getMessage(MessageKeys.CSV_SAVE_SUCCESS), JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.showSuccess(
+                        I18nUtil.getMessage(MessageKeys.CSV_DATA_SAVED, newCsvData.size(), currentHeaders.size()));
 
                 manageDialog.dispose();
 

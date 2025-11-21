@@ -486,6 +486,7 @@ public final class MessageKeys {
     public static final String COLLECTIONS_PASTE_SUCCESS = "collections.paste_success";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_SELECT_GROUP = "collections.menu.export_postman.select_group";
     public static final String COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE = "collections.menu.export_postman.dialog_title";
+    public static final String COLLECTIONS_MENU_ADD_TO_FUNCTIONAL = "collections.menu.add_to_functional";
 
     // ============ 集合导出导入相关 ============
     public static final String COLLECTIONS_EXPORT_DIALOG_TITLE = "collections.export.dialog_title";

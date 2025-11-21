@@ -66,6 +66,8 @@ public class FunctionalPanel extends SingletonBasePanel {
         mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
+        // 添加内边距
+        executionPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
         mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_REQUEST_CONFIG), new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
@@ -78,7 +80,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 12));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
         // 初始化 CSV 数据面板
         csvDataPanel = new CsvDataPanel();

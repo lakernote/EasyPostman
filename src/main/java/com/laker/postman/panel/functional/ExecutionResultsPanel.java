@@ -52,7 +52,11 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // 添加复合边框：内部间距 + 外部边框
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 8, 8, 8), // 内边距
+                BorderFactory.createMatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY) // 外边框
+        ));
 
         // 创建分割面板
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -661,7 +665,12 @@ public class ExecutionResultsPanel extends JPanel {
         }
 
         Object[][] data = tableData.toArray(new Object[0][]);
-        JTable table = new JTable(data, columnNames);
+        JTable table = new JTable(data, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // 所有单元格都不可编辑
+            }
+        };
 
         // 应用 ModernColors 配色方案
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));

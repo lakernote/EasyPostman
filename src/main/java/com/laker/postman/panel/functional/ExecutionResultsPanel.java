@@ -1,9 +1,11 @@
 package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.BatchExecutionHistory;
 import com.laker.postman.model.IterationResult;
 import com.laker.postman.model.RequestResult;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -11,6 +13,7 @@ import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -122,15 +125,15 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 只使用图标按钮，更简洁
         JButton expandAllBtn = createIconButton("icons/expand.svg",
-            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_EXPAND_ALL));
         expandAllBtn.addActionListener(e -> expandAll());
 
         JButton collapseAllBtn = createIconButton("icons/collapse.svg",
-            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_COLLAPSE_ALL));
         collapseAllBtn.addActionListener(e -> collapseAll());
 
         JButton refreshBtn = createIconButton("icons/refresh.svg",
-            I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TOOLTIP_REFRESH));
         refreshBtn.addActionListener(e -> refreshData());
 
         toolBar.add(expandAllBtn);
@@ -639,21 +642,19 @@ public class ExecutionResultsPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_METHOD),
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_STATUS),
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_TIME),
-                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION),
-                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_TIMESTAMP)
+                I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_COLUMN_RESULT)
         };
 
         java.util.List<Object[]> tableData = new java.util.ArrayList<>();
         for (IterationResult iteration : executionHistory.getIterations()) {
             for (RequestResult request : iteration.getRequestResults()) {
                 Object[] row = {
-                        I18nUtil.getMessage("functional.iteration.round.prefix") + (iteration.getIterationIndex() + 1) + I18nUtil.getMessage("functional.iteration.round.suffix"),
+                        "#" + (iteration.getIterationIndex() + 1),
                         request.getRequestName(),
                         request.getMethod(),
                         request.getStatus(),
-                        request.getCost() + "ms",
-                        request.getAssertion(),
-                        formatTimestamp(request.getTimestamp())
+                        request.getCost(), // 保存原始数值，渲染器会格式化
+                        request.getAssertion()
                 };
                 tableData.add(row);
             }
@@ -661,12 +662,170 @@ public class ExecutionResultsPanel extends JPanel {
 
         Object[][] data = tableData.toArray(new Object[0][]);
         JTable table = new JTable(data, columnNames);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
-        table.setRowHeight(22);
+
+        // 应用 ModernColors 配色方案
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        table.setRowHeight(28);
+        table.setGridColor(ModernColors.TABLE_GRID_COLOR);
+        table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
+        table.setSelectionForeground(ModernColors.TEXT_PRIMARY);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
+        // 设置列宽
+        setTableColumnWidths(table);
+
+        // 设置渲染器
+        setTableRenderers(table);
+
         return table;
+    }
+
+    private void setTableColumnWidths(JTable table) {
+        if (table.getColumnModel().getColumnCount() > 0) {
+            // 迭代列
+            table.getColumnModel().getColumn(0).setMinWidth(50);
+            table.getColumnModel().getColumn(0).setMaxWidth(70);
+            table.getColumnModel().getColumn(0).setPreferredWidth(60);
+            // 方法列
+            table.getColumnModel().getColumn(2).setMinWidth(60);
+            table.getColumnModel().getColumn(2).setMaxWidth(80);
+            table.getColumnModel().getColumn(2).setPreferredWidth(70);
+            // 状态列
+            table.getColumnModel().getColumn(3).setMinWidth(60);
+            table.getColumnModel().getColumn(3).setMaxWidth(80);
+            table.getColumnModel().getColumn(3).setPreferredWidth(70);
+            // 耗时列
+            table.getColumnModel().getColumn(4).setMinWidth(70);
+            table.getColumnModel().getColumn(4).setMaxWidth(100);
+            table.getColumnModel().getColumn(4).setPreferredWidth(85);
+            // 结果列
+            table.getColumnModel().getColumn(5).setMinWidth(50);
+            table.getColumnModel().getColumn(5).setMaxWidth(70);
+            table.getColumnModel().getColumn(5).setPreferredWidth(60);
+        }
+    }
+
+    private void setTableRenderers(JTable table) {
+        // 方法列渲染器
+        table.getColumnModel().getColumn(2).setCellRenderer(createMethodRenderer());
+        // 状态列渲染器
+        table.getColumnModel().getColumn(3).setCellRenderer(createStatusRenderer());
+        // 耗时列渲染器
+        table.getColumnModel().getColumn(4).setCellRenderer(createTimeRenderer());
+        // 结果列渲染器
+        table.getColumnModel().getColumn(5).setCellRenderer(createResultRenderer());
+    }
+
+    private DefaultTableCellRenderer createMethodRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null) {
+                    String color = HttpUtil.getMethodColor(value.toString());
+                    c.setForeground(Color.decode(color));
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    private DefaultTableCellRenderer createStatusRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                                                                    boolean isSelected, boolean hasFocus, int row, int column) {
+                java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null && !"-".equals(value)) {
+                    applyStatusColors(c, value.toString());
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    private void applyStatusColors(java.awt.Component c, String status) {
+        java.awt.Color foreground = ModernColors.TEXT_PRIMARY;
+
+        // 检查是否是"跳过"状态
+        String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+        if (skippedText.equals(status)) {
+            foreground = ModernColors.TEXT_HINT;
+        } else {
+            try {
+                int code = Integer.parseInt(status);
+                if (code >= 200 && code < 300) {
+                    foreground = ModernColors.SUCCESS_DARK;
+                } else if (code >= 400 && code < 500) {
+                    foreground = ModernColors.WARNING_DARKER;
+                } else if (code >= 500) {
+                    foreground = ModernColors.ERROR_DARKER;
+                }
+            } catch (NumberFormatException e) {
+                foreground = ModernColors.ERROR_DARK;
+            }
+        }
+        c.setForeground(foreground);
+    }
+
+    private DefaultTableCellRenderer createTimeRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                                                                    boolean isSelected, boolean hasFocus, int row, int column) {
+                if (value instanceof Long) {
+                    long cost = (Long) value;
+                    value = TimeDisplayUtil.formatElapsedTime(cost);
+                }
+                java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
+    }
+
+    private DefaultTableCellRenderer createResultRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                // 获取状态列的值
+                String status = "";
+                try {
+                    Object statusValue = table.getValueAt(row, 3);
+                    if (statusValue != null) {
+                        status = statusValue.toString();
+                    }
+                } catch (Exception e) {
+                    // 忽略
+                }
+
+                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
+                if (value != null && !"-".equals(value)) {
+                    if (skippedText.equals(status)) {
+                        setText("💨");
+                        c.setForeground(ModernColors.TEXT_HINT);
+                    } else if ("Pass".equalsIgnoreCase(value.toString()) || value.toString().isEmpty()) {
+                        setText("✅");
+                    } else {
+                        setText("❌");
+                    }
+                } else {
+                    c.setForeground(ModernColors.TEXT_DISABLED);
+                }
+                setHorizontalAlignment(CENTER);
+                return c;
+            }
+        };
     }
 
     private JPanel createCsvDataPanel(java.util.Map<String, String> csvData) {

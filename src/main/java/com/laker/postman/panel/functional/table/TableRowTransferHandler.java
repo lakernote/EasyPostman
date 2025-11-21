@@ -42,7 +42,7 @@ public class TableRowTransferHandler extends TransferHandler {
         int index = dl.getRow();
         TableModel model = table.getModel();
         if (rows == null) return false;
-        if (model instanceof RunnerTableModel runnerModel) {
+        if (model instanceof FunctionalRunnerTableModel runnerModel) {
             // 只支持单行拖拽（可扩展为多行）
             for (int from : rows) {
                 int to = index;
@@ -75,7 +75,7 @@ public class TableRowTransferHandler extends TransferHandler {
     protected void exportDone(JComponent c, Transferable t, int action) {
         if (action == MOVE && rows != null) {
             TableModel model = table.getModel();
-            if (model instanceof RunnerTableModel) {
+            if (model instanceof FunctionalRunnerTableModel) {
                 // 数据已在 moveRow 中同步，无需再删
             } else {
                 DefaultTableModel defModel = (DefaultTableModel) model;

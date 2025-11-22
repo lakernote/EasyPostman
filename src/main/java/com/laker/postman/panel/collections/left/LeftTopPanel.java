@@ -10,7 +10,7 @@ import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.dialog.LargeInputDialog;
+import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -308,7 +308,7 @@ public class LeftTopPanel extends SingletonBasePanel {
             curlText = defaultCurl;
         } else {
             // 否则弹出输入对话框
-            curlText = LargeInputDialog.show(mainFrame,
+            curlText = CurlImportDialog.show(mainFrame,
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), defaultCurl);
             if (curlText == null || curlText.trim().isEmpty()) return;

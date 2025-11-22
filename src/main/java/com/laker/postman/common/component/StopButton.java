@@ -14,6 +14,7 @@ public class StopButton extends JButton {
     public StopButton() {
         super(I18nUtil.getMessage(MessageKeys.BUTTON_STOP));
         setIcon(new FlatSVGIcon("icons/stop.svg"));
+        setFocusable(false); // 去掉按钮的焦点边框
         setPreferredSize(new Dimension(95, 28));
     }
 }

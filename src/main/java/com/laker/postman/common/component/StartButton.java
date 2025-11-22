@@ -14,6 +14,7 @@ public class StartButton extends JButton {
     public StartButton() {
         super(I18nUtil.getMessage(MessageKeys.BUTTON_START));
         setIcon(new FlatSVGIcon("icons/start.svg"));
+        setFocusable(false); // 去掉按钮的焦点边框
         setPreferredSize(new Dimension(95, 28));
     }
 }

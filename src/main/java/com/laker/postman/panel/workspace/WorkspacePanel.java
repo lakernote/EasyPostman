@@ -80,15 +80,17 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 新建工作区按钮
         JButton newButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_NEW));
-        newButton.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
+        newButton.setIcon(new FlatSVGIcon("icons/plus.svg", 20, 20));
         newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        newButton.setFocusable(false); // 去掉按钮聚焦虚线
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
         toolbar.add(newButton);
 
         // 刷新按钮
         JButton refreshButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        refreshButton.setIcon(new FlatSVGIcon("icons/refresh.svg", 16, 16));
+        refreshButton.setIcon(new FlatSVGIcon("icons/refresh.svg", 20, 20));
         refreshButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        refreshButton.setFocusable(false); // 去掉按钮聚焦虚线
         refreshButton.addActionListener(e -> refreshWorkspaceList());
         toolbar.add(refreshButton);
 

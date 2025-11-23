@@ -511,7 +511,6 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_TABLE_COLUMN_RESULT = "functional.table.column.result";
     public static final String FUNCTIONAL_MENU_VIEW_DETAIL = "functional.menu.view_detail";
     public static final String FUNCTIONAL_MENU_REMOVE = "functional.menu.remove";
-    public static final String FUNCTIONAL_MENU_REMOVE_SELECTED = "functional.menu.remove_selected";
 
     // ============ 集合导出导入相关 ============
     public static final String COLLECTIONS_EXPORT_DIALOG_TITLE = "collections.export.dialog_title";

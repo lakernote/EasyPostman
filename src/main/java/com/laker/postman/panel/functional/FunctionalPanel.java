@@ -697,17 +697,14 @@ public class FunctionalPanel extends SingletonBasePanel {
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) { // 双击
-                    int row = table.rowAtPoint(e.getPoint());
-                    if (row >= 0) {
-                        showRequestDetail(row);
-                    }
-                } else if (SwingUtilities.isRightMouseButton(e)) { // 右键
-                    int row = table.rowAtPoint(e.getPoint());
-                    if (row >= 0) {
-                        table.setRowSelectionInterval(row, row);
-                        showTableContextMenu(e, row);
-                    }
+                int row = table.rowAtPoint(e.getPoint());
+                if (row < 0) return;
+
+                if (SwingUtilities.isRightMouseButton(e)) { // 右键 - 只显示菜单
+                    table.setRowSelectionInterval(row, row);
+                    showTableContextMenu(e, row);
+                } else if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) { // 左键双击
+                    showRequestDetail(row);
                 }
             }
         });
@@ -756,20 +753,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         });
         menu.add(deleteItem);
 
-        // 移除选中项（如果有选中的行）
-        if (tableModel.hasSelectedRows()) {
-            JMenuItem deleteSelectedItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_REMOVE_SELECTED));
-            deleteSelectedItem.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
-            deleteSelectedItem.addActionListener(evt -> {
-                int removed = tableModel.removeSelectedRows();
-                if (removed > 0) {
-                    if (tableModel.getRowCount() == 0) {
-                        runBtn.setEnabled(false);
-                    }
-                }
-            });
-            menu.add(deleteSelectedItem);
-        }
 
         menu.show(e.getComponent(), e.getX(), e.getY());
     }

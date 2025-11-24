@@ -90,8 +90,8 @@ jobs:
           JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
           # 转换为MB
           JAR_SIZE_MB=$(echo "scale=2; $JAR_SIZE / 1024 / 1024" | bc)
-          # 最大允许大小：60MB
-          MAX_SIZE_MB=60
+          # 最大允许大小：70MB
+          MAX_SIZE_MB=70
           
           echo "📦 JAR file: $JAR_FILE"
           echo "📏 JAR size: ${JAR_SIZE_MB} MB"

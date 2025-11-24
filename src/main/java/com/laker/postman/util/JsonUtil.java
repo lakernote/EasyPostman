@@ -64,7 +64,7 @@ public class JsonUtil {
     }
 
     /**
-     * 清理 json 注释
+     * 清理 json 注释（去除注释后返回纯 JSON）
      *
      * @param json 待清理的 json
      * @return 清理后的 json
@@ -75,6 +75,61 @@ public class JsonUtil {
                 .build()
                 .readTree(json)
                 .toString();
+    }
+
+    /**
+     * 格式化 JSON5（支持注释）
+     * 注意：由于 Jackson 在解析后会丢失注释信息，此方法实际上会去除注释后格式化
+     * 如果需要保留注释，建议在代码编辑器中使用语法高亮和缩进功能
+     *
+     * @param json5 待格式化的 JSON5 字符串（可以包含注释）
+     * @return 格式化后的 JSON 字符串（注释会被去除）
+     */
+    public static String formatJson5(String json5) {
+        if (json5 == null || json5.trim().isEmpty()) {
+            return json5;
+        }
+
+        try {
+            // 使用支持注释的 mapper 来解析
+            JsonMapper commentSupportedMapper = JsonMapper.builder()
+                    .configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true)
+                    .build();
+
+            // 解析并格式化（注释会丢失）
+            JsonNode node = commentSupportedMapper.readTree(json5);
+            return commentSupportedMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(node);
+        } catch (Exception e) {
+            // 如果解析失败，尝试用默认 mapper
+            try {
+                return toJsonPrettyStr(json5);
+            } catch (Exception ex) {
+                // 如果还是失败，返回原始字符串
+                return json5;
+            }
+        }
+    }
+
+    /**
+     * 判断字符串是否为有效的 JSON 或 JSON5（支持注释）
+     *
+     * @param json 待判断的字符串
+     * @return 是否为有效的 JSON/JSON5
+     */
+    public static boolean isTypeJSON5(String json) {
+        try {
+            // 使用支持注释的 mapper 来解析
+            JsonMapper commentSupportedMapper = JsonMapper.builder()
+                    .configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true)
+                    .build();
+
+            JsonNode rootNode = commentSupportedMapper.readTree(json);
+            // 严格校验：只有是JSON对象或JSON数组时才返回true
+            return rootNode.isObject() || rootNode.isArray();
+        } catch (JacksonException e) {
+            return false;
+        }
     }
 
     /**

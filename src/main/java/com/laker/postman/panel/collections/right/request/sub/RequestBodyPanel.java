@@ -1,8 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
@@ -405,9 +403,21 @@ public class RequestBodyPanel extends JPanel {
             return;
         }
         String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
-        if (RAW_TYPE_JSON.equals(selectedFormat) && JsonUtil.isTypeJSON(bodyText)) {
-            JSON json = JSONUtil.parse(bodyText);
-            bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
+        if (RAW_TYPE_JSON.equals(selectedFormat)) {
+            if (!JsonUtil.isTypeJSON(bodyText) && JsonUtil.isTypeJSON5(bodyText)) {
+                int result = JOptionPane.showConfirmDialog(
+                        this,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_JSON5_WARNING),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+                if (result != JOptionPane.YES_OPTION) {
+                    return; // 用户选择取消，不执行格式化
+                }
+            }
+            String prettyJson = JsonUtil.formatJson5(bodyText);
+            bodyArea.setText(prettyJson);
         } else if (RAW_TYPE_XML.equals(selectedFormat)) {
             bodyArea.setText(XmlUtil.formatXml(bodyText));
         } else {

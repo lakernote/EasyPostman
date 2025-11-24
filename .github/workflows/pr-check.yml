@@ -7,11 +7,12 @@ name: PR Check
 # 触发条件：当创建或更新 Pull Request 时
 on:
   pull_request:
-    # 目标分支：main、master、develop
+    # 目标分支：main、master、develop、feature开头的分支
     branches:
       - main
       - master
       - develop
+      - 'feature/**'
     # 触发类型：
     # - opened: PR 首次创建时
     # - synchronize: PR 有新提交推送时
@@ -21,7 +22,7 @@ on:
 # 环境变量：定义跨平台打包所需的配置
 env:
   JAVA_VERSION: '17'
-  JAVA_DISTRIBUTION: 'temurin'
+  JAVA_DISTRIBUTION: 'jetbrains'
   JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
   JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
 
@@ -74,6 +75,39 @@ jobs:
       - name: Run tests
         run: mvn test
         continue-on-error: true
+
+      - name: Validate JAR size
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          JAR_FILE="target/easy-postman-${VERSION}.jar"
+          
+          if [ ! -f "$JAR_FILE" ]; then
+            echo "❌ JAR file not found: $JAR_FILE"
+            exit 1
+          fi
+          
+          # 获取文件大小（字节）
+          JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
+          # 转换为MB
+          JAR_SIZE_MB=$(echo "scale=2; $JAR_SIZE / 1024 / 1024" | bc)
+          # 最大允许大小：70MB
+          MAX_SIZE_MB=70
+          
+          echo "📦 JAR file: $JAR_FILE"
+          echo "📏 JAR size: ${JAR_SIZE_MB} MB"
+          echo "📊 Maximum allowed size: ${MAX_SIZE_MB} MB"
+          
+          # 检查大小是否超过限制
+          if (( $(echo "$JAR_SIZE_MB > $MAX_SIZE_MB" | bc -l) )); then
+            echo "❌ JAR file size (${JAR_SIZE_MB} MB) exceeds maximum allowed size (${MAX_SIZE_MB} MB)"
+            echo "💡 Please optimize the JAR size by:"
+            echo "   - Removing unnecessary dependencies"
+            echo "   - Using dependency exclusions"
+            echo "   - Optimizing resource files"
+            exit 1
+          else
+            echo "✅ JAR size validation passed"
+          fi
 
       - name: Upload JAR for packaging
         uses: actions/upload-artifact@v4
@@ -501,6 +535,8 @@ jobs:
   pr-validation:
     name: PR Validation
     runs-on: ubuntu-latest
+    # 对于 dependabot 的 PR 跳过验证（自动化 PR 不需要人工验证）
+    if: github.actor != 'dependabot[bot]'
 
     steps:
       # 第一步：检出代码（获取完整历史记录以检查冲突）
@@ -632,6 +668,8 @@ jobs:
           # PR Validation 结果
           if [[ "${{ needs.pr-validation.result }}" == "success" ]]; then
             echo "| 📋 PR 规范 | ✅ 通过 | 标题、描述符合规范，无冲突 |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.pr-validation.result }}" == "skipped" ]]; then
+            echo "| 📋 PR 规范 | ⏭️ 跳过 | Dependabot 自动化 PR，跳过验证 |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 📋 PR 规范 | ❌ 失败 | 请检查标题、描述或解决合并冲突 |" >> $GITHUB_STEP_SUMMARY
           fi
@@ -639,11 +677,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # 根据检查结果给出不同的消息
+          # pr-validation 可能是 success 或 skipped（dependabot 跳过），都视为通过
           if [[ "${{ needs.build.result }}" == "success" ]] && \
              [[ "${{ needs.test-windows-package.result }}" == "success" ]] && \
              [[ "${{ needs.test-macos-package.result }}" == "success" ]] && \
              [[ "${{ needs.code-quality.result }}" == "success" ]] && \
-             [[ "${{ needs.pr-validation.result }}" == "success" ]]; then
+             ( [[ "${{ needs.pr-validation.result }}" == "success" ]] || [[ "${{ needs.pr-validation.result }}" == "skipped" ]] ); then
             echo "### ✅ 所有检查通过！" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🎉 恭喜！此 PR 已通过以下验证：" >> $GITHUB_STEP_SUMMARY
@@ -665,7 +704,7 @@ jobs:
             [[ "${{ needs.test-windows-package.result }}" == "failure" ]] && echo "- 🪟 Windows 打包/启动测试失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.test-macos-package.result }}" == "failure" ]] && echo "- 🍎 macOS 打包/启动测试失败" >> $GITHUB_STEP_SUMMARY
             [[ "${{ needs.code-quality.result }}" != "success" ]] && echo "- 📊 代码质量检查失败" >> $GITHUB_STEP_SUMMARY
-            [[ "${{ needs.pr-validation.result }}" != "success" ]] && echo "- 📋 PR 规范验证失败" >> $GITHUB_STEP_SUMMARY
+            [[ "${{ needs.pr-validation.result }}" == "failure" ]] && echo "- 📋 PR 规范验证失败" >> $GITHUB_STEP_SUMMARY
           
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "💡 **提示**: 点击上方失败的 Job 查看详细日志" >> $GITHUB_STEP_SUMMARY

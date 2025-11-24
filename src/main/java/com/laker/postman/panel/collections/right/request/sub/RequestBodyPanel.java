@@ -1,18 +1,13 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.VariableUtil;
-import com.laker.postman.util.XmlUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -229,7 +224,7 @@ public class RequestBodyPanel extends JPanel {
     private JPanel createRawPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         bodyArea = new RSyntaxTextArea(5, 20);
-        bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON); // 默认JSON高亮
+        bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
         bodyArea.setLineWrap(true); // 自动换行
         // 设置主题
@@ -315,7 +310,7 @@ public class RequestBodyPanel extends JPanel {
                     String selected = (String) e.getItem();
                     switch (selected) {
                         case RAW_TYPE_JSON:
-                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS);
                             break;
                         case RAW_TYPE_XML:
                             bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
@@ -408,9 +403,21 @@ public class RequestBodyPanel extends JPanel {
             return;
         }
         String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
-        if (RAW_TYPE_JSON.equals(selectedFormat) && JSONUtil.isTypeJSON(bodyText)) {
-            JSON json = JSONUtil.parse(bodyText);
-            bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
+        if (RAW_TYPE_JSON.equals(selectedFormat)) {
+            if (!JsonUtil.isTypeJSON(bodyText) && JsonUtil.isTypeJSON5(bodyText)) {
+                int result = JOptionPane.showConfirmDialog(
+                        this,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_JSON5_WARNING),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+                if (result != JOptionPane.YES_OPTION) {
+                    return; // 用户选择取消，不执行格式化
+                }
+            }
+            String prettyJson = JsonUtil.formatJson5(bodyText);
+            bodyArea.setText(prettyJson);
         } else if (RAW_TYPE_XML.equals(selectedFormat)) {
             bodyArea.setText(XmlUtil.formatXml(bodyText));
         } else {

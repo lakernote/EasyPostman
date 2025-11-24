@@ -724,6 +724,7 @@ public final class MessageKeys {
     public static final String REQUEST_BODY_NONE = "request.body.none";
     public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";
     public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
+    public static final String REQUEST_BODY_FORMAT_JSON5_WARNING = "request.body.format.json5.warning";
 
     // ============ 响应头面板相关 ============
     public static final String RESPONSE_HEADERS_COPY_SELECTED = "response.headers.copy_selected";

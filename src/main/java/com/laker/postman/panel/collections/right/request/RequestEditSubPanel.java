@@ -20,10 +20,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.XmlUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
@@ -253,7 +250,7 @@ public class RequestEditSubPanel extends JPanel {
     public void setOriginalRequestItem(HttpRequestItem item) {
         if (item != null && !item.isNewRequest()) {
             // 深拷贝，避免引用同一对象导致脏检测失效
-            this.originalRequestItem = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
+            this.originalRequestItem = JsonUtil.deepCopy(item, HttpRequestItem.class);
         } else {
             this.originalRequestItem = null;
         }

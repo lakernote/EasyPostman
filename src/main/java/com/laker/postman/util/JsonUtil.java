@@ -2,7 +2,11 @@ package com.laker.postman.util;
 
 import lombok.experimental.UtilityClass;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.json.JsonFactory;
 import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.core.util.Separators;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -13,7 +17,17 @@ import tools.jackson.databind.node.ObjectNode;
  */
 @UtilityClass
 public class JsonUtil {
-    private static final JsonMapper mapper = new JsonMapper();
+    /**
+     * JsonMapper 自定义 json 美化格式，4 个空格缩进，属性名后不加空格，属性值前加空格
+     */
+    private static final DefaultIndenter DEFAULT_INDENTER = new DefaultIndenter("    ", "\n");
+    private static final DefaultPrettyPrinter DEFAULT_PRETTY_PRINTER = new DefaultPrettyPrinter(
+            Separators.createDefaultInstance().withObjectNameValueSpacing(Separators.Spacing.AFTER))
+            .withObjectIndenter(DEFAULT_INDENTER)
+            .withArrayIndenter(DEFAULT_INDENTER);
+    private static final JsonMapper mapper = new JsonMapper.Builder(new JsonFactory())
+            .defaultPrettyPrinter(DEFAULT_PRETTY_PRINTER)
+            .build();
 
     /**
      * 创建 ObjectNode

@@ -759,7 +759,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 批量创建副本
         for (RequestCopyInfo info : copyInfos) {
-            HttpRequestItem copy = JSONUtil.toBean(JSONUtil.parse(info.item).toString(), HttpRequestItem.class);
+            HttpRequestItem copy = JsonUtil.deepCopy(info.item, HttpRequestItem.class);
             copy.setId(java.util.UUID.randomUUID().toString());
             copy.setName(info.item.getName() + " " + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
             DefaultMutableTreeNode copyNode = new DefaultMutableTreeNode(new Object[]{REQUEST, copy});
@@ -801,7 +801,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
             if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
                 HttpRequestItem item = (HttpRequestItem) obj[1];
                 // 深拷贝
-                HttpRequestItem copy = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
+                HttpRequestItem copy = JsonUtil.deepCopy(item, HttpRequestItem.class);
                 copiedRequests.add(copy);
             }
         }
@@ -844,7 +844,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         // 批量粘贴
         for (HttpRequestItem copiedItem : copiedRequests) {
-            HttpRequestItem pasteItem = JSONUtil.toBean(JSONUtil.parse(copiedItem).toString(), HttpRequestItem.class);
+            HttpRequestItem pasteItem = JsonUtil.deepCopy(copiedItem, HttpRequestItem.class);
             pasteItem.setId(java.util.UUID.randomUUID().toString());
             pasteItem.setName(copiedItem.getName() + " " + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
 
@@ -913,7 +913,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 } else if (REQUEST.equals(childObj[0])) {
                     // 深拷贝请求节点
                     HttpRequestItem item = (HttpRequestItem) childObj[1];
-                    HttpRequestItem copyItem = JSONUtil.toBean(JSONUtil.parse(item).toString(), HttpRequestItem.class);
+                    HttpRequestItem copyItem = JsonUtil.deepCopy(item, HttpRequestItem.class);
                     copyItem.setId(java.util.UUID.randomUUID().toString());
                     Object[] reqObj = new Object[]{REQUEST, copyItem};
                     copy.add(new DefaultMutableTreeNode(reqObj));

@@ -9,10 +9,7 @@ import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.VariableUtil;
-import com.laker.postman.util.XmlUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -229,7 +226,7 @@ public class RequestBodyPanel extends JPanel {
     private JPanel createRawPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         bodyArea = new RSyntaxTextArea(5, 20);
-        bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON); // 默认JSON高亮
+        bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
         bodyArea.setLineWrap(true); // 自动换行
         // 设置主题
@@ -315,7 +312,7 @@ public class RequestBodyPanel extends JPanel {
                     String selected = (String) e.getItem();
                     switch (selected) {
                         case RAW_TYPE_JSON:
-                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                            bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS);
                             break;
                         case RAW_TYPE_XML:
                             bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
@@ -408,7 +405,7 @@ public class RequestBodyPanel extends JPanel {
             return;
         }
         String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
-        if (RAW_TYPE_JSON.equals(selectedFormat) && JSONUtil.isTypeJSON(bodyText)) {
+        if (RAW_TYPE_JSON.equals(selectedFormat) && JsonUtil.isTypeJSON(bodyText)) {
             JSON json = JSONUtil.parse(bodyText);
             bodyArea.setText(JSONUtil.toJsonPrettyStr(json));
         } else if (RAW_TYPE_XML.equals(selectedFormat)) {

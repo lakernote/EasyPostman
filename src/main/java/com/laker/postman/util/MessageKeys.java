@@ -297,10 +297,7 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST = "functional.msg.no_runnable_request";
     public static final String FUNCTIONAL_MSG_CSV_DETECTED = "functional.msg.csv_detected";
     public static final String FUNCTIONAL_MSG_CSV_TITLE = "functional.msg.csv_title";
-    public static final String FUNCTIONAL_STATUS_NOT_EXECUTED = "functional.status.not_executed";
     public static final String FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED = "functional.status.pre_script_failed";
-    public static final String FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED = "functional.status.sse_batch_not_supported";
-    public static final String FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED = "functional.status.ws_batch_not_supported";
     public static final String FUNCTIONAL_STATUS_SKIPPED = "functional.status.skipped";
 
     // ============ 工作区相关 ============

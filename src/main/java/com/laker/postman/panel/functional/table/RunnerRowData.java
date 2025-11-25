@@ -1,9 +1,6 @@
 package com.laker.postman.panel.functional.table;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.model.*;
 
 import java.util.List;
 
@@ -14,7 +11,7 @@ public class RunnerRowData {
     public String method;
     public long cost;
     public String status;
-    public String assertion;
+    public AssertionResult assertion;
     public HttpRequestItem requestItem;
     public PreparedRequest preparedRequest;
     public HttpResponse response;
@@ -27,7 +24,7 @@ public class RunnerRowData {
         this.method = item.getMethod();
         this.cost = 0;
         this.status = "";
-        this.assertion = "";
+        this.assertion = AssertionResult.NO_TESTS;
         this.requestItem = item;
         this.preparedRequest = prepared;
         this.response = null;

@@ -14,7 +14,7 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
     private final List<RunnerRowData> rows = new ArrayList<>();
 
     @Override
-    public int getRowCount() {
+    public synchronized int getRowCount() {
         return rows.size();
     }
 
@@ -49,7 +49,10 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
     }
 
     @Override
-    public Object getValueAt(int rowIndex, int columnIndex) {
+    public synchronized Object getValueAt(int rowIndex, int columnIndex) {
+        if (rowIndex < 0 || rowIndex >= rows.size()) {
+            return null;
+        }
         RunnerRowData row = rows.get(rowIndex);
         return switch (columnIndex) {
             case 0 -> row.selected;
@@ -58,13 +61,16 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
             case 3 -> row.method;
             case 4 -> row.status != null && !row.status.isEmpty() ? row.status : "-";
             case 5 -> row.cost > 0 ? TimeDisplayUtil.formatElapsedTime(row.cost) : "-";
-            case 6 -> row.assertion != null && !row.assertion.isEmpty() ? row.assertion : "-";
+            case 6 -> row.assertion != null ? row.assertion : "-";
             default -> null;
         };
     }
 
     @Override
-    public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+    public synchronized void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+        if (rowIndex < 0 || rowIndex >= rows.size()) {
+            return;
+        }
         RunnerRowData row = rows.get(rowIndex);
         if (columnIndex == 0) {
             row.selected = (Boolean) aValue;
@@ -72,12 +78,12 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
         }
     }
 
-    public void addRow(RunnerRowData row) {
+    public synchronized void addRow(RunnerRowData row) {
         rows.add(row);
         fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
     }
 
-    public void clear() {
+    public synchronized void clear() {
         int size = rows.size();
         if (size > 0) {
             rows.clear();
@@ -85,12 +91,18 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
         }
     }
 
-    public RunnerRowData getRow(int rowIndex) {
+    public synchronized RunnerRowData getRow(int rowIndex) {
+        if (rowIndex < 0 || rowIndex >= rows.size()) {
+            return null;
+        }
         return rows.get(rowIndex);
     }
 
-    public void moveRow(int fromIndex, int toIndex) {
+    public synchronized void moveRow(int fromIndex, int toIndex) {
         if (fromIndex == toIndex) return;
+        if (fromIndex < 0 || fromIndex >= rows.size() || toIndex < 0 || toIndex >= rows.size()) {
+            return;
+        }
         RunnerRowData row = rows.remove(fromIndex);
         if (toIndex > fromIndex) toIndex--;
         rows.add(toIndex, row);
@@ -100,7 +112,7 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
     /**
      * 删除指定行
      */
-    public void removeRow(int rowIndex) {
+    public synchronized void removeRow(int rowIndex) {
         if (rowIndex >= 0 && rowIndex < rows.size()) {
             rows.remove(rowIndex);
             fireTableRowsDeleted(rowIndex, rowIndex);
@@ -112,7 +124,7 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
      *
      * @return 删除的行数
      */
-    public int removeSelectedRows() {
+    public synchronized int removeSelectedRows() {
         List<RunnerRowData> toRemove = new ArrayList<>();
         for (RunnerRowData row : rows) {
             if (row.selected) {
@@ -129,7 +141,7 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
     /**
      * 设置所有行的选中状态
      */
-    public void setAllSelected(boolean selected) {
+    public synchronized void setAllSelected(boolean selected) {
         for (RunnerRowData row : rows) {
             row.selected = selected;
         }
@@ -139,21 +151,21 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
     /**
      * 获取选中的请求数量
      */
-    public int getSelectedCount() {
+    public synchronized int getSelectedCount() {
         return (int) rows.stream().filter(row -> row.selected).count();
     }
 
     /**
      * 获取所有行数据（用于保存测试集）
      */
-    public List<RunnerRowData> getAllRows() {
+    public synchronized List<RunnerRowData> getAllRows() {
         return new ArrayList<>(rows);
     }
 
     /**
      * 检查是否有选中的行
      */
-    public boolean hasSelectedRows() {
+    public synchronized boolean hasSelectedRows() {
         return rows.stream().anyMatch(row -> row.selected);
     }
 }

@@ -2,6 +2,7 @@ package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.AssertionResult;
 import com.laker.postman.model.BatchExecutionHistory;
 import com.laker.postman.model.IterationResult;
 import com.laker.postman.model.RequestResult;
@@ -527,7 +528,7 @@ public class ExecutionResultsPanel extends JPanel {
         @Override
         public String toString() {
             long passedCount = iteration.getRequestResults().stream()
-                    .filter(req -> "Pass".equals(req.getAssertion()))
+                    .filter(req -> AssertionResult.PASS.equals(req.getAssertion()))
                     .count();
             return I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_PASSED_FORMAT,
                     iteration.getIterationIndex() + 1,
@@ -567,23 +568,29 @@ public class ExecutionResultsPanel extends JPanel {
             if (userObject instanceof IterationNodeData) {
                 setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
             } else if (userObject instanceof RequestNodeData requestData) {
-                // 检查是否是跳过状态
+                // 检查status是否是跳过状态
                 String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+                AssertionResult assertion = requestData.request.getAssertion();
 
                 if (skippedText.equals(requestData.request.getStatus())) {
-                    // 跳过状态：灰色文字
+                    // status是跳过状态：灰色文字
                     if (!sel) {
-                        setForeground(ModernColors.TEXT_HINT); // 灰色
+                        setForeground(ModernColors.TEXT_HINT);
                     }
-                } else if ("Pass".equals(requestData.request.getAssertion())) {
-                    // 成功：绿色文字
-                    if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
-                        setForeground(new Color(40, 167, 69)); // 绿色
+                } else if (AssertionResult.NO_TESTS.equals(assertion)) {
+                    // assertion是无测试：灰蓝色文字
+                    if (!sel) {
+                        setForeground(new Color(108, 117, 125));
                     }
-                } else if (requestData.request.getAssertion() != null && !requestData.request.getAssertion().isEmpty()) {
-                    // 失败：红色文字
-                    if (!sel) { // 只在非选中状态下设置颜色，选中时保持选中色
-                        setForeground(new Color(220, 53, 69)); // 红色
+                } else if (AssertionResult.PASS.equals(assertion)) {
+                    // assertion是通过：绿色文字
+                    if (!sel) {
+                        setForeground(new Color(40, 167, 69));
+                    }
+                } else if (AssertionResult.FAIL.equals(assertion)) {
+                    // assertion是失败：红色文字
+                    if (!sel) {
+                        setForeground(new Color(220, 53, 69));
                     }
                 } else {
                     // 未执行或其他状态：默认图标
@@ -621,11 +628,24 @@ public class ExecutionResultsPanel extends JPanel {
                 .sum();
         long totalTime = executionHistory.getExecutionTime();
 
+        String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+
         long passedTests = executionHistory.getIterations().stream()
                 .flatMap(iter -> iter.getRequestResults().stream())
-                .filter(req -> "Pass".equals(req.getAssertion()))
+                .filter(req -> AssertionResult.PASS.equals(req.getAssertion()))
                 .count();
-        double successRate = totalRequests > 0 ? (double) passedTests / totalRequests * 100 : 0;
+
+        long failedTests = executionHistory.getIterations().stream()
+                .flatMap(iter -> iter.getRequestResults().stream())
+                .filter(req -> AssertionResult.FAIL.equals(req.getAssertion()) ||
+                        (req.getAssertion() != null &&
+                                !AssertionResult.PASS.equals(req.getAssertion()) &&
+                                !AssertionResult.NO_TESTS.equals(req.getAssertion()) &&
+                                !skippedText.equals(req.getStatus())))
+                .count();
+
+        long totalTestsWithAssertions = passedTests + failedTests;
+        double successRate = totalTestsWithAssertions > 0 ? (double) passedTests / totalTestsWithAssertions * 100 : 0;
 
         statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_ITERATIONS) + ": " + totalIterations));
         statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_REQUESTS) + ": " + totalRequests));
@@ -822,12 +842,11 @@ public class ExecutionResultsPanel extends JPanel {
 
                 if (value != null && !"-".equals(value)) {
                     if (skippedText.equals(status)) {
+                        // status是跳过状态
                         setText("💨");
                         c.setForeground(ModernColors.TEXT_HINT);
-                    } else if ("Pass".equalsIgnoreCase(value.toString()) || value.toString().isEmpty()) {
-                        setText("✅");
-                    } else {
-                        setText("❌");
+                    } else if (value instanceof AssertionResult assertionResult) {
+                        setText(assertionResult.getDisplayValue());
                     }
                 } else {
                     c.setForeground(ModernColors.TEXT_DISABLED);

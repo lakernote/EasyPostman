@@ -378,7 +378,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         HttpResponse resp;
         long cost;
         String status;
-        String assertion;
+        AssertionResult assertion;
     }
 
     private BatchResult executeSingleRequestWithCsv(RunnerRowData row, Map<String, String> csvRowData) {
@@ -411,29 +411,30 @@ public class FunctionalPanel extends SingletonBasePanel {
             PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
         }
 
-
         HttpResponse resp = null;
-        String status;
-        String assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_NOT_EXECUTED);
+        String status; // HTTP状态码或执行状态（需要国际化）
+        AssertionResult assertion = AssertionResult.NO_TESTS; // 断言结果
+
         if (!preOk) {
+            // 前置脚本失败
             status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED);
         } else if (HttpUtil.isSSERequest(req)) {
+            // SSE请求跳过
             status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-            assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SSE_BATCH_NOT_SUPPORTED);
         } else if (item.getProtocol().isWebSocketProtocol()) {
+            // WebSocket请求跳过
             status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-            assertion = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_WS_BATCH_NOT_SUPPORTED);
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
                 resp = HttpSingleRequestExecutor.executeHttp(req);
-                status = String.valueOf(resp.code);
-                assertion = runPostScriptAndAssertWithCsv(item, bindings, resp, row, pm);
+                status = String.valueOf(resp.code); // HTTP状态码
+                assertion = runPostScriptAndAssertWithCsv(item, bindings, resp, row, pm); // 返回断言结果
             } catch (Exception ex) {
                 log.error("请求执行失败", ex);
                 ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                status = ex.getMessage();
-                assertion = ex.getMessage();
+                status = ex.getMessage(); // 错误消息作为状态
+                assertion = AssertionResult.FAIL; // 错误消息也作为断言结果
             }
         }
         long cost = System.currentTimeMillis() - start;
@@ -466,8 +467,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         return true;
     }
 
-    private String runPostScriptAndAssertWithCsv(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, RunnerRowData row, Postman pm) {
-        String assertion = "Pass";
+    private AssertionResult runPostScriptAndAssertWithCsv(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, RunnerRowData row, Postman pm) {
         String postscript = item.getPostscript();
         if (postscript != null && !postscript.isBlank()) {
             HttpUtil.postBindings(bindings, resp);
@@ -485,15 +485,28 @@ public class FunctionalPanel extends SingletonBasePanel {
                 if (pm.testResults != null) {
                     row.testResults.addAll(pm.testResults);
                 }
+
+                // 检查是否有测试结果
+                if (pm.testResults == null || pm.testResults.isEmpty()) {
+                    // 没有测试断言
+                    return AssertionResult.NO_TESTS;
+                } else {
+                    // 有测试断言，检查是否全部通过
+                    boolean allPassed = pm.testResults.stream().allMatch(test -> test.passed);
+                    return allPassed ? AssertionResult.PASS : AssertionResult.FAIL;
+                }
             } catch (Exception assertionEx) {
-                assertion = assertionEx.getMessage();
                 row.testResults = new java.util.ArrayList<>();
                 if (pm.testResults != null) {
                     row.testResults.addAll(pm.testResults);
                 }
+                // 脚本执行异常，返回错误消息
+                return AssertionResult.FAIL;
             }
+        } else {
+            // 没有后置脚本，意味着没有测试
+            return AssertionResult.NO_TESTS;
         }
-        return assertion;
     }
 
     // 更新执行时间显示
@@ -672,14 +685,13 @@ public class FunctionalPanel extends SingletonBasePanel {
                 String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
 
                 if (value != null && !"-".equals(value)) {
-                    // 检查状态列是否为"跳过"
+
+                    // 检查状态列是否为"跳过"（status是跳过，assertion会是描述信息）
                     if (skippedText.equals(status)) {
                         setText("💨"); // 跳过符号
-                        c.setForeground(ModernColors.TEXT_HINT); // 使用统一的灰色
-                    } else if ("Pass".equalsIgnoreCase(value.toString()) || value.toString().isEmpty()) {
-                        setText("✅");
-                    } else {
-                        setText("❌");
+                        c.setForeground(ModernColors.TEXT_HINT);
+                    } else if (value instanceof AssertionResult assertionResult) {
+                        setText(assertionResult.getDisplayValue());
                     }
                 } else {
                     c.setForeground(ModernColors.TEXT_DISABLED);

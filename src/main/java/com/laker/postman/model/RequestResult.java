@@ -17,13 +17,13 @@ public class RequestResult {
     private final HttpResponse response;
     private final long cost;
     private final String status;
-    private final String assertion;
+    private final AssertionResult assertion;
     private final List<TestResult> testResults;
     private final long timestamp;
 
     public RequestResult(String requestName, String method, String url,
                          PreparedRequest req, HttpResponse response, long cost, String status,
-                         String assertion, List<TestResult> testResults) {
+                         AssertionResult assertion, List<TestResult> testResults) {
         this.requestName = requestName;
         this.method = method;
         this.url = url;

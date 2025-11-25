@@ -1,7 +1,6 @@
 package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
@@ -10,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 
 @Slf4j
 public class HttpUtil {
@@ -232,19 +231,27 @@ public class HttpUtil {
     }
 
 
-    public static Map<String, String> getParamsMapFromUrl(String url) {
-        if (url == null) return null;
+    /**
+     * 从URL解析参数列表（支持重复参数）
+     * 参考Postman的逻辑，允许相同的key出现多次
+     *
+     * @param url URL字符串
+     * @return 参数列表，如果没有参数返回null
+     */
+    public static List<HttpParam> getParamsListFromUrl(String url) {
+        if (url == null) return Collections.emptyList();
         int idx = url.indexOf('?');
-        if (idx < 0 || idx == url.length() - 1) return null;
+        if (idx < 0 || idx == url.length() - 1) return Collections.emptyList();
         String paramStr = url.substring(idx + 1);
 
-        Map<String, String> urlParams = new LinkedHashMap<>();
+        List<HttpParam> urlParams = new ArrayList<>();
         int last = 0;
         while (last < paramStr.length()) {
             int amp = paramStr.indexOf('&', last);
             String pair = (amp == -1) ? paramStr.substring(last) : paramStr.substring(last, amp);
             int eqIdx = pair.indexOf('=');
-            String k, v;
+            String k;
+            String v;
             if (eqIdx >= 0) {
                 k = pair.substring(0, eqIdx);
                 v = pair.substring(eqIdx + 1);
@@ -255,8 +262,8 @@ public class HttpUtil {
             }
 
             // 只要key不为空，就添加参数（value可以为空）
-            if (StrUtil.isNotBlank(k)) {
-                urlParams.put(k.trim(), v == null ? "" : v);
+            if (CharSequenceUtil.isNotBlank(k)) {
+                urlParams.add(new HttpParam(true, k.trim(), v));
             }
 
             if (amp == -1) break;
@@ -264,11 +271,10 @@ public class HttpUtil {
         }
 
         if (urlParams.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
         return urlParams;
     }
-
 
     /**
      * 获取不带参数的基础URL
@@ -287,13 +293,14 @@ public class HttpUtil {
     }
 
     /**
-     * 从参数Map构建完整的URL
+     * 从参数列表构建完整的URL（支持重复参数，只添加enabled的参数）
+     * 参考Postman的逻辑，允许相同的key出现多次
      *
      * @param baseUrl 基础URL（不带参数）
-     * @param params  参数Map
+     * @param params  参数列表
      * @return 完整的URL
      */
-    public static String buildUrlFromParamsMap(String baseUrl, Map<String, String> params) {
+    public static String buildUrlFromParamsList(String baseUrl, List<HttpParam> params) {
         if (baseUrl == null || baseUrl.trim().isEmpty()) {
             return baseUrl;
         }
@@ -305,12 +312,9 @@ public class HttpUtil {
         StringBuilder urlBuilder = new StringBuilder(baseUrl);
         boolean isFirst = true;
 
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-
-            // 只添加非空的key
-            if (StrUtil.isNotBlank(key)) {
+        for (HttpParam param : params) {
+            // 只添加enabled且key不为空的参数
+            if (param.isEnabled() && CharSequenceUtil.isNotBlank(param.getKey())) {
                 if (isFirst) {
                     urlBuilder.append("?");
                     isFirst = false;
@@ -319,12 +323,12 @@ public class HttpUtil {
                 }
 
                 // 对参数名进行URL编码
-                urlBuilder.append(encodeURIComponent(key));
+                urlBuilder.append(encodeURIComponent(param.getKey()));
 
                 // 如果value不为空，才添加=和value
-                if (StrUtil.isNotBlank(value)) {
+                if (CharSequenceUtil.isNotBlank(param.getValue())) {
                     urlBuilder.append("=");
-                    urlBuilder.append(encodeURIComponent(value));
+                    urlBuilder.append(encodeURIComponent(param.getValue()));
                 }
                 // 如果value为空，只添加key，不添加=
             }

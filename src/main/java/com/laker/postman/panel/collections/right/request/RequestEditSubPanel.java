@@ -686,9 +686,9 @@ public class RequestEditSubPanel extends JPanel {
             paramsPanel.setParamsList(item.getParamsList());
         } else {
             // 没有数据，尝试从 URL 解析参数
-            Map<String, String> urlParams = HttpUtil.getParamsMapFromUrl(url);
-            if (urlParams != null && !urlParams.isEmpty()) {
-                paramsPanel.setMap(urlParams);
+            List<HttpParam> urlParams = HttpUtil.getParamsListFromUrl(url);
+            if (!urlParams.isEmpty()) {
+                paramsPanel.setParamsList(urlParams);
                 item.setParamsList(paramsPanel.getParamsList());
             } else {
                 paramsPanel.clear();
@@ -816,27 +816,54 @@ public class RequestEditSubPanel extends JPanel {
         isUpdatingFromUrl = true;
         try {
             String url = urlField.getText();
-            Map<String, String> urlParams = getParamsMapFromUrl(url);
+            List<HttpParam> urlParams = HttpUtil.getParamsListFromUrl(url);
 
             // 获取当前Params面板的参数
-            Map<String, String> currentParams = paramsPanel.getMap();
+            List<HttpParam> currentParams = paramsPanel.getParamsList();
 
-            // 如果URL中没有参数，清空Params面板
-            if (urlParams == null || urlParams.isEmpty()) {
-                if (!currentParams.isEmpty()) {
-                    paramsPanel.clear();
-                }
-                return;
-            }
+            // 检查URL参数和当前Params参数中enabled的是否一致
+            // 注意：只比较enabled的参数，因为URL中不包含disabled的参数
+            List<HttpParam> enabledCurrentParams = currentParams.stream()
+                    .filter(HttpParam::isEnabled)
+                    .toList();
 
-            // 检查URL参数和当前Params参数是否完全一致
-            if (!urlParams.equals(currentParams)) {
-                // 完全用URL中的参数替换Params面板
-                paramsPanel.setMap(urlParams);
+            if (!paramsListEquals(urlParams, enabledCurrentParams)) {
+                // URL中的参数与当前enabled的参数不一致，需要更新
+                // 保留当前disabled的参数，添加URL中的新参数
+                List<HttpParam> disabledParams = currentParams.stream()
+                        .filter(p -> !p.isEnabled())
+                        .toList();
+
+                // 合并URL参数和disabled参数
+                // 如果URL没有参数，只保留disabled的参数
+                List<HttpParam> mergedParams = new ArrayList<>(urlParams);
+                mergedParams.addAll(disabledParams);
+
+                paramsPanel.setParamsList(mergedParams);
             }
         } finally {
             isUpdatingFromUrl = false;
         }
+    }
+
+    /**
+     * 比较两个参数列表是否相等
+     */
+    private boolean paramsListEquals(List<HttpParam> list1, List<HttpParam> list2) {
+        if (list1 == null && list2 == null) return true;
+        if (list1 == null || list2 == null) return false;
+        if (list1.size() != list2.size()) return false;
+
+        for (int i = 0; i < list1.size(); i++) {
+            HttpParam p1 = list1.get(i);
+            HttpParam p2 = list2.get(i);
+            if (!Objects.equals(p1.getKey(), p2.getKey()) ||
+                    !Objects.equals(p1.getValue(), p2.getValue()) ||
+                    p1.isEnabled() != p2.isEnabled()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -856,11 +883,11 @@ public class RequestEditSubPanel extends JPanel {
                 return; // 没有基础URL，无法构建完整URL
             }
 
-            // 获取Params面板的所有参数
-            Map<String, String> params = paramsPanel.getMap();
+            // 获取Params面板的所有参数（包括enabled状态）
+            List<HttpParam> params = paramsPanel.getParamsList();
 
-            // 使用HttpUtil中的方法构建完整URL
-            String newUrl = HttpUtil.buildUrlFromParamsMap(baseUrl, params);
+            // 使用HttpUtil中的方法构建完整URL（只包含enabled的参数）
+            String newUrl = HttpUtil.buildUrlFromParamsList(baseUrl, params);
 
             // 只有在URL真正发生变化时才更新
             if (!newUrl.equals(currentUrl)) {

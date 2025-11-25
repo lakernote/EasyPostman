@@ -30,4 +30,30 @@ public class PreparedRequest {
     public List<HttpHeader> headersList;
     public List<HttpFormData> formDataList;
     public List<HttpFormUrlencoded> urlencodedList;
+
+    /**
+     * 创建当前对象的浅拷贝
+     * 注意：List 和 Map 对象本身不会被深拷贝，只是引用复制
+     */
+    public PreparedRequest shallowCopy() {
+        PreparedRequest copy = new PreparedRequest();
+        copy.id = this.id;
+        copy.url = this.url;
+        copy.method = this.method;
+        copy.headers = this.headers;
+        copy.okHttpHeaders = this.okHttpHeaders;
+        copy.body = this.body;
+        copy.bodyType = this.bodyType;
+        copy.okHttpRequestBody = this.okHttpRequestBody;
+        copy.formData = this.formData;
+        copy.formFiles = this.formFiles;
+        copy.urlencoded = this.urlencoded;
+        copy.isMultipart = this.isMultipart;
+        copy.followRedirects = this.followRedirects;
+        copy.logEvent = this.logEvent;
+        copy.headersList = this.headersList;
+        copy.formDataList = this.formDataList;
+        copy.urlencodedList = this.urlencodedList;
+        return copy;
+    }
 }

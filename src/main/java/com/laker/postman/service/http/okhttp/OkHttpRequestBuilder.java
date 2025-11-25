@@ -1,5 +1,8 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
@@ -7,7 +10,7 @@ import okhttp3.*;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.Map;
+import java.util.List;
 
 /**
  * OkHttp 请求构建工具类
@@ -30,14 +33,14 @@ public class OkHttpRequestBuilder {
      */
     public static Request buildRequest(PreparedRequest req) {
         String methodUpper = req.method.toUpperCase();
-        String contentType = extractContentType(req.headers);
+        String contentType = extractContentType(req.headersList);
         RequestBody requestBody = buildRequestBody(req.body, methodUpper, contentType);
 
         Request.Builder builder = new Request.Builder()
                 .url(req.url)
                 .method(methodUpper, requestBody);
 
-        addHeaders(builder, req.headers);
+        addHeadersFromList(builder, req.headersList);
 
         return builder.build();
     }
@@ -48,14 +51,13 @@ public class OkHttpRequestBuilder {
     public static Request buildMultipartRequest(PreparedRequest req) {
         MultipartBody.Builder multipartBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
 
-        addFormDataParts(multipartBuilder, req.formData);
-        addFormFileParts(multipartBuilder, req.formFiles);
+        addFormDataPartsFromList(multipartBuilder, req.formDataList);
 
         Request.Builder builder = new Request.Builder()
                 .url(req.url)
                 .method(req.method, multipartBuilder.build());
 
-        addHeaders(builder, req.headers);
+        addHeadersFromList(builder, req.headersList);
 
         return builder.build();
     }
@@ -65,13 +67,14 @@ public class OkHttpRequestBuilder {
      */
     public static Request buildFormRequest(PreparedRequest req) {
         FormBody.Builder formBuilder = new FormBody.Builder();
-        addFormUrlEncodedParts(formBuilder, req.urlencoded);
+
+        addFormUrlEncodedPartsFromList(formBuilder, req.urlencodedList);
 
         Request.Builder builder = new Request.Builder()
                 .url(req.url)
                 .method(req.method, formBuilder.build());
 
-        boolean hasContentType = addHeaders(builder, req.headers);
+        boolean hasContentType = addHeadersFromList(builder, req.headersList);
 
         if (!hasContentType) {
             builder.addHeader(CONTENT_TYPE, DEFAULT_FORM_CONTENT_TYPE);
@@ -81,16 +84,16 @@ public class OkHttpRequestBuilder {
     }
 
     /**
-     * 从 headers 中提取 Content-Type
+     * 从 headersList 中提取 Content-Type
      */
-    private static String extractContentType(Map<String, String> headers) {
-        if (headers == null) {
+    private static String extractContentType(List<HttpHeader> headersList) {
+        if (headersList == null) {
             return null;
         }
 
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            if (CONTENT_TYPE.equalsIgnoreCase(entry.getKey())) {
-                String value = entry.getValue();
+        for (HttpHeader header : headersList) {
+            if (header.isEnabled() && CONTENT_TYPE.equalsIgnoreCase(header.getKey())) {
+                String value = header.getValue();
                 if (value != null && !value.isEmpty()) {
                     return value;
                 }
@@ -161,43 +164,6 @@ public class OkHttpRequestBuilder {
         return RequestBody.create(EMPTY_BODY, mediaType);
     }
 
-    /**
-     * 添加表单数据部分
-     */
-    private static void addFormDataParts(MultipartBody.Builder builder, Map<String, String> formData) {
-        if (formData == null) {
-            return;
-        }
-
-        for (Map.Entry<String, String> entry : formData.entrySet()) {
-            String key = entry.getKey();
-            if (key != null && !key.isEmpty()) {
-                String value = entry.getValue() != null ? entry.getValue() : "";
-                builder.addFormDataPart(key, value);
-            }
-        }
-    }
-
-    /**
-     * 添加表单文件部分
-     */
-    private static void addFormFileParts(MultipartBody.Builder builder, Map<String, String> formFiles) {
-        if (formFiles == null) {
-            return;
-        }
-
-        for (Map.Entry<String, String> entry : formFiles.entrySet()) {
-            File file = new File(entry.getValue());
-            if (file.exists()) {
-                String mimeType = detectMimeType(file);
-                builder.addFormDataPart(
-                        entry.getKey(),
-                        file.getName(),
-                        RequestBody.create(file, MediaType.parse(mimeType))
-                );
-            }
-        }
-    }
 
     /**
      * 检测文件 MIME 类型
@@ -211,50 +177,6 @@ public class OkHttpRequestBuilder {
         }
     }
 
-    /**
-     * 添加 URL 编码表单部分
-     */
-    private static void addFormUrlEncodedParts(FormBody.Builder builder, Map<String, String> urlencoded) {
-        if (urlencoded == null) {
-            return;
-        }
-
-        for (Map.Entry<String, String> entry : urlencoded.entrySet()) {
-            String key = entry.getKey();
-            if (key != null && !key.isEmpty()) {
-                String value = entry.getValue() != null ? entry.getValue() : "";
-                builder.add(key, value);
-            }
-        }
-    }
-
-    /**
-     * 添加 HTTP 请求头
-     *
-     * @return 是否包含 Content-Type 头
-     */
-    private static boolean addHeaders(Request.Builder builder, Map<String, String> headers) {
-        if (headers == null) {
-            return false;
-        }
-
-        boolean hasContentType = false;
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-
-            if (isValidHeaderName(key)) {
-                builder.addHeader(key, value != null ? value : "");
-
-                if (CONTENT_TYPE.equalsIgnoreCase(key)) {
-                    hasContentType = true;
-                }
-            }
-            // 非法 header name 自动跳过
-        }
-
-        return hasContentType;
-    }
 
     /**
      * 判断 header name 是否为合法的 ASCII 字符且不包含非法字符
@@ -272,5 +194,93 @@ public class OkHttpRequestBuilder {
             }
         }
         return true;
+    }
+
+    /**
+     * 从 List 添加 HTTP 请求头（支持相同 key）
+     */
+    private static boolean addHeadersFromList(Request.Builder builder, List<HttpHeader> headersList) {
+        if (headersList == null || headersList.isEmpty()) {
+            return false;
+        }
+
+        boolean hasContentType = false;
+        for (HttpHeader header : headersList) {
+            if (!header.isEnabled()) {
+                continue;
+            }
+
+            String key = header.getKey();
+            String value = header.getValue();
+
+            if (isValidHeaderName(key)) {
+                builder.addHeader(key, value != null ? value : "");
+
+                if (CONTENT_TYPE.equalsIgnoreCase(key)) {
+                    hasContentType = true;
+                }
+            }
+        }
+
+        return hasContentType;
+    }
+
+    /**
+     * 从 List 添加 Form-Data（支持相同 key）
+     */
+    private static void addFormDataPartsFromList(MultipartBody.Builder builder, List<HttpFormData> formDataList) {
+        if (formDataList == null || formDataList.isEmpty()) {
+            return;
+        }
+
+        for (HttpFormData formData : formDataList) {
+            if (!formData.isEnabled()) {
+                continue;
+            }
+
+            String key = formData.getKey();
+            if (key == null || key.isEmpty()) {
+                continue;
+            }
+
+            if (formData.isText()) {
+                String value = formData.getValue() != null ? formData.getValue() : "";
+                builder.addFormDataPart(key, value);
+            } else if (formData.isFile()) {
+                String filePath = formData.getValue();
+                if (filePath != null && !filePath.isEmpty()) {
+                    File file = new File(filePath);
+                    if (file.exists()) {
+                        String mimeType = detectMimeType(file);
+                        builder.addFormDataPart(
+                                key,
+                                file.getName(),
+                                RequestBody.create(file, MediaType.parse(mimeType))
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 从 List 添加 URL-Encoded Form（支持相同 key）
+     */
+    private static void addFormUrlEncodedPartsFromList(FormBody.Builder builder, List<HttpFormUrlencoded> urlencodedList) {
+        if (urlencodedList == null || urlencodedList.isEmpty()) {
+            return;
+        }
+
+        for (HttpFormUrlencoded urlencoded : urlencodedList) {
+            if (!urlencoded.isEnabled()) {
+                continue;
+            }
+
+            String key = urlencoded.getKey();
+            if (key != null && !key.isEmpty()) {
+                String value = urlencoded.getValue() != null ? urlencoded.getValue() : "";
+                builder.add(key, value);
+            }
+        }
     }
 }

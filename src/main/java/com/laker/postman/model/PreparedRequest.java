@@ -3,6 +3,7 @@ package com.laker.postman.model;
 
 import okhttp3.Headers;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,4 +25,9 @@ public class PreparedRequest {
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
     public boolean logEvent = false; // 默认不记录事件日志
+
+    // 使用 List 结构支持相同 key
+    public List<HttpHeader> headersList;
+    public List<HttpFormData> formDataList;
+    public List<HttpFormUrlencoded> urlencodedList;
 }

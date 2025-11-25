@@ -1,10 +1,11 @@
 package com.laker.postman.service.http;
 
-import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.http.okhttp.*;
+import com.laker.postman.service.setting.SettingManager;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.sse.EventSource;
@@ -20,6 +21,7 @@ import static com.laker.postman.service.http.HttpRequestUtil.extractBaseUri;
  * HTTP 请求服务类，负责发送 HTTP 请求并返回响应
  */
 @Slf4j
+@UtilityClass
 public class HttpService {
 
     /**
@@ -69,7 +71,7 @@ public class HttpService {
     private static Request buildRequestByType(PreparedRequest req) {
         if (req.isMultipart) {
             return OkHttpRequestBuilder.buildMultipartRequest(req);
-        } else if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+        } else if (req.urlencodedList != null && !req.urlencodedList.isEmpty()) {
             return OkHttpRequestBuilder.buildFormRequest(req);
         } else {
             return OkHttpRequestBuilder.buildRequest(req);
@@ -107,10 +109,10 @@ public class HttpService {
     /**
      * 发送 WebSocket 请求，支持动态 eventListenerFactory 和超时配置
      */
-    public static WebSocket sendWebSocket(PreparedRequest req, WebSocketListener listener) {
+    public static void sendWebSocket(PreparedRequest req, WebSocketListener listener) {
         OkHttpClient customClient = buildCustomClient(req);
         Request request = buildRequestByType(req);
-        return customClient.newWebSocket(request, new LogWebSocketListener(listener));
+        customClient.newWebSocket(request, new LogWebSocketListener(listener));
     }
 
 

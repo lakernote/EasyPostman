@@ -1,20 +1,19 @@
 package com.laker.postman.service.http;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.model.*;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.setting.SettingManager;
+import lombok.experimental.UtilityClass;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * 负责构建 PreparedRequest
  */
+@UtilityClass
 public class PreparedRequestBuilder {
-    private PreparedRequestBuilder() {
-        // 私有构造函数，防止实例化
-    }
 
     public static PreparedRequest build(HttpRequestItem item) {
         PreparedRequest req = new PreparedRequest();
@@ -37,6 +36,12 @@ public class PreparedRequestBuilder {
             req.formFiles = item.getFormFiles(); // 暂不替换变量
         }
         req.followRedirects = SettingManager.isFollowRedirects();
+
+        // 填充 List 数据，支持相同 key
+        req.headersList = item.getHeadersList();
+        req.formDataList = item.getFormDataList();
+        req.urlencodedList = item.getUrlencodedList();
+
         return req;
     }
 
@@ -61,6 +66,11 @@ public class PreparedRequestBuilder {
             req.formData = replaceVariables(req.formData);
             req.formFiles = replaceVariables(req.formFiles);
         }
+
+        // 替换 List 中的变量，支持相同 key
+        replaceVariablesInHeadersList(req.headersList);
+        replaceVariablesInFormDataList(req.formDataList);
+        replaceVariablesInUrlencodedList(req.urlencodedList);
     }
 
     private static Map<String, String> replaceVariables(Map<String, String> headers) {
@@ -74,5 +84,35 @@ public class PreparedRequestBuilder {
             processedHeaders.put(processedKey, processedValue);
         }
         return processedHeaders;
+    }
+
+    private static void replaceVariablesInHeadersList(List<HttpHeader> list) {
+        if (list == null) return;
+        for (HttpHeader item : list) {
+            if (item.isEnabled()) {
+                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
+                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+            }
+        }
+    }
+
+    private static void replaceVariablesInFormDataList(List<HttpFormData> list) {
+        if (list == null) return;
+        for (HttpFormData item : list) {
+            if (item.isEnabled()) {
+                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
+                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+            }
+        }
+    }
+
+    private static void replaceVariablesInUrlencodedList(List<HttpFormUrlencoded> list) {
+        if (list == null) return;
+        for (HttpFormUrlencoded item : list) {
+            if (item.isEnabled()) {
+                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
+                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+            }
+        }
     }
 }

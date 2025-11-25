@@ -250,12 +250,20 @@ public class OkHttpRequestBuilder {
                 String filePath = formData.getValue();
                 if (filePath != null && !filePath.isEmpty()) {
                     File file = new File(filePath);
-                    if (file.exists()) {
+                    if (file.exists() && file.isFile()) {
                         String mimeType = detectMimeType(file);
                         builder.addFormDataPart(
                                 key,
                                 file.getName(),
                                 RequestBody.create(file, MediaType.parse(mimeType))
+                        );
+                    } else {
+                        // 文件不存在或不是一个普通文件时，添加空文件占位
+                        // 这样用户可以在响应中看到该字段，而不是静默失败
+                        builder.addFormDataPart(
+                                key,
+                                "",
+                                RequestBody.create(EMPTY_BODY, MediaType.parse(DEFAULT_MIME_TYPE))
                         );
                     }
                 }

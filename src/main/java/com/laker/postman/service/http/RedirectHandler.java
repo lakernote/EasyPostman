@@ -11,8 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 负责处理重定向链
@@ -81,41 +83,17 @@ public class RedirectHandler {
             redirectReq.method = "GET";
             redirectReq.body = null;
             redirectReq.isMultipart = false;
-            redirectReq.formData = null;
-            redirectReq.formFiles = null;
-            redirectReq.urlencoded = null;
             redirectReq.formDataList = null;
             redirectReq.urlencodedList = null;
         }
         // 307/308 保持原 method 和 body
 
         // 处理 headers：移除特定 header
-        redirectReq.headers = cleanHeaders(redirectReq.headers, isCrossDomain);
         redirectReq.headersList = cleanHeadersList(redirectReq.headersList, isCrossDomain);
 
         return redirectReq;
     }
 
-    /**
-     * 清理 Map 结构的 headers
-     */
-    private static Map<String, String> cleanHeaders(Map<String, String> headers, boolean isCrossDomain) {
-        if (headers == null) {
-            return Collections.emptyMap();
-        }
-
-        Map<String, String> cleaned = new LinkedHashMap<>(headers);
-        cleaned.remove("Content-Length");
-        cleaned.remove("Host");
-        cleaned.remove("Content-Type");
-
-        if (isCrossDomain) {
-            cleaned.remove("Authorization");
-            cleaned.remove("Cookie");
-        }
-
-        return cleaned;
-    }
 
     /**
      * 清理 List 结构的 headersList

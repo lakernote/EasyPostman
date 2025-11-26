@@ -198,32 +198,9 @@ public class HistoryPersistenceService {
                 String value = item.request.okHttpHeaders.value(i);
                 requestHeaders.set(name, value);
             }
-        } else if (item.request.headers != null) {
-            // 回退到普通headers
-            requestHeaders.putAll(item.request.headers);
         }
         requestJson.set("headers", requestHeaders);
 
-        // 表单数据
-        if (item.request.formData != null) {
-            JSONObject formData = new JSONObject();
-            formData.putAll(item.request.formData);
-            requestJson.set("formData", formData);
-        }
-
-        // 表单文件
-        if (item.request.formFiles != null) {
-            JSONObject formFiles = new JSONObject();
-            formFiles.putAll(item.request.formFiles);
-            requestJson.set("formFiles", formFiles);
-        }
-
-        // URL编码数据
-        if (item.request.urlencoded != null) {
-            JSONObject urlencoded = new JSONObject();
-            urlencoded.putAll(item.request.urlencoded);
-            requestJson.set("urlencoded", urlencoded);
-        }
 
         jsonItem.set("request", requestJson);
 
@@ -314,53 +291,18 @@ public class HistoryPersistenceService {
         request.logEvent = requestJson.getBool("logEvent", false);
         request.isMultipart = requestJson.getBool("isMultipart", false);
 
-        // 重建请求头 - 同时设置 headers 和 okHttpHeaders
-        request.headers = new java.util.HashMap<>();
+        // 重建请求头 - 构建 okHttpHeaders 供 HttpHtmlRenderer 使用
         JSONObject requestHeaders = requestJson.getJSONObject("headers");
-        if (requestHeaders != null) {
+        if (requestHeaders != null && !requestHeaders.isEmpty()) {
+            okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
             for (String key : requestHeaders.keySet()) {
-                request.headers.put(key, requestHeaders.getStr(key));
-            }
-
-            // 同时构建 okHttpHeaders 供 HttpHtmlRenderer 使用
-            if (!request.headers.isEmpty()) {
-                okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
-                for (java.util.Map.Entry<String, String> entry : request.headers.entrySet()) {
-                    try {
-                        headersBuilder.add(entry.getKey(), entry.getValue());
-                    } catch (Exception e) {
-                        // 忽略无效的头信息
-                    }
+                try {
+                    headersBuilder.add(key, requestHeaders.getStr(key));
+                } catch (Exception e) {
+                    // 忽略无效的头信息
                 }
-                request.okHttpHeaders = headersBuilder.build();
             }
-        }
-
-        // 重建表单数据
-        JSONObject formData = requestJson.getJSONObject("formData");
-        if (formData != null) {
-            request.formData = new java.util.HashMap<>();
-            for (String key : formData.keySet()) {
-                request.formData.put(key, formData.getStr(key));
-            }
-        }
-
-        // 重建表单文件
-        JSONObject formFiles = requestJson.getJSONObject("formFiles");
-        if (formFiles != null) {
-            request.formFiles = new java.util.HashMap<>();
-            for (String key : formFiles.keySet()) {
-                request.formFiles.put(key, formFiles.getStr(key));
-            }
-        }
-
-        // 重建URL编码数据
-        JSONObject urlencoded = requestJson.getJSONObject("urlencoded");
-        if (urlencoded != null) {
-            request.urlencoded = new java.util.HashMap<>();
-            for (String key : urlencoded.keySet()) {
-                request.urlencoded.put(key, urlencoded.getStr(key));
-            }
+            request.okHttpHeaders = headersBuilder.build();
         }
 
         // 重建 HttpResponse

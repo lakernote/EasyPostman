@@ -1,7 +1,7 @@
 package com.laker.postman.service.curl;
 
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.*;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
  *
  */
 @Slf4j
+@UtilityClass
 public class CurlParser {
 
     private static final String CONTENT_TYPE = "Content-Type";
@@ -27,10 +28,6 @@ public class CurlParser {
             "Sec-WebSocket-Version",
             "Sec-WebSocket-Extensions"
     );
-
-    private CurlParser() {
-        // 私有构造函数，防止实例化
-    }
 
     /**
      * 解析 cURL 命令字符串为 CurlRequest 对象
@@ -105,14 +102,22 @@ public class CurlParser {
                             continue;
                         }
 
-                        req.headers.put(headerName, headerValue);
+                        if (req.headersList == null) {
+                            req.headersList = new ArrayList<>();
+                        }
+                        req.headersList.add(new HttpHeader(true, headerName, headerValue));
                     }
                 }
             }
 
             // 4. Cookie
             else if (token.equals("-b") || token.equals("--cookie")) {
-                if (i + 1 < tokens.size()) req.headers.put("Cookie", tokens.get(++i));
+                if (i + 1 < tokens.size()) {
+                    if (req.headersList == null) {
+                        req.headersList = new ArrayList<>();
+                    }
+                    req.headersList.add(new HttpHeader(true, "Cookie", tokens.get(++i)));
+                }
             }
 
             // 5. Body
@@ -134,18 +139,25 @@ public class CurlParser {
                     if (eqIdx > 0) {
                         String key = formField.substring(0, eqIdx);
                         String value = formField.substring(eqIdx + 1);
+                        if (req.formDataList == null) {
+                            req.formDataList = new ArrayList<>();
+                        }
                         if (value.startsWith("@")) {
                             // 文件上传
-                            req.formFiles.put(key, value.substring(1));
+                            req.formDataList.add(new HttpFormData(true, key, HttpFormData.TYPE_FILE, value.substring(1)));
                         } else {
                             // 普通表单字段
-                            req.formData.put(key, value);
+                            req.formDataList.add(new HttpFormData(true, key, HttpFormData.TYPE_TEXT, value));
                         }
                     }
                     if (req.method == null) req.method = "POST";
                     // 设置 Content-Type
-                    if (!req.headers.containsKey(CONTENT_TYPE)) {
-                        req.headers.put(CONTENT_TYPE, "multipart/form-data");
+                    if (req.headersList == null) {
+                        req.headersList = new ArrayList<>();
+                    }
+                    boolean hasContentType = req.headersList.stream().anyMatch(h -> h.isEnabled() && "Content-Type".equalsIgnoreCase(h.getKey()));
+                    if (!hasContentType) {
+                        req.headersList.add(new HttpHeader(true, CONTENT_TYPE, "multipart/form-data"));
                     }
                 }
             }
@@ -155,22 +167,39 @@ public class CurlParser {
         if (forceGet) {
             req.method = "GET";
             // 将 dataParams 添加到 URL 查询参数
+            if (req.paramsList == null) {
+                req.paramsList = new ArrayList<>();
+            }
             for (String dataParam : dataParams) {
                 String[] kv = dataParam.split("=", 2);
                 if (kv.length == 2) {
-                    req.params.put(kv[0], kv[1]);
+                    req.paramsList.add(new HttpParam(true, kv[0], kv[1]));
                 } else if (kv.length == 1) {
-                    req.params.put(kv[0], "");
+                    req.paramsList.add(new HttpParam(true, kv[0], ""));
                 }
             }
         } else {
             // 不是 -G 模式，将 dataParams 作为请求体
             if (!dataParams.isEmpty()) {
-                // 如果没有设置 Content-Type，默认设置为 application/x-www-form-urlencoded
-                if (!req.headers.containsKey(CONTENT_TYPE)) {
-                    req.headers.put(CONTENT_TYPE, "application/x-www-form-urlencoded");
+                // 获取 Content-Type
+                String contentType = "";
+                if (req.headersList != null) {
+                    for (com.laker.postman.model.HttpHeader h : req.headersList) {
+                        if (h.isEnabled() && CONTENT_TYPE.equalsIgnoreCase(h.getKey())) {
+                            contentType = h.getValue();
+                            break;
+                        }
+                    }
                 }
-                String contentType = req.headers.getOrDefault(CONTENT_TYPE, "");
+
+                // 如果没有设置 Content-Type，默认设置为 application/x-www-form-urlencoded
+                if (contentType.isEmpty()) {
+                    if (req.headersList == null) {
+                        req.headersList = new ArrayList<>();
+                    }
+                    contentType = "application/x-www-form-urlencoded";
+                    req.headersList.add(new HttpHeader(true, CONTENT_TYPE, contentType));
+                }
 
                 // 检查所有 dataParams 是否都是 key=value 格式
                 boolean allKeyValue = true;
@@ -183,12 +212,15 @@ public class CurlParser {
 
                 // 如果是 application/x-www-form-urlencoded 格式且所有参数都是 key=value 格式，解析为 key-value 对
                 if (contentType.startsWith("application/x-www-form-urlencoded") && allKeyValue) {
+                    if (req.urlencodedList == null) {
+                        req.urlencodedList = new ArrayList<>();
+                    }
                     for (String dataParam : dataParams) {
                         String[] kv = dataParam.split("=", 2);
                         if (kv.length == 2) {
-                            req.urlencoded.put(kv[0], kv[1]);
+                            req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0], kv[1]));
                         } else if (kv.length == 1) {
-                            req.urlencoded.put(kv[0], "");
+                            req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0], ""));
                         }
                     }
                 }
@@ -211,12 +243,15 @@ public class CurlParser {
         if (req.url != null && req.url.contains("?")) {
             String[] urlParts = req.url.split("\\?", 2);
             String query = urlParts[1];
+            if (req.paramsList == null) {
+                req.paramsList = new ArrayList<>();
+            }
             for (String param : query.split("&")) {
                 String[] kv = param.split("=", 2);
                 if (kv.length == 2) {
-                    req.params.put(kv[0], kv[1]);
+                    req.paramsList.add(new HttpParam(true, kv[0], kv[1]));
                 } else if (kv.length == 1) {
-                    req.params.put(kv[0], "");
+                    req.paramsList.add(new HttpParam(true, kv[0], ""));
                 }
             }
         }
@@ -233,7 +268,15 @@ public class CurlParser {
     private static void parseMultipartFormData(CurlRequest req, String data) {
         try {
             // 从 Content-Type 提取 boundary
-            String contentType = req.headers.get(CONTENT_TYPE);
+            String contentType = null;
+            if (req.headersList != null) {
+                for (com.laker.postman.model.HttpHeader h : req.headersList) {
+                    if (h.isEnabled() && CONTENT_TYPE.equalsIgnoreCase(h.getKey())) {
+                        contentType = h.getValue();
+                        break;
+                    }
+                }
+            }
             if (contentType == null || !contentType.contains("boundary=")) {
                 throw new IllegalArgumentException("Content-Type 缺失或无效");
             }
@@ -257,14 +300,17 @@ public class CurlParser {
 
                         // 提取文件名（如果有）
                         Matcher fileNameMatcher = Pattern.compile("filename=\"([^\"]+)\"").matcher(disposition);
+                        if (req.formDataList == null) {
+                            req.formDataList = new ArrayList<>();
+                        }
                         if (fileNameMatcher.find()) {
                             String fileName = fileNameMatcher.group(1);
-                            req.formFiles.put(fieldName, fileName); // 存储文件名
+                            req.formDataList.add(new HttpFormData(true, fieldName, HttpFormData.TYPE_FILE, fileName));
                         } else {
                             // 提取字段值
                             int valueStart = part.indexOf("\r\n\r\n") + 4;
                             String value = part.substring(valueStart).trim();
-                            req.formData.put(fieldName, value);
+                            req.formDataList.add(new HttpFormData(true, fieldName, HttpFormData.TYPE_TEXT, value));
                         }
                     }
                 }
@@ -418,9 +464,11 @@ public class CurlParser {
             sb.append(" \"").append(preparedRequest.url).append("\"");
         }
         // headers
-        if (preparedRequest.headers != null) {
-            for (var entry : preparedRequest.headers.entrySet()) {
-                sb.append(" -H \"").append(entry.getKey()).append(": ").append(entry.getValue()).append("\"");
+        if (preparedRequest.headersList != null) {
+            for (var header : preparedRequest.headersList) {
+                if (header.isEnabled()) {
+                    sb.append(" -H \"").append(header.getKey()).append(": ").append(header.getValue()).append("\"");
+                }
             }
         }
         // body
@@ -428,21 +476,23 @@ public class CurlParser {
             sb.append(" --data ").append(escapeShellArg(preparedRequest.body));
         }
         // urlencoded (application/x-www-form-urlencoded)
-        if (preparedRequest.urlencoded != null && !preparedRequest.urlencoded.isEmpty()) {
-            for (var entry : preparedRequest.urlencoded.entrySet()) {
-                sb.append(" --data-urlencode ").append(escapeShellArg(entry.getKey() + "=" + entry.getValue()));
+        if (preparedRequest.urlencodedList != null && !preparedRequest.urlencodedList.isEmpty()) {
+            for (var encoded : preparedRequest.urlencodedList) {
+                if (encoded.isEnabled()) {
+                    sb.append(" --data-urlencode ").append(escapeShellArg(encoded.getKey() + "=" + encoded.getValue()));
+                }
             }
         }
         // form-data
-        if (preparedRequest.formData != null && !preparedRequest.formData.isEmpty()) {
-            for (var entry : preparedRequest.formData.entrySet()) {
-                sb.append(" -F ").append(escapeShellArg(entry.getKey() + "=" + entry.getValue()));
-            }
-        }
-        // form-files
-        if (preparedRequest.formFiles != null && !preparedRequest.formFiles.isEmpty()) {
-            for (var entry : preparedRequest.formFiles.entrySet()) {
-                sb.append(" -F ").append(escapeShellArg(entry.getKey() + "=@" + entry.getValue()));
+        if (preparedRequest.formDataList != null && !preparedRequest.formDataList.isEmpty()) {
+            for (var formData : preparedRequest.formDataList) {
+                if (formData.isEnabled()) {
+                    if (formData.isText()) {
+                        sb.append(" -F ").append(escapeShellArg(formData.getKey() + "=" + formData.getValue()));
+                    } else if (formData.isFile()) {
+                        sb.append(" -F ").append(escapeShellArg(formData.getKey() + "=@" + formData.getValue()));
+                    }
+                }
             }
         }
         return sb.toString();

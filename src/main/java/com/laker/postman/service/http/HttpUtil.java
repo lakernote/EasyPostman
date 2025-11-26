@@ -53,14 +53,14 @@ public class HttpUtil {
 
     // 判断是否为SSE请求
     public static boolean isSSERequest(PreparedRequest req) {
-        if (req == null || req.headers == null) {
+        if (req == null || req.headersList == null) {
             return false;
         }
         // 判断Accept头是否包含text/event-stream
-        for (Map.Entry<String, String> entry : req.headers.entrySet()) {
-            if ("Accept".equalsIgnoreCase(entry.getKey()) &&
-                    entry.getValue() != null &&
-                    entry.getValue().toLowerCase().contains("text/event-stream")) {
+        for (HttpHeader header : req.headersList) {
+            if (header.isEnabled() && "Accept".equalsIgnoreCase(header.getKey()) &&
+                    header.getValue() != null &&
+                    header.getValue().toLowerCase().contains("text/event-stream")) {
                 return true;
             }
         }

@@ -12,7 +12,10 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.*;
+import com.laker.postman.model.CurlRequest;
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
@@ -38,9 +41,6 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
@@ -325,50 +325,22 @@ public class LeftTopPanel extends SingletonBasePanel {
             item.setUrl(curlRequest.url);
             item.setMethod(curlRequest.method);
 
-            // Convert headers map to list
-            if (curlRequest.headers != null && !curlRequest.headers.isEmpty()) {
-                List<HttpHeader> headersList = new ArrayList<>();
-                for (Map.Entry<String, String> entry : curlRequest.headers.entrySet()) {
-                    headersList.add(new HttpHeader(true, entry.getKey(), entry.getValue()));
-                }
-                item.setHeadersList(headersList);
+            if (curlRequest.headersList != null && !curlRequest.headersList.isEmpty()) {
+                item.setHeadersList(curlRequest.headersList);
             }
 
             item.setBody(curlRequest.body);
 
-            // Convert params map to list
-            if (curlRequest.params != null && !curlRequest.params.isEmpty()) {
-                List<HttpParam> paramsList = new ArrayList<>();
-                for (Map.Entry<String, String> entry : curlRequest.params.entrySet()) {
-                    paramsList.add(new HttpParam(true, entry.getKey(), entry.getValue()));
-                }
-                item.setParamsList(paramsList);
+            if (curlRequest.paramsList != null && !curlRequest.paramsList.isEmpty()) {
+                item.setParamsList(curlRequest.paramsList);
             }
 
-            // Convert formData and formFiles maps to list (for multipart/form-data)
-            if ((curlRequest.formData != null && !curlRequest.formData.isEmpty()) ||
-                    (curlRequest.formFiles != null && !curlRequest.formFiles.isEmpty())) {
-                List<HttpFormData> formDataList = new ArrayList<>();
-                if (curlRequest.formData != null) {
-                    for (Map.Entry<String, String> entry : curlRequest.formData.entrySet()) {
-                        formDataList.add(new HttpFormData(true, entry.getKey(), HttpFormData.TYPE_TEXT, entry.getValue()));
-                    }
-                }
-                if (curlRequest.formFiles != null) {
-                    for (Map.Entry<String, String> entry : curlRequest.formFiles.entrySet()) {
-                        formDataList.add(new HttpFormData(true, entry.getKey(), HttpFormData.TYPE_FILE, entry.getValue()));
-                    }
-                }
-                item.setFormDataList(formDataList);
+            if (curlRequest.formDataList != null && !curlRequest.formDataList.isEmpty()) {
+                item.setFormDataList(curlRequest.formDataList);
             }
 
-            // Convert urlencoded map to list (for application/x-www-form-urlencoded)
-            if (curlRequest.urlencoded != null && !curlRequest.urlencoded.isEmpty()) {
-                List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-                for (Map.Entry<String, String> entry : curlRequest.urlencoded.entrySet()) {
-                    urlencodedList.add(new HttpFormUrlencoded(true, entry.getKey(), entry.getValue()));
-                }
-                item.setUrlencodedList(urlencodedList);
+            if (curlRequest.urlencodedList != null && !curlRequest.urlencodedList.isEmpty()) {
+                item.setUrlencodedList(curlRequest.urlencodedList);
             }
 
             if (HttpUtil.isSSERequest(item)) {

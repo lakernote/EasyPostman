@@ -1,9 +1,7 @@
 package com.laker.postman.service.render;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.model.*;
+import lombok.experimental.UtilityClass;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -13,6 +11,7 @@ import java.util.List;
  * 统一的HTTP请求/响应HTML渲染工具类
  * 用于生成所有HTTP相关的HTML展示内容
  */
+@UtilityClass
 public class HttpHtmlRenderer {
 
     // 内容大小限制常量 - 防止内存溢出
@@ -87,40 +86,49 @@ public class HttpHtmlRenderer {
             }
             sb.append("</div>");
         }
-        if (req.formData != null && !req.formData.isEmpty()) {
-            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Data</b></div>");
-            // 改用div块格式
-            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
-            req.formData.forEach((key, value) -> {
-                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
-                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
-                sb.append("<span style='color:#222;'>").append(escapeHtml(value)).append("</span>");
+        if (req.formDataList != null && !req.formDataList.isEmpty()) {
+            boolean hasText = req.formDataList.stream().anyMatch(d -> d.isEnabled() && d.isText());
+            boolean hasFile = req.formDataList.stream().anyMatch(d -> d.isEnabled() && d.isFile());
+
+            if (hasText) {
+                sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Data</b></div>");
+                sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
+                req.formDataList.stream()
+                        .filter(d -> d.isEnabled() && d.isText())
+                        .forEach(data -> {
+                            sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                            sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(data.getKey())).append(":</strong> ");
+                            sb.append("<span style='color:#222;'>").append(escapeHtml(data.getValue())).append("</span>");
+                            sb.append("</div>");
+                        });
                 sb.append("</div>");
-            });
-            sb.append("</div>");
-        }
-        if (req.formFiles != null && !req.formFiles.isEmpty()) {
-            sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Files</b></div>");
-            // 改用div块格式
-            sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
-            req.formFiles.forEach((key, value) -> {
-                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
-                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
-                sb.append("<span style='color:#222;'>").append(escapeHtml(value)).append("</span>");
+            }
+
+            if (hasFile) {
+                sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Form Files</b></div>");
+                sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
+                req.formDataList.stream()
+                        .filter(d -> d.isEnabled() && d.isFile())
+                        .forEach(data -> {
+                            sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                            sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(data.getKey())).append(":</strong> ");
+                            sb.append("<span style='color:#222;'>").append(escapeHtml(data.getValue())).append("</span>");
+                            sb.append("</div>");
+                        });
                 sb.append("</div>");
-            });
-            sb.append("</div>");
+            }
         }
-        if (req.urlencoded != null && !req.urlencoded.isEmpty()) {
+        if (req.urlencodedList != null && !req.urlencodedList.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>x-www-form-urlencoded</b></div>");
-            // 改用div块格式
             sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
-            req.urlencoded.forEach((key, value) -> {
-                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
-                sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
-                sb.append("<span style='color:#222;'>").append(escapeHtml(value)).append("</span>");
-                sb.append("</div>");
-            });
+            req.urlencodedList.stream()
+                    .filter(HttpFormUrlencoded::isEnabled)
+                    .forEach(encoded -> {
+                        sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                        sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(encoded.getKey())).append(":</strong> ");
+                        sb.append("<span style='color:#222;'>").append(escapeHtml(encoded.getValue())).append("</span>");
+                        sb.append("</div>");
+                    });
             sb.append("</div>");
         }
         if (isNotEmpty(req.okHttpRequestBody)) {

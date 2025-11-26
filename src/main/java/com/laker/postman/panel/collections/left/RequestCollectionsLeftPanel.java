@@ -347,41 +347,4 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         }
     }
 
-
-    /**
-     * 执行集合转移操作
-     */
-    public void performCollectionMove(DefaultMutableTreeNode collectionNode, Workspace targetWorkspace) {
-        // 1. 深拷贝集合节点（包含所有子节点）
-        DefaultMutableTreeNode copiedNode = TreeNodeCloner.deepCopyGroupNode(collectionNode);
-
-        // 2. 获取目标工作区的集合文件路径
-        String targetCollectionPath = SystemUtil.getCollectionPathForWorkspace(targetWorkspace);
-
-        // 3. 创建目标工作区的持久化工具
-        DefaultMutableTreeNode targetRootNode = new DefaultMutableTreeNode(ROOT);
-        DefaultTreeModel targetTreeModel = new DefaultTreeModel(targetRootNode);
-        RequestsPersistence targetPersistence = new RequestsPersistence(
-                targetCollectionPath, targetRootNode, targetTreeModel);
-
-        // 4. 加载目标工作区的现有集合
-        targetPersistence.initRequestGroupsFromFile();
-
-        // 5. 将集合添加到目标工作区
-        targetRootNode.add(copiedNode);
-
-        // 6. 保存到目标工作区
-        targetPersistence.saveRequestGroups();
-
-        // 7. 从当前工作区删除原集合
-        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) collectionNode.getParent();
-        if (parent != null) {
-            parent.remove(collectionNode);
-            treeModel.reload();
-            persistence.saveRequestGroups();
-        }
-
-        log.info("Successfully moved collection '{}' to workspace '{}'",
-                ((Object[]) collectionNode.getUserObject())[1], targetWorkspace.getName());
-    }
 }

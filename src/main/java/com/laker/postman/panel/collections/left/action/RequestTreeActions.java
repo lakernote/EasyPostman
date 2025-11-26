@@ -8,24 +8,24 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.left.dialog.AddRequestDialog;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
+import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.postman.PostmanCollectionExporter;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -583,8 +583,49 @@ public class RequestTreeActions {
 
         WorkspaceTransferHelper.transferToWorkspaceQuiet(
                 collectionName,
-                (targetWorkspace, itemName) -> leftPanel.performCollectionMove(selectedNode, targetWorkspace)
+                (targetWorkspace, itemName) -> performCollectionMove(selectedNode, targetWorkspace)
         );
+    }
+
+    /**
+     * 执行集合移动到目标工作区
+     * 将集合从当前工作区移动到目标工作区
+     *
+     * @param collectionNode  要移动的集合节点
+     * @param targetWorkspace 目标工作区
+     */
+    private void performCollectionMove(DefaultMutableTreeNode collectionNode, Workspace targetWorkspace) {
+        // 1. 深拷贝集合节点（包含所有子节点）
+        DefaultMutableTreeNode copiedNode = TreeNodeCloner.deepCopyGroupNode(collectionNode);
+
+        // 2. 获取目标工作区的集合文件路径
+        String targetCollectionPath = SystemUtil.getCollectionPathForWorkspace(targetWorkspace);
+
+        // 3. 创建目标工作区的持久化工具
+        DefaultMutableTreeNode targetRootNode = new DefaultMutableTreeNode(ROOT);
+        DefaultTreeModel targetTreeModel = new DefaultTreeModel(targetRootNode);
+        RequestsPersistence targetPersistence = new RequestsPersistence(
+                targetCollectionPath, targetRootNode, targetTreeModel);
+
+        // 4. 加载目标工作区的现有集合
+        targetPersistence.initRequestGroupsFromFile();
+
+        // 5. 将集合添加到目标工作区
+        targetRootNode.add(copiedNode);
+
+        // 6. 保存到目标工作区
+        targetPersistence.saveRequestGroups();
+
+        // 7. 从当前工作区删除原集合
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) collectionNode.getParent();
+        if (parent != null) {
+            parent.remove(collectionNode);
+            leftPanel.getTreeModel().reload();
+            leftPanel.getPersistence().saveRequestGroups();
+        }
+
+        log.info("Successfully moved collection '{}' to workspace '{}'",
+                ((Object[]) collectionNode.getUserObject())[1], targetWorkspace.getName());
     }
 
     /**

@@ -28,8 +28,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseEvent;
 import java.io.InputStream;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
@@ -472,19 +470,6 @@ public class RequestBodyPanel extends JPanel {
 
     public String getRawBody() {
         return bodyArea != null ? bodyArea.getText().trim() : null;
-    }
-
-    public Map<String, String> getFormData() {
-        return formDataTablePanel != null ? formDataTablePanel.getFormData() : new LinkedHashMap<>();
-    }
-
-    public Map<String, String> getFormFiles() {
-        return formDataTablePanel != null ? formDataTablePanel.getFormFiles() : new LinkedHashMap<>();
-    }
-
-    public Map<String, String> getUrlencoded() {
-        if (formUrlencodedTablePanel == null) return new LinkedHashMap<>();
-        return formUrlencodedTablePanel.getFormData();
     }
 
 }

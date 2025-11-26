@@ -2,6 +2,7 @@ package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.EnvironmentService;
+import lombok.experimental.UtilityClass;
 
 import java.util.Base64;
 import java.util.LinkedHashSet;
@@ -11,7 +12,9 @@ import java.util.Set;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 
+@UtilityClass
 public class HttpRequestUtil {
+
     public static String buildUrlWithParams(String url, Map<String, String> params) {
         if (params == null || params.isEmpty()) return url;
         StringBuilder sb = new StringBuilder(url);

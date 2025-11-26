@@ -7,6 +7,7 @@ import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -20,12 +21,9 @@ import java.util.function.Consumer;
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
 
 @Slf4j
+@UtilityClass
 public class RequestCollectionsService {
 
-
-    private RequestCollectionsService() {
-        // Prevent instantiation
-    }
 
     public static HttpRequestItem getLastNonNewRequest() {
         List<HttpRequestItem> requestItems = OpenedRequestsService.getAll();
@@ -54,14 +52,13 @@ public class RequestCollectionsService {
         if (node == null) return null;
 
         Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj) {
-            if (REQUEST.equals(obj[0])) {
-                HttpRequestItem item = (HttpRequestItem) obj[1];
-                if (id.equals(item.getId())) {
-                    return node;
-                }
+        if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
+            HttpRequestItem item = (HttpRequestItem) obj[1];
+            if (id.equals(item.getId())) {
+                return node;
             }
         }
+
 
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
@@ -90,14 +87,14 @@ public class RequestCollectionsService {
         // 用JTree展示集合树，支持多选
         JTree tree = requestCollectionsLeftPanel.createRequestSelectionTree();
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-        
+
         // 默认展开第一个group
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) tree.getModel().getRoot();
         if (root != null && root.getChildCount() > 0) {
             DefaultMutableTreeNode firstChild = (DefaultMutableTreeNode) root.getChildAt(0);
             tree.expandPath(new TreePath(firstChild.getPath()));
         }
-        
+
         JScrollPane treeScroll = new JScrollPane(tree);
         dialog.add(treeScroll, BorderLayout.CENTER);
 

@@ -18,9 +18,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Params table panel with checkbox and delete button columns
@@ -634,106 +632,6 @@ public class EasyPostmanParamsTablePanel extends JPanel {
                 table.scrollRectToVisible(rect);
             }
         });
-    }
-
-    /**
-     * Get all rows as a list of maps (model data, not view data)
-     */
-    public List<Map<String, Object>> getRows() {
-        List<Map<String, Object>> rows = new ArrayList<>();
-
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            // Store enabled state
-            row.put("Enabled", tableModel.getValueAt(i, COL_ENABLED));
-            // Store Key and Value
-            row.put("Key", tableModel.getValueAt(i, COL_KEY));
-            row.put("Value", tableModel.getValueAt(i, COL_VALUE));
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
-    /**
-     * Set all rows from a list of maps
-     */
-    public void setRows(List<Map<String, Object>> rows) {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            // Clear existing data
-            tableModel.setRowCount(0);
-
-            // Add new rows
-            if (rows != null) {
-                for (Map<String, Object> row : rows) {
-                    Object enabled = row.get("Enabled");
-                    if (enabled == null) {
-                        enabled = true; // Default to enabled
-                    }
-                    Object key = row.get("Key");
-                    Object value = row.get("Value");
-
-                    tableModel.addRow(new Object[]{enabled, key, value, ""});
-                }
-            }
-
-            // Ensure there's always an empty row at the end
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * Set data from Map (legacy compatibility - all enabled by default)
-     */
-    public void setMap(Map<String, String> map) {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-            if (map != null) {
-                for (Map.Entry<String, String> entry : map.entrySet()) {
-                    tableModel.addRow(new Object[]{true, entry.getKey(), entry.getValue(), ""});
-                }
-            }
-
-            // Ensure there's always an empty row at the end
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * Get enabled parameters as Map (only returns enabled rows)
-     */
-    public Map<String, String> getMap() {
-        Map<String, String> map = new LinkedHashMap<>();
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);
-            Object keyObj = tableModel.getValueAt(i, COL_KEY);
-            Object valueObj = tableModel.getValueAt(i, COL_VALUE);
-
-            boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String value = valueObj == null ? "" : valueObj.toString().trim();
-
-            if (enabled && !key.isEmpty()) {
-                map.put(key, value);
-            }
-        }
-        return map;
     }
 
     /**

@@ -16,13 +16,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import static com.laker.postman.common.component.table.TableUIConstants.SELECT_FILE_TEXT;
-import static com.laker.postman.model.HttpFormData.TYPE_FILE;
-import static com.laker.postman.model.HttpFormData.TYPE_TEXT;
 
 /**
  * Form-Data 表格面板组件
@@ -691,117 +685,6 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
                 table.scrollRectToVisible(rect);
             }
         });
-    }
-
-    /**
-     * 获取所有行数据
-     *
-     * @return 所有行数据的列表
-     */
-    public List<Map<String, Object>> getRows() {
-        List<Map<String, Object>> rows = new ArrayList<>();
-
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("Enabled", tableModel.getValueAt(i, COL_ENABLED));
-            row.put("Key", tableModel.getValueAt(i, COL_KEY));
-            row.put("Type", tableModel.getValueAt(i, COL_TYPE));
-            row.put("Value", tableModel.getValueAt(i, COL_VALUE));
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
-    /**
-     * Set all rows from a list of maps
-     */
-    public void setRows(List<Map<String, Object>> rows) {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            // Clear existing data
-            tableModel.setRowCount(0);
-
-            // Add new rows
-            if (rows != null) {
-                for (Map<String, Object> row : rows) {
-                    Object enabled = row.get("Enabled");
-                    if (enabled == null) {
-                        enabled = true;
-                    }
-                    Object key = row.get("Key");
-                    Object type = row.get("Type");
-                    if (type == null) {
-                        type = HttpFormData.TYPE_TEXT;
-                    }
-                    Object value = row.get("Value");
-
-                    tableModel.addRow(new Object[]{enabled, key, type, value, ""});
-                }
-            }
-
-            // Ensure there's always an empty row at the end
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * 获取 Form-Data 中的文本数据（仅返回已启用的行）
-     * 保持向后兼容性
-     *
-     * @return Key-Value 形式的文本数据
-     */
-    public Map<String, String> getFormData() {
-        Map<String, String> formData = new LinkedHashMap<>();
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);
-            Object keyObj = tableModel.getValueAt(i, COL_KEY);
-            Object typeObj = tableModel.getValueAt(i, COL_TYPE);
-            Object valueObj = tableModel.getValueAt(i, COL_VALUE);
-
-            boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String type = typeObj == null ? HttpFormData.TYPE_TEXT : typeObj.toString();
-            String value = valueObj == null ? "" : valueObj.toString();
-
-            if (enabled && !key.isEmpty() && HttpFormData.TYPE_TEXT.equalsIgnoreCase(type)) {
-                formData.put(key, value);
-            }
-        }
-        return formData;
-    }
-
-    /**
-     * 获取 Form-Data 中的文件数据（仅返回已启用的行）
-     * 保持向后兼容性
-     *
-     * @return Key-FilePath 形式的文件数据
-     */
-    public Map<String, String> getFormFiles() {
-        Map<String, String> formFiles = new LinkedHashMap<>();
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);
-            Object keyObj = tableModel.getValueAt(i, COL_KEY);
-            Object typeObj = tableModel.getValueAt(i, COL_TYPE);
-            Object valueObj = tableModel.getValueAt(i, COL_VALUE);
-
-            boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String type = typeObj == null ? HttpFormData.TYPE_TEXT : typeObj.toString();
-            String value = valueObj == null ? "" : valueObj.toString();
-
-            if (enabled && !key.isEmpty() && HttpFormData.TYPE_FILE.equalsIgnoreCase(type) && !value.isEmpty() && !value.equals(SELECT_FILE_TEXT)) {
-                formFiles.put(key, value);
-            }
-        }
-        return formFiles;
     }
 
     /**

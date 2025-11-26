@@ -108,7 +108,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         };
         // 不显示根节点
         requestTree.setRootVisible(false);
-        // 让 JTree 组件显示根节点的"展开/收起"小三角（即树形结构的手柄）。
+        // 让 JTree 组件显示根节点的"展开/收起"小三角（即树形结构的手柄）
         requestTree.setShowsRootHandles(true);
         // 禁用双击展开/收起：设置 toggleClickCount 为 0
         // 这样双击只会触发我们自定义的打开 tab 行为，不会展开/收起
@@ -198,26 +198,36 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
                         if (node.getUserObject() instanceof Object[] obj) {
                             if (GROUP.equals(obj[0])) {
-                                // 检查是否点击在展开/收起图标区域（handle area）
+                                // 检查是否点击在展开/收起图标区域
                                 Rectangle rowBounds = requestTree.getRowBounds(selRow);
-                                if (rowBounds != null) {
-                                    // 获取 tree 的展开图标位置
-                                    // JTree 的展开图标通常在节点左侧，位置由 TreeUI 决定
+                                if (rowBounds != null && node.getChildCount() > 0) {
                                     int clickX = e.getX();
 
-                                    // 计算图标区域：从行起始位置到文本起始位置之间
-                                    // 通常展开图标占据左侧约 20px 的区域
-                                    int textStartX = rowBounds.x;
+                                    // 使用 UIManager 获取 FlatLaf 的实际配置
+                                    // Tree.leftChildIndent: 左侧缩进（包含展开图标）
+                                    // Tree.rightChildIndent: 图标和文本之间的间距
+                                    Integer leftIndent = UIManager.getInt("Tree.leftChildIndent");
+                                    Integer rightIndent = UIManager.getInt("Tree.rightChildIndent");
 
-                                    // 如果点击位置在文本左侧的图标区域，认为是点击了展开图标
-                                    boolean clickedOnHandle = clickX < textStartX;
+                                    int totalIndent = leftIndent + rightIndent;
+
+                                    // 计算节点深度和实际的图标区域
+                                    TreePath path = requestTree.getPathForRow(selRow);
+                                    int depth = path.getPathCount() - (requestTree.isRootVisible() ? 1 : 2);
+                                    int depthOffset = depth * totalIndent;
+
+                                    // 展开图标的结束位置
+                                    int handleEndX = depthOffset + totalIndent;
+
+                                    // 点击位置在展开图标区域内
+                                    boolean clickedOnHandle = clickX <= handleEndX;
 
                                     if (!clickedOnHandle) {
                                         // 点击文本区域：在预览 tab 中显示 Group 编辑面板
                                         Object groupData = obj[1];
                                         RequestGroup group;
-                                        if (groupData instanceof RequestGroup) {
-                                            group = (RequestGroup) groupData;
+                                        if (groupData instanceof RequestGroup requestGroup) {
+                                            group = requestGroup;
                                         } else {
                                             group = new RequestGroup(String.valueOf(groupData));
                                             obj[1] = group;
@@ -257,8 +267,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                                 // 双击 Group：打开编辑面板 tab（不触发展开/收起）
                                 Object groupData = obj[1];
                                 RequestGroup group;
-                                if (groupData instanceof RequestGroup) {
-                                    group = (RequestGroup) groupData;
+                                if (groupData instanceof RequestGroup requestGroup) {
+                                    group = requestGroup;
                                 } else {
                                     // 升级旧格式
                                     group = new RequestGroup(String.valueOf(groupData));

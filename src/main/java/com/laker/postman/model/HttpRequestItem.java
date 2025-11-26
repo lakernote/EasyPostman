@@ -1,20 +1,18 @@
 package com.laker.postman.model;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * HttpRequestItem 类表示一个HTTP请求的配置项
  * 包含请求的基本信息、头部、参数、认证等
  * 每个参数都要求有默认值，便于前端展示和编辑
  */
+@Setter
 @Getter
 public class HttpRequestItem implements Serializable {
     private String id = ""; // 唯一标识符
@@ -37,74 +35,6 @@ public class HttpRequestItem implements Serializable {
     // 后置脚本（响应后执行）
     private String postscript = "";
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public void setMethod(String method) {
-        this.method = method;
-    }
-
-    public void setProtocol(RequestItemProtocolEnum protocol) {
-        this.protocol = protocol;
-    }
-
-    public void setHeadersList(List<HttpHeader> headersList) {
-        this.headersList = headersList;
-    }
-
-    public void setBodyType(String bodyType) {
-        this.bodyType = bodyType;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
-
-    public void setParamsList(List<HttpParam> paramsList) {
-        this.paramsList = paramsList;
-    }
-
-    public void setFormDataList(List<HttpFormData> formDataList) {
-        this.formDataList = formDataList;
-    }
-
-    public void setUrlencodedList(List<HttpFormUrlencoded> urlencodedList) {
-        this.urlencodedList = urlencodedList;
-    }
-
-    public void setAuthType(String authType) {
-        this.authType = authType;
-    }
-
-    public void setAuthUsername(String authUsername) {
-        this.authUsername = authUsername;
-    }
-
-    public void setAuthPassword(String authPassword) {
-        this.authPassword = authPassword;
-    }
-
-    public void setAuthToken(String authToken) {
-        this.authToken = authToken;
-    }
-
-    public void setPrescript(String prescript) {
-        this.prescript = prescript;
-    }
-
-    public void setPostscript(String postscript) {
-        this.postscript = postscript;
-    }
-
     /**
      * 判断该请求是否为新建（未命名）请求
      */
@@ -112,51 +42,5 @@ public class HttpRequestItem implements Serializable {
         return name == null || name.trim().isEmpty();
     }
 
-
-    public Map<String, String> getParams() {
-        return paramsList.stream()
-                .filter(HttpParam::isEnabled)
-                .collect(toMap(
-                        HttpParam::getKey,
-                        HttpParam::getValue,
-                        (v1, v2) -> v2,
-                        LinkedHashMap::new
-                ));
-    }
-
-    public Map<String, String> getFormData() {
-        return formDataList.stream()
-                .filter(HttpFormData::isEnabled)
-                .filter(HttpFormData::isText)
-                .collect(toMap(
-                        HttpFormData::getKey,
-                        HttpFormData::getValue,
-                        (v1, v2) -> v2,
-                        LinkedHashMap::new
-                ));
-    }
-
-    public Map<String, String> getFormFiles() {
-        return formDataList.stream()
-                .filter(HttpFormData::isEnabled)
-                .filter(HttpFormData::isFile)
-                .collect(toMap(
-                        HttpFormData::getKey,
-                        HttpFormData::getValue,
-                        (v1, v2) -> v2,
-                        LinkedHashMap::new
-                ));
-    }
-
-    public Map<String, String> getUrlencoded() {
-        return urlencodedList.stream()
-                .filter(HttpFormUrlencoded::isEnabled)
-                .collect(toMap(
-                        HttpFormUrlencoded::getKey,
-                        HttpFormUrlencoded::getValue,
-                        (v1, v2) -> v2,
-                        LinkedHashMap::new
-                ));
-    }
 
 }

@@ -1,15 +1,12 @@
 package com.laker.postman.service.postman;
 
-import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.*;
+import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
@@ -18,6 +15,7 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
  * Postman Collection导出器
  * 负责将内部数据结构导出为Postman Collection格式（v2.1格式）
  */
+@UtilityClass
 public class PostmanCollectionExporter {
 
     /**
@@ -211,13 +209,15 @@ public class PostmanCollectionExporter {
         } catch (Exception ignore) {
         }
         // 额外合并 params
-        if (item.getParams() != null && !item.getParams().isEmpty()) {
+        if (item.getParamsList() != null && !item.getParamsList().isEmpty()) {
             JSONArray queryArr = url.containsKey("query") ? url.getJSONArray("query") : new JSONArray();
-            for (Map.Entry<String, String> entry : item.getParams().entrySet()) {
-                JSONObject q = new JSONObject();
-                q.put("key", entry.getKey());
-                q.put("value", entry.getValue());
-                queryArr.add(q);
+            for (HttpParam param : item.getParamsList()) {
+                if (param.isEnabled()) {
+                    JSONObject q = new JSONObject();
+                    q.put("key", param.getKey());
+                    q.put("value", param.getValue());
+                    queryArr.add(q);
+                }
             }
             url.put("query", queryArr);
         }
@@ -241,23 +241,21 @@ public class PostmanCollectionExporter {
             body.put("mode", "raw");
             body.put("raw", item.getBody());
             request.put("body", body);
-        } else if (item.getFormData() != null && !item.getFormData().isEmpty()) {
+        } else if (item.getFormDataList() != null && !item.getFormDataList().isEmpty()) {
             JSONObject body = new JSONObject();
             body.put("mode", "formdata");
             JSONArray arr = new JSONArray();
-            for (Map.Entry<String, String> entry : item.getFormData().entrySet()) {
-                JSONObject o = new JSONObject();
-                o.put("key", entry.getKey());
-                o.put("value", entry.getValue());
-                o.put("type", "text");
-                arr.add(o);
-            }
-            if (item.getFormFiles() != null && !item.getFormFiles().isEmpty()) {
-                for (Map.Entry<String, String> entry : item.getFormFiles().entrySet()) {
+            for (HttpFormData formData : item.getFormDataList()) {
+                if (formData.isEnabled()) {
                     JSONObject o = new JSONObject();
-                    o.put("key", entry.getKey());
-                    o.put("src", entry.getValue());
-                    o.put("type", "file");
+                    o.put("key", formData.getKey());
+                    if (formData.isText()) {
+                        o.put("value", formData.getValue());
+                        o.put("type", "text");
+                    } else if (formData.isFile()) {
+                        o.put("src", formData.getValue());
+                        o.put("type", "file");
+                    }
                     arr.add(o);
                 }
             }
@@ -265,16 +263,18 @@ public class PostmanCollectionExporter {
             request.put("body", body);
         }
         // urlencoded
-        else if (MapUtil.isNotEmpty(item.getUrlencoded())) {
+        else if (item.getUrlencodedList() != null && !item.getUrlencodedList().isEmpty()) {
             JSONObject body = new JSONObject();
             body.put("mode", "urlencoded");
             JSONArray arr = new JSONArray();
-            for (Map.Entry<String, String> entry : item.getUrlencoded().entrySet()) {
-                JSONObject o = new JSONObject();
-                o.put("key", entry.getKey());
-                o.put("value", entry.getValue());
-                o.put("type", "text");
-                arr.add(o);
+            for (HttpFormUrlencoded encoded : item.getUrlencodedList()) {
+                if (encoded.isEnabled()) {
+                    JSONObject o = new JSONObject();
+                    o.put("key", encoded.getKey());
+                    o.put("value", encoded.getValue());
+                    o.put("type", "text");
+                    arr.add(o);
+                }
             }
             body.put("urlencoded", arr);
             request.put("body", body);

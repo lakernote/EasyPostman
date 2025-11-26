@@ -29,19 +29,53 @@ public class PreparedRequestBuilder {
             }
         }
         // 拼接 params 到 url，但暂不替换变量
-        String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), item.getParams());
+        // Build params map from paramsList
+        Map<String, String> params = new LinkedHashMap<>();
+        if (item.getParamsList() != null) {
+            for (HttpParam param : item.getParamsList()) {
+                if (param.isEnabled()) {
+                    params.put(param.getKey(), param.getValue());
+                }
+            }
+        }
+        String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), params);
         req.url = HttpRequestUtil.encodeUrlParams(urlString); // 暂不替换变量
         HttpRequestUtil.addAuthorization(headers, item);
         req.headers = headers; // 暂不替换变量
         req.body = item.getBody(); // 暂不替换变量
         req.bodyType = item.getBodyType();
-        req.urlencoded = item.getUrlencoded(); // 暂不替换变量
-        boolean hasFormData = item.getFormData() != null && !item.getFormData().isEmpty();
-        boolean hasFormFiles = item.getFormFiles() != null && !item.getFormFiles().isEmpty();
+
+        // Build urlencoded map from urlencodedList
+        Map<String, String> urlencoded = new LinkedHashMap<>();
+        if (item.getUrlencodedList() != null) {
+            for (HttpFormUrlencoded encoded : item.getUrlencodedList()) {
+                if (encoded.isEnabled()) {
+                    urlencoded.put(encoded.getKey(), encoded.getValue());
+                }
+            }
+        }
+        req.urlencoded = urlencoded; // 暂不替换变量
+
+        // Build formData and formFiles maps from formDataList
+        Map<String, String> formData = new LinkedHashMap<>();
+        Map<String, String> formFiles = new LinkedHashMap<>();
+        if (item.getFormDataList() != null) {
+            for (HttpFormData data : item.getFormDataList()) {
+                if (data.isEnabled()) {
+                    if (data.isText()) {
+                        formData.put(data.getKey(), data.getValue());
+                    } else if (data.isFile()) {
+                        formFiles.put(data.getKey(), data.getValue());
+                    }
+                }
+            }
+        }
+        boolean hasFormData = !formData.isEmpty();
+        boolean hasFormFiles = !formFiles.isEmpty();
         req.isMultipart = hasFormData || hasFormFiles;
         if (req.isMultipart) {
-            req.formData = item.getFormData(); // 暂不替换变量
-            req.formFiles = item.getFormFiles(); // 暂不替换变量
+            req.formData = formData; // 暂不替换变量
+            req.formFiles = formFiles; // 暂不替换变量
         }
         req.followRedirects = SettingManager.isFollowRedirects();
 

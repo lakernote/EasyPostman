@@ -3,11 +3,14 @@ package com.laker.postman.service.postman;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
 
@@ -220,13 +223,15 @@ public class PostmanCollectionExporter {
         }
         request.put("url", url);
         // headers
-        if (item.getHeaders() != null && !item.getHeaders().isEmpty()) {
+        if (item.getHeadersList() != null && !item.getHeadersList().isEmpty()) {
             JSONArray headerArr = new JSONArray();
-            for (Map.Entry<String, String> entry : item.getHeaders().entrySet()) {
-                JSONObject h = new JSONObject();
-                h.put("key", entry.getKey());
-                h.put("value", entry.getValue());
-                headerArr.add(h);
+            for (HttpHeader header : item.getHeadersList()) {
+                if (header.isEnabled()) {
+                    JSONObject h = new JSONObject();
+                    h.put("key", header.getKey());
+                    h.put("value", header.getValue());
+                    headerArr.add(h);
+                }
             }
             request.put("header", headerArr);
         }

@@ -112,16 +112,6 @@ public class HttpRequestItem implements Serializable {
         return name == null || name.trim().isEmpty();
     }
 
-    public Map<String, String> getHeaders() {
-        return headersList.stream()
-                .filter(HttpHeader::isEnabled)
-                .collect(toMap(
-                        HttpHeader::getKey,
-                        HttpHeader::getValue,
-                        (v1, v2) -> v2,
-                        LinkedHashMap::new
-                ));
-    }
 
     public Map<String, String> getParams() {
         return paramsList.stream()

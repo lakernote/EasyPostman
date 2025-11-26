@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.left.dialog;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -176,7 +177,7 @@ public class AddRequestDialog {
         }
 
         RequestItemProtocolEnum protocol = getSelectedProtocol();
-        createNewRequest(protocol, requestName);
+        createAndAddRequest(requestName, protocol);
         dialog.dispose();
     }
 
@@ -195,15 +196,15 @@ public class AddRequestDialog {
     }
 
     /**
-     * 创建新请求
+     * 创建并添加请求到树
      */
-    private void createNewRequest(RequestItemProtocolEnum protocol, String requestName) {
+    private void createAndAddRequest(String requestName, RequestItemProtocolEnum protocol) {
         if (groupNode == null) return;
 
         HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
         defaultRequest.setProtocol(protocol);
         defaultRequest.setName(requestName);
-        defaultRequest.getHeaders().put(USER_AGENT, EASY_POSTMAN_CLIENT);
+        defaultRequest.getHeadersList().add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
 
         configureRequestByProtocol(defaultRequest, protocol);
 
@@ -227,13 +228,13 @@ public class AddRequestDialog {
 
         if (protocol.isWebSocketProtocol()) {
             // WebSocket 默认配置
-            request.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
+            request.getHeadersList().add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
             request.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
-            request.getHeaders().put(ACCEPT_ENCODING, "identity");
+            request.getHeadersList().add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
         } else if (protocol.isSseProtocol()) {
             // SSE 默认配置
-            request.getHeaders().put(ACCEPT, TEXT_EVENT_STREAM);
-            request.getHeaders().put(ACCEPT_ENCODING, "identity");
+            request.getHeadersList().add(new HttpHeader(true, ACCEPT, TEXT_EVENT_STREAM));
+            request.getHeadersList().add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
         }
         // HTTP 使用默认配置即可
     }

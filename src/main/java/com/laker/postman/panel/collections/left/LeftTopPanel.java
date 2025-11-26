@@ -371,7 +371,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                 item.setUrlencodedList(urlencodedList);
             }
 
-            if (HttpUtil.isSSERequest(item.getHeaders())) {
+            if (HttpUtil.isSSERequest(item)) {
                 item.setProtocol(RequestItemProtocolEnum.SSE);
             } else if (HttpUtil.isWebSocketRequest(item.getUrl())) {
                 item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);

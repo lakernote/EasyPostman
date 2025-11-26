@@ -19,7 +19,15 @@ public class PreparedRequestBuilder {
         PreparedRequest req = new PreparedRequest();
         req.id = item.getId();
         req.method = item.getMethod();
-        Map<String, String> headers = item.getHeaders() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(item.getHeaders());
+        // Build headers map from headersList
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (item.getHeadersList() != null) {
+            for (HttpHeader header : item.getHeadersList()) {
+                if (header.isEnabled()) {
+                    headers.put(header.getKey(), header.getValue());
+                }
+            }
+        }
         // 拼接 params 到 url，但暂不替换变量
         String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), item.getParams());
         req.url = HttpRequestUtil.encodeUrlParams(urlString); // 暂不替换变量

@@ -67,15 +67,15 @@ public class HttpUtil {
         return false;
     }
 
-    public static boolean isSSERequest(Map<String, String> headers) {
-        if (headers == null || headers.isEmpty()) {
+    public static boolean isSSERequest(HttpRequestItem item) {
+        if (item == null || item.getHeadersList() == null || item.getHeadersList().isEmpty()) {
             return false;
         }
         // 判断Accept头是否包含text/event-stream
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            if ("Accept".equalsIgnoreCase(entry.getKey()) &&
-                    entry.getValue() != null &&
-                    entry.getValue().toLowerCase().contains("text/event-stream")) {
+        for (HttpHeader header : item.getHeadersList()) {
+            if (header.isEnabled() && "Accept".equalsIgnoreCase(header.getKey()) &&
+                    header.getValue() != null &&
+                    header.getValue().toLowerCase().contains("text/event-stream")) {
                 return true;
             }
         }
@@ -337,11 +337,11 @@ public class HttpUtil {
         return urlBuilder.toString();
     }
 
-    public static String getHeaderIgnoreCase(Map<String, String> headers, String s) {
-        if (headers == null || s == null) return null;
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            if (s.equalsIgnoreCase(entry.getKey())) {
-                return entry.getValue();
+    public static String getHeaderIgnoreCase(HttpRequestItem item, String s) {
+        if (item == null || item.getHeadersList() == null || s == null) return null;
+        for (HttpHeader header : item.getHeadersList()) {
+            if (header.isEnabled() && s.equalsIgnoreCase(header.getKey())) {
+                return header.getValue();
             }
         }
         return null;

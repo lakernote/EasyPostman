@@ -208,7 +208,7 @@ public class HttpFileParser {
      */
     private static void finishRequest(HttpRequestItem request, StringBuilder bodyBuilder, String contentType) {
         // 设置协议类型
-        if (HttpUtil.isSSERequest(request.getHeaders())) {
+        if (HttpUtil.isSSERequest(request)) {
             request.setProtocol(RequestItemProtocolEnum.SSE);
         } else if (HttpUtil.isWebSocketRequest(request.getUrl())) {
             request.setProtocol(RequestItemProtocolEnum.WEBSOCKET);

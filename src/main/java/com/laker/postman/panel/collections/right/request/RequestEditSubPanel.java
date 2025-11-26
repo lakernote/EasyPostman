@@ -711,7 +711,7 @@ public class RequestEditSubPanel extends JPanel {
         if (CharSequenceUtil.isBlank(item.getBodyType())) {
             item.setBodyType(RequestBodyPanel.BODY_TYPE_NONE);
             // 根据请求headers尝试推断bodyType
-            String contentType = HttpUtil.getHeaderIgnoreCase(item.getHeaders(), "Content-Type");
+            String contentType = HttpUtil.getHeaderIgnoreCase(item, "Content-Type");
             if (CharSequenceUtil.isNotBlank(contentType)) {
                 if (contentType.contains("application/x-www-form-urlencoded")) {
                     item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);

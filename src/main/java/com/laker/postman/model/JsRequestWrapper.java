@@ -1,20 +1,15 @@
 package com.laker.postman.model;
 
-import com.laker.postman.service.http.HttpRequestUtil;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 /**
- * JS专用请求包装类，所有参数均支持 add 方法
+ * JS专用请求包装类，直接操作 List
  */
 public class JsRequestWrapper {
     public final PreparedRequest raw;
-    public ParamMapWrapper headers;
-    public ParamMapWrapper formData;
-    public ParamMapWrapper formFiles;
-    public ParamMapWrapper urlencoded;
-    public ParamMapWrapper params;
+    public JsListWrapper<HttpHeader> headers;
+    public JsListWrapper<HttpFormData> formData;
+    public JsListWrapper<HttpFormUrlencoded> urlencoded;
     public String id;
     public String url;
     public String method;
@@ -25,11 +20,23 @@ public class JsRequestWrapper {
 
     public JsRequestWrapper(PreparedRequest req) {
         this.raw = req;
-        this.headers = new ParamMapWrapper(req.headers != null ? req.headers : new LinkedHashMap<>());
-        this.formData = new ParamMapWrapper(req.formData != null ? req.formData : new LinkedHashMap<>());
-        this.formFiles = new ParamMapWrapper(req.formFiles != null ? req.formFiles : new LinkedHashMap<>());
-        this.urlencoded = new ParamMapWrapper(req.urlencoded != null ? req.urlencoded : new LinkedHashMap<>());
-        this.params = new ParamMapWrapper(new LinkedHashMap<>(), this); // params自动同步url
+
+        // 确保 List 不为 null，并关联到 PreparedRequest
+        if (req.headersList == null) {
+            req.headersList = new ArrayList<>();
+        }
+        if (req.formDataList == null) {
+            req.formDataList = new ArrayList<>();
+        }
+        if (req.urlencodedList == null) {
+            req.urlencodedList = new ArrayList<>();
+        }
+
+        // 直接包装 PreparedRequest 中的 List，确保前置脚本修改能生效
+        this.headers = new JsListWrapper<>(req.headersList, JsListWrapper.ListType.HEADER);
+        this.formData = new JsListWrapper<>(req.formDataList, JsListWrapper.ListType.FORM_DATA);
+        this.urlencoded = new JsListWrapper<>(req.urlencodedList, JsListWrapper.ListType.URLENCODED);
+
         this.id = req.id;
         this.url = req.url;
         this.method = req.method;
@@ -37,27 +44,5 @@ public class JsRequestWrapper {
         this.isMultipart = req.isMultipart;
         this.followRedirects = req.followRedirects;
         this.logEvent = req.logEvent;
-    }
-
-    // params变更时自动更新url
-    public void updateUrlWithParams(Map<String, String> params) {
-        this.url = HttpRequestUtil.buildUrlWithParams(this.url, params);
-        raw.url = this.url;
-    }
-
-    // urlencoded变更时自动更新body
-    public void updateBodyWithUrlencoded() {
-        if (this.urlencoded != null && !this.urlencoded.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            for (Map.Entry<String, String> entry : this.urlencoded.entrySet()) {
-                if (!sb.isEmpty()) sb.append("&");
-                sb.append(entry.getKey()).append("=").append(entry.getValue());
-            }
-            this.body = sb.toString();
-            raw.body = this.body;
-        } else {
-            this.body = "";
-            raw.body = "";
-        }
     }
 }

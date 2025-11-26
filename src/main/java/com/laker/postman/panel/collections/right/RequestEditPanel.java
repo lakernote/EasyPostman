@@ -46,6 +46,10 @@ public class RequestEditPanel extends SingletonBasePanel {
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
+    // 预览模式：单击使用的临时 tab（可被下次单击替换）
+    private Component previewTab = null; // 可以是 RequestEditSubPanel 或 GroupEditPanel
+    private int previewTabIndex = -1; // 预览 tab 的索引
+
 
     // 新建Tab，可指定标题
     public RequestEditSubPanel addNewTab(String title, RequestItemProtocolEnum protocol) {
@@ -101,7 +105,158 @@ public class RequestEditPanel extends SingletonBasePanel {
         return null;
     }
 
-    // showOrCreateTab 需适配 “+” Tab
+    /**
+     * 显示或创建预览 tab（用于单击时的临时预览）
+     * 预览 tab 的特点：
+     * 1. 如果没有预览 tab，创建一个新的
+     * 2. 如果已有预览 tab，复用它（替换内容）
+     * 3. 如果该 request 已有固定 tab，则切换到固定 tab
+     * 4. 预览 tab 会在标题显示斜体，提示这是临时的
+     */
+    public void showOrCreatePreviewTab(HttpRequestItem item) {
+        String id = item.getId();
+        if (id == null || id.isEmpty()) {
+            addNewTab(null);
+            updateRequest(item);
+            return;
+        }
+
+        // 1. 先查找是否已有固定的 tab（不包括预览 tab）
+        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (i != previewTabIndex && comp instanceof RequestEditSubPanel subPanel) {
+                if (id.equals(subPanel.getId())) {
+                    tabbedPane.setSelectedIndex(i);
+                    return;
+                }
+            }
+        }
+
+        // 2. 检查预览 tab 是否存在且有效
+        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
+            Component currentPreview = tabbedPane.getComponentAt(previewTabIndex);
+            if (currentPreview != previewTab) {
+                previewTab = null;
+                previewTabIndex = -1;
+            }
+        } else {
+            previewTab = null;
+            previewTabIndex = -1;
+        }
+
+        // 3. 复用或创建预览 tab
+        String name = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : REQUEST_STRING;
+        RequestEditSubPanel newPanel = new RequestEditSubPanel(id, item.getProtocol());
+        newPanel.initPanelData(item);
+
+        if (previewTab != null && previewTabIndex >= 0) {
+            // 复用现有预览 tab：替换内容
+            previewTab = newPanel;
+            tabbedPane.setComponentAt(previewTabIndex, previewTab);
+            tabbedPane.setTitleAt(previewTabIndex, name);
+            ClosableTabComponent tabComponent = new ClosableTabComponent(name, item.getProtocol());
+            tabComponent.setPreviewMode(true);
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+        } else {
+            // 创建新的预览 tab
+            int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
+            if (isPlusTab(plusTabIdx)) {
+                tabbedPane.removeTabAt(plusTabIdx);
+            }
+            previewTab = newPanel;
+            tabbedPane.addTab(name, previewTab);
+            previewTabIndex = tabbedPane.getTabCount() - 1;
+            ClosableTabComponent tabComponent = new ClosableTabComponent(name, item.getProtocol());
+            tabComponent.setPreviewMode(true);
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+            addPlusTab();
+        }
+    }
+
+    /**
+     * 将预览 tab 转为固定 tab
+     */
+    public void promotePreviewTabToPermanent() {
+        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
+            Component tabComponent = tabbedPane.getTabComponentAt(previewTabIndex);
+            if (tabComponent instanceof ClosableTabComponent closableTab) {
+                closableTab.setPreviewMode(false);
+            }
+            previewTab = null;
+            previewTabIndex = -1;
+        }
+    }
+
+    /**
+     * 显示或创建 Group 的预览 tab（用于单击 Group 时）
+     */
+    public void showOrCreatePreviewTabForGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
+        String groupId = group.getId();
+
+        // 1. 先查找是否已有固定的 Group tab（不包括预览 tab）
+        if (groupId != null && !groupId.isEmpty()) {
+            for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+                if (i != previewTabIndex) {
+                    Component comp = tabbedPane.getComponentAt(i);
+                    if (comp instanceof GroupEditPanel existingPanel) {
+                        if (groupId.equals(existingPanel.getGroup().getId())) {
+                            tabbedPane.setSelectedIndex(i);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. 检查预览 tab 是否存在且有效
+        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
+            Component currentPreview = tabbedPane.getComponentAt(previewTabIndex);
+            if (currentPreview != previewTab) {
+                previewTab = null;
+                previewTabIndex = -1;
+            }
+        } else {
+            previewTab = null;
+            previewTabIndex = -1;
+        }
+
+        // 3. 复用或创建预览 tab
+        String groupName = group.getName();
+        GroupEditPanel groupEditPanel = new GroupEditPanel(groupNode, group, () -> {
+            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            leftPanel.getTreeModel().nodeChanged(groupNode);
+            leftPanel.getPersistence().saveRequestGroups();
+        });
+
+        if (previewTab != null && previewTabIndex >= 0) {
+            // 复用现有预览 tab：替换内容
+            previewTab = groupEditPanel;
+            tabbedPane.setComponentAt(previewTabIndex, previewTab);
+            tabbedPane.setTitleAt(previewTabIndex, groupName);
+            ClosableTabComponent tabComponent = new ClosableTabComponent(groupName, null);
+            tabComponent.setPreviewMode(true);
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+        } else {
+            // 创建新的预览 tab
+            int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
+            if (isPlusTab(plusTabIdx)) {
+                tabbedPane.removeTabAt(plusTabIdx);
+            }
+            previewTab = groupEditPanel;
+            tabbedPane.addTab(groupName, previewTab);
+            previewTabIndex = tabbedPane.getTabCount() - 1;
+            ClosableTabComponent tabComponent = new ClosableTabComponent(groupName, null);
+            tabComponent.setPreviewMode(true);
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+            addPlusTab();
+        }
+    }
+
+    // showOrCreateTab 需适配 "+" Tab（双击时调用，创建固定 tab）
     public void showOrCreateTab(HttpRequestItem item) {
         String id = item.getId();
         if (id == null || id.isEmpty()) {
@@ -109,7 +264,14 @@ public class RequestEditPanel extends SingletonBasePanel {
             updateRequest(item);
             return;
         }
-        // 查找同id Tab（不查“+”Tab）
+
+        // 如果当前预览的就是这个 request，则将预览 tab 转为固定 tab
+        if (previewTab instanceof RequestEditSubPanel subPanel && id.equals(subPanel.getId())) {
+            promotePreviewTabToPermanent();
+            return;
+        }
+
+        // 查找同id Tab（不查"+"Tab）
         for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
             Component comp = tabbedPane.getComponentAt(i);
             if (comp instanceof RequestEditSubPanel subPanel) {
@@ -732,20 +894,28 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     /**
      * 显示分组编辑面板（参考 Postman，不使用弹窗）
-     * 如果已经打开了相同的分组，则直接切换到该 Tab
+     * 双击时调用，创建固定 tab
      */
     public void showGroupEditPanel(DefaultMutableTreeNode groupNode, RequestGroup group) {
-        // 先查找是否已经打开了相同的分组（使用 ID 判断）
         String groupId = group.getId();
+
+        // 如果当前预览的就是这个 group，则将预览 tab 转为固定 tab
+        if (previewTab instanceof GroupEditPanel previewGroupPanel &&
+            groupId != null && groupId.equals(previewGroupPanel.getGroup().getId())) {
+            promotePreviewTabToPermanent();
+            return;
+        }
+
+        // 先查找是否已经打开了相同的分组（使用 ID 判断）
         if (groupId != null && !groupId.isEmpty()) {
             for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-                Component comp = tabbedPane.getComponentAt(i);
-                if (comp instanceof GroupEditPanel existingPanel) {
-                    // 比较分组 ID
-                    if (groupId.equals(existingPanel.getGroup().getId())) {
-                        // 已经打开，直接切换到该 Tab
-                        tabbedPane.setSelectedIndex(i);
-                        return;
+                if (i != previewTabIndex) {
+                    Component comp = tabbedPane.getComponentAt(i);
+                    if (comp instanceof GroupEditPanel existingPanel) {
+                        if (groupId.equals(existingPanel.getGroup().getId())) {
+                            tabbedPane.setSelectedIndex(i);
+                            return;
+                        }
                     }
                 }
             }

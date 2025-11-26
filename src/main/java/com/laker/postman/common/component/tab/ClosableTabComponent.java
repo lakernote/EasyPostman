@@ -36,6 +36,8 @@ public class ClosableTabComponent extends JPanel {
     private boolean dirty = false;
     @Getter
     private boolean newRequest = false;
+    @Getter
+    private boolean previewMode = false; // 预览模式：单击打开的临时 tab
     private final JTabbedPane tabbedPane;
 
     private boolean hoverClose = false; // 鼠标是否悬浮在关闭按钮区域
@@ -233,6 +235,20 @@ public class ClosableTabComponent extends JPanel {
     public void setNewRequest(boolean newRequest) {
         this.newRequest = newRequest;
         label.setText(rawTitle);
+        repaint();
+    }
+
+    /**
+     * 设置预览模式
+     * 预览模式的 tab 使用斜体字体，提示用户这是临时的
+     */
+    public void setPreviewMode(boolean previewMode) {
+        this.previewMode = previewMode;
+        if (previewMode) {
+            label.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 12));
+        } else {
+            label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        }
         repaint();
     }
 }

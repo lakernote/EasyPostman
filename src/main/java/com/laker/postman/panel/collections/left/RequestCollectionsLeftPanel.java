@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.left;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
@@ -72,7 +71,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private transient RequestsPersistence persistence;
 
     // 剪贴板：存储复制的请求列表（用于跨分组粘贴）
-    private transient List<HttpRequestItem> copiedRequests = new ArrayList<>();
+    private final transient List<HttpRequestItem> copiedRequests = new ArrayList<>();
 
     @Override
     protected void initUI() {
@@ -111,6 +110,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.setRootVisible(false);
         // 让 JTree 组件显示根节点的"展开/收起"小三角（即树形结构的手柄）。
         requestTree.setShowsRootHandles(true);
+        // 禁用双击展开/收起：设置 toggleClickCount 为 0
+        // 这样双击只会触发我们自定义的打开 tab 行为，不会展开/收起
+        requestTree.setToggleClickCount(0);
         // 设置树支持多选（支持批量删除）
         requestTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         // 设置树的字体和行高
@@ -178,8 +180,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) { // pressed 而不是 clicked，更加灵敏
-                // 统一处理左键和右键点击
-                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) { // 左键单击 打开请求或分组
+                // 处理左键单击
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) {
                     int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
                     TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
                     // 如果点击位置没有直接命中节点，则获取最近的行
@@ -190,13 +192,69 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         }
                     }
                     if (selRow != -1 && selPath != null) {
+                        // 更新选中状态
+                        requestTree.setSelectionPath(selPath);
+
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+                        if (node.getUserObject() instanceof Object[] obj) {
+                            if (GROUP.equals(obj[0])) {
+                                // 检查是否点击在展开/收起图标区域（handle area）
+                                Rectangle rowBounds = requestTree.getRowBounds(selRow);
+                                if (rowBounds != null) {
+                                    // 获取 tree 的展开图标位置
+                                    // JTree 的展开图标通常在节点左侧，位置由 TreeUI 决定
+                                    int clickX = e.getX();
+
+                                    // 计算图标区域：从行起始位置到文本起始位置之间
+                                    // 通常展开图标占据左侧约 20px 的区域
+                                    int textStartX = rowBounds.x;
+
+                                    // 如果点击位置在文本左侧的图标区域，认为是点击了展开图标
+                                    boolean clickedOnHandle = clickX < textStartX;
+
+                                    if (!clickedOnHandle) {
+                                        // 点击文本区域：在预览 tab 中显示 Group 编辑面板
+                                        Object groupData = obj[1];
+                                        RequestGroup group;
+                                        if (groupData instanceof RequestGroup) {
+                                            group = (RequestGroup) groupData;
+                                        } else {
+                                            group = new RequestGroup(String.valueOf(groupData));
+                                            obj[1] = group;
+                                        }
+                                        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+                                        editPanel.showOrCreatePreviewTabForGroup(node, group);
+                                    }
+                                    // 如果点击的是展开图标，不做任何操作，让 JTree 自己处理
+                                }
+                            } else if (REQUEST.equals(obj[0])) {
+                                // 单击 Request：在预览 tab 中显示
+                                HttpRequestItem item = (HttpRequestItem) obj[1];
+                                SingletonFactory.getInstance(RequestEditPanel.class).showOrCreatePreviewTab(item);
+                            }
+                        }
+                    }
+                }
+
+                // 处理左键双击：打开 tab
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
+                    int selRow = requestTree.getRowForLocation(e.getX(), e.getY());
+                    TreePath selPath = requestTree.getPathForLocation(e.getX(), e.getY());
+                    if (selRow == -1 || selPath == null) {
+                        selRow = requestTree.getClosestRowForLocation(e.getX(), e.getY());
+                        if (selRow != -1) {
+                            selPath = requestTree.getPathForRow(selRow);
+                        }
+                    }
+                    if (selRow != -1 && selPath != null) {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
                         if (node.getUserObject() instanceof Object[] obj) {
                             if (REQUEST.equals(obj[0])) {
+                                // 双击 Request：打开 tab
                                 HttpRequestItem item = (HttpRequestItem) obj[1];
                                 SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
                             } else if (GROUP.equals(obj[0])) {
-                                // 点击分组，在右侧显示编辑面板
+                                // 双击 Group：打开编辑面板 tab（不触发展开/收起）
                                 Object groupData = obj[1];
                                 RequestGroup group;
                                 if (groupData instanceof RequestGroup) {
@@ -208,6 +266,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                                 }
                                 RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
                                 editPanel.showGroupEditPanel(node, group);
+                                // 阻止事件继续传播，防止触发 JTree 的默认展开/收起行为
+                                e.consume();
                             }
                         }
                     }

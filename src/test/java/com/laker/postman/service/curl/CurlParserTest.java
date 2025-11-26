@@ -1,11 +1,8 @@
 package com.laker.postman.service.curl;
 
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.*;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.LinkedHashMap;
 
 import static org.testng.Assert.*;
 
@@ -22,9 +19,9 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/users");
         assertEquals(result.method, "GET");
-        assertTrue(result.headers.isEmpty());
+        assertTrue(result.headersList == null || result.headersList.isEmpty());
         assertNull(result.body);
-        assertTrue(result.params.isEmpty());
+        assertTrue(result.paramsList == null || result.paramsList.isEmpty());
         assertFalse(result.followRedirects);
     }
 
@@ -35,9 +32,9 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/users?page=1&limit=10&sort=name");
         assertEquals(result.method, "GET");
-        assertEquals(result.params.get("page"), "1");
-        assertEquals(result.params.get("limit"), "10");
-        assertEquals(result.params.get("sort"), "name");
+        assertEquals(findParamValue(result.paramsList, "page"), "1");
+        assertEquals(findParamValue(result.paramsList, "limit"), "10");
+        assertEquals(findParamValue(result.paramsList, "sort"), "name");
     }
 
     @Test(description = "解析POST请求带JSON数据")
@@ -49,7 +46,7 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/users");
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
         assertEquals(result.body, "{\"name\":\"John\",\"email\":\"john@example.com\"}");
     }
 
@@ -63,9 +60,9 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/users");
         assertEquals(result.method, "GET");
-        assertEquals(result.headers.get("Authorization"), "Bearer token123");
-        assertEquals(result.headers.get("Accept"), "application/json");
-        assertEquals(result.headers.get("User-Agent"), "MyApp/1.0");
+        assertEquals(findHeaderValue(result.headersList, "Authorization"), "Bearer token123");
+        assertEquals(findHeaderValue(result.headersList, "Accept"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "User-Agent"), "MyApp/1.0");
     }
 
     @Test(description = "解析带Cookie的请求")
@@ -74,7 +71,7 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.url, "https://api.example.com/users");
-        assertEquals(result.headers.get("Cookie"), "session=abc123; lang=en");
+        assertEquals(findHeaderValue(result.headersList, "Cookie"), "session=abc123; lang=en");
     }
 
     @Test(description = "解析带重定向标志的请求")
@@ -101,10 +98,10 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/upload");
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "multipart/form-data");
-        assertEquals(result.formData.get("name"), "John");
-        assertEquals(result.formData.get("email"), "john@example.com");
-        assertEquals(result.formFiles.get("file"), "/path/to/file.txt");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "multipart/form-data");
+        assertEquals(findFormDataValue(result.formDataList, "name"), "John");
+        assertEquals(findFormDataValue(result.formDataList, "email"), "john@example.com");
+        assertEquals(findFormDataFileValue(result.formDataList, "file"), "/path/to/file.txt");
     }
 
     @Test(description = "解析带转义字符的数据")
@@ -132,7 +129,7 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/users");
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
         assertEquals(result.body, "{\"name\":\"John\"}");
     }
 
@@ -182,8 +179,8 @@ public class CurlParserTest {
 
         assertEquals(result.url, "https://api.example.com/users");
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.headers.get("Authorization"), "Bearer token");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Authorization"), "Bearer token");
         assertEquals(result.body, "{\"data\": \"test\"}");
     }
 
@@ -228,9 +225,9 @@ public class CurlParserTest {
         PreparedRequest preparedRequest = new PreparedRequest();
         preparedRequest.method = "POST";
         preparedRequest.url = "https://api.example.com/users";
-        preparedRequest.headers = new LinkedHashMap<>();
-        preparedRequest.headers.put("Content-Type", "application/json");
-        preparedRequest.headers.put("Authorization", "Bearer token");
+        preparedRequest.headersList = new java.util.ArrayList<>();
+        preparedRequest.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        preparedRequest.headersList.add(new HttpHeader(true, "Authorization", "Bearer token"));
         preparedRequest.body = "{\"name\":\"John\"}";
 
         String curlCommand = CurlParser.toCurl(preparedRequest);
@@ -249,11 +246,10 @@ public class CurlParserTest {
         PreparedRequest preparedRequest = new PreparedRequest();
         preparedRequest.method = "POST";
         preparedRequest.url = "https://api.example.com/upload";
-        preparedRequest.formData = new LinkedHashMap<>();
-        preparedRequest.formData.put("name", "John");
-        preparedRequest.formData.put("email", "john@example.com");
-        preparedRequest.formFiles = new LinkedHashMap<>();
-        preparedRequest.formFiles.put("file", "/path/to/file.txt");
+        preparedRequest.formDataList = new java.util.ArrayList<>();
+        preparedRequest.formDataList.add(new HttpFormData(true, "name", HttpFormData.TYPE_TEXT, "John"));
+        preparedRequest.formDataList.add(new HttpFormData(true, "email", HttpFormData.TYPE_TEXT, "john@example.com"));
+        preparedRequest.formDataList.add(new HttpFormData(true, "file", HttpFormData.TYPE_FILE, "/path/to/file.txt"));
 
         String curlCommand = CurlParser.toCurl(preparedRequest);
 
@@ -267,8 +263,8 @@ public class CurlParserTest {
         PreparedRequest preparedRequest = new PreparedRequest();
         preparedRequest.method = "GET";
         preparedRequest.url = "https://api.example.com/users";
-        preparedRequest.headers = new LinkedHashMap<>();
-        preparedRequest.headers.put("Accept", "application/json");
+        preparedRequest.headersList = new java.util.ArrayList<>();
+        preparedRequest.headersList.add(new HttpHeader(true, "Accept", "application/json"));
 
         String curlCommand = CurlParser.toCurl(preparedRequest);
 
@@ -314,8 +310,8 @@ public class CurlParserTest {
                 "-H 'Authorization: Bearer token:with:colons'";
         CurlRequest result = CurlParser.parse(curl);
 
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.headers.get("Authorization"), "Bearer token:with:colons");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Authorization"), "Bearer token:with:colons");
     }
 
     @Test(description = "测试查询参数解析边界情况")
@@ -323,14 +319,14 @@ public class CurlParserTest {
         // 没有值的参数
         String curl1 = "curl 'https://api.example.com?flag&key=value'";
         CurlRequest result1 = CurlParser.parse(curl1);
-        assertEquals(result1.params.get("flag"), "");
-        assertEquals(result1.params.get("key"), "value");
+        assertEquals(findParamValue(result1.paramsList, "flag"), "");
+        assertEquals(findParamValue(result1.paramsList, "key"), "value");
 
         // 空值参数
         String curl2 = "curl 'https://api.example.com?empty=&key=value'";
         CurlRequest result2 = CurlParser.parse(curl2);
-        assertEquals(result2.params.get("empty"), "");
-        assertEquals(result2.params.get("key"), "value");
+        assertEquals(findParamValue(result2.paramsList, "empty"), "");
+        assertEquals(findParamValue(result2.paramsList, "key"), "value");
     }
 
     @Test(description = "测试复杂的表单字段解析")
@@ -342,9 +338,9 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         // 没有等号的字段应该被忽略
-        assertFalse(result.formData.containsKey("field_without_value"));
-        assertEquals(result.formData.get("normal_field"), "value");
-        assertEquals(result.formFiles.get("file_field"), "/path/file.txt");
+        assertNull(findFormDataValue(result.formDataList, "field_without_value"));
+        assertEquals(findFormDataValue(result.formDataList, "normal_field"), "value");
+        assertEquals(findFormDataFileValue(result.formDataList, "file_field"), "/path/file.txt");
     }
 
     @Test(description = "测试URL和方法的不同位置")
@@ -367,12 +363,12 @@ public class CurlParserTest {
         // 短格式
         String curl1 = "curl -b 'session=123' https://api.example.com";
         CurlRequest result1 = CurlParser.parse(curl1);
-        assertEquals(result1.headers.get("Cookie"), "session=123");
+        assertEquals(findHeaderValue(result1.headersList, "Cookie"), "session=123");
 
         // 长格式
         String curl2 = "curl --cookie 'session=123' https://api.example.com";
         CurlRequest result2 = CurlParser.parse(curl2);
-        assertEquals(result2.headers.get("Cookie"), "session=123");
+        assertEquals(findHeaderValue(result2.headersList, "Cookie"), "session=123");
     }
 
     @Test(description = "测试请求头参数的不同格式")
@@ -380,12 +376,12 @@ public class CurlParserTest {
         // 短格式
         String curl1 = "curl -H 'Content-Type: application/json' https://api.example.com";
         CurlRequest result1 = CurlParser.parse(curl1);
-        assertEquals(result1.headers.get("Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result1.headersList, "Content-Type"), "application/json");
 
         // 长格式
         String curl2 = "curl --header 'Content-Type: application/json' https://api.example.com";
         CurlRequest result2 = CurlParser.parse(curl2);
-        assertEquals(result2.headers.get("Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result2.headersList, "Content-Type"), "application/json");
     }
 
     @Test(description = "测试HTTP方法大小写转换")
@@ -436,16 +432,16 @@ public class CurlParserTest {
         assertTrue(result.followRedirects);
 
         // 验证请求头
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.headers.get("Authorization"), "Bearer eyJhbGciOiJIUzI1NiJ9");
-        assertEquals(result.headers.get("User-Agent"), "EasyPostman/2.1.0");
-        assertEquals(result.headers.get("Cookie"), "session=abc123; csrf_token=xyz789");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Authorization"), "Bearer eyJhbGciOiJIUzI1NiJ9");
+        assertEquals(findHeaderValue(result.headersList, "User-Agent"), "EasyPostman/2.1.0");
+        assertEquals(findHeaderValue(result.headersList, "Cookie"), "session=abc123; csrf_token=xyz789");
 
         // 验证请求体
         assertEquals(result.body, "{\"name\":\"测试用户\",\"age\":25,\"active\":true}");
 
         // 验证查询参数
-        assertEquals(result.params.get("active"), "true");
+        assertEquals(findParamValue(result.paramsList, "active"), "true");
     }
 
     @Test(description = "测试往返转换一致性")
@@ -454,9 +450,9 @@ public class CurlParserTest {
         PreparedRequest original = new PreparedRequest();
         original.method = "PUT";
         original.url = "https://api.example.com/users/123";
-        original.headers = new LinkedHashMap<>();
-        original.headers.put("Content-Type", "application/json");
-        original.headers.put("Accept", "application/json");
+        original.headersList = new java.util.ArrayList<>();
+        original.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        original.headersList.add(new HttpHeader(true, "Accept", "application/json"));
         original.body = "{\"name\":\"Updated Name\"}";
 
         // 转换为cURL命令
@@ -468,8 +464,8 @@ public class CurlParserTest {
         // 验证往返转换的一致性
         assertEquals(parsed.method, original.method);
         assertEquals(parsed.url, original.url);
-        assertEquals(parsed.headers.get("Content-Type"), original.headers.get("Content-Type"));
-        assertEquals(parsed.headers.get("Accept"), original.headers.get("Accept"));
+        assertEquals(findHeaderValue(parsed.headersList, "Content-Type"), findHeaderValue(original.headersList, "Content-Type"));
+        assertEquals(findHeaderValue(parsed.headersList, "Accept"), findHeaderValue(original.headersList, "Accept"));
         assertEquals(parsed.body, original.body);
     }
 
@@ -494,18 +490,18 @@ public class CurlParserTest {
         assertEquals(result.method, "GET"); // WebSocket握手使用GET方法
 
         // 验证受限制的WebSocket头部已被过滤掉
-        assertNull(result.headers.get("Upgrade"));
-        assertNull(result.headers.get("Connection"));
-        assertNull(result.headers.get("Sec-WebSocket-Key"));
-        assertNull(result.headers.get("Sec-WebSocket-Version"));
-        assertNull(result.headers.get("Sec-WebSocket-Extensions"));
+        assertNull(findHeaderValue(result.headersList, "Upgrade"));
+        assertNull(findHeaderValue(result.headersList, "Connection"));
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Key"));
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Version"));
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Extensions"));
 
         // 验证非受限制的头部正常保留
-        assertEquals(result.headers.get("Origin"), "https://hoppscotch.io");
-        assertEquals(result.headers.get("Cache-Control"), "no-cache");
-        assertEquals(result.headers.get("Accept-Language"), "zh-CN,zh;q=0.9");
-        assertEquals(result.headers.get("Pragma"), "no-cache");
-        assertEquals(result.headers.get("User-Agent"), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
+        assertEquals(findHeaderValue(result.headersList, "Origin"), "https://hoppscotch.io");
+        assertEquals(findHeaderValue(result.headersList, "Cache-Control"), "no-cache");
+        assertEquals(findHeaderValue(result.headersList, "Accept-Language"), "zh-CN,zh;q=0.9");
+        assertEquals(findHeaderValue(result.headersList, "Pragma"), "no-cache");
+        assertEquals(findHeaderValue(result.headersList, "User-Agent"), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
     }
 
     @Test(description = "测试WebSocket请求的受限头部过滤")
@@ -527,16 +523,16 @@ public class CurlParserTest {
         assertEquals(result.method, "GET");
 
         // 验证受限制的WebSocket头部已被过滤掉
-        assertNull(result.headers.get("Upgrade"));
-        assertNull(result.headers.get("Connection"));
-        assertNull(result.headers.get("Sec-WebSocket-Key"));
-        assertNull(result.headers.get("Sec-WebSocket-Version"));
-        assertNull(result.headers.get("Sec-WebSocket-Extensions"));
+        assertNull(findHeaderValue(result.headersList, "Upgrade"));
+        assertNull(findHeaderValue(result.headersList, "Connection"));
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Key"));
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Version"));
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Extensions"));
 
         // 验证非受限制的头部正常保留
-        assertEquals(result.headers.get("Origin"), "https://hoppscotch.io");
-        assertEquals(result.headers.get("User-Agent"), "Mozilla/5.0");
-        assertEquals(result.headers.get("Accept-Language"), "zh-CN,zh;q=0.9");
+        assertEquals(findHeaderValue(result.headersList, "Origin"), "https://hoppscotch.io");
+        assertEquals(findHeaderValue(result.headersList, "User-Agent"), "Mozilla/5.0");
+        assertEquals(findHeaderValue(result.headersList, "Accept-Language"), "zh-CN,zh;q=0.9");
     }
 
     @Test(description = "测试普通HTTP请求不受WebSocket头部过滤影响")
@@ -552,10 +548,10 @@ public class CurlParserTest {
         // 验证普通HTTP请求允许设置这些头部
         assertEquals(result.url, "https://api.example.com/test");
         assertEquals(result.method, "GET");
-        assertEquals(result.headers.get("Sec-WebSocket-Key"), "test-key");
-        assertEquals(result.headers.get("Sec-WebSocket-Version"), "13");
-        assertEquals(result.headers.get("Connection"), "keep-alive");
-        assertEquals(result.headers.get("User-Agent"), "TestAgent");
+        assertEquals(findHeaderValue(result.headersList, "Sec-WebSocket-Key"), "test-key");
+        assertEquals(findHeaderValue(result.headersList, "Sec-WebSocket-Version"), "13");
+        assertEquals(findHeaderValue(result.headersList, "Connection"), "keep-alive");
+        assertEquals(findHeaderValue(result.headersList, "User-Agent"), "TestAgent");
     }
 
     @Test(description = "解析复杂的Bash多行curl示例")
@@ -588,9 +584,9 @@ public class CurlParserTest {
         assertNotNull(req);
         assertEquals(req.url, "http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList");
         assertEquals(req.method, "POST");
-        assertEquals(req.headers.get("Content-Type"), "application/json");
-        assertTrue(req.headers.containsKey("Authorization"));
-        assertEquals(req.headers.get("Request-Origion"), "Knife4j");
+        assertEquals(findHeaderValue(req.headersList, "Content-Type"), "application/json");
+        assertNotNull(findHeaderValue(req.headersList, "Authorization"));
+        assertEquals(findHeaderValue(req.headersList, "Request-Origion"), "Knife4j");
 
         assertNotNull(req.body);
         assertTrue(req.body.contains("\"pageNum\": 1"));
@@ -619,9 +615,9 @@ public class CurlParserTest {
 
         assertEquals(result.url, "http://127.0.0.1:8801/app-api/v1/ChangeClothes/getChangeClothesList");
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Accept"), "*/*");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
-        assertEquals(result.headers.get("Authorization"), "bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9");
+        assertEquals(findHeaderValue(result.headersList, "Accept"), "*/*");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Authorization"), "bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9");
 
         assertNotNull(result.body);
         assertTrue(result.body.contains("\n"), "Body should contain newline characters");
@@ -651,7 +647,7 @@ public class CurlParserTest {
 
         assertEquals(result.method, "GET", "使用 -G 选项时应该强制使用 GET 方法");
         assertEquals(result.url, "http://localhost:8086/query?db=mydb");
-        assertEquals(result.params.get("q"), "SELECT * FROM my_measurement LIMIT 5",
+        assertEquals(findParamValue(result.paramsList, "q"), "SELECT * FROM my_measurement LIMIT 5",
                 "使用 -G 时，data 参数应该被添加到查询参数中");
         assertNull(result.body, "使用 -G 时，不应该有请求体");
     }
@@ -666,15 +662,15 @@ public class CurlParserTest {
         assertEquals(result.method, "POST", "使用 -XPOST 时应该使用 POST 方法");
         assertEquals(result.url, "http://localhost:8086/query?db=mydb");
         // 查询参数应该只包含 URL 中的参数
-        assertEquals(result.params.get("db"), "mydb");
-        assertNull(result.params.get("q"), "不使用 -G 时，data 参数不应该在查询参数中");
+        assertEquals(findParamValue(result.paramsList, "db"), "mydb");
+        assertNull(findParamValue(result.paramsList, "q"), "不使用 -G 时，data 参数不应该在查询参数中");
         // 应该自动设置 Content-Type
-        assertEquals(result.headers.get("Content-Type"), "application/x-www-form-urlencoded",
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/x-www-form-urlencoded",
                 "使用 data-urlencode 时应该自动设置 Content-Type");
-        // data-urlencode 的数据应该解析到 urlencoded map 中
-        assertEquals(result.urlencoded.get("q"), "SELECT * FROM my_measurement LIMIT 5",
-                "使用 data-urlencode 时，数据应该解析到 urlencoded map 中");
-        // body 应该为 null，因为数据在 urlencoded map 中
+        // data-urlencode 的数据应该解析到 urlencoded list 中
+        assertEquals(findUrlencodedValue(result.urlencodedList, "q"), "SELECT * FROM my_measurement LIMIT 5",
+                "使用 data-urlencode 时，数据应该解析到 urlencoded list 中");
+        // body 应该为 null，因为数据在 urlencoded list 中
         assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
     }
 
@@ -686,11 +682,11 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/x-www-form-urlencoded");
-        assertEquals(result.urlencoded.get("db"), "mydb",
-                "多个 data-urlencode 参数应该都解析到 urlencoded map 中");
-        assertEquals(result.urlencoded.get("q"), "SELECT * FROM my_measurement",
-                "多个 data-urlencode 参数应该都解析到 urlencoded map 中");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/x-www-form-urlencoded");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "db"), "mydb",
+                "多个 data-urlencode 参数应该都解析到 urlencoded list 中");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "q"), "SELECT * FROM my_measurement",
+                "多个 data-urlencode 参数应该都解析到 urlencoded list 中");
         assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
     }
 
@@ -702,8 +698,8 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "GET");
-        assertEquals(result.params.get("db"), "mydb");
-        assertEquals(result.params.get("q"), "SELECT * FROM my_measurement");
+        assertEquals(findParamValue(result.paramsList, "db"), "mydb");
+        assertEquals(findParamValue(result.paramsList, "q"), "SELECT * FROM my_measurement");
         assertNull(result.body);
     }
 
@@ -715,8 +711,8 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "GET");
-        assertEquals(result.params.get("key"), "value");
-        assertEquals(result.params.get("param"), "data");
+        assertEquals(findParamValue(result.paramsList, "key"), "value");
+        assertEquals(findParamValue(result.paramsList, "param"), "data");
         assertNull(result.body);
     }
 
@@ -728,13 +724,13 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/x-www-form-urlencoded",
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/x-www-form-urlencoded",
                 "使用 -d 时应该自动设置 Content-Type 为 application/x-www-form-urlencoded");
-        // 多个 -d 参数应该解析到 urlencoded map 中
-        assertEquals(result.urlencoded.get("key"), "value");
-        assertEquals(result.urlencoded.get("param"), "data");
+        // 多个 -d 参数应该解析到 urlencoded list 中
+        assertEquals(findUrlencodedValue(result.urlencodedList, "key"), "value");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "param"), "data");
         assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
-        assertTrue(result.params.isEmpty());
+        assertTrue(result.paramsList == null || result.paramsList.isEmpty());
     }
 
     @Test(description = "测试没有等号的 data 参数")
@@ -755,9 +751,9 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "application/json");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/json");
         assertEquals(result.body, "{\"key\":\"value\"}", "JSON body 应该保持原样");
-        assertTrue(result.urlencoded.isEmpty(), "JSON 格式不应该解析为 urlencoded");
+        assertTrue(result.urlencodedList == null || result.urlencodedList.isEmpty(), "JSON 格式不应该解析为 urlencoded");
     }
 
     @Test(description = "测试 -G 与无值参数")
@@ -767,7 +763,7 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "GET");
-        assertEquals(result.params.get("flag"), "", "无值参数应该设置为空字符串");
+        assertEquals(findParamValue(result.paramsList, "flag"), "", "无值参数应该设置为空字符串");
     }
 
     @Test(description = "测试 ws:// 协议的 WebSocket URL")
@@ -778,8 +774,8 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.url, "ws://localhost:8080/socket");
-        assertNull(result.headers.get("Sec-WebSocket-Key"), "ws:// 协议也应该过滤 WebSocket 头部");
-        assertEquals(result.headers.get("Custom-Header"), "value", "自定义头部应该保留");
+        assertNull(findHeaderValue(result.headersList, "Sec-WebSocket-Key"), "ws:// 协议也应该过滤 WebSocket 头部");
+        assertEquals(findHeaderValue(result.headersList, "Custom-Header"), "value", "自定义头部应该保留");
     }
 
     @Test(description = "测试 Host 头部在 WebSocket 中被过滤")
@@ -789,8 +785,8 @@ public class CurlParserTest {
                 "-H 'Custom-Header: value'";
         CurlRequest result = CurlParser.parse(curl);
 
-        assertNull(result.headers.get("Host"), "Host 头部应该在 WebSocket 中被过滤");
-        assertEquals(result.headers.get("Custom-Header"), "value");
+        assertNull(findHeaderValue(result.headersList, "Host"), "Host 头部应该在 WebSocket 中被过滤");
+        assertEquals(findHeaderValue(result.headersList, "Custom-Header"), "value");
     }
 
     @Test(description = "测试双引号包含单引号")
@@ -843,7 +839,7 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.method, "POST");
-        assertEquals(result.headers.get("Content-Type"), "multipart/form-data; boundary=----WebKitFormBoundary");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "multipart/form-data; boundary=----WebKitFormBoundary");
         // 由于 parseMultipartFormData 会被调用
         assertNotNull(result.body);
     }
@@ -881,9 +877,9 @@ public class CurlParserTest {
         PreparedRequest req = new PreparedRequest();
         req.method = "POST";
         req.url = "https://example.com/api";
-        req.urlencoded = new LinkedHashMap<>();
-        req.urlencoded.put("username", "admin");
-        req.urlencoded.put("password", "secret123");
+        req.urlencodedList = new java.util.ArrayList<>();
+        req.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "username", "admin"));
+        req.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "password", "secret123"));
 
         String curl = CurlParser.toCurl(req);
 
@@ -907,17 +903,17 @@ public class CurlParserTest {
         PreparedRequest original = new PreparedRequest();
         original.method = "POST";
         original.url = "https://example.com/api";
-        original.urlencoded = new LinkedHashMap<>();
-        original.urlencoded.put("key1", "value1");
-        original.urlencoded.put("key2", "value2");
+        original.urlencodedList = new java.util.ArrayList<>();
+        original.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "key1", "value1"));
+        original.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "key2", "value2"));
 
         String curlCommand = CurlParser.toCurl(original);
         CurlRequest parsed = CurlParser.parse(curlCommand);
 
         assertEquals(parsed.method, original.method);
         assertEquals(parsed.url, original.url);
-        assertEquals(parsed.urlencoded.get("key1"), "value1");
-        assertEquals(parsed.urlencoded.get("key2"), "value2");
+        assertEquals(findUrlencodedValue(parsed.urlencodedList, "key1"), "value1");
+        assertEquals(findUrlencodedValue(parsed.urlencodedList, "key2"), "value2");
     }
 
     @Test(description = "测试空值和 null 的边界情况")
@@ -939,9 +935,9 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.url, "https://example.com/api?name=John%20Doe&age=30&tags=a,b,c");
-        assertEquals(result.params.get("name"), "John%20Doe");
-        assertEquals(result.params.get("age"), "30");
-        assertEquals(result.params.get("tags"), "a,b,c");
+        assertEquals(findParamValue(result.paramsList, "name"), "John%20Doe");
+        assertEquals(findParamValue(result.paramsList, "age"), "30");
+        assertEquals(findParamValue(result.paramsList, "tags"), "a,b,c");
     }
 
     @Test(description = "测试大小写混合的 HTTP 方法")
@@ -974,10 +970,10 @@ public class CurlParserTest {
         String curl = "curl 'https://api.example.com/search?q=java+programming&sort=date&filter=&limit=10'";
         CurlRequest result = CurlParser.parse(curl);
 
-        assertEquals(result.params.get("q"), "java+programming");
-        assertEquals(result.params.get("sort"), "date");
-        assertEquals(result.params.get("filter"), "");
-        assertEquals(result.params.get("limit"), "10");
+        assertEquals(findParamValue(result.paramsList, "q"), "java+programming");
+        assertEquals(findParamValue(result.paramsList, "sort"), "date");
+        assertEquals(findParamValue(result.paramsList, "filter"), "");
+        assertEquals(findParamValue(result.paramsList, "limit"), "10");
     }
 
     @Test(description = "测试同时使用 body 和 urlencoded（body 优先）")
@@ -986,13 +982,80 @@ public class CurlParserTest {
         req.method = "POST";
         req.url = "https://example.com/api";
         req.body = "{\"raw\":\"json\"}";
-        req.urlencoded = new LinkedHashMap<>();
-        req.urlencoded.put("key", "value");
+        req.urlencodedList = new java.util.ArrayList<>();
+        req.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "key", "value"));
 
         String curl = CurlParser.toCurl(req);
 
         // body 应该优先
         assertTrue(curl.contains("--data"));
         assertTrue(curl.contains("{\"raw\":\"json\"}"));
+    }
+
+    // ==================== 辅助方法 ====================
+
+    /**
+     * 从 headersList 中查找指定 key 的 value
+     */
+    private String findHeaderValue(java.util.List<HttpHeader> list, String key) {
+        if (list == null) return null;
+        for (HttpHeader item : list) {
+            if (item.getKey() != null && item.getKey().equals(key)) {
+                return item.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 从 paramsList 中查找指定 key 的 value
+     */
+    private String findParamValue(java.util.List<HttpParam> list, String key) {
+        if (list == null) return null;
+        for (HttpParam item : list) {
+            if (item.getKey() != null && item.getKey().equals(key)) {
+                return item.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 从 formDataList 中查找指定 key 的 Text 类型 value
+     */
+    private String findFormDataValue(java.util.List<HttpFormData> list, String key) {
+        if (list == null) return null;
+        for (HttpFormData item : list) {
+            if (item.getKey() != null && item.getKey().equals(key) && HttpFormData.TYPE_TEXT.equals(item.getType())) {
+                return item.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 从 formDataList 中查找指定 key 的 File 类型 value
+     */
+    private String findFormDataFileValue(java.util.List<HttpFormData> list, String key) {
+        if (list == null) return null;
+        for (HttpFormData item : list) {
+            if (item.getKey() != null && item.getKey().equals(key) && HttpFormData.TYPE_FILE.equals(item.getType())) {
+                return item.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 从 urlencodedList 中查找指定 key 的 value
+     */
+    private String findUrlencodedValue(java.util.List<com.laker.postman.model.HttpFormUrlencoded> list, String key) {
+        if (list == null) return null;
+        for (com.laker.postman.model.HttpFormUrlencoded item : list) {
+            if (item.getKey() != null && item.getKey().equals(key)) {
+                return item.getValue();
+            }
+        }
+        return null;
     }
 }

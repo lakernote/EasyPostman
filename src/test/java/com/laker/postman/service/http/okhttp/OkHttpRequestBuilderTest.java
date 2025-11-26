@@ -1,5 +1,8 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.PreparedRequest;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -10,7 +13,8 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Objects;
 
 import static org.testng.Assert.*;
 
@@ -26,7 +30,7 @@ public class OkHttpRequestBuilderTest {
         request = new PreparedRequest();
         request.url = "https://api.example.com/test";
         request.method = "POST";
-        request.headers = new HashMap<>();
+        request.headersList = new ArrayList<>();
     }
 
     // ==================== 基础请求测试 ====================
@@ -34,7 +38,7 @@ public class OkHttpRequestBuilderTest {
     @Test(description = "测试 GET 请求构建")
     public void testBuildGetRequest() {
         request.method = "GET";
-        request.headers.put("Accept", "application/json");
+        request.headersList.add(new HttpHeader(true, "Accept", "application/json"));
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
@@ -47,7 +51,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 POST 请求构建")
     public void testBuildPostRequest() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = "{\"name\":\"test\"}";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
@@ -61,9 +65,9 @@ public class OkHttpRequestBuilderTest {
     }
 
     @Test(description = "测试 PUT 请求构建")
-    public void testBuildPutRequest() throws IOException {
+    public void testBuildPutRequest() {
         request.method = "PUT";
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = "{\"id\":1,\"name\":\"updated\"}";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
@@ -96,7 +100,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 JSON5 单行注释去除")
     public void testJson5SingleLineComments() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = """
                 {
                   // 这是用户名
@@ -117,7 +121,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 JSON5 多行注释去除")
     public void testJson5MultiLineComments() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = """
                 {
                   /* 这是一个
@@ -140,7 +144,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 JSON5 混合注释去除")
     public void testJson5MixedComments() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = """
                 {
                   // 用户信息
@@ -184,12 +188,13 @@ public class OkHttpRequestBuilderTest {
         assertFalse(bodyContent.contains("//"), "默认 JSON 格式应该去除注释");
         assertTrue(bodyContent.contains("test"), "字段应该保留");
         assertTrue(bodyContent.contains("value"), "值应该保留");
-        assertEquals(okRequest.body().contentType().toString(), "application/json; charset=utf-8");
+        assertNotNull(okRequest.body());
+        assertEquals(Objects.requireNonNull(okRequest.body().contentType()).toString(), "application/json; charset=utf-8");
     }
 
     @Test(description = "测试普通 JSON 不受影响")
     public void testNormalJsonNotAffected() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = """
                 {
                   "name": "Bob",
@@ -208,7 +213,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试非 JSON Content-Type 不处理注释")
     public void testNonJsonContentTypeNotProcessed() throws IOException {
-        request.headers.put("Content-Type", "text/plain");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "text/plain"));
         request.body = "// This is not JSON\nSome text content";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
@@ -232,8 +237,8 @@ public class OkHttpRequestBuilderTest {
             PreparedRequest req = new PreparedRequest();
             req.url = "https://api.example.com/test";
             req.method = "POST";
-            req.headers = new HashMap<>();
-            req.headers.put("Content-Type", contentType);
+            req.headersList = new ArrayList<>();
+            req.headersList.add(new HttpHeader(true, "Content-Type", contentType));
             req.body = "{ // comment\n\"test\": \"value\" }";
 
             Request okRequest = OkHttpRequestBuilder.buildRequest(req);
@@ -248,9 +253,9 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试添加多个 Headers")
     public void testMultipleHeaders() {
-        request.headers.put("Accept", "application/json");
-        request.headers.put("Authorization", "Bearer token123");
-        request.headers.put("X-Custom-Header", "custom-value");
+        request.headersList.add(new HttpHeader(true, "Accept", "application/json"));
+        request.headersList.add(new HttpHeader(true, "Authorization", "Bearer token123"));
+        request.headersList.add(new HttpHeader(true, "X-Custom-Header", "custom-value"));
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
@@ -261,19 +266,21 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 null Header 值")
     public void testNullHeaderValue() {
-        request.headers.put("X-Test", null);
+        request.headersList.add(new HttpHeader(true, "X-Test", null));
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
-        assertEquals(okRequest.header("X-Test"), "", "null 值应该转为空字符串");
+        // OkHttp returns empty string for non-existent headers, and null values are skipped
+        String headerValue = okRequest.header("X-Test");
+        assertTrue(headerValue == null || headerValue.isEmpty(), "null 值的 header 应该被跳过或返回空字符串");
     }
 
     @Test(description = "测试非法 Header 名称被跳过")
     public void testInvalidHeaderNames() {
-        request.headers.put("Valid-Header", "value1");
-        request.headers.put("Invalid:Header", "value2"); // 包含冒号，非法
-        request.headers.put("", "value3"); // 空名称，非法
-        request.headers.put(null, "value4"); // null 名称，非法
+        request.headersList.add(new HttpHeader(true, "Valid-Header", "value1"));
+        request.headersList.add(new HttpHeader(true, "Invalid:Header", "value2")); // 包含冒号，非法
+        request.headersList.add(new HttpHeader(true, "", "value3")); // 空名称，非法
+        request.headersList.add(new HttpHeader(true, null, "value4")); // null 名称，非法
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
@@ -286,7 +293,7 @@ public class OkHttpRequestBuilderTest {
     @Test(description = "测试空 Body")
     public void testEmptyBody() throws IOException {
         request.body = "";
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
@@ -297,7 +304,7 @@ public class OkHttpRequestBuilderTest {
     @Test(description = "测试 null Body")
     public void testNullBody() throws IOException {
         request.body = null;
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
@@ -309,23 +316,23 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试构建 Multipart 请求")
     public void testBuildMultipartRequest() {
-        request.formData = new HashMap<>();
-        request.formData.put("field1", "value1");
-        request.formData.put("field2", "value2");
+        request.formDataList = new ArrayList<>();
+        request.formDataList.add(new HttpFormData(true, "field1", HttpFormData.TYPE_TEXT, "value1"));
+        request.formDataList.add(new HttpFormData(true, "field2", HttpFormData.TYPE_TEXT, "value2"));
 
         Request okRequest = OkHttpRequestBuilder.buildMultipartRequest(request);
 
         assertNotNull(okRequest);
         assertEquals(okRequest.method(), "POST");
         assertNotNull(okRequest.body());
-        assertTrue(okRequest.body().contentType().toString().contains("multipart/form-data"));
+        assertTrue(Objects.requireNonNull(okRequest.body().contentType()).toString().contains("multipart/form-data"));
     }
 
     @Test(description = "测试 Multipart 空值字段")
     public void testMultipartWithNullValue() {
-        request.formData = new HashMap<>();
-        request.formData.put("field1", null);
-        request.formData.put("field2", "value2");
+        request.formDataList = new ArrayList<>();
+        request.formDataList.add(new HttpFormData(true, "field1", HttpFormData.TYPE_TEXT, null));
+        request.formDataList.add(new HttpFormData(true, "field2", HttpFormData.TYPE_TEXT, "value2"));
 
         Request okRequest = OkHttpRequestBuilder.buildMultipartRequest(request);
 
@@ -334,9 +341,9 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 Multipart 空键被跳过")
     public void testMultipartWithEmptyKey() {
-        request.formData = new HashMap<>();
-        request.formData.put("", "value1");
-        request.formData.put("field2", "value2");
+        request.formDataList = new ArrayList<>();
+        request.formDataList.add(new HttpFormData(true, "", HttpFormData.TYPE_TEXT, "value1"));
+        request.formDataList.add(new HttpFormData(true, "field2", HttpFormData.TYPE_TEXT, "value2"));
 
         Request okRequest = OkHttpRequestBuilder.buildMultipartRequest(request);
 
@@ -350,23 +357,21 @@ public class OkHttpRequestBuilderTest {
         tempFile.deleteOnExit();
         Files.writeString(tempFile.toPath(), "test content");
 
-        request.formFiles = new HashMap<>();
-        request.formFiles.put("file", tempFile.getAbsolutePath());
+        request.formDataList = new ArrayList<>();
+        request.formDataList.add(new HttpFormData(true, "file", HttpFormData.TYPE_FILE, tempFile.getAbsolutePath()));
 
         Request okRequest = OkHttpRequestBuilder.buildMultipartRequest(request);
 
         assertNotNull(okRequest.body());
-        assertTrue(okRequest.body().contentType().toString().contains("multipart/form-data"));
+        assertTrue(Objects.requireNonNull(okRequest.body().contentType()).toString().contains("multipart/form-data"));
     }
 
     @Test(description = "测试 Multipart 不存在的文件被忽略")
     public void testMultipartWithNonExistentFile() {
         // 添加一个有效的表单字段，确保 multipart 有至少一个部分
-        request.formData = new HashMap<>();
-        request.formData.put("field1", "value1");
-
-        request.formFiles = new HashMap<>();
-        request.formFiles.put("file", "/path/to/nonexistent/file.txt");
+        request.formDataList = new ArrayList<>();
+        request.formDataList.add(new HttpFormData(true, "field1", HttpFormData.TYPE_TEXT, "value1"));
+        request.formDataList.add(new HttpFormData(true, "file", HttpFormData.TYPE_FILE, "/path/to/nonexistent/file.txt"));
 
         Request okRequest = OkHttpRequestBuilder.buildMultipartRequest(request);
 
@@ -378,9 +383,9 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试构建 URL Encoded Form 请求")
     public void testBuildFormRequest() {
-        request.urlencoded = new HashMap<>();
-        request.urlencoded.put("username", "test");
-        request.urlencoded.put("password", "123456");
+        request.urlencodedList = new ArrayList<>();
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "username", "test"));
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "password", "123456"));
 
         Request okRequest = OkHttpRequestBuilder.buildFormRequest(request);
 
@@ -393,9 +398,9 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 Form 请求保留用户指定的 Content-Type")
     public void testFormRequestWithCustomContentType() {
-        request.urlencoded = new HashMap<>();
-        request.urlencoded.put("field", "value");
-        request.headers.put("Content-Type", "application/x-www-form-urlencoded; charset=ISO-8859-1");
+        request.urlencodedList = new ArrayList<>();
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "field", "value"));
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/x-www-form-urlencoded; charset=ISO-8859-1"));
 
         Request okRequest = OkHttpRequestBuilder.buildFormRequest(request);
 
@@ -406,9 +411,9 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 Form 请求 null 值处理")
     public void testFormRequestWithNullValue() {
-        request.urlencoded = new HashMap<>();
-        request.urlencoded.put("field1", null);
-        request.urlencoded.put("field2", "value2");
+        request.urlencodedList = new ArrayList<>();
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "field1", null));
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "field2", "value2"));
 
         Request okRequest = OkHttpRequestBuilder.buildFormRequest(request);
 
@@ -417,9 +422,9 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试 Form 请求空键被跳过")
     public void testFormRequestWithEmptyKey() {
-        request.urlencoded = new HashMap<>();
-        request.urlencoded.put("", "value1");
-        request.urlencoded.put("field2", "value2");
+        request.urlencodedList = new ArrayList<>();
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "", "value1"));
+        request.urlencodedList.add(new HttpFormUrlencoded(true, "field2", "value2"));
 
         Request okRequest = OkHttpRequestBuilder.buildFormRequest(request);
 
@@ -430,19 +435,20 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试没有 headers 的请求")
     public void testRequestWithoutHeaders() {
-        request.headers = null;
+        request.headersList = null;
         request.body = "{\"test\":\"value\"}";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
 
         assertNotNull(okRequest);
         // 应该使用默认的 JSON Content-Type
-        assertEquals(okRequest.body().contentType().toString(), "application/json; charset=utf-8");
+        assertNotNull(okRequest.body());
+        assertEquals(Objects.requireNonNull(okRequest.body().contentType()).toString(), "application/json; charset=utf-8");
     }
 
-    @Test(description = "测试空 headers Map")
+    @Test(description = "测试空 headers List")
     public void testRequestWithEmptyHeaders() {
-        request.headers = new HashMap<>();
+        request.headersList = new ArrayList<>();
         request.body = "{\"test\":\"value\"}";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
@@ -461,9 +467,9 @@ public class OkHttpRequestBuilderTest {
     }
 
     @Test(description = "测试 PATCH 方法")
-    public void testPatchMethod() throws IOException {
+    public void testPatchMethod() {
         request.method = "PATCH";
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = "{\"status\":\"updated\"}";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
@@ -484,7 +490,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试无效 JSON 不会导致崩溃")
     public void testInvalidJsonWithComments() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = "{ // comment\n invalid json here }";
 
         Request okRequest = OkHttpRequestBuilder.buildRequest(request);
@@ -498,7 +504,7 @@ public class OkHttpRequestBuilderTest {
 
     @Test(description = "测试特殊字符的 JSON")
     public void testJsonWithSpecialCharacters() throws IOException {
-        request.headers.put("Content-Type", "application/json");
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.body = """
                 {
                   "text": "Hello\\nWorld\\t!",

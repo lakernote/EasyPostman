@@ -224,7 +224,6 @@ public class RequestBodyPanel extends JPanel {
         bodyArea = new RSyntaxTextArea(5, 20);
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
-        bodyArea.setLineWrap(true); // 自动换行
         // 设置主题
         try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
             if (in != null) {

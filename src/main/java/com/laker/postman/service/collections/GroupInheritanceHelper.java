@@ -3,6 +3,7 @@ package com.laker.postman.service.collections;
 import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
+import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
@@ -11,41 +12,42 @@ import javax.swing.tree.TreeNode;
 /**
  * 分组继承工具类
  * 处理认证和脚本从父分组继承的逻辑
- *
- * 继承规则（完全遵循 Postman 行为）：
- *
+ * <p>
+ * 树结构：
+ * - Folder（文件夹）：可嵌套的分组节点 ["group", RequestGroup对象]，可配置认证和脚本
+ * - Request（请求）：请求节点 ["request", HttpRequestItem对象]，可继承父级设置
+ * <p>
+ * 继承规则（遵循 Postman 行为）：
+ * <p>
  * 1. 认证继承：
- *    - 仅当请求的认证类型为 "Inherit auth from parent" 时才继承
- *    - 采用就近原则：最近的有认证的父分组优先
- *    - 示例：Collection(Basic) -> Folder(Bearer) -> Request(Inherit) => 使用 Bearer
- *
+ * - 仅当请求的认证类型为 "Inherit auth from parent" 时才继承
+ * - 就近原则：最近的有认证的父文件夹优先
+ * - 示例：FolderA(Basic) -> FolderB(Bearer) -> Request(Inherit) => 使用 Bearer
+ * <p>
  * 2. 前置脚本执行顺序（从外到内）：
- *    - Collection 前置脚本 -> Folder 前置脚本 -> Request 前置脚本 -> [发送请求]
- *    - 外层脚本先执行，可以为内层准备数据
- *
+ * - 外层 Folder 前置脚本 -> 内层 Folder 前置脚本 -> Request 前置脚本 -> [发送请求]
+ * - 外层脚本先执行，可以为内层准备数据
+ * <p>
  * 3. 后置脚本执行顺序（从内到外）：
- *    - [收到响应] -> Request 后置脚本 -> Folder 后置脚本 -> Collection 后置脚本
- *    - 内层脚本先执行，可以处理响应数据供外层使用
+ * - [收到响应] -> Request 后置脚本 -> 内层 Folder 后置脚本 -> 外层 Folder 后置脚本
+ * - 内层脚本先执行，可以处理响应数据供外层使用
  */
+@UtilityClass
 public class GroupInheritanceHelper {
-
-    private GroupInheritanceHelper() {
-        throw new IllegalStateException("Utility class");
-    }
 
     /**
      * 合并分组级别的认证和脚本到请求
      *
-     * @param item 请求项
+     * @param item        请求项
      * @param requestNode 请求在树中的节点
-     * @return 合并后的请求项（新对象）
+     * @return 合并后的请求项（新对象，不修改原对象）
      */
     public static HttpRequestItem mergeGroupSettings(HttpRequestItem item, DefaultMutableTreeNode requestNode) {
         if (item == null || requestNode == null) {
             return item;
         }
 
-        // 创建副本以避免修改原对象
+        // 创建副本，避免修改原对象
         HttpRequestItem mergedItem = cloneRequest(item);
 
         // 保存请求自己的脚本
@@ -63,7 +65,7 @@ public class GroupInheritanceHelper {
         }
 
         // 最后追加请求自己的脚本
-        // 前置脚本：请求脚本在最后
+        // 前置脚本：请求脚本在最后执行（在分组脚本之后）
         if (requestPreScript != null && !requestPreScript.trim().isEmpty()) {
             String groupScripts = mergedItem.getPrescript();
             if (groupScripts == null || groupScripts.trim().isEmpty()) {
@@ -73,7 +75,7 @@ public class GroupInheritanceHelper {
             }
         }
 
-        // 后置脚本：请求脚本在最前
+        // 后置脚本：请求脚本在最先执行（在分组脚本之前）
         if (requestPostScript != null && !requestPostScript.trim().isEmpty()) {
             String groupScripts = mergedItem.getPostscript();
             if (groupScripts == null || groupScripts.trim().isEmpty()) {
@@ -88,11 +90,11 @@ public class GroupInheritanceHelper {
 
     /**
      * 递归合并父分组的设置
-     *
-     * 关键策略：
-     * - 认证：先处理当前层，找到第一个有认证的分组就设置并停止（内层优先，就近原则）
-     * - 前置脚本：先递归父节点，再处理当前节点（结果：外层先 w，然后内层 n）
-     * - 后置脚本：先处理当前节点，再递归父节点（结果：内层先 n，然后外层 w）
+     * <p>
+     * 核心策略：
+     * - 认证：先处理当前层，找到第一个有认证的分组就停止（就近原则）
+     * - 前置脚本：先递归父节点，再处理当前节点（结果：外层 → 内层）
+     * - 后置脚本：先处理当前节点，再递归父节点（结果：内层 → 外层）
      */
     private static void mergeGroupSettingsRecursive(HttpRequestItem item, DefaultMutableTreeNode groupNode) {
         if (groupNode == null) {
@@ -104,7 +106,7 @@ public class GroupInheritanceHelper {
             // 不是分组节点，继续向上递归
             TreeNode parent = groupNode.getParent();
             if (parent instanceof DefaultMutableTreeNode parentNode &&
-                !"root".equals(String.valueOf(parentNode.getUserObject()))) {
+                    !"root".equals(String.valueOf(parentNode.getUserObject()))) {
                 mergeGroupSettingsRecursive(item, parentNode);
             }
             return;
@@ -137,7 +139,7 @@ public class GroupInheritanceHelper {
         // 递归处理父分组（外层）
         TreeNode parent = groupNode.getParent();
         if (parent instanceof DefaultMutableTreeNode parentNode &&
-            !"root".equals(String.valueOf(parentNode.getUserObject()))) {
+                !"root".equals(String.valueOf(parentNode.getUserObject()))) {
             mergeGroupSettingsRecursive(item, parentNode);
         }
 
@@ -181,7 +183,7 @@ public class GroupInheritanceHelper {
     /**
      * 在树中通过请求 ID 查找请求节点
      *
-     * @param root 树的根节点
+     * @param root      树的根节点
      * @param requestId 要查找的请求 ID
      * @return 请求节点，如果未找到则返回 null
      */

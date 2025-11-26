@@ -31,7 +31,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
             if (RequestCollectionsLeftPanel.GROUP.equals(obj[0])) {
                 setIcon(new FlatSVGIcon("icons/group.svg", ICON_SIZE, ICON_SIZE));
                 Object groupData = obj[1];
-                String groupName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
+                String groupName = groupData instanceof RequestGroup requestGroup ? requestGroup.getName() : String.valueOf(groupData);
                 setText(groupName);
             } else if (RequestCollectionsLeftPanel.REQUEST.equals(obj[0])) {
                 HttpRequestItem item = (HttpRequestItem) obj[1];

@@ -700,8 +700,8 @@ public class RequestEditSubPanel extends JPanel {
             // 有数据，使用请求的 headers
             headersPanel.setHeadersList(item.getHeadersList());
         } else {
-            // 没有数据，使用默认 headers
-            headersPanel.setHeadersList(List.of());
+            // 没有数据，初始化为空列表
+            headersPanel.setHeadersList(new ArrayList<>());
         }
         // 获取最新的补充了默认值和排序的 headers 列表
         item.setHeadersList(headersPanel.getHeadersList());

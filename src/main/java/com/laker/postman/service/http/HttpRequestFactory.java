@@ -5,12 +5,15 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
+import lombok.experimental.UtilityClass;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
 import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
 
+@UtilityClass
 public class HttpRequestFactory {
     public static final String TEXT_EVENT_STREAM = "text/event-stream";
     public static final String ACCEPT = "Accept";
@@ -28,13 +31,13 @@ public class HttpRequestFactory {
         testItem.setName("Default Request");
         testItem.setUrl("https://httpbin.org/get");
         testItem.setMethod("GET");
-        // Add some default headers
-        testItem.setHeadersList(List.of(
-                new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT),
-                new HttpHeader(true, ACCEPT, "*/*"),
-                new HttpHeader(true, ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE),
-                new HttpHeader(true, CONNECTION, CONNECTION_VALUE)
-        ));
+        // Add some default headers (using ArrayList to ensure mutability)
+        List<HttpHeader> headers = new ArrayList<>();
+        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
+        headers.add(new HttpHeader(true, ACCEPT, "*/*"));
+        headers.add(new HttpHeader(true, ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE));
+        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
+        testItem.setHeadersList(headers);
         return testItem;
     }
 
@@ -47,12 +50,12 @@ public class HttpRequestFactory {
         testItem.setUrl("https://httpbin.org/redirect/1");
         testItem.setMethod("GET");
         // Add some default headers
-        testItem.setHeadersList(List.of(
-                new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT),
-                new HttpHeader(true, ACCEPT, "*/*"),
-                new HttpHeader(true, ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE),
-                new HttpHeader(true, CONNECTION, CONNECTION_VALUE)
-        ));
+        List<HttpHeader> headers = new ArrayList<>();
+        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
+        headers.add(new HttpHeader(true, ACCEPT, "*/*"));
+        headers.add(new HttpHeader(true, ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE));
+        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
+        testItem.setHeadersList(headers);
         return testItem;
     }
 
@@ -65,13 +68,13 @@ public class HttpRequestFactory {
         testItem.setUrl("wss://echo.websocket.org");
         testItem.setMethod("GET");
         // Add some default headers
-        testItem.setHeadersList(List.of(
-                new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT),
-                new HttpHeader(true, ACCEPT, "*/*"),
-                new HttpHeader(true, ACCEPT_ENCODING, "identity"),
-                new HttpHeader(true, CONNECTION, CONNECTION_VALUE),
-                new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)
-        ));
+        List<HttpHeader> headers = new ArrayList<>();
+        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
+        headers.add(new HttpHeader(true, ACCEPT, "*/*"));
+        headers.add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
+        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
+        headers.add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
+        testItem.setHeadersList(headers);
         testItem.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
         return testItem;
     }
@@ -84,12 +87,13 @@ public class HttpRequestFactory {
         testItem.setName("SSE Example");
         testItem.setUrl("https://sse.dev/test");
         testItem.setMethod("GET");
-        testItem.setHeadersList(List.of(
-                new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT),
-                new HttpHeader(true, ACCEPT, TEXT_EVENT_STREAM),
-                new HttpHeader(true, ACCEPT_ENCODING, "identity"),
-                new HttpHeader(true, CONNECTION, CONNECTION_VALUE)
-        ));
+        // Add some default headers
+        List<HttpHeader> headers = new ArrayList<>();
+        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
+        headers.add(new HttpHeader(true, ACCEPT, TEXT_EVENT_STREAM));
+        headers.add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
+        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
+        testItem.setHeadersList(headers);
         return testItem;
     }
 }

@@ -2,7 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
-import com.laker.postman.panel.topmenu.TopMenuBarPanel;
+import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -153,7 +153,7 @@ public class ShortcutSettingsPanel extends JPanel {
 
         // 重新加载菜单栏快捷键
         SingletonFactory.getInstance(
-                TopMenuBarPanel.class).reloadShortcuts();
+                TopMenuBar.class).reloadShortcuts();
     }
 
     /**

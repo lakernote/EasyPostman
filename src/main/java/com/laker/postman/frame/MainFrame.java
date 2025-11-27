@@ -4,6 +4,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
+import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -68,6 +69,8 @@ public class MainFrame extends JFrame {
     }
 
     public void initComponents() {
+        setJMenuBar(SingletonFactory.getInstance(TopMenuBar.class));
+
         setContentPane(SingletonFactory.getInstance(MainPanel.class));
 
         // 设置最小窗口尺寸，防止窗口被拖得太小

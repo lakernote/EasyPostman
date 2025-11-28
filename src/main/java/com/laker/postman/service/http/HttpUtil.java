@@ -2,6 +2,7 @@ package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.*;
+import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.service.EnvironmentService;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -117,7 +118,7 @@ public class HttpUtil {
     // 绑定脚本变量
     public static Map<String, Object> prepareBindings(PreparedRequest req) {
         Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        Postman postman = new Postman(activeEnv);
+        PostmanApiContext postman = new PostmanApiContext(activeEnv);
         postman.setRequest(req);
         Map<String, Object> bindings = new LinkedHashMap<>();
         bindings.put("request", req);
@@ -147,7 +148,7 @@ public class HttpUtil {
 
 
     public static void postBindings(Map<String, Object> bindings, HttpResponse resp) {
-        Postman pm = (Postman) bindings.get("pm");
+        PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
         pm.setResponse(resp);
         bindings.put("response", resp);
         bindings.put("responseBody", resp.body);

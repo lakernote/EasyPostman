@@ -99,6 +99,19 @@ public class ScriptExecutionService {
     }
 
     /**
+     * 执行脚本（通用方法）
+     *
+     * @param context 脚本执行上下文
+     * @throws ScriptExecutionException 脚本执行异常
+     */
+    public static void executeScript(ScriptExecutionContext context) throws ScriptExecutionException {
+        if (context == null || CharSequenceUtil.isBlank(context.getScript())) {
+            return;
+        }
+        JsScriptExecutor.executeScript(context);
+    }
+
+    /**
      * 保存环境变量（如果有激活的环境）
      */
     private static void saveEnvironmentIfNeeded() {

@@ -1,4 +1,4 @@
-package com.laker.postman.model;
+package com.laker.postman.model.script;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -30,6 +30,10 @@ public class Expectation {
         if (!Objects.equals(actual, expected)) {
             throw new AssertionError(I18nUtil.getMessage(MessageKeys.EXPECTATION_EQL_FAILED, expected, actual));
         }
+    }
+
+    public void equal(Object expected) {
+        eql(expected); // equal() is an alias for eql() in Chai.js
     }
 
     public void property(String property) {

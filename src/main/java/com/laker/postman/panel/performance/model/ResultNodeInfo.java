@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance.model;
 import cn.hutool.core.util.StrUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.model.script.TestResult;
 
 import java.util.List;
 

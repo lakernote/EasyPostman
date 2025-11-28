@@ -2,10 +2,12 @@ package com.laker.postman.model;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Getter;
 
 /**
  * Authentication type enum
  */
+@Getter
 public enum AuthType {
     INHERIT("Inherit auth from parent", MessageKeys.AUTH_TYPE_INHERIT),
     NONE("No Auth", MessageKeys.AUTH_TYPE_NONE),
@@ -18,14 +20,6 @@ public enum AuthType {
     AuthType(String constant, String i18nKey) {
         this.constant = constant;
         this.i18nKey = i18nKey;
-    }
-
-    public String getConstant() {
-        return constant;
-    }
-
-    public String getI18nKey() {
-        return i18nKey;
     }
 
     public String getDisplayText() {

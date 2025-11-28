@@ -7,6 +7,8 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.*;
+import com.laker.postman.model.script.PostmanApiContext;
+import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
@@ -974,12 +976,12 @@ public class RequestEditSubPanel extends JPanel {
         try {
             HttpUtil.postBindings(bindings, resp);
             // 清空 pm.testResults，防止断言结果累加
-            Postman pm = (Postman) bindings.get("pm");
+            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
             if (pm != null) {
                 pm.testResults.clear();
             }
             ScriptExecutionService.executePostScript(item.getPostscript(), bindings);
-            setTestResults(pm != null ? pm.testResults : new ArrayList<>());
+            setTestResults(pm != null ? new ArrayList<>(pm.testResults) : new ArrayList<>());
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
             log.error("Error handling response: {}", ex.getMessage(), ex);
@@ -1014,7 +1016,7 @@ public class RequestEditSubPanel extends JPanel {
             resp.bodySize = message != null ? message.length() : 0;
             HttpUtil.postBindings(bindings, resp);
             // 清空 pm.testResults，防止累加
-            Postman pm = (Postman) bindings.get("pm");
+            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
             if (pm != null) {
                 pm.testResults.clear();
             }

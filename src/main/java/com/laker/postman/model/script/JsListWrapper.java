@@ -1,5 +1,8 @@
-package com.laker.postman.model;
+package com.laker.postman.model.script;
 
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpHeader;
 import lombok.Getter;
 
 import java.util.List;
@@ -272,19 +275,19 @@ public class JsListWrapper<T> {
                 @SuppressWarnings("unchecked")
                 List<HttpHeader> headerList = (List<HttpHeader>) list;
                 return headerList.stream().anyMatch(header ->
-                    key.equalsIgnoreCase(header.getKey()) && header.isEnabled());
+                        key.equalsIgnoreCase(header.getKey()) && header.isEnabled());
 
             case FORM_DATA:
                 @SuppressWarnings("unchecked")
                 List<HttpFormData> formDataList = (List<HttpFormData>) list;
                 return formDataList.stream().anyMatch(formData ->
-                    key.equals(formData.getKey()) && formData.isEnabled());
+                        key.equals(formData.getKey()) && formData.isEnabled());
 
             case URLENCODED:
                 @SuppressWarnings("unchecked")
                 List<HttpFormUrlencoded> urlencodedList = (List<HttpFormUrlencoded>) list;
                 return urlencodedList.stream().anyMatch(urlencoded ->
-                    key.equals(urlencoded.getKey()) && urlencoded.isEnabled());
+                        key.equals(urlencoded.getKey()) && urlencoded.isEnabled());
         }
         return false;
     }

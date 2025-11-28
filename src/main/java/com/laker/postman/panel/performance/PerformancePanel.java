@@ -1,14 +1,15 @@
 package com.laker.postman.panel.performance;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.model.*;
+import com.laker.postman.model.script.PostmanApiContext;
+import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
@@ -31,7 +32,10 @@ import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.service.js.JsScriptExecutor;
+import com.laker.postman.service.js.ScriptExecutionContext;
+import com.laker.postman.service.js.ScriptExecutionException;
+import com.laker.postman.service.js.ScriptExecutionService;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonPathUtil;
 import com.laker.postman.util.MessageKeys;
@@ -985,27 +989,25 @@ public class PerformancePanel extends SingletonBasePanel {
             // ====== 前置脚本 ======
             req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
             Map<String, Object> bindings = HttpUtil.prepareBindings(req);
-            Postman pm = (Postman) bindings.get("pm");
+            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
             // 注入CSV变量到pm
             if (csvRow != null) {
                 for (Map.Entry<String, String> entry : csvRow.entrySet()) {
-                    pm.setVariable(entry.getKey(), entry.getValue());
+                    pm.variables.set(entry.getKey(), entry.getValue());
                 }
             }
             boolean preOk = true;
             String prescript = jtNode.httpRequestItem.getPrescript();
             if (prescript != null && !prescript.isBlank()) {
                 try {
-                    JsScriptExecutor.executeScript(
-                            prescript,
-                            bindings,
-                            output -> {
-                                if (!output.isBlank()) {
-                                    ConsolePanel.appendLog("[PreScript Console]\n" + output);
-                                }
-                            }
-                    );
-                } catch (Exception ex) {
+                    ScriptExecutionContext context = ScriptExecutionContext.builder()
+                            .script(prescript)
+                            .scriptType(ScriptExecutionContext.ScriptType.PRE_REQUEST)
+                            .bindings(bindings)
+                            .outputCallback(output -> ConsolePanel.appendLog("[PreScript Console]\n" + output))
+                            .build();
+                    ScriptExecutionService.executeScript(context);
+                } catch (ScriptExecutionException ex) {
                     log.error("前置脚本: {}", ex.getMessage(), ex);
                     errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_PRE_SCRIPT_FAILED, ex.getMessage());
                     preOk = false;
@@ -1072,19 +1074,17 @@ public class PerformancePanel extends SingletonBasePanel {
                 if (resp != null && postscript != null && !postscript.isBlank()) {
                     HttpUtil.postBindings(bindings, resp);
                     try {
-                        JsScriptExecutor.executeScript(
-                                postscript,
-                                bindings,
-                                output -> {
-                                    if (!output.isBlank()) {
-                                        ConsolePanel.appendLog("[PostScript Console]\n" + output);
-                                    }
-                                }
-                        );
+                        ScriptExecutionContext context = ScriptExecutionContext.builder()
+                                .script(postscript)
+                                .scriptType(ScriptExecutionContext.ScriptType.POST_REQUEST)
+                                .bindings(bindings)
+                                .outputCallback(output -> ConsolePanel.appendLog("[PostScript Console]\n" + output))
+                                .build();
+                        ScriptExecutionService.executeScript(context);
                         if (pm.testResults != null) {
                             testResults.addAll(pm.testResults);
                         }
-                    } catch (Exception assertionEx) {
+                    } catch (ScriptExecutionException assertionEx) {
                         log.error("后置脚本执行失败: {}", assertionEx.getMessage(), assertionEx);
                         if (pm.testResults != null) {
                             testResults.addAll(pm.testResults);

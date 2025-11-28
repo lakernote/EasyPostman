@@ -1,5 +1,6 @@
 package com.laker.postman.model;
 
+import com.laker.postman.model.script.TestResult;
 import lombok.Data;
 
 import java.util.ArrayList;

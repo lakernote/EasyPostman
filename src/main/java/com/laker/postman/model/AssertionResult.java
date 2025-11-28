@@ -1,5 +1,8 @@
 package com.laker.postman.model;
 
+import lombok.Getter;
+
+@Getter
 public enum AssertionResult {
     PASS("✅"),
 
@@ -13,7 +16,4 @@ public enum AssertionResult {
         this.displayValue = displayValue;
     }
 
-    public String getDisplayValue() {
-        return displayValue;
-    }
 }

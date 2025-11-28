@@ -1,6 +1,7 @@
 package com.laker.postman.service.render;
 
 import com.laker.postman.model.*;
+import com.laker.postman.model.script.TestResult;
 import lombok.experimental.UtilityClass;
 
 import java.text.SimpleDateFormat;

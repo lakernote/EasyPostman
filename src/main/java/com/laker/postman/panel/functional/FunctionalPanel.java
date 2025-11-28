@@ -8,6 +8,7 @@ import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
+import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
@@ -19,7 +20,9 @@ import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.service.js.JsScriptExecutor;
+import com.laker.postman.service.js.ScriptExecutionContext;
+import com.laker.postman.service.js.ScriptExecutionException;
+import com.laker.postman.service.js.ScriptExecutionService;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -394,13 +397,13 @@ public class FunctionalPanel extends SingletonBasePanel {
         EnvironmentService.clearTemporaryVariables();
 
         Map<String, Object> bindings = HttpUtil.prepareBindings(req);
-        Postman pm = (Postman) bindings.get("pm");
+        PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
 
         // 添加 CSV 数据到脚本执行环境 - 使用 Postman 标准方式
         if (csvRowData != null) {
             // Postman 的标准方式：CSV 数据通过 pm.variables.get() 访问
             for (Map.Entry<String, String> entry : csvRowData.entrySet()) {
-                pm.setVariable(entry.getKey(), entry.getValue());
+                pm.variables.set(entry.getKey(), entry.getValue());
             }
         }
 
@@ -449,17 +452,15 @@ public class FunctionalPanel extends SingletonBasePanel {
         String prescript = item.getPrescript();
         if (prescript != null && !prescript.isBlank()) {
             try {
-                JsScriptExecutor.executeScript(
-                        prescript,
-                        bindings,
-                        output -> {
-                            if (!output.isBlank()) {
-                                ConsolePanel.appendLog("[PreScript Console]\n" + output);
-                            }
-                        }
-                );
+                ScriptExecutionContext context = ScriptExecutionContext.builder()
+                        .script(prescript)
+                        .scriptType(ScriptExecutionContext.ScriptType.PRE_REQUEST)
+                        .bindings(bindings)
+                        .outputCallback(output -> ConsolePanel.appendLog("[PreScript Console]\n" + output))
+                        .build();
+                ScriptExecutionService.executeScript(context);
                 return true;
-            } catch (Exception ex) {
+            } catch (ScriptExecutionException ex) {
                 log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
                 return false;
             }
@@ -467,20 +468,18 @@ public class FunctionalPanel extends SingletonBasePanel {
         return true;
     }
 
-    private AssertionResult runPostScriptAndAssertWithCsv(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, RunnerRowData row, Postman pm) {
+    private AssertionResult runPostScriptAndAssertWithCsv(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, RunnerRowData row, PostmanApiContext pm) {
         String postscript = item.getPostscript();
         if (postscript != null && !postscript.isBlank()) {
             HttpUtil.postBindings(bindings, resp);
             try {
-                JsScriptExecutor.executeScript(
-                        postscript,
-                        bindings,
-                        output -> {
-                            if (!output.isBlank()) {
-                                ConsolePanel.appendLog("[PostScript Console]\n" + output);
-                            }
-                        }
-                );
+                ScriptExecutionContext context = ScriptExecutionContext.builder()
+                        .script(postscript)
+                        .scriptType(ScriptExecutionContext.ScriptType.POST_REQUEST)
+                        .bindings(bindings)
+                        .outputCallback(output -> ConsolePanel.appendLog("[PostScript Console]\n" + output))
+                        .build();
+                ScriptExecutionService.executeScript(context);
                 row.testResults = new java.util.ArrayList<>();
                 if (pm.testResults != null) {
                     row.testResults.addAll(pm.testResults);
@@ -495,7 +494,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                     boolean allPassed = pm.testResults.stream().allMatch(test -> test.passed);
                     return allPassed ? AssertionResult.PASS : AssertionResult.FAIL;
                 }
-            } catch (Exception assertionEx) {
+            } catch (ScriptExecutionException assertionEx) {
                 row.testResults = new java.util.ArrayList<>();
                 if (pm.testResults != null) {
                     row.testResults.addAll(pm.testResults);

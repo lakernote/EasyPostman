@@ -45,8 +45,8 @@ public class ScriptMerger {
             ScriptFragment fragment = validScripts.get(i);
 
             // 添加注释标识（如果提供了来源名称）
-            if (fragment.getSourceName() != null && !fragment.getSourceName().isEmpty()) {
-                merged.append(String.format(SECTION_COMMENT_TEMPLATE, fragment.getSourceName()));
+            if (fragment.getSource() != null && !fragment.getSource().isEmpty()) {
+                merged.append(String.format(SECTION_COMMENT_TEMPLATE, fragment.getSource()));
             }
 
             // 添加脚本内容

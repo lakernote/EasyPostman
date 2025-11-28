@@ -6,7 +6,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
-import com.laker.postman.panel.topmenu.TopMenuBarPanel;
+import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.panel.workspace.components.*;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.*;
@@ -204,7 +204,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         if (dialog.isConfirmed()) {
             refreshWorkspaceList();
             // 更新顶部菜单栏的工作区下拉框
-            SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
+            SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
         }
     }
 
@@ -346,7 +346,7 @@ public class WorkspacePanel extends SingletonBasePanel {
             // 切换请求集合文件
             SingletonFactory.getInstance(RequestCollectionsLeftPanel.class).switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
             // 更新顶部菜单栏工作区显示
-            SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
+            SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
             refreshWorkspaceList();
         } catch (Exception e) {
             log.error("Failed to switch workspace", e);
@@ -428,7 +428,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 // 如果重命名的是当前工作区，更新顶部菜单栏显示
                 Workspace current = workspaceService.getCurrentWorkspace();
                 if (current != null && current.getId().equals(workspace.getId())) {
-                    SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
+                    SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
                 }
             } catch (Exception e) {
                 log.error("Failed to rename workspace", e);
@@ -479,7 +479,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 }
 
                 refreshWorkspaceList();
-                SingletonFactory.getInstance(TopMenuBarPanel.class).updateWorkspaceDisplay();
+                SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
             } catch (Exception e) {
                 log.error("Failed to delete workspace", e);
             }

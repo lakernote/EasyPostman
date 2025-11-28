@@ -56,6 +56,11 @@ public class SingletonFactory {
                 SingletonBasePanel.setCreatingAllowed(true);
             }
 
+            boolean isSingletonBaseMenuBar = SingletonBaseMenuBar.class.isAssignableFrom(clazz);
+            if (isSingletonBaseMenuBar) {
+                SingletonBaseMenuBar.setCreatingAllowed(true);
+            }
+
             // 4. 反射创建实例
             var constructor = clazz.getDeclaredConstructor();
             constructor.setAccessible(true);
@@ -70,6 +75,9 @@ public class SingletonFactory {
             if (instance instanceof SingletonBasePanel panel) {
                 log.debug("初始化面板: {}", clazz.getName());
                 panel.safeInit();
+            } else if (instance instanceof SingletonBaseMenuBar menuBar) {
+                log.debug("初始化菜单: {}", clazz.getName());
+                menuBar.safeInit();
             }
             INSTANCE_MAP.put(clazz, instance); // 替换占位符为真实实例
             log.debug("单例实例已注册到 INSTANCE_MAP: {}", clazz.getName());

@@ -15,7 +15,7 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.topmenu.TopMenuBarPanel;
+import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
@@ -174,7 +174,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
         // 联动菜单栏右上角下拉框
-        EnvironmentComboBox topComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+        EnvironmentComboBox topComboBox = SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox();
         if (topComboBox != null) {
             topComboBox.setOnEnvironmentChange(env -> {
                 environmentListModel.clear();
@@ -317,7 +317,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
                             // 激活环境
                             EnvironmentService.setActiveEnvironment(env.getId());
                             // 联动顶部下拉框
-                            EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+                            EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox();
                             if (comboBox != null) {
                                 comboBox.setSelectedEnvironment(env);
                             }
@@ -461,7 +461,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     private void refreshListAndComboFromAdd(List<Environment> envs) {
-        EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+        EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox();
         for (Environment env : envs) {
             EnvironmentService.saveEnvironment(env);
             environmentComboBox.addItem(new EnvironmentItem(env)); // 添加到下拉框
@@ -510,7 +510,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             EnvironmentService.saveEnvironment(env);
             environmentListModel.addElement(new EnvironmentItem(env));
             environmentList.setSelectedValue(new EnvironmentItem(env), true);
-            EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+            EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox();
             if (environmentComboBox != null) {
                 environmentComboBox.addItem(new EnvironmentItem(env));
             }
@@ -549,7 +549,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 EnvironmentService.saveEnvironment(env);
                 environmentListModel.setElementAt(new EnvironmentItem(env), environmentList.getSelectedIndex());
                 // 同步刷新顶部环境下拉框
-                SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload();
+                SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload();
             } else {
                 JOptionPane.showMessageDialog(this,
                         I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_FAIL),
@@ -570,7 +570,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (confirm == JOptionPane.YES_OPTION) {
             environmentListModel.removeElement(new EnvironmentItem(env));
             EnvironmentService.deleteEnvironment(env.getId());
-            SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload(); // 刷新顶部下拉框
+            SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload(); // 刷新顶部下拉框
             // 设置当前的变量表格为激活环境
             loadActiveEnvironmentVariables();
         }
@@ -591,7 +591,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             EnvironmentService.saveEnvironment(copy);
             EnvironmentItem copyItem = new EnvironmentItem(copy);
             environmentListModel.addElement(copyItem);
-            EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+            EnvironmentComboBox environmentComboBox = SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox();
             if (environmentComboBox != null) {
                 environmentComboBox.addItem(copyItem);
             }
@@ -690,7 +690,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
      * 拖拽后同步顶部下拉框顺序
      */
     private void syncComboBoxOrder() {
-        EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox();
+        EnvironmentComboBox comboBox = SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox();
         if (comboBox != null) {
             List<EnvironmentItem> items = new ArrayList<>();
             for (int i = 0; i < environmentListModel.size(); i++) {
@@ -707,7 +707,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         EnvironmentService.setDataFilePath(envFilePath);
         this.refreshUI();
         // 同步刷新顶部环境下拉框
-        SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload();
+        SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload();
     }
 
     /**
@@ -761,7 +761,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             refreshUI();
 
             // 7. 刷新顶部环境下拉框
-            SingletonFactory.getInstance(TopMenuBarPanel.class).getEnvironmentComboBox().reload();
+            SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload();
 
             log.info("Successfully moved environment '{}' to workspace '{}'",
                     environment.getName(), targetWorkspace.getName());

@@ -7,7 +7,6 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.*;
-import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -22,7 +21,8 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
-import com.laker.postman.service.js.ScriptExecutionService;
+import com.laker.postman.service.js.ScriptExecutionPipeline;
+import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
-import static com.laker.postman.service.http.HttpUtil.*;
+import static com.laker.postman.service.http.HttpUtil.getStatusColor;
+import static com.laker.postman.service.http.HttpUtil.validateRequest;
 
 /**
  * 单个请求编辑子面板，包含 URL、方法选择、Headers、Body 和响应展示
@@ -315,8 +316,17 @@ public class RequestEditSubPanel extends JPanel {
         HttpRequestItem effectiveItem = applyGroupInheritance(item);
 
         PreparedRequest req = PreparedRequestBuilder.build(effectiveItem);
-        Map<String, Object> bindings = prepareBindings(req);
-        if (!ScriptExecutionService.executePreScript(effectiveItem.getPrescript(), bindings)) return;
+
+        // 创建脚本执行流水线
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(req)
+                .preScript(effectiveItem.getPrescript())
+                .postScript(effectiveItem.getPostscript())
+                .build();
+
+        // 执行前置脚本
+        ScriptExecutionResult preResult = pipeline.executePreScript();
+        if (!preResult.isSuccess()) return;
 
         // 前置脚本执行完成后，再进行变量替换
         PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
@@ -325,13 +335,12 @@ public class RequestEditSubPanel extends JPanel {
         updateUIForRequesting();
 
         // 协议分发 - 根据HttpRequestItem的protocol字段分发
-        // 注意：这里传递 effectiveItem 以便后置脚本能够正确执行分组级别的脚本
         if (protocol.isWebSocketProtocol()) {
-            handleWebSocketRequest(effectiveItem, req, bindings);
+            handleWebSocketRequest(effectiveItem, req, pipeline);
         } else if (protocol.isSseProtocol()) {
-            handleSseRequest(effectiveItem, req, bindings);
+            handleSseRequest(effectiveItem, req, pipeline);
         } else {
-            handleHttpRequest(effectiveItem, req, bindings);
+            handleHttpRequest(effectiveItem, req, pipeline);
         }
     }
 
@@ -367,7 +376,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // 普通HTTP请求处理
-    private void handleHttpRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
+    private void handleHttpRequest(HttpRequestItem item, PreparedRequest req, ScriptExecutionPipeline pipeline) {
         currentWorker = new SwingWorker<>() {
             String statusText;
             HttpResponse resp;
@@ -395,7 +404,7 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 updateUIForResponse(statusText, resp);
-                handleResponse(item, bindings, req, resp);
+                handleResponse(pipeline, req, resp);
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
 
@@ -410,7 +419,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // SSE请求处理
-    private void handleSseRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
+    private void handleSseRequest(HttpRequestItem item, PreparedRequest req, ScriptExecutionPipeline pipeline) {
         currentWorker = new SwingWorker<>() {
             HttpResponse resp;
             StringBuilder sseBodyBuilder;
@@ -441,7 +450,7 @@ public class RequestEditSubPanel extends JPanel {
                                 // 使用 SSEResponsePanel 来显示 SSE 消息
                                 if (responsePanel.getSseResponsePanel() != null) {
                                     String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                                    List<TestResult> testResults = handleStreamMessage(item, bindings, data);
+                                    List<TestResult> testResults = handleStreamMessage(pipeline, data);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
                                 }
                             });
@@ -502,7 +511,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // WebSocket请求处理
-    private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, Map<String, Object> bindings) {
+    private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, ScriptExecutionPipeline pipeline) {
         // 生成新的连接ID，用于识别当前有效连接
         final String connectionId = UUID.randomUUID().toString();
         currentWebSocketConnectionId = connectionId;
@@ -556,7 +565,7 @@ public class RequestEditSubPanel extends JPanel {
                                 log.debug("Ignoring onMessage callback for expired connection ID: {}", connectionId);
                                 return;
                             }
-                            appendWebSocketMessage(MessageType.RECEIVED, text, handleStreamMessage(item, bindings, text));
+                            appendWebSocketMessage(MessageType.RECEIVED, text, handleStreamMessage(pipeline, text));
                         }
 
                         @Override
@@ -967,21 +976,15 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // 处理响应、后置脚本、变量提取、历史
-    private void handleResponse(HttpRequestItem item, Map<String, Object> bindings, PreparedRequest
-            req, HttpResponse resp) {
+    private void handleResponse(ScriptExecutionPipeline pipeline, PreparedRequest req, HttpResponse resp) {
         if (resp == null) {
             log.error("Response is null, cannot handle response.");
             return;
         }
         try {
-            HttpUtil.postBindings(bindings, resp);
-            // 清空 pm.testResults，防止断言结果累加
-            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-            if (pm != null) {
-                pm.testResults.clear();
-            }
-            ScriptExecutionService.executePostScript(item.getPostscript(), bindings);
-            setTestResults(pm != null ? new ArrayList<>(pm.testResults) : new ArrayList<>());
+            // 执行后置脚本（自动清空旧结果、添加响应绑定、收集新结果）
+            ScriptExecutionResult postResult = pipeline.executePostScript(resp);
+            setTestResults(postResult.getTestResults());
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
             log.error("Error handling response: {}", ex.getMessage(), ex);
@@ -1008,28 +1011,14 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 
-    private List<TestResult> handleStreamMessage(HttpRequestItem item, Map<String, Object> bindings, String
-            message) {
-        try {
-            HttpResponse resp = new HttpResponse();
-            resp.body = message;
-            resp.bodySize = message != null ? message.length() : 0;
-            HttpUtil.postBindings(bindings, resp);
-            // 清空 pm.testResults，防止累加
-            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-            if (pm != null) {
-                pm.testResults.clear();
-            }
-            ScriptExecutionService.executePostScript(item.getPostscript(), bindings);
-            if (pm != null) {
-                return new ArrayList<>(pm.testResults); // 返回副本，避免后续修改影响
-            }
-        } catch (Exception ex) {
-            log.error("Error handling stream message: {}", ex.getMessage(), ex);
-            ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-            return List.of();
-        }
-        return List.of();
+    private List<TestResult> handleStreamMessage(ScriptExecutionPipeline pipeline, String message) {
+        HttpResponse resp = new HttpResponse();
+        resp.body = message;
+        resp.bodySize = message != null ? message.length() : 0;
+
+        // 执行后置脚本（自动清空、添加响应绑定、收集结果）
+        ScriptExecutionResult postResult = pipeline.executePostScript(resp);
+        return postResult.getTestResults();
     }
 
     /**

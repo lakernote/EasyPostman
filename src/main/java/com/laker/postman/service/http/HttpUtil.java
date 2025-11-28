@@ -1,15 +1,17 @@
 package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.*;
-import com.laker.postman.model.script.PostmanApiContext;
-import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpParam;
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.PreparedRequest;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -113,47 +115,6 @@ public class HttpUtil {
             default -> methodColor = "#7f8c8d";          // 其它: 灰色
         }
         return methodColor;
-    }
-
-    // 绑定脚本变量
-    public static Map<String, Object> prepareBindings(PreparedRequest req) {
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        PostmanApiContext postman = new PostmanApiContext(activeEnv);
-        postman.setRequest(req);
-        Map<String, Object> bindings = new LinkedHashMap<>();
-        bindings.put("request", req);
-        bindings.put("env", activeEnv);
-        bindings.put("postman", postman);
-        bindings.put("pm", postman);
-
-        // 为前置脚本提供一个空的响应对象，防止pm.response为undefined
-        try {
-            // 创建一个空的HttpResponse对象并设置到pm中
-            HttpResponse emptyResponse = new HttpResponse();
-            emptyResponse.code = 0;
-            emptyResponse.headers = new LinkedHashMap<>();
-            emptyResponse.body = "{}";
-            postman.setResponse(emptyResponse);
-            // 添加到bindings中
-            bindings.put("response", emptyResponse);
-            bindings.put("responseBody", "{}");
-            bindings.put("responseHeaders", emptyResponse.headers);
-            bindings.put("statusCode", 0);
-        } catch (Exception e) {
-            log.warn("为前置脚本初始化空响应对象失败", e);
-        }
-
-        return bindings;
-    }
-
-
-    public static void postBindings(Map<String, Object> bindings, HttpResponse resp) {
-        PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-        pm.setResponse(resp);
-        bindings.put("response", resp);
-        bindings.put("responseBody", resp.body);
-        bindings.put("responseHeaders", resp.headers);
-        bindings.put("statusCode", resp.code);
     }
 
     // 校验请求参数

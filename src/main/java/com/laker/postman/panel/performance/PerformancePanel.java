@@ -7,8 +7,10 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
-import com.laker.postman.model.*;
-import com.laker.postman.model.script.PostmanApiContext;
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;
@@ -25,16 +27,13 @@ import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
-import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.service.js.ScriptExecutionContext;
-import com.laker.postman.service.js.ScriptExecutionException;
-import com.laker.postman.service.js.ScriptExecutionService;
+import com.laker.postman.service.js.ScriptExecutionPipeline;
+import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonPathUtil;
@@ -988,31 +987,26 @@ public class PerformancePanel extends SingletonBasePanel {
             }
             // ====== 前置脚本 ======
             req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
-            Map<String, Object> bindings = HttpUtil.prepareBindings(req);
-            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-            // 注入CSV变量到pm
+
+            // 创建脚本执行流水线
+            ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                    .request(req)
+                    .preScript(jtNode.httpRequestItem.getPrescript())
+                    .postScript(jtNode.httpRequestItem.getPostscript())
+                    .build();
+
+            // 注入 CSV 变量
             if (csvRow != null) {
-                for (Map.Entry<String, String> entry : csvRow.entrySet()) {
-                    pm.variables.set(entry.getKey(), entry.getValue());
-                }
+                pipeline.addCsvDataBindings(csvRow);
             }
-            boolean preOk = true;
-            String prescript = jtNode.httpRequestItem.getPrescript();
-            if (prescript != null && !prescript.isBlank()) {
-                try {
-                    ScriptExecutionContext context = ScriptExecutionContext.builder()
-                            .script(prescript)
-                            .scriptType(ScriptExecutionContext.ScriptType.PRE_REQUEST)
-                            .bindings(bindings)
-                            .outputCallback(output -> ConsolePanel.appendLog("[PreScript Console]\n" + output))
-                            .build();
-                    ScriptExecutionService.executeScript(context);
-                } catch (ScriptExecutionException ex) {
-                    log.error("前置脚本: {}", ex.getMessage(), ex);
-                    errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_PRE_SCRIPT_FAILED, ex.getMessage());
-                    preOk = false;
-                    success = false;
-                }
+
+            // 执行前置脚本
+            ScriptExecutionResult preResult = pipeline.executePreScript();
+            boolean preOk = preResult.isSuccess();
+            if (!preOk) {
+                log.error("前置脚本: {}", preResult.getErrorMessage());
+                errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_PRE_SCRIPT_FAILED, preResult.getErrorMessage());
+                success = false;
             }
 
             // 前置脚本执行完成后，进行变量替换
@@ -1070,26 +1064,15 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
                 }
                 // ====== 后置脚本 ======
-                String postscript = jtNode.httpRequestItem.getPostscript();
-                if (resp != null && postscript != null && !postscript.isBlank()) {
-                    HttpUtil.postBindings(bindings, resp);
-                    try {
-                        ScriptExecutionContext context = ScriptExecutionContext.builder()
-                                .script(postscript)
-                                .scriptType(ScriptExecutionContext.ScriptType.POST_REQUEST)
-                                .bindings(bindings)
-                                .outputCallback(output -> ConsolePanel.appendLog("[PostScript Console]\n" + output))
-                                .build();
-                        ScriptExecutionService.executeScript(context);
-                        if (pm.testResults != null) {
-                            testResults.addAll(pm.testResults);
-                        }
-                    } catch (ScriptExecutionException assertionEx) {
-                        log.error("后置脚本执行失败: {}", assertionEx.getMessage(), assertionEx);
-                        if (pm.testResults != null) {
-                            testResults.addAll(pm.testResults);
-                        }
-                        errorMsg = assertionEx.getMessage();
+                if (resp != null) {
+                    // 执行后置脚本（自动处理响应绑定和测试结果收集）
+                    ScriptExecutionResult postResult = pipeline.executePostScript(resp);
+                    if (postResult.hasTestResults()) {
+                        testResults.addAll(postResult.getTestResults());
+                    }
+                    if (!postResult.isSuccess()) {
+                        log.error("后置脚本执行失败: {}", postResult.getErrorMessage());
+                        errorMsg = postResult.getErrorMessage();
                         success = false;
                     }
                 }

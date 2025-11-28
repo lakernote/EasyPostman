@@ -8,7 +8,6 @@ import com.laker.postman.common.component.StartButton;
 import com.laker.postman.common.component.StopButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
-import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
@@ -20,9 +19,8 @@ import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.service.js.ScriptExecutionContext;
-import com.laker.postman.service.js.ScriptExecutionException;
-import com.laker.postman.service.js.ScriptExecutionService;
+import com.laker.postman.service.js.ScriptExecutionPipeline;
+import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -326,9 +324,7 @@ public class FunctionalPanel extends SingletonBasePanel {
             row.assertion = result.assertion;
             row.response = result.resp;
 
-            SwingUtilities.invokeLater(() -> {
-                tableModel.fireTableRowsUpdated(currentRowIndex, currentRowIndex);
-            });
+            SwingUtilities.invokeLater(() -> tableModel.fireTableRowsUpdated(currentRowIndex, currentRowIndex));
         }
 
         // 记录请求结果到执行历史
@@ -396,21 +392,23 @@ public class FunctionalPanel extends SingletonBasePanel {
         // 每次执行前清理临时变量
         EnvironmentService.clearTemporaryVariables();
 
-        Map<String, Object> bindings = HttpUtil.prepareBindings(req);
-        PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+        // 创建脚本执行流水线
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(req)
+                .preScript(item.getPrescript())
+                .postScript(item.getPostscript())
+                .build();
 
-        // 添加 CSV 数据到脚本执行环境 - 使用 Postman 标准方式
+        // 添加 CSV 数据到脚本执行环境
         if (csvRowData != null) {
-            // Postman 的标准方式：CSV 数据通过 pm.variables.get() 访问
-            for (Map.Entry<String, String> entry : csvRowData.entrySet()) {
-                pm.variables.set(entry.getKey(), entry.getValue());
-            }
+            pipeline.addCsvDataBindings(csvRowData);
         }
 
-        boolean preOk = runPreScriptWithCsv(item, bindings);
+        // 执行前置脚本
+        ScriptExecutionResult preResult = pipeline.executePreScript();
 
         // 前置脚本执行完成后，进行变量替换
-        if (preOk) {
+        if (preResult.isSuccess()) {
             PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
         }
 
@@ -418,7 +416,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         String status; // HTTP状态码或执行状态（需要国际化）
         AssertionResult assertion = AssertionResult.NO_TESTS; // 断言结果
 
-        if (!preOk) {
+        if (!preResult.isSuccess()) {
             // 前置脚本失败
             status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED);
         } else if (HttpUtil.isSSERequest(req)) {
@@ -432,7 +430,17 @@ public class FunctionalPanel extends SingletonBasePanel {
                 req.logEvent = true; // 确保日志事件开启
                 resp = HttpSingleRequestExecutor.executeHttp(req);
                 status = String.valueOf(resp.code); // HTTP状态码
-                assertion = runPostScriptAndAssertWithCsv(item, bindings, resp, row, pm); // 返回断言结果
+
+                // 执行后置脚本
+                ScriptExecutionResult postResult = pipeline.executePostScript(resp);
+                row.testResults = postResult.getTestResults();
+
+                // 判断断言结果
+                if (postResult.allTestsPassed()) {
+                    assertion = AssertionResult.PASS;
+                } else {
+                    assertion = AssertionResult.FAIL;
+                }
             } catch (Exception ex) {
                 log.error("请求执行失败", ex);
                 ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
@@ -448,65 +456,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         return result;
     }
 
-    private boolean runPreScriptWithCsv(HttpRequestItem item, Map<String, Object> bindings) {
-        String prescript = item.getPrescript();
-        if (prescript != null && !prescript.isBlank()) {
-            try {
-                ScriptExecutionContext context = ScriptExecutionContext.builder()
-                        .script(prescript)
-                        .scriptType(ScriptExecutionContext.ScriptType.PRE_REQUEST)
-                        .bindings(bindings)
-                        .outputCallback(output -> ConsolePanel.appendLog("[PreScript Console]\n" + output))
-                        .build();
-                ScriptExecutionService.executeScript(context);
-                return true;
-            } catch (ScriptExecutionException ex) {
-                log.error("前置脚本执行异常: {}", ex.getMessage(), ex);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private AssertionResult runPostScriptAndAssertWithCsv(HttpRequestItem item, Map<String, Object> bindings, HttpResponse resp, RunnerRowData row, PostmanApiContext pm) {
-        String postscript = item.getPostscript();
-        if (postscript != null && !postscript.isBlank()) {
-            HttpUtil.postBindings(bindings, resp);
-            try {
-                ScriptExecutionContext context = ScriptExecutionContext.builder()
-                        .script(postscript)
-                        .scriptType(ScriptExecutionContext.ScriptType.POST_REQUEST)
-                        .bindings(bindings)
-                        .outputCallback(output -> ConsolePanel.appendLog("[PostScript Console]\n" + output))
-                        .build();
-                ScriptExecutionService.executeScript(context);
-                row.testResults = new java.util.ArrayList<>();
-                if (pm.testResults != null) {
-                    row.testResults.addAll(pm.testResults);
-                }
-
-                // 检查是否有测试结果
-                if (pm.testResults == null || pm.testResults.isEmpty()) {
-                    // 没有测试断言
-                    return AssertionResult.NO_TESTS;
-                } else {
-                    // 有测试断言，检查是否全部通过
-                    boolean allPassed = pm.testResults.stream().allMatch(test -> test.passed);
-                    return allPassed ? AssertionResult.PASS : AssertionResult.FAIL;
-                }
-            } catch (ScriptExecutionException assertionEx) {
-                row.testResults = new java.util.ArrayList<>();
-                if (pm.testResults != null) {
-                    row.testResults.addAll(pm.testResults);
-                }
-                // 脚本执行异常，返回错误消息
-                return AssertionResult.FAIL;
-            }
-        } else {
-            // 没有后置脚本，意味着没有测试
-            return AssertionResult.NO_TESTS;
-        }
-    }
 
     // 更新执行时间显示
     private void updateExecutionTime() {

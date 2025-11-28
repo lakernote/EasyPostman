@@ -33,7 +33,6 @@ import java.util.Map;
  * JsScriptExecutor.execute(context);
  * }</pre>
  *
- * @see ScriptExecutionService
  * @see JsScriptExecutor
  * @see ScriptType
  * @author laker

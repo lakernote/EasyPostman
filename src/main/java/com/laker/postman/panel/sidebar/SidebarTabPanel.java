@@ -396,13 +396,31 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 if (isSelected) {
-                    // 选中状态：只绘制左侧蓝色指示条
-                    int margin = 4;
-                    int indicatorWidth = 3;
-                    int indicatorRadius = 2;
+                    // 选中状态：绘制左侧蓝色指示条
+                    int leftMargin = 2;        // 左边距，距离边缘更近
+                    int verticalMargin = 6;    // 上下边距，让指示条稍短一些
+                    int indicatorWidth = 4;    // 指示条宽度，增加到4px更醒目
+                    int indicatorRadius = 3;   // 圆角半径，更圆润
 
                     g2.setColor(ModernColors.PRIMARY);
-                    g2.fillRoundRect(x + margin, y + margin, indicatorWidth, h - margin * 2, indicatorRadius, indicatorRadius);
+                    g2.fillRoundRect(
+                        x + leftMargin,
+                        y + verticalMargin,
+                        indicatorWidth,
+                        h - verticalMargin * 2,
+                        indicatorRadius,
+                        indicatorRadius
+                    );
+
+                    // 可选：添加淡淡的背景色以增强选中效果
+                    Color bgColor = new Color(
+                        ModernColors.PRIMARY.getRed(),
+                        ModernColors.PRIMARY.getGreen(),
+                        ModernColors.PRIMARY.getBlue(),
+                        15  // 非常淡的透明度
+                    );
+                    g2.setColor(bgColor);
+                    g2.fillRect(x, y, w, h);
                 }
                 // 不绘制悬停效果，避免卡顿
 

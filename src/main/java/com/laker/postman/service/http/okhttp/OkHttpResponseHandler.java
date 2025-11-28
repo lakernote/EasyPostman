@@ -72,9 +72,10 @@ public class OkHttpResponseHandler {
         response.message = okResponse.message();
         response.headers = new LinkedHashMap<>();
         for (String name : okResponse.headers().names()) {
-            String value = okResponse.header(name);
-            if (value != null) {
-                response.addHeader(name, List.of(value));
+            // 使用 headers(name) 获取所有同名的 header 值（例如多个 Set-Cookie）
+            List<String> values = okResponse.headers(name);
+            if (!values.isEmpty()) {
+                response.addHeader(name, values);
             }
         }
         response.headersSize = response.httpEventInfo != null ? response.httpEventInfo.getHeaderBytesReceived() : 0;

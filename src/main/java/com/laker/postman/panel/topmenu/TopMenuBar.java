@@ -2,7 +2,8 @@ package com.laker.postman.panel.topmenu;
 
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonBasePanel;
+import com.formdev.flatlaf.util.SystemInfo;
+import com.laker.postman.common.SingletonBaseMenuBar;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.ioc.BeanFactory;
@@ -29,24 +30,21 @@ import java.util.List;
 import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
-public class TopMenuBarPanel extends SingletonBasePanel {
+public class TopMenuBar extends SingletonBaseMenuBar {
     @Getter
     private EnvironmentComboBox environmentComboBox;
     private JComboBox<Workspace> workspaceComboBox;
-    private JMenuBar menuBar;
 
     @Override
     protected void initUI() {
-        setLayout(new BorderLayout());
         setBorder(createPanelBorder());
-        setOpaque(true);
         initComponents();
     }
 
     private Border createPanelBorder() {
         return BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 1, 0, Color.lightGray),
-                BorderFactory.createEmptyBorder(1, 4, 1, 4)
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray),
+                BorderFactory.createEmptyBorder(2, 4, 1, 8)
         );
     }
 
@@ -60,33 +58,27 @@ public class TopMenuBarPanel extends SingletonBasePanel {
      * 重新加载快捷键（快捷键设置修改后调用）
      */
     public void reloadShortcuts() {
-        // 移除旧的菜单栏
-        remove(menuBar);
-
+        removeAll();
         // 重新创建菜单栏
-        menuBar = new JMenuBar();
-        menuBar.setBorder(BorderFactory.createEmptyBorder());
-        addFileMenu();
-        addLanguageMenu();
-        addSettingMenu();
-        addHelpMenu();
-        addAboutMenu();
-        add(menuBar, BorderLayout.WEST);
-
+        initComponents();
         // 刷新界面
         revalidate();
         repaint();
     }
 
     private void initComponents() {
-        menuBar = new JMenuBar();
-        menuBar.setBorder(BorderFactory.createEmptyBorder());
+        if (SystemInfo.isMacFullWindowContentSupported) {
+            // macOS Full Window Content 模式下，左侧留出更多空间给红黄绿按钮
+            // macOS 红黄绿按钮宽度约 70-76px
+            add(Box.createHorizontalStrut(70));
+        }
+
         addFileMenu();
         addLanguageMenu();
         addSettingMenu();
         addHelpMenu();
         addAboutMenu();
-        add(menuBar, BorderLayout.WEST);
+        add(Box.createGlue());
         addRightLableAndComboBox();
     }
 
@@ -104,7 +96,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         exitMenuItem.addActionListener(e -> BeanFactory.getBean(ExitService.class).exit());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
-        menuBar.add(fileMenu);
+        add(fileMenu);
     }
 
     private void openLogDirectory() {
@@ -140,7 +132,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
 
         languageMenu.add(englishItem);
         languageMenu.add(chineseItem);
-        menuBar.add(languageMenu);
+        add(languageMenu);
     }
 
     private void switchLanguage(String languageCode) {
@@ -188,7 +180,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         shortcutMenuItem.addActionListener(e -> showModernSettingsDialog(6));
         settingMenu.add(shortcutMenuItem);
 
-        menuBar.add(settingMenu);
+        add(settingMenu);
     }
 
 
@@ -213,7 +205,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         helpMenu.add(updateMenuItem);
         helpMenu.add(changelogMenuItem);
         helpMenu.add(feedbackMenuItem);
-        menuBar.add(helpMenu);
+        add(helpMenu);
     }
 
     private void showFeedbackDialog() {
@@ -235,7 +227,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         JMenuItem aboutMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_ABOUT_EASYPOSTMAN));
         aboutMenuItem.addActionListener(e -> aboutActionPerformed());
         aboutMenu.add(aboutMenuItem);
-        menuBar.add(aboutMenu);
+        add(aboutMenu);
     }
 
     private void addRightLableAndComboBox() {
@@ -257,18 +249,17 @@ public class TopMenuBarPanel extends SingletonBasePanel {
 
         // 添加工作区图标和下拉框
         JLabel workspaceIconLabel = new JLabel(new FlatSVGIcon("icons/workspace.svg", 20, 20));
-        rightPanel.add(workspaceIconLabel);
-        rightPanel.add(workspaceComboBox);
+        add(workspaceIconLabel);
+        add(workspaceComboBox);
 
         // 添加分隔间距
-        rightPanel.add(Box.createHorizontalStrut(2));
+        add(Box.createHorizontalStrut(2));
 
         // 添加环境变量图标和下拉框
         JLabel envIconLabel = new JLabel(new FlatSVGIcon("icons/environments.svg", 20, 20));
-        rightPanel.add(envIconLabel);
-        rightPanel.add(environmentComboBox);
+        add(envIconLabel);
+        add(environmentComboBox);
 
-        add(rightPanel, BorderLayout.EAST);
     }
 
     /**
@@ -280,6 +271,7 @@ public class TopMenuBarPanel extends SingletonBasePanel {
         comboBox.setMaximumRowCount(10);
         comboBox.setFocusable(false);
         comboBox.setPreferredSize(new Dimension(150, 28));
+        comboBox.setMaximumSize(new Dimension(150, 28));
 
         // 自定义渲染器，只显示名称（不显示图标，因为外面已有图标）
         comboBox.setRenderer(new DefaultListCellRenderer() {

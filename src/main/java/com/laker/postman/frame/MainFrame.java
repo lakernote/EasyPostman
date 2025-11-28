@@ -1,5 +1,6 @@
 package com.laker.postman.frame;
 
+import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.ioc.BeanFactory;
@@ -66,6 +67,12 @@ public class MainFrame extends JFrame {
         setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setIconImage(Icons.LOGO.getImage());
+
+        // 在 macOS 上启用 Full Window Content
+        if (SystemInfo.isMacFullWindowContentSupported) {
+            getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
+            getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+        }
     }
 
     public void initComponents() {

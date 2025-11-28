@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu;
 
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonBaseMenuBar;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
@@ -43,7 +44,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     private Border createPanelBorder() {
         return BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray),
-                BorderFactory.createEmptyBorder(1, 4, 1, 4)
+                BorderFactory.createEmptyBorder(2, 4, 1, 8)
         );
     }
 
@@ -66,6 +67,12 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     }
 
     private void initComponents() {
+        if (SystemInfo.isMacFullWindowContentSupported) {
+            // macOS Full Window Content 模式下，左侧留出更多空间给红黄绿按钮
+            // macOS 红黄绿按钮宽度约 70-76px
+            add(Box.createHorizontalStrut(70));
+        }
+
         addFileMenu();
         addLanguageMenu();
         addSettingMenu();

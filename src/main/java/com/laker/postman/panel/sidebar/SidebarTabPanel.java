@@ -57,6 +57,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
     // 自适应宽度缓存
     private int calculatedExpandedTabWidth = -1; // 计算后的展开状态tab宽度
 
+    // 性能优化：缓存绘制时使用的颜色对象，避免重复创建
+    private transient Color cachedBgColor;
+    private transient GradientPaint cachedGradient;
+    private transient int lastIndicatorHeight = -1; // 用于判断是否需要重新创建渐变
+
     @Override
     protected void initUI() {
         // 初始化字体缓存
@@ -393,34 +398,50 @@ public class SidebarTabPanel extends SingletonBasePanel {
             protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
                                               int x, int y, int w, int h, boolean isSelected) {
                 Graphics2D g2 = (Graphics2D) g.create();
+                // 高质量渲染提示，确保清晰锐利
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
                 if (isSelected) {
-                    // 选中状态：绘制左侧蓝色指示条
+                    // 选中状态：绘制清晰的渐变指示条 + 淡雅背景
                     int leftMargin = 2;        // 左边距，距离边缘更近
                     int verticalMargin = 6;    // 上下边距，让指示条稍短一些
-                    int indicatorWidth = 4;    // 指示条宽度，增加到4px更醒目
-                    int indicatorRadius = 3;   // 圆角半径，更圆润
+                    int indicatorWidth = 4;    // 指示条宽度
+                    int indicatorRadius = 2;   // 圆角半径，减小到2px避免模糊
 
-                    g2.setColor(ModernColors.PRIMARY);
-                    g2.fillRoundRect(
-                        x + leftMargin,
-                        y + verticalMargin,
-                        indicatorWidth,
-                        h - verticalMargin * 2,
-                        indicatorRadius,
-                        indicatorRadius
-                    );
-
-                    // 可选：添加淡淡的背景色以增强选中效果
-                    Color bgColor = new Color(
-                        ModernColors.PRIMARY.getRed(),
-                        ModernColors.PRIMARY.getGreen(),
-                        ModernColors.PRIMARY.getBlue(),
-                        15  // 非常淡的透明度
-                    );
-                    g2.setColor(bgColor);
+                    // 1. 绘制淡雅背景（使用缓存的颜色对象）
+                    if (cachedBgColor == null) {
+                        cachedBgColor = new Color(
+                                ModernColors.PRIMARY.getRed(),
+                                ModernColors.PRIMARY.getGreen(),
+                                ModernColors.PRIMARY.getBlue(),
+                                25  // 稍微增加透明度，让背景更明显
+                        );
+                    }
+                    g2.setColor(cachedBgColor);
                     g2.fillRect(x, y, w, h);
+
+                    // 2. 绘制实心渐变指示条（使用缓存的渐变对象）
+                    int indicatorX = x + leftMargin;
+                    int indicatorY = y + verticalMargin;
+                    int indicatorHeight = h - verticalMargin * 2;
+
+                    // 只有在高度变化时才重新创建渐变对象，使用更饱和的颜色
+                    if (cachedGradient == null || lastIndicatorHeight != indicatorHeight) {
+                        cachedGradient = new GradientPaint(
+                                0, 0, ModernColors.PRIMARY,  // 顶部：标准蓝（更清晰）
+                                0, indicatorHeight, ModernColors.PRIMARY_LIGHT  // 底部：亮蓝
+                        );
+                        lastIndicatorHeight = indicatorHeight;
+                    }
+
+                    g2.setPaint(cachedGradient);
+                    g2.translate(indicatorX, indicatorY);
+                    // 使用fillRoundRect绘制实心指示条，清晰锐利
+                    g2.fillRoundRect(0, 0, indicatorWidth, indicatorHeight, indicatorRadius, indicatorRadius);
+                    g2.translate(-indicatorX, -indicatorY);
                 }
                 // 不绘制悬停效果，避免卡顿
 

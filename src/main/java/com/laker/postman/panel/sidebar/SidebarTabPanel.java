@@ -54,6 +54,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private Font boldFont;        // BOLD 12 - Tab文本选中态和底部栏共用
     private Font bottomBarFont;   // BOLD 12 - 底部栏字体（与boldFont相同，为了语义清晰保留）
 
+    // 自适应宽度缓存
+    private int calculatedExpandedTabWidth = -1; // 计算后的展开状态tab宽度
+
     @Override
     protected void initUI() {
         // 初始化字体缓存
@@ -436,13 +439,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
             @Override
             public Dimension getPreferredSize() {
                 Dimension size = super.getPreferredSize();
-                // 设置最小宽度，保证所有 tab 宽度一致
                 if (sidebarExpanded) {
-                    // 展开状态：使用所有 tab 中最宽的宽度
-                    size.width = Math.max(size.width, 75);
+                    // 展开状态：使用计算出的最佳宽度，基于最长文本
+                    size.width = calculateExpandedTabWidth();
                 } else {
-                    // 收起状态：固定宽度
-                    size.width = 48;
+                    // 收起状态：紧凑的固定宽度，仅容纳图标
+                    size.width = 38;
                 }
                 return size;
             }
@@ -528,6 +530,35 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
+     * 计算展开状态下的最佳tab宽度
+     * 基于所有tab标题中最长的文本
+     */
+    private int calculateExpandedTabWidth() {
+        if (calculatedExpandedTabWidth > 0) {
+            return calculatedExpandedTabWidth;
+        }
+
+        int maxWidth = 0;
+        JLabel tempLabel = new JLabel();
+        tempLabel.setFont(boldFont); // 使用粗体字体计算，因为选中时会变粗
+
+        for (TabInfo info : tabInfos) {
+            tempLabel.setText(info.title);
+            int textWidth = tempLabel.getPreferredSize().width;
+            maxWidth = Math.max(maxWidth, textWidth);
+        }
+
+        // 计算总宽度：左右边距(10+10) + 文本宽度
+        calculatedExpandedTabWidth = maxWidth + 20;
+
+        // 设置最小和最大宽度限制
+        calculatedExpandedTabWidth = Math.max(calculatedExpandedTabWidth, 40); // 最小70px
+        calculatedExpandedTabWidth = Math.min(calculatedExpandedTabWidth, 120); // 最大120px
+
+        return calculatedExpandedTabWidth;
+    }
+
+    /**
      * 更新侧边栏展开/收起状态
      * 从设置对话框调用，用于实时更新UI
      */
@@ -535,6 +566,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         boolean newExpanded = SettingManager.isSidebarExpanded();
         if (this.sidebarExpanded != newExpanded) {
             this.sidebarExpanded = newExpanded;
+            calculatedExpandedTabWidth = -1; // 重置宽度缓存
             // 重新创建 TabbedPane 以应用新的展开状态
             recreateTabbedPane();
         }

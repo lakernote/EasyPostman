@@ -16,7 +16,7 @@ import java.util.Map;
 public class UserSettingsUtil {
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
-    private static final String KEY_WINDOW_MAXIMIZED = "windowMaximized";
+    private static final String KEY_WINDOW_EXTENDED_STATE = "windowExtendedState";  // 窗口状态
     private static final String KEY_LANGUAGE = "language";
     private static final String SETTINGS_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "user_settings.json";
     private static final Object lock = new Object();
@@ -104,12 +104,12 @@ public class UserSettingsUtil {
     }
 
     // 窗口状态专用方法
-    public static void saveWindowState(int width, int height, boolean maximized) {
+    public static void saveWindowState(int width, int height, int extendedState) {
         synchronized (lock) {
             readSettings();
             settingsCache.put(KEY_WINDOW_WIDTH, width);
             settingsCache.put(KEY_WINDOW_HEIGHT, height);
-            settingsCache.put(KEY_WINDOW_MAXIMIZED, maximized);
+            settingsCache.put(KEY_WINDOW_EXTENDED_STATE, extendedState);
             saveSettings();
         }
     }
@@ -123,9 +123,8 @@ public class UserSettingsUtil {
         return getInt(KEY_WINDOW_HEIGHT);
     }
 
-    public static boolean isWindowMaximized() {
-        Boolean v = getBoolean(KEY_WINDOW_MAXIMIZED);
-        return v != null && v;
+    public static Integer getWindowExtendedState() {
+        return getInt(KEY_WINDOW_EXTENDED_STATE);
     }
 
     public static boolean hasWindowState() {

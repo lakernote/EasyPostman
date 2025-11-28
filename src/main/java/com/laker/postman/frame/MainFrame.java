@@ -192,8 +192,10 @@ public class MainFrame extends JFrame {
                 }
             }
 
-            UserSettingsUtil.saveWindowState(width, height, isMaximized);
-            log.debug("窗口状态已保存: width={}, height={}, maximized={}", width, height, isMaximized);
+            // 保存完整的 extendedState，可以恢复更多的窗口状态（如部分最大化、最小化等）
+            int extendedState = getExtendedState();
+            UserSettingsUtil.saveWindowState(width, height, extendedState);
+            log.debug("窗口状态已保存: width={}, height={}, extendedState={}", width, height, extendedState);
         } catch (Exception e) {
             log.warn("保存窗口状态失败", e);
         }
@@ -213,24 +215,28 @@ public class MainFrame extends JFrame {
             if (UserSettingsUtil.hasWindowState()) {
                 Integer width = UserSettingsUtil.getWindowWidth();
                 Integer height = UserSettingsUtil.getWindowHeight();
-                boolean isMaximized = UserSettingsUtil.isWindowMaximized();
+                Integer extendedState = UserSettingsUtil.getWindowExtendedState();
 
                 Dimension minSize = getMinWindowSize();
                 int actualWidth = (width != null && width > 0) ? Math.max(width, minSize.width) : minSize.width;
                 int actualHeight = (height != null && height > 0) ? Math.max(height, minSize.height) : minSize.height;
+                int actualState = (extendedState != null) ? extendedState : Frame.NORMAL;
+                boolean isMaximized = (actualState & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
 
                 if (isMaximized) {
-                    // 最大化状态：先设置尺寸（用于退出最大化时的尺寸），但不显示，然后直接设置最大化
-                    // 这样可以避免窗口先显示为普通尺寸再最大化的闪烁
-                    setBounds(0, 0, actualWidth, actualHeight);
-                    setExtendedState(Frame.MAXIMIZED_BOTH);
+                    // 最大化状态时，先设置尺寸并居中，再设置 extendedState
+                    // 这样当用户从最大化恢复时，窗口会出现在屏幕中央
+                    setSize(actualWidth, actualHeight);
+                    setLocationRelativeTo(null);  // 居中窗口
+                    setExtendedState(actualState);
                 } else {
-                    // 非最大化状态：正常设置尺寸
+                    // 非最大化状态：正常设置尺寸和状态
                     setSize(new Dimension(actualWidth, actualHeight));
+                    setExtendedState(actualState);
                 }
 
-                log.debug("窗口状态已恢复: width={}, height={}, maximized={}",
-                        actualWidth, actualHeight, isMaximized);
+                log.debug("窗口状态已恢复: width={}, height={}, extendedState={}",
+                        actualWidth, actualHeight, actualState);
             }
         } catch (Exception e) {
             log.warn("恢复窗口状态失败", e);

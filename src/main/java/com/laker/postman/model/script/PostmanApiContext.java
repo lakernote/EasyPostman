@@ -86,6 +86,11 @@ public class PostmanApiContext {
     public CookieApi cookies;
 
     /**
+     * 测试 API - 对应 pm.test，支持 pm.test() 调用和 pm.test.index() 方法
+     */
+    public TestApi test;
+
+    /**
      * 构造 Postman API 上下文
      *
      * @param environment 当前激活的环境对象
@@ -94,6 +99,7 @@ public class PostmanApiContext {
         this.environment = environment;
         this.env = environment; // Postman 中 env 和 environment 是同一个对象
         this.cookies = new CookieApi(); // 初始化 cookies
+        this.test = new TestApi(this); // 初始化 test API
     }
 
     /**
@@ -142,7 +148,7 @@ public class PostmanApiContext {
     }
 
     /**
-     * 执行测试断言
+     * 执行测试断言（保持向后兼容）
      * 对应脚本中的: pm.test(name, function)
      *
      * <p>示例：
@@ -154,24 +160,13 @@ public class PostmanApiContext {
      *
      * @param name         测试名称
      * @param testFunction 测试函数，使用 GraalVM Value 类型以支持 JavaScript 函数
+     * @deprecated 推荐使用 test 对象，但保留此方法以保持向后兼容
      */
     public void test(String name, Value testFunction) {
-        String errorMessage = null;
-        boolean passed = true;
-
-        try {
-            if (testFunction != null && testFunction.canExecute()) {
-                testFunction.execute();
-            }
-        } catch (Exception e) {
-            passed = false;
-            errorMessage = e.getMessage();
-            log.debug("测试失败: {}, 错误: {}", name, e.getMessage());
+        // 委托给 TestApi
+        if (test != null) {
+            test.run(name, testFunction);
         }
-
-        TestResult result = new TestResult(name, passed, errorMessage);
-        result.id = UUID.randomUUID().toString();
-        testResults.add(result);
     }
 
     /**

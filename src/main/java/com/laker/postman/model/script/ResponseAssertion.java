@@ -80,6 +80,9 @@ public class ResponseAssertion {
     /** 响应状态码 - 对应 pm.response.code */
     public int code;
 
+    /** 响应状态文本 - 对应 pm.response.status */
+    public String status;
+
     /**
      * 构造响应断言对象
      *
@@ -89,7 +92,35 @@ public class ResponseAssertion {
         this.response = response;
         this.responseTime = response != null ? response.costMs : -1;
         this.code = response != null ? response.code : -1;
+        this.status = response != null ? getStatusText(response.code) : "Unknown";
         this.headers = new Headers(this);
+    }
+
+    /**
+     * 根据状态码获取状态文本
+     *
+     * @param code HTTP 状态码
+     * @return 状态文本
+     */
+    private String getStatusText(int code) {
+        switch (code) {
+            case 200: return "OK";
+            case 201: return "Created";
+            case 204: return "No Content";
+            case 301: return "Moved Permanently";
+            case 302: return "Found";
+            case 304: return "Not Modified";
+            case 400: return "Bad Request";
+            case 401: return "Unauthorized";
+            case 403: return "Forbidden";
+            case 404: return "Not Found";
+            case 405: return "Method Not Allowed";
+            case 500: return "Internal Server Error";
+            case 502: return "Bad Gateway";
+            case 503: return "Service Unavailable";
+            case 504: return "Gateway Timeout";
+            default: return "HTTP " + code;
+        }
     }
 
     /**
@@ -186,6 +217,16 @@ public class ResponseAssertion {
             throw new AssertionError(I18nUtil.getMessage(MessageKeys.RESPONSE_ASSERTION_INVALID_JSON, e.getMessage()));
         }
         return null;
+    }
+
+    /**
+     * 获取响应大小信息
+     * 对应脚本中的: pm.response.size()
+     *
+     * @return ResponseSize 对象，包含 body 和 header 大小信息
+     */
+    public ResponseSize size() {
+        return new ResponseSize(this);
     }
 
     /**
@@ -345,6 +386,72 @@ public class ResponseAssertion {
         @Override
         public String toString() {
             return key + ": " + value;
+        }
+    }
+
+    /**
+     * 响应大小信息类 (pm.response.size())
+     * <p>
+     * 提供响应体和响应头的大小信息。
+     * </p>
+     *
+     * <h3>使用示例：</h3>
+     * <pre>{@code
+     * var responseSize = pm.response.size();
+     * console.log("响应体大小:", responseSize.body, "bytes");
+     * console.log("响应头大小:", responseSize.header, "bytes");
+     * console.log("总大小:", responseSize.total, "bytes");
+     * }</pre>
+     */
+    public static class ResponseSize {
+        /** 响应体大小（字节） */
+        public long body;
+
+        /** 响应头大小（字节） */
+        public long header;
+
+        /** 总大小（字节） */
+        public long total;
+
+        /**
+         * 构造响应大小对象
+         *
+         * @param responseAssertion 响应断言对象
+         */
+        public ResponseSize(ResponseAssertion responseAssertion) {
+            // 计算响应体大小
+            if (responseAssertion.response != null && responseAssertion.response.body != null) {
+                this.body = responseAssertion.response.body.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            } else {
+                this.body = 0;
+            }
+
+            // 计算响应头大小
+            this.header = 0;
+            if (responseAssertion.response != null && responseAssertion.response.headers != null) {
+                for (Map.Entry<String, List<String>> entry : responseAssertion.response.headers.entrySet()) {
+                    if (entry.getKey() != null) {
+                        this.header += entry.getKey().getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                    }
+                    if (entry.getValue() != null) {
+                        for (String value : entry.getValue()) {
+                            if (value != null) {
+                                this.header += value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                            }
+                        }
+                    }
+                    // 添加 ": " 和 "\r\n" 的大小
+                    this.header += 4;
+                }
+            }
+
+            // 总大小
+            this.total = this.body + this.header;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("body: %d bytes, header: %d bytes, total: %d bytes", body, header, total);
         }
     }
 }

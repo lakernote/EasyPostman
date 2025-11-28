@@ -70,6 +70,7 @@ public class RequestTreeActions {
      * 在指定节点下添加分组
      */
     private void addGroupToNode(DefaultMutableTreeNode parentNode, String groupName) {
+        if (parentNode == null) return;
         RequestGroup group = new RequestGroup(groupName);
         DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, group});
 
@@ -519,7 +520,16 @@ public class RequestTreeActions {
 
         DefaultMutableTreeNode copyNode = TreeNodeCloner.deepCopyGroupNode(selectedNode);
         Object[] copyObj = (Object[]) copyNode.getUserObject();
-        copyObj[1] = copyObj[1] + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX);
+
+        // 正确处理 RequestGroup 对象的名称
+        String originalName = getGroupName(copyObj[1]);
+        String newName = originalName + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX);
+
+        if (copyObj[1] instanceof RequestGroup requestGroup) {
+            requestGroup.setName(newName);
+        } else {
+            copyObj[1] = newName;
+        }
 
         DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
         if (parent != null) {
@@ -690,8 +700,8 @@ public class RequestTreeActions {
     }
 
     private String getGroupName(Object groupData) {
-        return groupData instanceof RequestGroup
-                ? ((RequestGroup) groupData).getName()
+        return groupData instanceof RequestGroup requestGroup
+                ? requestGroup.getName()
                 : String.valueOf(groupData);
     }
 

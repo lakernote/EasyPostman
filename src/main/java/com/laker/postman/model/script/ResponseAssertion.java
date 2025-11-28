@@ -5,6 +5,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -228,6 +229,19 @@ public class ResponseAssertion {
      * <pre>{@code
      * var contentType = pm.response.headers.get('Content-Type');
      * var authorization = pm.response.headers.get('authorization'); // 不区分大小写
+     *
+     * // 检查 header 是否存在
+     * if (pm.response.headers.has('Set-Cookie')) {
+     *     console.log('Cookie was set');
+     * }
+     *
+     * // 获取 header 数量
+     * var count = pm.response.headers.count();
+     *
+     * // 遍历所有 headers
+     * pm.response.headers.each(function(header) {
+     *     console.log(header.key + ': ' + header.value);
+     * });
      * }</pre>
      */
     public static class Headers {
@@ -250,6 +264,87 @@ public class ResponseAssertion {
          */
         public String get(String name) {
             return responseAssertion.getHeader(name);
+        }
+
+        /**
+         * 检查指定名称的响应头是否存在
+         *
+         * @param name 响应头名称（不区分大小写）
+         * @return 如果响应头存在返回 true，否则返回 false
+         */
+        public boolean has(String name) {
+            return responseAssertion.getHeader(name) != null;
+        }
+
+        /**
+         * 获取响应头的数量
+         *
+         * @return 响应头数量
+         */
+        public int count() {
+            if (responseAssertion.response == null || responseAssertion.response.headers == null) {
+                return 0;
+            }
+            return responseAssertion.response.headers.size();
+        }
+
+        /**
+         * 遍历所有响应头
+         *
+         * @param callback 回调函数，接收 header 对象（包含 key 和 value 属性）
+         */
+        public void each(org.graalvm.polyglot.Value callback) {
+            if (responseAssertion.response == null || responseAssertion.response.headers == null) {
+                return;
+            }
+            if (callback == null || !callback.canExecute()) {
+                return;
+            }
+
+            for (Map.Entry<String, List<String>> entry : responseAssertion.response.headers.entrySet()) {
+                if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                    // 创建 header 对象
+                    HeaderEntry headerEntry = new HeaderEntry(entry.getKey(), entry.getValue().get(0));
+                    callback.executeVoid(headerEntry);
+                }
+            }
+        }
+
+        /**
+         * 获取所有响应头
+         *
+         * @return 响应头数组
+         */
+        public HeaderEntry[] all() {
+            if (responseAssertion.response == null || responseAssertion.response.headers == null) {
+                return new HeaderEntry[0];
+            }
+
+           List<HeaderEntry> headerList = new ArrayList<>();
+            for (Map.Entry<String, List<String>> entry : responseAssertion.response.headers.entrySet()) {
+                if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                    headerList.add(new HeaderEntry(entry.getKey(), entry.getValue().get(0)));
+                }
+            }
+            return headerList.toArray(new HeaderEntry[0]);
+        }
+    }
+
+    /**
+     * Header 条目类，用于表示单个响应头
+     */
+    public static class HeaderEntry {
+        public String key;
+        public String value;
+
+        public HeaderEntry(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return key + ": " + value;
         }
     }
 }

@@ -842,6 +842,103 @@ public final class MessageKeys {
     public static final String AUTOCOMPLETE_SNIPPET_JSON_PARSE = "autocomplete.snippet.json_parse";
     public static final String AUTOCOMPLETE_SNIPPET_JSON_STRINGIFY = "autocomplete.snippet.json_stringify";
 
+    // ========== pm 对象方法自动补全 ==========
+    public static final String AUTOCOMPLETE_PM_TEST = "autocomplete.pm.test";
+    public static final String AUTOCOMPLETE_PM_EXPECT = "autocomplete.pm.expect";
+    public static final String AUTOCOMPLETE_PM_GENERATE_UUID = "autocomplete.pm.generateUUID";
+    public static final String AUTOCOMPLETE_PM_GET_TIMESTAMP = "autocomplete.pm.getTimestamp";
+    public static final String AUTOCOMPLETE_PM_SET_VARIABLE = "autocomplete.pm.setVariable";
+    public static final String AUTOCOMPLETE_PM_GET_VARIABLE = "autocomplete.pm.getVariable";
+    public static final String AUTOCOMPLETE_PM_GET_RESPONSE_COOKIE = "autocomplete.pm.getResponseCookie";
+
+    // ========== pm.environment 方法 ==========
+    public static final String AUTOCOMPLETE_PM_ENV_SET = "autocomplete.pm.environment.set";
+    public static final String AUTOCOMPLETE_PM_ENV_GET = "autocomplete.pm.environment.get";
+    public static final String AUTOCOMPLETE_PM_ENV_HAS = "autocomplete.pm.environment.has";
+    public static final String AUTOCOMPLETE_PM_ENV_UNSET = "autocomplete.pm.environment.unset";
+    public static final String AUTOCOMPLETE_PM_ENV_CLEAR = "autocomplete.pm.environment.clear";
+
+    // ========== pm.variables 方法 ==========
+    public static final String AUTOCOMPLETE_PM_VAR_SET = "autocomplete.pm.variables.set";
+    public static final String AUTOCOMPLETE_PM_VAR_GET = "autocomplete.pm.variables.get";
+    public static final String AUTOCOMPLETE_PM_VAR_HAS = "autocomplete.pm.variables.has";
+    public static final String AUTOCOMPLETE_PM_VAR_UNSET = "autocomplete.pm.variables.unset";
+    public static final String AUTOCOMPLETE_PM_VAR_CLEAR = "autocomplete.pm.variables.clear";
+
+    // ========== pm.request 方法 ==========
+    public static final String AUTOCOMPLETE_PM_REQUEST_URL = "autocomplete.pm.request.url";
+    public static final String AUTOCOMPLETE_PM_REQUEST_METHOD = "autocomplete.pm.request.method";
+    public static final String AUTOCOMPLETE_PM_REQUEST_HEADERS = "autocomplete.pm.request.headers";
+    public static final String AUTOCOMPLETE_PM_REQUEST_BODY = "autocomplete.pm.request.body";
+    public static final String AUTOCOMPLETE_PM_REQUEST_PARAMS = "autocomplete.pm.request.params";
+    public static final String AUTOCOMPLETE_PM_REQUEST_FORMDATA = "autocomplete.pm.request.formData";
+    public static final String AUTOCOMPLETE_PM_REQUEST_URLENCODED = "autocomplete.pm.request.urlencoded";
+    public static final String AUTOCOMPLETE_PM_REQUEST_FORMFILES = "autocomplete.pm.request.formFiles";
+
+    // ========== pm.response 方法 ==========
+    public static final String AUTOCOMPLETE_PM_RESPONSE_CODE = "autocomplete.pm.response.code";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_STATUS = "autocomplete.pm.response.status";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_HEADERS = "autocomplete.pm.response.headers";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_JSON = "autocomplete.pm.response.json";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_TEXT = "autocomplete.pm.response.text";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_TIME = "autocomplete.pm.response.responseTime";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_TO_HAVE_STATUS = "autocomplete.pm.response.to.have.status";
+    public static final String AUTOCOMPLETE_PM_RESPONSE_TO_HAVE_HEADER = "autocomplete.pm.response.to.have.header";
+
+    // ========== pm.cookies 方法 ==========
+    public static final String AUTOCOMPLETE_PM_COOKIES_GET = "autocomplete.pm.cookies.get";
+    public static final String AUTOCOMPLETE_PM_COOKIES_HAS = "autocomplete.pm.cookies.has";
+    public static final String AUTOCOMPLETE_PM_COOKIES_ALL = "autocomplete.pm.cookies.all";
+    public static final String AUTOCOMPLETE_PM_COOKIES_JAR = "autocomplete.pm.cookies.jar";
+
+    // ========== Console 对象 ==========
+    public static final String AUTOCOMPLETE_CONSOLE_LOG = "autocomplete.console.log";
+    public static final String AUTOCOMPLETE_CONSOLE_WARN = "autocomplete.console.warn";
+    public static final String AUTOCOMPLETE_CONSOLE_ERROR = "autocomplete.console.error";
+    public static final String AUTOCOMPLETE_CONSOLE_INFO = "autocomplete.console.info";
+
+    // ========== JavaScript 内置对象 ==========
+    public static final String AUTOCOMPLETE_JSON_PARSE = "autocomplete.json.parse";
+    public static final String AUTOCOMPLETE_JSON_STRINGIFY = "autocomplete.json.stringify";
+    public static final String AUTOCOMPLETE_DATE_NOW = "autocomplete.date.now";
+    public static final String AUTOCOMPLETE_MATH_RANDOM = "autocomplete.math.random";
+
+    // ========== 编码/解码函数 ==========
+    public static final String AUTOCOMPLETE_BTOA = "autocomplete.btoa";
+    public static final String AUTOCOMPLETE_ATOB = "autocomplete.atob";
+    public static final String AUTOCOMPLETE_ENCODE_URI = "autocomplete.encodeURIComponent";
+    public static final String AUTOCOMPLETE_DECODE_URI = "autocomplete.decodeURIComponent";
+    public static final String AUTOCOMPLETE_ENCODE_URI_FULL = "autocomplete.encodeURI";
+    public static final String AUTOCOMPLETE_DECODE_URI_FULL = "autocomplete.decodeURI";
+
+    // ========== 加密函数 ==========
+    public static final String AUTOCOMPLETE_MD5 = "autocomplete.md5";
+    public static final String AUTOCOMPLETE_SHA256 = "autocomplete.sha256";
+
+    // ========== JavaScript 关键字 ==========
+    public static final String AUTOCOMPLETE_VAR = "autocomplete.var";
+    public static final String AUTOCOMPLETE_LET = "autocomplete.let";
+    public static final String AUTOCOMPLETE_CONST = "autocomplete.const";
+
+    // ========== 代码片段自动补全 ==========
+    public static final String AUTOCOMPLETE_SNIPPET_VAR_SET = "autocomplete.snippet.var.set";
+    public static final String AUTOCOMPLETE_SNIPPET_VAR_GET = "autocomplete.snippet.var.get";
+    public static final String AUTOCOMPLETE_SNIPPET_GENERATE_UUID = "autocomplete.snippet.generateUUID";
+    public static final String AUTOCOMPLETE_SNIPPET_GET_TIMESTAMP = "autocomplete.snippet.getTimestamp";
+    public static final String AUTOCOMPLETE_SNIPPET_TEST = "autocomplete.snippet.test";
+    public static final String AUTOCOMPLETE_SNIPPET_STATUS_200 = "autocomplete.snippet.status200";
+    public static final String AUTOCOMPLETE_SNIPPET_RESPONSE_TIME = "autocomplete.snippet.responseTime";
+    public static final String AUTOCOMPLETE_SNIPPET_BODY_CONTAINS = "autocomplete.snippet.bodyContains";
+    public static final String AUTOCOMPLETE_SNIPPET_JSON_VALUE = "autocomplete.snippet.jsonValue";
+    public static final String AUTOCOMPLETE_SNIPPET_EXTRACT_JSON = "autocomplete.snippet.extractJson";
+    public static final String AUTOCOMPLETE_SNIPPET_EXTRACT_HEADER = "autocomplete.snippet.extractHeader";
+    public static final String AUTOCOMPLETE_SNIPPET_GET_COOKIE = "autocomplete.snippet.getCookie";
+    public static final String AUTOCOMPLETE_SNIPPET_SET_COOKIE = "autocomplete.snippet.setCookie";
+    public static final String AUTOCOMPLETE_SNIPPET_ADD_HEADER = "autocomplete.snippet.addHeader";
+    public static final String AUTOCOMPLETE_SNIPPET_ADD_PARAM = "autocomplete.snippet.addParam";
+    public static final String AUTOCOMPLETE_SNIPPET_MD5 = "autocomplete.snippet.md5";
+    public static final String AUTOCOMPLETE_SNIPPET_SHA256 = "autocomplete.snippet.sha256";
+
     // ============ 工作区远程配置相关 ============
     public static final String WORKSPACE_REMOTE_CONFIG_TITLE = "workspace.remote.config.title";
     public static final String WORKSPACE_CONFIG_PROGRESS = "workspace.config.progress";

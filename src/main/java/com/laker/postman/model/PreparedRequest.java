@@ -19,6 +19,7 @@ public class PreparedRequest {
     public List<HttpHeader> headersList;
     public List<HttpFormData> formDataList;
     public List<HttpFormUrlencoded> urlencodedList;
+    public List<HttpParam> paramsList;
 
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
@@ -46,6 +47,7 @@ public class PreparedRequest {
         copy.headersList = this.headersList;
         copy.formDataList = this.formDataList;
         copy.urlencodedList = this.urlencodedList;
+        copy.paramsList = this.paramsList;
         return copy;
     }
 }

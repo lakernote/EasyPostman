@@ -3,6 +3,7 @@ package com.laker.postman.model.script;
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpParam;
 import lombok.Getter;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public class JsListWrapper<T> {
     private final ListType type;
 
     public enum ListType {
-        HEADER, FORM_DATA, URLENCODED
+        HEADER, FORM_DATA, URLENCODED, PARAM
     }
 
     public JsListWrapper(List<T> list, ListType type) {
@@ -76,6 +77,16 @@ public class JsListWrapper<T> {
                 List<HttpFormUrlencoded> urlencodedList = (List<HttpFormUrlencoded>) list;
                 urlencodedList.add(urlencoded);
                 break;
+
+            case PARAM:
+                HttpParam param = new HttpParam();
+                param.setEnabled(true);
+                param.setKey(key);
+                param.setValue(value);
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                paramList.add(param);
+                break;
         }
     }
 
@@ -115,6 +126,16 @@ public class JsListWrapper<T> {
                 @SuppressWarnings("unchecked")
                 List<HttpFormUrlencoded> urlencodedList = (List<HttpFormUrlencoded>) list;
                 urlencodedList.add(urlencoded);
+                break;
+
+            case PARAM:
+                HttpParam param = new HttpParam();
+                param.setEnabled(true);
+                param.setKey(key);
+                param.setValue(value);
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                paramList.add(param);
                 break;
         }
     }
@@ -174,6 +195,19 @@ public class JsListWrapper<T> {
                     }
                 }
                 break;
+
+            case PARAM:
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                for (HttpParam param : paramList) {
+                    if (key.equals(param.getKey())) {
+                        param.setValue(value);
+                        param.setEnabled(true);
+                        updated = true;
+                        break;
+                    }
+                }
+                break;
         }
 
         // 如果没有找到，则添加新项
@@ -228,6 +262,19 @@ public class JsListWrapper<T> {
                     }
                 }
                 break;
+
+            case PARAM:
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                for (HttpParam param : paramList) {
+                    if (key.equals(param.getKey())) {
+                        param.setValue(value);
+                        param.setEnabled(true);
+                        updated = true;
+                        break;
+                    }
+                }
+                break;
         }
 
         if (!updated) {
@@ -260,6 +307,12 @@ public class JsListWrapper<T> {
                 List<HttpFormUrlencoded> urlencodedList = (List<HttpFormUrlencoded>) list;
                 urlencodedList.removeIf(urlencoded -> key.equals(urlencoded.getKey()));
                 break;
+
+            case PARAM:
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                paramList.removeIf(param -> key.equals(param.getKey()));
+                break;
         }
     }
 
@@ -288,6 +341,12 @@ public class JsListWrapper<T> {
                 List<HttpFormUrlencoded> urlencodedList = (List<HttpFormUrlencoded>) list;
                 return urlencodedList.stream().anyMatch(urlencoded ->
                         key.equals(urlencoded.getKey()) && urlencoded.isEnabled());
+
+            case PARAM:
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                return paramList.stream().anyMatch(param ->
+                        key.equals(param.getKey()) && param.isEnabled());
         }
         return false;
     }
@@ -326,6 +385,16 @@ public class JsListWrapper<T> {
                 for (HttpFormUrlencoded urlencoded : urlencodedList) {
                     if (key.equals(urlencoded.getKey()) && urlencoded.isEnabled()) {
                         return urlencoded.getValue();
+                    }
+                }
+                break;
+
+            case PARAM:
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                for (HttpParam param : paramList) {
+                    if (key.equals(param.getKey()) && param.isEnabled()) {
+                        return param.getValue();
                     }
                 }
                 break;

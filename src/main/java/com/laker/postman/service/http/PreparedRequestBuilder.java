@@ -65,6 +65,7 @@ public class PreparedRequestBuilder {
         req.headersList = item.getHeadersList();
         req.formDataList = item.getFormDataList();
         req.urlencodedList = item.getUrlencodedList();
+        req.paramsList = item.getParamsList();
 
         return req;
     }
@@ -73,17 +74,41 @@ public class PreparedRequestBuilder {
      * 在前置脚本执行后，替换所有变量占位符
      */
     public static void replaceVariablesAfterPreScript(PreparedRequest req) {
+        // 替换 List 中的变量，支持相同 key
+        replaceVariablesInHeadersList(req.headersList);
+        replaceVariablesInFormDataList(req.formDataList);
+        replaceVariablesInUrlencodedList(req.urlencodedList);
+        replaceVariablesInParamsList(req.paramsList);
+
+        // 重新构建 URL（包含脚本动态添加的 params）
+        rebuildUrlWithParams(req);
+
         // 替换URL中的变量
         req.url = EnvironmentService.replaceVariables(req.url);
 
         // 替换Body中的变量
         req.body = EnvironmentService.replaceVariables(req.body);
+    }
 
+    /**
+     * 重新构建 URL，包含脚本中动态添加的 params
+     * buildUrlWithParams 会自动避免重复的 key
+     */
+    private static void rebuildUrlWithParams(PreparedRequest req) {
+        if (req.paramsList == null || req.paramsList.isEmpty()) return;
 
-        // 替换 List 中的变量，支持相同 key
-        replaceVariablesInHeadersList(req.headersList);
-        replaceVariablesInFormDataList(req.formDataList);
-        replaceVariablesInUrlencodedList(req.urlencodedList);
+        // 提取所有启用的 params 到 Map（脚本可能添加了新的 params）
+        Map<String, String> params = new LinkedHashMap<>();
+        for (HttpParam param : req.paramsList) {
+            if (param.isEnabled()) {
+                params.put(param.getKey(), param.getValue());
+            }
+        }
+
+        // 重新构建 URL（buildUrlWithParams 会自动避免重复的 key）
+        if (!params.isEmpty()) {
+            req.url = HttpRequestUtil.buildUrlWithParams(req.url, params);
+        }
     }
 
     private static void replaceVariablesInHeadersList(List<HttpHeader> list) {
@@ -109,6 +134,16 @@ public class PreparedRequestBuilder {
     private static void replaceVariablesInUrlencodedList(List<HttpFormUrlencoded> list) {
         if (list == null) return;
         for (HttpFormUrlencoded item : list) {
+            if (item.isEnabled()) {
+                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
+                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+            }
+        }
+    }
+
+    private static void replaceVariablesInParamsList(List<HttpParam> list) {
+        if (list == null) return;
+        for (HttpParam item : list) {
             if (item.isEnabled()) {
                 item.setKey(EnvironmentService.replaceVariables(item.getKey()));
                 item.setValue(EnvironmentService.replaceVariables(item.getValue()));

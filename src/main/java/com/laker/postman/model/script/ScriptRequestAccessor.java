@@ -39,44 +39,77 @@ import java.util.ArrayList;
  *     key: "username",
  *     value: "john"
  * });
+ *
+ * // 添加 URL 查询参数
+ * pm.request.params.add({
+ *     key: "timestamp",
+ *     value: Date.now()
+ * });
  * }</pre>
  *
- * @see PreparedRequest
  * @author laker
+ * @see PreparedRequest
  */
 public class ScriptRequestAccessor {
 
-    /** 原始请求对象，包含所有请求信息 */
+    /**
+     * 原始请求对象，包含所有请求信息
+     */
     public final PreparedRequest raw;
 
-    /** 请求头集合包装器，支持 JavaScript 操作 */
+    /**
+     * 请求头集合包装器，支持 JavaScript 操作
+     */
     public JsListWrapper<HttpHeader> headers;
 
-    /** 表单数据（multipart/form-data）集合包装器 */
+    /**
+     * 表单数据（multipart/form-data）集合包装器
+     */
     public JsListWrapper<HttpFormData> formData;
 
-    /** URL 编码表单数据（application/x-www-form-urlencoded）集合包装器 */
+    /**
+     * URL 编码表单数据（application/x-www-form-urlencoded）集合包装器
+     */
     public JsListWrapper<HttpFormUrlencoded> urlencoded;
 
-    /** 请求唯一标识 */
+    /**
+     * URL 查询参数集合包装器
+     */
+    public JsListWrapper<HttpParam> params;
+
+    /**
+     * 请求唯一标识
+     */
     public String id;
 
-    /** 请求 URL */
+    /**
+     * 请求 URL
+     */
     public String url;
 
-    /** 请求方法 (GET, POST, PUT, DELETE 等) */
+    /**
+     * 请求方法 (GET, POST, PUT, DELETE 等)
+     */
     public String method;
 
-    /** 请求体内容 */
+    /**
+     * 请求体内容
+     */
     public String body;
 
-    /** 是否为 multipart 请求 */
+    /**
+     * 是否为 multipart 请求
+     */
     public boolean isMultipart;
 
-    /** 是否跟随重定向 */
+    /**
+     * 是否跟随重定向
+     */
     public boolean followRedirects;
 
-    /** 是否记录事件日志 */
+    /**
+     * 是否记录事件日志
+     */
     public boolean logEvent;
 
     /**
@@ -101,11 +134,15 @@ public class ScriptRequestAccessor {
         if (req.urlencodedList == null) {
             req.urlencodedList = new ArrayList<>();
         }
+        if (req.paramsList == null) {
+            req.paramsList = new ArrayList<>();
+        }
 
         // 直接包装 PreparedRequest 中的 List，确保前置脚本修改能生效
         this.headers = new JsListWrapper<>(req.headersList, JsListWrapper.ListType.HEADER);
         this.formData = new JsListWrapper<>(req.formDataList, JsListWrapper.ListType.FORM_DATA);
         this.urlencoded = new JsListWrapper<>(req.urlencodedList, JsListWrapper.ListType.URLENCODED);
+        this.params = new JsListWrapper<>(req.paramsList, JsListWrapper.ListType.PARAM);
 
         this.id = req.id;
         this.url = req.url;
@@ -116,4 +153,3 @@ public class ScriptRequestAccessor {
         this.logEvent = req.logEvent;
     }
 }
-

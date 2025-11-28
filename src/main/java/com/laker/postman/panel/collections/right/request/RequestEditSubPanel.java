@@ -20,6 +20,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
+import com.laker.postman.service.js.ScriptExecutionService;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -313,7 +314,7 @@ public class RequestEditSubPanel extends JPanel {
 
         PreparedRequest req = PreparedRequestBuilder.build(effectiveItem);
         Map<String, Object> bindings = prepareBindings(req);
-        if (!executePrescript(effectiveItem, bindings)) return;
+        if (!ScriptExecutionService.executePreScript(effectiveItem.getPrescript(), bindings)) return;
 
         // 前置脚本执行完成后，再进行变量替换
         PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
@@ -977,7 +978,7 @@ public class RequestEditSubPanel extends JPanel {
             if (pm != null) {
                 pm.testResults.clear();
             }
-            executePostscript(item.getPostscript(), bindings);
+            ScriptExecutionService.executePostScript(item.getPostscript(), bindings);
             setTestResults(pm != null ? pm.testResults : new ArrayList<>());
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
@@ -1017,7 +1018,7 @@ public class RequestEditSubPanel extends JPanel {
             if (pm != null) {
                 pm.testResults.clear();
             }
-            executePostscript(item.getPostscript(), bindings);
+            ScriptExecutionService.executePostScript(item.getPostscript(), bindings);
             if (pm != null) {
                 return new ArrayList<>(pm.testResults); // 返回副本，避免后续修改影响
             }

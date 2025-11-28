@@ -2,14 +2,12 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
+import com.laker.postman.service.js.ScriptSnippetManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
-import org.fife.ui.autocomplete.BasicCompletion;
-import org.fife.ui.autocomplete.DefaultCompletionProvider;
-import org.fife.ui.autocomplete.ShorthandCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -188,35 +186,9 @@ public class ScriptPanel extends JPanel {
      * 为 RSyntaxTextArea 添加自动补全、悬浮提示和代码片段
      */
     private void addAutoCompletion(RSyntaxTextArea area) {
-        DefaultCompletionProvider provider = new DefaultCompletionProvider();
-        // 常用 JS/pm/postman 相关补全
-        provider.addCompletion(new BasicCompletion(provider, "pm", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM)));
-        provider.addCompletion(new BasicCompletion(provider, "postman", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_POSTMAN)));
-        provider.addCompletion(new BasicCompletion(provider, "request", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_REQUEST)));
-        provider.addCompletion(new BasicCompletion(provider, "response", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_RESPONSE)));
-        provider.addCompletion(new BasicCompletion(provider, "env", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_ENV)));
-        provider.addCompletion(new BasicCompletion(provider, "responseBody", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_RESPONSE_BODY)));
-        provider.addCompletion(new BasicCompletion(provider, "responseHeaders", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_RESPONSE_HEADERS)));
-        provider.addCompletion(new BasicCompletion(provider, "status", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_STATUS)));
-        provider.addCompletion(new BasicCompletion(provider, "statusCode", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_STATUS_CODE)));
-        provider.addCompletion(new BasicCompletion(provider, "setEnvironmentVariable", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SET_ENV)));
-        provider.addCompletion(new BasicCompletion(provider, "getEnvironmentVariable", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_GET_ENV)));
-        provider.addCompletion(new BasicCompletion(provider, "if", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_IF)));
-        provider.addCompletion(new BasicCompletion(provider, "else", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_ELSE)));
-        provider.addCompletion(new BasicCompletion(provider, "for", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_FOR)));
-        provider.addCompletion(new BasicCompletion(provider, "while", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_WHILE)));
-        provider.addCompletion(new BasicCompletion(provider, "function", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_FUNCTION)));
-        provider.addCompletion(new BasicCompletion(provider, "return", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_RETURN)));
-        // 代码片段 JsPolyfillInjector
-        provider.addCompletion(new ShorthandCompletion(provider, "pm.environment.set", "pm.environment.set('key', 'value');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_SET_ENV)));
-        provider.addCompletion(new ShorthandCompletion(provider, "pm.environment.get", "pm.environment.get('key');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_GET_ENV)));
-        provider.addCompletion(new ShorthandCompletion(provider, "btoa", "btoa('String');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_BTOA)));
-        provider.addCompletion(new ShorthandCompletion(provider, "atob", "atob('Base64');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_ATOB)));
-        provider.addCompletion(new ShorthandCompletion(provider, "encodeURIComponent", "encodeURIComponent('String');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_ENCODE_URI)));
-        provider.addCompletion(new ShorthandCompletion(provider, "decodeURIComponent", "decodeURIComponent('String');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_DECODE_URI)));
-        provider.addCompletion(new ShorthandCompletion(provider, "console.log", "console.log('内容');", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_CONSOLE_LOG)));
-        provider.addCompletion(new ShorthandCompletion(provider, "JSON.parse(responseBody)", "JSON.parse(responseBody);", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_JSON_PARSE)));
-        provider.addCompletion(new ShorthandCompletion(provider, "JSON.stringify", "JSON.stringify(obj);", I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_JSON_STRINGIFY)));
+        var provider = ScriptSnippetManager.createCompletionProvider();
+
+        // 配置自动补全
         AutoCompletion ac = new AutoCompletion(provider);
         ac.setAutoCompleteEnabled(true); // 启用自动补全
         ac.setAutoActivationEnabled(true); // 启用自动激活

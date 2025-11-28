@@ -107,6 +107,7 @@ public class SnippetDialog extends JDialog {
                         case STRING -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                         case CONTROL -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
                         case TOKEN -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                        case COOKIES -> label.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
                         default -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                     }
                 }

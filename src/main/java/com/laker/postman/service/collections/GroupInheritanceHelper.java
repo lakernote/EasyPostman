@@ -3,10 +3,14 @@ package com.laker.postman.service.collections;
 import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.service.js.ScriptFragment;
+import com.laker.postman.service.js.ScriptMerger;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -54,49 +58,42 @@ public class GroupInheritanceHelper {
         String requestPreScript = mergedItem.getPrescript();
         String requestPostScript = mergedItem.getPostscript();
 
-        // 清空脚本，准备合并
-        mergedItem.setPrescript(null);
-        mergedItem.setPostscript(null);
+        // 收集分组脚本
+        List<ScriptFragment> groupPreScripts = new ArrayList<>();
+        List<ScriptFragment> groupPostScripts = new ArrayList<>();
 
-        // 查找父分组并合并设置
+        // 查找父分组并收集脚本
         TreeNode parent = requestNode.getParent();
         if (parent instanceof DefaultMutableTreeNode parentNode) {
-            mergeGroupSettingsRecursive(mergedItem, parentNode);
+            collectGroupSettings(mergedItem, parentNode, groupPreScripts, groupPostScripts);
         }
 
-        // 最后追加请求自己的脚本
-        // 前置脚本：请求脚本在最后执行（在分组脚本之后）
-        if (requestPreScript != null && !requestPreScript.trim().isEmpty()) {
-            String groupScripts = mergedItem.getPrescript();
-            if (groupScripts == null || groupScripts.trim().isEmpty()) {
-                mergedItem.setPrescript(requestPreScript);
-            } else {
-                mergedItem.setPrescript(groupScripts + "\n\n// === 请求级脚本 ===\n\n" + requestPreScript);
-            }
-        }
+        // 合并前置脚本（外层到内层的顺序）
+        String mergedPreScript = ScriptMerger.mergePreScripts(groupPreScripts, requestPreScript);
+        mergedItem.setPrescript(mergedPreScript);
 
-        // 后置脚本：请求脚本在最先执行（在分组脚本之前）
-        if (requestPostScript != null && !requestPostScript.trim().isEmpty()) {
-            String groupScripts = mergedItem.getPostscript();
-            if (groupScripts == null || groupScripts.trim().isEmpty()) {
-                mergedItem.setPostscript(requestPostScript);
-            } else {
-                mergedItem.setPostscript(requestPostScript + "\n\n// === 分组级脚本 ===\n\n" + groupScripts);
-            }
-        }
+        // 合并后置脚本（内层到外层的顺序）
+        // 注意：groupPostScripts已经按从内到外的顺序收集
+        String mergedPostScript = ScriptMerger.mergePostScripts(requestPostScript, groupPostScripts);
+        mergedItem.setPostscript(mergedPostScript);
 
         return mergedItem;
     }
 
     /**
-     * 递归合并父分组的设置
+     * 收集分组设置和脚本
      * <p>
      * 核心策略：
-     * - 认证：先处理当前层，找到第一个有认证的分组就停止（就近原则）
-     * - 前置脚本：先递归父节点，再处理当前节点（结果：外层 → 内层）
-     * - 后置脚本：先处理当前节点，再递归父节点（结果：内层 → 外层）
+     * - 认证：就近原则，找到第一个有认证的分组就停止
+     * - 前置脚本：从外到内收集（外层先执行）
+     * - 后置脚本：从内到外收集（内层先执行）
      */
-    private static void mergeGroupSettingsRecursive(HttpRequestItem item, DefaultMutableTreeNode groupNode) {
+    private static void collectGroupSettings(
+            HttpRequestItem item,
+            DefaultMutableTreeNode groupNode,
+            List<ScriptFragment> preScripts,
+            List<ScriptFragment> postScripts) {
+
         if (groupNode == null) {
             return;
         }
@@ -107,7 +104,7 @@ public class GroupInheritanceHelper {
             TreeNode parent = groupNode.getParent();
             if (parent instanceof DefaultMutableTreeNode parentNode &&
                     !"root".equals(String.valueOf(parentNode.getUserObject()))) {
-                mergeGroupSettingsRecursive(item, parentNode);
+                collectGroupSettings(item, parentNode, preScripts, postScripts);
             }
             return;
         }
@@ -117,7 +114,7 @@ public class GroupInheritanceHelper {
             return;
         }
 
-        // 【认证】先处理当前层（内层优先，一旦找到有认证的分组就设置并停止继承）
+        // 【认证】就近原则：内层优先，一旦找到有认证的分组就设置并停止继承
         if (AuthType.INHERIT.getConstant().equals(item.getAuthType()) && group.hasAuth()) {
             item.setAuthType(group.getAuthType());
             item.setAuthUsername(group.getAuthUsername());
@@ -125,33 +122,21 @@ public class GroupInheritanceHelper {
             item.setAuthToken(group.getAuthToken());
         }
 
-        // 【后置脚本】先处理当前层（这样内层先追加）
-        if (group.hasPostScript()) {
-            String groupScript = group.getPostscript();
-            String existingScript = item.getPostscript();
-            if (existingScript == null || existingScript.trim().isEmpty()) {
-                item.setPostscript(groupScript);
-            } else {
-                item.setPostscript(existingScript + "\n\n// === " + group.getName() + " 脚本 ===\n\n" + groupScript);
-            }
-        }
-
-        // 递归处理父分组（外层）
+        // 先递归处理父分组（外层）
         TreeNode parent = groupNode.getParent();
         if (parent instanceof DefaultMutableTreeNode parentNode &&
                 !"root".equals(String.valueOf(parentNode.getUserObject()))) {
-            mergeGroupSettingsRecursive(item, parentNode);
+            collectGroupSettings(item, parentNode, preScripts, postScripts);
         }
 
-        // 【前置脚本】在递归返回后处理（这样外层先追加，内层后追加）
+        // 【前置脚本】在递归返回后添加（这样外层脚本在列表前面，内层在后面）
         if (group.hasPreScript()) {
-            String groupScript = group.getPrescript();
-            String existingScript = item.getPrescript();
-            if (existingScript == null || existingScript.trim().isEmpty()) {
-                item.setPrescript(groupScript);
-            } else {
-                item.setPrescript(existingScript + "\n\n// === " + group.getName() + " 脚本 ===\n\n" + groupScript);
-            }
+            preScripts.add(ScriptFragment.of(group.getName() + " 脚本", group.getPrescript()));
+        }
+
+        // 【后置脚本】在递归返回后添加（这样内层脚本在列表前面，外层在后面）
+        if (group.hasPostScript()) {
+            postScripts.add(ScriptFragment.of(group.getName() + " 脚本", group.getPostscript()));
         }
     }
 
@@ -213,4 +198,3 @@ public class GroupInheritanceHelper {
         return null;
     }
 }
-

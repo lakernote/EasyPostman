@@ -2,9 +2,8 @@ package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.js.JsScriptExecutor;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -13,6 +12,7 @@ import java.util.*;
 import java.util.List;
 
 @Slf4j
+@UtilityClass
 public class HttpUtil {
 
     /**
@@ -153,56 +153,6 @@ public class HttpUtil {
         bindings.put("responseBody", resp.body);
         bindings.put("responseHeaders", resp.headers);
         bindings.put("statusCode", resp.code);
-    }
-
-
-    // 执行前置脚本，异常时弹窗并返回false
-    public static boolean executePrescript(HttpRequestItem item, Map<String, Object> bindings) {
-        String prescript = item.getPrescript();
-        if (prescript != null && !prescript.isBlank()) {
-            try {
-                JsScriptExecutor.executeScript(
-                        prescript,
-                        bindings,
-                        output -> {
-                            if (!output.isBlank()) {
-                                ConsolePanel.appendLog("[PreScript Console]\n" + output);
-                            }
-                        }
-                );
-            } catch (Exception ex) {
-                log.error("PreScript Error", ex);
-                ConsolePanel.appendLog("[PreScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                JOptionPane.showMessageDialog(null, "前置脚本执行异常：" + ex.getMessage(), "脚本错误", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-    public static void executePostscript(String postscript, Map<String, Object> bindings) {
-        // postscript 执行
-        if (CharSequenceUtil.isNotBlank(postscript)) {
-            try {
-                JsScriptExecutor.executeScript(
-                        postscript,
-                        bindings,
-                        output -> {
-                            if (!output.isBlank()) {
-                                ConsolePanel.appendLog("[PostScript Console]\n" + output);
-                            }
-                        }
-                );
-                Environment activeEnv = EnvironmentService.getActiveEnvironment();
-                if (activeEnv != null) {
-                    EnvironmentService.saveEnvironment(activeEnv);
-                }
-            } catch (Exception ex) {
-                log.error("PostScript Error", ex);
-                ConsolePanel.appendLog("[PostScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
-            }
-        }
     }
 
     // 校验请求参数

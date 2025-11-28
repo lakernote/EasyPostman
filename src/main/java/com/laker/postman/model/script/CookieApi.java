@@ -28,6 +28,14 @@ import java.util.List;
  *
  * // 删除 Cookie
  * pm.cookies.delete("session_token");
+ *
+ * // 使用 Cookie Jar
+ * var jar = pm.cookies.jar();
+ * jar.unset(pm.request.url, 'session_id', function(error) {
+ *     if (error) {
+ *         console.error('Failed to delete cookie');
+ *     }
+ * });
  * }</pre>
  */
 public class CookieApi {
@@ -35,6 +43,11 @@ public class CookieApi {
      * Cookie 存储列表
      */
     private final List<Cookie> cookiesList = new ArrayList<>();
+
+    /**
+     * Cookie Jar 实例（延迟初始化）
+     */
+    private CookieJar cookieJar;
 
     /**
      * 获取指定名称的 Cookie
@@ -173,5 +186,20 @@ public class CookieApi {
      */
     public Cookie[] toArray() {
         return cookiesList.toArray(new Cookie[0]);
+    }
+
+    /**
+     * 获取 Cookie Jar 实例
+     * <p>
+     * Cookie Jar 提供 Postman 兼容的异步 Cookie 操作接口。
+     * </p>
+     *
+     * @return CookieJar 实例
+     */
+    public CookieJar jar() {
+        if (cookieJar == null) {
+            cookieJar = new CookieJar(this);
+        }
+        return cookieJar;
     }
 }

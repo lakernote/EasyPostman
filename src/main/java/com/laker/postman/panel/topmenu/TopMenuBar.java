@@ -59,29 +59,19 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     public void reloadShortcuts() {
         removeAll();
         // 重新创建菜单栏
-//        setBorder(BorderFactory.createEmptyBorder());
-        addFileMenu();
-        addLanguageMenu();
-        addSettingMenu();
-        addHelpMenu();
-        addAboutMenu();
-//        add(menuBar, BorderLayout.WEST);
-
+        initComponents();
         // 刷新界面
         revalidate();
         repaint();
     }
 
     private void initComponents() {
-//        setBorder(BorderFactory.createEmptyBorder());
-
         addFileMenu();
         addLanguageMenu();
         addSettingMenu();
         addHelpMenu();
         addAboutMenu();
-//        add(menuBar, BorderLayout.WEST);
-        add( Box.createGlue() );
+        add(Box.createGlue());
         addRightLableAndComboBox();
     }
 
@@ -263,7 +253,6 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         add(envIconLabel);
         add(environmentComboBox);
 
-//        add(rightPanel, BorderLayout.EAST);
     }
 
     /**

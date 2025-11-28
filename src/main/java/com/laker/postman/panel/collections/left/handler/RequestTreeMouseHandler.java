@@ -47,7 +47,6 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         TreePath selPath = getTreePathAt(e.getX(), e.getY());
         if (selPath == null) return;
 
-        requestTree.setSelectionPath(selPath);
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
 
         if (!(node.getUserObject() instanceof Object[] obj)) return;
@@ -156,8 +155,8 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      */
     private RequestGroup ensureRequestGroup(Object[] obj) {
         Object groupData = obj[1];
-        if (groupData instanceof RequestGroup) {
-            return (RequestGroup) groupData;
+        if (groupData instanceof RequestGroup requestGroup) {
+            return requestGroup;
         } else {
             RequestGroup group = new RequestGroup(String.valueOf(groupData));
             obj[1] = group;

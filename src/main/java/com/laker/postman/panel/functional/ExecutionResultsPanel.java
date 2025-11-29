@@ -29,6 +29,8 @@ import java.util.Date;
  */
 public class ExecutionResultsPanel extends JPanel {
     public static final String TEXT_HTML = "text/html";
+    private static final String ICON_HTTP = "icons/http.svg";
+
     private JTree resultsTree;
     private DefaultTreeModel treeModel;
     private JPanel detailPanel;
@@ -459,7 +461,7 @@ public class ExecutionResultsPanel extends JPanel {
         reqPane.setEditable(false);
         reqPane.setText(HttpHtmlRenderer.renderRequest(request.getReq()));
         reqPane.setCaretPosition(0);
-        detailTabs.addTab("Request", new FlatSVGIcon("icons/http.svg", 16, 16), new JScrollPane(reqPane));
+        detailTabs.addTab("Request", new FlatSVGIcon(ICON_HTTP, 16, 16), new JScrollPane(reqPane));
 
         // 响应信息
         if (request.getResponse() != null) {
@@ -565,42 +567,82 @@ public class ExecutionResultsPanel extends JPanel {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
             Object userObject = node.getUserObject();
 
-            if (userObject instanceof IterationNodeData) {
-                setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
+            if (userObject instanceof IterationNodeData iterationData) {
+                renderIterationNode(iterationData, sel);
             } else if (userObject instanceof RequestNodeData requestData) {
-                // 检查status是否是跳过状态
-                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-                AssertionResult assertion = requestData.request.getAssertion();
-
-                if (skippedText.equals(requestData.request.getStatus())) {
-                    // status是跳过状态：灰色文字
-                    if (!sel) {
-                        setForeground(ModernColors.TEXT_HINT);
-                    }
-                } else if (AssertionResult.NO_TESTS.equals(assertion)) {
-                    // assertion是无测试：灰蓝色文字
-                    if (!sel) {
-                        setForeground(new Color(108, 117, 125));
-                    }
-                } else if (AssertionResult.PASS.equals(assertion)) {
-                    // assertion是通过：绿色文字
-                    if (!sel) {
-                        setForeground(new Color(40, 167, 69));
-                    }
-                } else if (AssertionResult.FAIL.equals(assertion)) {
-                    // assertion是失败：红色文字
-                    if (!sel) {
-                        setForeground(new Color(220, 53, 69));
-                    }
-                } else {
-                    // 未执行或其他状态：默认图标
-                    setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
-                }
+                renderRequestNode(requestData, sel);
             } else {
+                // 根节点
                 setIcon(new FlatSVGIcon("icons/history.svg", 16, 16));
             }
 
             return this;
+        }
+
+        private void renderIterationNode(IterationNodeData iterationData, boolean selected) {
+            IterationResult iteration = iterationData.iteration;
+            boolean hasFailures = iteration.getRequestResults().stream()
+                    .anyMatch(req -> AssertionResult.FAIL.equals(req.getAssertion()));
+            boolean hasTests = iteration.getRequestResults().stream()
+                    .anyMatch(req -> !AssertionResult.NO_TESTS.equals(req.getAssertion()));
+
+            if (hasFailures) {
+                // 有失败：红色图标和文字
+                setIcon(new FlatSVGIcon("icons/fail.svg", 16, 16));
+                if (!selected) {
+                    setForeground(ModernColors.ERROR_DARK);
+                }
+            } else if (hasTests) {
+                // 全部通过：绿色图标和文字
+                setIcon(new FlatSVGIcon("icons/pass.svg", 16, 16));
+                if (!selected) {
+                    setForeground(ModernColors.SUCCESS_DARK);
+                }
+            } else {
+                // 无测试：默认图标
+                setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
+                if (!selected) {
+                    setForeground(ModernColors.TEXT_SECONDARY);
+                }
+            }
+        }
+
+        private void renderRequestNode(RequestNodeData requestData, boolean selected) {
+            String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+            AssertionResult assertion = requestData.request.getAssertion();
+            String status = requestData.request.getStatus();
+
+            if (skippedText.equals(status)) {
+                // 跳过状态：灰色图标和文字
+                setIcon(new FlatSVGIcon("icons/info.svg", 16, 16));
+                setForegroundIfNotSelected(ModernColors.TEXT_HINT, selected);
+            } else if (assertion == null) {
+                // 未执行：灰色图标和文字
+                setIcon(new FlatSVGIcon(ExecutionResultsPanel.ICON_HTTP, 16, 16));
+                setForegroundIfNotSelected(ModernColors.TEXT_DISABLED, selected);
+            } else if (AssertionResult.NO_TESTS.equals(assertion)) {
+                // 无测试：蓝色图标和文字
+                setIcon(new FlatSVGIcon("icons/nocheck.svg", 16, 16));
+                setForegroundIfNotSelected(ModernColors.TEXT_SECONDARY, selected);
+            } else if (AssertionResult.PASS.equals(assertion)) {
+                // 通过：绿色图标和文字
+                setIcon(new FlatSVGIcon("icons/pass.svg", 16, 16));
+                setForegroundIfNotSelected(ModernColors.SUCCESS_DARK, selected);
+            } else if (AssertionResult.FAIL.equals(assertion)) {
+                // 失败：红色图标和文字
+                setIcon(new FlatSVGIcon("icons/fail.svg", 16, 16));
+                setForegroundIfNotSelected(ModernColors.ERROR_DARK, selected);
+            } else {
+                // 其他状态：默认图标
+                setIcon(new FlatSVGIcon(ExecutionResultsPanel.ICON_HTTP, 16, 16));
+                setForegroundIfNotSelected(ModernColors.TEXT_SECONDARY, selected);
+            }
+        }
+
+        private void setForegroundIfNotSelected(Color color, boolean selected) {
+            if (!selected) {
+                setForeground(color);
+            }
         }
     }
 
@@ -809,8 +851,7 @@ public class ExecutionResultsPanel extends JPanel {
             @Override
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
                                                                     boolean isSelected, boolean hasFocus, int row, int column) {
-                if (value instanceof Long) {
-                    long cost = (Long) value;
+                if (value instanceof Long cost) {
                     value = TimeDisplayUtil.formatElapsedTime(cost);
                 }
                 java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);

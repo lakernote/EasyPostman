@@ -5,9 +5,13 @@ import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 
 /**
  * 负责构建 PreparedRequest
@@ -19,15 +23,7 @@ public class PreparedRequestBuilder {
         PreparedRequest req = new PreparedRequest();
         req.id = item.getId();
         req.method = item.getMethod();
-        // Build headers map from headersList
-        Map<String, String> headers = new LinkedHashMap<>();
-        if (item.getHeadersList() != null) {
-            for (HttpHeader header : item.getHeadersList()) {
-                if (header.isEnabled()) {
-                    headers.put(header.getKey(), header.getValue());
-                }
-            }
-        }
+
         // 拼接 params 到 url，但暂不替换变量
         // Build params map from paramsList
         Map<String, String> params = new LinkedHashMap<>();
@@ -40,7 +36,7 @@ public class PreparedRequestBuilder {
         }
         String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), params);
         req.url = HttpRequestUtil.encodeUrlParams(urlString); // 暂不替换变量
-        HttpRequestUtil.addAuthorization(headers, item);
+
         req.body = item.getBody(); // 暂不替换变量
         req.bodyType = item.getBodyType();
 
@@ -62,12 +58,67 @@ public class PreparedRequestBuilder {
         req.followRedirects = SettingManager.isFollowRedirects();
 
         // 填充 List 数据，支持相同 key
-        req.headersList = item.getHeadersList();
+        // 先复制原始 headersList，然后添加认证头
+        req.headersList = buildHeadersListWithAuth(item);
         req.formDataList = item.getFormDataList();
         req.urlencodedList = item.getUrlencodedList();
         req.paramsList = item.getParamsList();
 
         return req;
+    }
+
+    /**
+     * 构建包含认证信息的 headersList
+     * 如果配置了认证，会自动添加 Authorization 头（如果不存在）
+     */
+    private static List<HttpHeader> buildHeadersListWithAuth(HttpRequestItem item) {
+        List<HttpHeader> headersList = new ArrayList<>();
+
+        // 复制原始的 headers
+        if (item.getHeadersList() != null) {
+            headersList.addAll(item.getHeadersList());
+        }
+
+        // 检查是否已有 Authorization 头
+        boolean hasAuthHeader = false;
+        if (item.getHeadersList() != null) {
+            for (HttpHeader header : item.getHeadersList()) {
+                if (header.isEnabled() && "Authorization".equalsIgnoreCase(header.getKey())) {
+                    hasAuthHeader = true;
+                    break;
+                }
+            }
+        }
+
+        // 如果没有 Authorization 头，根据 authType 添加
+        if (!hasAuthHeader) {
+            String authType = item.getAuthType();
+            if (AUTH_TYPE_BASIC.equals(authType)) {
+                String username = EnvironmentService.replaceVariables(item.getAuthUsername());
+                String password = EnvironmentService.replaceVariables(item.getAuthPassword());
+                if (username != null) {
+                    String token = java.util.Base64.getEncoder().encodeToString(
+                            (username + ":" + (password == null ? "" : password)).getBytes()
+                    );
+                    HttpHeader authHeader = new HttpHeader();
+                    authHeader.setKey("Authorization");
+                    authHeader.setValue("Basic " + token);
+                    authHeader.setEnabled(true);
+                    headersList.add(authHeader);
+                }
+            } else if (AUTH_TYPE_BEARER.equals(authType)) {
+                String token = EnvironmentService.replaceVariables(item.getAuthToken());
+                if (token != null && !token.isEmpty()) {
+                    HttpHeader authHeader = new HttpHeader();
+                    authHeader.setKey("Authorization");
+                    authHeader.setValue("Bearer " + token);
+                    authHeader.setEnabled(true);
+                    headersList.add(authHeader);
+                }
+            }
+        }
+
+        return headersList;
     }
 
     /**

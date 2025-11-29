@@ -1,16 +1,10 @@
 package com.laker.postman.service.http;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.service.EnvironmentService;
 import lombok.experimental.UtilityClass;
 
-import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 
 @UtilityClass
 public class HttpRequestUtil {
@@ -74,23 +68,6 @@ public class HttpRequestUtil {
             if (i < pairs.length - 1) sb.append("&");
         }
         return sb.toString();
-    }
-
-    public static void addAuthorization(Map<String, String> headers, HttpRequestItem item) {
-        String authType = item.getAuthType();
-        if (AUTH_TYPE_BASIC.equals(authType)) {
-            String username = EnvironmentService.replaceVariables(item.getAuthUsername());
-            String password = EnvironmentService.replaceVariables(item.getAuthPassword());
-            if (!headers.containsKey("Authorization") && username != null) {
-                String token = Base64.getEncoder().encodeToString((username + ":" + (password == null ? "" : password)).getBytes());
-                headers.put("Authorization", "Basic " + token);
-            }
-        } else if (AUTH_TYPE_BEARER.equals(authType)) {
-            String token = EnvironmentService.replaceVariables(item.getAuthToken());
-            if (!headers.containsKey("Authorization") && token != null && !token.isEmpty()) {
-                headers.put("Authorization", "Bearer " + token);
-            }
-        }
     }
 
     /**

@@ -24,7 +24,7 @@ public class ComboBoxStyleHelper {
      * @return 应用了样式的 ComboBox
      */
     public static <T extends JComboBox<?>> T createWithPanelStyle(Supplier<T> comboBoxSupplier) {
-        return createWithCustomStyle(comboBoxSupplier, ModernColors.PANEL_BACKGROUND);
+        return createWithCustomStyle(comboBoxSupplier, ModernColors.MENU_BACKGROUND);
     }
 
     /**

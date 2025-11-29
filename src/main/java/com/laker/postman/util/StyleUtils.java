@@ -79,10 +79,8 @@ public class StyleUtils {
         properties.put("EditorPane.background", panelBg);
 
         // 菜单相关背景色
-        // MenuBar 使用与 Panel 一致的背景色
-        properties.put("MenuBar.background", panelBg);
-        // Menu 和 MenuItem 使用单独的菜单背景色
         Color menuBg = ModernColors.MENU_BACKGROUND;
+        properties.put("MenuBar.background", menuBg);
         properties.put("Menu.background", menuBg);
         properties.put("MenuItem.background", menuBg);
 

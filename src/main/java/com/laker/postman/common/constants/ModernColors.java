@@ -304,7 +304,7 @@ public final class ModernColors {
     /**
      * 菜单背景色
      */
-    public static final Color MENU_BACKGROUND = new Color(240, 242, 245);
+    public static final Color MENU_BACKGROUND = new Color(242, 242, 242);
 
     /**
      * 选中背景色

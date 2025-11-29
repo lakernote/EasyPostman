@@ -7,6 +7,7 @@ import com.laker.postman.util.FontsUtil;
 import lombok.Setter;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
 import java.util.function.Consumer;
@@ -22,6 +23,9 @@ public class EnvironmentComboBox extends JComboBox<EnvironmentItem> {
         setMaximumSize(new Dimension(150, 28));
         setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         setFocusable(false);
+        // 设置无边框样式
+        setBorder(new EmptyBorder(0, 0, 0, 0));
+
         addActionListener(e -> {
             if (isUpdating) return;
             EnvironmentItem item = (EnvironmentItem) getSelectedItem();

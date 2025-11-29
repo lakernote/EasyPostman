@@ -79,8 +79,10 @@ public class StyleUtils {
         properties.put("EditorPane.background", panelBg);
 
         // 菜单相关背景色
+        // MenuBar 使用与 Panel 一致的背景色
+        properties.put("MenuBar.background", panelBg);
+        // Menu 和 MenuItem 使用单独的菜单背景色
         Color menuBg = ModernColors.MENU_BACKGROUND;
-        properties.put("MenuBar.background", menuBg);
         properties.put("Menu.background", menuBg);
         properties.put("MenuItem.background", menuBg);
 
@@ -110,6 +112,7 @@ public class StyleUtils {
         properties.put("OptionPane.buttonArea.background", panelBg);
         properties.put("OptionPane.messageArea.background", panelBg);
 
+
         // 前景色设置
         Color accentColor = ModernColors.ACCENT_COLOR;
         properties.put("TextArea.caretForeground", accentColor);
@@ -126,6 +129,7 @@ public class StyleUtils {
      */
     private static void addRoundedCorners(Map<String, Object> properties) {
         properties.put("Component.arc", DEFAULT_ARC);
+        properties.put("Component.arrowType", "chevron");  // 设置所有组件的箭头样式为 chevron（V形）
         properties.put("Button.arc", BUTTON_ARC);
         properties.put("ProgressBar.arc", COMPONENT_ARC);
         properties.put("TextComponent.arc", COMPONENT_ARC);

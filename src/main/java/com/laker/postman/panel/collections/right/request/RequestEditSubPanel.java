@@ -985,10 +985,18 @@ public class RequestEditSubPanel extends JPanel {
             // 执行后置脚本（自动清空旧结果、添加响应绑定、收集新结果）
             ScriptExecutionResult postResult = pipeline.executePostScript(resp);
             setTestResults(postResult.getTestResults());
+        } catch (Exception ex) {
+            log.error("Error executing post-script: {}", ex.getMessage(), ex);
+            ConsolePanel.appendLog("[Error] Post-script execution failed: " + ex.getMessage(), ConsolePanel.LogType.ERROR);
+        }
+
+        // 单独处理历史记录保存，避免历史记录失败影响整个响应处理
+        try {
             SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
         } catch (Exception ex) {
-            log.error("Error handling response: {}", ex.getMessage(), ex);
-            ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
+            log.error("Error saving to history: {}", ex.getMessage(), ex);
+            // 历史记录失败不应该中断用户流程，只记录日志
+            ConsolePanel.appendLog("[Warning] Failed to save request to history: " + ex.getMessage(), ConsolePanel.LogType.WARN);
         }
     }
 

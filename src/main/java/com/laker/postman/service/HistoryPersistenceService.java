@@ -12,8 +12,7 @@ import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +29,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Component
 public class HistoryPersistenceService {
     private static final String HISTORY_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "request_history.json";
+
+    // 限制单个响应体保存的最大字符数 (100KB)
+    private static final int MAX_BODY_SIZE = 100 * 1024;
+    // 限制单个请求体保存的最大字符数 (50KB)
+    private static final int MAX_REQUEST_BODY_SIZE = 50 * 1024;
+    // 限制文件大小 (50MB)
+    private static final long MAX_FILE_SIZE = 50L * 1024 * 1024;
 
     private final List<RequestHistoryItem> historyItems = new CopyOnWriteArrayList<>();
 
@@ -116,7 +122,21 @@ public class HistoryPersistenceService {
     }
 
     /**
-     * 加载历史记录
+     * 截断过大的body内容
+     */
+    private String truncateBody(String body, int maxSize) {
+        if (body == null) {
+            return "";
+        }
+        if (body.length() <= maxSize) {
+            return body;
+        }
+        // 截断并添加提示信息
+        return body.substring(0, maxSize) + "\n\n... [内容过大，已截断。原始大小: " + body.length() + " 字符] ...";
+    }
+
+    /**
+     * 加载历史记录 - 使用流式读取避免内存溢出
      */
     private void loadHistory() {
         File file = new File(HISTORY_FILE);
@@ -125,7 +145,23 @@ public class HistoryPersistenceService {
         }
 
         try {
-            String jsonString = Files.readString(Paths.get(HISTORY_FILE), StandardCharsets.UTF_8);
+            // 检查文件大小，如果超过限制则删除文件并重新开始
+            long fileSizeInBytes = file.length();
+
+            if (fileSizeInBytes > MAX_FILE_SIZE) {
+                log.warn("History file is too large ({} bytes, max: {} bytes), deleting and starting fresh",
+                        fileSizeInBytes, MAX_FILE_SIZE);
+                deleteHistoryFile(file);
+                return;
+            }
+
+            // 如果文件为空，直接返回
+            if (fileSizeInBytes == 0) {
+                return;
+            }
+
+            // 使用流式读取，避免一次性加载整个文件到内存
+            String jsonString = loadFileContent(file);
             if (jsonString.trim().isEmpty()) {
                 return;
             }
@@ -133,30 +169,70 @@ public class HistoryPersistenceService {
             JSONArray jsonArray = JSONUtil.parseArray(jsonString);
             historyItems.clear();
 
-            for (int i = 0; i < jsonArray.size(); i++) {
+            // 限制加载的历史记录数量
+            int maxCount = SettingManager.getMaxHistoryCount();
+            int loadCount = Math.min(jsonArray.size(), maxCount);
+
+            for (int i = 0; i < loadCount; i++) {
                 try {
                     JSONObject jsonItem = jsonArray.getJSONObject(i);
                     RequestHistoryItem item = convertFromJson(jsonItem);
                     historyItems.add(item);
                 } catch (Exception e) {
                     // 忽略无法恢复的历史记录项
-                    log.error("Failed to restore history item: {}", e.getMessage());
+                    log.warn("Failed to restore history item at index {}: {}", i, e.getMessage());
                 }
             }
-        } catch (IOException e) {
-            log.error("Failed to load history: {}", e.getMessage());
-            // 如果加载失败，删除损坏的文件
-            boolean deleted = file.delete();
-            if (!deleted) {
-                log.error("Failed to delete corrupted history file: {}", file.getPath());
-            }
+
+            log.info("Successfully loaded {} history items from file", historyItems.size());
+
+        } catch (OutOfMemoryError e) {
+            log.error("Out of memory while loading history file, deleting and starting fresh", e);
+            // 内存溢出，删除文件并重新开始
+            deleteHistoryFile(file);
+            historyItems.clear();
         } catch (Exception e) {
-            log.error("Failed to parse history JSON: {}", e.getMessage());
-            // JSON 解析失败，删除损坏的文件
-            boolean deleted = file.delete();
-            if (!deleted) {
-                log.error("Failed to delete corrupted history file: {}", file.getPath());
+            log.error("Failed to load history: {}", e.getMessage(), e);
+            // 加载失败，删除损坏的文件
+            deleteHistoryFile(file);
+            historyItems.clear();
+        }
+    }
+
+    /**
+     * 使用流式方式读取文件内容，更节省内存
+     */
+    private String loadFileContent(File file) throws IOException {
+        StringBuilder content = new StringBuilder((int) Math.min(file.length(), MAX_FILE_SIZE));
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+
+            char[] buffer = new char[8192]; // 8KB buffer
+            int charsRead;
+            long totalCharsRead = 0;
+            long maxChars = MAX_FILE_SIZE / 2; // 限制读取字符数，防止超大文件
+
+            while ((charsRead = reader.read(buffer)) != -1) {
+                totalCharsRead += charsRead;
+                if (totalCharsRead > maxChars) {
+                    log.warn("History file content too large, truncating at {} chars", totalCharsRead);
+                    break;
+                }
+                content.append(buffer, 0, charsRead);
             }
+        }
+        return content.toString();
+    }
+
+    /**
+     * 删除历史文件
+     */
+    private void deleteHistoryFile(File file) {
+        try {
+            Files.delete(file.toPath());
+            log.info("Deleted history file: {}", file.getPath());
+        } catch (IOException e) {
+            log.error("Failed to delete history file: {}", file.getPath(), e);
         }
     }
 
@@ -176,13 +252,15 @@ public class HistoryPersistenceService {
         JSONObject requestJson = new JSONObject();
         requestJson.set("method", item.request.method);
         requestJson.set("url", item.request.url);
-        // 请求体 - 优先保存实际发送的okHttpRequestBody
+        // 请求体 - 优先保存实际发送的okHttpRequestBody，但限制大小
         String requestBody = "";
         if (item.request.okHttpRequestBody != null && !item.request.okHttpRequestBody.isEmpty()) {
             requestBody = item.request.okHttpRequestBody;
         } else if (item.request.body != null) {
             requestBody = item.request.body;
         }
+        // 限制请求体大小
+        requestBody = truncateBody(requestBody, MAX_REQUEST_BODY_SIZE);
         requestJson.set("body", requestBody);
         requestJson.set("id", item.request.id);
         requestJson.set("followRedirects", item.request.followRedirects);
@@ -207,7 +285,10 @@ public class HistoryPersistenceService {
         // 响应信息
         JSONObject responseJson = new JSONObject();
         responseJson.set("code", item.response.code);
-        responseJson.set("body", item.response.body != null ? item.response.body : "");
+        // 限制响应体大小
+        String responseBody = item.response.body != null ? item.response.body : "";
+        responseBody = truncateBody(responseBody, MAX_BODY_SIZE);
+        responseJson.set("body", responseBody);
         responseJson.set("costMs", item.response.costMs);
         responseJson.set("threadName", item.response.threadName);
         responseJson.set("filePath", item.response.filePath);

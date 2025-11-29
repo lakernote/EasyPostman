@@ -436,11 +436,11 @@ public class FunctionalPanel extends SingletonBasePanel {
                 row.testResults = postResult.getTestResults();
 
                 // 判断断言结果
-                if (postResult.allTestsPassed()) {
-                    assertion = AssertionResult.PASS;
-                } else {
-                    assertion = AssertionResult.FAIL;
+                if (postResult.hasTestResults()) {
+                    // 有测试时，根据结果设置断言状态
+                    assertion = postResult.allTestsPassed() ? AssertionResult.PASS : AssertionResult.FAIL;
                 }
+                // 没有测试时，保持默认的 NO_TESTS
             } catch (Exception ex) {
                 log.error("请求执行失败", ex);
                 ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);

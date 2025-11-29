@@ -81,14 +81,20 @@ public class ScriptExecutionResult {
      * 是否有测试结果
      */
     public boolean hasTestResults() {
-        return testResults != null && !testResults.isEmpty();
+        return !testResults.isEmpty();
     }
 
     /**
      * 所有测试是否通过
+     * 注意：如果没有测试，返回true（没有失败的测试）
      */
     public boolean allTestsPassed() {
-        return hasTestResults() && testResults.stream().allMatch(test -> test.passed);
+        // 如果没有测试，视为通过
+        if (!hasTestResults()) {
+            return true;
+        }
+        // 如果有测试，检查是否全部通过
+        return testResults.stream().allMatch(test -> test.passed);
     }
 }
 

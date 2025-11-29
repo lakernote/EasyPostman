@@ -153,11 +153,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         stopBtn = new StopButton();
         stopBtn.addActionListener(e -> {
             isStopped = true;
-            if (executionTimer != null && executionTimer.isRunning()) {
-                executionTimer.stop();
-            }
             stopBtn.setEnabled(false);
-            runBtn.setEnabled(true);
         });
         btnPanel.add(stopBtn);
 
@@ -244,14 +240,14 @@ public class FunctionalPanel extends SingletonBasePanel {
 
             totalFinished = processIterationRequests(rowCount, selectedCount, iterations, totalFinished, iterationResult, currentCsvRow);
 
-            if (isStopped) break;
-
-            // 完成当前迭代并添加到历史记录
+            // 完成当前迭代并添加到历史记录（无论是否停止，都要保存当前迭代的结果）
             iterationResult.complete();
             executionHistory.addIteration(iterationResult);
 
             // 实时更新结果面板
             SwingUtilities.invokeLater(() -> resultsPanel.updateExecutionHistory(executionHistory));
+
+            if (isStopped) break;
         }
 
         // 完成整个批量执行
@@ -350,19 +346,19 @@ public class FunctionalPanel extends SingletonBasePanel {
     private void finalizeExecution() {
         SwingUtilities.invokeLater(() -> {
             runBtn.setEnabled(true);
+            stopBtn.setEnabled(false);
+
             // 停止计时器
             stopExecutionTimer();
 
             // 最终更新结果面板
             resultsPanel.updateExecutionHistory(executionHistory);
 
-            // 如果执行完成，切换到结果面板
-            if (!isStopped) {
-                mainTabbedPane.setSelectedIndex(1); // 切换到执行结果面板
+            // 无论是正常完成还是用户停止，都切换到结果面板显示已执行的结果
+            mainTabbedPane.setSelectedIndex(1); // 切换到执行结果面板
 
-                // 自动选择第一个迭代节点并展开详细信息
-                SwingUtilities.invokeLater(() -> resultsPanel.selectFirstIteration());
-            }
+            // 自动选择第一个迭代节点并展开详细信息
+            SwingUtilities.invokeLater(() -> resultsPanel.selectFirstIteration());
         });
     }
 

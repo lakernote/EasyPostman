@@ -1,7 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
@@ -11,6 +10,7 @@ import com.laker.postman.model.MessageType;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -359,8 +359,7 @@ public class WebSocketResponsePanel extends JPanel {
     // 简单格式化JSON
     private String formatJson(String str) {
         if (JSONUtil.isTypeJSON(str)) {
-            JSON formatJson = JSONUtil.parse(str);
-            return JSONUtil.toJsonPrettyStr(formatJson);
+            return JsonUtil.toJsonPrettyStr(str);
         }
         return str;
 

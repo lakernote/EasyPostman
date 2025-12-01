@@ -1,8 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.util.XmlUtil;
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonFactory;
@@ -11,6 +9,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileExtensionUtil;
+import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -293,7 +292,6 @@ public class ResponseBodyPanel extends JPanel {
     }
 
 
-
     /**
      * 格式化内容
      * 根据 Content-Type 对 JSON 或 XML 进行格式化美化
@@ -309,8 +307,7 @@ public class ResponseBodyPanel extends JPanel {
         try {
             String formatted = null;
             if (contentType.contains("json")) {
-                JSON json = JSONUtil.parse(text);
-                formatted = JSONUtil.toJsonPrettyStr(json);
+                formatted = JsonUtil.toJsonPrettyStr(text);
             } else if (contentType.contains("xml")) {
                 formatted = XmlUtil.format(text);
             }
@@ -452,8 +449,7 @@ public class ResponseBodyPanel extends JPanel {
         if (textSize < LARGE_RESPONSE_THRESHOLD) {
             try {
                 if (contentType != null && contentType.toLowerCase().contains("json")) {
-                    JSON json = JSONUtil.parse(text);
-                    String pretty = JSONUtil.toJsonPrettyStr(json);
+                    String pretty = JsonUtil.toJsonPrettyStr(text);
                     responseBodyPane.setText(pretty);
                 } else if (contentType != null && contentType.toLowerCase().contains("xml")) {
                     String pretty = XmlUtil.format(text);

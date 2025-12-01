@@ -24,52 +24,82 @@ public class App {
 
     public static void main(String[] args) {
         // 0. 初始化 IOC 容器（在 EDT 之前，避免阻塞 UI）
-        // 扫描 com.laker.postman 包下的所有 @Component 注解的类
         BeanFactory.init("com.laker.postman");
 
-        // linux Full window: https://www.formdev.com/flatlaf/window-decorations/
-        if(SystemInfo.isLinux) {
-            // enable custom window decorations
+        // 1. 配置平台特定的窗口装饰
+        configurePlatformSpecificSettings();
+
+        // 2. 在事件分派线程（EDT）中初始化 UI
+        SwingUtilities.invokeLater(() -> {
+            initializeLookAndFeel();
+            initializeUI();
+        });
+
+        // 3. 设置全局异常处理器
+        setupGlobalExceptionHandler();
+
+        // 4. 注册应用程序关闭钩子
+        registerShutdownHook();
+
+        // 5. 启动后台版本检查
+        BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
+    }
+
+    /**
+     * 配置平台特定的设置。
+     * <p>
+     * Linux 平台：启用自定义窗口装饰以获得更好的原生外观体验。
+     * 参考：https://www.formdev.com/flatlaf/window-decorations/
+     * </p>
+     */
+    private static void configurePlatformSpecificSettings() {
+        if (SystemInfo.isLinux) {
+            log.debug("Detected Linux platform, enabling custom window decorations");
             JFrame.setDefaultLookAndFeelDecorated(true);
             JDialog.setDefaultLookAndFeelDecorated(true);
         }
+    }
 
-        // Swing 推荐在事件分派线程（EDT）中运行所有 UI 相关操作
-        SwingUtilities.invokeLater(() -> {
-            // 1. 设置主题
-            FlatIntelliJLaf.setup();
-            // 2. FlatLaf 统一商务风格属性（圆角、阴影等）
-            StyleUtils.apply();
-            // 3. 注册图标字体，使用 FontAwesome 图标库
-            IconFontSwing.register(FontAwesome.getIconFont());
-            // 4. 从 IOC 容器获取 SplashWindow
-            SplashWindow splash = BeanFactory.getBean(SplashWindow.class);
-            // 5. 异步加载主窗口
-            splash.initMainFrame();
-        });
+    /**
+     * 初始化外观主题。
+     */
+    private static void initializeLookAndFeel() {
+        FlatIntelliJLaf.setup();
+        StyleUtils.apply();
+    }
 
-        // 6. 设置全局异常处理器，防止程序因未捕获异常崩溃
+    /**
+     * 初始化用户界面。
+     */
+    private static void initializeUI() {
+        // 注册图标字体
+        IconFontSwing.register(FontAwesome.getIconFont());
+
+        // 显示启动画面并异步加载主窗口
+        SplashWindow splash = BeanFactory.getBean(SplashWindow.class);
+        splash.initMainFrame();
+    }
+
+    /**
+     * 设置全局未捕获异常处理器。
+     */
+    private static void setupGlobalExceptionHandler() {
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            // 过滤掉应该被忽略的异常（例如第三方库的清理过程产生的无害异常）
+            // 过滤掉应该被忽略的异常
             if (ExceptionUtil.shouldIgnoreException(throwable)) {
                 log.debug("Ignoring harmless exception in thread: {}", thread.getName(), throwable);
                 return;
             }
 
-            // 记录真正的错误并通知用户
+            // 记录错误并通知用户
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                     null,
                     I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                    JOptionPane.ERROR_MESSAGE
             ));
         });
-
-        // 7. 注册应用程序关闭钩子，确保优雅关闭
-        registerShutdownHook();
-
-        // 8. 启动后台版本检查
-        BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
     }
 
 

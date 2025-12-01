@@ -2,6 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -219,7 +220,7 @@ public class JsonToolPanel extends JPanel {
         }
 
         try {
-            String formatted = JSONUtil.toJsonPrettyStr(JSONUtil.parse(input));
+            String formatted = JsonUtil.formatJson5(input);
             outputArea.setText(formatted);
             int lines = formatted.split("\n").length;
             String message = I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_STATUS_FORMATTED,
@@ -381,7 +382,7 @@ public class JsonToolPanel extends JPanel {
             Object parsed = JSONUtil.parse(input);
             // 使用有序的JSONObject来保持键的排序
             if (parsed instanceof cn.hutool.json.JSONObject obj) {
-                String sorted = JSONUtil.toJsonPrettyStr(sortJsonObject(obj));
+                String sorted = JsonUtil.toJsonPrettyStr(sortJsonObject(obj));
                 outputArea.setText(sorted);
                 updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_STATUS_SORTED), true);
             } else {

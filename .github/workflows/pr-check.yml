@@ -44,6 +44,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: 'maven'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract version
         id: extract_version
@@ -68,6 +69,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: 'maven'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build with Maven
         run: mvn clean package -DskipTests -B
@@ -132,6 +134,7 @@ jobs:
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download JAR
         uses: actions/download-artifact@v4
@@ -362,6 +365,7 @@ jobs:
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download JAR
         uses: actions/download-artifact@v4
@@ -516,6 +520,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # 第三步：验证代码编译是否通过
       - name: Verify compilation

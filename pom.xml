@@ -17,7 +17,7 @@
         <mainClass>com.laker.postman.App</mainClass>
         <!-- 依赖版本号 -->
         <flatlaf.version>3.6.2</flatlaf.version>
-        <hutool.version>5.8.41</hutool.version>
+        <hutool.version>5.8.42</hutool.version>
         <jiconfont-swing.version>1.0.1</jiconfont-swing.version>
         <jiconfont-font_awesome.version>4.7.0.1</jiconfont-font_awesome.version>
         <logback-classic.version>1.5.20</logback-classic.version>

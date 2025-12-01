@@ -1,6 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
+import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
@@ -25,6 +26,13 @@ public class App {
         // 0. 初始化 IOC 容器（在 EDT 之前，避免阻塞 UI）
         // 扫描 com.laker.postman 包下的所有 @Component 注解的类
         BeanFactory.init("com.laker.postman");
+
+        // linux Full window: https://www.formdev.com/flatlaf/window-decorations/
+        if(SystemInfo.isLinux) {
+            // enable custom window decorations
+            JFrame.setDefaultLookAndFeelDecorated(true);
+            JDialog.setDefaultLookAndFeelDecorated(true);
+        }
 
         // Swing 推荐在事件分派线程（EDT）中运行所有 UI 相关操作
         SwingUtilities.invokeLater(() -> {

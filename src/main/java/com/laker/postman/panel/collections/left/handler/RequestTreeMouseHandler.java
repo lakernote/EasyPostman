@@ -142,10 +142,8 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         TreePath selPath = requestTree.getPathForLocation(x, y);
 
         if (selRow == -1 || selPath == null) {
-            selRow = requestTree.getClosestRowForLocation(x, y);
-            if (selRow != -1) {
-                selPath = requestTree.getPathForRow(selRow);
-            }
+            // 如果没有找到坐标对应的节点，应该直接返回null，不做处理
+            return null;
         }
         return selPath;
     }

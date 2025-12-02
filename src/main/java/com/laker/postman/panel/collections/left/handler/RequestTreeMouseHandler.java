@@ -138,12 +138,22 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 获取鼠标位置的树路径
      */
     private TreePath getTreePathAt(int x, int y) {
-        int selRow = requestTree.getRowForLocation(x, y);
         TreePath selPath = requestTree.getPathForLocation(x, y);
 
-        if (selRow == -1 || selPath == null) {
-            // 如果没有找到坐标对应的节点，应该直接返回null，不做处理
-            return null;
+        if (selPath == null) {
+            selPath = requestTree.getClosestPathForLocation(x, y);
+            if (selPath != null) {
+                // 判断Y坐标是否在树节点的矩形范围内，解决Y轴被误选中问题
+                Rectangle bounds = requestTree.getPathBounds(selPath);
+                if (bounds == null) {
+                    return null;
+                }
+                if (y > bounds.y && y < bounds.y + bounds.height) {
+                    return selPath;
+                } else {
+                    return null;
+                }
+            }
         }
         return selPath;
     }

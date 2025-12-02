@@ -187,6 +187,45 @@ public class PostmanApiContext {
      */
     public void setResponse(HttpResponse httpResponse) {
         this.response = new ResponseAssertion(httpResponse);
+
+        // 自动将响应中的 Cookie 填充到 pm.cookies，使得 pm.cookies.get() 能够工作
+        populateResponseCookies(httpResponse);
+    }
+
+    /**
+     * 从响应头中提取所有 Cookie 并填充到 pm.cookies
+     *
+     * @param httpResponse HTTP 响应对象
+     */
+    private void populateResponseCookies(HttpResponse httpResponse) {
+        if (httpResponse == null || httpResponse.headers == null || cookies == null) {
+            return;
+        }
+
+        // 清空旧的响应 Cookie（保留用户手动设置的）
+        // 注意：这里不清空，而是覆盖同名的 Cookie
+
+        // 从响应头中查找 Set-Cookie
+        List<String> setCookieHeaders = null;
+        for (Map.Entry<String, List<String>> entry : httpResponse.headers.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("Set-Cookie")) {
+                setCookieHeaders = entry.getValue();
+                break;
+            }
+        }
+
+        if (setCookieHeaders == null || setCookieHeaders.isEmpty()) {
+            return;
+        }
+
+        // 解析所有 Set-Cookie 头并添加到 cookies
+        for (String setCookieValue : setCookieHeaders) {
+            Cookie cookie = parseCookie(setCookieValue);
+            if (cookie != null && cookie.name != null) {
+                cookies.set(cookie);
+                log.debug("Populated response cookie to pm.cookies: {} = {}", cookie.name, cookie.value);
+            }
+        }
     }
 
     /**

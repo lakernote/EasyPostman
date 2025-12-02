@@ -1,5 +1,6 @@
 package com.laker.postman.model.script;
 
+import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;
 
 /**
@@ -62,6 +63,7 @@ import org.graalvm.polyglot.Value;
  * });
  * }</pre>
  */
+@Slf4j
 public class CookieJar {
     private final CookieApi cookieApi;
 
@@ -93,9 +95,9 @@ public class CookieJar {
     /**
      * 设置 Cookie（3 参数版本：url, name, value）
      *
-     * @param url      目标 URL
-     * @param name     Cookie 名称
-     * @param value    Cookie 值
+     * @param url   目标 URL
+     * @param name  Cookie 名称
+     * @param value Cookie 值
      */
     public void set(String url, String name, String value) {
         cookieApi.set(name, value);
@@ -135,7 +137,22 @@ public class CookieJar {
     }
 
     /**
-     * 删除 Cookie（支持回调）
+     * 删除 Cookie（2 参数版本：url, name，无回调）
+     *
+     * @param url  目标 URL（兼容参数，当前实现忽略）
+     * @param name Cookie 名称
+     */
+    public void unset(String url, String name) {
+        try {
+            cookieApi.delete(name);
+        } catch (Exception e) {
+            // 无回调时，静默处理错误或记录日志
+            log.error("Failed to delete cookie: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 删除 Cookie（3 参数版本：url, name, callback）
      *
      * @param url      目标 URL（兼容参数，当前实现忽略）
      * @param name     Cookie 名称

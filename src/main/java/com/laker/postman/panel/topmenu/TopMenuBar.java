@@ -290,7 +290,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
             if (currentWorkspace != null && currentWorkspace.getType() == WorkspaceType.GIT) {
                 JPanel gitToolbarPanel = createGitToolbar(currentWorkspace);
                 add(gitToolbarPanel);
-                add(Box.createHorizontalStrut(20)); // Git 工具栏和工作区图标之间的间距
+                add(Box.createHorizontalStrut(12)); // Git 工具栏和工作区图标之间的间距
             }
         } catch (Exception e) {
             log.error("Failed to create Git toolbar", e);
@@ -426,7 +426,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
             // Commit 按钮（本地提交，始终显示）
             JButton commitButton = createGitButton(
                     I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT),
-                    "icons/save.svg",
+                    "icons/git-commit.svg",
                     e -> performGitOperation(workspace, GitOperation.COMMIT)
             );
             toolbar.add(commitButton);
@@ -436,7 +436,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
                 // Pull 按钮（拉取远程更新）
                 JButton pullButton = createGitButton(
                         I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL),
-                        "icons/download.svg",
+                        "icons/git-pull.svg",
                         e -> performGitOperation(workspace, GitOperation.PULL)
                 );
                 toolbar.add(pullButton);
@@ -445,7 +445,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
                 if (remoteStatus.hasUpstream) {
                     JButton pushButton = createGitButton(
                             I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH),
-                            "icons/upload.svg",
+                            "icons/git-push.svg",
                             e -> performGitOperation(workspace, GitOperation.PUSH)
                     );
                     toolbar.add(pushButton);

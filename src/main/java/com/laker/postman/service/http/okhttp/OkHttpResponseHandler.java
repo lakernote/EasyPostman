@@ -293,10 +293,18 @@ public class OkHttpResponseHandler {
             return;
         }
         if (is != null) {
-            FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null, contentLengthHeader);
-            response.filePath = fs.file.getAbsolutePath();
-            response.body = I18nUtil.getMessage(MessageKeys.BINARY_SAVED_TEMP_FILE);
-            response.bodySize = fs.size;
+            try {
+                FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null, contentLengthHeader);
+                response.filePath = fs.file.getAbsolutePath();
+                response.body = I18nUtil.getMessage(MessageKeys.BINARY_SAVED_TEMP_FILE);
+                response.bodySize = fs.size;
+            } catch (EOFException e) {
+                // 处理下载过程中连接中断的情况
+                log.error("Failed to download complete binary response: {}", e.getMessage());
+                response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, e.getMessage());
+                response.bodySize = 0;
+                response.filePath = null;
+            }
         } else {
             response.body = I18nUtil.getMessage(MessageKeys.NO_RESPONSE_BODY);
             response.bodySize = 0;
@@ -335,7 +343,21 @@ public class OkHttpResponseHandler {
             return;
         }
         if (body != null) {
-            byte[] bytes = body.bytes();
+            byte[] bytes;
+            try {
+                bytes = body.bytes();
+            } catch (EOFException e) {
+                // 处理响应体不完整的情况（网络中断、服务器过早关闭连接等）
+                log.error("Failed to read complete response body: {}", e.getMessage());
+                response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, e.getMessage());
+                response.bodySize = 0;
+                response.filePath = null;
+                return;
+            } catch (IOException e) {
+                // 处理其他 IO 异常
+                log.error("Error reading response body: {}", e.getMessage(), e);
+                throw e;
+            }
             response.bodySize = bytes.length;
             if (bytes.length > getMaxBodySize()) { // 如果解压后内容超过设置值，保存为临时文件
                 String extension = ext != null ? ext : ".txt";

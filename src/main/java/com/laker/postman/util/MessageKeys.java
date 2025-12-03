@@ -796,6 +796,7 @@ public final class MessageKeys {
     public static final String TEXT_TOO_LARGE_BODY = "text.too_large.body";
     public static final String BODY_TOO_LARGE_SAVED = "body.too_large.saved";
     public static final String SSE_STREAM_UNSUPPORTED = "sse.stream.unsupported";
+    public static final String RESPONSE_INCOMPLETE = "response.incomplete";
 
     // ============ ResponseAssertion 国际化 ============
     public static final String RESPONSE_ASSERTION_STATUS_FAILED = "response.assertion.status_failed";

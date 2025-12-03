@@ -19,8 +19,8 @@ public class EnvironmentComboBox extends JComboBox<EnvironmentItem> {
 
     public EnvironmentComboBox() {
         setRenderer(new EnvironmentItemRenderer());
-        setPreferredSize(new Dimension(150, 28));
-        setMaximumSize(new Dimension(150, 28));
+        setPreferredSize(new Dimension(120, 28));
+        setMaximumSize(new Dimension(120, 28));
         setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
         setFocusable(false);
         // 设置无边框样式

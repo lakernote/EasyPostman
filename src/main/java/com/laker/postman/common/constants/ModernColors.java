@@ -182,6 +182,23 @@ public final class ModernColors {
      */
     public static final Color NEUTRAL_DARKER = new Color(51, 65, 85);
 
+    // ==================== Git 操作颜色（现代简约风格）====================
+
+    /**
+     * Git Commit（提交）- 柔和翠绿色
+     */
+    public static final Color GIT_COMMIT = new Color(34, 197, 94);  // Green-500
+
+    /**
+     * Git Push（推送）- 优雅深蓝色
+     */
+    public static final Color GIT_PUSH = new Color(59, 130, 246);  // Blue-500
+
+    /**
+     * Git Pull（拉取）- 清新紫色
+     */
+    public static final Color GIT_PULL = new Color(168, 85, 247);  // Purple-500
+
     // ==================== 中性色系 - 文字 ====================
 
     /**

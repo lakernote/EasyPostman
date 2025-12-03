@@ -151,9 +151,9 @@ public class ShortcutSettingsPanel extends JPanel {
         SingletonFactory.getInstance(
                 RequestEditPanel.class).reloadShortcuts();
 
-        // 重新加载菜单栏快捷键
+        // 重新加载菜单栏（包括快捷键和 Git 工具栏等所有组件）
         SingletonFactory.getInstance(
-                TopMenuBar.class).reloadShortcuts();
+                TopMenuBar.class).reloadMenuBar();
     }
 
     /**

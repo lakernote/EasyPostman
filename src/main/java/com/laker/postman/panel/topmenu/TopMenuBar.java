@@ -8,11 +8,15 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.combobox.WorkspaceComboBox;
 import com.laker.postman.ioc.BeanFactory;
+import com.laker.postman.model.GitOperation;
+import com.laker.postman.model.RemoteStatus;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
+import com.laker.postman.panel.workspace.components.GitOperationDialog;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
@@ -23,7 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 
@@ -57,11 +64,14 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     }
 
     /**
-     * 重新加载快捷键（快捷键设置修改后调用）
+     * 重新加载菜单栏（包括菜单项、快捷键、Git 工具栏等所有组件）
+     * 在以下场景调用：
+     * 1. 快捷键设置修改后
+     * 2. 工作区切换后（需要更新 Git 工具栏显示状态）
      */
-    public void reloadShortcuts() {
+    public void reloadMenuBar() {
         removeAll();
-        // 重新创建菜单栏
+        // 重新创建菜单栏所有组件
         initComponents();
         // 刷新界面
         revalidate();
@@ -80,7 +90,9 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         addSettingMenu();
         addHelpMenu();
         addAboutMenu();
-        add(Box.createGlue());
+
+        add(Box.createGlue()); // 添加弹性空间，将后续组件推到右侧
+
         addRightLableAndComboBox();
     }
 
@@ -232,14 +244,8 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         add(aboutMenu);
     }
 
-    private void addRightLableAndComboBox() {
-        // 初始化或重新加载环境下拉框
-        if (environmentComboBox == null) {
-            environmentComboBox = ComboBoxStyleHelper.createWithPanelStyle(EnvironmentComboBox::new);
-        } else {
-            environmentComboBox.reload();
-        }
 
+    private void addRightLableAndComboBox() {
         // 初始化或重新加载工作区下拉框
         if (workspaceComboBox == null) {
             workspaceComboBox = ComboBoxStyleHelper.createWithPanelStyle(WorkspaceComboBox::new);
@@ -247,6 +253,16 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         } else {
             workspaceComboBox.reload();
         }
+
+        // 初始化或重新加载环境下拉框
+        if (environmentComboBox == null) {
+            environmentComboBox = ComboBoxStyleHelper.createWithPanelStyle(EnvironmentComboBox::new);
+        } else {
+            environmentComboBox.reload();
+        }
+
+        // 添加 Git 工具栏（在工作区下拉框左侧）
+        addGitToolbarIfNeeded();
 
         // 添加工作区图标和下拉框
         JLabel workspaceIconLabel = new JLabel(new FlatSVGIcon("icons/workspace.svg", 20, 20));
@@ -260,7 +276,25 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         JLabel envIconLabel = new JLabel(new FlatSVGIcon("icons/environments.svg", 20, 20));
         add(envIconLabel);
         add(environmentComboBox);
+    }
 
+    /**
+     * 添加 Git 工具栏（仅在当前工作区为 Git 类型时添加）
+     */
+    private void addGitToolbarIfNeeded() {
+        try {
+            WorkspaceService workspaceService = WorkspaceService.getInstance();
+            Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
+
+            // 只有当前工作区是 Git 工作区时才显示 Git 工具栏
+            if (currentWorkspace != null && currentWorkspace.getType() == WorkspaceType.GIT) {
+                JPanel gitToolbarPanel = createGitToolbar(currentWorkspace);
+                add(gitToolbarPanel);
+                add(Box.createHorizontalStrut(20)); // Git 工具栏和工作区图标之间的间距
+            }
+        } catch (Exception e) {
+            log.error("Failed to create Git toolbar", e);
+        }
     }
 
     /**
@@ -274,6 +308,9 @@ public class TopMenuBar extends SingletonBaseMenuBar {
 
     /**
      * 切换到指定工作区
+     * 包括切换环境变量文件、请求集合文件，并刷新 Git 工具栏
+     *
+     * @param workspace 目标工作区
      */
     private void switchToWorkspace(Workspace workspace) {
         try {
@@ -295,11 +332,12 @@ public class TopMenuBar extends SingletonBaseMenuBar {
             SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
 
-            // 只记录日志，不显示通知弹窗
+            // 重新加载菜单栏（根据新工作区类型更新 Git 工具栏显示状态）
+            reloadMenuBar();
+
             log.info("Switched to workspace: {}", workspace.getName());
         } catch (Exception e) {
             log.error("Failed to switch workspace", e);
-            // 只有出错时才显示通知
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_FAILED_DETAIL, e.getMessage()));
         }
     }
@@ -366,6 +404,115 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         // 直接用JEditorPane，不用滚动条，且自适应高度
         editorPane.setPreferredSize(new Dimension(310, 350));
         return editorPane;
+    }
+
+
+    /**
+     * 创建 Git 工具栏面板
+     * 根据工作区的 Git 配置情况动态显示不同的操作按钮
+     *
+     * @param workspace 当前 Git 工作区
+     * @return Git 工具栏面板
+     */
+    private JPanel createGitToolbar(Workspace workspace) {
+        JPanel toolbar = new JPanel();
+        toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.X_AXIS));
+        toolbar.setOpaque(false);
+
+        try {
+            WorkspaceService workspaceService = WorkspaceService.getInstance();
+            RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
+
+            // Commit 按钮（本地提交，始终显示）
+            JButton commitButton = createGitButton(
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT),
+                    "icons/save.svg",
+                    e -> performGitOperation(workspace, GitOperation.COMMIT)
+            );
+            toolbar.add(commitButton);
+
+            // 远程操作按钮（仅在配置了远程仓库时显示）
+            if (remoteStatus.hasRemote) {
+                // Pull 按钮（拉取远程更新）
+                JButton pullButton = createGitButton(
+                        I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL),
+                        "icons/download.svg",
+                        e -> performGitOperation(workspace, GitOperation.PULL)
+                );
+                toolbar.add(pullButton);
+
+                // Push 按钮（仅在设置了上游分支时显示）
+                if (remoteStatus.hasUpstream) {
+                    JButton pushButton = createGitButton(
+                            I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH),
+                            "icons/upload.svg",
+                            e -> performGitOperation(workspace, GitOperation.PUSH)
+                    );
+                    toolbar.add(pushButton);
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to create Git toolbar buttons", e);
+        }
+
+        return toolbar;
+    }
+
+    /**
+     * 创建 Git 操作按钮
+     */
+    private JButton createGitButton(String tooltip, String iconPath, ActionListener action) {
+        JButton button = new JButton();
+        button.setIcon(new FlatSVGIcon(iconPath, 18, 18));
+        button.setToolTipText(tooltip);
+        button.setFocusable(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setPreferredSize(new Dimension(24, 24));
+        button.addActionListener(action);
+
+        // 添加鼠标悬停效果
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setContentAreaFilled(true);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setContentAreaFilled(false);
+            }
+        });
+
+        return button;
+    }
+
+    /**
+     * 执行 Git 操作（Commit/Pull/Push）
+     *
+     * @param workspace 目标工作区
+     * @param operation Git 操作类型
+     */
+    private void performGitOperation(Workspace workspace, GitOperation operation) {
+        GitOperationDialog dialog = new GitOperationDialog(
+                SwingUtilities.getWindowAncestor(this),
+                workspace,
+                operation
+        );
+        dialog.setVisible(true);
+
+        if (dialog.isConfirmed()) {
+            // Pull 操作后需要刷新相关面板以显示最新数据
+            if (operation == GitOperation.PULL) {
+                SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+                SingletonFactory.getInstance(EnvironmentPanel.class)
+                        .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+            }
+
+            log.info("Git {} operation completed successfully", operation.getDisplayName());
+        }
     }
 
     /**

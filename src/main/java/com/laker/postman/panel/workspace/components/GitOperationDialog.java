@@ -399,26 +399,48 @@ public class GitOperationDialog extends JDialog {
      */
     private void performPreOperationCheck() {
         stepIndicator.setCurrentStep(0);
+        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", Color.BLUE);
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", Color.BLUE);
-                CredentialsProvider credentialsProvider = null;
-                SshCredentialsProvider sshCredentialsProvider = null;
-                if (workspace.getGitAuthType() != null) {
-                    credentialsProvider = workspaceService.getCredentialsProvider(workspace);
-                    sshCredentialsProvider = workspaceService.getSshCredentialsProvider(workspace);
+        // 禁用执行按钮，防止在检查期间执行操作
+        executeButton.setEnabled(false);
+
+        // 使用 SwingWorker 在后台线程执行 Git 检查，避免阻塞 UI
+        SwingWorker<GitStatusCheck, Void> worker = new SwingWorker<>() {
+            @Override
+            protected GitStatusCheck doInBackground() {
+                try {
+                    CredentialsProvider credentialsProvider = null;
+                    SshCredentialsProvider sshCredentialsProvider = null;
+                    if (workspace.getGitAuthType() != null) {
+                        credentialsProvider = workspaceService.getCredentialsProvider(workspace);
+                        sshCredentialsProvider = workspaceService.getSshCredentialsProvider(workspace);
+                    }
+                    return checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider, sshCredentialsProvider);
+                } catch (Exception e) {
+                    log.error("Failed to check git status", e);
+                    return null;
                 }
-                statusCheck = checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider, sshCredentialsProvider);
-                displayStatusCheck(statusCheck);
-                displayFileChangesStatus();
-                stepIndicator.setCurrentStep(1);
-                updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", new Color(34, 139, 34));
-            } catch (Exception e) {
-                log.error("Failed to perform pre-operation check", e);
-                updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", Color.RED);
             }
-        });
+
+            @Override
+            protected void done() {
+                try {
+                    statusCheck = get();
+                    if (statusCheck != null) {
+                        displayStatusCheck(statusCheck);
+                        displayFileChangesStatus();
+                        stepIndicator.setCurrentStep(1);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", new Color(34, 139, 34));
+                    } else {
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, "Unknown error"), "icons/warning.svg", Color.RED);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to perform pre-operation check", e);
+                    updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", Color.RED);
+                }
+            }
+        };
+        worker.execute();
     }
 
     /**

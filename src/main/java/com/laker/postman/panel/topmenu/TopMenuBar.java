@@ -426,7 +426,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
             // Commit 按钮（本地提交，始终显示）
             JButton commitButton = createGitButton(
                     I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT),
-                    "icons/git-commit.svg",
+                    GitOperation.COMMIT.getIconName(),
                     e -> performGitOperation(workspace, GitOperation.COMMIT)
             );
             toolbar.add(commitButton);
@@ -436,7 +436,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
                 // Pull 按钮（拉取远程更新）
                 JButton pullButton = createGitButton(
                         I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL),
-                        "icons/git-pull.svg",
+                        GitOperation.PULL.getIconName(),
                         e -> performGitOperation(workspace, GitOperation.PULL)
                 );
                 toolbar.add(pullButton);
@@ -445,7 +445,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
                 if (remoteStatus.hasUpstream) {
                     JButton pushButton = createGitButton(
                             I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH),
-                            "icons/git-push.svg",
+                            GitOperation.PUSH.getIconName(),
                             e -> performGitOperation(workspace, GitOperation.PUSH)
                     );
                     toolbar.add(pushButton);

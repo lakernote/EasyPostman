@@ -278,7 +278,7 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 1.提交操作 始终显示
         JMenuItem commitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT));
-        commitItem.setIcon(new FlatSVGIcon("icons/save.svg", 16, 16));
+        commitItem.setIcon(new FlatSVGIcon(GitOperation.COMMIT.getIconName(), 16, 16));
         commitItem.addActionListener(e -> performGitCommit(workspace));
         menu.add(commitItem);
 
@@ -286,13 +286,13 @@ public class WorkspacePanel extends SingletonBasePanel {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
             if (remoteStatus.hasRemote) { // 2.只有已配置远程仓库的工作区才显示拉取操作
                 JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
-                pullItem.setIcon(new FlatSVGIcon("icons/download.svg", 16, 16));
+                pullItem.setIcon(new FlatSVGIcon(GitOperation.PULL.getIconName(), 16, 16));
                 pullItem.addActionListener(e -> performGitPull(workspace));
                 menu.add(pullItem);
 
                 if (remoteStatus.hasUpstream) { // 3.只有有上游分支的工作区才显示推送操作
                     JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
-                    pushItem.setIcon(new FlatSVGIcon("icons/upload.svg", 16, 16));
+                    pushItem.setIcon(new FlatSVGIcon(GitOperation.PUSH.getIconName(), 16, 16));
                     pushItem.addActionListener(e -> performGitPush(workspace));
                     menu.add(pushItem);
                 }

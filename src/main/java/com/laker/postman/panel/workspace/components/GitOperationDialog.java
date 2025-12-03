@@ -138,7 +138,7 @@ public class GitOperationDialog extends JDialog {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);
 
-        JLabel operationIcon = new JLabel(new FlatSVGIcon("icons/" + operation.getIconName(), 32, 32));
+        JLabel operationIcon = new JLabel(new FlatSVGIcon(operation.getIconName(), 32, 32));
         operationIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
 
         JPanel textPanel = new JPanel(new GridLayout(2, 1, 0, 5));

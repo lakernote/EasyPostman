@@ -17,6 +17,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
 
     private JTextField jmeterMaxIdleField;
     private JTextField jmeterKeepAliveField;
+    private JTextField trendSamplingField;
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -46,6 +47,17 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 jmeterKeepAliveField
         );
         jmeterSection.add(keepAliveRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 趋势图采样间隔
+        trendSamplingField = new JTextField(10);
+        trendSamplingField.setText(String.valueOf(SettingManager.getTrendSamplingIntervalSeconds()));
+        JPanel trendSamplingRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TREND_SAMPLING),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP),
+                trendSamplingField
+        );
+        jmeterSection.add(trendSamplingRow);
 
         contentPanel.add(jmeterSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
@@ -55,6 +67,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         // 跟踪所有组件的初始值
         trackComponentValue(jmeterMaxIdleField);
         trackComponentValue(jmeterKeepAliveField);
+        trackComponentValue(trendSamplingField);
     }
 
     private void setupValidators() {
@@ -68,6 +81,20 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 this::isPositiveInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_KEEP_ALIVE_ERROR)
         );
+        setupValidator(
+                trendSamplingField,
+                this::isValidTrendSamplingInterval,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_TREND_SAMPLING_ERROR)
+        );
+    }
+
+    private boolean isValidTrendSamplingInterval(String value) {
+        try {
+            int interval = Integer.parseInt(value.trim());
+            return interval >= 1 && interval <= 60;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     @Override
@@ -116,11 +143,13 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             // 保存JMeter设置
             SettingManager.setJmeterMaxIdleConnections(Integer.parseInt(jmeterMaxIdleField.getText().trim()));
             SettingManager.setJmeterKeepAliveSeconds(Integer.parseInt(jmeterKeepAliveField.getText().trim()));
+            SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
 
             // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(jmeterMaxIdleField);
             trackComponentValue(jmeterKeepAliveField);
+            trackComponentValue(trendSamplingField);
             setHasUnsavedChanges(false);
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));

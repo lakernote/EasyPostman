@@ -678,6 +678,8 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_MAX_IDLE_TOOLTIP = "settings.jmeter.max_idle.tooltip";
     public static final String SETTINGS_JMETER_KEEP_ALIVE = "settings.jmeter.keep_alive";
     public static final String SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP = "settings.jmeter.keep_alive.tooltip";
+    public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
+    public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
 
     // Download settings section
     public static final String SETTINGS_DOWNLOAD_TITLE = "settings.download.title";
@@ -704,6 +706,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_MAX_DOWNLOAD_SIZE_ERROR = "settings.validation.max_download_size.error";
     public static final String SETTINGS_VALIDATION_MAX_IDLE_ERROR = "settings.validation.max_idle.error";
     public static final String SETTINGS_VALIDATION_KEEP_ALIVE_ERROR = "settings.validation.keep_alive.error";
+    public static final String SETTINGS_VALIDATION_TREND_SAMPLING_ERROR = "settings.validation.trend_sampling.error";
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";

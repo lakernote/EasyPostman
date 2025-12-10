@@ -126,6 +126,27 @@ public class SettingManager {
         save();
     }
 
+    public static int getTrendSamplingIntervalSeconds() {
+        String val = props.getProperty("trend_sampling_interval_seconds");
+        if (val != null) {
+            try {
+                int interval = Integer.parseInt(val);
+                // 限制范围：1-60秒
+                return Math.max(1, Math.min(60, interval));
+            } catch (NumberFormatException e) {
+                return 1;
+            }
+        }
+        return 1; // 默认1秒
+    }
+
+    public static void setTrendSamplingIntervalSeconds(int seconds) {
+        // 限制范围：1-60秒
+        int interval = Math.max(1, Math.min(60, seconds));
+        props.setProperty("trend_sampling_interval_seconds", String.valueOf(interval));
+        save();
+    }
+
     public static boolean isShowDownloadProgressDialog() {
         String val = props.getProperty("show_download_progress_dialog");
         if (val != null) {

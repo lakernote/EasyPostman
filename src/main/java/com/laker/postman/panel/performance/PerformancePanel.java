@@ -309,12 +309,15 @@ public class PerformancePanel extends SingletonBasePanel {
             trendTimer.cancel();
         }
         trendTimer = new Timer();
+        // 从设置中读取采样间隔，默认1秒
+        int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
+        long samplingIntervalMs = samplingIntervalSeconds * 1000L;
         trendTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 SwingUtilities.invokeLater(() -> sampleTrendData());
             }
-        }, 0, 1000);
+        }, 0, samplingIntervalMs);
 
         // 重要：更新开始时间，确保递增线程等模式正常工作
         startTime = System.currentTimeMillis();
@@ -403,23 +406,28 @@ public class PerformancePanel extends SingletonBasePanel {
         }
     }
 
-    // 每秒采样统计方法
+    // 采样统计方法（根据配置的采样间隔）
     private void sampleTrendData() {
         int users = activeThreads.get();
         long now = System.currentTimeMillis();
         Second second = new Second(new Date(now));
-        // 统计本秒内的请求
+
+        // 从设置中读取采样间隔
+        int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
+        long samplingIntervalMs = samplingIntervalSeconds * 1000L;
+
+        // 统计本采样间隔内的请求
         int totalReq = 0;
         int errorReq = 0;
         long totalRespTime = 0;
         synchronized (allRequestResults) {
             for (int i = allRequestResults.size() - 1; i >= 0; i--) {
                 RequestResult result = allRequestResults.get(i);
-                if (result.endTime >= now - 1000 && result.endTime <= now) {
+                if (result.endTime >= now - samplingIntervalMs && result.endTime <= now) {
                     totalReq++;
                     if (!result.success) errorReq++;
                     totalRespTime += result.responseTime; // 使用实际响应时间
-                } else if (result.endTime < now - 1000) {
+                } else if (result.endTime < now - samplingIntervalMs) {
                     break;
                 }
             }
@@ -429,7 +437,8 @@ public class PerformancePanel extends SingletonBasePanel {
                         .setScale(2, RoundingMode.HALF_UP)
                         .doubleValue()
                 : 0;
-        double qps = totalReq;
+        // QPS = 请求总数 / 采样间隔（秒）
+        double qps = totalReq / (double) samplingIntervalSeconds;
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
         // 更新趋势图数据
         log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);

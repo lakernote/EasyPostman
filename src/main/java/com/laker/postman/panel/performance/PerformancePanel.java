@@ -358,6 +358,9 @@ public class PerformancePanel extends SingletonBasePanel {
 
                     performanceReportPanel.updateReport(apiCostMapCopy, apiSuccessMap, apiFailMap, startTimesCopy, resultsCopy);
 
+                    // 刷新所有待处理的结果树节点
+                    performanceResultTreePanel.flushPendingResults();
+
                     // 显示执行完成提示
                     long totalTime = System.currentTimeMillis() - startTime;
                     int totalRequests = resultsCopy.size();
@@ -1313,6 +1316,8 @@ public class PerformancePanel extends SingletonBasePanel {
         OkHttpClientManager.setDefaultConnectionPoolConfig();
         // 停止趋势图定时采样
         stopTrendTimer();
+        // 刷新所有待处理的结果树节点
+        performanceResultTreePanel.flushPendingResults();
     }
 
     private static int getJmeterMaxIdleConnections() {

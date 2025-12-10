@@ -397,7 +397,7 @@ jobs:
 
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
-    runs-on: macos-13  # Intel x86_64
+    runs-on: macos-15-intel  # Intel x86_64
     needs: [ get-version, build-jar-artifact ]
 
     steps:

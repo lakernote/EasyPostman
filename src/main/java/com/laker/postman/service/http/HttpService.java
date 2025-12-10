@@ -4,6 +4,7 @@ import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.http.okhttp.*;
+import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -60,9 +61,9 @@ public class HttpService {
      * @return HttpResponse 响应对象
      * @throws Exception 发送请求异常
      */
-    public static HttpResponse sendRequest(PreparedRequest req) throws Exception {
+    public static HttpResponse sendRequest(PreparedRequest req, SseResEventListener callback) throws Exception {
         Request request = buildRequestByType(req);
-        return executeRequest(req, request);
+        return executeRequest(req, request, callback);
     }
 
     /**
@@ -91,10 +92,10 @@ public class HttpService {
     /**
      * 执行 HTTP 请求的通用方法
      */
-    private static HttpResponse executeRequest(PreparedRequest req, Request request) throws Exception {
+    private static HttpResponse executeRequest(PreparedRequest req, Request request, SseResEventListener callback) throws Exception {
         OkHttpClient client = buildCustomClient(req);
         Call call = client.newCall(request);
-        return callWithRequest(call, client);
+        return callWithRequest(call, client, callback);
     }
 
     /**
@@ -116,7 +117,7 @@ public class HttpService {
     }
 
 
-    private static HttpResponse callWithRequest(Call call, OkHttpClient client) throws IOException {
+    private static HttpResponse callWithRequest(Call call, OkHttpClient client, SseResEventListener callback) throws IOException {
         long startTime = System.currentTimeMillis();
         HttpResponse httpResponse = new HttpResponse();
         ConnectionPool pool = client.connectionPool();
@@ -128,7 +129,7 @@ public class HttpService {
         } finally {
             fillHttpEventInfo(httpResponse, startTime);
         }
-        OkHttpResponseHandler.handleResponse(okResponse, httpResponse);
+        OkHttpResponseHandler.handleResponse(okResponse, httpResponse, callback);
         httpResponse.endTime = System.currentTimeMillis();
         httpResponse.costMs = httpResponse.endTime - startTime;
         // 响应后主动通知Cookie变化，刷新CookieTablePanel

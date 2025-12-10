@@ -6,6 +6,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +24,7 @@ import java.util.Map;
 @UtilityClass
 public class RedirectHandler {
 
-    public static HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects) throws Exception {
+    public static HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects, SseResEventListener callback) throws Exception {
         // 创建工作副本
         PreparedRequest workingReq = req.shallowCopy();
         workingReq.logEvent = true; // 记录事件日志
@@ -32,7 +33,7 @@ public class RedirectHandler {
         int redirectCount = 0;
 
         while (redirectCount <= maxRedirects) {
-            HttpResponse resp = HttpSingleRequestExecutor.executeHttp(workingReq);
+            HttpResponse resp = HttpSingleRequestExecutor.executeHttp(workingReq, callback);
 
             // 更新原始请求对象的 OkHttp 相关字段
             req.okHttpHeaders = workingReq.okHttpHeaders;

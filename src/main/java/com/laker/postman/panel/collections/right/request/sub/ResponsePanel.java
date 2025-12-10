@@ -117,11 +117,16 @@ public class ResponsePanel extends JPanel {
                     I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
                     I18nUtil.getMessage(MessageKeys.TAB_TESTS),
                     I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG),
-                    I18nUtil.getMessage(MessageKeys.TAB_TIMING)
+                    I18nUtil.getMessage(MessageKeys.TAB_TIMING),
+                    I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG)
             };
             tabButtons = new JButton[tabNames.length];
             for (int i = 0; i < tabNames.length; i++) {
                 tabButtons[i] = new TabButton(tabNames[i], i);
+                // 默认情况下HTTP模式不显示日志tab
+                if (i == 5) {
+                    tabButtons[i].setVisible(false);
+                }
                 tabBar.add(tabButtons[i]);
             }
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
@@ -150,8 +155,9 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(testsPanel, tabNames[2]);
             cardPanel.add(networkLogPanel, tabNames[3]);
             cardPanel.add(new JScrollPane(timelinePanel), tabNames[4]);
+            sseResponsePanel = new SSEResponsePanel();
+            cardPanel.add(sseResponsePanel, tabNames[5]);
             webSocketResponsePanel = null;
-            sseResponsePanel = null;
         }
         add(cardPanel, BorderLayout.CENTER);
 
@@ -420,10 +426,26 @@ public class ResponsePanel extends JPanel {
             timelinePanel.revalidate();
             timelinePanel.repaint();
             networkLogPanel.clearLog();
+            sseResponsePanel.clearMessages();
         }
 
         if (testsPane != null) {
             setTestResults(new ArrayList<>());
+        }
+    }
+
+    /**
+     * 切换Tab按钮，http或sse
+     */
+    public void switchTabButtonHttpOrSse(String type) {
+        if ("http".equals(type)) {
+            tabButtons[0].setVisible(true);
+            tabButtons[0].doClick();
+            tabButtons[5].setVisible(false);
+        } else {
+            tabButtons[0].setVisible(false);
+            tabButtons[5].setVisible(true);
+            tabButtons[5].doClick();
         }
     }
 

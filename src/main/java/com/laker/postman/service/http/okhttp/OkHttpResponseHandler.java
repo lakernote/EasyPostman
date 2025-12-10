@@ -2,6 +2,7 @@ package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.component.DownloadProgressDialog;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileExtensionUtil;
 import com.laker.postman.util.I18nUtil;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import okhttp3.internal.sse.ServerSentEventReader;
 
 import javax.swing.*;
 import java.io.*;
@@ -67,7 +69,7 @@ public class OkHttpResponseHandler {
      * @param response   内部响应对象（用于填充数据）
      * @throws IOException 读取响应体时可能抛出的异常
      */
-    public static void handleResponse(Response okResponse, HttpResponse response) throws IOException {
+    public static void handleResponse(Response okResponse, HttpResponse response, SseResEventListener callback) throws IOException {
         response.code = okResponse.code();
         response.message = okResponse.message();
         response.headers = new LinkedHashMap<>();
@@ -86,6 +88,14 @@ public class OkHttpResponseHandler {
 
         if (isSSEContent(contentType)) {
             handleSseResponse(response);
+            if (callback != null) {
+                ResponseBody body = okResponse.body();
+                if (body != null) {
+                    var reader = new ServerSentEventReader(body.source(), callback);
+                    callback.onOpen(response);
+                    while (reader.processNextEvent());
+                }
+            }
         } else if (FileExtensionUtil.isBinaryType(contentType)) {
             handleBinaryResponse(okResponse, response);
         } else {

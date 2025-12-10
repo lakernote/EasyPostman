@@ -167,9 +167,28 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     public void addOrUpdate(RegularTimePeriod period, double users,
                             double responseTime, double qps, double errorPercent) {
         if (period == null) return;
-        userCountSeries.addOrUpdate(period, users);
-        responseTimeSeries.addOrUpdate(period, responseTime);
-        qpsSeries.addOrUpdate(period, qps);
-        errorPercentSeries.addOrUpdate(period, errorPercent);
+
+        // 批量更新：暂时禁用通知，避免每次addOrUpdate都触发重绘
+        // 这样可以将4次重绘优化为1次重绘
+        userCountSeries.setNotify(false);
+        responseTimeSeries.setNotify(false);
+        qpsSeries.setNotify(false);
+        errorPercentSeries.setNotify(false);
+
+        try {
+            userCountSeries.addOrUpdate(period, users);
+            responseTimeSeries.addOrUpdate(period, responseTime);
+            qpsSeries.addOrUpdate(period, qps);
+            errorPercentSeries.addOrUpdate(period, errorPercent);
+        } finally {
+            // 恢复通知并手动触发一次更新
+            userCountSeries.setNotify(true);
+            responseTimeSeries.setNotify(true);
+            qpsSeries.setNotify(true);
+            errorPercentSeries.setNotify(true);
+
+            // 手动触发一次数据集更新通知，统一重绘
+            userCountSeries.fireSeriesChanged();
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.WebSocketListener;
@@ -13,7 +14,11 @@ import okhttp3.sse.EventSourceListener;
 public class HttpSingleRequestExecutor {
 
     public static HttpResponse executeHttp(PreparedRequest req) throws Exception {
-        return HttpService.sendRequest(req);
+        return HttpService.sendRequest(req, null);
+    }
+
+    public static HttpResponse executeHttp(PreparedRequest req, SseResEventListener callback) throws Exception {
+        return HttpService.sendRequest(req, callback);
     }
 
     public static EventSource executeSSE(PreparedRequest req, EventSourceListener listener) {

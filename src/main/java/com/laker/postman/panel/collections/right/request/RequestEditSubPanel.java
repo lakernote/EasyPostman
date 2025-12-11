@@ -20,6 +20,7 @@ import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseEventListener;
+import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
@@ -385,7 +386,38 @@ public class RequestEditSubPanel extends JPanel {
             protected Void doInBackground() {
                 try {
                     responsePanel.setResponseTabButtonsEnable(true);
-                    resp = RedirectHandler.executeWithRedirects(req, 10);
+                    responsePanel.switchTabButtonHttpOrSse("http");
+                    resp = RedirectHandler.executeWithRedirects(req, 10, new SseResEventListener() {
+                        @Override
+                        public void onOpen(HttpResponse response) {
+                            SwingUtilities.invokeLater(() -> {
+                                responsePanel.switchTabButtonHttpOrSse("sse");
+                                updateUIForResponse(String.valueOf(response.code), response);
+                                // 添加连接成功消息
+                                if (responsePanel.getSseResponsePanel() != null) {
+                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    responsePanel.getSseResponsePanel().addMessage(MessageType.CONNECTED, timestamp, "Connected to SSE stream", null);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onEvent(String id, String type, String data) {
+                            SwingUtilities.invokeLater(() -> {
+                                // 使用 SSEResponsePanel 来显示 SSE 消息
+                                if (responsePanel.getSseResponsePanel() != null) {
+                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    List<TestResult> testResults = handleStreamMessage(pipeline, data);
+                                    responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onRetryChange(long l) {
+                            // ignored
+                        }
+                    });
                     if (resp != null) {
                         statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
                     }
@@ -404,15 +436,11 @@ public class RequestEditSubPanel extends JPanel {
             @Override
             protected void done() {
                 updateUIForResponse(statusText, resp);
-                handleResponse(pipeline, req, resp);
+                if (resp != null && !resp.isSse) {
+                    handleResponse(pipeline, req, resp);
+                }
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
-
-                // 只有当前协议是 HTTP 且响应是 SSE 类型时，才提示切换到 SSE 协议
-                if (resp != null && resp.isSse && protocol == RequestItemProtocolEnum.HTTP) {
-                    // 弹窗提示用户是否切换到SSE监听模式
-                    SwingUtilities.invokeLater(() -> SingletonFactory.getInstance(RequestEditPanel.class).switchCurrentTabToSseProtocol());
-                }
             }
         };
         currentWorker.execute();

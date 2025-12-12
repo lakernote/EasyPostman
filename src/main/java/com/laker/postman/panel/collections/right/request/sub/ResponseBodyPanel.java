@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.util.XmlUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
@@ -40,7 +39,7 @@ public class ResponseBodyPanel extends JPanel {
     private final JButton downloadButton;
     private String currentFilePath;
     private String fileName = DEFAULT_FILE_NAME; // 默认下载文件名
-    private final FlatTextField searchField;
+    private final SearchTextField searchField;
     private Map<String, List<String>> lastHeaders;
     private final JComboBox<String> syntaxComboBox;
     private final JButton formatButton;
@@ -114,6 +113,18 @@ public class ResponseBodyPanel extends JPanel {
         prevButton.addActionListener(e -> search(false));
         nextButton.addActionListener(e -> search(true));
         syntaxComboBox.addActionListener(e -> onSyntaxComboChanged());
+
+        // 监听搜索选项变化，触发重新搜索
+        searchField.addPropertyChangeListener("caseSensitive", evt -> {
+            if (!searchField.getText().isEmpty()) {
+                search(true);
+            }
+        });
+        searchField.addPropertyChangeListener("wholeWord", evt -> {
+            if (!searchField.getText().isEmpty()) {
+                search(true);
+            }
+        });
     }
 
     /**
@@ -137,7 +148,7 @@ public class ResponseBodyPanel extends JPanel {
     }
 
     /**
-     * 搜索关键字
+     * 搜索关键字，支持大小写敏感和整词匹配
      *
      * @param forward true 表示向前搜索，false 表示向后搜索
      */
@@ -152,7 +163,36 @@ public class ResponseBodyPanel extends JPanel {
             return;
         }
 
-        int pos = forward ? searchForward(text, keyword) : searchBackward(text, keyword);
+        // 获取搜索选项
+        boolean caseSensitive = searchField.isCaseSensitive();
+        boolean wholeWord = searchField.isWholeWord();
+
+        int caret = responseBodyPane.getCaretPosition();
+        int pos;
+
+        if (forward) {
+            // 向后查找
+            int start = caret;
+            if (responseBodyPane.getSelectedText() != null) {
+                start = responseBodyPane.getSelectionEnd();
+            }
+            pos = findNext(text, keyword, start, caseSensitive, wholeWord);
+            if (pos == -1) {
+                // 循环查找：从头开始
+                pos = findNext(text, keyword, 0, caseSensitive, wholeWord);
+            }
+        } else {
+            // 向前查找
+            int start = caret;
+            if (responseBodyPane.getSelectedText() != null) {
+                start = responseBodyPane.getSelectionStart() - 1;
+            }
+            pos = findPrevious(text, keyword, start, caseSensitive, wholeWord);
+            if (pos == -1) {
+                // 循环查找：从末尾开始
+                pos = findPrevious(text, keyword, text.length(), caseSensitive, wholeWord);
+            }
+        }
 
         if (pos != -1) {
             selectAndFocusText(pos, keyword.length());
@@ -160,56 +200,65 @@ public class ResponseBodyPanel extends JPanel {
     }
 
     /**
-     * 向前搜索关键字
-     *
-     * @param text    文本内容
-     * @param keyword 搜索关键字
-     * @return 找到的位置，未找到返回 -1
+     * 向后查找匹配
      */
-    private int searchForward(String text, String keyword) {
-        int caret = responseBodyPane.getCaretPosition();
-        int start = caret;
+    private int findNext(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
+        String searchText = caseSensitive ? text : text.toLowerCase();
+        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
 
-        if (isKeywordSelected(keyword)) {
-            start = caret + 1;
+        int pos = fromIndex;
+        while ((pos = searchText.indexOf(searchKeyword, pos)) != -1) {
+            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
+                return pos;
+            }
+            pos++;
         }
-
-        int pos = text.indexOf(keyword, start);
-        return pos == -1 ? text.indexOf(keyword) : pos;
+        return -1;
     }
 
     /**
-     * 向后搜索关键字
-     *
-     * @param text    文本内容
-     * @param keyword 搜索关键字
-     * @return 找到的位置，未找到返回 -1
+     * 向前查找匹配
      */
-    private int searchBackward(String text, String keyword) {
-        int caret = responseBodyPane.getCaretPosition();
-        int start = caret - 1;
-
-        if (isKeywordSelected(keyword)) {
-            start = caret - keyword.length() - 1;
+    private int findPrevious(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
+        if (fromIndex > text.length()) {
+            fromIndex = text.length();
         }
 
-        if (start < 0) {
-            start = text.length() - 1;
-        }
+        String searchText = caseSensitive ? text : text.toLowerCase();
+        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
 
-        int pos = text.lastIndexOf(keyword, start);
-        return pos == -1 ? text.lastIndexOf(keyword) : pos;
+        int pos = fromIndex;
+        while ((pos = searchText.lastIndexOf(searchKeyword, pos)) != -1) {
+            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
+                return pos;
+            }
+            pos--;
+            if (pos < 0) break;
+        }
+        return -1;
     }
 
     /**
-     * 检查当前选中的文本是否为搜索关键字
-     *
-     * @param keyword 搜索关键字
-     * @return 如果选中的文本等于关键字返回 true，否则返回 false
+     * 判断是否为整词匹配
      */
-    private boolean isKeywordSelected(String keyword) {
-        String selectedText = responseBodyPane.getSelectedText();
-        return selectedText != null && selectedText.equals(keyword);
+    private boolean isWholeWord(String text, int start, int length) {
+        int end = start + length;
+
+        // 检查前一个字符
+        if (start > 0) {
+            char prevChar = text.charAt(start - 1);
+            if (Character.isLetterOrDigit(prevChar) || prevChar == '_') {
+                return false;
+            }
+        }
+
+        // 检查后一个字符
+        if (end < text.length()) {
+            char nextChar = text.charAt(end);
+            return !Character.isLetterOrDigit(nextChar) && nextChar != '_';
+        }
+
+        return true;
     }
 
     /**

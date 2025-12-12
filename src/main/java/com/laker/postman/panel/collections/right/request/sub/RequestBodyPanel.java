@@ -65,6 +65,7 @@ public class RequestBodyPanel extends JPanel {
     private JButton wsTimedSendButton; // 定时发送按钮
     private JTextField wsIntervalField; // 定时间隔输入框
     private JCheckBox wsClearInputCheckBox; // 清空输入复选框
+    private SearchTextField searchField; // HTTP模式下的搜索框
 
     @Setter
     private transient ActionListener wsSendActionListener; // 外部注入的发送回调
@@ -102,7 +103,7 @@ public class RequestBodyPanel extends JPanel {
         topPanel.add(rawTypeComboBox);
 
         // 搜索区控件
-        SearchTextField searchField = new SearchTextField();
+        searchField = new SearchTextField();
         JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 18, 18));
         prevButton.setToolTipText("Previous");
         JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 18, 18));
@@ -135,6 +136,18 @@ public class RequestBodyPanel extends JPanel {
         });
         nextButton.addActionListener(e -> {
             if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), true);
+        });
+
+        // 监听搜索选项变化，触发重新搜索
+        searchField.addPropertyChangeListener("caseSensitive", evt -> {
+            if (isBodyTypeRAW() && !searchField.getText().isEmpty()) {
+                searchInBodyArea(bodyArea, searchField.getText(), true);
+            }
+        });
+        searchField.addPropertyChangeListener("wholeWord", evt -> {
+            if (isBodyTypeRAW() && !searchField.getText().isEmpty()) {
+                searchInBodyArea(bodyArea, searchField.getText(), true);
+            }
         });
         // 切换body类型时，控制搜索区显示
         bodyTypeComboBox.addActionListener(e -> {
@@ -424,42 +437,111 @@ public class RequestBodyPanel extends JPanel {
     }
 
     /**
-     * 在 bodyArea 中搜索关键字并跳转，参考 ResponseBodyPanel 的 search 方法，支持循环查找和选中匹配内容。
+     * 在 bodyArea 中搜索关键字并跳转，支持大小写敏感、整词匹配、循环查找
      */
     private void searchInBodyArea(RSyntaxTextArea area, String keyword, boolean forward) {
         if (keyword == null || keyword.isEmpty()) return;
         String text = area.getText();
         if (text == null || text.isEmpty()) return;
+
+        // 获取搜索选项
+        boolean caseSensitive = searchField != null && searchField.isCaseSensitive();
+        boolean wholeWord = searchField != null && searchField.isWholeWord();
+
         int caret = area.getCaretPosition();
-        int pos = -1;
+        int pos;
+
         if (forward) {
             // 向后查找
             int start = caret;
-            if (area.getSelectedText() != null && area.getSelectedText().equals(keyword)) {
-                start = caret + 1;
+            if (area.getSelectedText() != null) {
+                start = area.getSelectionEnd();
             }
-            pos = text.indexOf(keyword, start);
+            pos = findNext(text, keyword, start, caseSensitive, wholeWord);
             if (pos == -1) {
-                // 循环查找
-                pos = text.indexOf(keyword);
+                // 循环查找：从头开始
+                pos = findNext(text, keyword, 0, caseSensitive, wholeWord);
             }
         } else {
             // 向前查找
-            int start = caret - 1;
-            if (area.getSelectedText() != null && area.getSelectedText().equals(keyword)) {
-                start = caret - keyword.length() - 1;
+            int start = caret;
+            if (area.getSelectedText() != null) {
+                start = area.getSelectionStart() - 1;
             }
-            if (start < 0) start = text.length() - 1;
-            pos = text.lastIndexOf(keyword, start);
+            pos = findPrevious(text, keyword, start, caseSensitive, wholeWord);
             if (pos == -1) {
-                pos = text.lastIndexOf(keyword);
+                // 循环查找：从末尾开始
+                pos = findPrevious(text, keyword, text.length(), caseSensitive, wholeWord);
             }
         }
+
         if (pos != -1) {
             area.setCaretPosition(pos);
             area.select(pos, pos + keyword.length());
             area.requestFocusInWindow();
         }
+    }
+
+    /**
+     * 向后查找匹配
+     */
+    private int findNext(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
+        String searchText = caseSensitive ? text : text.toLowerCase();
+        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
+
+        int pos = fromIndex;
+        while ((pos = searchText.indexOf(searchKeyword, pos)) != -1) {
+            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
+                return pos;
+            }
+            pos++;
+        }
+        return -1;
+    }
+
+    /**
+     * 向前查找匹配
+     */
+    private int findPrevious(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
+        if (fromIndex > text.length()) {
+            fromIndex = text.length();
+        }
+
+        String searchText = caseSensitive ? text : text.toLowerCase();
+        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
+
+        int pos = fromIndex;
+        while ((pos = searchText.lastIndexOf(searchKeyword, pos)) != -1) {
+            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
+                return pos;
+            }
+            pos--;
+            if (pos < 0) break;
+        }
+        return -1;
+    }
+
+    /**
+     * 判断是否为整词匹配
+     */
+    private boolean isWholeWord(String text, int start, int length) {
+        int end = start + length;
+
+        // 检查前一个字符
+        if (start > 0) {
+            char prevChar = text.charAt(start - 1);
+            if (Character.isLetterOrDigit(prevChar) || prevChar == '_') {
+                return false;
+            }
+        }
+
+        // 检查后一个字符
+        if (end < text.length()) {
+            char nextChar = text.charAt(end);
+            return !Character.isLetterOrDigit(nextChar) && nextChar != '_';
+        }
+
+        return true;
     }
 
     // getter方法，供主面板调用

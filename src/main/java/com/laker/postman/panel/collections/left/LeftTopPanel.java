@@ -6,7 +6,6 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
@@ -46,7 +45,7 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 
 @Slf4j
 public class LeftTopPanel extends SingletonBasePanel {
-    private FlatTextField searchField;
+    private SearchTextField searchField;
 
     @Override
     protected void initUI() {
@@ -81,8 +80,13 @@ public class LeftTopPanel extends SingletonBasePanel {
                     leftPanel.getTreeModel().reload();
                     return;
                 }
+
+                // 获取搜索选项
+                boolean caseSensitive = searchField.isCaseSensitive();
+                boolean wholeWord = searchField.isWholeWord();
+
                 DefaultMutableTreeNode filteredRoot = new DefaultMutableTreeNode(ROOT);
-                filterNodes(leftPanel.getRootTreeNode(), filteredRoot, text.toLowerCase());
+                filterNodes(leftPanel.getRootTreeNode(), filteredRoot, text, caseSensitive, wholeWord);
                 leftPanel.getTreeModel().setRoot(filteredRoot);
                 leftPanel.getTreeModel().reload();
                 expandAll(leftPanel.getRequestTree(), true);
@@ -101,6 +105,38 @@ public class LeftTopPanel extends SingletonBasePanel {
             @Override
             public void changedUpdate(DocumentEvent e) {
                 filterTree();
+            }
+        });
+
+        // 监听搜索选项变化，触发重新过滤
+        searchField.addPropertyChangeListener("caseSensitive", evt -> {
+            if (!searchField.getText().isEmpty()) {
+                // 直接触发过滤逻辑
+                RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                String text = searchField.getText().trim();
+                boolean caseSensitive = searchField.isCaseSensitive();
+                boolean wholeWord = searchField.isWholeWord();
+
+                DefaultMutableTreeNode filteredRoot = new DefaultMutableTreeNode(ROOT);
+                filterNodes(leftPanel.getRootTreeNode(), filteredRoot, text, caseSensitive, wholeWord);
+                leftPanel.getTreeModel().setRoot(filteredRoot);
+                leftPanel.getTreeModel().reload();
+                expandAll(leftPanel.getRequestTree(), true);
+            }
+        });
+        searchField.addPropertyChangeListener("wholeWord", evt -> {
+            if (!searchField.getText().isEmpty()) {
+                // 直接触发过滤逻辑
+                RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                String text = searchField.getText().trim();
+                boolean caseSensitive = searchField.isCaseSensitive();
+                boolean wholeWord = searchField.isWholeWord();
+
+                DefaultMutableTreeNode filteredRoot = new DefaultMutableTreeNode(ROOT);
+                filterNodes(leftPanel.getRootTreeNode(), filteredRoot, text, caseSensitive, wholeWord);
+                leftPanel.getTreeModel().setRoot(filteredRoot);
+                leftPanel.getTreeModel().reload();
+                expandAll(leftPanel.getRequestTree(), true);
             }
         });
     }
@@ -408,8 +444,9 @@ public class LeftTopPanel extends SingletonBasePanel {
     }
 
 
-    // 递归过滤节点
-    private boolean filterNodes(DefaultMutableTreeNode src, DefaultMutableTreeNode dest, String keyword) {
+    // 递归过滤节点，支持大小写敏感和整词匹配
+    private boolean filterNodes(DefaultMutableTreeNode src, DefaultMutableTreeNode dest, String keyword,
+                                boolean caseSensitive, boolean wholeWord) {
         boolean matched = false;
         Object userObj = src.getUserObject();
         if (userObj instanceof Object[] obj) {
@@ -420,18 +457,20 @@ public class LeftTopPanel extends SingletonBasePanel {
                 boolean childMatched = false;
                 for (int i = 0; i < src.getChildCount(); i++) {
                     DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
-                    if (filterNodes(child, groupNode, keyword)) {
+                    if (filterNodes(child, groupNode, keyword, caseSensitive, wholeWord)) {
                         childMatched = true;
                     }
                 }
-                if (groupName.toLowerCase().contains(keyword) || childMatched) {
+                if (matchesText(groupName, keyword, caseSensitive, wholeWord) || childMatched) {
                     dest.add(groupNode);
                     matched = true;
                 }
             } else if (REQUEST.equals(type)) {
                 HttpRequestItem item = (HttpRequestItem) obj[1];
-                boolean nameMatch = item.getName() != null && item.getName().toLowerCase().contains(keyword);
-                boolean urlMatch = item.getUrl() != null && item.getUrl().toLowerCase().contains(keyword);
+                boolean nameMatch = item.getName() != null &&
+                        matchesText(item.getName(), keyword, caseSensitive, wholeWord);
+                boolean urlMatch = item.getUrl() != null &&
+                        matchesText(item.getUrl(), keyword, caseSensitive, wholeWord);
                 if (nameMatch || urlMatch) {
                     dest.add(new DefaultMutableTreeNode(obj.clone()));
                     matched = true;
@@ -442,13 +481,37 @@ public class LeftTopPanel extends SingletonBasePanel {
             boolean childMatched = false;
             for (int i = 0; i < src.getChildCount(); i++) {
                 DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
-                if (filterNodes(child, dest, keyword)) {
+                if (filterNodes(child, dest, keyword, caseSensitive, wholeWord)) {
                     childMatched = true;
                 }
             }
             matched = childMatched;
         }
         return matched;
+    }
+
+    /**
+     * 判断文本是否匹配关键字，支持大小写敏感和整词匹配
+     */
+    private boolean matchesText(String text, String keyword, boolean caseSensitive, boolean wholeWord) {
+        if (text == null || keyword == null) {
+            return false;
+        }
+
+        String searchText = caseSensitive ? text : text.toLowerCase();
+        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
+
+        if (!wholeWord) {
+            // 简单包含匹配
+            return searchText.contains(searchKeyword);
+        }
+
+        // 整词匹配：使用正则表达式
+        // \b 表示单词边界
+        String regex = "\\b" + java.util.regex.Pattern.quote(searchKeyword) + "\\b";
+        int flags = caseSensitive ? 0 : java.util.regex.Pattern.CASE_INSENSITIVE;
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex, flags);
+        return pattern.matcher(text).find();
     }
 
     // 展开/收起所有节点

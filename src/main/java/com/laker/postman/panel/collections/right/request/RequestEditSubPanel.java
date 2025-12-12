@@ -295,6 +295,10 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
 
+        // 发送请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
+        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        editPanel.promotePreviewTabToPermanent();
+
         // 清理上次请求的临时变量
         EnvironmentService.clearTemporaryVariables();
 

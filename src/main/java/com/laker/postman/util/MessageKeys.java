@@ -400,6 +400,8 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_ADD_TIMER = "performance.menu.add_timer";
     public static final String PERFORMANCE_MENU_RENAME = "performance.menu.rename";
     public static final String PERFORMANCE_MENU_DELETE = "performance.menu.delete";
+    public static final String PERFORMANCE_MENU_ENABLE = "performance.menu.enable";
+    public static final String PERFORMANCE_MENU_DISABLE = "performance.menu.disable";
     public static final String PERFORMANCE_MSG_SELECT_THREAD_GROUP = "performance.msg.select_thread_group";
     public static final String PERFORMANCE_MSG_RENAME_NODE = "performance.msg.rename_node";
     public static final String PERFORMANCE_MSG_EXECUTION_INTERRUPTED = "performance.msg.execution_interrupted";

@@ -12,6 +12,7 @@ public class JMeterTreeNode {
     public ThreadGroupData threadGroupData; // 线程组数据
     public AssertionData assertionData;   // 断言数据
     public TimerData timerData;           // 定时器数据
+    public boolean enabled = true;        // 是否启用，默认启用
 
     public JMeterTreeNode(String name, NodeType type) {
         this.name = name;

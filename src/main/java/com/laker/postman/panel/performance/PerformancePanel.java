@@ -125,6 +125,8 @@ public class PerformancePanel extends SingletonBasePanel {
         jmeterTree.setRootVisible(true);
         jmeterTree.setShowsRootHandles(true);
         jmeterTree.setCellRenderer(new JMeterTreeCellRenderer());
+        // 允许多选，支持批量操作
+        jmeterTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         // 只允许单节点拖拽
         jmeterTree.setDragEnabled(true);
         jmeterTree.setDropMode(DropMode.ON_OR_INSERT);
@@ -173,8 +175,6 @@ public class PerformancePanel extends SingletonBasePanel {
 
         add(verticalSplit, BorderLayout.CENTER);
 
-        // 只允许单节点选择和拖拽
-        jmeterTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
         // 保存/加载用例按钮 ==========
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -386,6 +386,10 @@ public class PerformancePanel extends SingletonBasePanel {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) rootNode.getChildAt(i);
             Object userObj = child.getUserObject();
             if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
+                // 只计算已启用的线程组
+                if (!jtNode.enabled) {
+                    continue;
+                }
                 ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
                 switch (tg.threadMode) {
                     case FIXED -> total += tg.numThreads;
@@ -454,6 +458,11 @@ public class PerformancePanel extends SingletonBasePanel {
                 List<Thread> tgThreads = new ArrayList<>();
                 for (int i = 0; i < rootNode.getChildCount(); i++) {
                     DefaultMutableTreeNode tgNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+                    Object tgUserObj = tgNode.getUserObject();
+                    // 跳过已停用的线程组
+                    if (tgUserObj instanceof JMeterTreeNode tgJtNode && !tgJtNode.enabled) {
+                        continue;
+                    }
                     Thread t = new Thread(() -> runJMeterTreeWithProgress(tgNode, progressLabel, totalThreads));
                     tgThreads.add(t);
                     t.start();
@@ -964,6 +973,10 @@ public class PerformancePanel extends SingletonBasePanel {
         for (int i = 0; i < groupNode.getChildCount() && running; i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
             Object userObj = child.getUserObject();
+            // 跳过已停用的请求节点
+            if (userObj instanceof JMeterTreeNode jtNode && !jtNode.enabled) {
+                continue;
+            }
             executeRequestNode(userObj, child);
         }
     }
@@ -1046,6 +1059,10 @@ public class PerformancePanel extends SingletonBasePanel {
                     DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                     Object subObj = sub.getUserObject();
                     if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
+                        // 跳过已停用的断言
+                        if (!subNode.enabled) {
+                            continue;
+                        }
                         AssertionData assertion = subNode.assertionData;
                         String type = assertion.type;
                         boolean pass = false;
@@ -1113,6 +1130,10 @@ public class PerformancePanel extends SingletonBasePanel {
                 DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                 Object subObj = sub.getUserObject();
                 if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
+                    // 跳过已停用的定时器
+                    if (!subNode2.enabled) {
+                        continue;
+                    }
                     try {
                         TimeUnit.MILLISECONDS.sleep(subNode2.timerData.delayMs);
                     } catch (InterruptedException ignored) {
@@ -1132,6 +1153,13 @@ public class PerformancePanel extends SingletonBasePanel {
 
             @Override
             public void valueChanged(TreeSelectionEvent e) {
+                // 检查是否多选
+                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                if (selectedPaths != null && selectedPaths.length > 1) {
+                    // 多选模式：不切换属性面板，保持当前显示
+                    return;
+                }
+
                 // 保存上一个节点的数据
                 if (lastNode != null) {
                     Object userObj = lastNode.getUserObject();
@@ -1193,11 +1221,21 @@ public class PerformancePanel extends SingletonBasePanel {
         JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_TIMER));
         JMenuItem renameNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_RENAME));
         JMenuItem deleteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DELETE));
+        JMenuItem enableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ENABLE));
+        JMenuItem disableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DISABLE));
+
+        // 创建两个分割线，以便可以单独控制显示
+        JSeparator separator1 = new JSeparator();
+        JSeparator separator2 = new JSeparator();
+
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
         treeMenu.add(addAssertion);
         treeMenu.add(addTimer);
-        treeMenu.addSeparator();
+        treeMenu.add(separator1);
+        treeMenu.add(enableNode);
+        treeMenu.add(disableNode);
+        treeMenu.add(separator2);
         treeMenu.add(renameNode);
         treeMenu.add(deleteNode);
 
@@ -1279,6 +1317,32 @@ public class PerformancePanel extends SingletonBasePanel {
             if (jtNode.type == NodeType.ROOT) return;
             treeModel.removeNodeFromParent(node);
         });
+        // 启用（自动支持单个和批量操作）
+        enableNode.addActionListener(e -> {
+            TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+            if (selectedPaths == null || selectedPaths.length == 0) return;
+            for (TreePath path : selectedPaths) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                Object userObj = node.getUserObject();
+                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
+                    jtNode.enabled = true;
+                    treeModel.nodeChanged(node);
+                }
+            }
+        });
+        // 停用（自动支持单个和批量操作）
+        disableNode.addActionListener(e -> {
+            TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+            if (selectedPaths == null || selectedPaths.length == 0) return;
+            for (TreePath path : selectedPaths) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                Object userObj = node.getUserObject();
+                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
+                    jtNode.enabled = false;
+                    treeModel.nodeChanged(node);
+                }
+            }
+        });
 
         // 右键弹出逻辑
         jmeterTree.addMouseListener(new MouseAdapter() {
@@ -1287,27 +1351,91 @@ public class PerformancePanel extends SingletonBasePanel {
                 if (e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e)) {
                     int row = jmeterTree.getClosestRowForLocation(e.getX(), e.getY());
                     if (row < 0) return;
-                    jmeterTree.setSelectionRow(row);
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-                    if (node == null) return;
-                    Object userObj = node.getUserObject();
-                    if (!(userObj instanceof JMeterTreeNode jtNode)) return;
-                    if (jtNode.type == NodeType.ROOT) {
-                        addThreadGroup.setVisible(true);
+
+                    // 如果右键点击的节点不在选中列表中，则只选中该节点
+                    TreePath clickedPath = jmeterTree.getPathForLocation(e.getX(), e.getY());
+                    if (clickedPath != null) {
+                        TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                        boolean isInSelection = false;
+                        if (selectedPaths != null) {
+                            for (TreePath path : selectedPaths) {
+                                if (path.equals(clickedPath)) {
+                                    isInSelection = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!isInSelection) {
+                            jmeterTree.setSelectionPath(clickedPath);
+                        }
+                    }
+
+                    TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                    if (selectedPaths == null || selectedPaths.length == 0) return;
+
+                    // 判断是单选还是多选
+                    boolean isMultiSelection = selectedPaths.length > 1;
+
+                    if (isMultiSelection) {
+                        // 多选模式：只显示批量操作相关菜单
+                        addThreadGroup.setVisible(false);
                         addRequest.setVisible(false);
                         addAssertion.setVisible(false);
                         addTimer.setVisible(false);
                         renameNode.setVisible(false);
-                        deleteNode.setVisible(false);
-                        treeMenu.show(jmeterTree, e.getX(), e.getY());
-                        return;
+                        deleteNode.setVisible(true); // 允许批量删除
+
+                        // 检查选中节点的启用状态，智能显示启用/停用
+                        boolean hasDisabled = false;
+                        boolean hasEnabled = false;
+                        for (TreePath path : selectedPaths) {
+                            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                            Object userObj = node.getUserObject();
+                            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
+                                if (jtNode.enabled) {
+                                    hasEnabled = true;
+                                } else {
+                                    hasDisabled = true;
+                                }
+                            }
+                        }
+                        enableNode.setVisible(hasDisabled);
+                        disableNode.setVisible(hasEnabled);
+                        separator1.setVisible(true);
+                        separator2.setVisible(true);
+                    } else {
+                        // 单选模式：显示常规菜单
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent();
+                        Object userObj = node.getUserObject();
+                        if (!(userObj instanceof JMeterTreeNode jtNode)) return;
+
+                        if (jtNode.type == NodeType.ROOT) {
+                            addThreadGroup.setVisible(true);
+                            addRequest.setVisible(false);
+                            addAssertion.setVisible(false);
+                            addTimer.setVisible(false);
+                            renameNode.setVisible(false);
+                            deleteNode.setVisible(false);
+                            enableNode.setVisible(false);
+                            disableNode.setVisible(false);
+                            separator1.setVisible(false);
+                            separator2.setVisible(false);
+                            treeMenu.show(jmeterTree, e.getX(), e.getY());
+                            return;
+                        }
+                        addThreadGroup.setVisible(false);
+                        addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP);
+                        addAssertion.setVisible(jtNode.type == NodeType.REQUEST);
+                        addTimer.setVisible(jtNode.type == NodeType.REQUEST);
+                        renameNode.setVisible(true);
+                        deleteNode.setVisible(true);
+                        // 根据当前启用状态显示启用或停用菜单
+                        enableNode.setVisible(!jtNode.enabled);
+                        disableNode.setVisible(jtNode.enabled);
+                        // 显示分割线
+                        separator1.setVisible(true);
+                        separator2.setVisible(true);
                     }
-                    addThreadGroup.setVisible(false);
-                    addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP);
-                    addAssertion.setVisible(jtNode.type == NodeType.REQUEST);
-                    addTimer.setVisible(jtNode.type == NodeType.REQUEST);
-                    renameNode.setVisible(jtNode.type != NodeType.ROOT);
-                    deleteNode.setVisible(jtNode.type != NodeType.ROOT);
                     treeMenu.show(jmeterTree, e.getX(), e.getY());
                 }
             }

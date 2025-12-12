@@ -276,12 +276,24 @@ public class PerformanceResultTreePanel extends JPanel {
             }
 
             resultTreeModel.nodesWereInserted(resultRootNode, childIndices);
+
+            // 自动展开根节点，让所有结果可见
+            expandRootNode();
         }
 
         // 显示警告信息（如果达到上限）
         if (currentResultCount.get() >= MAX_RESULT_NODES && !limitWarningShown) {
             limitWarningShown = true;
             log.warn("结果树已达到最大限制 {} 个节点，旧结果将被自动移除", MAX_RESULT_NODES);
+        }
+    }
+
+    /**
+     * 展开根节点，显示所有第一级子节点
+     */
+    private void expandRootNode() {
+        if (resultTree.getRowCount() > 0) {
+            resultTree.expandRow(0);
         }
     }
 

@@ -290,11 +290,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
-     * 初始化所有 tab 的文字颜色（仅在首次加载时调用）
+     * 初始化所有 tab 的图标和文字颜色（在首次加载时调用，展开和收起状态都需要）
      */
     private void initializeAllTabColors() {
-        if (!sidebarExpanded) return;
-
         int selectedIndex = tabbedPane.getSelectedIndex();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             updateSingleTabTextColor(i, i == selectedIndex);
@@ -303,12 +301,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
-     * 更新所有 tab 的文字颜色（仅在展开状态下）
+     * 更新所有 tab 的图标和文字颜色（展开和收起状态都支持）
      * 优化：只更新当前和之前选中的 tab，避免遍历所有 tab
      */
     private void updateTabTextColors() {
-        if (!sidebarExpanded) return;
-
         int selectedIndex = tabbedPane.getSelectedIndex();
 
         // 更新之前选中的 tab（如果存在）
@@ -326,23 +322,36 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
-     * 更新单个 tab 的文字颜色
+     * 更新单个 tab 的图标和文字颜色（支持展开和收起状态）
      */
     private void updateSingleTabTextColor(int tabIndex, boolean isSelected) {
         Component tabComponent = tabbedPane.getTabComponentAt(tabIndex);
         if (!(tabComponent instanceof JPanel panel)) return;
 
-        // 查找文字标签并更新颜色
+        // 获取对应的 SidebarTab 枚举
+        if (tabIndex < 0 || tabIndex >= SidebarTab.values().length) return;
+        SidebarTab sidebarTab = SidebarTab.values()[tabIndex];
+
+        // 遍历面板中的组件，根据名称更新图标和文字
         for (Component comp : panel.getComponents()) {
-            if (comp instanceof JLabel label && label.getText() != null && !label.getText().isEmpty()) {
-                if (isSelected) {
-                    label.setForeground(ModernColors.PRIMARY);
-                    label.setFont(boldFont); // 使用缓存的字体
-                } else {
-                    label.setForeground(ModernColors.TEXT_SECONDARY);
-                    label.setFont(normalFont); // 使用缓存的字体
+            if (comp instanceof JLabel label) {
+                String name = label.getName();
+
+                // 更新图标（展开和收起状态都有图标）
+                if ("iconLabel".equals(name)) {
+                    label.setIcon(isSelected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon());
                 }
-                break;
+
+                // 更新文字（只在展开状态有文字）
+                if ("titleLabel".equals(name)) {
+                    if (isSelected) {
+                        label.setForeground(ModernColors.PRIMARY);
+                        label.setFont(boldFont);
+                    } else {
+                        label.setForeground(ModernColors.TEXT_SECONDARY);
+                        label.setFont(normalFont);
+                    }
+                }
             }
         }
     }
@@ -495,8 +504,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 展开状态：图标在上，文本在下
             JLabel iconLabel = new JLabel(icon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setName("iconLabel"); // 标记为图标标签
 
             JLabel titleLabel = new JLabel(title);
+            titleLabel.setName("titleLabel"); // 标记为文字标签
             // 根据当前是否选中设置初始颜色
             int currentIndex = getTabIndexByTitle(title);
             boolean isCurrentlySelected = currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
@@ -521,6 +532,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 收起状态：只显示图标，居中，增加上下左右间距
             JLabel iconLabel = new JLabel(icon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            iconLabel.setName("iconLabel"); // 标记为图标标签
             // 设置 tooltip 在 panel 上而非 label 上
             panel.setToolTipText(title);
 

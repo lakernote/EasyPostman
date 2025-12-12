@@ -2,6 +2,7 @@ package com.laker.postman.model;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -64,6 +65,7 @@ public enum SidebarTab {
 
     // 懒加载缓存
     private FlatSVGIcon icon;
+    private FlatSVGIcon selectedIcon;  // 选中状态的图标（带颜色）
     private String title;
     private JPanel panel;
 
@@ -84,13 +86,27 @@ public enum SidebarTab {
     }
 
     /**
-     * 获取图标（懒加载，避免重复创建）
+     * 获取图标（懒加载，避免重复创建）- 普通状态
      */
     public Icon getIcon() {
         if (icon == null) {
             icon = new FlatSVGIcon(iconPath, 22, 22);
         }
         return icon;
+    }
+
+    /**
+     * 获取选中状态的图标（懒加载，带主题色）
+     * 使用 ModernColors.PRIMARY 确保颜色一致性
+     */
+    public Icon getSelectedIcon() {
+        if (selectedIcon == null) {
+            selectedIcon = new FlatSVGIcon(iconPath, 22, 22);
+            // 使用 ModernColors.PRIMARY (#007AFF iOS蓝)
+            selectedIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.PRIMARY
+            ));
+        }
+        return selectedIcon;
     }
 
     /**

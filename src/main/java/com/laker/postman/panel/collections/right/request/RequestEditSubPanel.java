@@ -1096,8 +1096,19 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
 
-        // 3. POST/PUT/PATCH请求：默认显示Body Tab（这些方法通常需要发送数据）
+        // 3. POST/PUT/PATCH请求：智能判断
+        // 如果没有任何Body数据，优先显示Params Tab（更符合实际使用场景）
         if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
+            // 检查是否有有效的参数数据
+            boolean hasParams = CollUtil.isNotEmpty(item.getParamsList());
+
+            // 如果有参数但没有Body数据，显示Params Tab
+            if (hasParams) {
+                reqTabs.setSelectedComponent(paramsPanel);
+                return;
+            }
+
+            // 否则显示Body Tab（默认行为，方便用户输入请求体）
             reqTabs.setSelectedComponent(requestBodyPanel);
             return;
         }

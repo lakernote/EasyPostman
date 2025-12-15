@@ -1,9 +1,13 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,6 +15,7 @@ import java.awt.*;
 /**
  * 现代化界面设置面板 - 下载进度、历史记录等UI相关配置
  */
+@Slf4j
 public class UISettingsPanelModern extends ModernSettingsPanel {
     private static final int FIELD_SPACING = 8;
     private static final int SECTION_SPACING = 12;
@@ -21,6 +26,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JTextField maxOpenedRequestsCountField;
     private JCheckBox autoFormatResponseCheckBox;
     private JCheckBox sidebarExpandedCheckBox;
+    private JComboBox<String> notificationPositionComboBox;
     private JLabel downloadProgressDialogThresholdLabel;
 
     @Override
@@ -119,6 +125,26 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP)
         );
         generalSection.add(sidebarRow);
+        generalSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 通知位置设置 - 使用枚举的 i18nKey
+        NotificationPosition[] positions = NotificationPosition.values();
+        String[] positionLabels = new String[positions.length];
+        for (int i = 0; i < positions.length; i++) {
+            positionLabels[i] = I18nUtil.getMessage(positions[i].getI18nKey());
+        }
+        notificationPositionComboBox = new JComboBox<>(positionLabels);
+
+        // 设置当前值 - 直接从 SettingManager 获取枚举
+        NotificationPosition currentPosition = SettingManager.getNotificationPosition();
+        notificationPositionComboBox.setSelectedIndex(currentPosition.getIndex());
+
+        JPanel notificationPositionRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_NOTIFICATION_POSITION),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_NOTIFICATION_POSITION_TOOLTIP),
+                notificationPositionComboBox
+        );
+        generalSection.add(notificationPositionRow);
 
         contentPanel.add(generalSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
@@ -132,6 +158,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(maxOpenedRequestsCountField);
         trackComponentValue(autoFormatResponseCheckBox);
         trackComponentValue(sidebarExpandedCheckBox);
+        trackComponentValue(notificationPositionComboBox);
     }
 
     private void setupValidators() {
@@ -215,6 +242,11 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 updateSidebarExpansion();
             }
 
+            // 保存通知位置设置并更新NotificationUtil - 使用枚举的 fromIndex 方法
+            NotificationPosition selectedPosition = NotificationPosition.fromIndex(notificationPositionComboBox.getSelectedIndex());
+            SettingManager.setNotificationPosition(selectedPosition);
+            NotificationUtil.setDefaultPosition(selectedPosition);
+
             // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(showDownloadProgressCheckBox);
@@ -223,6 +255,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(maxOpenedRequestsCountField);
             trackComponentValue(autoFormatResponseCheckBox);
             trackComponentValue(sidebarExpandedCheckBox);
+            trackComponentValue(notificationPositionComboBox);
             setHasUnsavedChanges(false);
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
@@ -245,14 +278,10 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private void updateSidebarExpansion() {
         try {
             // 获取 SidebarTabPanel 单例并更新
-            com.laker.postman.panel.sidebar.SidebarTabPanel sidebarPanel =
-                com.laker.postman.common.SingletonFactory.getInstance(
-                    com.laker.postman.panel.sidebar.SidebarTabPanel.class);
+            SidebarTabPanel sidebarPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
             sidebarPanel.updateSidebarExpansion();
         } catch (Exception ex) {
-            // 静默处理异常
-            ex.printStackTrace();
+            log.error(ex.getMessage(), ex);
         }
     }
 }
-

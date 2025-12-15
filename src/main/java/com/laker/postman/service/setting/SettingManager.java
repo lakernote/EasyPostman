@@ -1,7 +1,10 @@
 package com.laker.postman.service.setting;
 
+import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
+import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.SystemUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+@Slf4j
 public class SettingManager {
     private static final String CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "easy_postman_settings.properties";
     private static final Properties props = new Properties();
@@ -20,6 +24,7 @@ public class SettingManager {
 
     static {
         load();
+        initializeNotificationPosition();
     }
 
     public static void load() {
@@ -30,6 +35,19 @@ public class SettingManager {
             } catch (IOException e) {
                 // ignore
             }
+        }
+    }
+
+    /**
+     * 初始化通知位置设置
+     */
+    private static void initializeNotificationPosition() {
+        try {
+            NotificationPosition position = getNotificationPosition();
+            NotificationUtil.setDefaultPosition(position);
+        } catch (Exception e) {
+            // 如果解析失败，使用默认值
+            log.error("Error initializing notification position", e);
         }
     }
 
@@ -272,6 +290,22 @@ public class SettingManager {
 
     public static void setSidebarExpanded(boolean expanded) {
         props.setProperty("sidebar_expanded", String.valueOf(expanded));
+        save();
+    }
+
+    /**
+     * 获取通知位置
+     */
+    public static NotificationPosition getNotificationPosition() {
+        String val = props.getProperty("notification_position");
+        if (val != null) {
+            return NotificationPosition.fromName(val);
+        }
+        return NotificationPosition.BOTTOM_RIGHT; // 默认右下角
+    }
+
+    public static void setNotificationPosition(NotificationPosition position) {
+        props.setProperty("notification_position", position.name());
         save();
     }
 

@@ -3,8 +3,10 @@ package com.laker.postman.util;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.model.NotificationPosition;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
@@ -153,19 +155,14 @@ public class NotificationUtil {
 
     }
 
-    // 通知位置枚举
-    public enum NotificationPosition {
-        TOP_RIGHT,
-        TOP_CENTER,
-        TOP_LEFT,
-        BOTTOM_RIGHT,
-        BOTTOM_CENTER,
-        BOTTOM_LEFT,
-        CENTER
-    }
 
+    /**
+     * -- SETTER --
+     * 设置默认通知位置
+     */
     // 默认位置
-    private static NotificationPosition defaultPosition = NotificationPosition.TOP_RIGHT;
+    @Setter
+    private static NotificationPosition defaultPosition = NotificationPosition.BOTTOM_RIGHT;
 
     // 是否显示进度条（默认关闭以提升性能）
     private static boolean showProgressBar = false;
@@ -175,15 +172,6 @@ public class NotificationUtil {
 
     // 当前显示的通知列表（用于堆叠管理）
     private static final List<ToastWindow> activeToasts = new ArrayList<>();
-
-    /**
-     * 设置是否显示进度条
-     * 注意：开启进度条会增加 CPU 使用率，低配电脑建议关闭
-     */
-    public static void setShowProgressBar(boolean show) {
-        showProgressBar = show;
-    }
-
 
     /**
      * 显示成功通知（2秒后自动关闭）

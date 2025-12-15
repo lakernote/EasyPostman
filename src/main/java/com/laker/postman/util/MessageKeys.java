@@ -700,6 +700,15 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED = "settings.general.sidebar_expanded";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP = "settings.general.sidebar_expanded.tooltip";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION = "settings.general.notification_position";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_TOOLTIP = "settings.general.notification_position.tooltip";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_TOP_RIGHT = "settings.general.notification_position.top_right";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_TOP_CENTER = "settings.general.notification_position.top_center";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_TOP_LEFT = "settings.general.notification_position.top_left";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_BOTTOM_RIGHT = "settings.general.notification_position.bottom_right";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_BOTTOM_CENTER = "settings.general.notification_position.bottom_center";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_BOTTOM_LEFT = "settings.general.notification_position.bottom_left";
+    public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_CENTER = "settings.general.notification_position.center";
 
     // Validation messages
     public static final String SETTINGS_VALIDATION_ERROR_MESSAGE = "settings.validation.error.message";

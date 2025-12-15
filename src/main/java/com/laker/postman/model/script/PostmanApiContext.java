@@ -115,6 +115,18 @@ public class PostmanApiContext {
     }
 
     /**
+     * 设置环境变量（支持任意类型）
+     * 对应脚本中的: pm.environment.set(key, value)
+     *
+     * @param key   变量名
+     * @param value 变量值（任意类型）
+     */
+    public void setEnvironmentVariable(String key, Object value) {
+        environment.set(key, value);
+        EnvironmentService.saveEnvironment(environment);
+    }
+
+    /**
      * 获取环境变量
      * 对应脚本中的: pm.environment.get(key)
      *
@@ -133,6 +145,17 @@ public class PostmanApiContext {
      * @param value 变量值
      */
     public void setGlobalVariable(String key, String value) {
+        setEnvironmentVariable(key, value);
+    }
+
+    /**
+     * 设置全局变量（支持任意类型）
+     * 对应脚本中的: pm.globals.set(key, value)
+     *
+     * @param key   变量名
+     * @param value 变量值（任意类型）
+     */
+    public void setGlobalVariable(String key, Object value) {
         setEnvironmentVariable(key, value);
     }
 
@@ -236,6 +259,48 @@ public class PostmanApiContext {
      */
     public String uuid() {
         return UUID.randomUUID().toString();
+    }
+
+    /**
+     * 生成 UUID（别名方法）
+     * 对应脚本中的: pm.generateUUID()
+     *
+     * @return UUID 字符串
+     */
+    public String generateUUID() {
+        return uuid();
+    }
+
+    /**
+     * 获取当前时间戳（毫秒）
+     * 对应脚本中的: pm.getTimestamp()
+     *
+     * @return 当前时间戳（毫秒）
+     */
+    public long getTimestamp() {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * 设置临时变量
+     * 对应脚本中的: pm.setVariable(key, value)
+     *
+     * @param key   变量名
+     * @param value 变量值
+     */
+    public void setVariable(String key, String value) {
+        variables.set(key, value);
+    }
+
+    /**
+     * 获取临时变量
+     * 对应脚本中的: pm.getVariable(key)
+     *
+     * @param key 变量名
+     * @return 变量值，不存在则返回 null
+     */
+    public String getVariable(String key) {
+        return variables.get(key);
     }
 
     /**

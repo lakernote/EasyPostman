@@ -122,6 +122,14 @@ public class Environment {
     }
 
     /**
+     * 检查变量是否存在（别名方法）
+     * 对应脚本中的: pm.environment.has(key)
+     */
+    public boolean has(String key) {
+        return hasVariable(key);
+    }
+
+    /**
      * 获取所有变量的 Map 表示
      * 从 variableList 构建 Map，只包含已启用的变量
      */

@@ -36,6 +36,19 @@ public class TemporaryVariablesApi {
     }
 
     /**
+     * 设置临时变量（支持任意类型，自动转换为字符串）
+     * 解决JavaScript中传入数字等非String类型的问题
+     *
+     * @param key   变量名
+     * @param value 变量值（任意类型）
+     */
+    public void set(String key, Object value) {
+        if (key != null && value != null) {
+            variablesMap.put(key, String.valueOf(value));
+        }
+    }
+
+    /**
      * 获取临时变量
      *
      * @param key 变量名

@@ -354,6 +354,11 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 从集合中查找最新的请求
         String requestId = jmNode.httpRequestItem.getId();
+        if (requestId == null || requestId.trim().isEmpty()) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS));
+            return;
+        }
+
         HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(requestId);
 
         if (latestRequestItem == null) {
@@ -392,14 +397,11 @@ public class PerformancePanel extends SingletonBasePanel {
         threadGroupPanel.saveThreadGroupData();
         assertionPanel.saveAssertionData();
         timerPanel.saveTimerData();
-        if (requestEditSubPanel != null) {
-            // 保存RequestEditSubPanel表单到当前选中节点
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-            if (node != null) {
-                Object userObj = node.getUserObject();
-                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
-                    jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
-                }
+        if (requestEditSubPanel != null && currentRequestNode != null) {
+            // 保存RequestEditSubPanel表单到当前选中的请求节点
+            Object userObj = currentRequestNode.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+                jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
             }
         }
     }
@@ -1299,12 +1301,14 @@ public class PerformancePanel extends SingletonBasePanel {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
                 if (node == null) {
                     propertyCardLayout.show(propertyPanel, EMPTY);
+                    currentRequestNode = null; // 清空当前请求节点引用
                     lastNode = null;
                     return;
                 }
                 Object userObj = node.getUserObject();
                 if (!(userObj instanceof JMeterTreeNode jtNode)) {
                     propertyCardLayout.show(propertyPanel, EMPTY);
+                    currentRequestNode = null; // 清空当前请求节点引用
                     lastNode = node;
                     return;
                 }
@@ -1331,7 +1335,10 @@ public class PerformancePanel extends SingletonBasePanel {
                         timerPanel.setTimerData(jtNode);
                         currentRequestNode = null; // 清空当前请求节点引用
                     }
-                    default -> propertyCardLayout.show(propertyPanel, EMPTY);
+                    default -> {
+                        propertyCardLayout.show(propertyPanel, EMPTY);
+                        currentRequestNode = null; // 清空当前请求节点引用
+                    }
                 }
                 lastNode = node;
             }
@@ -1444,6 +1451,10 @@ public class PerformancePanel extends SingletonBasePanel {
             Object userObj = node.getUserObject();
             if (!(userObj instanceof JMeterTreeNode jtNode)) return;
             if (jtNode.type == NodeType.ROOT) return;
+            // 如果删除的是当前选中的请求节点，清空引用
+            if (node == currentRequestNode) {
+                currentRequestNode = null;
+            }
             treeModel.removeNodeFromParent(node);
             saveConfig();
         });
@@ -1631,6 +1642,10 @@ public class PerformancePanel extends SingletonBasePanel {
         // 移除不存在的请求节点（从后往前删除，避免索引变化）
         for (int i = nodesToRemove.size() - 1; i >= 0; i--) {
             DefaultMutableTreeNode nodeToRemove = nodesToRemove.get(i);
+            // 如果删除的是当前选中的请求节点，清空引用
+            if (nodeToRemove == currentRequestNode) {
+                currentRequestNode = null;
+            }
             treeModel.removeNodeFromParent(nodeToRemove);
         }
 
@@ -1666,18 +1681,24 @@ public class PerformancePanel extends SingletonBasePanel {
             // 如果是请求节点，刷新请求数据
             if (jmNode.type == NodeType.REQUEST && jmNode.httpRequestItem != null) {
                 String requestId = jmNode.httpRequestItem.getId();
-                HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(requestId);
-
-                if (latestRequestItem == null) {
-                    // 请求在集合中已被删除，标记为待删除
-                    log.warn("Request with ID {} not found in collections", requestId);
+                // 检查 requestId 是否有效
+                if (requestId == null || requestId.trim().isEmpty()) {
+                    log.warn("Request node has null or empty ID, marking for removal");
                     nodesToRemove.add(treeNode);
                 } else {
-                    // 更新请求数据
-                    jmNode.httpRequestItem = latestRequestItem;
-                    jmNode.name = latestRequestItem.getName();
-                    treeModel.nodeChanged(treeNode);
-                    updatedCount++;
+                    HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(requestId);
+
+                    if (latestRequestItem == null) {
+                        // 请求在集合中已被删除，标记为待删除
+                        log.warn("Request with ID {} not found in collections", requestId);
+                        nodesToRemove.add(treeNode);
+                    } else {
+                        // 更新请求数据
+                        jmNode.httpRequestItem = latestRequestItem;
+                        jmNode.name = latestRequestItem.getName();
+                        treeModel.nodeChanged(treeNode);
+                        updatedCount++;
+                    }
                 }
             }
         }

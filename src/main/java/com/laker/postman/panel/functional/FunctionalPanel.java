@@ -30,6 +30,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -165,6 +166,13 @@ public class FunctionalPanel extends SingletonBasePanel {
             stopBtn.setEnabled(false);
         });
         btnPanel.add(stopBtn);
+
+        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
+        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg"));
+        refreshBtn.setPreferredSize(new Dimension(95, 28));
+        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_REFRESH_TOOLTIP));
+        refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
+        btnPanel.add(refreshBtn);
 
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
         clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
@@ -777,6 +785,77 @@ public class FunctionalPanel extends SingletonBasePanel {
             persistenceService.saveAsync(rows);
         } catch (Exception e) {
             log.error("Failed to save config", e);
+        }
+    }
+
+    /**
+     * 从集合中刷新请求数据
+     * 重新加载所有请求的最新配置
+     */
+    private void refreshRequestsFromCollections() {
+        List<RunnerRowData> currentRows = tableModel.getAllRows();
+        if (currentRows.isEmpty()) {
+            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST));
+            return;
+        }
+
+        int updatedCount = 0;
+        int removedCount = 0;
+        List<Integer> rowsToRemove = new ArrayList<>();
+
+        for (int i = 0; i < currentRows.size(); i++) {
+            RunnerRowData row = currentRows.get(i);
+            if (row == null || row.requestItem == null) {
+                rowsToRemove.add(i);
+                removedCount++;
+                continue;
+            }
+
+            // 通过ID从集合中查找最新的请求配置
+            HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(row.requestItem.getId());
+
+            if (latestRequestItem == null) {
+                // 请求在集合中已被删除
+                log.warn("Request with ID {} not found in collections", row.requestItem.getId());
+                rowsToRemove.add(i);
+                removedCount++;
+            } else {
+                // 更新请求数据
+                try {
+                    PreparedRequest preparedRequest = PreparedRequestBuilder.build(latestRequestItem);
+                    row.requestItem = latestRequestItem;
+                    row.preparedRequest = preparedRequest;
+                    row.name = latestRequestItem.getName();
+                    row.url = latestRequestItem.getUrl();
+                    row.method = latestRequestItem.getMethod();
+                    updatedCount++;
+                } catch (Exception e) {
+                    log.error("Failed to refresh request {}: {}", latestRequestItem.getName(), e.getMessage());
+                }
+            }
+        }
+
+        // 移除不存在的请求（从后往前删除，避免索引变化）
+        for (int i = rowsToRemove.size() - 1; i >= 0; i--) {
+            tableModel.removeRow(rowsToRemove.get(i));
+        }
+
+        // 刷新表格显示
+        tableModel.fireTableDataChanged();
+
+        // 保存更新后的配置
+        save();
+
+        // 更新按钮状态
+        if (tableModel.getRowCount() == 0) {
+            runBtn.setEnabled(false);
+        }
+
+        // 显示刷新结果
+        if (removedCount > 0) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_REFRESH_WARNING, removedCount));
+        } else {
+            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_REFRESH_SUCCESS, updatedCount));
         }
     }
 }

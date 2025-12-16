@@ -170,7 +170,7 @@ public class FunctionalPersistenceService {
     /**
      * 通过ID从集合中查找请求项
      */
-    private HttpRequestItem findRequestItemById(String requestId) {
+    public HttpRequestItem findRequestItemById(String requestId) {
         if (requestId == null || requestId.isEmpty()) {
             return null;
         }

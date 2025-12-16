@@ -82,6 +82,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
+    private JButton refreshBtn;
     private long startTime;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
@@ -206,7 +207,7 @@ public class PerformancePanel extends SingletonBasePanel {
         btnPanel.add(stopBtn);
 
         // 刷新按钮
-        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
+        refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
         refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg"));
         refreshBtn.setPreferredSize(new Dimension(95, 28));
         refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_TOOLTIP));
@@ -318,7 +319,6 @@ public class PerformancePanel extends SingletonBasePanel {
         JButton refreshCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT));
         refreshCurrentBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 14, 14));
         refreshCurrentBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-//        refreshCurrentBtn.setPreferredSize(new Dimension(80, 24));
         refreshCurrentBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP));
         refreshCurrentBtn.addActionListener(e -> refreshCurrentRequest());
         rightPanel.add(refreshCurrentBtn);
@@ -414,6 +414,7 @@ public class PerformancePanel extends SingletonBasePanel {
         running = true;
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
+        refreshBtn.setEnabled(false); // 运行时禁用刷新按钮
         resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
         performanceResultTreePanel.clearResults(); // 清空结果树
         performanceReportPanel.clearReport(); // 清空报表数据
@@ -457,6 +458,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     running = false;
                     runBtn.setEnabled(true);
                     stopBtn.setEnabled(false);
+                    refreshBtn.setEnabled(true); // 测试完成时重新启用刷新按钮
                     stopTrendTimer();
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
 
@@ -1593,6 +1595,7 @@ public class PerformancePanel extends SingletonBasePanel {
         }
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
+        refreshBtn.setEnabled(true); // 停止时重新启用刷新按钮
         OkHttpClientManager.setDefaultConnectionPoolConfig();
         // 停止趋势图定时采样
         stopTrendTimer();
@@ -1649,6 +1652,12 @@ public class PerformancePanel extends SingletonBasePanel {
             treeModel.removeNodeFromParent(nodeToRemove);
         }
 
+        // 保存当前选中节点的路径（用于重新定位）
+        TreePath currentPath = null;
+        if (currentRequestNode != null) {
+            currentPath = new TreePath(currentRequestNode.getPath());
+        }
+
         // 保存更新后的配置
         saveConfig();
 
@@ -1658,6 +1667,29 @@ public class PerformancePanel extends SingletonBasePanel {
         // 展开所有节点
         for (int i = 0; i < jmeterTree.getRowCount(); i++) {
             jmeterTree.expandRow(i);
+        }
+
+        // 重新定位并刷新当前选中的请求节点
+        if (currentPath != null) {
+            // 尝试重新找到相同路径的节点
+            TreePath newPath = findTreePathByPath(currentPath);
+            if (newPath != null) {
+                jmeterTree.setSelectionPath(newPath);
+                DefaultMutableTreeNode newNode = (DefaultMutableTreeNode) newPath.getLastPathComponent();
+                Object userObj = newNode.getUserObject();
+                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+                    currentRequestNode = newNode;
+                    // 刷新右侧编辑面板
+                    if (jtNode.httpRequestItem != null) {
+                        requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
+                    }
+                } else {
+                    currentRequestNode = null;
+                }
+            } else {
+                // 路径找不到了（节点可能被删除），清空引用
+                currentRequestNode = null;
+            }
         }
 
         // 显示刷新结果
@@ -1710,5 +1742,56 @@ public class PerformancePanel extends SingletonBasePanel {
         }
 
         return updatedCount;
+    }
+
+    /**
+     * 在树重建后，根据旧路径查找新节点
+     * 通过比较节点的名称和类型来定位
+     */
+    private TreePath findTreePathByPath(TreePath oldPath) {
+        if (oldPath == null) {
+            return null;
+        }
+
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        Object[] oldPathObjects = oldPath.getPath();
+
+        // 从根节点开始，逐层查找匹配的节点
+        DefaultMutableTreeNode currentNode = root;
+        List<DefaultMutableTreeNode> newPath = new ArrayList<>();
+        newPath.add(root);
+
+        // 跳过第一个根节点，从第二层开始匹配
+        for (int i = 1; i < oldPathObjects.length; i++) {
+            Object oldNodeUserObj = ((DefaultMutableTreeNode) oldPathObjects[i]).getUserObject();
+            if (!(oldNodeUserObj instanceof JMeterTreeNode oldJmNode)) {
+                return null;
+            }
+
+            // 在当前节点的子节点中查找匹配的节点
+            DefaultMutableTreeNode matchedChild = null;
+            for (int j = 0; j < currentNode.getChildCount(); j++) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(j);
+                Object childUserObj = child.getUserObject();
+                if (childUserObj instanceof JMeterTreeNode childJmNode) {
+                    // 通过名称和类型匹配节点
+                    if (childJmNode.type == oldJmNode.type &&
+                            childJmNode.name.equals(oldJmNode.name)) {
+                        matchedChild = child;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedChild == null) {
+                // 找不到匹配的子节点，路径断裂
+                return null;
+            }
+
+            newPath.add(matchedChild);
+            currentNode = matchedChild;
+        }
+
+        return new TreePath(newPath.toArray());
     }
 }

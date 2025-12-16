@@ -24,8 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 性能测试配置持久化服务
@@ -383,6 +381,7 @@ public class PerformancePersistenceService {
 
     /**
      * 通过ID从集合中查找请求项
+     * 注意：返回的是深拷贝，避免性能测试面板中的修改影响集合中的原始数据
      */
     public HttpRequestItem findRequestItemById(String requestId) {
         if (requestId == null || requestId.isEmpty()) {
@@ -400,8 +399,10 @@ public class PerformancePersistenceService {
             if (requestNode != null) {
                 Object userObj = requestNode.getUserObject();
                 if (userObj instanceof Object[] obj) {
-                    if (obj.length > 1 && obj[1] instanceof HttpRequestItem) {
-                        return (HttpRequestItem) obj[1];
+                    if (obj.length > 1 && obj[1] instanceof HttpRequestItem originalItem) {
+                        // 使用 JSON 序列化/反序列化进行深拷贝
+                        // 这样可以确保性能测试面板中的修改不会影响集合中的原始请求
+                        return deepCopyRequestItem(originalItem);
                     }
                 }
             }
@@ -410,6 +411,23 @@ public class PerformancePersistenceService {
         }
 
         return null;
+    }
+
+    /**
+     * 深拷贝 HttpRequestItem 对象
+     * 使用 JSON 序列化/反序列化实现深拷贝
+     */
+    private HttpRequestItem deepCopyRequestItem(HttpRequestItem original) {
+        try {
+            // 将对象转换为 JSON
+            String json = JSONUtil.toJsonStr(original);
+            // 从 JSON 反序列化为新对象
+            return JSONUtil.toBean(json, HttpRequestItem.class);
+        } catch (Exception e) {
+            log.error("Failed to deep copy request item: {}", e.getMessage());
+            // 如果深拷贝失败，返回原始对象（降级处理）
+            return original;
+        }
     }
 
     /**

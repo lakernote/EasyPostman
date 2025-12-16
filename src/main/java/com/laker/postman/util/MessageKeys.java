@@ -394,6 +394,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_EFFICIENT_MODE_DESC = "performance.efficient_mode.desc";
     public static final String PERFORMANCE_EFFICIENT_MODE_HELP_TITLE = "performance.efficient_mode.help_title";
     public static final String PERFORMANCE_PROGRESS_TOOLTIP = "performance.progress.tooltip";
+    public static final String PERFORMANCE_BUTTON_REFRESH_TOOLTIP = "performance.button.refresh.tooltip";
+    public static final String PERFORMANCE_MSG_REFRESH_SUCCESS = "performance.msg.refresh_success";
+    public static final String PERFORMANCE_MSG_REFRESH_WARNING = "performance.msg.refresh_warning";
+    public static final String PERFORMANCE_MSG_NO_REQUEST_TO_REFRESH = "performance.msg.no_request_to_refresh";
     public static final String PERFORMANCE_MENU_ADD_THREAD_GROUP = "performance.menu.add_thread_group";
     public static final String PERFORMANCE_MENU_ADD_REQUEST = "performance.menu.add_request";
     public static final String PERFORMANCE_MENU_ADD_ASSERTION = "performance.menu.add_assertion";
@@ -412,6 +416,12 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TEST_PLAN = "performance.test_plan";
     public static final String PERFORMANCE_THREAD_GROUP = "performance.thread_group";
     public static final String PERFORMANCE_DEFAULT_REQUEST = "performance.default_request";
+    public static final String PERFORMANCE_REQUEST_COPY_INFO = "performance.request.copy_info";
+    public static final String PERFORMANCE_BUTTON_REFRESH_CURRENT = "performance.button.refresh_current";
+    public static final String PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP = "performance.button.refresh_current.tooltip";
+    public static final String PERFORMANCE_MSG_NO_REQUEST_SELECTED = "performance.msg.no_request_selected";
+    public static final String PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS = "performance.msg.request_not_found_in_collections";
+    public static final String PERFORMANCE_MSG_REQUEST_REFRESHED = "performance.msg.request_refreshed";
 
     // ============ 性能报表列相关 ============
     public static final String PERFORMANCE_REPORT_COLUMN_API_NAME = "performance.report.column.api_name";

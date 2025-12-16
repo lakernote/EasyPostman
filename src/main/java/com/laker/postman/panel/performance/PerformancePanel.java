@@ -28,6 +28,7 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -35,10 +36,7 @@ import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.JsonPathUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
 
@@ -112,14 +110,31 @@ public class PerformancePanel extends SingletonBasePanel {
     // CSV行索引分配器
     private final AtomicInteger csvRowIndex = new AtomicInteger(0);
 
+    // 持久化服务
+    private transient PerformancePersistenceService persistenceService;
+
+    // 当前选中的请求节点
+    private DefaultMutableTreeNode currentRequestNode;
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 
+        // 初始化持久化服务
+        this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
+
         // 1. 左侧树结构
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
-        createDefaultRequest(root);
+        DefaultMutableTreeNode root;
+        // 尝试加载保存的配置
+        DefaultMutableTreeNode savedRoot = persistenceService.load(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN));
+        if (savedRoot != null) {
+            root = savedRoot;
+        } else {
+            // 如果没有保存的配置，创建默认树结构
+            root = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
+            createDefaultRequest(root);
+        }
         treeModel = new DefaultTreeModel(root);
         jmeterTree = new JTree(treeModel);
         jmeterTree.setRootVisible(true);
@@ -140,8 +155,12 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE)), EMPTY);
         threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, THREAD_GROUP);
+
+        // 创建请求编辑面板的包装器，添加提示信息
         requestEditSubPanel = new RequestEditSubPanel("", RequestItemProtocolEnum.HTTP);
-        propertyPanel.add(requestEditSubPanel, REQUEST);
+        JPanel requestWrapperPanel = createRequestEditPanelWithInfoBar();
+        propertyPanel.add(requestWrapperPanel, REQUEST);
+
         assertionPanel = new AssertionPropertyPanel();
         propertyPanel.add(assertionPanel, ASSERTION);
         timerPanel = new TimerPropertyPanel();
@@ -185,6 +204,15 @@ public class PerformancePanel extends SingletonBasePanel {
         stopBtn.setEnabled(false);
         btnPanel.add(runBtn);
         btnPanel.add(stopBtn);
+
+        // 刷新按钮
+        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
+        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg"));
+        refreshBtn.setPreferredSize(new Dimension(95, 28));
+        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_TOOLTIP));
+        refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
+        btnPanel.add(refreshBtn);
+
         // 高效模式checkbox和问号提示
         JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
         efficientCheckBox.setSelected(true); // 默认开启高效模式
@@ -253,6 +281,98 @@ public class PerformancePanel extends SingletonBasePanel {
                 threadGroupPanel.setThreadGroupData(jtNode);
             }
         }
+    }
+
+    /**
+     * 创建包含提示信息栏的请求编辑面板
+     */
+    private JPanel createRequestEditPanelWithInfoBar() {
+        JPanel wrapper = new JPanel(new BorderLayout());
+
+        // 创建顶部信息提示栏
+        JPanel infoBar = new JPanel(new BorderLayout());
+        infoBar.setBackground(new Color(255, 250, 205)); // 淡黄色背景
+        infoBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 220, 170)),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+
+        // 左侧：信息图标和文本
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftPanel.setOpaque(false);
+
+        JLabel infoIcon = new JLabel(new FlatSVGIcon("icons/info.svg", 16, 16));
+        leftPanel.add(infoIcon);
+
+        JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));
+        infoText.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        infoText.setForeground(new Color(102, 85, 0)); // 深黄色文字
+        leftPanel.add(infoText);
+
+        infoBar.add(leftPanel, BorderLayout.CENTER);
+
+        // 右侧：刷新按钮
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        rightPanel.setOpaque(false);
+
+        JButton refreshCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT));
+        refreshCurrentBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 14, 14));
+        refreshCurrentBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+//        refreshCurrentBtn.setPreferredSize(new Dimension(80, 24));
+        refreshCurrentBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP));
+        refreshCurrentBtn.addActionListener(e -> refreshCurrentRequest());
+        rightPanel.add(refreshCurrentBtn);
+
+        infoBar.add(rightPanel, BorderLayout.EAST);
+
+        // 组装
+        wrapper.add(infoBar, BorderLayout.NORTH);
+        wrapper.add(requestEditSubPanel, BorderLayout.CENTER);
+
+        return wrapper;
+    }
+
+    /**
+     * 刷新当前选中的请求节点
+     */
+    private void refreshCurrentRequest() {
+        if (currentRequestNode == null) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_NO_REQUEST_SELECTED));
+            return;
+        }
+
+        Object userObj = currentRequestNode.getUserObject();
+        if (!(userObj instanceof JMeterTreeNode jmNode) || jmNode.type != NodeType.REQUEST) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_NO_REQUEST_SELECTED));
+            return;
+        }
+
+        if (jmNode.httpRequestItem == null) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_NO_REQUEST_SELECTED));
+            return;
+        }
+
+        // 从集合中查找最新的请求
+        String requestId = jmNode.httpRequestItem.getId();
+        HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(requestId);
+
+        if (latestRequestItem == null) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS));
+            return;
+        }
+
+        // 更新节点中的请求数据
+        jmNode.httpRequestItem = latestRequestItem;
+        jmNode.name = latestRequestItem.getName();
+        treeModel.nodeChanged(currentRequestNode);
+
+        // 刷新右侧编辑面板
+        requestEditSubPanel.initPanelData(latestRequestItem);
+
+        // 保存配置
+        saveConfig();
+
+        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_REFRESHED));
     }
 
     private static void createDefaultRequest(DefaultMutableTreeNode root) {
@@ -1192,9 +1312,11 @@ public class PerformancePanel extends SingletonBasePanel {
                     case THREAD_GROUP -> {
                         propertyCardLayout.show(propertyPanel, THREAD_GROUP);
                         threadGroupPanel.setThreadGroupData(jtNode);
+                        currentRequestNode = null; // 清空当前请求节点引用
                     }
                     case REQUEST -> {
                         propertyCardLayout.show(propertyPanel, REQUEST);
+                        currentRequestNode = node; // 记录当前请求节点
                         if (jtNode.httpRequestItem != null) {
                             requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
                         }
@@ -1202,10 +1324,12 @@ public class PerformancePanel extends SingletonBasePanel {
                     case ASSERTION -> {
                         propertyCardLayout.show(propertyPanel, ASSERTION);
                         assertionPanel.setAssertionData(jtNode);
+                        currentRequestNode = null; // 清空当前请求节点引用
                     }
                     case TIMER -> {
                         propertyCardLayout.show(propertyPanel, TIMER);
                         timerPanel.setTimerData(jtNode);
+                        currentRequestNode = null; // 清空当前请求节点引用
                     }
                     default -> propertyCardLayout.show(propertyPanel, EMPTY);
                 }
@@ -1245,6 +1369,7 @@ public class PerformancePanel extends SingletonBasePanel {
             DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
             treeModel.insertNodeInto(group, root1, root1.getChildCount());
             jmeterTree.expandPath(new TreePath(root1.getPath()));
+            saveConfig();
         });
         // 添加请求
         addRequest.addActionListener(e -> {
@@ -1270,6 +1395,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 jmeterTree.setSelectionPath(newPath);
                 propertyCardLayout.show(propertyPanel, REQUEST);
                 requestEditSubPanel.initPanelData(((JMeterTreeNode) newNodes.get(0).getUserObject()).httpRequestItem);
+                saveConfig();
             });
         });
         // 添加断言
@@ -1279,6 +1405,7 @@ public class PerformancePanel extends SingletonBasePanel {
             DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
             treeModel.insertNodeInto(assertion, node, node.getChildCount());
             jmeterTree.expandPath(new TreePath(node.getPath()));
+            saveConfig();
         });
         // 添加定时器
         addTimer.addActionListener(e -> {
@@ -1287,6 +1414,7 @@ public class PerformancePanel extends SingletonBasePanel {
             DefaultMutableTreeNode timer = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
             treeModel.insertNodeInto(timer, node, node.getChildCount());
             jmeterTree.expandPath(new TreePath(node.getPath()));
+            saveConfig();
         });
         // 重命名
         renameNode.addActionListener(e -> {
@@ -1306,6 +1434,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
                 }
                 treeModel.nodeChanged(node);
+                saveConfig();
             }
         });
         // 删除
@@ -1316,6 +1445,7 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!(userObj instanceof JMeterTreeNode jtNode)) return;
             if (jtNode.type == NodeType.ROOT) return;
             treeModel.removeNodeFromParent(node);
+            saveConfig();
         });
         // 启用（自动支持单个和批量操作）
         enableNode.addActionListener(e -> {
@@ -1329,6 +1459,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     treeModel.nodeChanged(node);
                 }
             }
+            saveConfig();
         });
         // 停用（自动支持单个和批量操作）
         disableNode.addActionListener(e -> {
@@ -1342,6 +1473,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     treeModel.nodeChanged(node);
                 }
             }
+            saveConfig();
         });
 
         // 右键弹出逻辑
@@ -1464,5 +1596,98 @@ public class PerformancePanel extends SingletonBasePanel {
     private static long getJmeterKeepAliveSeconds() {
         return SettingManager.getJmeterKeepAliveSeconds();
     }
-}
 
+    /**
+     * 保存当前配置
+     */
+    private void saveConfig() {
+        try {
+            // 保存所有属性面板数据到树节点
+            saveAllPropertyPanelData();
+            // 获取根节点
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+            // 异步保存配置
+            persistenceService.saveAsync(root);
+        } catch (Exception e) {
+            log.error("Failed to save performance config", e);
+        }
+    }
+
+    /**
+     * 从集合中刷新请求数据
+     * 重新加载所有请求的最新配置
+     */
+    private void refreshRequestsFromCollections() {
+        saveAllPropertyPanelData();
+
+        int updatedCount = 0;
+        int removedCount = 0;
+        List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<>();
+
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        updatedCount = refreshTreeNode(root, nodesToRemove);
+        removedCount = nodesToRemove.size();
+
+        // 移除不存在的请求节点（从后往前删除，避免索引变化）
+        for (int i = nodesToRemove.size() - 1; i >= 0; i--) {
+            DefaultMutableTreeNode nodeToRemove = nodesToRemove.get(i);
+            treeModel.removeNodeFromParent(nodeToRemove);
+        }
+
+        // 保存更新后的配置
+        saveConfig();
+
+        // 刷新树显示
+        treeModel.reload();
+
+        // 展开所有节点
+        for (int i = 0; i < jmeterTree.getRowCount(); i++) {
+            jmeterTree.expandRow(i);
+        }
+
+        // 显示刷新结果
+        if (removedCount > 0) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REFRESH_WARNING, removedCount));
+        } else if (updatedCount > 0) {
+            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REFRESH_SUCCESS, updatedCount));
+        } else {
+            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_NO_REQUEST_TO_REFRESH));
+        }
+    }
+
+    /**
+     * 递归刷新树节点
+     */
+    private int refreshTreeNode(DefaultMutableTreeNode treeNode, List<DefaultMutableTreeNode> nodesToRemove) {
+        int updatedCount = 0;
+
+        Object userObj = treeNode.getUserObject();
+        if (userObj instanceof JMeterTreeNode jmNode) {
+            // 如果是请求节点，刷新请求数据
+            if (jmNode.type == NodeType.REQUEST && jmNode.httpRequestItem != null) {
+                String requestId = jmNode.httpRequestItem.getId();
+                HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(requestId);
+
+                if (latestRequestItem == null) {
+                    // 请求在集合中已被删除，标记为待删除
+                    log.warn("Request with ID {} not found in collections", requestId);
+                    nodesToRemove.add(treeNode);
+                } else {
+                    // 更新请求数据
+                    jmNode.httpRequestItem = latestRequestItem;
+                    jmNode.name = latestRequestItem.getName();
+                    treeModel.nodeChanged(treeNode);
+                    updatedCount++;
+                }
+            }
+        }
+
+        // 递归处理子节点
+        for (int i = 0; i < treeNode.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) treeNode.getChildAt(i);
+            updatedCount += refreshTreeNode(childNode, nodesToRemove);
+        }
+
+        return updatedCount;
+    }
+}

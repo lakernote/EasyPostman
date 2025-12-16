@@ -15,6 +15,7 @@ import com.laker.postman.panel.functional.table.TableRowTransferHandler;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.FunctionalPersistenceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -53,6 +54,10 @@ public class FunctionalPanel extends SingletonBasePanel {
     private JTabbedPane mainTabbedPane;
     private ExecutionResultsPanel resultsPanel;
 
+    // 持久化服务
+    private transient FunctionalPersistenceService persistenceService;
+
+
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
@@ -74,6 +79,10 @@ public class FunctionalPanel extends SingletonBasePanel {
         mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_EXECUTION_RESULTS), new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
 
         add(mainTabbedPane, BorderLayout.CENTER);
+
+        // 加载保存的配置
+        this.persistenceService = SingletonFactory.getInstance(FunctionalPersistenceService.class);
+        loadSaved();
     }
 
     private JPanel createTopPanel() {
@@ -166,6 +175,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             stopBtn.setEnabled(false);
             resetProgress();
             resultsPanel.updateExecutionHistory(null);
+            // 清除持久化的配置
+            persistenceService.clear();
         });
         btnPanel.add(clearBtn);
 
@@ -706,6 +717,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             if (tableModel.getRowCount() == 0) {
                 runBtn.setEnabled(false);
             }
+            // 删除行后保存配置
+            save();
         });
         menu.add(deleteItem);
 
@@ -732,5 +745,38 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
         table.setEnabled(true);
         runBtn.setEnabled(true);
+        // 加载请求后保存配置
+        save();
+    }
+
+    /**
+     * 加载保存的配置
+     */
+    private void loadSaved() {
+        try {
+            List<RunnerRowData> savedRows = persistenceService.load();
+            if (savedRows != null && !savedRows.isEmpty()) {
+                for (RunnerRowData row : savedRows) {
+                    tableModel.addRow(row);
+                }
+                table.setEnabled(true);
+                runBtn.setEnabled(true);
+                log.info("Loaded {} saved test configurations", savedRows.size());
+            }
+        } catch (Exception e) {
+            log.error("Failed to load saved config", e);
+        }
+    }
+
+    /**
+     * 保存当前配置
+     */
+    public void save() {
+        try {
+            List<RunnerRowData> rows = tableModel.getAllRows();
+            persistenceService.saveAsync(rows);
+        } catch (Exception e) {
+            log.error("Failed to save config", e);
+        }
     }
 }

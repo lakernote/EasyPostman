@@ -1,4 +1,4 @@
-package com.laker.postman.common.component;
+package com.laker.postman.common.component.button;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.util.I18nUtil;

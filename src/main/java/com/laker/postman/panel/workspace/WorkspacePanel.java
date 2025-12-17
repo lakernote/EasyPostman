@@ -3,7 +3,7 @@ package com.laker.postman.panel.workspace;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.RefreshButton;
+import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;

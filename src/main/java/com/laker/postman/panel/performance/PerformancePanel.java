@@ -1628,6 +1628,13 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     /**
+     * 保存性能测试配置（供外部调用，如退出时）
+     */
+    public void save() {
+        saveConfig();
+    }
+
+    /**
      * 从集合中刷新请求数据
      * 重新加载所有请求的最新配置
      */

@@ -5,6 +5,7 @@ import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.panel.functional.FunctionalPanel;
+import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.service.collections.OpenedRequestsService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +32,14 @@ public class ExitService {
             functionalPanel.save();
         } catch (Exception e) {
             log.error("Failed to save functional test config on exit", e);
+        }
+
+        // 保存性能测试配置
+        try {
+            PerformancePanel performancePanel = SingletonFactory.getInstance(PerformancePanel.class);
+            performancePanel.save();
+        } catch (Exception e) {
+            log.error("Failed to save performance test config on exit", e);
         }
 
         // 没有未保存内容，或已处理完未保存内容，直接退出

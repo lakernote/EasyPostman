@@ -67,7 +67,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 左侧环境列表面板
         JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setPreferredSize(new Dimension(250, 400));
+        leftPanel.setPreferredSize(new Dimension(250, 200));
         // 顶部搜索和导入导出按钮
         leftPanel.add(getSearchAndImportPanel(), BorderLayout.NORTH);
 
@@ -167,6 +167,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         importExportPanel.add(exportBtn);
 
         searchField = new SearchTextField();
+        searchField.setPreferredSize(new Dimension(180, 28));
         importExportPanel.add(searchField);
         return importExportPanel;
     }

@@ -40,7 +40,7 @@ public class SearchTextField extends FlatTextField {
         setPlaceholderText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
         setPreferredSize(new Dimension(220, 28));
-        setMaximumSize(new Dimension(220, 28));
+        setMaximumSize(new Dimension(100, 28));
 
         // 创建选项按钮工具栏
         initOptionsToolbar();

@@ -3,10 +3,7 @@ package com.laker.postman.panel.performance;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.CsvDataPanel;
-import com.laker.postman.common.component.MemoryLabel;
-import com.laker.postman.common.component.StartButton;
-import com.laker.postman.common.component.StopButton;
+import com.laker.postman.common.component.*;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -207,10 +204,7 @@ public class PerformancePanel extends SingletonBasePanel {
         btnPanel.add(stopBtn);
 
         // 刷新按钮
-        refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg"));
-        refreshBtn.setPreferredSize(new Dimension(95, 28));
-        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_TOOLTIP));
+        refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
         btnPanel.add(refreshBtn);
 
@@ -1392,8 +1386,22 @@ public class PerformancePanel extends SingletonBasePanel {
             // 多选请求弹窗
             RequestCollectionsService.showMultiSelectRequestDialog(selectedList -> {
                 if (selectedList == null || selectedList.isEmpty()) return;
+
+                // 过滤只保留HTTP类型的请求
+                List<HttpRequestItem> httpOnlyList = selectedList.stream()
+                        .filter(reqItem -> reqItem.getProtocol() != null && reqItem.getProtocol().isHttpProtocol())
+                        .toList();
+
+                if (httpOnlyList.isEmpty()) {
+                    JOptionPane.showMessageDialog(PerformancePanel.this,
+                            I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_ONLY_HTTP_SUPPORTED),
+                            I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
                 List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
-                for (com.laker.postman.model.HttpRequestItem reqItem : selectedList) {
+                for (HttpRequestItem reqItem : httpOnlyList) {
                     DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
                     treeModel.insertNodeInto(req, node, node.getChildCount());
                     newNodes.add(req);
@@ -1446,18 +1454,31 @@ public class PerformancePanel extends SingletonBasePanel {
                 saveConfig();
             }
         });
-        // 删除
+        // 删除（自动支持单个和批量操作）
         deleteNode.addActionListener(e -> {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-            if (node == null) return;
-            Object userObj = node.getUserObject();
-            if (!(userObj instanceof JMeterTreeNode jtNode)) return;
-            if (jtNode.type == NodeType.ROOT) return;
-            // 如果删除的是当前选中的请求节点，清空引用
-            if (node == currentRequestNode) {
-                currentRequestNode = null;
+            TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+            if (selectedPaths == null || selectedPaths.length == 0) return;
+
+            // 收集要删除的节点（过滤掉ROOT节点）
+            List<DefaultMutableTreeNode> nodesToDelete = new ArrayList<>();
+            for (TreePath path : selectedPaths) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                Object userObj = node.getUserObject();
+                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
+                    nodesToDelete.add(node);
+                }
             }
-            treeModel.removeNodeFromParent(node);
+
+            if (nodesToDelete.isEmpty()) return;
+
+            // 批量删除节点
+            for (DefaultMutableTreeNode node : nodesToDelete) {
+                // 如果删除的是当前选中的请求节点，清空引用
+                if (node == currentRequestNode) {
+                    currentRequestNode = null;
+                }
+                treeModel.removeNodeFromParent(node);
+            }
             saveConfig();
         });
         // 启用（自动支持单个和批量操作）

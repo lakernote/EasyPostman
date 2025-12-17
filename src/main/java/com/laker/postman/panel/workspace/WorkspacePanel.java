@@ -3,6 +3,7 @@ package com.laker.postman.panel.workspace;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.RefreshButton;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -87,10 +88,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         toolbar.add(newButton);
 
         // 刷新按钮
-        JButton refreshButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        refreshButton.setIcon(new FlatSVGIcon("icons/refresh.svg", 20, 20));
-        refreshButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        refreshButton.setFocusable(false); // 去掉按钮聚焦虚线
+        JButton refreshButton = new RefreshButton();
         refreshButton.addActionListener(e -> refreshWorkspaceList());
         toolbar.add(refreshButton);
 

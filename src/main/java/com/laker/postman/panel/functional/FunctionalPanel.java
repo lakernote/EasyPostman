@@ -3,9 +3,7 @@ package com.laker.postman.panel.functional;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.CsvDataPanel;
-import com.laker.postman.common.component.StartButton;
-import com.laker.postman.common.component.StopButton;
+import com.laker.postman.common.component.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -148,8 +146,8 @@ public class FunctionalPanel extends SingletonBasePanel {
         btnPanel.setOpaque(false);
 
         JButton loadBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_LOAD));
-        loadBtn.setIcon(new FlatSVGIcon("icons/load.svg"));
-        loadBtn.setPreferredSize(new Dimension(90, 28));
+        loadBtn.setIcon(new FlatSVGIcon("icons/load.svg", 20, 20));
+        loadBtn.setFocusable(false);
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
         btnPanel.add(loadBtn);
 
@@ -167,16 +165,11 @@ public class FunctionalPanel extends SingletonBasePanel {
         });
         btnPanel.add(stopBtn);
 
-        JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        refreshBtn.setIcon(new FlatSVGIcon("icons/refresh.svg"));
-        refreshBtn.setPreferredSize(new Dimension(95, 28));
-        refreshBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_BUTTON_REFRESH_TOOLTIP));
+        JButton refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
         btnPanel.add(refreshBtn);
 
-        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg"));
-        clearBtn.setPreferredSize(new Dimension(95, 28));
+        JButton clearBtn = new ClearButton();
         clearBtn.addActionListener(e -> {
             tableModel.clear();
             runBtn.setEnabled(false);

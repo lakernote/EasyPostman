@@ -9,10 +9,10 @@ import javax.swing.*;
 /**
  * 通用开始按钮，带图标和统一样式。
  */
-public class StartButton extends JButton {
-    public StartButton() {
-        super(I18nUtil.getMessage(MessageKeys.BUTTON_START));
-        setIcon(new FlatSVGIcon("icons/start.svg", 20, 20));
+public class ClearButton extends JButton {
+    public ClearButton() {
+        super(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
+        setIcon(new FlatSVGIcon("icons/clear.svg", 20, 20));
         setFocusable(false); // 去掉按钮的焦点边框
     }
 }

@@ -88,10 +88,7 @@ public class CsvDataPanel extends JPanel {
      * 创建带下拉菜单的 CSV 按钮
      */
     private JButton createCsvMenuButton() {
-        JButton csvBtn = new JButton("CSV");
-        csvBtn.setIcon(new FlatSVGIcon("icons/csv.svg", 16, 16));
-        csvBtn.setFocusable(false);
-        csvBtn.setPreferredSize(new Dimension(90, 28));
+        JButton csvBtn = new CSVButton();
 
         JPopupMenu csvMenu = new JPopupMenu();
 

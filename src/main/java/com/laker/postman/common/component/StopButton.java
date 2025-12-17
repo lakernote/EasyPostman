@@ -5,7 +5,6 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * 通用停止按钮，带图标和统一样式。
@@ -13,8 +12,7 @@ import java.awt.*;
 public class StopButton extends JButton {
     public StopButton() {
         super(I18nUtil.getMessage(MessageKeys.BUTTON_STOP));
-        setIcon(new FlatSVGIcon("icons/stop.svg"));
+        setIcon(new FlatSVGIcon("icons/stop.svg", 20, 20));
         setFocusable(false); // 去掉按钮的焦点边框
-        setPreferredSize(new Dimension(95, 28));
     }
 }

@@ -394,7 +394,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_EFFICIENT_MODE_DESC = "performance.efficient_mode.desc";
     public static final String PERFORMANCE_EFFICIENT_MODE_HELP_TITLE = "performance.efficient_mode.help_title";
     public static final String PERFORMANCE_PROGRESS_TOOLTIP = "performance.progress.tooltip";
-    public static final String PERFORMANCE_BUTTON_REFRESH_TOOLTIP = "performance.button.refresh.tooltip";
     public static final String PERFORMANCE_MSG_REFRESH_SUCCESS = "performance.msg.refresh_success";
     public static final String PERFORMANCE_MSG_REFRESH_WARNING = "performance.msg.refresh_warning";
     public static final String PERFORMANCE_MSG_NO_REQUEST_TO_REFRESH = "performance.msg.no_request_to_refresh";
@@ -422,6 +421,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_NO_REQUEST_SELECTED = "performance.msg.no_request_selected";
     public static final String PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS = "performance.msg.request_not_found_in_collections";
     public static final String PERFORMANCE_MSG_REQUEST_REFRESHED = "performance.msg.request_refreshed";
+    public static final String PERFORMANCE_MSG_ONLY_HTTP_SUPPORTED = "performance.msg.only_http_supported";
 
     // ============ 性能报表列相关 ============
     public static final String PERFORMANCE_REPORT_COLUMN_API_NAME = "performance.report.column.api_name";
@@ -520,7 +520,6 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_TABLE_COLUMN_RESULT = "functional.table.column.result";
     public static final String FUNCTIONAL_MENU_VIEW_DETAIL = "functional.menu.view_detail";
     public static final String FUNCTIONAL_MENU_REMOVE = "functional.menu.remove";
-    public static final String FUNCTIONAL_BUTTON_REFRESH_TOOLTIP = "functional.button.refresh.tooltip";
     public static final String FUNCTIONAL_MSG_REFRESH_SUCCESS = "functional.msg.refresh_success";
     public static final String FUNCTIONAL_MSG_REFRESH_WARNING = "functional.msg.refresh_warning";
 

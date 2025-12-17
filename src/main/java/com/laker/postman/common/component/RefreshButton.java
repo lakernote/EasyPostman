@@ -7,12 +7,12 @@ import com.laker.postman.util.MessageKeys;
 import javax.swing.*;
 
 /**
- * 通用开始按钮，带图标和统一样式。
+ * 通用刷新按钮，带图标和统一样式。
  */
-public class StartButton extends JButton {
-    public StartButton() {
-        super(I18nUtil.getMessage(MessageKeys.BUTTON_START));
-        setIcon(new FlatSVGIcon("icons/start.svg", 20, 20));
+public class RefreshButton extends JButton {
+    public RefreshButton() {
+        super(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
+        setIcon(new FlatSVGIcon("icons/refresh.svg", 20, 20));
         setFocusable(false); // 去掉按钮的焦点边框
     }
 }

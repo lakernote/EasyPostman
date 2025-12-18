@@ -298,9 +298,10 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     }
 
     /**
-     * 更新工作区下拉框内容
+     * 更新工作区下拉框内容（不重新加载整个菜单栏）
+     * 用于工作区列表变化但当前工作区类型未变化的场景（如创建、重命名）
      */
-    private void updateWorkspaceComboBox() {
+    public void updateWorkspaceComboBox() {
         if (workspaceComboBox != null) {
             workspaceComboBox.reload();
         }
@@ -343,10 +344,13 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     }
 
     /**
-     * 更新工作区显示（保留此方法以保持向后兼容）
+     * 更新工作区显示（包括工作区下拉框和 Git 工具栏）
+     * 在外部切换工作区后调用（例如从 WorkspacePanel 切换）
+     * 会重新加载整个菜单栏以更新 Git 工具栏显示状态
      */
     public void updateWorkspaceDisplay() {
-        updateWorkspaceComboBox();
+        // 重新加载整个菜单栏以更新 Git 工具栏显示状态
+        reloadMenuBar();
     }
 
     private void aboutActionPerformed() {

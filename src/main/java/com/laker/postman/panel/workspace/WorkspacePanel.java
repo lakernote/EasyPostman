@@ -201,8 +201,8 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             refreshWorkspaceList();
-            // 更新顶部菜单栏的工作区下拉框
-            SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
+            // 更新顶部菜单栏的工作区下拉框（不需要重新加载整个菜单栏）
+            SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceComboBox();
         }
     }
 
@@ -423,10 +423,11 @@ public class WorkspacePanel extends SingletonBasePanel {
             try {
                 workspaceService.renameWorkspace(workspace.getId(), newName.trim());
                 refreshWorkspaceList();
-                // 如果重命名的是当前工作区，更新顶部菜单栏显示
+                // 如果重命名的是当前工作区，更新顶部菜单栏的工作区下拉框
                 Workspace current = workspaceService.getCurrentWorkspace();
                 if (current != null && current.getId().equals(workspace.getId())) {
-                    SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
+                    // 只更新下拉框，不需要重新加载整个菜单栏（工作区类型未变）
+                    SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceComboBox();
                 }
             } catch (Exception e) {
                 log.error("Failed to rename workspace", e);

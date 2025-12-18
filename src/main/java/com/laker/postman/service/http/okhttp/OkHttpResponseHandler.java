@@ -93,7 +93,7 @@ public class OkHttpResponseHandler {
                 if (body != null) {
                     var reader = new ServerSentEventReader(body.source(), callback);
                     callback.onOpen(response);
-                    while (reader.processNextEvent());
+                    while (reader.processNextEvent()) ;
                 }
             }
         } else if (FileExtensionUtil.isBinaryType(contentType)) {
@@ -304,7 +304,7 @@ public class OkHttpResponseHandler {
         }
         if (is != null) {
             try {
-                FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", null, contentLengthHeader);
+                FileAndSize fs = saveInputStreamToTempFile(is, "easyPostman_download_", ext, contentLengthHeader);
                 response.filePath = fs.file.getAbsolutePath();
                 response.body = I18nUtil.getMessage(MessageKeys.BINARY_SAVED_TEMP_FILE);
                 response.bodySize = fs.size;

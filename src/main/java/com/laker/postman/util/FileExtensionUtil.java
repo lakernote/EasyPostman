@@ -22,6 +22,24 @@ public class FileExtensionUtil {
 
         String ct = contentType.toLowerCase();
 
+        // 文档类型（优先判断，避免被 xml/json 等通用类型误判）
+        if (ct.contains("pdf")) return ".pdf";
+        if (ct.contains("msword") && !ct.contains("wordprocessingml")) return ".doc";
+        if (ct.contains("wordprocessingml.document")) return ".docx";
+        if (ct.contains("ms-excel") && !ct.contains("spreadsheetml")) return ".xls";
+        if (ct.contains("spreadsheetml.sheet")) return ".xlsx";
+        if (ct.contains("ms-powerpoint") && !ct.contains("presentationml")) return ".ppt";
+        if (ct.contains("presentationml.presentation")) return ".pptx";
+
+        // 图片类型（在文本类型之前判断，避免 svg+xml 被 xml 误判）
+        if (ct.contains("image/png")) return ".png";
+        if (ct.contains("image/jpeg")) return ".jpg";
+        if (ct.contains("image/gif")) return ".gif";
+        if (ct.contains("image/bmp")) return ".bmp";
+        if (ct.contains("image/webp")) return ".webp";
+        if (ct.contains("image/svg")) return ".svg";
+        if (ct.contains("image/ico") || ct.contains("image/x-icon")) return ".ico";
+
         // 文本类型
         if (ct.contains("json")) return ".json";
         if (ct.contains("xml")) return ".xml";
@@ -31,24 +49,6 @@ public class FileExtensionUtil {
         if (ct.contains("csv")) return ".csv";
         if (ct.contains("text/plain")) return ".txt";
         if (ct.contains("yaml") || ct.contains("yml")) return ".yaml";
-
-        // 文档类型
-        if (ct.contains("pdf")) return ".pdf";
-        if (ct.contains("msword") && !ct.contains("wordprocessingml")) return ".doc";
-        if (ct.contains("wordprocessingml.document")) return ".docx";
-        if (ct.contains("ms-excel") && !ct.contains("spreadsheetml")) return ".xls";
-        if (ct.contains("spreadsheetml.sheet")) return ".xlsx";
-        if (ct.contains("ms-powerpoint") && !ct.contains("presentationml")) return ".ppt";
-        if (ct.contains("presentationml.presentation")) return ".pptx";
-
-        // 图片类型
-        if (ct.contains("image/png")) return ".png";
-        if (ct.contains("image/jpeg")) return ".jpg";
-        if (ct.contains("image/gif")) return ".gif";
-        if (ct.contains("image/bmp")) return ".bmp";
-        if (ct.contains("image/webp")) return ".webp";
-        if (ct.contains("image/svg")) return ".svg";
-        if (ct.contains("image/ico") || ct.contains("image/x-icon")) return ".ico";
 
         // 压缩文件
         if (ct.contains("application/zip") || ct.contains("x-zip")) return ".zip";
@@ -156,8 +156,14 @@ public class FileExtensionUtil {
         }
 
         // application 下的文本类型
+        // 注意：使用精确匹配避免误判
+        // - "application/xml" 或 "text/xml" 是文本
+        // - 但 "image/svg+xml" 或 "application/vnd...openxmlformats..." 不是文本
+        boolean isXml = (ct.equals("application/xml") || ct.equals("text/xml")
+                || ct.startsWith("application/xml;") || ct.startsWith("text/xml;"));
+
         return ct.contains("json")
-                || ct.contains("xml")
+                || isXml
                 || ct.contains("javascript")
                 || ct.contains("x-www-form-urlencoded")
                 || ct.contains("x-sh")
@@ -174,15 +180,11 @@ public class FileExtensionUtil {
             return false;
         }
 
-        // 如果是文本类型，则不是二进制类型
-        if (isTextType(contentType)) {
-            return false;
-        }
-
         String ct = contentType.toLowerCase();
 
-        // 明确的二进制类型
-        return ct.contains("application/octet-stream")
+        // 优先检查明确的二进制类型（避免被 isTextType 误判）
+        // 例如：application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 包含 "xml" 但是二进制文件
+        if (ct.contains("application/octet-stream")
                 || ct.contains("image/")
                 || ct.contains("audio/")
                 || ct.contains("video/")
@@ -190,6 +192,11 @@ public class FileExtensionUtil {
                 || ct.contains("application/zip")
                 || ct.contains("application/gzip")
                 || ct.contains("application/msword")
-                || ct.contains("application/vnd.");
+                || ct.contains("application/vnd.")) {
+            return true;
+        }
+
+        // 如果是文本类型，则不是二进制类型
+        return !isTextType(contentType);
     }
 }

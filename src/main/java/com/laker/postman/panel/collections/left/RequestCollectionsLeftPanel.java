@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.left;
 
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.async.AsyncTaskExecutor;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
 import com.laker.postman.model.HttpRequestItem;
@@ -117,29 +118,39 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.addKeyListener(new RequestTreeKeyboardHandler(requestTree, this));
         requestTree.addMouseListener(new RequestTreeMouseHandler(requestTree, this));
 
-
-        SwingUtilities.invokeLater(() -> {  // 异步加载请求组
-            persistence.initRequestGroupsFromFile(); // 从文件加载请求集合
-            SwingUtilities.invokeLater(() -> {
-                HttpRequestItem lastNonNewRequest = RequestCollectionsService.getLastNonNewRequest();
-                // 恢复之前已打开请求
-                RequestCollectionsService.restoreOpenedRequests();
-                // 增加一个plusTab
-                SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
-                // 反向定位到最后一个请求
-                if (lastNonNewRequest != null) {
-                    locateAndSelectRequest(lastNonNewRequest.getId());
-                } else { // 没有请求时默认展开第一个组
-                    if (rootTreeNode.getChildCount() > 0) {
-                        DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);
-                        TreePath path = new TreePath(firstGroup.getPath());
-                        requestTree.setSelectionPath(path);
-                        requestTree.expandPath(path);
+        // 使用 AsyncTaskExecutor 异步加载请求集合
+        AsyncTaskExecutor.execute(
+                // 后台线程：执行耗时的IO操作
+                () -> {
+                    persistence.initRequestGroupsFromFile();
+                    return RequestCollectionsService.getLastNonNewRequest();
+                },
+                // EDT线程：更新UI
+                lastNonNewRequest -> {
+                    // 恢复之前已打开请求
+                    RequestCollectionsService.restoreOpenedRequests();
+                    // 增加一个plusTab
+                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                    // 反向定位到最后一个请求
+                    if (lastNonNewRequest != null) {
+                        locateAndSelectRequest(lastNonNewRequest.getId());
+                    } else { // 没有请求时默认展开第一个组
+                        if (rootTreeNode.getChildCount() > 0) {
+                            DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);
+                            TreePath path = new TreePath(firstGroup.getPath());
+                            requestTree.setSelectionPath(path);
+                            requestTree.expandPath(path);
+                        }
                     }
-                }
-            });
-        });
-
+                },
+                // EDT线程：处理错误
+                error -> {
+                    log.error("Error loading request collections", error);
+                    // 即使加载失败也要添加 plusTab
+                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                },
+                "RequestCollections-Loader"
+        );
     }
 
 
@@ -323,17 +334,28 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
      * 切换到指定工作区的请求集合文件，并刷新树UI
      */
     public void switchWorkspaceAndRefreshUI(String collectionFilePath) {
-        if (persistence != null) {
-            persistence.setDataFilePath(collectionFilePath);
-        }
-        // 重新加载树结构
-        treeModel.reload(rootTreeNode);
-        // 清空 RequestEditPanel 中的请求
-        SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
-        // 新增一个空白请求Tab
-        SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
-        // 自动展开第一个分组
-        expandFirstGroup();
+        // 使用 AsyncTaskExecutor 异步切换工作区
+        AsyncTaskExecutor.builder()
+                .threadName("SwitchWorkspace-Loader")
+                .backgroundTask(() -> {
+                    // 后台线程：执行文件加载操作
+                    if (persistence != null) {
+                        persistence.setDataFilePath(collectionFilePath);
+                    }
+                })
+                .onSuccess(() -> {
+                    // EDT线程：更新UI
+                    SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
+                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                    expandFirstGroup();
+                })
+                .onError(error -> {
+                    // EDT线程：处理错误
+                    log.error("Error switching workspace and loading collections", error);
+                    SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
+                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                })
+                .execute();
     }
 
     /**

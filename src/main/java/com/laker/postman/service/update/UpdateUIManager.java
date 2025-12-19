@@ -4,9 +4,9 @@ import cn.hutool.json.JSONArray;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.panel.update.AutoUpdateNotification;
 import com.laker.postman.panel.update.ModernProgressDialog;
 import com.laker.postman.panel.update.ModernUpdateDialog;
-import com.laker.postman.panel.update.ModernUpdateNotification;
 import com.laker.postman.service.update.asset.PlatformDownloadUrlResolver;
 import com.laker.postman.service.update.source.UpdateSource;
 import com.laker.postman.service.update.source.UpdateSourceSelector;
@@ -37,19 +37,11 @@ public class UpdateUIManager {
     }
 
     /**
-     * 显示后台更新通知（右下角弹窗）- 使用现代化通知
+     * 显示后台更新通知（右下角弹窗）
      */
     public void showUpdateNotification(UpdateInfo updateInfo) {
-        SwingUtilities.invokeLater(() -> {
-            MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-            if (!mainFrame.isVisible()) {
-                return;
-            }
-
-            ModernUpdateNotification notification = new ModernUpdateNotification(
-                    mainFrame, updateInfo, this::showUpdateDialog);
-            notification.show();
-        });
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        AutoUpdateNotification.show(mainFrame, updateInfo, this::showUpdateDialog);
     }
 
     /**
@@ -96,7 +88,7 @@ public class UpdateUIManager {
 
         // 检查可用的安装包
         JSONArray assets = updateInfo.getReleaseInfo() != null ?
-            updateInfo.getReleaseInfo().getJSONArray("assets") : null;
+                updateInfo.getReleaseInfo().getJSONArray("assets") : null;
 
         if (assets == null || assets.isEmpty()) {
             NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));

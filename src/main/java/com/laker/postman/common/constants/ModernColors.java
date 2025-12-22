@@ -496,6 +496,93 @@ public final class ModernColors {
      */
     public static final Color ICON_RESTART_REQUIRED = new Color(245, 158, 11); // 橙色
 
+    // ==================== Console 控制台专用色（柔和浅色主题）====================
+
+    /**
+     * Console 背景色 - 柔和的浅灰白色背景
+     */
+    public static final Color CONSOLE_BACKGROUND = new Color(250, 251, 252);
+
+    /**
+     * Console 文本区域背景色 - 清爽的白色背景
+     */
+    public static final Color CONSOLE_TEXT_AREA_BG = new Color(255, 255, 255);
+
+    /**
+     * Console 普通文本颜色 - 深灰色，易读
+     */
+    public static final Color CONSOLE_TEXT = new Color(51, 65, 85);
+
+    /**
+     * Console INFO 级别颜色 - 专业蓝色
+     */
+    public static final Color CONSOLE_INFO = new Color(37, 99, 235);
+
+    /**
+     * Console DEBUG 级别颜色 - 清新绿色
+     */
+    public static final Color CONSOLE_DEBUG = new Color(22, 163, 74);
+
+    /**
+     * Console WARN 级别颜色 - 醒目橙色
+     */
+    public static final Color CONSOLE_WARN = new Color(234, 88, 12);
+
+    /**
+     * Console ERROR 级别颜色 - 鲜明红色
+     */
+    public static final Color CONSOLE_ERROR = new Color(220, 38, 38);
+
+    /**
+     * Console 时间戳颜色 - 中性灰
+     */
+    public static final Color CONSOLE_TIMESTAMP = new Color(100, 116, 139);
+
+    /**
+     * Console 类名颜色 - 优雅紫色
+     */
+    public static final Color CONSOLE_CLASS_NAME = new Color(147, 51, 234);
+
+    /**
+     * Console 方法名颜色 - 活力青色
+     */
+    public static final Color CONSOLE_METHOD_NAME = new Color(14, 165, 233);
+
+    /**
+     * Console 工具栏背景色 - 浅灰背景
+     */
+    public static final Color CONSOLE_TOOLBAR_BG = new Color(248, 250, 252);
+
+    /**
+     * Console 工具栏边框色 - 淡雅边框
+     */
+    public static final Color CONSOLE_TOOLBAR_BORDER = new Color(226, 232, 240);
+
+    /**
+     * Console 按钮悬停背景色 - 柔和蓝色
+     */
+    public static final Color CONSOLE_BUTTON_HOVER = new Color(224, 242, 254);
+
+    /**
+     * Console 滚动条颜色 - 淡灰色
+     */
+    public static final Color CONSOLE_SCROLLBAR = new Color(203, 213, 225);
+
+    /**
+     * Console 滚动条悬停颜色 - 中灰色
+     */
+    public static final Color CONSOLE_SCROLLBAR_HOVER = new Color(148, 163, 184);
+
+    /**
+     * Console 选中文本背景色 - 柔和蓝色
+     */
+    public static final Color CONSOLE_SELECTION_BG = new Color(191, 219, 254);
+
+    /**
+     * Console 当前行高亮色 - 极淡灰色
+     */
+    public static final Color CONSOLE_CURRENT_LINE = new Color(248, 250, 252);
+
     // ==================== 透明度变体 ====================
 
     /**

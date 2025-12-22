@@ -33,6 +33,10 @@ import java.util.List;
 @Slf4j
 public class SidebarTabPanel extends SingletonBasePanel {
 
+    // Constants
+    private static final String ICON_LABEL_NAME = "iconLabel";
+    private static final String TITLE_LABEL_NAME = "titleLabel";
+
     @Getter
     private JTabbedPane tabbedPane;
     @Getter
@@ -164,6 +168,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);
         sidebarToggleLabel.setEnabled(true);
+        // 优化提示文本
+        sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
         sidebarToggleLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -178,6 +184,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void toggleSidebarExpansion() {
         sidebarExpanded = !sidebarExpanded;
         SettingManager.setSidebarExpanded(sidebarExpanded);
+        // 更新提示文本
+        sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
         recreateTabbedPane();
     }
 
@@ -242,7 +250,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(normalFont); // 使用缓存的字体（与normalFont共用）
+        versionLabel.setForeground(ModernColors.TEXT_SECONDARY);
         versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
+        versionLabel.setToolTipText("EasyPostman version");
     }
 
     @Override
@@ -332,26 +342,36 @@ public class SidebarTabPanel extends SingletonBasePanel {
         if (tabIndex < 0 || tabIndex >= SidebarTab.values().length) return;
         SidebarTab sidebarTab = SidebarTab.values()[tabIndex];
 
-        // 遍历面板中的组件，根据名称更新图标和文字
+        updateTabIcon(panel, sidebarTab, isSelected);
+        updateTabTitle(panel, isSelected);
+    }
+
+    /**
+     * 更新tab图标
+     */
+    private void updateTabIcon(JPanel panel, SidebarTab sidebarTab, boolean isSelected) {
         for (Component comp : panel.getComponents()) {
-            if (comp instanceof JLabel label) {
-                String name = label.getName();
+            if (comp instanceof JLabel label && ICON_LABEL_NAME.equals(label.getName())) {
+                label.setIcon(isSelected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon());
+                break;
+            }
+        }
+    }
 
-                // 更新图标（展开和收起状态都有图标）
-                if ("iconLabel".equals(name)) {
-                    label.setIcon(isSelected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon());
+    /**
+     * 更新tab标题
+     */
+    private void updateTabTitle(JPanel panel, boolean isSelected) {
+        for (Component comp : panel.getComponents()) {
+            if (comp instanceof JLabel label && TITLE_LABEL_NAME.equals(label.getName())) {
+                if (isSelected) {
+                    label.setForeground(ModernColors.PRIMARY);
+                    label.setFont(boldFont);
+                } else {
+                    label.setForeground(ModernColors.TEXT_SECONDARY);
+                    label.setFont(normalFont);
                 }
-
-                // 更新文字（只在展开状态有文字）
-                if ("titleLabel".equals(name)) {
-                    if (isSelected) {
-                        label.setForeground(ModernColors.PRIMARY);
-                        label.setFont(boldFont);
-                    } else {
-                        label.setForeground(ModernColors.TEXT_SECONDARY);
-                        label.setFont(normalFont);
-                    }
-                }
+                break;
             }
         }
     }
@@ -504,10 +524,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 展开状态：图标在上，文本在下
             JLabel iconLabel = new JLabel(icon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setName("iconLabel"); // 标记为图标标签
+            iconLabel.setName(ICON_LABEL_NAME); // 标记为图标标签
 
             JLabel titleLabel = new JLabel(title);
-            titleLabel.setName("titleLabel"); // 标记为文字标签
+            titleLabel.setName(TITLE_LABEL_NAME); // 标记为文字标签
             // 根据当前是否选中设置初始颜色
             int currentIndex = getTabIndexByTitle(title);
             boolean isCurrentlySelected = currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
@@ -532,7 +552,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 收起状态：只显示图标，居中，增加上下左右间距
             JLabel iconLabel = new JLabel(icon);
             iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            iconLabel.setName("iconLabel"); // 标记为图标标签
+            iconLabel.setName(ICON_LABEL_NAME); // 标记为图标标签
             // 设置 tooltip 在 panel 上而非 label 上
             panel.setToolTipText(title);
 
@@ -683,3 +703,4 @@ public class SidebarTabPanel extends SingletonBasePanel {
         repaint();
     }
 }
+

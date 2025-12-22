@@ -30,10 +30,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class HistoryPersistenceService {
     private static final String HISTORY_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "request_history.json";
 
-    // 限制单个响应体保存的最大字符数 (100KB)
-    private static final int MAX_BODY_SIZE = 100 * 1024;
-    // 限制单个请求体保存的最大字符数 (50KB)
-    private static final int MAX_REQUEST_BODY_SIZE = 50 * 1024;
+    // 限制单个响应体保存的最大字符数 (10KB)
+    private static final int MAX_BODY_SIZE = 10 * 1024;
+    // 限制单个请求体保存的最大字符数 (10KB)
+    private static final int MAX_REQUEST_BODY_SIZE = 10 * 1024;
     // 限制文件大小 (50MB)
     private static final long MAX_FILE_SIZE = 50L * 1024 * 1024;
 

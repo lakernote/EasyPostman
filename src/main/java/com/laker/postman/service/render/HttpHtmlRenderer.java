@@ -1,6 +1,9 @@
 package com.laker.postman.service.render;
 
-import com.laker.postman.model.*;
+import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
 import lombok.experimental.UtilityClass;
 
@@ -16,7 +19,7 @@ import java.util.List;
 public class HttpHtmlRenderer {
 
     // 内容大小限制常量 - 防止内存溢出
-    private static final int MAX_DISPLAY_SIZE = 20 * 1024;  // 20KB for safe display
+    private static final int MAX_DISPLAY_SIZE = 2 * 1024;  // 2KB for safe display
 
     // CSS样式常量
     private static final String BASE_STYLE = "font-family:monospace;";
@@ -38,9 +41,6 @@ public class HttpHtmlRenderer {
 
     // HTML模板常量
     private static final String HTML_TEMPLATE = "<html><body style='%s'>%s</body></html>";
-
-    // 时间格式化器
-    private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");
 
 
     /**
@@ -297,7 +297,9 @@ public class HttpHtmlRenderer {
 
     private static String createEventRow(String label, String value) {
         // 增加换行控制和固定列宽
-        return "<tr><td style='min-width:80px;padding:2px 120px 2px 0;color:" + COLOR_GRAY + ";width:30%;word-wrap:break-word;overflow-wrap:break-word;'>" + label + "</td><td style='width:70%;word-wrap:break-word;overflow-wrap:break-word;'>" + value + "</td></tr>";
+        return "<tr><td style='min-width:80px;padding:2px 120px 2px 0;color:" + COLOR_GRAY
+                + ";width:30%;word-wrap:break-word;overflow-wrap:break-word;'>"
+                + label + "</td><td style='width:70%;word-wrap:break-word;overflow-wrap:break-word;'>" + value + "</td></tr>";
     }
 
     private static String createEventTimingRows(HttpEventInfo info) {
@@ -329,11 +331,13 @@ public class HttpHtmlRenderer {
 
     private static String createEventTimingRow(String label, long millis, String color) {
         String style = color != null ? "color:" + color + ";" : "";
-        return "<tr><td style='padding:2px 8px 2px 0;" + style + "width:30%;word-wrap:break-word;overflow-wrap:break-word;'>" + label + "</td><td style='width:70%;word-wrap:break-word;overflow-wrap:break-word;'>" + formatMillis(millis) + "</td></tr>";
+        return "<tr><td style='padding:2px 8px 2px 0;" + style + "width:30%;word-wrap:break-word;overflow-wrap:break-word;'>"
+                + label + "</td><td style='width:70%;word-wrap:break-word;overflow-wrap:break-word;'>"
+                + formatMillis(millis) + "</td></tr>";
     }
 
     private static String formatMillis(long millis) {
-        return millis <= 0 ? "-" : TIME_FORMATTER.format(new Date(millis));
+        return millis <= 0 ? "-" : new SimpleDateFormat("HH:mm:ss.SSS").format(new Date(millis));
     }
 
     private static boolean isNotEmpty(String str) {
@@ -359,103 +363,10 @@ public class HttpHtmlRenderer {
 
         if (content.length() > MAX_DISPLAY_SIZE) {
             String truncated = content.substring(0, MAX_DISPLAY_SIZE);
-            return truncated + "......\n\n[Content too large, truncated for display. Original length: " + content.length() + " characters, max displayed: " + (MAX_DISPLAY_SIZE / 1024) + "KB]";
+            return truncated + "......\n\n[Content too large, truncated for display. Original length: "
+                    + content.length() + " characters, max displayed: " + (MAX_DISPLAY_SIZE / 1024) + "KB]";
         }
 
         return content;
-    }
-
-    // 时序计算辅助类
-    private static class TimingCalculator {
-        private final HttpEventInfo info;
-
-        public TimingCalculator(HttpEventInfo info) {
-            this.info = info;
-        }
-
-        public long getTotal() {
-            return calculateDuration(info.getCallStart(), info.getCallEnd());
-        }
-
-        public long getQueueing() {
-            return info.getQueueingCost() > 0 ? info.getQueueingCost() :
-                    calculateDuration(info.getQueueStart(), info.getCallStart());
-        }
-
-        public long getStalled() {
-            return info.getStalledCost() > 0 ? info.getStalledCost() :
-                    calculateDuration(info.getCallStart(), info.getConnectStart());
-        }
-
-        public long getDns() {
-            return calculateDuration(info.getDnsStart(), info.getDnsEnd());
-        }
-
-        public long getConnect() {
-            return calculateDuration(info.getConnectStart(), info.getConnectEnd());
-        }
-
-        public long getTls() {
-            return calculateDuration(info.getSecureConnectStart(), info.getSecureConnectEnd());
-        }
-
-        public long getRequestSent() {
-            long reqHeaders = calculateDuration(info.getRequestHeadersStart(), info.getRequestHeadersEnd());
-            long reqBody = calculateDuration(info.getRequestBodyStart(), info.getRequestBodyEnd());
-
-            if (reqHeaders >= 0 && reqBody >= 0) {
-                return reqHeaders + reqBody;
-            } else if (reqHeaders >= 0) {
-                return reqHeaders;
-            } else if (reqBody >= 0) {
-                return reqBody;
-            }
-            return -1;
-        }
-
-        public long getServerCost() {
-            if (info.getResponseHeadersStart() <= 0) {
-                return -1;
-            }
-
-            // 优先使用 RequestBodyEnd，如果没有则使用 RequestHeadersEnd
-            long requestEndTime = info.getRequestBodyEnd() > 0 ?
-                    info.getRequestBodyEnd() : info.getRequestHeadersEnd();
-
-            if (requestEndTime <= 0) {
-                return -1;
-            }
-
-            return calculateDuration(requestEndTime, info.getResponseHeadersStart());
-        }
-
-        public long getResponseBody() {
-            return calculateDuration(info.getResponseBodyStart(), info.getResponseBodyEnd());
-        }
-
-        public boolean getConnectionReused() {
-            // 如果没有连接获取事件，无法判断
-            if (info.getConnectionAcquired() <= 0) {
-                return false;
-            }
-
-            // 如果连接获取时间早于连接开始时间，说明是复用的连接
-            return info.getConnectStart() <= 0 || info.getConnectionAcquired() < info.getConnectStart();
-        }
-
-        private long calculateDuration(long start, long end) {
-            if (start <= 0 || end <= 0 || end < start) {
-                return -1;
-            }
-
-            long duration = end - start;
-
-            // 防止异常大的时间差（超过1小时认为异常）
-            if (duration > 3600000) { // 3600000ms = 1小时
-                return -1;
-            }
-
-            return duration;
-        }
     }
 }

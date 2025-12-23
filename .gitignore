@@ -5,3 +5,15 @@
 /.vscode/
 .DS_Store
 **/.DS_Store
+*.log
+*.tmp
+*.bak
+*.swp
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+out/
+logs/
+temp/

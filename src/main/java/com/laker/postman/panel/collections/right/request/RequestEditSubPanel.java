@@ -341,11 +341,11 @@ public class RequestEditSubPanel extends JPanel {
 
         // 协议分发 - 根据HttpRequestItem的protocol字段分发
         if (protocol.isWebSocketProtocol()) {
-            handleWebSocketRequest(effectiveItem, req, pipeline);
+            handleWebSocketRequest(req, pipeline);
         } else if (protocol.isSseProtocol()) {
-            handleSseRequest(effectiveItem, req, pipeline);
+            handleSseRequest(req, pipeline);
         } else {
-            handleHttpRequest(effectiveItem, req, pipeline);
+            handleHttpRequest(req, pipeline);
         }
     }
 
@@ -381,7 +381,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // 普通HTTP请求处理
-    private void handleHttpRequest(HttpRequestItem item, PreparedRequest req, ScriptExecutionPipeline pipeline) {
+    private void handleHttpRequest(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         currentWorker = new SwingWorker<>() {
             String statusText;
             HttpResponse resp;
@@ -451,7 +451,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // SSE请求处理
-    private void handleSseRequest(HttpRequestItem item, PreparedRequest req, ScriptExecutionPipeline pipeline) {
+    private void handleSseRequest(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         currentWorker = new SwingWorker<>() {
             HttpResponse resp;
             StringBuilder sseBodyBuilder;
@@ -543,7 +543,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // WebSocket请求处理
-    private void handleWebSocketRequest(HttpRequestItem item, PreparedRequest req, ScriptExecutionPipeline pipeline) {
+    private void handleWebSocketRequest(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         // 生成新的连接ID，用于识别当前有效连接
         final String connectionId = UUID.randomUUID().toString();
         currentWebSocketConnectionId = connectionId;

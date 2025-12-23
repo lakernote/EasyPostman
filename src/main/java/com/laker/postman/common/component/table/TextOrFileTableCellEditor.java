@@ -14,9 +14,9 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
     private static final WeakHashMap<Component, FileCellEditor> FILE_EDITOR_CACHE = new WeakHashMap<>();
 
     // 可配置的类型列索引，默认为2（Form-Data表格中Type列的索引）
-    private int typeColumnIndex = 2;
+    private static final int typeColumnIndex = 2;
 
-    private final DefaultCellEditor textEditor;
+    private final EasyPostmanTextFieldCellEditor textEditor;
     private FileCellEditor fileEditor;
     private String currentType;
 
@@ -29,16 +29,7 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
      */
     public TextOrFileTableCellEditor() {
         super(new JTextField());
-
-        // 创建自定义文本编辑器，添加自动选择文本功能
-        JTextField textField = new JTextField();
-        textField.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent e) {
-                textField.selectAll();
-            }
-        });
-        textEditor = new DefaultCellEditor(textField);
+        textEditor = new EasyPostmanTextFieldCellEditor();
     }
 
     /**

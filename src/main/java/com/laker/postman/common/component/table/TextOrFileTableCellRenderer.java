@@ -1,7 +1,6 @@
 package com.laker.postman.common.component.table;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
@@ -12,20 +11,16 @@ import java.awt.*;
 public class TextOrFileTableCellRenderer implements TableCellRenderer {
 
     private final FileCellRenderer fileRenderer = new FileCellRenderer();
-    private final DefaultTableCellRenderer textRenderer;
+    private final EasyPostmanTextFieldCellRenderer textRenderer;
 
     // 可配置的类型列索引，默认为2（Form-Data表格中Type列的索引）
-    private int typeColumnIndex = 2;
-
-    // 可选的空值提示文本
-    private String emptyValueHint = null;
+    private final int typeColumnIndex = 2;
 
     /**
      * 创建默认的文本或文件组合渲染器
      */
     public TextOrFileTableCellRenderer() {
-        textRenderer = new DefaultTableCellRenderer();
-        textRenderer.setVerticalAlignment(SwingConstants.CENTER);
+        textRenderer = new EasyPostmanTextFieldCellRenderer();
     }
 
     @Override
@@ -37,18 +32,7 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
         if (TableUIConstants.FILE_TYPE.equals(type)) {
             c = fileRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         } else {
-            // 对于普通文本单元格，处理空值提示
-            if (value == null || value.toString().trim().isEmpty()) {
-                if (emptyValueHint != null) {
-                    c = textRenderer.getTableCellRendererComponent(table, emptyValueHint, isSelected, hasFocus, row, column);
-                    c.setForeground(TableUIConstants.TEXT_DISABLED);
-                    c.setFont(c.getFont().deriveFont(Font.ITALIC));
-                } else {
-                    c = textRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                }
-            } else {
-                c = textRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            }
+            c = textRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         }
 
         int hoverRow = -1;

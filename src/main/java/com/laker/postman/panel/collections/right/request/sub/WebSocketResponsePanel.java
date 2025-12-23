@@ -80,7 +80,7 @@ public class WebSocketResponsePanel extends JPanel {
         table.setRowHeight(26);
         table.getColumnModel().getColumn(0).setMaxWidth(36);
         table.getColumnModel().getColumn(0).setCellRenderer(new IconCellRenderer());
-        table.getColumnModel().getColumn(1).setMaxWidth(60);
+        table.getColumnModel().getColumn(1).setMaxWidth(100);
         // 设置第2列（时间列）居中
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);

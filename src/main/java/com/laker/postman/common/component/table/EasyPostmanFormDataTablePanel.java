@@ -298,7 +298,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         table.getColumnModel().getColumn(COL_KEY).setCellRenderer(new EasyPostmanTextFieldCellRenderer());
 
         // Set Type column to dropdown editor with custom renderer
-        JComboBox<String> typeCombo = new JComboBox<>(TYPE_OPTIONS);
+        JComboBox<String> typeCombo = createModernTypeComboBox();
         table.getColumnModel().getColumn(COL_TYPE).setCellEditor(new DefaultCellEditor(typeCombo));
         table.getColumnModel().getColumn(COL_TYPE).setCellRenderer(new TypeColumnRenderer());
 
@@ -308,6 +308,39 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
         // Set custom renderer for delete column
         table.getColumnModel().getColumn(COL_DELETE).setCellRenderer(new DeleteButtonRenderer());
+    }
+
+    /**
+     * Create a modern-styled ComboBox for the Type column
+     */
+    private JComboBox<String> createModernTypeComboBox() {
+        JComboBox<String> comboBox = new JComboBox<>(TYPE_OPTIONS);
+        comboBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+
+        // 自定义下拉列表的渲染器
+        comboBox.setRenderer(new DefaultListCellRenderer() {
+            private final Icon textIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
+            private final Icon fileIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
+
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+                String typeValue = value != null ? value.toString() : "";
+
+                // 设置图标和文本颜色
+                if (HttpFormData.TYPE_FILE.equalsIgnoreCase(typeValue)) {
+                    label.setIcon(fileIcon);
+                } else {
+                    label.setIcon(textIcon);
+                }
+
+                return label;
+            }
+        });
+
+        return comboBox;
     }
 
     private void setupTableListeners() {
@@ -430,30 +463,52 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
 
     /**
      * Custom renderer for Type column
-     * 提供与其他列一致的样式和更美观的显示效果
+     * 提供现代化、美观的样式和显示效果
      */
-    private class TypeColumnRenderer extends DefaultTableCellRenderer {
+    private class TypeColumnRenderer extends JPanel implements TableCellRenderer {
+        private final JLabel iconLabel;
+        private final JLabel textLabel;
+        private final Icon textIcon;
+        private final Icon fileIcon;
+
         public TypeColumnRenderer() {
-            setVerticalAlignment(SwingConstants.CENTER);
-            setHorizontalAlignment(SwingConstants.LEFT);
+            setLayout(new BorderLayout(4, 0));
+            setOpaque(true);
+
+            // 创建图标标签
+            iconLabel = new JLabel();
+            iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            iconLabel.setPreferredSize(new Dimension(20, 20));
+
+            // 创建文本标签
+            textLabel = new JLabel();
+            textLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+            textLabel.setVerticalAlignment(SwingConstants.CENTER);
+
+            // 加载图标
+            textIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
+            fileIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
+
+            // 添加组件
+            add(iconLabel, BorderLayout.WEST);
+            add(textLabel, BorderLayout.CENTER);
+
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
-            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            String typeValue = value != null ? value.toString() : HttpFormData.TYPE_TEXT;
 
-            // 设置背景色 - 与其他列保持一致
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
+            // 根据类型设置图标和文本
+            if (HttpFormData.TYPE_FILE.equalsIgnoreCase(typeValue)) {
+                iconLabel.setIcon(fileIcon);
+                textLabel.setText("File");
             } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
+                iconLabel.setIcon(textIcon);
+                textLabel.setText("Text");
             }
 
-            // 添加内边距，与其他列保持一致
-            setBorder(TableUIConstants.createLabelBorder());
             return this;
         }
     }

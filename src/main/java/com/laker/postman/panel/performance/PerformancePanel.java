@@ -3,7 +3,8 @@ package com.laker.postman.panel.performance;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.*;
+import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
@@ -258,6 +259,9 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 初始化定位到第一个Thread Group节点
         selectFirstThreadGroup();
+
+        // 设置 Ctrl/Cmd+S 快捷键保存
+        setupSaveShortcut();
     }
 
     /**
@@ -387,6 +391,50 @@ public class PerformancePanel extends SingletonBasePanel {
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq));
         group.add(req);
         root.add(group);
+    }
+
+    /**
+     * 设置 Ctrl/Cmd+S 快捷键保存所有配置
+     */
+    private void setupSaveShortcut() {
+        // 获取 InputMap 和 ActionMap
+        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = getActionMap();
+
+        // 根据操作系统选择快捷键（macOS 用 Cmd，其他用 Ctrl）
+        int modifierKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        KeyStroke saveKeyStroke = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, modifierKey);
+
+        // 绑定快捷键
+        inputMap.put(saveKeyStroke, "savePerformanceConfig");
+        actionMap.put("savePerformanceConfig", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                handleSaveShortcut();
+            }
+        });
+    }
+
+    /**
+     * 处理 Ctrl/Cmd+S 快捷键
+     * 1. 强制提交所有 EasyJSpinner 的值
+     * 2. 保存所有属性面板数据到树节点
+     * 3. 持久化到文件
+     * 4. 显示成功提示
+     */
+    private void handleSaveShortcut() {
+        // 1. 强制提交所有 EasyJSpinner 的值
+        threadGroupPanel.forceCommitAllSpinners();
+
+        // 2. 保存所有属性面板数据
+        saveAllPropertyPanelData();
+
+        // 3. 持久化到文件
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        persistenceService.save(root);
+
+        // 4. 显示成功提示
+        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
     }
 
     private void saveAllPropertyPanelData() {

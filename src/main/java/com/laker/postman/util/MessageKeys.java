@@ -422,6 +422,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS = "performance.msg.request_not_found_in_collections";
     public static final String PERFORMANCE_MSG_REQUEST_REFRESHED = "performance.msg.request_refreshed";
     public static final String PERFORMANCE_MSG_ONLY_HTTP_SUPPORTED = "performance.msg.only_http_supported";
+    public static final String PERFORMANCE_MSG_SAVE_SUCCESS = "performance.msg.save_success";
 
     // ============ 性能报表列相关 ============
     public static final String PERFORMANCE_REPORT_COLUMN_API_NAME = "performance.report.column.api_name";

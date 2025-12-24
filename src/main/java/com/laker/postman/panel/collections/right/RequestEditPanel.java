@@ -71,8 +71,8 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     // 新建Tab，可指定标题
-    public RequestEditSubPanel addNewTab(String title) {
-        return addNewTab(title, RequestItemProtocolEnum.HTTP);
+    public void addNewTab(String title) {
+        addNewTab(title, RequestItemProtocolEnum.HTTP);
     }
 
     // 添加"+"Tab

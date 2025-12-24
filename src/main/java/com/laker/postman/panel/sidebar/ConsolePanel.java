@@ -182,7 +182,7 @@ public class ConsolePanel extends SingletonBasePanel {
             if (wholeWord) {
                 boolean isWordStart = pos == 0 || !Character.isLetterOrDigit(text.charAt(pos - 1));
                 boolean isWordEnd = (pos + searchKeyword.length() >= text.length()) ||
-                                   !Character.isLetterOrDigit(text.charAt(pos + searchKeyword.length()));
+                        !Character.isLetterOrDigit(text.charAt(pos + searchKeyword.length()));
 
                 if (isWordStart && isWordEnd) {
                     matchPositions.add(pos);
@@ -305,19 +305,14 @@ public class ConsolePanel extends SingletonBasePanel {
                 BorderFactory.createEmptyBorder(4, 6, 4, 6)
         ));
 
-        // 左侧：日志级别过滤器
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        leftPanel.setOpaque(false);
+        // 中间：搜索栏
+        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
+        centerPanel.setOpaque(false);
 
         logLevelFilter = new JComboBox<>(new String[]{"All", "INFO", "ERROR", "WARN", "DEBUG"});
         logLevelFilter.setPreferredSize(new Dimension(90, 28));
         logLevelFilter.setFocusable(false);
         logLevelFilter.setToolTipText("Filter logs by level");
-        leftPanel.add(logLevelFilter);
-
-        // 中间：搜索栏
-        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
-        centerPanel.setOpaque(false);
 
         searchField = new SearchTextField();
         searchField.setPreferredSize(new Dimension(200, 28));
@@ -339,6 +334,7 @@ public class ConsolePanel extends SingletonBasePanel {
         matchCountLabel.setPreferredSize(new Dimension(50, 28));
         matchCountLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
+        centerPanel.add(logLevelFilter);
         centerPanel.add(searchField);
         centerPanel.add(prevBtn);
         centerPanel.add(nextBtn);
@@ -369,7 +365,6 @@ public class ConsolePanel extends SingletonBasePanel {
         rightPanel.add(clearBtn);
         rightPanel.add(closeBtn);
 
-        topPanel.add(leftPanel, BorderLayout.WEST);
         topPanel.add(centerPanel, BorderLayout.CENTER);
         topPanel.add(rightPanel, BorderLayout.EAST);
 

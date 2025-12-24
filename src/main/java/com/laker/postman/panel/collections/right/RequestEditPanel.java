@@ -934,19 +934,18 @@ public class RequestEditPanel extends SingletonBasePanel {
         Component component = tabbedPane.getComponentAt(currentIndex);
 
         // 只有 RequestEditSubPanel 才需要检查是否修改
-        if (component instanceof RequestEditSubPanel editSubPanel) {
-            if (editSubPanel.isModified()) {
-                int result = JOptionPane.showConfirmDialog(tabbedPane,
-                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
-                        I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
-                if (result == JOptionPane.CANCEL_OPTION) return;
-                if (result == JOptionPane.YES_OPTION) {
-                    saveCurrentRequest();
-                }
+        if (component instanceof RequestEditSubPanel editSubPanel && editSubPanel.isModified()) {
+            int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
+                    I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
+                    I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (result == JOptionPane.CANCEL_OPTION) return;
+            if (result == JOptionPane.YES_OPTION) {
+                saveCurrentRequest();
             }
         }
+
 
         // 对于其他类型的面板（如 GroupEditPanel），直接关闭
         tabbedPane.remove(currentIndex);
@@ -986,7 +985,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             // 只对 RequestEditSubPanel 检查是否修改
             if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
                 int idx = tabbedPane.indexOfComponent(comp);
-                int result = JOptionPane.showConfirmDialog(tabbedPane,
+                int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_OTHERS),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                         JOptionPane.YES_NO_CANCEL_OPTION,
@@ -1025,7 +1024,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             // 只对 RequestEditSubPanel 检查是否修改
             if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
                 int idx = tabbedPane.indexOfComponent(comp);
-                int result = JOptionPane.showConfirmDialog(tabbedPane,
+                int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_ALL),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                         JOptionPane.YES_NO_CANCEL_OPTION,

@@ -14,9 +14,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class RequestsPersistence {
+    // 静态锁映射：每个文件路径对应一个锁对象，确保不同实例操作同一文件时使用同一个锁
+    private static final ConcurrentHashMap<String, Object> FILE_LOCKS = new ConcurrentHashMap<>();
+    // 静态加载状态映射：记录每个文件是否正在加载
+    private static final ConcurrentHashMap<String, Boolean> LOADING_STATUS = new ConcurrentHashMap<>();
+
     private String filePath;
     private final DefaultMutableTreeNode rootTreeNode;
     private final DefaultTreeModel treeModel;
@@ -27,43 +33,49 @@ public class RequestsPersistence {
         this.treeModel = treeModel;
     }
 
+    /**
+     * 获取文件对应的锁对象
+     * 使用 computeIfAbsent 确保同一文件路径始终返回同一个锁对象
+     */
+    private Object getFileLock() {
+        return FILE_LOCKS.computeIfAbsent(filePath, k -> new Object());
+    }
+
+    /**
+     * 检查文件是否正在加载
+     */
+    private boolean isFileLoading() {
+        return LOADING_STATUS.getOrDefault(filePath, false);
+    }
+
+    /**
+     * 设置文件加载状态
+     */
+    private void setFileLoading(boolean loading) {
+        if (loading) {
+            LOADING_STATUS.put(filePath, true);
+        } else {
+            LOADING_STATUS.remove(filePath);
+        }
+    }
+
     public void exportRequestCollection(File fileToSave) throws IOException {
-        try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
-            JSONArray array = new JSONArray();
-            for (int i = 0; i < rootTreeNode.getChildCount(); i++) {
-                DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootTreeNode.getChildAt(i);
-                array.add(buildGroupJson(groupNode));
+        synchronized (getFileLock()) {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
+                JSONArray array = new JSONArray();
+                for (int i = 0; i < rootTreeNode.getChildCount(); i++) {
+                    DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootTreeNode.getChildAt(i);
+                    array.add(buildGroupJson(groupNode));
+                }
+                writer.write(array.toStringPretty());
             }
-            writer.write(array.toStringPretty());
         }
     }
 
-    public void initRequestGroupsFromFile() {
-        File file = new File(filePath);
-        if (!file.exists()) { // 如果文件不存在，则创建默认请求组
-            DefaultRequestsFactory.create(rootTreeNode, treeModel); // 创建默认请求组
-            saveRequestGroups(); // 保存默认请求组到文件
-            log.info("File not found, created default request groups.");
-            return;
-        }
-        try {
-
-            JSONArray array = JSONUtil.readJSONArray(file, StandardCharsets.UTF_8);
-            List<DefaultMutableTreeNode> groupNodeList = new ArrayList<>();
-            for (Object o : array) {
-                JSONObject groupJson = (JSONObject) o;
-                DefaultMutableTreeNode groupNode = parseGroupNode(groupJson);
-                groupNodeList.add(groupNode);
-            }
-            groupNodeList.forEach(rootTreeNode::add);
-            treeModel.reload(rootTreeNode);
-            log.info("Loaded request groups from file: {}", filePath);
-        } catch (Exception e) {
-            log.error("Error loading request groups from file: {}", filePath, e);
-        }
-    }
-
-    public void saveRequestGroups() {
+    /**
+     * 内部保存方法，绕过加载状态检查，仅在初始化时使用
+     */
+    private void saveRequestGroupsInternal() {
         try (Writer writer = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8)) {
             JSONArray array = new JSONArray();
             for (int i = 0; i < rootTreeNode.getChildCount(); i++) {
@@ -74,6 +86,68 @@ public class RequestsPersistence {
             log.debug("Saved request groups to: {}", filePath);
         } catch (Exception ex) {
             log.error("Error saving request groups to file: {}", filePath, ex);
+        }
+    }
+
+    public void initRequestGroupsFromFile() {
+        Object lock = getFileLock();
+        synchronized (lock) {
+            setFileLoading(true); // 设置加载状态
+            try {
+                File file = new File(filePath);
+                if (!file.exists()) { // 如果文件不存在，则创建默认请求组
+                    DefaultRequestsFactory.create(rootTreeNode, treeModel); // 创建默认请求组
+                    saveRequestGroupsInternal(); // 使用内部方法保存，绕过加载状态检查
+                    log.info("File not found, created default request groups.");
+                    return;
+                }
+                try {
+
+                    JSONArray array = JSONUtil.readJSONArray(file, StandardCharsets.UTF_8);
+                    List<DefaultMutableTreeNode> groupNodeList = new ArrayList<>();
+                    for (Object o : array) {
+                        JSONObject groupJson = (JSONObject) o;
+                        DefaultMutableTreeNode groupNode = parseGroupNode(groupJson);
+                        groupNodeList.add(groupNode);
+                    }
+                    groupNodeList.forEach(rootTreeNode::add);
+                    treeModel.reload(rootTreeNode);
+                    log.info("Loaded request groups from file: {}", filePath);
+                } catch (Exception e) {
+                    log.error("Error loading request groups from file: {}", filePath, e);
+                }
+            } finally {
+                setFileLoading(false); // 重置加载状态
+            }
+        }
+    }
+
+    public void saveRequestGroups() {
+        // 如果正在加载数据，跳过保存操作，避免保存空数据
+        if (isFileLoading()) {
+            log.warn("Skipping save operation for file '{}' because it is being loaded", filePath);
+            return;
+        }
+
+        Object lock = getFileLock();
+        synchronized (lock) {
+            // 再次检查加载状态（双重检查）
+            if (isFileLoading()) {
+                log.warn("Skipping save operation for file '{}' because it is being loaded (double-check)", filePath);
+                return;
+            }
+
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8)) {
+                JSONArray array = new JSONArray();
+                for (int i = 0; i < rootTreeNode.getChildCount(); i++) {
+                    DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootTreeNode.getChildAt(i);
+                    array.add(buildGroupJson(groupNode));
+                }
+                writer.write(array.toStringPretty());
+                log.debug("Saved request groups to: {}", filePath);
+            } catch (Exception ex) {
+                log.error("Error saving request groups to file: {}", filePath, ex);
+            }
         }
     }
 
@@ -181,11 +255,29 @@ public class RequestsPersistence {
      */
     public void setDataFilePath(String path) {
         if (path == null || path.isBlank()) return;
-        this.filePath = path;
-        // 清空现有树
-        rootTreeNode.removeAllChildren();
-        treeModel.reload(rootTreeNode);
-        // 重新加载
-        initRequestGroupsFromFile();
+
+        // 先获取旧文件路径的锁，防止在切换过程中旧文件被保存
+        String oldPath = this.filePath;
+        Object oldLock = FILE_LOCKS.computeIfAbsent(oldPath, k -> new Object());
+
+        synchronized (oldLock) {
+            // 更新文件路径
+            this.filePath = path;
+
+            // 获取新文件路径的锁
+            Object newLock = getFileLock();
+            synchronized (newLock) {
+                setFileLoading(true); // 设置新文件的加载状态，防止在加载期间保存空数据
+                try {
+                    // 清空现有树
+                    rootTreeNode.removeAllChildren();
+                    treeModel.reload(rootTreeNode);
+                    // 重新加载
+                    initRequestGroupsFromFile();
+                } finally {
+                    setFileLoading(false); // 无论成功或失败，都要重置加载状态
+                }
+            }
+        }
     }
 }

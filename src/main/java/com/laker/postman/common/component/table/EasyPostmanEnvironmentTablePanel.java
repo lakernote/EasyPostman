@@ -179,6 +179,9 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         // Configure Tab key behavior to move between columns
         table.setSurrendersFocusOnKeystroke(true);
 
+        // 失去焦点时自动停止编辑并保存，实现 Postman 风格的即时保存
+        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+
         // Set column widths for drag/enable column
         table.getColumnModel().getColumn(COL_DRAG_ENABLE).setPreferredWidth(40);
         table.getColumnModel().getColumn(COL_DRAG_ENABLE).setMaxWidth(40);

@@ -49,7 +49,6 @@ import java.util.List;
  */
 @Slf4j
 public class EnvironmentPanel extends SingletonBasePanel {
-    public static final String SAVE_VARIABLES = "saveVariables";
     public static final String EXPORT_FILE_NAME = "EasyPostman-Environments.json";
     private EasyPostmanEnvironmentTablePanel variablesTablePanel;
     private transient Environment currentEnvironment;
@@ -97,11 +96,12 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     /**
-     * 自动保存功能
+     * 初始化表格自动保存功能
+     * 类似 Postman，环境变量修改后即时生效，无需手动保存
      */
     private void initTableValidationAndAutoSave() {
 
-        // 添加表格模型监听器，实现自动保存
+        // 添加表格模型监听器，实现即时自动保存（类似 Postman）
         variablesTablePanel.addTableModelListener(e -> {
             if (currentEnvironment == null || isLoadingData) return;
 
@@ -122,7 +122,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     /**
-     * 自动保存变量（无提示框版本）
+     * 自动保存变量（静默保存，无提示）
+     * 类似 Postman 的即时保存体验
      */
     private void autoSaveVariables() {
         if (currentEnvironment == null) return;
@@ -134,9 +135,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
             EnvironmentService.saveEnvironment(currentEnvironment);
             // 保存后更新快照
             originalVariablesSnapshot = JSONUtil.toJsonStr(currentEnvironment.getVariableList());
-            log.debug("自动保存环境变量: {}", currentEnvironment.getName());
+            log.debug("Auto-saved environment: {}", currentEnvironment.getName());
         } catch (Exception ex) {
-            log.error("自动保存环境变量失败", ex);
+            log.error("Failed to auto-save environment variables", ex);
         }
     }
 
@@ -208,17 +209,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 if (item == null || item.getEnvironment() == currentEnvironment) {
                     return; // 没有切换环境，不处理
                 }
-                if (isVariablesChanged()) {
-                    int option = JOptionPane.showConfirmDialog(this,
-                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES),
-                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES_TITLE),
-                            JOptionPane.YES_NO_OPTION);
-                    if (option == JOptionPane.YES_OPTION) {
-                        saveVariables();
-                    } else {
-                        loadVariables(currentEnvironment);
-                    }
-                }
                 currentEnvironment = item.getEnvironment();
                 loadVariables(currentEnvironment);
             }
@@ -226,6 +216,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 环境列表右键菜单
         addRightMenuList();
 
+        // 添加手动保存快捷键（虽然有自动保存，但保留手动保存让用户有掌控感）
         addSaveKeyStroke();
 
         // 默认加载当前激活环境变量
@@ -236,20 +227,24 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     }
 
+    /**
+     * 添加手动保存快捷键（Cmd+S / Ctrl+S）
+     * 虽然已有自动保存，但保留手动保存快捷键让用户有主动掌控感
+     */
     private void addSaveKeyStroke() {
-        // 右键菜单由EasyTablePanel自带，无需再注册
-        // 增加 Command+S 保存快捷键（兼容 Mac 和 Windows Ctrl+S）
         KeyStroke saveKeyStroke = KeyStroke.getKeyStroke("meta S"); // Mac Command+S
         KeyStroke saveKeyStroke2 = KeyStroke.getKeyStroke("control S"); // Windows/Linux Ctrl+S
-        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke, SAVE_VARIABLES);
-        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke2, SAVE_VARIABLES);
-        this.getActionMap().put(SAVE_VARIABLES, new AbstractAction() {
+        String actionKey = "saveEnvironmentVariables";
+        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke, actionKey);
+        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(saveKeyStroke2, actionKey);
+        this.getActionMap().put(actionKey, new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                saveVariables();
+                saveVariablesManually();
             }
         });
     }
+
 
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
@@ -402,9 +397,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     /**
-     * 保存当前环境的变量到文件
+     * 保存当前环境的变量到文件（内部调用，静默保存）
+     * 供自动保存和程序内部调用使用
      */
-    public void saveVariables() {
+    private void saveVariables() {
         if (currentEnvironment == null) return;
         variablesTablePanel.stopCellEditing();
 
@@ -414,8 +410,19 @@ public class EnvironmentPanel extends SingletonBasePanel {
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
         originalVariablesSnapshot = JSONUtil.toJsonStr(currentEnvironment.getVariableList());
+    }
 
-        // 显示保存成功通知
+    /**
+     * 手动保存环境变量（用户主动按 Cmd+S / Ctrl+S 时调用）
+     * 显示保存成功通知，给用户反馈
+     */
+    private void saveVariablesManually() {
+        if (currentEnvironment == null) return;
+
+        // 调用保存逻辑
+        saveVariables();
+
+        // 显示保存成功通知（只有手动保存才显示，自动保存不打扰用户）
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS));
     }
 

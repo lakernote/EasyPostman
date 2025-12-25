@@ -214,7 +214,7 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
                     nextColumn = COL_KEY;
                     break;
                 }
-            } while (!isCellEditable(currentRow, nextColumn));
+            } while (!isCellEditable(nextColumn));
         } else {
             // Move forwards
             int attempts = 0;
@@ -237,13 +237,13 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
                     nextColumn = COL_KEY;
                     break;
                 }
-            } while (!isCellEditable(currentRow, nextColumn));
+            } while (!isCellEditable(nextColumn));
         }
 
         // Select and start editing the next cell
         if (nextColumn >= 0 && nextColumn < columnCount && currentRow >= 0 && currentRow < table.getRowCount()) {
             table.changeSelection(currentRow, nextColumn, false, false);
-            if (isCellEditable(currentRow, nextColumn)) {
+            if (isCellEditable(nextColumn)) {
                 table.editCellAt(currentRow, nextColumn);
                 Component editor = table.getEditorComponent();
                 if (editor instanceof JTextField) {
@@ -257,7 +257,7 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
     /**
      * Check if a cell is editable
      */
-    private boolean isCellEditable(int row, int column) {
+    private boolean isCellEditable(int column) {
         if (!editable) {
             return false;
         }

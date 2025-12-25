@@ -85,6 +85,8 @@ public class RequestEditSubPanel extends JPanel {
     // 双向联动控制标志，防止循环更新
     private boolean isUpdatingFromUrl = false;
     private boolean isUpdatingFromParams = false;
+    // 数据加载标志，防止加载时触发自动保存和联动更新
+    private boolean isLoadingData = false;
     @Getter
     private final ResponsePanel responsePanel;
 
@@ -132,7 +134,7 @@ public class RequestEditSubPanel extends JPanel {
 
         // 添加Params面板的监听器，实现从Params到URL的联动
         paramsPanel.addTableModelListener(e -> {
-            if (!isUpdatingFromUrl) {
+            if (!isUpdatingFromUrl && !isLoadingData) {
                 parseParamsPanelToUrl();
             }
         });
@@ -719,93 +721,101 @@ public class RequestEditSubPanel extends JPanel {
      * 更新表单内容（用于切换请求或保存后刷新）
      */
     public void initPanelData(HttpRequestItem item) {
-        this.id = item.getId();
-        this.name = item.getName();
-        // 拆解URL参数
-        String url = item.getUrl();
-        urlField.setText(url);
-        urlField.setCaretPosition(0); // 设置光标到开头
+        // 设置加载标志，防止加载过程中触发自动保存和URL/Params联动
+        isLoadingData = true;
 
-        if (CollUtil.isNotEmpty(item.getParamsList())) {
-            paramsPanel.setParamsList(item.getParamsList());
-        } else {
-            // 没有数据，尝试从 URL 解析参数
-            List<HttpParam> urlParams = HttpUtil.getParamsListFromUrl(url);
-            if (!urlParams.isEmpty()) {
-                paramsPanel.setParamsList(urlParams);
-                item.setParamsList(paramsPanel.getParamsList());
+        try {
+            this.id = item.getId();
+            this.name = item.getName();
+            // 拆解URL参数
+            String url = item.getUrl();
+            urlField.setText(url);
+            urlField.setCaretPosition(0); // 设置光标到开头
+
+            if (CollUtil.isNotEmpty(item.getParamsList())) {
+                paramsPanel.setParamsList(item.getParamsList());
             } else {
-                paramsPanel.clear();
-            }
-        }
-        methodBox.setSelectedItem(item.getMethod());
-
-        if (CollUtil.isNotEmpty(item.getHeadersList())) {
-            // 有数据，使用请求的 headers
-            headersPanel.setHeadersList(item.getHeadersList());
-        } else {
-            // 没有数据，初始化为空列表
-            headersPanel.setHeadersList(new ArrayList<>());
-        }
-        // 获取最新的补充了默认值和排序的 headers 列表
-        item.setHeadersList(headersPanel.getHeadersList());
-        // Body
-        requestBodyPanel.getBodyArea().setText(item.getBody());
-        // 这是兼容性代码，防止旧数据bodyType字段为空
-        if (CharSequenceUtil.isBlank(item.getBodyType())) {
-            item.setBodyType(RequestBodyPanel.BODY_TYPE_NONE);
-            // 根据请求headers尝试推断bodyType
-            String contentType = HttpUtil.getHeaderIgnoreCase(item, "Content-Type");
-            if (CharSequenceUtil.isNotBlank(contentType)) {
-                if (contentType.contains("application/x-www-form-urlencoded")) {
-                    item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
-                } else if (contentType.contains("multipart/form-data")) {
-                    item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_DATA);
+                // 没有数据，尝试从 URL 解析参数
+                List<HttpParam> urlParams = HttpUtil.getParamsListFromUrl(url);
+                if (!urlParams.isEmpty()) {
+                    paramsPanel.setParamsList(urlParams);
+                    item.setParamsList(paramsPanel.getParamsList());
                 } else {
-                    item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+                    paramsPanel.clear();
                 }
             }
-        }
-        requestBodyPanel.getBodyTypeComboBox().setSelectedItem(item.getBodyType());
-        // rawTypeComboBox 根据body内容智能设置
-        String body = item.getBody();
-        if (CharSequenceUtil.isNotBlank(body)) {
-            JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
-            if (rawTypeComboBox != null) {
-                if (JSONUtil.isTypeJSON(body)) {
-                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
-                } else if (XmlUtil.isXml(body)) {
-                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
-                } else {
-                    rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
+            methodBox.setSelectedItem(item.getMethod());
+
+            if (CollUtil.isNotEmpty(item.getHeadersList())) {
+                // 有数据，使用请求的 headers
+                headersPanel.setHeadersList(item.getHeadersList());
+            } else {
+                // 没有数据，初始化为空列表
+                headersPanel.setHeadersList(new ArrayList<>());
+            }
+            // 获取最新的补充了默认值和排序的 headers 列表
+            item.setHeadersList(headersPanel.getHeadersList());
+            // Body
+            requestBodyPanel.getBodyArea().setText(item.getBody());
+            // 这是兼容性代码，防止旧数据bodyType字段为空
+            if (CharSequenceUtil.isBlank(item.getBodyType())) {
+                item.setBodyType(RequestBodyPanel.BODY_TYPE_NONE);
+                // 根据请求headers尝试推断bodyType
+                String contentType = HttpUtil.getHeaderIgnoreCase(item, "Content-Type");
+                if (CharSequenceUtil.isNotBlank(contentType)) {
+                    if (contentType.contains("application/x-www-form-urlencoded")) {
+                        item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
+                    } else if (contentType.contains("multipart/form-data")) {
+                        item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_DATA);
+                    } else {
+                        item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+                    }
                 }
             }
+            requestBodyPanel.getBodyTypeComboBox().setSelectedItem(item.getBodyType());
+            // rawTypeComboBox 根据body内容智能设置
+            String body = item.getBody();
+            if (CharSequenceUtil.isNotBlank(body)) {
+                JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
+                if (rawTypeComboBox != null) {
+                    if (JSONUtil.isTypeJSON(body)) {
+                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
+                    } else if (XmlUtil.isXml(body)) {
+                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
+                    } else {
+                        rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
+                    }
+                }
+            }
+
+            if (CollUtil.isNotEmpty(item.getFormDataList())) {
+                EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+                formDataTablePanel.setFormDataList(item.getFormDataList());
+            }
+
+            if (CollUtil.isNotEmpty(item.getUrlencodedList())) {
+                EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+                urlencodedTablePanel.setFormDataList(item.getUrlencodedList());
+            }
+
+            // 认证Tab
+            authTabPanel.setAuthType(item.getAuthType());
+            authTabPanel.setUsername(item.getAuthUsername());
+            authTabPanel.setPassword(item.getAuthPassword());
+            authTabPanel.setToken(item.getAuthToken());
+
+            // 前置/后置脚本
+            scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
+            scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
+            // 设置原始数据用于脏检测
+            setOriginalRequestItem(item);
+
+            // 根据请求类型智能选择默认Tab
+            selectDefaultTabByRequestType(item);
+        } finally {
+            // 确保标志一定会被清除，即使发生异常
+            isLoadingData = false;
         }
-
-        if (CollUtil.isNotEmpty(item.getFormDataList())) {
-            EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
-            formDataTablePanel.setFormDataList(item.getFormDataList());
-        }
-
-        if (CollUtil.isNotEmpty(item.getUrlencodedList())) {
-            EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
-            urlencodedTablePanel.setFormDataList(item.getUrlencodedList());
-        }
-
-        // 认证Tab
-        authTabPanel.setAuthType(item.getAuthType());
-        authTabPanel.setUsername(item.getAuthUsername());
-        authTabPanel.setPassword(item.getAuthPassword());
-        authTabPanel.setToken(item.getAuthToken());
-
-        // 前置/后置脚本
-        scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
-        scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
-        // 设置原始数据用于脏检测
-        setOriginalRequestItem(item);
-
-        // 根据请求类型智能选择默认Tab
-        selectDefaultTabByRequestType(item);
     }
 
     /**

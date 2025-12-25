@@ -382,18 +382,25 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     private void loadVariables(Environment env) {
-        variablesTablePanel.stopCellEditing();
-        currentEnvironment = env;
-        variablesTablePanel.clear();
-        isLoadingData = true; // 设置标志位，开始加载数据
-        if (env != null) {
-            variablesTablePanel.setVariableList(env.getVariableList());
-            originalVariablesSnapshot = JSONUtil.toJsonStr(env.getVariableList()); // 用rows做快照，保证同步
-        } else {
+        // 设置标志位，开始加载数据（必须在最前面，防止任何操作触发自动保存）
+        isLoadingData = true;
+
+        try {
+            variablesTablePanel.stopCellEditing();
+            currentEnvironment = env;
             variablesTablePanel.clear();
-            originalVariablesSnapshot = JSONUtil.toJsonStr(new ArrayList<>()); // 空快照
+
+            if (env != null) {
+                variablesTablePanel.setVariableList(env.getVariableList());
+                originalVariablesSnapshot = JSONUtil.toJsonStr(env.getVariableList()); // 用rows做快照，保证同步
+            } else {
+                variablesTablePanel.clear();
+                originalVariablesSnapshot = JSONUtil.toJsonStr(new ArrayList<>()); // 空快照
+            }
+        } finally {
+            // 使用 finally 确保标志位一定会被清除，即使发生异常
+            isLoadingData = false;
         }
-        isLoadingData = false; // 清除标志位，结束加载数据
     }
 
     /**

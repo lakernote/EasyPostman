@@ -1,14 +1,12 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.table.AbstractEasyPostmanTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellRenderer;
-import com.laker.postman.util.FontsUtil;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
@@ -20,12 +18,7 @@ import java.util.*;
 import java.util.List;
 
 @Slf4j
-public class EasyHttpHeadersTablePanel extends JPanel {
-    // Table components
-    private DefaultTableModel tableModel;
-    @Getter
-    private JTable table;
-    private final String[] columns;
+public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map<String, Object>> {
 
     // Default header keys for consistency
     private static final String USER_AGENT = "User-Agent";
@@ -41,19 +34,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         DEFAULT_HEADER_KEYS.add(CONNECTION);
     }
 
-    @Getter
-    private boolean editable = true;
-
-    /**
-     * Flag to suppress auto-append row during batch operations
-     */
-    private boolean suppressAutoAppendRow = false;
-
-    /**
-     * Flag to prevent recursive calls when stopping cell editing
-     */
-    private boolean isStoppingCellEdit = false;
-
     // Column indices
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
@@ -61,13 +41,34 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     private static final int COL_DELETE = 3;
 
     public EasyHttpHeadersTablePanel() {
-        this.columns = new String[]{"", "Key", "Value", ""};
+        super(new String[]{"", "Key", "Value", ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
         setupTableListeners();
         addAutoAppendRowFeature();
     }
+
+    // ========== 实现抽象方法 ==========
+
+    @Override
+    protected int getEnabledColumnIndex() {
+        return COL_ENABLED;
+    }
+
+    @Override
+    protected int getDeleteColumnIndex() {
+        return COL_DELETE;
+    }
+
+    @Override
+    protected boolean hasContentInRow(int row) {
+        String key = getStringValue(row, COL_KEY);
+        String value = getStringValue(row, COL_VALUE);
+        return !key.isEmpty() || !value.isEmpty();
+    }
+
+    // ========== 初始化方法 ==========
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
@@ -122,39 +123,14 @@ public class EasyHttpHeadersTablePanel extends JPanel {
         add(table, BorderLayout.CENTER);
     }
 
-    private void initializeTableUI() {
-        table.setFillsViewportHeight(true);
-        table.setRowHeight(28);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
-        table.getTableHeader().setBackground(new Color(240, 242, 245));
-        table.getTableHeader().setForeground(new Color(33, 33, 33));
-        table.setGridColor(new Color(237, 237, 237));
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(true);
-        table.setIntercellSpacing(new Dimension(2, 2));
-        table.setRowMargin(2);
-        table.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(237, 237, 237)),
-                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-        table.setOpaque(false);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+    @Override
+    protected void initializeTableUI() {
+        // 调用父类的通用UI配置
+        super.initializeTableUI();
 
-        // Configure Tab key behavior to move between columns
-        table.setSurrendersFocusOnKeystroke(true);
-
-        // 失去焦点时自动停止编辑并保存，实现 Postman 风格的即时保存
-        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-
-        // Set column widths
-        table.getColumnModel().getColumn(COL_ENABLED).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_ENABLED).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_ENABLED).setMinWidth(40);
-
-        table.getColumnModel().getColumn(COL_DELETE).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_DELETE).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_DELETE).setMinWidth(40);
+        // 设置列宽
+        setEnabledColumnWidth(40);
+        setDeleteColumnWidth(40);
 
         // Setup Tab key navigation to move between columns in the same row
         setupTabKeyNavigation();
@@ -677,62 +653,30 @@ public class EasyHttpHeadersTablePanel extends JPanel {
     }
 
     /**
-     * Clear all rows in the table
-     */
-    public void clear() {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-            // Don't add empty row here - let caller or setRows handle it
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
      * Scroll to make the rectangle visible
+     * Wrapper for backward compatibility
      */
     public void scrollRectToVisible() {
         scrollToLastRow();
-    }
-
-    private void scrollToLastRow() {
-        SwingUtilities.invokeLater(() -> {
-            int rowCount = table.getRowCount();
-            if (rowCount > 0) {
-                Rectangle rect = table.getCellRect(rowCount - 1, 0, true);
-                table.scrollRectToVisible(rect);
-            }
-        });
     }
 
     /**
      * Get all rows as a list of maps (model data, not view data)
      */
     public List<Map<String, Object>> getRows() {
-        // Stop cell editing to ensure any in-progress edits are committed to the table model
-        // Use flag to prevent recursive calls during stopCellEditing
-        if (!isStoppingCellEdit) {
-            isStoppingCellEdit = true;
-            try {
-                stopCellEditing();
-            } finally {
-                isStoppingCellEdit = false;
-            }
-        }
+        // Stop cell editing to ensure any in-progress edits are committed
+        // Use parent class method with recursion protection
+        stopCellEditingWithProtection();
 
         List<Map<String, Object>> rows = new ArrayList<>();
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Map<String, Object> row = new LinkedHashMap<>();
             // Store enabled state
-            row.put("Enabled", tableModel.getValueAt(i, COL_ENABLED));
+            row.put("Enabled", getBooleanValue(i, COL_ENABLED));
             // Store Key and Value
-            row.put("Key", tableModel.getValueAt(i, COL_KEY));
-            row.put("Value", tableModel.getValueAt(i, COL_VALUE));
+            row.put("Key", getStringValue(i, COL_KEY));
+            row.put("Value", getStringValue(i, COL_VALUE));
             rows.add(row);
         }
 
@@ -764,66 +708,6 @@ public class EasyHttpHeadersTablePanel extends JPanel {
 
             // Ensure there's always an empty row at the end
             ensureEmptyLastRow();
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * Add table model listener
-     */
-    public void addTableModelListener(TableModelListener l) {
-        if (tableModel != null) {
-            tableModel.addTableModelListener(l);
-        }
-    }
-
-    /**
-     * Set whether the table is editable
-     */
-    public void setEditable(boolean editable) {
-        this.editable = editable;
-        table.repaint(); // Refresh to update cell editability
-    }
-
-    /**
-     * Stop cell editing for the current row
-     */
-    private void stopCellEditing() {
-        int editingRow = table.getEditingRow();
-        if (editingRow >= 0) {
-            TableCellEditor editor = table.getCellEditor();
-            if (editor != null) {
-                editor.stopCellEditing();
-            }
-        }
-    }
-
-    /**
-     * Ensure there is always an empty last row
-     */
-    private void ensureEmptyLastRow() {
-        suppressAutoAppendRow = true;
-        try {
-            int rowCount = tableModel.getRowCount();
-            if (rowCount == 0) {
-                // No rows at all, add an empty row
-                tableModel.addRow(new Object[]{true, "", "", ""});
-                return;
-            }
-
-            // Check if the last row has any content
-            int lastRow = rowCount - 1;
-            Object keyObj = tableModel.getValueAt(lastRow, COL_KEY);
-            Object valueObj = tableModel.getValueAt(lastRow, COL_VALUE);
-
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String value = valueObj == null ? "" : valueObj.toString().trim();
-
-            // Only add a new row if the last row has content
-            if (!key.isEmpty() || !value.isEmpty()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
-            }
         } finally {
             suppressAutoAppendRow = false;
         }

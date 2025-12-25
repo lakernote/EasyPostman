@@ -3,14 +3,11 @@ package com.laker.postman.common.component.table;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.util.FontsUtil;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -24,26 +21,7 @@ import java.util.List;
  * 支持 Enable、Key、Type(Text/File)、Value 和 Delete 列结构
  */
 @Slf4j
-public class EasyPostmanFormDataTablePanel extends JPanel {
-
-    // Table components
-    private DefaultTableModel tableModel;
-    @Getter
-    private JTable table;
-    private final String[] columns;
-
-    @Getter
-    private boolean editable = true;
-
-    /**
-     * Flag to suppress auto-append row during batch operations
-     */
-    private boolean suppressAutoAppendRow = false;
-
-    /**
-     * Flag to prevent recursive calls when stopping cell editing
-     */
-    private boolean isStoppingCellEdit = false;
+public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel<HttpFormData> {
 
     // Column indices
     private static final int COL_ENABLED = 0;
@@ -69,7 +47,7 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
     public EasyPostmanFormDataTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
-        this.columns = new String[]{"", "Key", "Type", "Value", ""};
+        super(new String[]{"", "Key", "Type", "Value", ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -83,6 +61,33 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         // Add initial empty row
         addRow();
     }
+
+    // ========== 实现抽象方法 ==========
+
+    @Override
+    protected int getEnabledColumnIndex() {
+        return COL_ENABLED;
+    }
+
+    @Override
+    protected int getDeleteColumnIndex() {
+        return COL_DELETE;
+    }
+
+    @Override
+    protected boolean hasContentInRow(int row) {
+        String key = getStringValue(row, COL_KEY);
+        String value = getStringValue(row, COL_VALUE);
+        return !key.isEmpty() || !value.isEmpty();
+    }
+
+    @Override
+    protected Object[] createEmptyRow() {
+        // FormData has 5 columns including Type column with default value
+        return new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""};
+    }
+
+    // ========== 初始化方法 ==========
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
@@ -131,43 +136,20 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void initializeTableUI() {
-        table.setFillsViewportHeight(true);
-        table.setRowHeight(28);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
-        table.getTableHeader().setBackground(new Color(240, 242, 245));
-        table.getTableHeader().setForeground(new Color(33, 33, 33));
-        table.setGridColor(new Color(237, 237, 237));
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(true);
-        table.setIntercellSpacing(new Dimension(2, 2));
-        table.setRowMargin(2);
-        table.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(237, 237, 237)),
-                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-        table.setOpaque(false);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+    @Override
+    protected void initializeTableUI() {
+        // 调用父类的通用UI配置
+        super.initializeTableUI();
 
-        // Configure Tab key behavior to move between columns
-        table.setSurrendersFocusOnKeystroke(true);
+        // 设置列宽
+        setEnabledColumnWidth(40);
 
-        // 失去焦点时自动停止编辑并保存，实现 Postman 风格的即时保存
-        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-
-        // Set column widths
-        table.getColumnModel().getColumn(COL_ENABLED).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_ENABLED).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_ENABLED).setMinWidth(40);
-
+        // Type 列特殊宽度
         table.getColumnModel().getColumn(COL_TYPE).setPreferredWidth(80);
         table.getColumnModel().getColumn(COL_TYPE).setMaxWidth(80);
         table.getColumnModel().getColumn(COL_TYPE).setMinWidth(80);
 
-        table.getColumnModel().getColumn(COL_DELETE).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_DELETE).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_DELETE).setMinWidth(40);
+        setDeleteColumnWidth(40);
 
         // Setup Tab key navigation
         setupTabKeyNavigation();
@@ -641,33 +623,6 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
         });
     }
 
-    /**
-     * 添加表格模型监听器
-     *
-     * @param listener 表格模型监听器
-     */
-    public void addTableModelListener(TableModelListener listener) {
-        if (tableModel != null) {
-            tableModel.addTableModelListener(listener);
-        }
-    }
-
-    /**
-     * 清空表格数据
-     */
-    public void clear() {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-            // Add an empty row after clearing
-            tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
 
     /**
      * 添加一行数据 (内部使用)
@@ -738,44 +693,22 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
     }
 
     /**
-     * Scroll to last row
-     */
-    private void scrollToLastRow() {
-        SwingUtilities.invokeLater(() -> {
-            int rowCount = table.getRowCount();
-            if (rowCount > 0) {
-                Rectangle rect = table.getCellRect(rowCount - 1, 0, true);
-                table.scrollRectToVisible(rect);
-            }
-        });
-    }
-
-    /**
      * Get form-data list with enabled state (new format)
      */
     public List<HttpFormData> getFormDataList() {
-        // Stop cell editing to ensure any in-progress edits are committed to the table model
-        // Use flag to prevent recursive calls during stopCellEditing
-        if (!isStoppingCellEdit) {
-            isStoppingCellEdit = true;
-            try {
-                stopCellEditing();
-            } finally {
-                isStoppingCellEdit = false;
-            }
-        }
+        // Stop cell editing to ensure any in-progress edits are committed
+        // Use parent class method with recursion protection
+        stopCellEditingWithProtection();
 
         List<HttpFormData> dataList = new ArrayList<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);
-            Object keyObj = tableModel.getValueAt(i, COL_KEY);
-            Object typeObj = tableModel.getValueAt(i, COL_TYPE);
-            Object valueObj = tableModel.getValueAt(i, COL_VALUE);
-
-            boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String type = typeObj == null ? HttpFormData.TYPE_TEXT : typeObj.toString();
-            String value = valueObj == null ? "" : valueObj.toString();
+            boolean enabled = getBooleanValue(i, COL_ENABLED);
+            String key = getStringValue(i, COL_KEY);
+            String type = getStringValue(i, COL_TYPE);
+            if (type.isEmpty()) {
+                type = HttpFormData.TYPE_TEXT;
+            }
+            String value = getStringValue(i, COL_VALUE);
 
             // Only add non-empty params
             if (!key.isEmpty()) {
@@ -817,51 +750,6 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
             }
         } finally {
             suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * Check if the last row has any content
-     */
-    private boolean hasContentInLastRow() {
-        int rowCount = tableModel.getRowCount();
-        if (rowCount == 0) {
-            return false;
-        }
-
-        int lastRow = rowCount - 1;
-        Object keyObj = tableModel.getValueAt(lastRow, COL_KEY);
-        Object valueObj = tableModel.getValueAt(lastRow, COL_VALUE);
-
-        String key = keyObj == null ? "" : keyObj.toString().trim();
-        String value = valueObj == null ? "" : valueObj.toString().trim();
-
-        return !key.isEmpty() || !value.isEmpty();
-    }
-
-    /**
-     * Ensure there's always an empty row at the end of the table
-     */
-    private void ensureEmptyLastRow() {
-        suppressAutoAppendRow = true;
-        try {
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * Safely stop cell editing
-     */
-    private void stopCellEditing() {
-        if (table.isEditing()) {
-            TableCellEditor editor = table.getCellEditor();
-            if (editor != null) {
-                editor.stopCellEditing();
-            }
         }
     }
 }

@@ -3,11 +3,9 @@ package com.laker.postman.common.component.table;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.util.FontsUtil;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
@@ -21,31 +19,12 @@ import java.util.List;
 /**
  * Postman 环境变量表格面板
  * 专门用于处理 Postman 环境变量数据
- * 支持 Enable、Key、Value 和 Delete 列结构
+ * 支持 Drag+Enable、Key、Value 和 Delete 列结构
  */
 @Slf4j
-public class EasyPostmanEnvironmentTablePanel extends JPanel {
+public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePanel<EnvironmentVariable> {
 
-    // Table components
-    private DefaultTableModel tableModel;
-    @Getter
-    private JTable table;
-    private final String[] columns;
-
-    @Getter
-    private boolean editable = true;
-
-    /**
-     * Flag to suppress auto-append row during batch operations
-     */
-    private boolean suppressAutoAppendRow = false;
-
-    /**
-     * Flag to prevent recursive calls when stopping cell editing
-     */
-    private boolean isStoppingCellEdit = false;
-
-    // Column indices
+    // Column indices - 此表格有特殊的 Drag+Enable 合并列
     private static final int COL_DRAG_ENABLE = 0;  // 合并拖动手柄和启用复选框
     private static final int COL_KEY = 1;
     private static final int COL_VALUE = 2;
@@ -77,7 +56,7 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
     public EasyPostmanEnvironmentTablePanel(String nameCol, String valueCol, boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
-        this.columns = new String[]{"", nameCol, valueCol, ""};
+        super(new String[]{"", nameCol, valueCol, ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -94,6 +73,26 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         addRow();
     }
 
+    // ========== 实现抽象方法 ==========
+
+    @Override
+    protected int getEnabledColumnIndex() {
+        return COL_DRAG_ENABLE;  // Drag+Enable 合并列
+    }
+
+    @Override
+    protected int getDeleteColumnIndex() {
+        return COL_DELETE;
+    }
+
+    @Override
+    protected boolean hasContentInRow(int row) {
+        String key = getStringValue(row, COL_KEY);
+        String value = getStringValue(row, COL_VALUE);
+        return !key.isEmpty() || !value.isEmpty();
+    }
+
+    // ========== 拖拽功能 ==========
 
     /**
      * 启用JTable行拖动排序
@@ -157,40 +156,14 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void initializeTableUI() {
-        table.setFillsViewportHeight(true);
-        table.setRowHeight(28);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
-        table.getTableHeader().setBackground(new Color(240, 242, 245));
-        table.getTableHeader().setForeground(new Color(33, 33, 33));
-        table.setGridColor(new Color(237, 237, 237));
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(true);
-        table.setIntercellSpacing(new Dimension(2, 2));
-        table.setRowMargin(2);
-        table.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(237, 237, 237)),
-                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
-        table.setOpaque(false);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+    @Override
+    protected void initializeTableUI() {
+        // 调用父类的通用UI配置
+        super.initializeTableUI();
 
-        // Configure Tab key behavior to move between columns
-        table.setSurrendersFocusOnKeystroke(true);
-
-        // 失去焦点时自动停止编辑并保存，实现 Postman 风格的即时保存
-        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-
-        // Set column widths for drag/enable column
-        table.getColumnModel().getColumn(COL_DRAG_ENABLE).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_DRAG_ENABLE).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_DRAG_ENABLE).setMinWidth(40);
-
-        // Set column widths for delete button
-        table.getColumnModel().getColumn(COL_DELETE).setPreferredWidth(40);
-        table.getColumnModel().getColumn(COL_DELETE).setMaxWidth(40);
-        table.getColumnModel().getColumn(COL_DELETE).setMinWidth(40);
+        // 设置 Drag+Enable 合并列的宽度
+        setEnabledColumnWidth(40);
+        setDeleteColumnWidth(40);
 
         // Setup Tab key navigation to move between columns in the same row
         setupTabKeyNavigation();
@@ -756,30 +729,6 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
     }
 
     /**
-     * 添加表格模型监听器
-     */
-    public void addTableModelListener(TableModelListener listener) {
-        if (tableModel != null) {
-            tableModel.addTableModelListener(listener);
-        }
-    }
-
-    /**
-     * 清空表格数据
-     */
-    public void clear() {
-        stopCellEditing();
-
-        suppressAutoAppendRow = true;
-        try {
-            tableModel.setRowCount(0);
-            tableModel.addRow(new Object[]{true, "", "", ""});
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
      * 添加一行数据 (内部使用)
      */
     private void addRow(Object... values) {
@@ -839,43 +788,20 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         }
     }
 
-    /**
-     * Scroll to last row
-     */
-    private void scrollToLastRow() {
-        SwingUtilities.invokeLater(() -> {
-            int rowCount = table.getRowCount();
-            if (rowCount > 0) {
-                Rectangle rect = table.getCellRect(rowCount - 1, 0, true);
-                table.scrollRectToVisible(rect);
-            }
-        });
-    }
 
     /**
      * 获取环境变量列表（新格式）
      */
     public List<EnvironmentVariable> getVariableList() {
-        // Stop cell editing to ensure any in-progress edits are committed to the table model
-        // Use flag to prevent recursive calls during stopCellEditing
-        if (!isStoppingCellEdit) {
-            isStoppingCellEdit = true;
-            try {
-                stopCellEditing();
-            } finally {
-                isStoppingCellEdit = false;
-            }
-        }
+        // Stop cell editing to ensure any in-progress edits are committed
+        // Use parent class method with recursion protection
+        stopCellEditingWithProtection();
 
         List<EnvironmentVariable> dataList = new ArrayList<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Object enabledObj = tableModel.getValueAt(i, COL_DRAG_ENABLE);
-            Object keyObj = tableModel.getValueAt(i, COL_KEY);
-            Object valueObj = tableModel.getValueAt(i, COL_VALUE);
-
-            boolean enabled = enabledObj instanceof Boolean ? (Boolean) enabledObj : true;
-            String key = keyObj == null ? "" : keyObj.toString().trim();
-            String value = valueObj == null ? "" : valueObj.toString().trim();
+            boolean enabled = getBooleanValue(i, COL_DRAG_ENABLE);
+            String key = getStringValue(i, COL_KEY);
+            String value = getStringValue(i, COL_VALUE);
 
             if (!key.isEmpty()) {
                 dataList.add(new EnvironmentVariable(enabled, key, value));
@@ -907,50 +833,6 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
         }
     }
 
-    /**
-     * Check if the last row has any content
-     */
-    private boolean hasContentInLastRow() {
-        int rowCount = tableModel.getRowCount();
-        if (rowCount == 0) {
-            return false;
-        }
-
-        int lastRow = rowCount - 1;
-        Object keyObj = tableModel.getValueAt(lastRow, COL_KEY);
-        Object valueObj = tableModel.getValueAt(lastRow, COL_VALUE);
-
-        String key = keyObj == null ? "" : keyObj.toString().trim();
-        String value = valueObj == null ? "" : valueObj.toString().trim();
-
-        return !key.isEmpty() || !value.isEmpty();
-    }
-
-    /**
-     * Ensure there's always an empty row at the end of the table
-     */
-    private void ensureEmptyLastRow() {
-        suppressAutoAppendRow = true;
-        try {
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
-            }
-        } finally {
-            suppressAutoAppendRow = false;
-        }
-    }
-
-    /**
-     * Safely stop cell editing
-     */
-    public void stopCellEditing() {
-        if (table.isEditing()) {
-            TableCellEditor editor = table.getCellEditor();
-            if (editor != null) {
-                editor.stopCellEditing();
-            }
-        }
-    }
 
     /**
      * Check if table is currently in dragging state

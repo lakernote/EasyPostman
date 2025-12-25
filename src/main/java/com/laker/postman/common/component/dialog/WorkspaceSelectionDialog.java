@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -199,48 +200,46 @@ public class WorkspaceSelectionDialog extends JDialog {
      * 工作区列表单元格渲染器
      */
     private static class WorkspaceListCellRenderer extends DefaultListCellRenderer {
+        private static final String HTML_START = "<html>";
+        private static final String HTML_END = "</html>";
+
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                                                       boolean isSelected, boolean cellHasFocus) {
-            JPanel panel = new JPanel(new BorderLayout(10, 5));
-            panel.setOpaque(true);
-            panel.setBorder(new EmptyBorder(5, 10, 5, 10));
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
             if (value instanceof Workspace workspace) {
-                // 左侧图标
-                JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/workspace.svg", 24, 24));
-                panel.add(iconLabel, BorderLayout.WEST);
+                // 根据工作区类型设置图标
+                FlatSVGIcon icon = workspace.getType() == WorkspaceType.GIT
+                        ? new FlatSVGIcon("icons/git.svg", 20, 20)
+                        : new FlatSVGIcon("icons/local.svg", 18, 18);
+                setIcon(icon);
 
-                // 中间文本区域
-                JPanel textPanel = new JPanel();
-                textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-                textPanel.setOpaque(false);
+                // 构建显示文本：名称 + 类型 + 描述
+                StringBuilder text = new StringBuilder();
+                text.append(HTML_START);
+                text.append("<b>").append(workspace.getName()).append("</b>");
+                text.append("<br>");
+                text.append("<small style='color: gray;'>");
 
-                JLabel nameLabel = new JLabel(workspace.getName());
-                nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 13f));
+                // 显示工作区类型
+                text.append(workspace.getType() == WorkspaceType.LOCAL
+                        ? I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL)
+                        : I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_GIT));
 
-                textPanel.add(nameLabel);
-
+                // 如果有描述，追加显示
                 if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
-                    JLabel descLabel = new JLabel(workspace.getDescription());
-                    descLabel.setFont(descLabel.getFont().deriveFont(Font.PLAIN, 11f));
-                    descLabel.setForeground(Color.GRAY);
-                    textPanel.add(descLabel);
+                    text.append(" - ").append(workspace.getDescription());
                 }
 
-                panel.add(textPanel, BorderLayout.CENTER);
+                text.append("</small>");
+                text.append(HTML_END);
 
-                // 设置选中状态的颜色
-                if (isSelected) {
-                    panel.setBackground(list.getSelectionBackground());
-                    nameLabel.setForeground(list.getSelectionForeground());
-                } else {
-                    panel.setBackground(list.getBackground());
-                    nameLabel.setForeground(list.getForeground());
-                }
+                setText(text.toString());
+                setBorder(new EmptyBorder(5, 10, 5, 10));
             }
 
-            return panel;
+            return this;
         }
     }
 }

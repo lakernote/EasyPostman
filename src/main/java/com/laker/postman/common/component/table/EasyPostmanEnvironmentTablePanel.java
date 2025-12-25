@@ -40,6 +40,11 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
+    /**
+     * Flag to prevent recursive calls when stopping cell editing
+     */
+    private boolean isStoppingCellEdit = false;
+
     // Column indices
     private static final int COL_DRAG_ENABLE = 0;  // 合并拖动手柄和启用复选框
     private static final int COL_KEY = 1;
@@ -848,6 +853,17 @@ public class EasyPostmanEnvironmentTablePanel extends JPanel {
      * 获取环境变量列表（新格式）
      */
     public List<EnvironmentVariable> getVariableList() {
+        // Stop cell editing to ensure any in-progress edits are committed to the table model
+        // Use flag to prevent recursive calls during stopCellEditing
+        if (!isStoppingCellEdit) {
+            isStoppingCellEdit = true;
+            try {
+                stopCellEditing();
+            } finally {
+                isStoppingCellEdit = false;
+            }
+        }
+
         List<EnvironmentVariable> dataList = new ArrayList<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Object enabledObj = tableModel.getValueAt(i, COL_DRAG_ENABLE);

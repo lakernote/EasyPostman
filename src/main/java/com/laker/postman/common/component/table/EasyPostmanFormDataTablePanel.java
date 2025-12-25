@@ -40,6 +40,11 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
+    /**
+     * Flag to prevent recursive calls when stopping cell editing
+     */
+    private boolean isStoppingCellEdit = false;
+
     // Column indices
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
@@ -746,6 +751,17 @@ public class EasyPostmanFormDataTablePanel extends JPanel {
      * Get form-data list with enabled state (new format)
      */
     public List<HttpFormData> getFormDataList() {
+        // Stop cell editing to ensure any in-progress edits are committed to the table model
+        // Use flag to prevent recursive calls during stopCellEditing
+        if (!isStoppingCellEdit) {
+            isStoppingCellEdit = true;
+            try {
+                stopCellEditing();
+            } finally {
+                isStoppingCellEdit = false;
+            }
+        }
+
         List<HttpFormData> dataList = new ArrayList<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Object enabledObj = tableModel.getValueAt(i, COL_ENABLED);

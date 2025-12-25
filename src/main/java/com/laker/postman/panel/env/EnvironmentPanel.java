@@ -402,7 +402,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     /**
-     * 保存表格中的变量到当前环境
+     * 保存当前环境的变量到文件
      */
     public void saveVariables() {
         if (currentEnvironment == null) return;
@@ -414,6 +414,9 @@ public class EnvironmentPanel extends SingletonBasePanel {
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
         originalVariablesSnapshot = JSONUtil.toJsonStr(currentEnvironment.getVariableList());
+
+        // 显示保存成功通知
+        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS));
     }
 
     /**

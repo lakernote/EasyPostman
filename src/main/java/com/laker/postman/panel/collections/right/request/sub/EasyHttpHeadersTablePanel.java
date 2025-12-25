@@ -49,6 +49,11 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      */
     private boolean suppressAutoAppendRow = false;
 
+    /**
+     * Flag to prevent recursive calls when stopping cell editing
+     */
+    private boolean isStoppingCellEdit = false;
+
     // Column indices
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
@@ -705,6 +710,17 @@ public class EasyHttpHeadersTablePanel extends JPanel {
      * Get all rows as a list of maps (model data, not view data)
      */
     public List<Map<String, Object>> getRows() {
+        // Stop cell editing to ensure any in-progress edits are committed to the table model
+        // Use flag to prevent recursive calls during stopCellEditing
+        if (!isStoppingCellEdit) {
+            isStoppingCellEdit = true;
+            try {
+                stopCellEditing();
+            } finally {
+                isStoppingCellEdit = false;
+            }
+        }
+
         List<Map<String, Object>> rows = new ArrayList<>();
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {

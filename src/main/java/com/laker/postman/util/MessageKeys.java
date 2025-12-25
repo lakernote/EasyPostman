@@ -270,6 +270,7 @@ public final class MessageKeys {
     public static final String ENV_MENU_IMPORT_POSTMAN = "env.menu.import_postman";
     public static final String ENV_DIALOG_SAVE_CHANGES = "env.dialog.save_changes";
     public static final String ENV_DIALOG_SAVE_CHANGES_TITLE = "env.dialog.save_changes.title";
+    public static final String ENV_DIALOG_SAVE_SUCCESS = "env.dialog.save.success";
     public static final String ENV_DIALOG_EXPORT_TITLE = "env.dialog.export.title";
     public static final String ENV_DIALOG_EXPORT_SUCCESS = "env.dialog.export.success";
     public static final String ENV_DIALOG_EXPORT_FAIL = "env.dialog.export.fail";

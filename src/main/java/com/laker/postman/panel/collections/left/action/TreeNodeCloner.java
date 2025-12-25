@@ -1,10 +1,12 @@
 package com.laker.postman.panel.collections.left.action;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.UUID;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
@@ -20,7 +22,20 @@ public class TreeNodeCloner {
      */
     public static DefaultMutableTreeNode deepCopyGroupNode(DefaultMutableTreeNode node) {
         Object userObj = node.getUserObject();
-        Object[] obj = userObj instanceof Object[] ? ((Object[]) userObj).clone() : null;
+        Object[] obj = null;
+        if (userObj instanceof Object[] originalObj) {
+            // 创建新数组并深拷贝内容
+            obj = new Object[originalObj.length];
+            obj[0] = originalObj[0]; // type字段直接复制
+            // 深拷贝 RequestGroup 对象
+            if (originalObj[1] instanceof RequestGroup originalGroup) {
+                obj[1] = JsonUtil.deepCopy(originalGroup, RequestGroup.class);
+                // 生成新的ID
+                ((RequestGroup) obj[1]).setId(UUID.randomUUID().toString());
+            } else {
+                obj[1] = originalObj[1]; // 如果是字符串，直接复制
+            }
+        }
         DefaultMutableTreeNode copy = new DefaultMutableTreeNode(obj);
 
         for (int i = 0; i < node.getChildCount(); i++) {

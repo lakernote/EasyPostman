@@ -32,9 +32,9 @@ public class EasyConsoleEventListener extends EventListener {
     private static final ThreadLocal<HttpEventInfo> eventInfoThreadLocal = new ThreadLocal<>();
     private final long callStartNanos;
     private final HttpEventInfo info;
-    private String reqItemId;
+    private final String reqItemId;
     private RequestEditSubPanel editSubPanel;
-    private PreparedRequest preparedRequest;
+    private final PreparedRequest preparedRequest;
 
     public EasyConsoleEventListener(PreparedRequest preparedRequest) {
         this.callStartNanos = System.nanoTime();

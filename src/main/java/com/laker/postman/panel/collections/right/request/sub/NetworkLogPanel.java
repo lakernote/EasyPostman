@@ -16,17 +16,19 @@ public class NetworkLogPanel extends JPanel {
     private final JTextPane logArea;
     private final StyledDocument doc;
 
-    // 性能优化配置
+    // 性能优化配置 - 降低限制防止卡顿
     private static final int MAX_LINE_LENGTH = 500; // 单行最大长度
-    private static final int MAX_LINES_PER_MESSAGE = 50; // 单条消息最大行数
-    private static final int MAX_TOTAL_LENGTH = 100000; // 日志总长度限制（字符数）
+    private static final int MAX_LINES_PER_MESSAGE = 30; // 单条消息最大行数
+    private static final int MAX_TOTAL_LENGTH = 50000; // 日志总长度限制（字符数）
 
     public NetworkLogPanel() {
         setLayout(new BorderLayout());
+
         // 日志区
         logArea = new JTextPane();
         logArea.setEditable(false);
         doc = logArea.getStyledDocument();
+
         JScrollPane logScroll = new JScrollPane(logArea);
         add(logScroll, BorderLayout.CENTER);
     }
@@ -57,24 +59,29 @@ public class NetworkLogPanel extends JPanel {
                             + "\n... [Content truncated, total " + content.length() + " characters]";
                 }
 
-                // 3. 选择 emoji
+                // 3. 选择 emoji 和优化颜色
                 String emoji = getEmoji(stage);
+                Color optimizedColor = optimizeColor(color, stage);
+
                 // 4. 阶段名样式
-                Style stageStyle = logArea.addStyle("stageStyle", null);
-                StyleConstants.setForeground(stageStyle, color);
+                Style stageStyle = logArea.addStyle("stageStyle_" + System.nanoTime(), null);
+                StyleConstants.setForeground(stageStyle, optimizedColor);
                 StyleConstants.setBold(stageStyle, true);
-                StyleConstants.setFontSize(stageStyle, 12);
+                StyleConstants.setFontSize(stageStyle, 13);
+
                 // 5. 正文样式
-                Style contentStyle = logArea.addStyle("contentStyle", null);
+                Style contentStyle = logArea.addStyle("contentStyle_" + System.nanoTime(), null);
                 StyleConstants.setForeground(contentStyle, color);
                 StyleConstants.setBold(contentStyle, bold);
-                StyleConstants.setFontSize(contentStyle, 12);
+                StyleConstants.setFontSize(contentStyle, 13);
+
                 // 6. 插入 emoji+阶段名
                 if (stage != null) {
                     doc.insertString(doc.getLength(), emoji + " " + stage + " ", stageStyle);
                 } else {
                     doc.insertString(doc.getLength(), emoji + " ", stageStyle);
                 }
+
                 // 7. 多行内容缩进美化，限制行数和每行长度
                 String[] lines = content.split("\\n");
                 int lineCount = Math.min(lines.length, MAX_LINES_PER_MESSAGE);
@@ -95,6 +102,8 @@ public class NetworkLogPanel extends JPanel {
                     doc.insertString(doc.getLength(), "\n    ... [" + (lines.length - MAX_LINES_PER_MESSAGE) + " more lines omitted]", contentStyle);
                 }
                 doc.insertString(doc.getLength(), "\n", contentStyle);
+
+                // 自动滚动到底部
                 logArea.setCaretPosition(doc.getLength());
             } catch (BadLocationException e) {
                 // ignore
@@ -102,25 +111,140 @@ public class NetworkLogPanel extends JPanel {
         });
     }
 
+    /**
+     * 优化日志颜色，使用柔和的颜色方案
+     */
+    private Color optimizeColor(Color original, String stage) {
+        if (stage == null) return original;
+
+        // 使用柔和的颜色方案，避免颜色过重
+        if (stage.contains("Failed") || stage.contains("failed") || stage.contains("canceled")) {
+            return new Color(220, 100, 100); // 柔和的红色 - 错误
+        } else if (stage.contains("callEnd") || stage.contains("cacheHit")) {
+            return new Color(100, 180, 100); // 柔和的绿色 - 成功
+        } else if (stage.contains("secureConnect")) {
+            return new Color(180, 120, 200); // 柔和的紫色 - SSL/TLS
+        } else if (stage.contains("connect")) {
+            return new Color(100, 150, 220); // 柔和的蓝色 - 连接
+        } else if (stage.contains("request")) {
+            return new Color(220, 160, 100); // 柔和的橙色 - 请求
+        } else if (stage.contains("response")) {
+            return new Color(100, 180, 200); // 柔和的青色 - 响应
+        }
+
+        return original;
+    }
+
     @NotNull
     private static String getEmoji(String stage) {
-        String emoji = "🔹";
-        if (stage != null) {
-            if (stage.contains("Failed") || stage.contains("failed") || stage.contains("canceled")) {
-                emoji = "❌";
-            } else if (stage.contains("callEnd") || stage.contains("cacheHit")) {
-                emoji = "✅";
-            } else if (stage.contains("secureConnect")) {
-                emoji = "🔒";
-            } else if (stage.contains("connect")) {
-                emoji = "🌐";
-            } else if (stage.contains("request")) {
-                emoji = "➡️";
-            } else if (stage.contains("response")) {
-                emoji = "⬅️";
-            }
+        if (stage == null) return "📋";
+
+        // 错误和失败
+        if (stage.contains("Failed") || stage.contains("failed")) {
+            return "❌";
         }
-        return emoji;
+        if (stage.contains("canceled")) {
+            return "🚫";
+        }
+
+        // 成功和完成
+        if (stage.contains("callEnd")) {
+            return "✅";
+        }
+        if (stage.contains("cacheHit")) {
+            return "💾";
+        }
+
+        // 安全连接
+        if (stage.contains("secureConnectStart")) {
+            return "🔐";
+        }
+        if (stage.contains("secureConnectEnd")) {
+            return "🔒";
+        }
+
+        // 连接相关
+        if (stage.contains("connectStart")) {
+            return "🔌";
+        }
+        if (stage.contains("connectEnd")) {
+            return "✔️";
+        }
+        if (stage.contains("connectFailed")) {
+            return "⚠️";
+        }
+        if (stage.contains("connectionAcquired")) {
+            return "🔗";
+        }
+        if (stage.contains("connectionReleased")) {
+            return "🔓";
+        }
+
+        // DNS
+        if (stage.contains("dnsStart")) {
+            return "🔍";
+        }
+        if (stage.contains("dnsEnd")) {
+            return "📍";
+        }
+
+        // 请求
+        if (stage.contains("requestHeadersStart")) {
+            return "📤";
+        }
+        if (stage.contains("requestHeadersEnd")) {
+            return "📨";
+        }
+        if (stage.contains("requestBodyStart")) {
+            return "📦";
+        }
+        if (stage.contains("requestBodyEnd")) {
+            return "✔️";
+        }
+        if (stage.contains("requestFailed")) {
+            return "❌";
+        }
+
+        // 响应
+        if (stage.contains("responseHeadersStart")) {
+            return "📥";
+        }
+        if (stage.contains("responseHeadersEnd:redirect")) {
+            return "🔀";
+        }
+        if (stage.contains("responseHeadersEnd")) {
+            return "📬";
+        }
+        if (stage.contains("responseBodyStart")) {
+            return "📄";
+        }
+        if (stage.contains("responseBodyEnd")) {
+            return "✔️";
+        }
+        if (stage.contains("responseFailed")) {
+            return "❌";
+        }
+
+        // 代理
+        if (stage.contains("proxySelect")) {
+            return "🌐";
+        }
+
+        // 重定向
+        if (stage.contains("Redirect")) {
+            return "↪️";
+        }
+
+        // 调用
+        if (stage.contains("callStart")) {
+            return "🚀";
+        }
+        if (stage.contains("callFailed")) {
+            return "💥";
+        }
+
+        // 默认
+        return "📋";
     }
 
     public void clearLog() {
@@ -133,3 +257,4 @@ public class NetworkLogPanel extends JPanel {
         });
     }
 }
+

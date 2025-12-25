@@ -1,4 +1,4 @@
-package com.laker.postman.component;
+package com.laker.postman.common.component;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;

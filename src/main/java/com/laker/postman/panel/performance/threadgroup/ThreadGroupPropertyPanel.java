@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance.threadgroup;
 
-import com.laker.postman.component.EasyJSpinner;
+import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

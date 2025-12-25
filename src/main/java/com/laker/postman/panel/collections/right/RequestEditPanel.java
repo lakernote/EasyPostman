@@ -18,6 +18,7 @@ import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.RequestsTabsService;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -323,21 +324,21 @@ public class RequestEditPanel extends SingletonBasePanel {
         ActionMap actionMap = this.getActionMap();
 
         // 保存快捷键
-        KeyStroke saveKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-                com.laker.postman.service.setting.ShortcutManager.SAVE_REQUEST);
+        KeyStroke saveKey = ShortcutManager.getKeyStroke(ShortcutManager.SAVE_REQUEST);
         if (saveKey != null) {
             inputMap.put(saveKey, ACTION_SAVE_REQUEST);
             actionMap.put(ACTION_SAVE_REQUEST, new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    saveCurrentRequest();
+                    if (saveCurrentRequest()) {
+                        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_REQUEST_SUCCESS));
+                    }
                 }
             });
         }
 
         // 新建标签页快捷键
-        KeyStroke newTabKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-                com.laker.postman.service.setting.ShortcutManager.NEW_REQUEST);
+        KeyStroke newTabKey = ShortcutManager.getKeyStroke(ShortcutManager.NEW_REQUEST);
         if (newTabKey != null) {
             inputMap.put(newTabKey, ACTION_NEW_REQUEST_TAB);
             actionMap.put(ACTION_NEW_REQUEST_TAB, new AbstractAction() {
@@ -349,8 +350,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 关闭当前标签页快捷键
-        KeyStroke closeCurrentKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-                com.laker.postman.service.setting.ShortcutManager.CLOSE_CURRENT_TAB);
+        KeyStroke closeCurrentKey = ShortcutManager.getKeyStroke(ShortcutManager.CLOSE_CURRENT_TAB);
         if (closeCurrentKey != null) {
             inputMap.put(closeCurrentKey, ACTION_CLOSE_CURRENT_TAB);
             actionMap.put(ACTION_CLOSE_CURRENT_TAB, new AbstractAction() {
@@ -362,8 +362,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 关闭其他标签页快捷键
-        KeyStroke closeOthersKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-                com.laker.postman.service.setting.ShortcutManager.CLOSE_OTHER_TABS);
+        KeyStroke closeOthersKey = ShortcutManager.getKeyStroke(ShortcutManager.CLOSE_OTHER_TABS);
         if (closeOthersKey != null) {
             inputMap.put(closeOthersKey, ACTION_CLOSE_OTHER_TABS);
             actionMap.put(ACTION_CLOSE_OTHER_TABS, new AbstractAction() {
@@ -375,8 +374,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 关闭所有标签页快捷键
-        KeyStroke closeAllKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-                com.laker.postman.service.setting.ShortcutManager.CLOSE_ALL_TABS);
+        KeyStroke closeAllKey = ShortcutManager.getKeyStroke(ShortcutManager.CLOSE_ALL_TABS);
         if (closeAllKey != null) {
             inputMap.put(closeAllKey, ACTION_CLOSE_ALL_TABS);
             actionMap.put(ACTION_CLOSE_ALL_TABS, new AbstractAction() {
@@ -391,14 +389,14 @@ public class RequestEditPanel extends SingletonBasePanel {
     /**
      * 保存当前请求
      */
-    public void saveCurrentRequest() {
+    public boolean saveCurrentRequest() {
         // 保存请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
         promotePreviewTabToPermanent();
 
         HttpRequestItem currentItem = getCurrentRequest();
         if (currentItem == null) {
-            log.error("没有可保存的请求");
-            return;
+            log.warn("没有可保存的请求");
+            return false;
         }
 
         boolean isNewRequest = currentItem.isNewRequest();
@@ -412,6 +410,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         } else {
             updateExistingRequest(collectionPanel, currentItem);
         }
+        return true;
     }
 
     /**

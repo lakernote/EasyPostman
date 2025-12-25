@@ -8,6 +8,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -136,9 +137,11 @@ public class RequestLinePanel extends JPanel {
                 "icons/save.svg"
         );
         button.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE_TOOLTIP));
-        button.addActionListener(e ->
-                SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest()
-        );
+        button.addActionListener(e -> {
+            if (SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest()) {
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_REQUEST_SUCCESS));
+            }
+        });
 
         return button;
     }

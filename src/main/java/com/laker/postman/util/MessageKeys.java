@@ -136,6 +136,7 @@ public final class MessageKeys {
     public static final String PLEASE_SELECT_GROUP = "please.select.group";
     public static final String PLEASE_SELECT_VALID_GROUP = "please.select.valid.group";
     public static final String SUCCESS = "success";
+    public static final String SAVE_REQUEST_SUCCESS = "save.request.success";
     public static final String UPDATE_REQUEST_FAILED = "update.request.failed";
     public static final String ERROR = "error";
 

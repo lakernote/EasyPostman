@@ -1,6 +1,5 @@
 package com.laker.postman.common.component.table;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.util.FontsUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -532,64 +531,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
                 SwingUtilities.invokeLater(() -> isDragging = false);
             }
         });
-    }
-
-    /**
-     * Custom renderer for delete button column
-     */
-    private class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
-        private final Icon deleteIcon;
-
-        public DeleteButtonRenderer() {
-            setHorizontalAlignment(SwingConstants.CENTER);
-            setOpaque(true);
-            deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-            }
-
-            setIcon(null);
-            setCursor(Cursor.getDefaultCursor());
-
-            int modelRow = row;
-            if (table.getRowSorter() != null) {
-                modelRow = table.getRowSorter().convertRowIndexToModel(row);
-            }
-
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-                boolean isLastRow = (modelRow == rowCount - 1);
-
-                Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
-                String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-                String valueStr = valueObj == null ? "" : valueObj.toString().trim();
-                boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
-
-                boolean shouldShowIcon = false;
-                if (!isLastRow) {
-                    shouldShowIcon = true;
-                } else {
-                    shouldShowIcon = !isEmpty && rowCount > 1;
-                }
-
-                if (shouldShowIcon && editable) {
-                    setIcon(deleteIcon);
-                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                }
-            }
-
-            return this;
-        }
     }
 
     /**

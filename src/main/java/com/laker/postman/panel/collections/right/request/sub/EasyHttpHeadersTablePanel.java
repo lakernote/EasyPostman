@@ -1,6 +1,5 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.table.AbstractEasyPostmanTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellRenderer;
@@ -343,74 +342,6 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
         });
     }
 
-    /**
-     * Custom renderer for delete button column
-     */
-    private class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
-        private final Icon deleteIcon;
-
-        public DeleteButtonRenderer() {
-            setHorizontalAlignment(SwingConstants.CENTER);
-            setOpaque(true);
-            deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus, int row, int column) {
-            // Set background
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-            }
-
-            // Clear icon by default
-            setIcon(null);
-            setCursor(Cursor.getDefaultCursor());
-
-            // Convert view row to model row
-            int modelRow = row;
-            if (table.getRowSorter() != null) {
-                modelRow = table.getRowSorter().convertRowIndexToModel(row);
-            }
-
-            // Show delete icon for all rows except default headers and the last empty row
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-                boolean isLastRow = (modelRow == rowCount - 1);
-
-                Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
-
-                String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-                String valueStr = valueObj == null ? "" : valueObj.toString().trim();
-
-                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
-                boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
-
-                boolean shouldShowIcon = false;
-                if (!isDefaultHeader) {
-                    if (!isLastRow) {
-                        // Not the last row - always show delete icon (including empty rows)
-                        shouldShowIcon = true;
-                    } else {
-                        // Last row - only show if it has content and there are multiple rows
-                        shouldShowIcon = !isEmpty && rowCount > 1;
-                    }
-                }
-
-                if (shouldShowIcon && editable) {
-                    setIcon(deleteIcon);
-                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                }
-            }
-
-            return this;
-        }
-    }
 
     /**
      * Set empty cell white background renderer
@@ -531,10 +462,6 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
 
         return menu;
     }
-
-    /**
-     * Add auto-append row feature when editing the last row
-    // Public API methods
 
     /**
      * Add a new row with the given values

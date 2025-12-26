@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.table;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.util.FontsUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,7 @@ import javax.swing.*;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
 /**
@@ -281,8 +283,8 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
     }
 
     /**
-    /**
      * 从表格模型的指定行获取布尔值
+     *
      * @param row 行索引
      * @param col 列索引
      * @return 布尔值，非Boolean类型默认为true
@@ -328,5 +330,66 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
             });
         });
     }
-}
 
+    /**
+     * 通用删除按钮渲染器
+     * 显示删除图标，对于非空行或非最后一行显示删除按钮
+     */
+    protected class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
+        private final Icon deleteIcon;
+
+        public DeleteButtonRenderer() {
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setOpaque(true);
+            deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            // Set background
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+
+            // Clear icon by default
+            setIcon(null);
+            setCursor(Cursor.getDefaultCursor());
+
+            // Convert view row to model row
+            int modelRow = row;
+            if (table.getRowSorter() != null) {
+                modelRow = table.getRowSorter().convertRowIndexToModel(row);
+            }
+
+            // Show delete icon for all rows except the last empty row
+            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                int rowCount = tableModel.getRowCount();
+                boolean isLastRow = (modelRow == rowCount - 1);
+
+                // Use abstract method to check if row has content
+                boolean isEmpty = !hasContentInRow(modelRow);
+
+                boolean shouldShowIcon = false;
+                if (!isLastRow) {
+                    // Not the last row - always show delete icon
+                    shouldShowIcon = true;
+                } else {
+                    // Last row - only show if it has content and there are multiple rows
+                    shouldShowIcon = !isEmpty && rowCount > 1;
+                }
+
+                if (shouldShowIcon && editable) {
+                    setIcon(deleteIcon);
+                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                }
+            }
+
+            return this;
+        }
+    }
+}

@@ -389,71 +389,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
     }
 
     /**
-     * Custom renderer for delete button column
-     */
-    private class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
-        private final Icon deleteIcon;
-
-        public DeleteButtonRenderer() {
-            setHorizontalAlignment(SwingConstants.CENTER);
-            setOpaque(true);
-            deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus, int row, int column) {
-            // Set background
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-            }
-
-            // Clear icon by default
-            setIcon(null);
-            setCursor(Cursor.getDefaultCursor());
-
-            // Convert view row to model row
-            int modelRow = row;
-            if (table.getRowSorter() != null) {
-                modelRow = table.getRowSorter().convertRowIndexToModel(row);
-            }
-
-            // Show delete icon for all rows except the last empty row
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-                boolean isLastRow = (modelRow == rowCount - 1);
-
-                // Show delete icon if not the last empty row
-                Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                Object valueObj = tableModel.getValueAt(modelRow, COL_VALUE);
-                String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-                String valueStr = valueObj == null ? "" : valueObj.toString().trim();
-                boolean isEmpty = keyStr.isEmpty() && valueStr.isEmpty();
-
-                boolean shouldShowIcon = false;
-                if (!isLastRow) {
-                    shouldShowIcon = true;
-                } else {
-                    shouldShowIcon = !isEmpty && rowCount > 1;
-                }
-
-                if (shouldShowIcon && editable) {
-                    setIcon(deleteIcon);
-                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                }
-            }
-
-            return this;
-        }
-    }
-
-    /**
-     * Custom renderer for Type column
-     * 提供现代化、美观的样式和显示效果
+     * Type列的自定义渲染器，显示 Text/File 图标和文本
      */
     private class TypeColumnRenderer extends JPanel implements TableCellRenderer {
         private final JLabel iconLabel;
@@ -580,8 +516,8 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
     /**
      * Add auto-append row feature when editing the last row
-
-    /**
+     * <p>
+     * /**
      * 添加一行数据 (内部使用)
      *
      * @param values 行数据

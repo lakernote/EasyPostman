@@ -281,8 +281,8 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
     }
 
     /**
+    /**
      * 从表格模型的指定行获取布尔值
-     *
      * @param row 行索引
      * @param col 列索引
      * @return 布尔值，非Boolean类型默认为true
@@ -290,6 +290,43 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
     protected boolean getBooleanValue(int row, int col) {
         Object obj = tableModel.getValueAt(row, col);
         return obj instanceof Boolean ? (Boolean) obj : true;
+    }
+
+    /**
+     * 添加自动追加空行功能
+     * 当最后一行有内容时，自动在末尾添加新的空行（类似Postman行为）
+     */
+    protected void addAutoAppendRowFeature() {
+        tableModel.addTableModelListener(e -> {
+            if (suppressAutoAppendRow || !editable) {
+                return;
+            }
+
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    int rowCount = tableModel.getRowCount();
+                    if (rowCount == 0) {
+                        return;
+                    }
+
+                    // Check if the last row has any content
+                    int lastRow = rowCount - 1;
+                    boolean lastRowHasContent = hasContentInRow(lastRow);
+
+                    // Add empty row if last row has content
+                    if (lastRowHasContent) {
+                        suppressAutoAppendRow = true;
+                        try {
+                            tableModel.addRow(createEmptyRow());
+                        } finally {
+                            suppressAutoAppendRow = false;
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("Error in auto-append row feature", ex);
+                }
+            });
+        });
     }
 }
 

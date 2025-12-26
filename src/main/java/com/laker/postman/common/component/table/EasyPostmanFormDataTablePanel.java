@@ -580,49 +580,6 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
     /**
      * Add auto-append row feature when editing the last row
-     */
-    private void addAutoAppendRowFeature() {
-        tableModel.addTableModelListener(e -> {
-            if (suppressAutoAppendRow || !editable) {
-                return;
-            }
-
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    int rowCount = tableModel.getRowCount();
-                    if (rowCount == 0) {
-                        return;
-                    }
-
-                    // Check if the last row has any content
-                    int lastRow = rowCount - 1;
-                    boolean lastRowHasContent = false;
-
-                    // Check Key and Value columns only
-                    Object keyValue = tableModel.getValueAt(lastRow, COL_KEY);
-                    Object valueValue = tableModel.getValueAt(lastRow, COL_VALUE);
-
-                    if ((keyValue != null && !keyValue.toString().trim().isEmpty()) ||
-                            (valueValue != null && !valueValue.toString().trim().isEmpty())) {
-                        lastRowHasContent = true;
-                    }
-
-                    // Add empty row if last row has content
-                    if (lastRowHasContent) {
-                        suppressAutoAppendRow = true;
-                        try {
-                            tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
-                        } finally {
-                            suppressAutoAppendRow = false;
-                        }
-                    }
-                } catch (Exception ex) {
-                    log.warn("Error in auto-append row feature", ex);
-                }
-            });
-        });
-    }
-
 
     /**
      * 添加一行数据 (内部使用)

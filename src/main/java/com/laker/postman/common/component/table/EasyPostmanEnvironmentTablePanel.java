@@ -688,49 +688,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * Add auto-append row feature when editing the last row
      */
-    private void addAutoAppendRowFeature() {
-        tableModel.addTableModelListener(e -> {
-            // 在拖拽期间、批量操作期间或不可编辑时，禁用自动补空行
-            if (suppressAutoAppendRow || suppressAutoDuringDrag || !editable) {
-                return;
-            }
-
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    int rowCount = tableModel.getRowCount();
-                    if (rowCount == 0) {
-                        return;
-                    }
-
-                    int lastRow = rowCount - 1;
-                    boolean lastRowHasContent = false;
-
-                    for (int col = COL_KEY; col <= COL_VALUE; col++) {
-                        Object value = tableModel.getValueAt(lastRow, col);
-                        if (value != null && !value.toString().trim().isEmpty()) {
-                            lastRowHasContent = true;
-                            break;
-                        }
-                    }
-
-                    if (lastRowHasContent) {
-                        suppressAutoAppendRow = true;
-                        try {
-                            tableModel.addRow(new Object[]{true, "", "", ""});
-                        } finally {
-                            suppressAutoAppendRow = false;
-                        }
-                    }
-                } catch (Exception ex) {
-                    log.warn("Error in auto-append row feature", ex);
-                }
-            });
-        });
-    }
-
-    /**
-     * 添加一行数据 (内部使用)
-     */
     private void addRow(Object... values) {
         if (values == null || values.length == 0) {
             tableModel.addRow(new Object[]{true, "", "", ""});

@@ -534,49 +534,6 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
 
     /**
      * Add auto-append row feature when editing the last row
-     */
-    private void addAutoAppendRowFeature() {
-        tableModel.addTableModelListener(e -> {
-            if (suppressAutoAppendRow || !editable) {
-                return;
-            }
-
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    int rowCount = tableModel.getRowCount();
-                    if (rowCount == 0) {
-                        return;
-                    }
-
-                    // Check if the last row has any content
-                    int lastRow = rowCount - 1;
-                    boolean lastRowHasContent = false;
-
-                    // Check Key and Value columns only
-                    for (int col = COL_KEY; col <= COL_VALUE; col++) {
-                        Object value = tableModel.getValueAt(lastRow, col);
-                        if (value != null && !value.toString().trim().isEmpty()) {
-                            lastRowHasContent = true;
-                            break;
-                        }
-                    }
-
-                    // Add empty row if last row has content
-                    if (lastRowHasContent) {
-                        suppressAutoAppendRow = true;
-                        try {
-                            tableModel.addRow(new Object[]{true, "", "", ""});
-                        } finally {
-                            suppressAutoAppendRow = false;
-                        }
-                    }
-                } catch (Exception ex) {
-                    log.warn("Error in auto-append row feature", ex);
-                }
-            });
-        });
-    }
-
     // Public API methods
 
     /**

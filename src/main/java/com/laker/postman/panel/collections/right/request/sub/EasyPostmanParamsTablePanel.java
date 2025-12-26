@@ -55,6 +55,22 @@ public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<H
     }
 
     @Override
+    protected int getFirstEditableColumnIndex() {
+        return COL_KEY;
+    }
+
+    @Override
+    protected int getLastEditableColumnIndex() {
+        return COL_VALUE;
+    }
+
+    @Override
+    protected boolean isCellEditableForNavigation(int row, int column) {
+        // Enable和Delete列不可编辑，Key和Value列可编辑
+        return column == COL_KEY || column == COL_VALUE;
+    }
+
+    @Override
     protected boolean hasContentInRow(int row) {
         String key = getStringValue(row, COL_KEY);
         String value = getStringValue(row, COL_VALUE);
@@ -123,135 +139,7 @@ public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<H
         setupTabKeyNavigation();
     }
 
-    /**
-     * Setup Tab key navigation to move between columns instead of rows
-     */
-    private void setupTabKeyNavigation() {
-        // Override Tab and Shift+Tab behavior for proper column-by-column navigation
-        InputMap inputMap = table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-        ActionMap actionMap = table.getActionMap();
-
-        // Tab key - move to next editable cell in the same row
-        inputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_TAB, 0), "nextCell");
-        actionMap.put("nextCell", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                moveToNextEditableCell(false);
-            }
-        });
-
-        // Shift+Tab - move to previous editable cell in the same row
-        inputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_TAB, java.awt.event.InputEvent.SHIFT_DOWN_MASK), "previousCell");
-        actionMap.put("previousCell", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                moveToNextEditableCell(true);
-            }
-        });
-    }
-
-    /**
-     * Move to the next (or previous) editable cell in the current row
-     *
-     * @param reverse true to move backwards (Shift+Tab), false to move forwards (Tab)
-     */
-    private void moveToNextEditableCell(boolean reverse) {
-        int currentRow = table.getSelectedRow();
-        int currentColumn = table.getSelectedColumn();
-
-        if (currentRow < 0 || currentColumn < 0) {
-            // No cell selected, select the first editable cell
-            table.changeSelection(0, COL_KEY, false, false);
-            table.editCellAt(0, COL_KEY);
-            return;
-        }
-
-        // Stop editing current cell
-        if (table.isEditing()) {
-            table.getCellEditor().stopCellEditing();
-        }
-
-        // Find next editable column in the current row
-        int nextColumn = currentColumn;
-        int columnCount = table.getColumnCount();
-
-        if (reverse) {
-            // Move backwards
-            int attempts = 0;
-            int maxAttempts = columnCount + table.getRowCount() * columnCount;
-            do {
-                nextColumn--;
-                attempts++;
-                if (nextColumn < 0) {
-                    // Move to previous row, last editable column
-                    if (currentRow > 0) {
-                        currentRow--;
-                        nextColumn = COL_VALUE; // Last editable column
-                    } else {
-                        nextColumn = COL_KEY; // Stay at first editable column
-                        break;
-                    }
-                }
-                if (attempts >= maxAttempts) {
-                    // Safety break to prevent infinite loop
-                    nextColumn = COL_KEY;
-                    break;
-                }
-            } while (!isCellEditable(currentRow, nextColumn));
-        } else {
-            // Move forwards
-            int attempts = 0;
-            int maxAttempts = columnCount + table.getRowCount() * columnCount;
-            do {
-                nextColumn++;
-                attempts++;
-                if (nextColumn >= columnCount) {
-                    // Move to next row, first editable column
-                    if (currentRow < table.getRowCount() - 1) {
-                        currentRow++;
-                        nextColumn = COL_KEY; // First editable column
-                    } else {
-                        nextColumn = COL_VALUE; // Stay at last editable column
-                        break;
-                    }
-                }
-                if (attempts >= maxAttempts) {
-                    // Safety break to prevent infinite loop
-                    nextColumn = COL_KEY;
-                    break;
-                }
-            } while (!isCellEditable(currentRow, nextColumn));
-        }
-
-        // Select and start editing the next cell
-        if (nextColumn >= 0 && nextColumn < columnCount && currentRow >= 0 && currentRow < table.getRowCount()) {
-            table.changeSelection(currentRow, nextColumn, false, false);
-            if (isCellEditable(currentRow, nextColumn)) {
-                table.editCellAt(currentRow, nextColumn);
-                Component editor = table.getEditorComponent();
-                if (editor instanceof JTextField) {
-                    editor.requestFocusInWindow();
-                    ((JTextField) editor).selectAll();
-                }
-            }
-        }
-    }
-
-    /**
-     * Check if a cell is editable
-     */
-    private boolean isCellEditable(int row, int column) {
-        if (!editable) {
-            return false;
-        }
-        // Only Key and Value columns are editable via Tab navigation
-        // (Checkbox is editable but we skip it in Tab navigation)
-        return column == COL_KEY || column == COL_VALUE;
-    }
-
     private void setupCellRenderersAndEditors() {
-        setEmptyCellWhiteBackgroundRenderer();
-
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         setColumnEditor(COL_VALUE, new EasyPostmanTextFieldCellEditor());
@@ -524,3 +412,4 @@ public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<H
         }
     }
 }
+

@@ -84,6 +84,29 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
     protected abstract int getDeleteColumnIndex();
 
     /**
+     * 获取第一个可编辑列的索引（用于Tab导航）
+     *
+     * @return 第一个可编辑列索引
+     */
+    protected abstract int getFirstEditableColumnIndex();
+
+    /**
+     * 获取最后一个可编辑列的索引（用于Tab导航）
+     *
+     * @return 最后一个可编辑列索引
+     */
+    protected abstract int getLastEditableColumnIndex();
+
+    /**
+     * 检查指定单元格是否可编辑（用于Tab导航）
+     *
+     * @param row    行索引
+     * @param column 列索引
+     * @return true 如果可编辑
+     */
+    protected abstract boolean isCellEditableForNavigation(int row, int column);
+
+    /**
      * 检查指定行是否有内容
      *
      * @param row 行索引
@@ -390,6 +413,121 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
             }
 
             return this;
+        }
+    }
+
+    // ========== Tab 键导航功能 ==========
+
+    /**
+     * 设置Tab键导航，支持在可编辑单元格之间跳转
+     */
+    protected void setupTabKeyNavigation() {
+        InputMap inputMap = table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap actionMap = table.getActionMap();
+
+        // Tab key - move to next editable cell
+        inputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_TAB, 0), "nextCell");
+        actionMap.put("nextCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                moveToNextEditableCell(false);
+            }
+        });
+
+        // Shift+Tab - move to previous editable cell
+        inputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_TAB, java.awt.event.InputEvent.SHIFT_DOWN_MASK), "previousCell");
+        actionMap.put("previousCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                moveToNextEditableCell(true);
+            }
+        });
+    }
+
+    /**
+     * 移动到下一个（或上一个）可编辑单元格
+     *
+     * @param reverse true表示向后移动（Shift+Tab），false表示向前移动（Tab）
+     */
+    protected void moveToNextEditableCell(boolean reverse) {
+        int currentRow = table.getSelectedRow();
+        int currentColumn = table.getSelectedColumn();
+
+        if (currentRow < 0 || currentColumn < 0) {
+            // 没有选中的单元格，选择第一个可编辑单元格
+            table.changeSelection(0, getFirstEditableColumnIndex(), false, false);
+            table.editCellAt(0, getFirstEditableColumnIndex());
+            return;
+        }
+
+        // 停止当前单元格的编辑
+        if (table.isEditing()) {
+            table.getCellEditor().stopCellEditing();
+        }
+
+        // 查找下一个可编辑列
+        int nextColumn = currentColumn;
+        int columnCount = table.getColumnCount();
+
+        if (reverse) {
+            // 向后移动
+            int attempts = 0;
+            int maxAttempts = columnCount + table.getRowCount() * columnCount;
+            do {
+                nextColumn--;
+                attempts++;
+                if (nextColumn < 0) {
+                    // 移动到上一行的最后一个可编辑列
+                    if (currentRow > 0) {
+                        currentRow--;
+                        nextColumn = getLastEditableColumnIndex();
+                    } else {
+                        nextColumn = getFirstEditableColumnIndex();
+                        break;
+                    }
+                }
+                if (attempts >= maxAttempts) {
+                    // 安全退出，防止无限循环
+                    nextColumn = getFirstEditableColumnIndex();
+                    break;
+                }
+            } while (!isCellEditableForNavigation(currentRow, nextColumn));
+        } else {
+            // 向前移动
+            int attempts = 0;
+            int maxAttempts = columnCount + table.getRowCount() * columnCount;
+            do {
+                nextColumn++;
+                attempts++;
+                if (nextColumn >= columnCount) {
+                    // 移动到下一行的第一个可编辑列
+                    if (currentRow < table.getRowCount() - 1) {
+                        currentRow++;
+                        nextColumn = getFirstEditableColumnIndex();
+                    } else {
+                        nextColumn = getLastEditableColumnIndex();
+                        break;
+                    }
+                }
+                if (attempts >= maxAttempts) {
+                    // 安全退出，防止无限循环
+                    nextColumn = getFirstEditableColumnIndex();
+                    break;
+                }
+            } while (!isCellEditableForNavigation(currentRow, nextColumn));
+        }
+
+        // 选择并开始编辑下一个单元格
+        if (nextColumn >= 0 && nextColumn < columnCount && currentRow >= 0 && currentRow < table.getRowCount()) {
+            table.changeSelection(currentRow, nextColumn, false, false);
+            if (isCellEditableForNavigation(currentRow, nextColumn)) {
+                table.editCellAt(currentRow, nextColumn);
+                Component editor = table.getEditorComponent();
+                if (editor instanceof JTextField textField) {
+                    editor.requestFocusInWindow();
+                    textField.selectAll();
+                }
+            }
         }
     }
 }

@@ -55,9 +55,7 @@ public class FontManager {
                 Object key = keys.nextElement();
                 Object value = defaults.get(key);
 
-                if (value instanceof FontUIResource) {
-                    FontUIResource originalFont = (FontUIResource) value;
-
+                if (value instanceof FontUIResource originalFont) {
                     // 根据原始字体的样式选择对应的新字体
                     Font newFont;
                     int style = originalFont.getStyle();
@@ -128,7 +126,7 @@ public class FontManager {
      * 递归更新组件及其子组件的字体
      *
      * @param component 要更新的组件
-     * @param font 新字体
+     * @param font      新字体
      */
     public static void updateComponentFont(Component component, Font font) {
         if (component == null || font == null) {

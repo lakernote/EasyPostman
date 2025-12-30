@@ -40,7 +40,7 @@ public class CurlImportDialog extends JDialog {
         curlArea.setAntiAliasingEnabled(true);
         curlArea.setAutoIndentEnabled(true);
         curlArea.setTabSize(2);
-        curlArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        curlArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
 
         // 尝试应用主题
         try {

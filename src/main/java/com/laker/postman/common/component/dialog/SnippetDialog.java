@@ -130,7 +130,7 @@ public class SnippetDialog extends JDialog {
         previewArea.setEditable(false);
         previewArea.setLineWrap(false);  // 代码不应该自动换行
         previewArea.setBackground(new Color(245, 245, 245));
-        previewArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        previewArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
         previewArea.setTabSize(4);  // 设置 Tab 缩进为 4 个空格
         JScrollPane previewScrollPane = new JScrollPane(previewArea);
         previewScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);

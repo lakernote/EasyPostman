@@ -24,7 +24,7 @@ public class WorkspaceComboBox extends JComboBox<Workspace> {
         setRenderer(new WorkspaceItemRenderer());
         setPreferredSize(new Dimension(120, 28));
         setMaximumSize(new Dimension(120, 28));
-        setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
         setFocusable(false);
         // 设置无边框样式
         setBorder(new EmptyBorder(0, 0, 0, 0));

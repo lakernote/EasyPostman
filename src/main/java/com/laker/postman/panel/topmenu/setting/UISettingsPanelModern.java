@@ -4,6 +4,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.FontManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -409,7 +410,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
             // 如果字体有变化，立即应用字体设置到整个应用
             if (fontChanged) {
-                com.laker.postman.util.FontManager.applyFont(newFontName, newFontSize);
+                FontManager.applyFont(newFontName, newFontSize);
             }
 
             // 重新跟踪当前值

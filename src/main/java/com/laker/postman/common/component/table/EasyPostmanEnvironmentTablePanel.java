@@ -211,7 +211,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
 
             // Drag handle label - 加粗的拖拽图标
             dragLabel = new JLabel("⋮⋮");
-            dragLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16)); // 增大字号并加粗
             dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
             dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20

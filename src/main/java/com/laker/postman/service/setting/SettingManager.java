@@ -551,17 +551,11 @@ public class SettingManager {
     }
 
     /**
-     * 获取默认字体大小（根据操作系统）
-     * macOS: 12号（macOS 字体渲染更清晰，12号已经很合适）
-     * Windows/Linux: 13号（Windows 字体渲染需要稍大一点）
+     * 获取默认字体大小
+     * 所有平台统一使用 12 号字体
      */
     private static int getDefaultFontSize() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.contains("mac")) {
-            return 12; // macOS 默认 12号
-        } else {
-            return 13; // Windows/Linux 默认 13号
-        }
+        return 12; // 所有平台统一默认 12号
     }
 
     public static void setUiFontSize(int size) {

@@ -268,7 +268,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 fontName = selectedFont;
             }
 
-            int fontSize = 12; // 默认大小
+            int fontSize = 13; // 默认大小
             String sizeText = fontSizeField.getText().trim();
             if (!sizeText.isEmpty()) {
                 try {

@@ -544,10 +544,10 @@ public class SettingManager {
                 // 限制范围：10-24
                 return Math.max(10, Math.min(24, size));
             } catch (NumberFormatException e) {
-                return 12;
+                return 13;
             }
         }
-        return 12; // 默认12号字体
+        return 13; // 默认13号字体
     }
 
     public static void setUiFontSize(int size) {

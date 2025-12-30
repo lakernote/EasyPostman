@@ -544,10 +544,24 @@ public class SettingManager {
                 // 限制范围：10-24
                 return Math.max(10, Math.min(24, size));
             } catch (NumberFormatException e) {
-                return 13;
+                return getDefaultFontSize();
             }
         }
-        return 13; // 默认13号字体
+        return getDefaultFontSize(); // 根据操作系统返回默认字体大小
+    }
+
+    /**
+     * 获取默认字体大小（根据操作系统）
+     * macOS: 12号（macOS 字体渲染更清晰，12号已经很合适）
+     * Windows/Linux: 13号（Windows 字体渲染需要稍大一点）
+     */
+    private static int getDefaultFontSize() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("mac")) {
+            return 12; // macOS 默认 12号
+        } else {
+            return 13; // Windows/Linux 默认 13号
+        }
     }
 
     public static void setUiFontSize(int size) {

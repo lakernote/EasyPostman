@@ -1,7 +1,7 @@
 package com.laker.postman.service.http.okhttp;
 
-import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
+import com.laker.postman.service.setting.SettingManager;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.Authenticator;
@@ -57,6 +57,48 @@ public class OkHttpClientManager {
             client.connectionPool().evictAll();
         }
         clientMap.clear();
+    }
+
+    /**
+     * 取消所有正在执行和排队的 HTTP 请求
+     * 用于性能测试停止时快速中断所有网络请求
+     */
+    public static void cancelAllCalls() {
+        int totalRunningCount = 0;
+        int totalQueuedCount = 0;
+
+        for (Map.Entry<String, OkHttpClient> entry : clientMap.entrySet()) {
+            String clientKey = entry.getKey();
+            OkHttpClient client = entry.getValue();
+
+            int clientRunningCount = 0;
+            int clientQueuedCount = 0;
+
+            // 取消所有正在执行的请求
+            for (okhttp3.Call call : client.dispatcher().runningCalls()) {
+                call.cancel();
+                clientRunningCount++;
+            }
+
+            // 取消所有排队的请求
+            for (okhttp3.Call call : client.dispatcher().queuedCalls()) {
+                call.cancel();
+                clientQueuedCount++;
+            }
+
+            // 只在有请求被取消时才打印该客户端的日志
+            if (clientRunningCount > 0 || clientQueuedCount > 0) {
+                // 提取可读的 baseUri（去掉 followRedirects 和 proxy 配置信息）
+                String baseUri = clientKey.split("\\|")[0];
+                log.info("Client [{}] 取消了 {} 个正在执行的请求和 {} 个排队的请求",
+                        baseUri, clientRunningCount, clientQueuedCount);
+            }
+
+            totalRunningCount += clientRunningCount;
+            totalQueuedCount += clientQueuedCount;
+        }
+
+        log.info("总共取消了 {} 个正在执行的请求和 {} 个排队的请求", totalRunningCount, totalQueuedCount);
     }
 
     /**

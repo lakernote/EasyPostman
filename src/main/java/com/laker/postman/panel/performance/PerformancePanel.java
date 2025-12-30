@@ -84,6 +84,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private StartButton runBtn;
     private StopButton stopBtn;
     private JButton refreshBtn;
+    private JLabel progressLabel; // 进度标签
     private long startTime;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
@@ -235,7 +236,7 @@ public class PerformancePanel extends SingletonBasePanel {
         topPanel.add(btnPanel, BorderLayout.WEST);
         // ========== 执行进度指示器 ==========
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
-        JLabel progressLabel = new JLabel();
+        progressLabel = new JLabel();
         progressLabel.setText("0/0");
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
         progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)); // 使用FlatLaf SVG图标
@@ -698,13 +699,25 @@ public class PerformancePanel extends SingletonBasePanel {
         executor.shutdown();
         try {
             // 等待所有线程完成，或者超时
+            boolean terminated;
             if (useTime) {
-                executor.awaitTermination(durationSeconds + 10L, TimeUnit.SECONDS);
+                terminated = executor.awaitTermination(durationSeconds + 10L, TimeUnit.SECONDS);
             } else {
-                executor.awaitTermination(1, TimeUnit.HOURS);
+                terminated = executor.awaitTermination(1, TimeUnit.HOURS);
+            }
+
+            // 如果线程池未能正常终止（例如用户点击了停止按钮），则强制关闭
+            if (!terminated || !running) {
+                log.warn("线程池未能在预期时间内完成，强制关闭剩余线程");
+                executor.shutdownNow();
+                // 再等待一小段时间确保强制关闭完成
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.warn("部分线程在强制关闭后仍未终止");
+                }
             }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            executor.shutdownNow(); // 中断时也强制关闭
             JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED, exception.getMessage()), I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             log.error(exception.getMessage(), exception);
         }
@@ -769,11 +782,25 @@ public class PerformancePanel extends SingletonBasePanel {
 
         try {
             // 等待执行完成
-            scheduler.awaitTermination(totalDuration + 10L, TimeUnit.SECONDS);
+            boolean schedulerTerminated = scheduler.awaitTermination(totalDuration + 10L, TimeUnit.SECONDS);
+            if (!schedulerTerminated || !running) {
+                log.warn("递增模式调度器未能正常终止，强制关闭");
+                scheduler.shutdownNow();
+            }
+
             executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+            boolean executorTerminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+            if (!executorTerminated || !running) {
+                log.warn("递增模式执行器未能正常终止，强制关闭");
+                executor.shutdownNow();
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.warn("递增模式部分线程在强制关闭后仍未终止");
+                }
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            scheduler.shutdownNow();
+            executor.shutdownNow();
             log.error("递增线程执行中断", e);
         }
     }
@@ -884,12 +911,21 @@ public class PerformancePanel extends SingletonBasePanel {
 
         try {
             // 等待执行完成
-            scheduler.awaitTermination(totalTime + 10L, TimeUnit.SECONDS);
+            boolean schedulerTerminated = scheduler.awaitTermination(totalTime + 10L, TimeUnit.SECONDS);
+            if (!schedulerTerminated || !running) {
+                log.warn("尖刺模式调度器未能正常终止，强制关闭");
+                scheduler.shutdownNow();
+            }
+
             // 确保等待所有threadEndTimes中的线程完成
             for (Thread t : threadEndTimes.keySet()) {
                 try {
                     if (t.isAlive()) {
-                        t.join(10000); // 设置超时时间避免永久阻塞
+                        t.join(5000); // 减少超时时间，避免等待过久
+                        if (t.isAlive() && !running) {
+                            // 如果用户停止测试且线程仍在运行，则中断它
+                            t.interrupt();
+                        }
                     }
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
@@ -898,6 +934,13 @@ public class PerformancePanel extends SingletonBasePanel {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            scheduler.shutdownNow();
+            // 中断所有活跃线程
+            for (Thread t : threadEndTimes.keySet()) {
+                if (t.isAlive()) {
+                    t.interrupt();
+                }
+            }
             log.error("尖刺模式执行中断", e);
         }
     }
@@ -994,13 +1037,21 @@ public class PerformancePanel extends SingletonBasePanel {
 
         try {
             // 等待执行完成
-            scheduler.awaitTermination(totalTime + 10L, TimeUnit.SECONDS);
+            boolean schedulerTerminated = scheduler.awaitTermination(totalTime + 10L, TimeUnit.SECONDS);
+            if (!schedulerTerminated || !running) {
+                log.warn("阶梯模式调度器未能正常终止，强制关闭");
+                scheduler.shutdownNow();
+            }
 
             // 确保等待所有threadEndTimes中的线程完成
             for (Thread t : threadEndTimes.keySet()) {
                 try {
                     if (t.isAlive()) {
-                        t.join(10000); // 设置超时时间避免永久阻塞
+                        t.join(5000); // 减少超时时间，避免等待过久
+                        if (t.isAlive() && !running) {
+                            // 如果用户停止测试且线程仍在运行，则中断它
+                            t.interrupt();
+                        }
                     }
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
@@ -1009,6 +1060,13 @@ public class PerformancePanel extends SingletonBasePanel {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            scheduler.shutdownNow();
+            // 中断所有活跃线程
+            for (Thread t : threadEndTimes.keySet()) {
+                if (t.isAlive()) {
+                    t.interrupt();
+                }
+            }
             log.error("阶梯模式执行中断", e);
         }
     }
@@ -1159,6 +1217,11 @@ public class PerformancePanel extends SingletonBasePanel {
 
     // 执行单个请求节点
     private void executeRequestNode(Object userObj, DefaultMutableTreeNode child) {
+        // 如果测试已停止，立即返回，不执行请求
+        if (!running) {
+            return;
+        }
+
         if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
             String apiName = jtNode.httpRequestItem.getName();
             boolean success = true;
@@ -1203,6 +1266,11 @@ public class PerformancePanel extends SingletonBasePanel {
                 success = false;
             }
 
+            // 前置脚本执行完后再次检查是否已停止
+            if (!running) {
+                return;
+            }
+
             // 前置脚本执行完成后，进行变量替换
             if (preOk) {
                 PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
@@ -1212,7 +1280,7 @@ public class PerformancePanel extends SingletonBasePanel {
             allRequestStartTimes.add(startTime); // 记录开始时间
             long costMs = 0;
 
-            if (preOk) {
+            if (preOk && running) {  // 执行HTTP请求前再次检查running状态
                 try {
                     req.logEvent = !efficientMode; // 记录事件日志
                     resp = HttpSingleRequestExecutor.executeHttp(req);
@@ -1224,7 +1292,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     costMs = System.currentTimeMillis() - startTime;
                 }
                 // 断言处理（JMeter树断言）
-                for (int j = 0; j < child.getChildCount() && resp != null; j++) {
+                for (int j = 0; j < child.getChildCount() && resp != null && running; j++) {
                     DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                     Object subObj = sub.getUserObject();
                     if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
@@ -1262,7 +1330,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
                 }
                 // ====== 后置脚本 ======
-                if (resp != null) {
+                if (resp != null && running) {  // 执行后置脚本前检查是否已停止
                     // 执行后置脚本（自动处理响应绑定和测试结果收集）
                     ScriptExecutionResult postResult = pipeline.executePostScript(resp);
                     if (postResult.hasTestResults()) {
@@ -1295,7 +1363,12 @@ public class PerformancePanel extends SingletonBasePanel {
             performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
 
             // ====== 定时器延迟（sleep） ======
-            for (int j = 0; j < child.getChildCount(); j++) {
+            // 如果测试已停止，跳过定时器延迟
+            if (!running) {
+                return;
+            }
+
+            for (int j = 0; j < child.getChildCount() && running; j++) {
                 DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                 Object subObj = sub.getUserObject();
                 if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
@@ -1665,6 +1738,11 @@ public class PerformancePanel extends SingletonBasePanel {
         if (runThread != null && runThread.isAlive()) {
             runThread.interrupt();
         }
+
+        // 立即取消所有正在执行的 OkHttp 请求
+        // 这会中断所有网络 I/O，让线程快速退出
+        cancelAllHttpCalls();
+
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
         refreshBtn.setEnabled(true); // 停止时重新启用刷新按钮
@@ -1673,6 +1751,14 @@ public class PerformancePanel extends SingletonBasePanel {
         stopTrendTimer();
         // 刷新所有待处理的结果树节点
         performanceResultTreePanel.flushPendingResults();
+    }
+
+    /**
+     * 取消所有正在执行的 HTTP 请求
+     * 通过取消 OkHttpClient 的 Dispatcher 中的所有 Call 来实现快速停止
+     */
+    private void cancelAllHttpCalls() {
+        OkHttpClientManager.cancelAllCalls();
     }
 
     private static int getJmeterMaxIdleConnections() {

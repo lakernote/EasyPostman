@@ -18,9 +18,6 @@ public class FontsUtil {
      * @param style 字体样式 (Font.PLAIN, Font.BOLD, Font.ITALIC)
      * @param size  字体大小
      * @return Font 对象，从系统默认字体派生
-     * @deprecated 不推荐使用硬编码的字体大小。
-     * 请使用 {@link #getDefaultFont(int)} 使用用户设置的字体大小，
-     * 或使用 {@link #getDefaultFontWithOffset(int, int)} 使用相对大小。
      */
     private static Font getDefaultFont(int style, int size) {
         // 从 UIManager 获取默认字体，使用 deriveFont 派生，保留降级链
@@ -30,7 +27,7 @@ public class FontsUtil {
             baseFont = new JLabel().getFont();
         }
         // 使用 deriveFont 派生新字体，保留原字体的所有属性和降级链
-        return baseFont.deriveFont(style, (float) size);
+        return baseFont.deriveFont(style, size);
     }
 
     /**

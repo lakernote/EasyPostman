@@ -22,12 +22,13 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.MouseInputAdapter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.InputStream;
+import java.util.Map;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
@@ -41,6 +42,12 @@ public class RequestBodyPanel extends JPanel {
     public static final String RAW_TYPE_JSON = "JSON";
     public static final String RAW_TYPE_TEXT = "Text";
     public static final String RAW_TYPE_XML = "XML";
+
+    // 自动补全UI颜色 - 与 EasyPostmanTextField 保持一致
+    private static final Color BUILTIN_FUNCTION_COLOR = new Color(156, 39, 176); // 紫色 - 内置函数
+    private static final Color ENV_VARIABLE_COLOR = new Color(46, 125, 50); // 绿色 - 环境变量
+    private static final Color POPUP_BACKGROUND = new Color(255, 255, 255);
+    private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
 
     @Getter
     private JComboBox<String> bodyTypeComboBox;
@@ -66,6 +73,13 @@ public class RequestBodyPanel extends JPanel {
     private JTextField wsIntervalField; // 定时间隔输入框
     private JCheckBox wsClearInputCheckBox; // 清空输入复选框
     private SearchTextField searchField; // HTTP模式下的搜索框
+
+    // 自动补全相关
+    private JWindow autocompleteWindow;
+    private JList<String> autocompleteList;
+    private DefaultListModel<String> autocompleteModel;
+    private Map<String, String> currentVariables;
+    private int autocompleteStartPos = -1;
 
     @Setter
     private transient ActionListener wsSendActionListener; // 外部注入的发送回调
@@ -245,6 +259,40 @@ public class RequestBodyPanel extends JPanel {
             }
         } catch (Exception ignored) {
         }
+
+        // ====== 添加撤回/重做功能 ======
+        UndoManager undoManager = new UndoManager();
+        bodyArea.getDocument().addUndoableEditListener(undoManager);
+
+        // Undo
+        bodyArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
+        bodyArea.getInputMap().put(KeyStroke.getKeyStroke("meta Z"), "Undo"); // macOS Cmd+Z
+        bodyArea.getActionMap().put("Undo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (undoManager.canUndo()) undoManager.undo();
+                } catch (CannotUndoException ignored) {
+                }
+            }
+        });
+
+        // Redo
+        bodyArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
+        bodyArea.getInputMap().put(KeyStroke.getKeyStroke("meta shift Z"), "Redo"); // macOS Cmd+Shift+Z
+        bodyArea.getActionMap().put("Redo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (undoManager.canRedo()) undoManager.redo();
+                } catch (CannotRedoException ignored) {
+                }
+            }
+        });
+
+        // ====== 添加变量自动补全功能 ======
+        initAutocomplete();
+
         RTextScrollPane scrollPane = new RTextScrollPane(bodyArea); // 使用RSyntaxTextArea的滚动面板 显示行号
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -259,7 +307,9 @@ public class RequestBodyPanel extends JPanel {
                 String text = bodyArea.getText();
                 java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
-                    boolean isDefined = VariableUtil.isVariableDefined(seg.name);
+                    // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
+                    boolean isDefined = VariableUtil.isVariableDefined(seg.name)
+                            || VariableUtil.isBuiltInFunction(seg.name);
                     try {
                         highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
                     } catch (BadLocationException ignored) {
@@ -284,14 +334,16 @@ public class RequestBodyPanel extends JPanel {
             String text = bodyArea.getText();
             java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
             for (VariableSegment seg : segments) {
-                boolean isDefined = VariableUtil.isVariableDefined(seg.name);
+                // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
+                boolean isDefined = VariableUtil.isVariableDefined(seg.name)
+                        || VariableUtil.isBuiltInFunction(seg.name);
                 try {
                     highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
                 } catch (BadLocationException ignored) {
                 }
             }
         });
-        // 悬浮提示
+        // 悬浮提示 - 与 EasyPostmanTextField 保持一致
         bodyArea.addMouseMotionListener(new MouseInputAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -301,11 +353,22 @@ public class RequestBodyPanel extends JPanel {
                 for (VariableSegment seg : segments) {
                     if (pos >= seg.start && pos <= seg.end) {
                         String varName = seg.name;
+
+                        // 检查是否是内置函数
+                        if (VariableUtil.isBuiltInFunction(varName)) {
+                            String desc = currentVariables != null ?
+                                    currentVariables.get(varName) :
+                                    "Dynamic function generates value at runtime";
+                            bodyArea.setToolTipText(buildTooltip(varName, desc, true, true));
+                            return;
+                        }
+
+                        // 环境变量
                         String varValue = VariableUtil.getVariableValue(varName);
                         if (varValue != null) {
-                            bodyArea.setToolTipText(varName + " = " + varValue);
+                            bodyArea.setToolTipText(buildTooltip(varName, varValue, false, true));
                         } else {
-                            bodyArea.setToolTipText("[" + varName + "] not found");
+                            bodyArea.setToolTipText(buildTooltip(varName, "Variable not defined in current environment", false, false));
                         }
                         return;
                     }
@@ -551,6 +614,498 @@ public class RequestBodyPanel extends JPanel {
 
     public String getRawBody() {
         return bodyArea != null ? bodyArea.getText().trim() : null;
+    }
+
+    /**
+     * 初始化自动补全功能
+     */
+    private void initAutocomplete() {
+        if (bodyArea == null) return;
+
+        // 创建弹出窗口
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        if (parentWindow == null) {
+            // 延迟初始化，等待组件被添加到窗口
+            SwingUtilities.invokeLater(() -> {
+                Window parent = SwingUtilities.getWindowAncestor(RequestBodyPanel.this);
+                if (parent != null) {
+                    initAutocompleteWindow(parent);
+                }
+            });
+        } else {
+            initAutocompleteWindow(parentWindow);
+        }
+
+        // 监听文档变化
+        bodyArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> checkForAutocomplete());
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> checkForAutocomplete());
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> checkForAutocomplete());
+            }
+        });
+
+        // 文本框键盘事件
+        bodyArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (autocompleteWindow != null && autocompleteWindow.isVisible()) {
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_DOWN:
+                            int currentIndex = autocompleteList.getSelectedIndex();
+                            int nextIndex = currentIndex + 1;
+                            if (nextIndex >= autocompleteModel.getSize()) {
+                                nextIndex = 0;
+                            }
+                            autocompleteList.setSelectedIndex(nextIndex);
+                            autocompleteList.ensureIndexIsVisible(nextIndex);
+                            e.consume();
+                            break;
+                        case KeyEvent.VK_UP:
+                            int currentUpIndex = autocompleteList.getSelectedIndex();
+                            int prevIndex = currentUpIndex - 1;
+                            if (prevIndex < 0) {
+                                prevIndex = autocompleteModel.getSize() - 1;
+                            }
+                            autocompleteList.setSelectedIndex(prevIndex);
+                            autocompleteList.ensureIndexIsVisible(prevIndex);
+                            e.consume();
+                            break;
+                        case KeyEvent.VK_ENTER:
+                        case KeyEvent.VK_TAB:
+                            insertSelectedVariable();
+                            e.consume();
+                            break;
+                        case KeyEvent.VK_ESCAPE:
+                            hideAutocomplete();
+                            e.consume();
+                            break;
+                        default:
+                            // No action needed for other keys
+                            break;
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 初始化自动补全窗口 - 与 EasyPostmanTextField 保持一致
+     */
+    private void initAutocompleteWindow(Window parent) {
+        autocompleteWindow = new JWindow(parent);
+        autocompleteWindow.setFocusableWindowState(false);
+
+        autocompleteModel = new DefaultListModel<>();
+        autocompleteList = new JList<>(autocompleteModel);
+        autocompleteList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        autocompleteList.setVisibleRowCount(10);
+        autocompleteList.setBackground(POPUP_BACKGROUND);
+        autocompleteList.setSelectionBackground(POPUP_SELECTION_BG);
+        autocompleteList.setSelectionForeground(Color.BLACK);
+        autocompleteList.setFont(bodyArea.getFont());
+        // 固定列表宽度，防止内容过长导致横向滚动
+        autocompleteList.setFixedCellWidth(384); // 400 - 边框和内边距
+
+        // 自定义列表渲染器 - 显示图标、变量名和值/描述，支持长文本截断
+        autocompleteList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                JPanel panel = new JPanel(new BorderLayout(8, 0));
+                panel.setOpaque(true);
+                panel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                // 设置固定大小，防止横向滚动
+                panel.setPreferredSize(new Dimension(384, 32));
+                panel.setMaximumSize(new Dimension(384, 32));
+
+                if (isSelected) {
+                    panel.setBackground(POPUP_SELECTION_BG);
+                } else {
+                    panel.setBackground(POPUP_BACKGROUND);
+                }
+
+                if (value != null && currentVariables != null) {
+                    String varName = value.toString();
+                    String varValue = currentVariables.get(varName);
+
+                    // 判断是内置函数还是环境变量
+                    boolean isBuiltIn = varName.startsWith("$");
+                    Color labelColor = isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR;
+
+                    // 使用彩色圆点代替 Emoji（更好的跨平台兼容性）
+                    JPanel iconPanel = new JPanel() {
+                        @Override
+                        protected void paintComponent(Graphics g) {
+                            super.paintComponent(g);
+                            Graphics2D g2d = (Graphics2D) g.create();
+                            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                            // 获取字体度量信息以实现垂直对齐
+                            int panelHeight = getHeight();
+
+                            // 计算圆点垂直居中位置
+                            int circleSize = 12;
+                            int circleY = (panelHeight - circleSize) / 2;
+
+                            // 绘制圆形图标
+                            g2d.setColor(isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR);
+                            g2d.fillOval(2, circleY, circleSize, circleSize);
+
+                            // 绘制白色符号 - 垂直居中对齐
+                            g2d.setColor(Color.WHITE);
+                            g2d.setFont(FontsUtil.getDefaultFont(Font.BOLD, 10));
+                            FontMetrics symbolFm = g2d.getFontMetrics();
+                            String symbol = isBuiltIn ? "$" : "E";
+                            int symbolWidth = symbolFm.stringWidth(symbol);
+                            int symbolAscent = symbolFm.getAscent();
+                            int symbolDescent = symbolFm.getDescent();
+                            int symbolHeight = symbolAscent + symbolDescent;
+
+                            // 符号在圆点内垂直居中
+                            int symbolX = 2 + (circleSize - symbolWidth) / 2;
+                            int symbolY = circleY + (circleSize - symbolHeight) / 2 + symbolAscent;
+                            g2d.drawString(symbol, symbolX, symbolY);
+
+                            g2d.dispose();
+                        }
+
+                        @Override
+                        public Dimension getPreferredSize() {
+                            return new Dimension(16, 24);
+                        }
+                    };
+                    iconPanel.setOpaque(false);
+                    panel.add(iconPanel, BorderLayout.WEST);
+
+                    // 中间区域：使用固定宽度的面板容纳name和value，让它们各占一半空间
+                    JPanel contentPanel = new JPanel(new GridLayout(1, 2, 8, 0));
+                    contentPanel.setOpaque(false);
+
+                    // 左侧：变量名（占一半空间）
+                    JPanel namePanel = new JPanel(new BorderLayout());
+                    namePanel.setOpaque(false);
+
+                    String displayName = varName;
+                    String fullName = varName;
+
+                    // 变量名最大长度（约占一半宽度）
+                    int maxNameLength = 25;
+                    if (varName.length() > maxNameLength) {
+                        displayName = varName.substring(0, maxNameLength - 3) + "...";
+                    }
+
+                    JLabel nameLabel = new JLabel(displayName);
+                    nameLabel.setFont(bodyArea.getFont().deriveFont(Font.BOLD));
+                    nameLabel.setForeground(labelColor);
+
+                    // 为变量名添加工具提示
+                    if (!displayName.equals(fullName)) {
+                        nameLabel.setToolTipText(fullName);
+                    }
+
+                    namePanel.add(nameLabel, BorderLayout.WEST);
+                    contentPanel.add(namePanel);
+
+                    // 右侧：变量值或描述（占一半空间）
+                    JPanel valuePanel = new JPanel(new BorderLayout());
+                    valuePanel.setOpaque(false);
+
+                    if (varValue != null && !varValue.isEmpty()) {
+                        String displayValue = varValue;
+                        String fullValue = varValue;
+
+                        // 变量值最大长度（约占一半宽度）
+                        int maxValueLength = 25;
+                        if (varValue.length() > maxValueLength) {
+                            displayValue = varValue.substring(0, maxValueLength - 3) + "...";
+                        }
+
+                        JLabel valueLabel = new JLabel(displayValue);
+                        valueLabel.setFont(bodyArea.getFont().deriveFont(Font.PLAIN, bodyArea.getFont().getSize() - 1));
+                        valueLabel.setForeground(Color.GRAY);
+
+                        // 为值添加工具提示（显示完整内容）
+                        if (!displayValue.equals(fullValue) || fullValue.length() > 20) {
+                            // 格式化工具提示，支持换行
+                            String tooltipText = formatTooltipText(fullValue, 60);
+                            valueLabel.setToolTipText("<html>" + tooltipText + "</html>");
+                        }
+
+                        valuePanel.add(valueLabel, BorderLayout.WEST);
+                    }
+                    contentPanel.add(valuePanel);
+
+                    panel.add(contentPanel, BorderLayout.CENTER);
+
+                    // 为整个面板添加工具提示（显示完整信息）
+                    StringBuilder tooltipBuilder = new StringBuilder("<html>");
+                    tooltipBuilder.append("<b>").append(escapeHtml(varName)).append("</b>");
+                    if (varValue != null && !varValue.isEmpty()) {
+                        tooltipBuilder.append("<br/>").append(escapeHtml(varValue));
+                    }
+                    tooltipBuilder.append("</html>");
+                    panel.setToolTipText(tooltipBuilder.toString());
+                }
+
+                return panel;
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(autocompleteList);
+        // 禁用横向滚动条，只保留纵向滚动
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(180, 180, 180), 1),
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)
+        ));
+        autocompleteWindow.add(scrollPane);
+
+        // 列表鼠标点击事件
+        autocompleteList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 || e.getClickCount() == 1) {
+                    insertSelectedVariable();
+                }
+            }
+        });
+    }
+
+    /**
+     * 检查是否需要显示自动补全 - 与 EasyPostmanTextField 保持一致
+     */
+    private void checkForAutocomplete() {
+        if (bodyArea == null || autocompleteWindow == null) return;
+
+        String text = bodyArea.getText();
+        int caretPos = bodyArea.getCaretPosition();
+
+        if (text == null || caretPos < 2) {
+            hideAutocomplete();
+            return;
+        }
+
+        // 查找光标前最近的 {{
+        int openBracePos = text.lastIndexOf("{{", caretPos - 1);
+        if (openBracePos == -1) {
+            hideAutocomplete();
+            return;
+        }
+
+        // 检查 {{ 之后是否有 }}
+        int closeBracePos = text.indexOf("}}", openBracePos);
+        if (closeBracePos != -1 && closeBracePos < caretPos) {
+            hideAutocomplete();
+            return;
+        }
+
+        // 获取 {{ 之后的文本作为过滤前缀
+        String prefix = text.substring(openBracePos + 2, caretPos);
+
+        // 过滤变量列表
+        currentVariables = VariableUtil.filterVariables(prefix);
+
+        if (currentVariables.isEmpty()) {
+            hideAutocomplete();
+            return;
+        }
+
+        // 更新列表
+        autocompleteStartPos = openBracePos + 2;
+        autocompleteModel.clear();
+        for (String varName : currentVariables.keySet()) {
+            autocompleteModel.addElement(varName);
+        }
+
+        // 默认选中第一项
+        if (autocompleteModel.getSize() > 0) {
+            autocompleteList.setSelectedIndex(0);
+            autocompleteList.ensureIndexIsVisible(0);
+        }
+
+        // 显示弹出菜单
+        showAutocomplete();
+    }
+
+    /**
+     * 显示自动补全弹出窗口 - 与 EasyPostmanTextField 保持一致
+     */
+    private void showAutocomplete() {
+        if (autocompleteWindow == null || autocompleteModel.getSize() == 0) {
+            return;
+        }
+
+        try {
+            // 获取光标位置
+            Rectangle rect = bodyArea.modelToView2D(bodyArea.getCaretPosition()).getBounds();
+            Point screenPos = bodyArea.getLocationOnScreen();
+
+            // 计算弹出窗口大小 - 固定宽度为400
+            int itemHeight = 32; // 每项高度
+            int popupWidth = 400;
+            int popupHeight = Math.min(autocompleteModel.getSize() * itemHeight + 10, 320);
+
+            // 设置窗口大小和位置
+            autocompleteWindow.setSize(popupWidth, popupHeight);
+            autocompleteWindow.setLocation(
+                    screenPos.x + rect.x,
+                    screenPos.y + rect.y + rect.height + 2
+            );
+
+            if (!autocompleteWindow.isVisible()) {
+                autocompleteWindow.setVisible(true);
+            }
+        } catch (Exception e) {
+            log.error("showAutocomplete error", e);
+        }
+    }
+
+    /**
+     * 隐藏自动补全列表
+     */
+    private void hideAutocomplete() {
+        if (autocompleteWindow != null) {
+            autocompleteWindow.setVisible(false);
+        }
+        autocompleteStartPos = -1;
+    }
+
+    /**
+     * 格式化工具提示文本，支持换行 - 与 EasyPostmanTextField 保持一致
+     */
+    private String formatTooltipText(String text, int maxLineLength) {
+        if (text == null || text.length() <= maxLineLength) {
+            return text;
+        }
+
+        StringBuilder formatted = new StringBuilder();
+        int start = 0;
+        while (start < text.length()) {
+            int end = Math.min(start + maxLineLength, text.length());
+            formatted.append(text, start, end);
+            if (end < text.length()) {
+                formatted.append("<br/>");
+            }
+            start = end + 1;
+        }
+        return formatted.toString();
+    }
+
+    /**
+     * HTML转义，防止特殊字符破坏工具提示 - 与 EasyPostmanTextField 保持一致
+     */
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
+    }
+
+    /**
+     * 构建美观的工具提示HTML - 与 EasyPostmanTextField 保持一致
+     */
+    private String buildTooltip(String varName, String content, boolean isBuiltIn, boolean isDefined) {
+        StringBuilder tooltip = new StringBuilder();
+        tooltip.append("<html><body style='padding: 8px; font-family: Arial, sans-serif;'>");
+
+        // 标题部分 - 变量名
+        String titleColor = isBuiltIn ? "#9C27B0" : (isDefined ? "#2E7D32" : "#D32F2F");
+        String typeLabel = isBuiltIn ? "Built-in Function" : (isDefined ? "Environment Variable" : "Undefined Variable");
+        String typeIcon = isBuiltIn ? "⚡" : (isDefined ? "✓" : "✗");
+
+        tooltip.append("<div style='margin-bottom: 6px;'>");
+        tooltip.append("<span style='font-size: 10px; color: ").append(titleColor).append(";'>");
+        tooltip.append(typeIcon).append(" ").append(typeLabel);
+        tooltip.append("</span></div>");
+
+        // 变量名 - 粗体显示
+        tooltip.append("<div style='margin-bottom: 1px;'>");
+        tooltip.append("<b style='font-size: 10px; color: ").append(titleColor).append(";'>");
+        tooltip.append(escapeHtml(varName));
+        tooltip.append("</b></div>");
+
+        // 分隔线
+        tooltip.append("<hr style='border: none; border-top: 1px solid #E0E0E0; margin: 1px 0;'/>");
+
+        // 内容部分 - 变量值或描述
+        tooltip.append("<div style='margin-top: 1px; color: #424242; font-size: 10px;'>");
+
+        if (isDefined && !isBuiltIn) {
+            // 环境变量值
+            tooltip.append("<span style='color: #757575;'>Value:</span><br/>");
+            tooltip.append("<span style='font-family: Consolas, monospace; background-color: #F5F5F5; ");
+            tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
+
+            // 限制显示长度，超过150字符截断
+            String displayContent = content.length() > 150 ? content.substring(0, 150) + "..." : content;
+            tooltip.append(escapeHtml(displayContent));
+            tooltip.append("</span>");
+        } else if (isBuiltIn) {
+            // 内置函数描述
+            tooltip.append("<span style='color: #757575; font-style: italic;'>");
+            tooltip.append(escapeHtml(content));
+            tooltip.append("</span>");
+        } else {
+            // 未定义变量警告
+            tooltip.append("<span style='color: #D32F2F; font-weight: bold;'>⚠ ");
+            tooltip.append(escapeHtml(content));
+            tooltip.append("</span>");
+        }
+
+        tooltip.append("</div>");
+        tooltip.append("</body></html>");
+
+        return tooltip.toString();
+    }
+
+    /**
+     * 插入选中的变量 - 与 EasyPostmanTextField 保持一致
+     */
+    private void insertSelectedVariable() {
+        if (autocompleteList == null || bodyArea == null) return;
+
+        String selected = autocompleteList.getSelectedValue();
+        if (selected == null) return;
+
+        try {
+            String text = bodyArea.getText();
+            int caretPos = bodyArea.getCaretPosition();
+
+            // 查找光标前最近的 {{
+            int openBracePos = text.lastIndexOf("{{", caretPos - 1);
+            if (openBracePos == -1) {
+                hideAutocomplete();
+                return;
+            }
+
+            // 构建新文本：{{ 之前的部分 + {{变量名}} + 光标之后的部分
+            String before = text.substring(0, openBracePos);
+            String after = text.substring(caretPos);
+            String newText = before + "{{" + selected + "}}" + after;
+
+            // 设置新文本并移动光标到 }} 之后
+            bodyArea.setText(newText);
+            int newCaretPos = before.length() + selected.length() + 4; // {{ + 变量名 + }}
+            bodyArea.setCaretPosition(newCaretPos);
+
+        } catch (Exception e) {
+            log.error("insertSelectedVariable error", e);
+        }
+
+        hideAutocomplete();
     }
 
 }

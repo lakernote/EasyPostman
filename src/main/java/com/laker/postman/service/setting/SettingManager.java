@@ -513,4 +513,47 @@ public class SettingManager {
         // 清除客户端缓存以应用新的 SSL 设置
         OkHttpClientManager.clearClientCache();
     }
+
+    // ===== UI 字体设置 =====
+
+    /**
+     * 获取UI字体名称
+     */
+    public static String getUiFontName() {
+        String val = props.getProperty("ui_font_name");
+        if (val != null && !val.isEmpty()) {
+            return val;
+        }
+        // 默认使用系统字体
+        return ""; // 空字符串表示使用系统默认字体
+    }
+
+    public static void setUiFontName(String fontName) {
+        props.setProperty("ui_font_name", fontName != null ? fontName : "");
+        save();
+    }
+
+    /**
+     * 获取UI字体大小
+     */
+    public static int getUiFontSize() {
+        String val = props.getProperty("ui_font_size");
+        if (val != null) {
+            try {
+                int size = Integer.parseInt(val);
+                // 限制范围：10-24
+                return Math.max(10, Math.min(24, size));
+            } catch (NumberFormatException e) {
+                return 12;
+            }
+        }
+        return 12; // 默认12号字体
+    }
+
+    public static void setUiFontSize(int size) {
+        // 限制范围：10-24
+        int fontSize = Math.max(10, Math.min(24, size));
+        props.setProperty("ui_font_size", String.valueOf(fontSize));
+        save();
+    }
 }

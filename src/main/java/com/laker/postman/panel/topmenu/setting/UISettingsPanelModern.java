@@ -28,6 +28,10 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JCheckBox sidebarExpandedCheckBox;
     private JComboBox<String> notificationPositionComboBox;
     private JLabel downloadProgressDialogThresholdLabel;
+    private JComboBox<String> fontNameComboBox;
+    private JTextField fontSizeField;
+    private JLabel fontPreviewLabel;
+    private String systemDefaultFontName; // 保存系统默认字体名称
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -149,6 +153,90 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(generalSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
+        // 字体设置区域
+        JPanel fontSection = createModernSection(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_RESTART_RECOMMENDED)
+        );
+
+        // 获取系统可用字体
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        String[] fontNames = ge.getAvailableFontFamilyNames();
+
+        // 创建字体选择下拉框，添加"系统默认"选项
+        String[] fontOptions = new String[fontNames.length + 1];
+        fontOptions[0] = I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SYSTEM_DEFAULT);
+        System.arraycopy(fontNames, 0, fontOptions, 1, fontNames.length);
+
+        fontNameComboBox = new JComboBox<>(fontOptions);
+
+        // 设置当前字体
+        String currentFont = SettingManager.getUiFontName();
+        if (currentFont.isEmpty()) {
+            fontNameComboBox.setSelectedIndex(0); // 系统默认
+        } else {
+            // 在列表中查找并选中
+            for (int i = 1; i < fontOptions.length; i++) {
+                if (fontNames[i - 1].equals(currentFont)) {
+                    fontNameComboBox.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+
+        JPanel fontNameRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_NAME),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_NAME_TOOLTIP),
+                fontNameComboBox
+        );
+        fontSection.add(fontNameRow);
+        fontSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 字体大小
+        fontSizeField = new JTextField(10);
+        fontSizeField.setText(String.valueOf(SettingManager.getUiFontSize()));
+        JPanel fontSizeRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SIZE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SIZE_TOOLTIP),
+                fontSizeField
+        );
+        fontSection.add(fontSizeRow);
+        fontSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 字体预览
+        fontPreviewLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_PREVIEW));
+        fontPreviewLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fontPreviewLabel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        fontPreviewLabel.setOpaque(true);
+        fontPreviewLabel.setBackground(Color.WHITE);
+        // 保存系统默认字体名称
+        systemDefaultFontName = fontPreviewLabel.getFont().getName();
+        updateFontPreview();
+
+        // 监听字体变化以更新预览
+        fontNameComboBox.addActionListener(e -> updateFontPreview());
+        fontSizeField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateFontPreview();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateFontPreview();
+            }
+
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateFontPreview();
+            }
+        });
+
+        fontSection.add(fontPreviewLabel);
+
+        contentPanel.add(fontSection);
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
         setupValidators();
 
         // 跟踪所有组件的初始值
@@ -159,6 +247,41 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(autoFormatResponseCheckBox);
         trackComponentValue(sidebarExpandedCheckBox);
         trackComponentValue(notificationPositionComboBox);
+        trackComponentValue(fontNameComboBox);
+        trackComponentValue(fontSizeField);
+    }
+
+    /**
+     * 更新字体预览
+     */
+    private void updateFontPreview() {
+        try {
+            String selectedFont = (String) fontNameComboBox.getSelectedItem();
+            if (selectedFont == null) return;
+
+            // 如果选择的是"系统默认"，使用保存的系统默认字体名称
+            String fontName;
+            if (fontNameComboBox.getSelectedIndex() == 0) {
+                fontName = systemDefaultFontName;
+            } else {
+                fontName = selectedFont;
+            }
+
+            int fontSize = 12; // 默认大小
+            String sizeText = fontSizeField.getText().trim();
+            if (!sizeText.isEmpty()) {
+                try {
+                    fontSize = Integer.parseInt(sizeText);
+                    fontSize = Math.max(10, Math.min(24, fontSize));
+                } catch (NumberFormatException e) {
+                    // 使用默认大小
+                }
+            }
+
+            fontPreviewLabel.setFont(new Font(fontName, Font.PLAIN, fontSize));
+        } catch (Exception e) {
+            // 忽略预览更新错误
+        }
     }
 
     private void setupValidators() {
@@ -177,6 +300,20 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 this::isPositiveInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR)
         );
+        setupValidator(
+                fontSizeField,
+                this::isValidFontSize,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_FONT_SIZE_ERROR)
+        );
+    }
+
+    private boolean isValidFontSize(String value) {
+        try {
+            int size = Integer.parseInt(value.trim());
+            return size >= 10 && size <= 24;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     @Override
@@ -220,6 +357,8 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             return;
         }
 
+        boolean fontChanged = false; // 声明在 try 块外，以便在 catch 后也能访问
+
         try {
             // 保存下载设置
             SettingManager.setShowDownloadProgressDialog(showDownloadProgressCheckBox.isSelected());
@@ -247,6 +386,32 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setNotificationPosition(selectedPosition);
             NotificationUtil.setDefaultPosition(selectedPosition);
 
+            // 检测字体是否有变化（在保存前获取旧值）
+            String oldFontName = SettingManager.getUiFontName();
+            int oldFontSize = SettingManager.getUiFontSize();
+
+            // 保存字体设置
+            int fontNameIndex = fontNameComboBox.getSelectedIndex();
+            String newFontName;
+            if (fontNameIndex == 0) {
+                // 系统默认
+                newFontName = "";
+                SettingManager.setUiFontName("");
+            } else {
+                newFontName = (String) fontNameComboBox.getSelectedItem();
+                SettingManager.setUiFontName(newFontName);
+            }
+            int newFontSize = Integer.parseInt(fontSizeField.getText().trim());
+            SettingManager.setUiFontSize(newFontSize);
+
+            // 判断字体是否真的有变化（处理 null 情况）
+            fontChanged = !java.util.Objects.equals(newFontName, oldFontName) || newFontSize != oldFontSize;
+
+            // 如果字体有变化，立即应用字体设置到整个应用
+            if (fontChanged) {
+                com.laker.postman.util.FontManager.applyFont(newFontName, newFontSize);
+            }
+
             // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(showDownloadProgressCheckBox);
@@ -256,9 +421,16 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(autoFormatResponseCheckBox);
             trackComponentValue(sidebarExpandedCheckBox);
             trackComponentValue(notificationPositionComboBox);
+            trackComponentValue(fontNameComboBox);
+            trackComponentValue(fontSizeField);
             setHasUnsavedChanges(false);
 
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
+            // 根据是否修改了字体显示不同的提示信息
+            if (fontChanged) {
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_APPLIED));
+            } else {
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
+            }
 
             // 根据参数决定是否关闭对话框
             if (closeAfterSave) {

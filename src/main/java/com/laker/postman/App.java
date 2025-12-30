@@ -5,10 +5,7 @@ import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
-import com.laker.postman.util.ExceptionUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.StyleUtils;
+import com.laker.postman.util.*;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +63,8 @@ public class App {
     private static void initializeLookAndFeel() {
         FlatIntelliJLaf.setup();
         StyleUtils.apply();
+        // 应用用户保存的字体设置
+        FontManager.applyFontSettings();
     }
 
     /**

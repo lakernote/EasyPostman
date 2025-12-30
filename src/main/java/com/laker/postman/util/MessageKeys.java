@@ -998,6 +998,16 @@ public final class MessageKeys {
     public static final String SETTINGS_UPDATE_SOURCE_GITEE = "settings.update_source.gitee";
 
     // ============ UI设置相关 ============
+    public static final String SETTINGS_UI_TITLE = "settings.ui.title";
+    public static final String SETTINGS_UI_FONT_NAME = "settings.ui.font_name";
+    public static final String SETTINGS_UI_FONT_NAME_TOOLTIP = "settings.ui.font_name.tooltip";
+    public static final String SETTINGS_UI_FONT_SIZE = "settings.ui.font_size";
+    public static final String SETTINGS_UI_FONT_SIZE_TOOLTIP = "settings.ui.font_size.tooltip";
+    public static final String SETTINGS_UI_FONT_SYSTEM_DEFAULT = "settings.ui.font.system_default";
+    public static final String SETTINGS_UI_FONT_PREVIEW = "settings.ui.font.preview";
+    public static final String SETTINGS_UI_FONT_APPLIED = "settings.ui.font.applied";
+    public static final String SETTINGS_UI_FONT_RESTART_RECOMMENDED = "settings.ui.font.restart_recommended";
+    public static final String SETTINGS_VALIDATION_FONT_SIZE_ERROR = "settings.validation.font_size_error";
 
     // WebSocket面板相关
     public static final String WEBSOCKET_PANEL_LABEL_SEND_MESSAGE = "websocket.panel.label.send_message";

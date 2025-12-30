@@ -6,6 +6,7 @@ import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.service.setting.SettingManager;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -18,8 +19,6 @@ import java.awt.*;
 public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
 
     private static final int ICON_SIZE = 16;
-    private static final int METHOD_FONT_PX = 8;
-    private static final int NAME_FONT_PX = 9;
 
     @Override
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
@@ -60,17 +59,23 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         setText(buildStyledText(method, methodColor, name));
     }
 
-    // Build HTML with escaped content and consistent font sizes
+    // Build HTML with escaped content and dynamic font sizes based on user settings
     private static String buildStyledText(String method, String methodColor, String name) {
         String safeMethod = method == null ? "" : escapeHtml(method);
         String safeName = name == null ? "" : escapeHtml(name);
         String color = methodColor == null ? "#000" : methodColor;
+
+        // 获取用户设置的字体大小，并计算相对大小
+        int baseFontSize = SettingManager.getUiFontSize();
+        int methodFontSize = Math.max(8, baseFontSize - 4); // 方法名比标准字体小4号，最小8px
+        int nameFontSize = Math.max(9, baseFontSize - 3);   // 请求名比标准字体小3号，最小9px
+
         // simple concatenation is clearer for this short html fragment
         return "<html>" +
-                "<span style='color:" + color + ";font-weight:bold;font-size:" + METHOD_FONT_PX + "px'>" +
+                "<span style='color:" + color + ";font-weight:bold;font-size:" + methodFontSize + "px'>" +
                 safeMethod +
                 "</span> " +
-                "<span style='font-size:" + NAME_FONT_PX + "px'>" +
+                "<span style='font-size:" + nameFontSize + "px'>" +
                 safeName +
                 "</span></html>";
     }

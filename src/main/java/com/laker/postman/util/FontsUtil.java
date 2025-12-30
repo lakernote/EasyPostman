@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
@@ -28,4 +29,33 @@ public class FontsUtil {
         // 使用 deriveFont 派生新字体，保留原字体的所有属性和降级链
         return baseFont.deriveFont(style, (float) size);
     }
+
+    /**
+     * 获取默认字体，使用用户设置的字体大小
+     * 从 UIManager 派生以保留降级链，支持 emoji 等特殊字符
+     *
+     * @param style 字体样式 (Font.PLAIN, Font.BOLD, Font.ITALIC)
+     * @return Font 对象，使用用户设置的字体大小
+     */
+    public static Font getDefaultFont(int style) {
+        // 使用用户设置的字体大小
+        int fontSize = SettingManager.getUiFontSize();
+        return getDefaultFont(style, fontSize);
+    }
+
+    /**
+     * 获取默认字体，使用相对于用户设置字体大小的偏移
+     * 例如：如果用户设置字体为 14，offset 为 -2，则返回 12 号字体
+     *
+     * @param style  字体样式 (Font.PLAIN, Font.BOLD, Font.ITALIC)
+     * @param offset 相对于用户设置字体大小的偏移量（可正可负）
+     * @return Font 对象
+     */
+    public static Font getDefaultFontWithOffset(int style, int offset) {
+        int fontSize = SettingManager.getUiFontSize() + offset;
+        // 确保字体大小在合理范围内（最小 8，最大 32）
+        fontSize = Math.max(8, Math.min(32, fontSize));
+        return getDefaultFont(style, fontSize);
+    }
 }
+

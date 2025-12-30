@@ -300,7 +300,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
             // 创建文本标签
             textLabel = new JLabel();
-            textLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+            textLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
             textLabel.setVerticalAlignment(SwingConstants.CENTER);
 
             // 加载图标

@@ -180,7 +180,7 @@ public class CsvDataPanel extends JPanel {
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
         JLabel descLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DESCRIPTION));
-        descLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        descLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
         descLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         topPanel.add(descLabel, BorderLayout.CENTER);
 
@@ -240,7 +240,7 @@ public class CsvDataPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridy = 3;
         JLabel placeholderLabel = new JLabel("eg: username,password,email");
-        placeholderLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 10));
+        placeholderLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2)); // 比标准字体小2号
         placeholderLabel.setForeground(Color.GRAY);
         contentPanel.add(placeholderLabel, gbc);
 
@@ -357,11 +357,11 @@ public class CsvDataPanel extends JPanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_DRIVEN_TEST));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4)); // 比标准字体大4号
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
         JTextArea descArea = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION));
-        descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
         descArea.setEditable(false);
         descArea.setOpaque(false);
         descArea.setLineWrap(true);
@@ -540,8 +540,8 @@ public class CsvDataPanel extends JPanel {
 
         csvTable.setFillsViewportHeight(true);
         csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
-        csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
+        csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用标准字体大小（粗体）
         csvTable.getTableHeader().setBackground(new Color(240, 242, 245));
         csvTable.getTableHeader().setForeground(new Color(33, 33, 33));
         csvTable.setGridColor(new Color(237, 237, 237)); // 使用更柔和的表格线颜色

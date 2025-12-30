@@ -552,10 +552,10 @@ public class SettingManager {
 
     /**
      * 获取默认字体大小
-     * 所有平台统一使用 12 号字体
+     * 所有平台统一使用 13 号字体
      */
     private static int getDefaultFontSize() {
-        return 12; // 所有平台统一默认 12号
+        return 13; // 所有平台统一默认 13号
     }
 
     public static void setUiFontSize(int size) {

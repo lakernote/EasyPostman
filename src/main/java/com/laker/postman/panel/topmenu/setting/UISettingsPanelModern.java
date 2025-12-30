@@ -160,14 +160,13 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_RESTART_RECOMMENDED)
         );
 
-        // 获取系统可用字体
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        String[] fontNames = ge.getAvailableFontFamilyNames();
+        // 获取常用字体列表（只显示高质量、常用的字体，避免列表过长）
+        String[] commonFonts = getCommonFonts();
 
         // 创建字体选择下拉框，添加"系统默认"选项
-        String[] fontOptions = new String[fontNames.length + 1];
+        String[] fontOptions = new String[commonFonts.length + 1];
         fontOptions[0] = I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SYSTEM_DEFAULT);
-        System.arraycopy(fontNames, 0, fontOptions, 1, fontNames.length);
+        System.arraycopy(commonFonts, 0, fontOptions, 1, commonFonts.length);
 
         fontNameComboBox = new JComboBox<>(fontOptions);
 
@@ -177,11 +176,17 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             fontNameComboBox.setSelectedIndex(0); // 系统默认
         } else {
             // 在列表中查找并选中
+            boolean found = false;
             for (int i = 1; i < fontOptions.length; i++) {
-                if (fontNames[i - 1].equals(currentFont)) {
+                if (commonFonts[i - 1].equals(currentFont)) {
                     fontNameComboBox.setSelectedIndex(i);
+                    found = true;
                     break;
                 }
+            }
+            // 如果当前字体不在常用列表中，默认选择"系统默认"
+            if (!found) {
+                fontNameComboBox.setSelectedIndex(0);
             }
         }
 
@@ -253,6 +258,96 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     }
 
     /**
+     * 获取常用字体列表
+     * 根据操作系统返回常用的、高质量的字体，避免列表过长影响用户选择
+     *
+     * @return 常用字体数组，只包含在当前系统中可用的字体
+     */
+    private String[] getCommonFonts() {
+        // 获取当前系统所有可用字体
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        String[] allFonts = ge.getAvailableFontFamilyNames();
+        java.util.Set<String> availableFonts = new java.util.HashSet<>(java.util.Arrays.asList(allFonts));
+
+        // 常用编程字体（跨平台）
+        String jetbrainsMono = "JetBrains Mono";
+        String firaCode = "Fira Code";
+        String sourceCodePro = "Source Code Pro";
+        String consolas = "Consolas";
+
+        // 定义各平台常用字体列表
+        String[] commonFontNames;
+        String osName = System.getProperty("os.name").toLowerCase();
+
+        if (osName.contains("mac")) {
+            // macOS 常用字体
+            commonFontNames = new String[]{
+                    // 系统字体
+                    "SF Pro Text", "SF Pro Display", ".AppleSystemUIFont",
+                    // 西文字体
+                    "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Courier New",
+                    "Georgia", "Verdana", "Monaco", "Menlo",
+                    // 中文字体
+                    "PingFang SC", "PingFang TC", "Heiti SC", "Heiti TC", "STHeiti",
+                    "Songti SC", "Songti TC", "STSong", "Kaiti SC", "Kaiti TC",
+                    // 日文字体
+                    "Hiragino Sans", "Hiragino Kaku Gothic Pro",
+                    // 编程字体
+                    jetbrainsMono, firaCode, sourceCodePro, consolas
+            };
+        } else if (osName.contains("win")) {
+            // Windows 常用字体
+            commonFontNames = new String[]{
+                    // 系统字体
+                    "Segoe UI", "Segoe UI Variable",
+                    // 西文字体
+                    "Arial", "Calibri", "Cambria", "Consolas", "Courier New",
+                    "Georgia", "Times New Roman", "Trebuchet MS", "Verdana",
+                    // 中文字体
+                    "Microsoft YaHei", "Microsoft YaHei UI", "SimSun", "SimHei",
+                    "KaiTi", "FangSong", "NSimSun",
+                    // 编程字体
+                    "Cascadia Code", "Cascadia Mono", jetbrainsMono, firaCode,
+                    sourceCodePro, consolas
+            };
+        } else {
+            // Linux 常用字体
+            commonFontNames = new String[]{
+                    // 系统字体
+                    "DejaVu Sans", "DejaVu Serif", "DejaVu Sans Mono",
+                    "Liberation Sans", "Liberation Serif", "Liberation Mono",
+                    // 西文字体
+                    "Ubuntu", "Ubuntu Mono", "Cantarell", "Noto Sans", "Noto Serif",
+                    "FreeSans", "FreeSerif", "FreeMono",
+                    // 中文字体
+                    "Noto Sans CJK SC", "Noto Sans CJK TC", "Noto Serif CJK SC",
+                    "WenQuanYi Micro Hei", "WenQuanYi Zen Hei", "AR PL UMing CN",
+                    "Droid Sans Fallback",
+                    // 编程字体
+                    jetbrainsMono, firaCode, sourceCodePro, "Hack", "Inconsolata"
+            };
+        }
+
+        // 过滤出系统中实际可用的字体
+        java.util.List<String> result = new java.util.ArrayList<>();
+        for (String fontName : commonFontNames) {
+            if (availableFonts.contains(fontName)) {
+                result.add(fontName);
+            }
+        }
+
+        // 如果过滤后列表为空（不太可能），返回一些基本字体
+        if (result.isEmpty()) {
+            result.add("Dialog");
+            result.add("SansSerif");
+            result.add("Serif");
+            result.add("Monospaced");
+        }
+
+        return result.toArray(new String[0]);
+    }
+
+    /**
      * 更新字体预览
      */
     private void updateFontPreview() {
@@ -279,7 +374,24 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 }
             }
 
-            fontPreviewLabel.setFont(new Font(fontName, Font.PLAIN, fontSize));
+            // 字体预览处理：
+            // 1. 如果选择系统默认，使用 deriveFont 保留降级链（确保 emoji 显示）
+            // 2. 如果选择自定义字体，使用 new Font 让用户看到实际字体效果
+            //    （注意：自定义字体可能不支持 emoji，这是预期行为，用户需要知道选择的字体效果）
+
+            if (fontNameComboBox.getSelectedIndex() == 0) {
+                // 选择了"系统默认"，使用 deriveFont 保留降级链
+                Font baseFont = UIManager.getFont("Label.font");
+                if (baseFont == null) {
+                    baseFont = fontPreviewLabel.getFont();
+                }
+                // ✅ 使用 deriveFont 确保 emoji 和所有 Unicode 字符正确显示
+                fontPreviewLabel.setFont(baseFont.deriveFont(Font.PLAIN, fontSize));
+            } else {
+                // 选择了具体字体，创建该字体实例以展示真实效果
+                // 这样用户可以看到选择的字体是否支持 emoji
+                fontPreviewLabel.setFont(new Font(fontName, Font.PLAIN, fontSize));
+            }
         } catch (Exception e) {
             // 忽略预览更新错误
         }

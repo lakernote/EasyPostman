@@ -496,7 +496,7 @@ public class ResponsePanel extends JPanel {
             instance = new EasyPostmanStyleTooltip(parentWindow);
 
             JLabel content = new JLabel(html);
-            content.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+            content.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
             content.setOpaque(true);
             // Use colors matching ModernColors theme
             content.setBackground(new Color(250, 251, 253)); // Very light background

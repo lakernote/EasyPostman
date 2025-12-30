@@ -62,13 +62,13 @@ public class ModernProgressDialog {
         contentPanel.add(Box.createVerticalStrut(16));
 
         // 状态文本
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16));
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(statusLabel);
         contentPanel.add(Box.createVerticalStrut(20));
 
         // 百分比
-        percentLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 32));
+        percentLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +20));
         percentLabel.setForeground(ModernColors.PRIMARY);
         percentLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(percentLabel);
@@ -107,21 +107,21 @@ public class ModernProgressDialog {
 
         // 大小信息
         JLabel sizeTitle = new JLabel(I18nUtil.isChinese() ? "已下载" : "Downloaded");
-        sizeTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        sizeTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         sizeTitle.setForeground(ModernColors.TEXT_HINT);
         panel.add(sizeTitle);
 
-        sizeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        sizeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         sizeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(sizeLabel);
 
         // 速度信息
         JLabel speedTitle = new JLabel(I18nUtil.isChinese() ? "下载速度" : "Speed");
-        speedTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        speedTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         speedTitle.setForeground(ModernColors.TEXT_HINT);
         panel.add(speedTitle);
 
-        speedLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        speedLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         speedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(speedLabel);
 
@@ -130,7 +130,7 @@ public class ModernProgressDialog {
 
     private JButton createCancelButton() {
         JButton button = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
-        button.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         button.setForeground(ModernColors.TEXT_SECONDARY);
         button.setBackground(ModernColors.BG_LIGHT);
         button.setBorderPainted(false);

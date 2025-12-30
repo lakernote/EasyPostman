@@ -382,7 +382,7 @@ public class NotificationUtil {
 
             // 图标
             JLabel iconLabel = new JLabel(type.getIcon());
-            iconLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 18));
+            iconLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +6));
             iconLabel.setForeground(type.getColor());
             iconLabel.setVerticalAlignment(SwingConstants.TOP);
             iconLabel.setBorder(BorderFactory.createEmptyBorder(1, 0, 0, 0));

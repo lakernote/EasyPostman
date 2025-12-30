@@ -56,7 +56,7 @@ public class HistoryPanel extends SingletonBasePanel {
                 BorderFactory.createEmptyBorder(4, 8, 4, 8) // 内边框
         ));
         JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.MENU_HISTORY));
-        title.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         JButton clearBtn = new JButton(new FlatSVGIcon("icons/clear.svg"));
         clearBtn.setMargin(new Insets(0, 4, 0, 4));
         clearBtn.setBackground(ModernColors.PANEL_BACKGROUND);
@@ -87,7 +87,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
         // 创建 Tab 面板
         historyDetailTabPane = new JTabbedPane();
-        historyDetailTabPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        historyDetailTabPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
         // 创建各个标签页
         requestPane = createDetailPane();
@@ -133,7 +133,7 @@ public class HistoryPanel extends SingletonBasePanel {
         private final Color selectedBackground = new Color(180, 215, 255);
 
         public OptimizedHistoryListCellRenderer() {
-            Font baseFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);
+            Font baseFont = FontsUtil.getDefaultFont(Font.PLAIN);
             boldFont = baseFont.deriveFont(Font.BOLD);
             plainFont = baseFont.deriveFont(Font.PLAIN);
         }
@@ -165,7 +165,7 @@ public class HistoryPanel extends SingletonBasePanel {
         JTextPane pane = new JTextPane();
         pane.setEditable(false);
         pane.setContentType("text/html");
-        pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         return pane;
     }
 

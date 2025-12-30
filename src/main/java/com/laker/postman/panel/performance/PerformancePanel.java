@@ -308,7 +308,7 @@ public class PerformancePanel extends SingletonBasePanel {
         leftPanel.add(infoIcon);
 
         JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));
-        infoText.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        infoText.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         infoText.setForeground(new Color(102, 85, 0)); // 深黄色文字
         leftPanel.add(infoText);
 
@@ -320,7 +320,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         JButton refreshCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT));
         refreshCurrentBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 14, 14));
-        refreshCurrentBtn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        refreshCurrentBtn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         refreshCurrentBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP));
         refreshCurrentBtn.addActionListener(e -> refreshCurrentRequest());
         rightPanel.add(refreshCurrentBtn);

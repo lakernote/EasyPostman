@@ -86,7 +86,7 @@ public class ExecutionResultsPanel extends JPanel {
         resultsTree.setRootVisible(true);
         resultsTree.setShowsRootHandles(true);
         resultsTree.setCellRenderer(new ExecutionResultTreeCellRenderer());
-        resultsTree.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        resultsTree.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         resultsTree.setRowHeight(26);
         resultsTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
@@ -116,7 +116,7 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 左侧标题
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         // 右侧工具按钮
@@ -166,7 +166,7 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 创建详情选项卡
         detailTabs = new JTabbedPane();
-        detailTabs.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        detailTabs.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         detailTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
         // 默认显示欢迎页面
@@ -736,8 +736,8 @@ public class ExecutionResultsPanel extends JPanel {
         };
 
         // 应用 ModernColors 配色方案
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
         table.setRowHeight(28);
         table.setGridColor(ModernColors.TABLE_GRID_COLOR);
         table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
@@ -910,8 +910,8 @@ public class ExecutionResultsPanel extends JPanel {
         }
 
         csvTable.setModel(new javax.swing.table.DefaultTableModel(data, headers));
-        csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
-        csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 11));
+        csvTable.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
+        csvTable.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1)); // 比标准字体小1号（粗体）
         csvTable.setRowHeight(20);
 
         JScrollPane csvScrollPane = new JScrollPane(csvTable);

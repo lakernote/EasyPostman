@@ -69,8 +69,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         // 初始化字体缓存
-        normalFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);  // Tab文本和版本号共用
-        boldFont = FontsUtil.getDefaultFont(Font.BOLD, 12);     // Tab选中态共用
+        normalFont = FontsUtil.getDefaultFont(Font.PLAIN);  // Tab文本和版本号共用
+        boldFont = FontsUtil.getDefaultFont(Font.BOLD);     // Tab选中态共用
         bottomBarFont = boldFont; // 底部栏使用相同的 BOLD 12 字体
 
         // 先读取侧边栏展开状态

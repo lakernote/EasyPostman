@@ -81,7 +81,7 @@ public class GroupEditPanel extends JPanel {
 
         // 中间内容区域 - 使用 Tabs
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        tabbedPane.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         // General Tab
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TAB_GENERAL), createGeneralPanel());
@@ -127,7 +127,7 @@ public class GroupEditPanel extends JPanel {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 18));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +6));
         titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         leftPanel.add(titleLabel);
 
@@ -158,7 +158,7 @@ public class GroupEditPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_NAME_LABEL));
-        nameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        nameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         nameLabel.setForeground(ModernColors.TEXT_PRIMARY);
         formPanel.add(nameLabel, gbc);
 
@@ -167,7 +167,7 @@ public class GroupEditPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         nameField = new EasyPostmanTextField(30);
         nameField.setPreferredSize(new Dimension(300, 32));
-        nameField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        nameField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
         formPanel.add(nameField, gbc);
 
         // 水平填充

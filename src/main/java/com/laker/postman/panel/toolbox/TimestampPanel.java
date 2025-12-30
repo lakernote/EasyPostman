@@ -69,7 +69,7 @@ public class TimestampPanel extends JPanel {
 
         // 时间戳显示标签
         currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
-        currentLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16));
+        currentLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
         currentLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 按钮面板
@@ -197,7 +197,7 @@ public class TimestampPanel extends JPanel {
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setRows(12);
-        resultArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        resultArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         resultArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JScrollPane scrollPane = new JScrollPane(resultArea);

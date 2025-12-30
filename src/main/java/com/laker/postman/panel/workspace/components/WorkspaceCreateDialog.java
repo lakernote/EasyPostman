@@ -87,7 +87,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 自动生成路径选项
         autoGeneratePathCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.WORKSPACE_AUTO_GENERATE_PATH), true);
-        autoGeneratePathCheckBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        autoGeneratePathCheckBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
 
         // Git相关组件
         cloneRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_CLONE_FROM_REMOTE), true);
@@ -108,7 +108,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         progressPanel.setVisible(false);
 
         // 设置默认字体
-        Font defaultFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);
+        Font defaultFont = FontsUtil.getDefaultFont(Font.PLAIN);
         nameField.setFont(defaultFont);
         descriptionArea.setFont(defaultFont);
         pathField.setFont(defaultFont);
@@ -267,7 +267,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -341,7 +341,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
                 "Git " + I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD)
         ));
 
         // Git模式选择

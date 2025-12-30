@@ -763,7 +763,7 @@ public class RequestBodyPanel extends JPanel {
 
                             // 绘制白色符号 - 垂直居中对齐
                             g2d.setColor(Color.WHITE);
-                            g2d.setFont(FontsUtil.getDefaultFont(Font.BOLD, 10));
+                            g2d.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
                             FontMetrics symbolFm = g2d.getFontMetrics();
                             String symbol = isBuiltIn ? "$" : "E";
                             int symbolWidth = symbolFm.stringWidth(symbol);

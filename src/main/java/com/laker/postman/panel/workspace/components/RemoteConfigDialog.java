@@ -104,7 +104,7 @@ public class RemoteConfigDialog extends JDialog {
                 I18nUtil.getMessage(WORKSPACE_REMOTE_CONFIG_TITLE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD)
         ));
 
         // 基本配置

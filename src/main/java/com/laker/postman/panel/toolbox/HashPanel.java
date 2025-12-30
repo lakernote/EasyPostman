@@ -149,7 +149,7 @@ public class HashPanel extends JPanel {
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        inputArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        inputArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         inputArea.setMargin(new Insets(5, 5, 5, 5));
         inputArea.setBackground(Color.WHITE);
 
@@ -182,7 +182,7 @@ public class HashPanel extends JPanel {
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setEditable(false);
-        outputArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        outputArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         outputArea.setMargin(new Insets(5, 5, 5, 5));
 
         JScrollPane outputScroll = new JScrollPane(outputArea);
@@ -200,7 +200,7 @@ public class HashPanel extends JPanel {
         statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusLabel.setForeground(Color.GRAY);
 
         statusPanel.add(statusLabel, BorderLayout.WEST);

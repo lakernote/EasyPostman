@@ -34,7 +34,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.weightx = 1.0; // 值扩展填充剩余空间
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel nameLabel = new JLabel(workspace.getName());
-        nameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        nameLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         infoSection.add(nameLabel, gbc);
 
         // 类型
@@ -130,7 +130,7 @@ public class WorkspaceDetailPanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel urlLabel = new JLabel(workspace.getGitRemoteUrl());
-        urlLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        urlLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         panel.add(urlLabel, gbc);
         row++;
 
@@ -174,7 +174,7 @@ public class WorkspaceDetailPanel extends JPanel {
                     : workspace.getLastCommitId();
         }
         JLabel commitLabel = new JLabel(shortCommitId);
-        commitLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        commitLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         panel.add(commitLabel, gbc);
 
         return panel;

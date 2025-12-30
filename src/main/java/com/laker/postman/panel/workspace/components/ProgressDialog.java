@@ -106,11 +106,11 @@ public abstract class ProgressDialog extends JDialog {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        cancelButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        cancelButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         cancelButton.addActionListener(this::handleCancel);
 
         confirmButton = new JButton(confirmText);
-        confirmButton.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        confirmButton.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         confirmButton.addActionListener(this::handleConfirm);
 
         panel.add(cancelButton);

@@ -60,7 +60,7 @@ public class GitAuthPanel extends JPanel {
         sshKeyBrowseButton.setFocusPainted(false);
 
         // 设置默认字体
-        Font defaultFont = FontsUtil.getDefaultFont(Font.PLAIN, 12);
+        Font defaultFont = FontsUtil.getDefaultFont(Font.PLAIN);
         passwordUsernameField.setFont(defaultFont);
         passwordField.setFont(defaultFont);
         tokenUsernameField.setFont(defaultFont);
@@ -132,7 +132,7 @@ public class GitAuthPanel extends JPanel {
     private JPanel createNoAuthPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_NONE));
-        label.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 11));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
         label.setForeground(Color.GRAY);
         panel.add(label);
         return panel;

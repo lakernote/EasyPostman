@@ -135,7 +135,7 @@ public class AddRequestDialog {
         btn.setIcon(new FlatSVGIcon(iconPath, 24, 24));
         btn.setSelected(selected);
         btn.setFocusPainted(false);
-        btn.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        btn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         btn.setVerticalTextPosition(SwingConstants.BOTTOM);
         btn.setHorizontalTextPosition(SwingConstants.CENTER);
         btn.setPreferredSize(new Dimension(100, 60));

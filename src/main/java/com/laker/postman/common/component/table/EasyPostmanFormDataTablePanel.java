@@ -197,7 +197,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
      */
     private JComboBox<String> createModernTypeComboBox() {
         JComboBox<String> comboBox = new JComboBox<>(TYPE_OPTIONS);
-        comboBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        comboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
 
         // 自定义下拉列表的渲染器
         comboBox.setRenderer(new DefaultListCellRenderer() {

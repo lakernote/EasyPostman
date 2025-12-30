@@ -66,12 +66,12 @@ public class TimelinePanel extends JPanel {
         int labelMaxWidth = 80, descMaxWidth = 80;
         Graphics g = getGraphics();
         if (g != null) {
-            g.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+            g.setFont(FontsUtil.getDefaultFont(Font.BOLD));
             for (Stage s : stages) {
                 int w = g.getFontMetrics().stringWidth(s.label);
                 if (w > labelMaxWidth) labelMaxWidth = w;
             }
-            g.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+            g.setFont(FontsUtil.getDefaultFont(Font.PLAIN));; // 使用用户设置的字体大小
             for (Stage s : stages) {
                 if (s.desc != null && !s.desc.isEmpty()) {
                     int w = g.getFontMetrics().stringWidth(s.desc);
@@ -107,7 +107,7 @@ public class TimelinePanel extends JPanel {
         g2.setColor(INFO_BORDER_COLOR);
         g2.drawRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 8, 8);
         int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_LINE_HEIGHT - 3;
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.setColor(Color.DARK_GRAY);
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
@@ -132,22 +132,22 @@ public class TimelinePanel extends JPanel {
         int lineEndX = getWidth() - INFO_TEXT_LEFT_PAD;
         int remoteLineY = -1, cipherLineY = -1;
         // HTTP Version
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.setColor(Color.DARK_GRAY);
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Local Address
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Remote Address
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
@@ -157,15 +157,15 @@ public class TimelinePanel extends JPanel {
             g2.setColor(Color.DARK_GRAY);
         }
         // TLS Protocol
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Cipher Name
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
@@ -175,30 +175,30 @@ public class TimelinePanel extends JPanel {
             g2.setColor(Color.DARK_GRAY);
         }
         // Certificate CN
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Issuer CN
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Valid Until
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
 
         // SSL Certificate Warning - 如果有警告则显示
         if (httpEventInfo != null && httpEventInfo.getSslCertWarning() != null && !httpEventInfo.getSslCertWarning().isEmpty()) {
-            g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+            g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
             g2.setColor(new Color(220, 53, 69)); // 红色警告
             g2.drawString("Cert Warning:", labelX, infoY);
-            g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+            g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
 
             // 处理过长的警告文本，可能需要换行或截断
             String warning = httpEventInfo.getSslCertWarning();
@@ -222,12 +222,12 @@ public class TimelinePanel extends JPanel {
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
         int descMaxWidth = 0;
-        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         for (Stage s : stages) {
             int w = g2.getFontMetrics().stringWidth(s.label);
             if (w > labelMaxWidth) labelMaxWidth = w;
         }
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         for (Stage s : stages) {
             if (s.desc != null && !s.desc.isEmpty()) {
                 int w = g2.getFontMetrics().stringWidth(s.desc);
@@ -268,7 +268,7 @@ public class TimelinePanel extends JPanel {
         int currentX = leftPad;
 
         // 计算文字垂直居中的位置
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         FontMetrics fm = g2.getFontMetrics();
         int textYOffset = (BAR_HEIGHT - fm.getHeight()) / 2 + fm.getAscent();
 
@@ -277,7 +277,7 @@ public class TimelinePanel extends JPanel {
             int barW = barWidths[i];
             Color color = COLORS[i % COLORS.length];
             // label 区域
-            g2.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+            g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
             g2.setColor(new Color(40, 40, 40));
             String label = s.label;
             int labelStrW = g2.getFontMetrics().stringWidth(label);
@@ -308,7 +308,7 @@ public class TimelinePanel extends JPanel {
             }
             // 耗时始终在bar内右侧，bar太窄则不显示
             String ms = (s.end - s.start) + "ms";
-            g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+            g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 8) {
                 g2.setColor(Color.WHITE);
@@ -316,7 +316,7 @@ public class TimelinePanel extends JPanel {
             }
             // desc 区域
             if (s.desc != null && !s.desc.isEmpty()) {
-                g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+                g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
                 g2.setColor(new Color(140, 140, 140));
                 int descX = currentX + barW + DESC_LEFT_PAD;
                 int maxDescW = panelW - descX - RIGHT_PAD;

@@ -31,7 +31,7 @@ public class ProgressPanel extends JPanel {
         progressBar.setString(I18nUtil.getMessage(MessageKeys.PROGRESS_PANEL_READY));
 
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PROGRESS_PANEL_FILL_CONFIG));
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 11));
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
     }
 
     private void setupLayout(String title) {
@@ -41,7 +41,7 @@ public class ProgressPanel extends JPanel {
                 title,
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD)
         ));
 
         // 状态标签

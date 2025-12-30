@@ -50,7 +50,7 @@ public class ScriptPanel extends JPanel {
         helpArea.setEditable(false);
         helpArea.setLineWrap(true);
         helpArea.setWrapStyleWord(true);
-        helpArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        helpArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
         helpArea.setMargin(new Insets(10, 10, 10, 10));
         helpArea.setText(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TEXT));
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_HELP), new JScrollPane(helpArea));

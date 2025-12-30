@@ -211,8 +211,8 @@ public class CookieTablePanel extends JPanel {
         table.setGridColor(new Color(240, 240, 240));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
         // 设置列宽
         setColumnWidths();
@@ -287,7 +287,7 @@ public class CookieTablePanel extends JPanel {
                         "</p></div></html>",
                 SwingConstants.CENTER
         );
-        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 14));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
         try {
             label.setIcon(new FlatSVGIcon("icons/cookie.svg", 48, 48));
         } catch (Exception e) {

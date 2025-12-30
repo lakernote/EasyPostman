@@ -68,7 +68,7 @@ public class UpdateAuthDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_TYPE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD, 12)
+                FontsUtil.getDefaultFont(Font.BOLD)
         ));
         authContainer.add(gitAuthPanel, BorderLayout.CENTER);
         mainPanel.add(authContainer, BorderLayout.CENTER);

@@ -89,12 +89,12 @@ public class ModernUpdateDialog extends JDialog {
         infoPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 20));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +8));
         titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel versionLabel = new JLabel(String.format("%s %s → %s", I18nUtil.isChinese() ? "版本" : "Version", updateInfo.getCurrentVersion(), updateInfo.getLatestVersion()));
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
         versionLabel.setForeground(ModernColors.PRIMARY);
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -103,7 +103,7 @@ public class ModernUpdateDialog extends JDialog {
         if (!publishedAt.isEmpty()) {
             String dateStr = publishedAt.substring(0, 10); // 提取日期部分
             JLabel dateLabel = new JLabel((I18nUtil.isChinese() ? "发布于 " : "Released on ") + dateStr);
-            dateLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+            dateLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
             dateLabel.setForeground(ModernColors.TEXT_HINT);
             dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -130,7 +130,7 @@ public class ModernUpdateDialog extends JDialog {
 
         // 标题
         JLabel titleLabel = new JLabel("📝 " + (I18nUtil.isChinese() ? "更新内容" : "What's New"));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 15));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
         panel.add(titleLabel, BorderLayout.NORTH);
 
         // 更新日志
@@ -140,7 +140,7 @@ public class ModernUpdateDialog extends JDialog {
         textArea.setFocusable(false); // 禁用焦点，避免出现光标
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         textArea.setBackground(ModernColors.BG_LIGHT);
         textArea.setBorder(new EmptyBorder(12, 12, 12, 12));
         textArea.setCaretPosition(0);
@@ -185,7 +185,7 @@ public class ModernUpdateDialog extends JDialog {
 
         // 左侧提示
         JLabel tipLabel = new JLabel(I18nUtil.isChinese() ? "💡 建议在更新前保存工作" : "💡 Save your work before updating");
-        tipLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        tipLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         tipLabel.setForeground(ModernColors.TEXT_HINT);
         panel.add(tipLabel, BorderLayout.WEST);
 

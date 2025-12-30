@@ -41,7 +41,7 @@ public class ChangelogDialog extends JDialog {
         // 中间面板：更新日志内容
         contentArea = new JTextArea();
         contentArea.setEditable(false);
-        contentArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        contentArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
         contentArea.setText(I18nUtil.getMessage(MessageKeys.CHANGELOG_LOADING));
@@ -55,7 +55,7 @@ public class ChangelogDialog extends JDialog {
 
         // 状态标签
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusLabel.setForeground(Color.GRAY);
         bottomPanel.add(statusLabel, BorderLayout.WEST);
 
@@ -100,7 +100,7 @@ public class ChangelogDialog extends JDialog {
 
         String currentVersion = SystemUtil.getCurrentVersion();
         JLabel versionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CHANGELOG_CURRENT_VERSION, currentVersion));
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2)); // 比标准字体大2号
 
         panel.add(versionLabel, BorderLayout.WEST);
 

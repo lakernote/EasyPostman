@@ -69,7 +69,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
-        mainTabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        mainTabbedPane.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
         // 添加内边距
@@ -114,7 +114,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         timePanel.setOpaque(false);
         JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20));
         timeLabel = new JLabel("0 ms");
-        timeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        timeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         timePanel.add(timeIcon);
         timePanel.add(Box.createHorizontalStrut(3));
         timePanel.add(timeLabel);
@@ -127,7 +127,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 创建进度文本标签
         progressLabel = new JLabel("0/0");
-        progressLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        progressLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
         taskPanel.add(taskIcon);
         taskPanel.add(Box.createHorizontalStrut(3));
@@ -497,8 +497,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             }
         };
         table.setRowHeight(28);
-        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
+        table.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1)); // 比标准字体大1号（粗体）
 
         // 添加表头点击监听器，点击"选择"列表头时全选/反选
         table.getTableHeader().addMouseListener(new MouseAdapter() {

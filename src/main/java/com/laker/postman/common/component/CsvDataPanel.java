@@ -65,7 +65,7 @@ public class CsvDataPanel extends JPanel {
         // CSV 状态图标和文本
         JLabel csvIcon = new JLabel(new FlatSVGIcon("icons/csv.svg", 16, 16));
         csvStatusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
-        csvStatusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        csvStatusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         csvStatusLabel.setForeground(new Color(100, 100, 100));
 
         // CSV 清除按钮
@@ -176,7 +176,7 @@ public class CsvDataPanel extends JPanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 16));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
         JLabel descLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DESCRIPTION));
@@ -198,13 +198,13 @@ public class CsvDataPanel extends JPanel {
         gbc.gridy = 0;
         gbc.weightx = 0.3;
         JLabel columnCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_COLUMN_COUNT));
-        columnCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        columnCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(columnCountLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
         JTextField columnCountField = new JTextField("3");
-        columnCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        columnCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(columnCountField, gbc);
 
         // 行数输入
@@ -212,13 +212,13 @@ public class CsvDataPanel extends JPanel {
         gbc.gridy = 1;
         gbc.weightx = 0.3;
         JLabel rowCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_ROW_COUNT));
-        rowCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        rowCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(rowCountLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
         JTextField rowCountField = new JTextField("5");
-        rowCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        rowCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(rowCountField, gbc);
 
         // 列标题输入
@@ -226,13 +226,13 @@ public class CsvDataPanel extends JPanel {
         gbc.gridy = 2;
         gbc.weightx = 0.3;
         JLabel headersLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_COLUMN_HEADERS));
-        headersLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        headersLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(headersLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
         JTextField headersField = new JTextField();
-        headersField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        headersField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         headersField.setText("username,password,email");
         contentPanel.add(headersField, gbc);
 
@@ -489,7 +489,7 @@ public class CsvDataPanel extends JPanel {
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_SOURCE_INFO,
                 csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED),
                 csvData.size()));
-        infoLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        infoLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         topPanel.add(infoLabel, BorderLayout.CENTER);
 
         manageDialog.add(topPanel, BorderLayout.NORTH);
@@ -738,7 +738,7 @@ public class CsvDataPanel extends JPanel {
         JPanel helpPanel = new JPanel(new BorderLayout());
         helpPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS)));
         JTextArea helpText = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_USAGE_TEXT));
-        helpText.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        helpText.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         helpText.setEditable(false);
         helpText.setOpaque(false);
         helpText.setLineWrap(true);

@@ -40,7 +40,7 @@ public class AuthTabPanel extends JPanel {
         // 初始化所有字段
         typeCombo = new JComboBox<>(AuthType.values());
         typeCombo.setPreferredSize(new Dimension(220, 32));
-        typeCombo.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        typeCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         usernameField = new EasyPostmanTextField(20);
         usernameField.setPreferredSize(new Dimension(200, 32));
@@ -54,7 +54,7 @@ public class AuthTabPanel extends JPanel {
         // 顶部：认证类型选择
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         JLabel typeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_LABEL));
-        typeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD, 13));
+        typeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1)); // 比标准字体大1号（粗体）
         typeLabel.setForeground(ModernColors.TEXT_PRIMARY);
         topPanel.add(typeLabel);
         topPanel.add(typeCombo);
@@ -121,7 +121,7 @@ public class AuthTabPanel extends JPanel {
         ));
 
         JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         infoPanel.add(iconLabel, BorderLayout.WEST);
 
         JLabel textLabel = new JLabel(
@@ -150,7 +150,7 @@ public class AuthTabPanel extends JPanel {
         ));
 
         JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         infoPanel.add(iconLabel, BorderLayout.WEST);
 
         JLabel textLabel = new JLabel(
@@ -180,7 +180,7 @@ public class AuthTabPanel extends JPanel {
         ));
 
         JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         infoPanel.add(iconLabel, BorderLayout.WEST);
 
         JLabel textLabel = new JLabel(
@@ -270,7 +270,7 @@ public class AuthTabPanel extends JPanel {
         ));
 
         JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         infoPanel.add(iconLabel, BorderLayout.WEST);
 
         JLabel textLabel = new JLabel(

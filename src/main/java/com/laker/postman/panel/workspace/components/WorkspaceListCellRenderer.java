@@ -77,6 +77,6 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
     }
 
     private void configureWorkspaceStyle() {
-        setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        setFont(FontsUtil.getDefaultFont(Font.PLAIN));
     }
 }

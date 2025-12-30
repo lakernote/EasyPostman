@@ -66,7 +66,7 @@ public class CronPanel extends JPanel {
         JPanel row1 = new JPanel(new BorderLayout(5, 5));
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXPRESSION) + ":"), BorderLayout.WEST);
         cronField = new FlatTextField();
-        cronField.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 14));
+        cronField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
         cronField.setText("0 0 12 * * ?");
         cronField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PLACEHOLDER));
         cronField.setBackground(Color.WHITE);
@@ -203,7 +203,7 @@ public class CronPanel extends JPanel {
         resultPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_GENERATED) + ":"), BorderLayout.WEST);
         JTextField generatedField = new JTextField();
         generatedField.setEditable(false);
-        generatedField.setFont(FontsUtil.getDefaultFont(Font.BOLD, 14));
+        generatedField.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
         resultPanel.add(generatedField, BorderLayout.CENTER);
         mainPanel.add(resultPanel);
 

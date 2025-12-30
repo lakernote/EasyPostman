@@ -59,13 +59,13 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         renderer.setSeriesPaint(3, errorPercent);
         plot.setDomainGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
         plot.setRangeGridlinePaint(new Color(194, 211, 236)); // 中性色调的蓝色网格线
-        trendChart.getTitle().setFont(FontsUtil.getDefaultFont(Font.PLAIN, 13));
+        trendChart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
         if (trendChart.getLegend() != null)
-            trendChart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getDomainAxis().setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getDomainAxis().setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getRangeAxis().setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
-        plot.getRangeAxis().setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+            trendChart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
+        plot.getDomainAxis().setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
+        plot.getDomainAxis().setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
+        plot.getRangeAxis().setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
+        plot.getRangeAxis().setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小
         plot.setBackgroundPaint(Color.WHITE);
         trendChart.setBackgroundPaint(Color.WHITE);
         plot.getRangeAxis().setAutoRange(true);

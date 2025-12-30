@@ -52,12 +52,12 @@ public class StepIndicator extends JPanel {
         circle.setOpaque(true);
         circle.setBackground(active ? new Color(30, 144, 255) : Color.LIGHT_GRAY);
         circle.setForeground(Color.WHITE);
-        circle.setFont(FontsUtil.getDefaultFont(Font.BOLD, 12));
+        circle.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         circle.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
 
         // 文本
         JLabel label = new JLabel(text, SwingConstants.CENTER);
-        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 10));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         label.setForeground(active ? Color.BLACK : Color.GRAY);
 
         panel.add(circle, BorderLayout.CENTER);

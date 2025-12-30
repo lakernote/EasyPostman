@@ -82,7 +82,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 新建工作区按钮
         JButton newButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_NEW));
         newButton.setIcon(new FlatSVGIcon("icons/plus.svg", 20, 20));
-        newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         newButton.setFocusable(false); // 去掉按钮聚焦虚线
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
         toolbar.add(newButton);
@@ -107,7 +107,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 设置列表样式
         workspaceList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         workspaceList.setCellRenderer(new WorkspaceListCellRenderer());
-        workspaceList.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 12));
+        workspaceList.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         workspaceList.setFixedCellHeight(50);
 
         // 添加右键菜单和双击事件
@@ -151,7 +151,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) +
                 "</center></html>");
         welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 12));
+        welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
         welcomeLabel.setForeground(Color.GRAY);
 
         infoPanel.add(welcomeLabel, BorderLayout.CENTER);
@@ -171,7 +171,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 创建日志文本区域
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        logArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         logArea.setBackground(new Color(248, 248, 248));
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
@@ -182,7 +182,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         JPanel logToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
         JButton clearLogButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
         clearLogButton.setIcon(new FlatSVGIcon("icons/clear.svg", 20, 20));
-        clearLogButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN, 11));
+        clearLogButton.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         clearLogButton.addActionListener(e -> logArea.setText(""));
         logToolbar.add(clearLogButton);
         panel.add(logToolbar, BorderLayout.SOUTH);
@@ -576,7 +576,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                     I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) +
                     "</center>" + HTML_END);
             welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC, 12));
+            welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
             welcomeLabel.setForeground(Color.GRAY);
             infoPanel.add(welcomeLabel, BorderLayout.CENTER);
         }

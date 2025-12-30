@@ -67,8 +67,8 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
 
         // 获取用户设置的字体大小，并计算相对大小
         int baseFontSize = SettingManager.getUiFontSize();
-        int methodFontSize = Math.max(8, baseFontSize - 4); // 方法名比标准字体小4号，最小8px
-        int nameFontSize = Math.max(9, baseFontSize - 3);   // 请求名比标准字体小3号，最小9px
+        int methodFontSize = Math.max(7, baseFontSize - 5); // 方法名比标准字体小4号，最小8px
+        int nameFontSize = Math.max(8, baseFontSize - 4);   // 请求名比标准字体小3号，最小9px
 
         // simple concatenation is clearer for this short html fragment
         return "<html>" +

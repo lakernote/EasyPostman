@@ -8,6 +8,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileExtensionUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
@@ -66,6 +67,10 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setCodeFoldingEnabled(true);
         responseBodyPane.setLineWrap(false); // 禁用自动换行以提升大文本性能
         responseBodyPane.setHighlightCurrentLine(false); // 关闭选中行高亮
+
+        // 设置字体 - 使用用户设置的字体大小
+        updateEditorFont();
+
         scrollPane = new RTextScrollPane(responseBodyPane);
         scrollPane.setLineNumbersEnabled(true); // 显示行号
         add(scrollPane, BorderLayout.CENTER);
@@ -569,6 +574,14 @@ public class ResponseBodyPanel extends JPanel {
         } else {
             sizeWarningLabel.setVisible(false);
         }
+    }
+
+    /**
+     * 更新编辑器字体
+     * 使用用户设置的字体大小
+     */
+    private void updateEditorFont() {
+        responseBodyPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
     }
 
 }

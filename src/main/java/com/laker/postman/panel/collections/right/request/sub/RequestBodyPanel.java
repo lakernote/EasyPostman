@@ -251,6 +251,7 @@ public class RequestBodyPanel extends JPanel {
         bodyArea = new RSyntaxTextArea(5, 20);
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
+
         // 设置主题
         try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
             if (in != null) {
@@ -259,6 +260,9 @@ public class RequestBodyPanel extends JPanel {
             }
         } catch (Exception ignored) {
         }
+
+        // 设置字体 - 使用用户设置的字体大小（必须在主题应用之后，避免被主题覆盖）
+        updateEditorFont();
 
         // ====== 添加撤回/重做功能 ======
         UndoManager undoManager = new UndoManager();
@@ -1106,6 +1110,16 @@ public class RequestBodyPanel extends JPanel {
         }
 
         hideAutocomplete();
+    }
+
+    /**
+     * 更新编辑器字体
+     * 使用用户设置的字体大小
+     */
+    private void updateEditorFont() {
+        if (bodyArea != null) {
+            bodyArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        }
     }
 
 }

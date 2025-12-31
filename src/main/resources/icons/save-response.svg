@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="16" viewBox="0 0 32 16" fill="none">
-  <rect x="1" y="1" width="30" height="14" rx="2" stroke="currentColor" stroke-width="1" stroke-opacity="0.4" fill="none"/>
-  <text x="16" y="11.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.85">e.g.</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="1" y="5" width="22" height="14" rx="3" fill="currentColor" fill-opacity=".1"/><rect x="1" y="5" width="22" height="14" rx="3" stroke="currentColor" stroke-opacity=".5"/><text x="12" y="14.2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="8" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity=".85">e.g.</text></svg>

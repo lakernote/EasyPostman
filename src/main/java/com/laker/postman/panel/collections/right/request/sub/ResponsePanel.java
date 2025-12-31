@@ -138,7 +138,7 @@ public class ResponsePanel extends JPanel {
                 }
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
 
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
@@ -147,16 +147,18 @@ public class ResponsePanel extends JPanel {
             // 仅在 enableSaveButton 为 true 时创建保存按钮
             if (enableSaveButton) {
                 // 添加分隔符
-                saveButtonSeparator = new JLabel(" | ");
-                saveButtonSeparator.setForeground(new Color(200, 200, 200));
+                saveButtonSeparator = new JLabel("|");
+                saveButtonSeparator.setForeground(new Color(180, 180, 180));
                 saveButtonSeparator.setVisible(false); // 默认隐藏，与保存按钮同步显示
 
                 // 创建保存响应按钮（仅HTTP协议）- 默认隐藏，有响应后显示
-                saveResponseButton = new JButton(new FlatSVGIcon("icons/save-response.svg", 32, 16));
+                saveResponseButton = new JButton(new FlatSVGIcon("icons/save-response.svg", 24, 24));
                 saveResponseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_TOOLTIP));
                 saveResponseButton.setFocusPainted(false);
                 saveResponseButton.setBorderPainted(false);
                 saveResponseButton.setContentAreaFilled(false);
+                saveResponseButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                saveResponseButton.setMargin(new Insets(0, 0, 0, 0));
                 saveResponseButton.setVisible(false); // 默认隐藏，有响应后才显示
 
                 statusBar.add(saveButtonSeparator);

@@ -66,7 +66,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
 
     // Render saved response node with status code and timestamp
     private void applySavedResponseRendering(SavedResponse savedResponse) {
-        setIcon(new FlatSVGIcon("icons/save-response.svg", ICON_SIZE, ICON_SIZE));
+        setIcon(new FlatSVGIcon("icons/save-response.svg", 24, 24));
 
         String name = savedResponse.getName();
         int code = savedResponse.getCode();

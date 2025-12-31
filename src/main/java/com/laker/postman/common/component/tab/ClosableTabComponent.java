@@ -257,7 +257,7 @@ public class ClosableTabComponent extends JPanel {
      */
     public void setCustomIcon(String iconPath) {
         if (iconPath != null && !iconPath.isEmpty()) {
-            label.setIcon(new FlatSVGIcon(iconPath, 16, 16));
+            label.setIcon(new FlatSVGIcon(iconPath, 24, 24));
         }
     }
 }

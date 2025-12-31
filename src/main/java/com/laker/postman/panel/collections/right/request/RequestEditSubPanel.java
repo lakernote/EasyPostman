@@ -211,7 +211,9 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptPanel);
 
         // 3. 响应面板
-        responsePanel = new ResponsePanel(protocol);
+        // 对于 SAVED_RESPONSE 类型的面板，不创建保存按钮
+        boolean enableSaveButton = (panelType != RequestEditSubPanelType.SAVED_RESPONSE);
+        responsePanel = new ResponsePanel(protocol, enableSaveButton);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(5); // 设置分割条的宽度（增大以提高拖拽灵敏度）
         splitPane.setResizeWeight(0.4); // 设置分割线位置，请求和响应各占40%（降低响应面板默认高度）
@@ -236,8 +238,9 @@ public class RequestEditSubPanel extends JPanel {
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
 
-        // 添加保存响应按钮监听器（仅HTTP协议）
-        if (protocol.isHttpProtocol() && responsePanel.getSaveResponseButton() != null) {
+        // 添加保存响应按钮监听器（仅HTTP协议且非保存的响应面板）
+        if (protocol.isHttpProtocol() && panelType != RequestEditSubPanelType.SAVED_RESPONSE
+                && responsePanel.getSaveResponseButton() != null) {
             responsePanel.getSaveResponseButton().addActionListener(e -> saveResponseDialog());
         }
 

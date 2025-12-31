@@ -12,9 +12,7 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.SAVED_RESPONSE;
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
 /**
  * 请求树右键弹出菜单
@@ -59,9 +57,11 @@ public class RequestTreePopupMenu {
             addRequestMenuItems(menu, isMultipleSelection);
         }
 
-        // 保存的响应节点菜单
+        // 保存的响应节点菜单 - 只显示重命名和删除，不显示粘贴等其他选项
         if (userObj instanceof Object[] && SAVED_RESPONSE.equals(((Object[]) userObj)[0])) {
-            addSavedResponseMenuItems(menu);
+            addRenameAndDeleteMenuItems(menu, isMultipleSelection);
+            menu.show(requestTree, x, y);
+            return;
         }
 
         // 粘贴选项
@@ -194,19 +194,6 @@ public class RequestTreePopupMenu {
         menu.addSeparator();
     }
 
-    /**
-     * 添加保存的响应相关菜单项
-     */
-    private void addSavedResponseMenuItems(JPopupMenu menu) {
-        // 仅显示删除选项
-        JMenuItem delete = createMenuItem(
-                MessageKeys.COLLECTIONS_MENU_DELETE,
-                "icons/close.svg",
-                e -> actions.deleteSelectedItem()
-        );
-        delete.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
-        menu.add(delete);
-    }
 
     /**
      * 添加粘贴菜单项

@@ -105,7 +105,7 @@ public class RequestTreeActions {
     }
 
     /**
-     * 重命名选中的项（分组或请求）
+     * 重命名选中的项（分组、请求或保存的响应）
      */
     public void renameSelectedItem() {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
@@ -118,6 +118,8 @@ public class RequestTreeActions {
             renameGroup(selectedNode, obj);
         } else if (REQUEST.equals(obj[0])) {
             renameRequest(selectedNode, obj);
+        } else if (SAVED_RESPONSE.equals(obj[0])) {
+            renameSavedResponse(selectedNode, obj);
         }
     }
 
@@ -218,6 +220,70 @@ public class RequestTreeActions {
                     tabbedPane.setTabComponentAt(i,
                             new ClosableTabComponent(newName, item.getProtocol()));
                     subPanel.initPanelData(item);
+                }
+            }
+        }
+    }
+
+    /**
+     * 重命名保存的响应
+     */
+    private void renameSavedResponse(DefaultMutableTreeNode selectedNode, Object[] obj) {
+        SavedResponse savedResponse = (SavedResponse) obj[1];
+        String oldName = savedResponse.getName();
+
+        Object result = JOptionPane.showInputDialog(
+                SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_PROMPT),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_TITLE),
+                JOptionPane.PLAIN_MESSAGE,
+                null, null, oldName
+        );
+
+        if (result != null) {
+            String newName = result.toString().trim();
+            if (!newName.isEmpty() && !newName.equals(oldName)) {
+                updateSavedResponseName(selectedNode, savedResponse, newName);
+            } else if (newName.isEmpty()) {
+                NotificationUtil.showWarning(
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY)
+                );
+            }
+        }
+    }
+
+    /**
+     * 更新保存的响应名称
+     */
+    private void updateSavedResponseName(DefaultMutableTreeNode node, SavedResponse savedResponse, String newName) {
+        savedResponse.setName(newName);
+        leftPanel.getTreeModel().nodeChanged(node);
+        leftPanel.getPersistence().saveRequestGroups();
+
+        // 同步更新已打开Tab的标题
+        updateOpenedSavedResponseTabsTitle(savedResponse, newName);
+    }
+
+    /**
+     * 更新已打开的保存响应Tab的标题
+     */
+    private void updateOpenedSavedResponseTabsTitle(SavedResponse savedResponse, String newName) {
+        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        JTabbedPane tabbedPane = editPanel.getTabbedPane();
+
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel subPanel) {
+                if (subPanel.isSavedResponseTab()) {
+                    SavedResponse tabSavedResponse = subPanel.getSavedResponse();
+                    if (tabSavedResponse != null && savedResponse.getId().equals(tabSavedResponse.getId())) {
+                        tabbedPane.setTitleAt(i, newName);
+                        HttpRequestItem parentRequest = subPanel.getParentRequest();
+                        if (parentRequest != null) {
+                            tabbedPane.setTabComponentAt(i,
+                                    new ClosableTabComponent(newName, parentRequest.getProtocol()));
+                        }
+                    }
                 }
             }
         }

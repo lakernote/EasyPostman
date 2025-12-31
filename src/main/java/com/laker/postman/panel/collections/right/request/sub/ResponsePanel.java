@@ -4,7 +4,6 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.SavedResponse;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
@@ -51,6 +50,10 @@ public class ResponsePanel extends JPanel {
     private JLabel saveButtonSeparator; // 按钮前的分隔符
 
     public ResponsePanel(RequestItemProtocolEnum protocol) {
+        this(protocol, true); // 默认启用保存按钮
+    }
+
+    public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
         setLayout(new BorderLayout());
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -141,21 +144,24 @@ public class ResponsePanel extends JPanel {
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
 
-            // 添加分隔符
-            saveButtonSeparator = new JLabel(" | ");
-            saveButtonSeparator.setForeground(new Color(200, 200, 200));
-            saveButtonSeparator.setVisible(false); // 默认隐藏，与保存按钮同步显示
+            // 仅在 enableSaveButton 为 true 时创建保存按钮
+            if (enableSaveButton) {
+                // 添加分隔符
+                saveButtonSeparator = new JLabel(" | ");
+                saveButtonSeparator.setForeground(new Color(200, 200, 200));
+                saveButtonSeparator.setVisible(false); // 默认隐藏，与保存按钮同步显示
 
-            // 创建保存响应按钮（仅HTTP协议）- 默认隐藏，有响应后显示
-            saveResponseButton = new JButton(new FlatSVGIcon("icons/save-response.svg", 32, 16));
-            saveResponseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_TOOLTIP));
-            saveResponseButton.setFocusPainted(false);
-            saveResponseButton.setBorderPainted(false);
-            saveResponseButton.setContentAreaFilled(false);
-            saveResponseButton.setVisible(false); // 默认隐藏，有响应后才显示
+                // 创建保存响应按钮（仅HTTP协议）- 默认隐藏，有响应后显示
+                saveResponseButton = new JButton(new FlatSVGIcon("icons/save-response.svg", 32, 16));
+                saveResponseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_TOOLTIP));
+                saveResponseButton.setFocusPainted(false);
+                saveResponseButton.setBorderPainted(false);
+                saveResponseButton.setContentAreaFilled(false);
+                saveResponseButton.setVisible(false); // 默认隐藏，有响应后才显示
 
-            statusBar.add(saveButtonSeparator);
-            statusBar.add(saveResponseButton);
+                statusBar.add(saveButtonSeparator);
+                statusBar.add(saveResponseButton);
+            }
             JPanel topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);

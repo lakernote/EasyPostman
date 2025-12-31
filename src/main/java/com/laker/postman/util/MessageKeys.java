@@ -557,6 +557,9 @@ public final class MessageKeys {
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT = "collections.dialog.rename_request.prompt";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE = "collections.dialog.rename_request.title";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY = "collections.dialog.rename_request.empty";
+    public static final String COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_PROMPT = "collections.dialog.rename_saved_response.prompt";
+    public static final String COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_TITLE = "collections.dialog.rename_saved_response.title";
+    public static final String COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY = "collections.dialog.rename_saved_response.empty";
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_TITLE = "collections.dialog.multi_select.title";
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_EMPTY = "collections.dialog.multi_select.empty";
     public static final String COLLECTIONS_DELETE_CONFIRM = "collections.delete.confirm";

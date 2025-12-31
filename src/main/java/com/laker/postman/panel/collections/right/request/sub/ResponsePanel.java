@@ -72,7 +72,7 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -101,7 +101,7 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -138,7 +138,7 @@ public class ResponsePanel extends JPanel {
                 }
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
 
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);

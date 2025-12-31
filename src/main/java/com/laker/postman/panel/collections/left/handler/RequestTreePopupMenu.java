@@ -14,6 +14,7 @@ import java.awt.event.KeyEvent;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.SAVED_RESPONSE;
 
 /**
  * 请求树右键弹出菜单
@@ -56,6 +57,11 @@ public class RequestTreePopupMenu {
         // 请求节点菜单
         if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
             addRequestMenuItems(menu, isMultipleSelection);
+        }
+
+        // 保存的响应节点菜单
+        if (userObj instanceof Object[] && SAVED_RESPONSE.equals(((Object[]) userObj)[0])) {
+            addSavedResponseMenuItems(menu);
         }
 
         // 粘贴选项
@@ -189,6 +195,20 @@ public class RequestTreePopupMenu {
     }
 
     /**
+     * 添加保存的响应相关菜单项
+     */
+    private void addSavedResponseMenuItems(JPopupMenu menu) {
+        // 仅显示删除选项
+        JMenuItem delete = createMenuItem(
+                MessageKeys.COLLECTIONS_MENU_DELETE,
+                "icons/close.svg",
+                e -> actions.deleteSelectedItem()
+        );
+        delete.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
+        menu.add(delete);
+    }
+
+    /**
      * 添加粘贴菜单项
      */
     private void addPasteMenuItem(JPopupMenu menu) {
@@ -239,4 +259,3 @@ public class RequestTreePopupMenu {
         return item;
     }
 }
-

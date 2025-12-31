@@ -35,6 +35,9 @@ public class HttpRequestItem implements Serializable {
     // 后置脚本（响应后执行）
     private String postscript = "";
 
+    // 保存的响应列表（类似 Postman 的 Examples）
+    private List<SavedResponse> savedResponses = new ArrayList<>();
+
     /**
      * 判断该请求是否为新建（未命名）请求
      */

@@ -8,6 +8,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.SavedResponse;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.left.dialog.AddRequestDialog;
@@ -310,9 +311,17 @@ public class RequestTreeActions {
         if (!(userObj instanceof Object[] obj)) return;
 
         if (REQUEST.equals(obj[0])) {
-            closeRequestTabs((HttpRequestItem) obj[1], tabbedPane);
+            HttpRequestItem item = (HttpRequestItem) obj[1];
+            // 清空保存的响应列表，确保删除时不会保留已保存的响应
+            if (item.getSavedResponses() != null) {
+                item.getSavedResponses().clear();
+            }
+            closeRequestTabs(item, tabbedPane);
         } else if (GROUP.equals(obj[0])) {
             closeTabsForGroup(node, tabbedPane);
+        } else if (SAVED_RESPONSE.equals(obj[0])) {
+            // 处理删除保存的响应节点
+            deleteSavedResponseNode(node);
         }
     }
 
@@ -720,6 +729,34 @@ public class RequestTreeActions {
 
     public boolean isCopiedRequestsEmpty() {
         return copiedRequests.isEmpty();
+    }
+
+    /**
+     * 从父请求中删除保存的响应
+     */
+    private void deleteSavedResponseNode(DefaultMutableTreeNode savedResponseNode) {
+        // 获取父节点（应该是 REQUEST 节点）
+        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) savedResponseNode.getParent();
+        if (parentNode == null) return;
+
+        Object parentUserObj = parentNode.getUserObject();
+        if (!(parentUserObj instanceof Object[] parentObj)) return;
+        if (!REQUEST.equals(parentObj[0])) return;
+
+        // 获取父请求和要删除的响应
+        HttpRequestItem parentRequest = (HttpRequestItem) parentObj[1];
+        Object savedRespUserObj = savedResponseNode.getUserObject();
+        if (!(savedRespUserObj instanceof Object[] respObj)) return;
+        if (!SAVED_RESPONSE.equals(respObj[0])) return;
+
+        SavedResponse toDelete = (SavedResponse) respObj[1];
+
+        // 从父请求的 savedResponses 列表中删除
+        if (parentRequest.getSavedResponses() != null) {
+            parentRequest.getSavedResponses().removeIf(resp ->
+                resp.getId() != null && resp.getId().equals(toDelete.getId())
+            );
+        }
     }
 
     /**

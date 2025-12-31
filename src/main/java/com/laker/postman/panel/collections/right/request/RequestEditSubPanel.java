@@ -38,6 +38,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
@@ -52,6 +53,16 @@ import static com.laker.postman.service.http.HttpUtil.getStatusColor;
 import static com.laker.postman.service.http.HttpUtil.validateRequest;
 
 /**
+ * 请求编辑子面板的类型
+ */
+enum RequestEditSubPanelType {
+    /** 普通请求编辑面板 */
+    NORMAL,
+    /** 保存的响应预览面板 */
+    SAVED_RESPONSE
+}
+
+/**
  * 单个请求编辑子面板，包含 URL、方法选择、Headers、Body 和响应展示
  */
 @Slf4j
@@ -64,6 +75,17 @@ public class RequestEditSubPanel extends JPanel {
     private String id;
     private String name;
     private final RequestItemProtocolEnum protocol;
+
+    // 面板类型
+    @Getter
+    private final RequestEditSubPanelType panelType;
+
+    // 如果是 SAVED_RESPONSE 类型，保存关联的 savedResponse 和 parentRequest
+    @Getter
+    private final SavedResponse savedResponse;
+    @Getter
+    private final HttpRequestItem parentRequest;
+
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
     private final RequestBodyPanel requestBodyPanel;
@@ -90,9 +112,41 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private final ResponsePanel responsePanel;
 
+    // 保存最后一次请求和响应，用于保存响应功能
+    private PreparedRequest lastRequest;
+    private HttpResponse lastResponse;
+
+    /**
+     * 判断当前面板是否是保存的响应标签页
+     */
+    public boolean isSavedResponseTab() {
+        return panelType == RequestEditSubPanelType.SAVED_RESPONSE;
+    }
+
+    /**
+     * 普通请求编辑面板构造函数
+     */
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
+        this(id, protocol, RequestEditSubPanelType.NORMAL, null, null);
+    }
+
+    /**
+     * 保存的响应面板构造函数
+     */
+    public RequestEditSubPanel(RequestItemProtocolEnum protocol, SavedResponse savedResponse, HttpRequestItem parentRequest) {
+        this(java.util.UUID.randomUUID().toString(), protocol, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse, parentRequest);
+    }
+
+    /**
+     * 完整构造函数
+     */
+    private RequestEditSubPanel(String id, RequestItemProtocolEnum protocol, RequestEditSubPanelType panelType,
+                                SavedResponse savedResponse, HttpRequestItem parentRequest) {
         this.id = id;
         this.protocol = protocol;
+        this.panelType = panelType;
+        this.savedResponse = savedResponse;
+        this.parentRequest = parentRequest;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
         // 1. 顶部请求行面板
@@ -182,6 +236,11 @@ public class RequestEditSubPanel extends JPanel {
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
 
+        // 添加保存响应按钮监听器（仅HTTP协议）
+        if (protocol.isHttpProtocol() && responsePanel.getSaveResponseButton() != null) {
+            responsePanel.getSaveResponseButton().addActionListener(e -> saveResponseDialog());
+        }
+
         // bodyTypeComboBox 变化时，自动设置 Content-Type
         requestBodyPanel.getBodyTypeComboBox().addActionListener(e -> {
             String selectedType = (String) requestBodyPanel.getBodyTypeComboBox().getSelectedItem();
@@ -265,19 +324,48 @@ public class RequestEditSubPanel extends JPanel {
 
     /**
      * 判断当前表单内容是否被修改（与原始请求对比）
+     * 注意：比较时排除 savedResponses 字段，因为它是历史响应数据，不属于表单编辑内容
      */
     public boolean isModified() {
         if (originalRequestItem == null) return false;
         HttpRequestItem current = getCurrentRequest();
-        String oriJson = JSONUtil.toJsonStr(originalRequestItem);
-        String curJson = JSONUtil.toJsonStr(current);
-        boolean isModified = !oriJson.equals(curJson);
+
+        // 使用字段级别比较，排除 savedResponses（优化性能，避免JSON序列化）
+        boolean isModified = !equalsIgnoringSavedResponses(originalRequestItem, current);
+
         if (isModified) {
-            log.debug("Request form has been modified,Request Name: {}", current.getName());
-            log.debug("oriJson: {}", oriJson);
-            log.debug("curJson: {}", curJson);
+            log.debug("Request form has been modified, Request Name: {}", current.getName());
         }
         return isModified;
+    }
+
+    /**
+     * 比较两个 HttpRequestItem 是否相等（排除 savedResponses 字段）
+     * 使用字段级别比较，避免序列化开销，提升性能
+     */
+    private boolean equalsIgnoringSavedResponses(HttpRequestItem ori, HttpRequestItem cur) {
+        if (ori == cur) return true;
+        if (ori == null || cur == null) return false;
+
+        // 比较所有请求配置字段（排除 savedResponses）
+        return java.util.Objects.equals(ori.getId(), cur.getId())
+                && java.util.Objects.equals(ori.getName(), cur.getName())
+                && java.util.Objects.equals(ori.getUrl(), cur.getUrl())
+                && java.util.Objects.equals(ori.getMethod(), cur.getMethod())
+                && java.util.Objects.equals(ori.getProtocol(), cur.getProtocol())
+                && java.util.Objects.equals(ori.getHeadersList(), cur.getHeadersList())
+                && java.util.Objects.equals(ori.getBodyType(), cur.getBodyType())
+                && java.util.Objects.equals(ori.getBody(), cur.getBody())
+                && java.util.Objects.equals(ori.getParamsList(), cur.getParamsList())
+                && java.util.Objects.equals(ori.getFormDataList(), cur.getFormDataList())
+                && java.util.Objects.equals(ori.getUrlencodedList(), cur.getUrlencodedList())
+                && java.util.Objects.equals(ori.getAuthType(), cur.getAuthType())
+                && java.util.Objects.equals(ori.getAuthUsername(), cur.getAuthUsername())
+                && java.util.Objects.equals(ori.getAuthPassword(), cur.getAuthPassword())
+                && java.util.Objects.equals(ori.getAuthToken(), cur.getAuthToken())
+                && java.util.Objects.equals(ori.getPrescript(), cur.getPrescript())
+                && java.util.Objects.equals(ori.getPostscript(), cur.getPostscript());
+        // 注意：故意不比较 savedResponses 字段
     }
 
     /**
@@ -725,7 +813,11 @@ public class RequestEditSubPanel extends JPanel {
         isLoadingData = true;
 
         try {
-            this.id = item.getId();
+            // 只有当 ID 未设置时才使用 item.getId()
+            // 这样可以保留 saved-response 等特殊场景下的组合 ID
+            if (this.id == null || this.id.isEmpty()) {
+                this.id = item.getId();
+            }
             this.name = item.getName();
             // 拆解URL参数
             String url = item.getUrl();
@@ -984,6 +1076,12 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.setResponseTimeRequesting();
         responsePanel.setResponseSizeRequesting();
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
+
+        // 隐藏保存响应按钮
+        if (protocol.isHttpProtocol()) {
+            responsePanel.enableSaveResponseButton(false);
+        }
+
         if (protocol.isHttpProtocol()) {
             responsePanel.getNetworkLogPanel().clearLog();
             responsePanel.setResponseTabButtonsEnable(false);
@@ -1011,6 +1109,11 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.setStatus(statusText, statusColor);
         responsePanel.setResponseTime(resp.costMs);
         responsePanel.setResponseSize(resp.bodySize, resp.httpEventInfo);
+
+        // 显示保存响应按钮（仅HTTP协议且有响应数据）
+        if (protocol.isHttpProtocol()) {
+            responsePanel.enableSaveResponseButton(true);
+        }
     }
 
     private void setTestResults(List<TestResult> testResults) {
@@ -1023,6 +1126,11 @@ public class RequestEditSubPanel extends JPanel {
             log.error("Response is null, cannot handle response.");
             return;
         }
+
+        // 保存最后一次请求和响应，用于保存响应功能
+        this.lastRequest = req;
+        this.lastResponse = resp;
+
         try {
             // 执行后置脚本（自动清空旧结果、添加响应绑定、收集新结果）
             ScriptExecutionResult postResult = pipeline.executePostScript(resp);
@@ -1144,6 +1252,249 @@ public class RequestEditSubPanel extends JPanel {
      */
     public void clickSendButton() {
         SwingUtilities.invokeLater(() -> requestLinePanel.getSendButton().doClick());
+    }
+
+    /**
+     * 显示保存响应对话框
+     */
+    private void saveResponseDialog() {
+        if (lastResponse == null) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_NO_RESPONSE));
+            return;
+        }
+
+        // 默认名称：当前时间
+        String defaultName = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+
+        String name = (String) JOptionPane.showInputDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_DIALOG_MESSAGE),
+                I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_DIALOG_TITLE),
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                defaultName
+        );
+
+        if (name != null && !name.trim().isEmpty()) {
+            saveResponse(name.trim());
+        }
+    }
+
+    /**
+     * 保存响应到树节点
+     */
+    private void saveResponse(String name) {
+        try {
+            // 创建 SavedResponse
+            SavedResponse savedResponse = SavedResponse.fromRequestAndResponse(
+                    name, lastRequest, lastResponse
+            );
+
+            // 在树中查找对应的请求节点
+            RequestCollectionsLeftPanel leftPanel =
+                    SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            DefaultMutableTreeNode requestNode = findRequestNodeInTree(originalRequestItem);
+
+            if (requestNode != null) {
+                // 获取树节点中的 HttpRequestItem 对象（这才是被序列化保存的对象）
+                Object[] nodeObj = (Object[]) requestNode.getUserObject();
+                HttpRequestItem treeRequestItem = (HttpRequestItem) nodeObj[1];
+
+                // 添加到树节点中的请求对象
+                if (treeRequestItem.getSavedResponses() == null) {
+                    treeRequestItem.setSavedResponses(new ArrayList<>());
+                }
+                treeRequestItem.getSavedResponses().add(savedResponse);
+
+                // 同时更新 originalRequestItem（保持一致性）
+                if (originalRequestItem.getSavedResponses() == null) {
+                    originalRequestItem.setSavedResponses(new ArrayList<>());
+                }
+                originalRequestItem.getSavedResponses().add(savedResponse);
+
+                // 创建响应节点
+                DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
+                        new Object[]{RequestCollectionsLeftPanel.SAVED_RESPONSE, savedResponse}
+                );
+                requestNode.add(responseNode);
+
+                // 刷新树
+                leftPanel.getTreeModel().reload(requestNode);
+                leftPanel.getRequestTree().expandPath(new TreePath(requestNode.getPath()));
+
+                // 保存到文件
+                leftPanel.getPersistence().saveRequestGroups();
+
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_SUCCESS, name));
+            } else {
+                log.warn("无法找到请求节点，保存响应失败");
+                NotificationUtil.showWarning(I18nUtil.getMessage("无法找到请求节点"));
+            }
+
+        } catch (Exception ex) {
+            log.error("保存响应失败", ex);
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_ERROR, ex.getMessage()));
+        }
+    }
+
+    /**
+     * 在树中查找请求节点
+     */
+    private DefaultMutableTreeNode findRequestNodeInTree(HttpRequestItem item) {
+        RequestCollectionsLeftPanel leftPanel =
+                SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        DefaultMutableTreeNode root = leftPanel.getRootTreeNode();
+        return findRequestNodeRecursively(root, item);
+    }
+
+    private DefaultMutableTreeNode findRequestNodeRecursively(DefaultMutableTreeNode node, HttpRequestItem item) {
+        // 检查当前节点
+        Object userObj = node.getUserObject();
+        if (userObj instanceof Object[] obj && RequestCollectionsLeftPanel.REQUEST.equals(obj[0])) {
+            HttpRequestItem nodeItem = (HttpRequestItem) obj[1];
+            if (nodeItem.getId().equals(item.getId())) {
+                return node;
+            }
+        }
+
+        // 递归检查子节点
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            DefaultMutableTreeNode result = findRequestNodeRecursively(child, item);
+            if (result != null) {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 加载保存的响应到面板
+     */
+    public void loadSavedResponse(SavedResponse savedResponse) {
+        if (savedResponse == null) return;
+
+        try {
+            // 1. 回填原始请求数据
+            SavedResponse.OriginalRequest originalRequest = savedResponse.getOriginalRequest();
+            if (originalRequest != null) {
+                isLoadingData = true; // 设置加载标志，防止触发自动保存
+                try {
+                    // 设置 URL
+                    if (originalRequest.getUrl() != null) {
+                        urlField.setText(originalRequest.getUrl());
+                        urlField.setCaretPosition(0); // 设置光标到开头
+                    }
+
+                    // 设置 Method
+                    if (originalRequest.getMethod() != null) {
+                        methodBox.setSelectedItem(originalRequest.getMethod());
+                    }
+
+                    // 设置 Params
+                    if (CollUtil.isNotEmpty(originalRequest.getParams())) {
+                        paramsPanel.setParamsList(new ArrayList<>(originalRequest.getParams()));
+                    } else {
+                        paramsPanel.clear();
+                    }
+
+                    // 设置 Headers
+                    if (CollUtil.isNotEmpty(originalRequest.getHeaders())) {
+                        headersPanel.setHeadersList(new ArrayList<>(originalRequest.getHeaders()));
+                    } else {
+                        headersPanel.setHeadersList(new ArrayList<>());
+                    }
+
+                    // 设置 Body Type
+                    String bodyType = originalRequest.getBodyType();
+                    if (CharSequenceUtil.isBlank(bodyType)) {
+                        bodyType = RequestBodyPanel.BODY_TYPE_NONE;
+                    }
+                    requestBodyPanel.getBodyTypeComboBox().setSelectedItem(bodyType);
+
+                    // 设置 Body 内容
+                    String body = originalRequest.getBody();
+                    if (body != null) {
+                        requestBodyPanel.getBodyArea().setText(body);
+
+                        // 智能设置 Raw Type
+                        JComboBox<String> rawTypeComboBox = requestBodyPanel.getRawTypeComboBox();
+                        if (rawTypeComboBox != null && CharSequenceUtil.isNotBlank(body)) {
+                            if (JSONUtil.isTypeJSON(body)) {
+                                rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_JSON);
+                            } else if (XmlUtil.isXml(body)) {
+                                rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_XML);
+                            } else {
+                                rawTypeComboBox.setSelectedItem(RequestBodyPanel.RAW_TYPE_TEXT);
+                            }
+                        }
+                    }
+
+                    // 设置 Form Data
+                    if (CollUtil.isNotEmpty(originalRequest.getFormDataList())) {
+                        EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+                        formDataTablePanel.setFormDataList(new ArrayList<>(originalRequest.getFormDataList()));
+                    }
+
+                    // 设置 URL Encoded
+                    if (CollUtil.isNotEmpty(originalRequest.getUrlencodedList())) {
+                        EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+                        urlencodedTablePanel.setFormDataList(new ArrayList<>(originalRequest.getUrlencodedList()));
+                    }
+                } finally {
+                    isLoadingData = false; // 恢复标志
+                }
+            }
+
+            // 2. 构建 HttpResponse 对象
+            HttpResponse response = new HttpResponse();
+            response.code = savedResponse.getCode();
+            response.message = savedResponse.getStatus();
+            response.body = savedResponse.getBody();
+
+            // 转换 headers
+            response.headers = new java.util.LinkedHashMap<>();
+            if (savedResponse.getHeaders() != null) {
+                for (HttpHeader header : savedResponse.getHeaders()) {
+                    response.headers.put(header.getKey(), java.util.List.of(header.getValue()));
+                }
+            }
+
+            response.costMs = savedResponse.getCostMs();
+            response.bodySize = savedResponse.getBodySize();
+            response.headersSize = savedResponse.getHeadersSize();
+
+            // 3. 显示响应
+            SwingUtilities.invokeLater(() -> {
+                // 设置按钮状态（保持发送按钮可用）
+                requestLinePanel.setSendButtonToSend(this::sendRequest);
+
+                // 显示响应数据
+                responsePanel.setResponseTabButtonsEnable(true);
+                responsePanel.setResponseBody(response);
+                responsePanel.setResponseHeaders(response);
+
+                String statusText = response.code + " " + (response.message != null ? response.message : "");
+                Color statusColor = getStatusColor(response.code);
+                responsePanel.setStatus(statusText, statusColor);
+                responsePanel.setResponseTime(response.costMs);
+                responsePanel.setResponseSize(response.bodySize, null);
+
+                // 隐藏保存按钮（因为这已经是保存的响应）
+                if (protocol.isHttpProtocol()) {
+                    responsePanel.enableSaveResponseButton(false);
+                }
+
+                // 切换到 Response Body tab
+                responsePanel.getTabButtons()[0].doClick();
+            });
+
+        } catch (Exception ex) {
+            log.error("加载保存的响应失败", ex);
+            NotificationUtil.showError(I18nUtil.getMessage("加载响应失败: {0}", ex.getMessage()));
+        }
     }
 }
 

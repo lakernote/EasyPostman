@@ -390,6 +390,17 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 保存当前请求
      */
     public boolean saveCurrentRequest() {
+        // 检查当前 tab 是否是 saved-response 类型
+        RequestEditSubPanel currentSubPanel = getCurrentSubPanel();
+        if (currentSubPanel != null) {
+            // 如果是 saved-response 类型，不保存
+            if (currentSubPanel.isSavedResponseTab()) {
+                log.info("当前是 saved-response tab，不执行保存");
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVED_RESPONSE_READONLY));
+                return false;
+            }
+        }
+
         // 保存请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
         promotePreviewTabToPermanent();
 
@@ -1039,5 +1050,186 @@ public class RequestEditPanel extends SingletonBasePanel {
             }
             tabbedPane.remove(comp);
         }
+    }
+
+    /**
+     * 单击保存的响应：在预览 Tab 中显示
+     */
+    public void showOrCreatePreviewTabForSavedResponse(HttpRequestItem parentRequest, com.laker.postman.model.SavedResponse savedResponse) {
+        log.info("=== showOrCreatePreviewTabForSavedResponse START ===");
+
+        if (parentRequest == null || savedResponse == null) {
+            log.warn("parentRequest or savedResponse is null");
+            return;
+        }
+
+        String parentId = parentRequest.getId();
+        String savedResponseId = savedResponse.getId();
+        log.info("parentId: {}, savedResponseId: {}, savedResponseName: {}", parentId, savedResponseId, savedResponse.getName());
+
+        if (parentId == null || parentId.isEmpty() || savedResponseId == null || savedResponseId.isEmpty()) {
+            log.warn("parentId or savedResponseId is null/empty");
+            return;
+        }
+
+        // 1. 先查找是否已有固定的 tab 显示这个 savedResponse（不包括预览 tab）
+        log.info("Step 1: 查找固定 tab, previewTabIndex: {}, tabCount: {}", previewTabIndex, tabbedPane.getTabCount());
+        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (i != previewTabIndex && comp instanceof RequestEditSubPanel subPanel) {
+                log.info("  检查 tab[{}], isSavedResponse: {}", i, subPanel.isSavedResponseTab());
+                if (subPanel.isSavedResponseTab() &&
+                        savedResponseId.equals(subPanel.getSavedResponse().getId()) &&
+                        parentId.equals(subPanel.getParentRequest().getId())) {
+                    log.info("  找到已有固定 tab[{}]，切换过去", i);
+                    tabbedPane.setSelectedIndex(i);
+                    log.info("=== showOrCreatePreviewTabForSavedResponse END (找到固定) ===");
+                    return;
+                }
+            }
+        }
+        log.info("Step 1: 没有找到固定 tab");
+
+        // 2. 检查预览 tab 是否存在且有效
+        log.info("Step 2: 检查预览 tab, previewTab: {}, previewTabIndex: {}", previewTab != null, previewTabIndex);
+        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
+            Component currentPreview = tabbedPane.getComponentAt(previewTabIndex);
+            if (currentPreview != previewTab) {
+                log.info("  预览 tab 已失效，重置");
+                previewTab = null;
+                previewTabIndex = -1;
+            } else {
+                log.info("  预览 tab 有效");
+            }
+        } else {
+            log.info("  预览 tab 不存在");
+            previewTab = null;
+            previewTabIndex = -1;
+        }
+
+        // 3. 创建新 panel
+        log.info("Step 3: 创建新 panel");
+        String name = savedResponse.getName();
+        RequestEditSubPanel newPanel = new RequestEditSubPanel(parentRequest.getProtocol(), savedResponse, parentRequest);
+        log.info("  新 panel 创建完成，id: {}, name: {}", newPanel.getId(), name);
+        newPanel.loadSavedResponse(savedResponse);
+        log.info("  loadSavedResponse 完成");
+
+        if (previewTab != null && previewTabIndex >= 0) {
+            // 复用现有预览 tab：替换内容
+            log.info("Step 4: 复用预览 tab[{}]", previewTabIndex);
+            previewTab = newPanel;
+            tabbedPane.setComponentAt(previewTabIndex, previewTab);
+            tabbedPane.setTitleAt(previewTabIndex, name);
+            ClosableTabComponent tabComponent = new ClosableTabComponent(name, parentRequest.getProtocol());
+            tabComponent.setPreviewMode(true);
+            tabComponent.setCustomIcon("icons/save-response.svg"); // 使用自定义图标
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+            log.info("=== showOrCreatePreviewTabForSavedResponse END (复用) ===");
+        } else {
+            // 创建新的预览 tab
+            log.info("Step 4: 创建新预览 tab");
+            int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
+            log.info("  plusTabIdx: {}, isPlusTab: {}", plusTabIdx, isPlusTab(plusTabIdx));
+            if (isPlusTab(plusTabIdx)) {
+                tabbedPane.removeTabAt(plusTabIdx);
+                log.info("  移除 + tab");
+            }
+            previewTab = newPanel;
+            tabbedPane.addTab(name, previewTab);
+            previewTabIndex = tabbedPane.getTabCount() - 1;
+            log.info("  预览 tab 添加完成，index: {}", previewTabIndex);
+            ClosableTabComponent tabComponent = new ClosableTabComponent(name, parentRequest.getProtocol());
+            tabComponent.setPreviewMode(true);
+            tabComponent.setCustomIcon("icons/save-response.svg"); // 使用自定义图标
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+            addPlusTab();
+            log.info("  + tab 恢复完成");
+            log.info("=== showOrCreatePreviewTabForSavedResponse END (新建) ===");
+        }
+    }
+
+    /**
+     * 双击保存的响应：在固定 Tab 中显示
+     */
+    public void showOrCreateTabForSavedResponse(HttpRequestItem parentRequest, com.laker.postman.model.SavedResponse savedResponse) {
+        log.info("=== showOrCreateTabForSavedResponse START ===");
+
+        if (parentRequest == null || savedResponse == null) {
+            log.warn("parentRequest or savedResponse is null");
+            return;
+        }
+
+        String parentId = parentRequest.getId();
+        String savedResponseId = savedResponse.getId();
+        log.info("parentId: {}, savedResponseId: {}, savedResponseName: {}", parentId, savedResponseId, savedResponse.getName());
+
+        if (parentId == null || parentId.isEmpty() || savedResponseId == null || savedResponseId.isEmpty()) {
+            log.warn("parentId or savedResponseId is null/empty");
+            return;
+        }
+
+        // 1. 如果当前预览的就是这个 savedResponse，则将预览 tab 转为固定 tab
+        log.info("Step 1: 检查是否需要提升预览 tab");
+        if (previewTab instanceof RequestEditSubPanel subPanel) {
+            log.info("  previewTab isSavedResponse: {}", subPanel.isSavedResponseTab());
+            if (subPanel.isSavedResponseTab() &&
+                    savedResponseId.equals(subPanel.getSavedResponse().getId()) &&
+                    parentId.equals(subPanel.getParentRequest().getId())) {
+                log.info("  提升预览 tab 为固定 tab");
+                int savedIndex = previewTabIndex;
+                promotePreviewTabToPermanent();
+                // 设置自定义图标
+                if (savedIndex >= 0 && savedIndex < tabbedPane.getTabCount()) {
+                    Component tabComponent = tabbedPane.getTabComponentAt(savedIndex);
+                    if (tabComponent instanceof ClosableTabComponent closableTab) {
+                        closableTab.setCustomIcon("icons/save-response.svg");
+                        log.info("  图标设置完成");
+                    }
+                }
+                log.info("=== showOrCreateTabForSavedResponse END (提升) ===");
+                return;
+            }
+        } else {
+            log.info("  previewTab 不是 RequestEditSubPanel 或为 null");
+        }
+
+        // 2. 查找同样 savedResponse 的固定 Tab（不查"+"Tab）
+        log.info("Step 2: 查找已有固定 tab");
+        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel existingSubPanel) {
+                log.info("  检查 tab[{}], isSavedResponse: {}", i, existingSubPanel.isSavedResponseTab());
+                if (existingSubPanel.isSavedResponseTab() &&
+                        savedResponseId.equals(existingSubPanel.getSavedResponse().getId()) &&
+                        parentId.equals(existingSubPanel.getParentRequest().getId())) {
+                    log.info("  找到已有固定 tab[{}]，切换过去", i);
+                    tabbedPane.setSelectedIndex(i);
+                    log.info("=== showOrCreateTabForSavedResponse END (切换) ===");
+                    return;
+                }
+            }
+        }
+        log.info("Step 2: 没有找到固定 tab");
+
+        // 3. 创建新的固定 tab
+        log.info("Step 3: 创建新固定 tab");
+        String name = savedResponse.getName();
+        RequestEditSubPanel newPanel = new RequestEditSubPanel(parentRequest.getProtocol(), savedResponse, parentRequest);
+        log.info("  新 panel 创建完成，id: {}, name: {}", newPanel.getId(), name);
+        newPanel.loadSavedResponse(savedResponse);
+        log.info("  loadSavedResponse 完成");
+
+        int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0; // 插入到"+"Tab前
+        log.info("  插入位置: {}", plusTabIdx);
+        tabbedPane.insertTab(name, null, newPanel, null, plusTabIdx);
+        ClosableTabComponent tabComponent = new ClosableTabComponent(name, parentRequest.getProtocol());
+        tabComponent.setCustomIcon("icons/save-response.svg"); // 使用自定义图标
+        tabbedPane.setTabComponentAt(plusTabIdx, tabComponent);
+        tabbedPane.setSelectedIndex(plusTabIdx);
+        log.info("  固定 tab 创建完成");
+        log.info("=== showOrCreateTabForSavedResponse END (新建) ===");
     }
 }

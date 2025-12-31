@@ -40,6 +40,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     public static final String REQUEST = "request";
     public static final String GROUP = "group";
     public static final String ROOT = "root";
+    public static final String SAVED_RESPONSE = "response";
     public static final String EXPORT_FILE_NAME = "EasyPostman-Collections.json";
     // 请求集合的根节点
     @Getter

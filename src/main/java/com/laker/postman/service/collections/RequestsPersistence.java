@@ -5,6 +5,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.SavedResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -202,7 +203,21 @@ public class RequestsPersistence {
                             item.setId(id);
                         }
                     }
-                    groupNode.add(new DefaultMutableTreeNode(new Object[]{"request", item}));
+
+                    // 创建请求节点
+                    DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{"request", item});
+
+                    // 为 savedResponses 创建子节点
+                    if (item.getSavedResponses() != null && !item.getSavedResponses().isEmpty()) {
+                        for (SavedResponse savedResp : item.getSavedResponses()) {
+                            DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
+                                    new Object[]{"response", savedResp}
+                            );
+                            requestNode.add(responseNode);
+                        }
+                    }
+
+                    groupNode.add(requestNode);
                 }
             }
         }

@@ -163,6 +163,7 @@ public final class MessageKeys {
     public static final String TAB_UNSAVED_CHANGES_SAVE_ALL = "tab.unsaved_changes.save_all";
     public static final String TAB_UNSAVED_CHANGES_TITLE = "tab.unsaved_changes.title";
     public static final String TAB_CLOSE_CURRENT = "tab.close_current";
+    public static final String SAVED_RESPONSE_READONLY = "saved_response.readonly";
 
     // ============ 快捷键设置 ============
     public static final String SHORTCUT_SETTINGS_TITLE = "shortcut.settings.title";
@@ -757,6 +758,12 @@ public final class MessageKeys {
     public static final String RESPONSE_HEADERS_COPY_CELL = "response.headers.copy_cell";
     public static final String RESPONSE_HEADERS_COPY_ALL = "response.headers.copy_all";
     public static final String RESPONSE_HEADERS_SELECT_ALL = "response.headers.select_all";
+    public static final String RESPONSE_SAVE_TOOLTIP = "response.save.tooltip";
+    public static final String RESPONSE_SAVE_DIALOG_TITLE = "response.save.dialog.title";
+    public static final String RESPONSE_SAVE_DIALOG_MESSAGE = "response.save.dialog.message";
+    public static final String RESPONSE_SAVE_SUCCESS = "response.save.success";
+    public static final String RESPONSE_SAVE_ERROR = "response.save.error";
+    public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
 
     // ============ CSV Data Panel related ============
     public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";

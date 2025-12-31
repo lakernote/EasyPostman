@@ -1,8 +1,10 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.SavedResponse;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
@@ -43,6 +45,10 @@ public class ResponsePanel extends JPanel {
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
     private final SSEResponsePanel sseResponsePanel;
+
+    // 保存响应的按钮（加载响应通过左侧树节点实现）
+    private JButton saveResponseButton;
+    private JLabel saveButtonSeparator; // 按钮前的分隔符
 
     public ResponsePanel(RequestItemProtocolEnum protocol) {
         this.protocol = protocol;
@@ -130,9 +136,26 @@ public class ResponsePanel extends JPanel {
                 tabBar.add(tabButtons[i]);
             }
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
+
+            // 添加分隔符
+            saveButtonSeparator = new JLabel(" | ");
+            saveButtonSeparator.setForeground(new Color(200, 200, 200));
+            saveButtonSeparator.setVisible(false); // 默认隐藏，与保存按钮同步显示
+
+            // 创建保存响应按钮（仅HTTP协议）- 默认隐藏，有响应后显示
+            saveResponseButton = new JButton(new FlatSVGIcon("icons/save-response.svg", 32, 16));
+            saveResponseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_TOOLTIP));
+            saveResponseButton.setFocusPainted(false);
+            saveResponseButton.setBorderPainted(false);
+            saveResponseButton.setContentAreaFilled(false);
+            saveResponseButton.setVisible(false); // 默认隐藏，有响应后才显示
+
+            statusBar.add(saveButtonSeparator);
+            statusBar.add(saveResponseButton);
             JPanel topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
@@ -597,5 +620,24 @@ public class ResponsePanel extends JPanel {
                 autoHideTimer = null;
             }
         }
+    }
+
+    /**
+     * 显示/隐藏保存响应按钮（当有响应数据时显示）
+     */
+    public void enableSaveResponseButton(boolean enable) {
+        if (saveResponseButton != null) {
+            saveResponseButton.setVisible(enable);
+        }
+        if (saveButtonSeparator != null) {
+            saveButtonSeparator.setVisible(enable);
+        }
+    }
+
+    /**
+     * 获取保存响应按钮（用于添加监听器）
+     */
+    public JButton getSaveResponseButton() {
+        return saveResponseButton;
     }
 }

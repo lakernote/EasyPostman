@@ -5,11 +5,7 @@ import cn.hutool.json.JSONObject;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.SavedResponse;
-import com.laker.postman.model.Workspace;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.left.dialog.AddRequestDialog;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -278,11 +274,8 @@ public class RequestTreeActions {
                     SavedResponse tabSavedResponse = subPanel.getSavedResponse();
                     if (tabSavedResponse != null && savedResponse.getId().equals(tabSavedResponse.getId())) {
                         tabbedPane.setTitleAt(i, newName);
-                        HttpRequestItem parentRequest = subPanel.getParentRequest();
-                        if (parentRequest != null) {
-                            tabbedPane.setTabComponentAt(i,
-                                    new ClosableTabComponent(newName, parentRequest.getProtocol()));
-                        }
+                        tabbedPane.setTabComponentAt(i,
+                                new ClosableTabComponent(newName, RequestItemProtocolEnum.SAVED_RESPONSE));
                     }
                 }
             }
@@ -820,7 +813,7 @@ public class RequestTreeActions {
         // 从父请求的 savedResponses 列表中删除
         if (parentRequest.getSavedResponses() != null) {
             parentRequest.getSavedResponses().removeIf(resp ->
-                resp.getId() != null && resp.getId().equals(toDelete.getId())
+                    resp.getId() != null && resp.getId().equals(toDelete.getId())
             );
         }
     }

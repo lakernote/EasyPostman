@@ -74,8 +74,6 @@ public class RequestEditSubPanel extends JPanel {
     // 如果是 SAVED_RESPONSE 类型，保存关联的 savedResponse 和 parentRequest
     @Getter
     private final SavedResponse savedResponse;
-    @Getter
-    private final HttpRequestItem parentRequest;
 
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
@@ -118,26 +116,25 @@ public class RequestEditSubPanel extends JPanel {
      * 普通请求编辑面板构造函数
      */
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
-        this(id, protocol, RequestEditSubPanelType.NORMAL, null, null);
+        this(id, protocol, RequestEditSubPanelType.NORMAL, null);
     }
 
     /**
      * 保存的响应面板构造函数
      */
-    public RequestEditSubPanel(RequestItemProtocolEnum protocol, SavedResponse savedResponse, HttpRequestItem parentRequest) {
-        this(UUID.randomUUID().toString(), protocol, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse, parentRequest);
+    public RequestEditSubPanel(SavedResponse savedResponse) {
+        this(UUID.randomUUID().toString(), RequestItemProtocolEnum.HTTP, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse);
     }
 
     /**
      * 完整构造函数
      */
     private RequestEditSubPanel(String id, RequestItemProtocolEnum protocol, RequestEditSubPanelType panelType,
-                                SavedResponse savedResponse, HttpRequestItem parentRequest) {
+                                SavedResponse savedResponse) {
         this.id = id;
         this.protocol = protocol;
         this.panelType = panelType;
         this.savedResponse = savedResponse;
-        this.parentRequest = parentRequest;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
         // 1. 顶部请求行面板

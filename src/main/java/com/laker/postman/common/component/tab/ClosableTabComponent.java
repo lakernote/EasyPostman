@@ -251,14 +251,5 @@ public class ClosableTabComponent extends JPanel {
         }
         repaint();
     }
-
-    /**
-     * 设置自定义图标（用于特殊类型的 Tab，如保存的响应）
-     */
-    public void setCustomIcon(String iconPath) {
-        if (iconPath != null && !iconPath.isEmpty()) {
-            label.setIcon(new FlatSVGIcon(iconPath, 24, 24));
-        }
-    }
 }
 

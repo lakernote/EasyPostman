@@ -14,9 +14,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.SAVED_RESPONSE;
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
 /**
  * 请求树鼠标事件处理器
@@ -58,7 +56,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         } else if (REQUEST.equals(obj[0])) {
             handleRequestClick(obj);
         } else if (SAVED_RESPONSE.equals(obj[0])) {
-            handleSavedResponseClick(node, obj);
+            handleSavedResponseClick((SavedResponse) obj[1]);
         }
     }
 
@@ -82,7 +80,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
             e.consume(); // 阻止展开/收起
         } else if (SAVED_RESPONSE.equals(obj[0])) {
             // 双击保存的响应：打开固定 Tab
-            handleSavedResponseDoubleClick(node, obj);
+            handleSavedResponseDoubleClick((SavedResponse) obj[1]);
             e.consume();
         }
     }
@@ -130,43 +128,17 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     /**
      * 处理保存的响应单击事件：预览
      */
-    private void handleSavedResponseClick(DefaultMutableTreeNode node, Object[] obj) {
-        SavedResponse savedResponse = (SavedResponse) obj[1];
-
-        // 获取父节点（REQUEST 节点）
-        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) node.getParent();
-        if (parentNode == null) return;
-
-        Object parentUserObj = parentNode.getUserObject();
-        if (!(parentUserObj instanceof Object[] parentObj)) return;
-        if (!REQUEST.equals(parentObj[0])) return;
-
-        HttpRequestItem parentRequest = (HttpRequestItem) parentObj[1];
-
-        // 根据 SavedResponse ID 显示预览 Tab
+    private void handleSavedResponseClick(SavedResponse savedResponse) {
         RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-        editPanel.showOrCreatePreviewTabForSavedResponse(parentRequest, savedResponse);
+        editPanel.showOrCreatePreviewTabForSavedResponse(savedResponse);
     }
 
     /**
      * 处理保存的响应双击事件：打开固定 Tab
      */
-    private void handleSavedResponseDoubleClick(DefaultMutableTreeNode node, Object[] obj) {
-        SavedResponse savedResponse = (SavedResponse) obj[1];
-
-        // 获取父节点（REQUEST 节点）
-        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) node.getParent();
-        if (parentNode == null) return;
-
-        Object parentUserObj = parentNode.getUserObject();
-        if (!(parentUserObj instanceof Object[] parentObj)) return;
-        if (!REQUEST.equals(parentObj[0])) return;
-
-        HttpRequestItem parentRequest = (HttpRequestItem) parentObj[1];
-
-        // 根据 SavedResponse ID 打开固定 Tab
+    private void handleSavedResponseDoubleClick(SavedResponse savedResponse) {
         RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-        editPanel.showOrCreateTabForSavedResponse(parentRequest, savedResponse);
+        editPanel.showOrCreateTabForSavedResponse(savedResponse);
     }
 
     /**

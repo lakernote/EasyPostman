@@ -10,7 +10,8 @@ import javax.swing.*;
 public enum RequestItemProtocolEnum {
     HTTP("HTTP", new FlatSVGIcon("icons/http.svg", 24, 24)),
     WEBSOCKET("WebSocket", new FlatSVGIcon("icons/websocket.svg", 24, 24)),
-    SSE("SSE", new FlatSVGIcon("icons/sse.svg", 24, 24));
+    SSE("SSE", new FlatSVGIcon("icons/sse.svg", 24, 24)),
+    SAVED_RESPONSE("SavedResponse", new FlatSVGIcon("icons/save-response.svg", 24, 24));
 
     private final String protocol;
     private final Icon icon;

@@ -810,11 +810,7 @@ public class RequestEditSubPanel extends JPanel {
         isLoadingData = true;
 
         try {
-            // 只有当 ID 未设置时才使用 item.getId()
-            // 这样可以保留 saved-response 等特殊场景下的组合 ID
-            if (this.id == null || this.id.isEmpty()) {
-                this.id = item.getId();
-            }
+            this.id = item.getId();
             this.name = item.getName();
             // 拆解URL参数
             String url = item.getUrl();

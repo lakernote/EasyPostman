@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 保存的响应对象
@@ -57,7 +58,7 @@ public class SavedResponse implements Serializable {
      */
     public static SavedResponse fromRequestAndResponse(String name, PreparedRequest request, HttpResponse response) {
         SavedResponse saved = new SavedResponse();
-        saved.setId(java.util.UUID.randomUUID().toString());
+        saved.setId(UUID.randomUUID().toString());
         saved.setName(name);
         saved.setTimestamp(System.currentTimeMillis());
 

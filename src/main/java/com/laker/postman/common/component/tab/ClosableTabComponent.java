@@ -81,7 +81,7 @@ public class ClosableTabComponent extends JPanel {
                 return false;
             }
         };
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2)); // 使用用户设置的字体大小，略小一点
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 使用用户设置的字体大小，略小一点
         if (protocol != null) {
             label.setIcon(protocol.getIcon());
         } else {
@@ -245,9 +245,9 @@ public class ClosableTabComponent extends JPanel {
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
         if (previewMode) {
-            label.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2)); // 使用用户设置的字体大小
+            label.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1)); // 使用用户设置的字体大小
         } else {
-            label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2)); // 使用用户设置的字体大小
+            label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 使用用户设置的字体大小
         }
         repaint();
     }

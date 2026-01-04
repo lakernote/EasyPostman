@@ -40,6 +40,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     public static final String REQUEST = "request";
     public static final String GROUP = "group";
     public static final String ROOT = "root";
+    public static final String SAVED_RESPONSE = "response";
     public static final String EXPORT_FILE_NAME = "EasyPostman-Collections.json";
     // 请求集合的根节点
     @Getter
@@ -227,6 +228,12 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         HttpRequestItem originalItem = (HttpRequestItem) userObj[1];
         String originalName = originalItem.getName();
         item.setName(originalName);
+
+        // 保留原对象的 response，避免在保存请求时丢失已保存的响应
+        if (originalItem.getResponse() != null && !originalItem.getResponse().isEmpty()) {
+            item.setResponse(originalItem.getResponse());
+        }
+
         userObj[1] = item;
         treeModel.nodeChanged(requestNode);
         persistence.saveRequestGroups();

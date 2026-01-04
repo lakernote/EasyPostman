@@ -9,10 +9,7 @@ import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.RequestsTabsService;
@@ -125,57 +122,19 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 1. 先查找是否已有固定的 tab（不包括预览 tab）
-        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-            Component comp = tabbedPane.getComponentAt(i);
-            if (i != previewTabIndex && comp instanceof RequestEditSubPanel subPanel) {
-                if (id.equals(subPanel.getId())) {
-                    tabbedPane.setSelectedIndex(i);
-                    return;
-                }
-            }
+        if (switchToExistingRequestTab(id)) {
+            return;
         }
 
-        // 2. 检查预览 tab 是否存在且有效
-        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
-            Component currentPreview = tabbedPane.getComponentAt(previewTabIndex);
-            if (currentPreview != previewTab) {
-                previewTab = null;
-                previewTabIndex = -1;
-            }
-        } else {
-            previewTab = null;
-            previewTabIndex = -1;
-        }
+        // 2. 验证并清理无效的预览 tab
+        validatePreviewTab();
 
         // 3. 复用或创建预览 tab
         String name = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : REQUEST_STRING;
         RequestEditSubPanel newPanel = new RequestEditSubPanel(id, item.getProtocol());
         newPanel.initPanelData(item);
 
-        if (previewTab != null && previewTabIndex >= 0) {
-            // 复用现有预览 tab：替换内容
-            previewTab = newPanel;
-            tabbedPane.setComponentAt(previewTabIndex, previewTab);
-            tabbedPane.setTitleAt(previewTabIndex, name);
-            ClosableTabComponent tabComponent = new ClosableTabComponent(name, item.getProtocol());
-            tabComponent.setPreviewMode(true);
-            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
-            tabbedPane.setSelectedIndex(previewTabIndex);
-        } else {
-            // 创建新的预览 tab
-            int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
-            if (isPlusTab(plusTabIdx)) {
-                tabbedPane.removeTabAt(plusTabIdx);
-            }
-            previewTab = newPanel;
-            tabbedPane.addTab(name, previewTab);
-            previewTabIndex = tabbedPane.getTabCount() - 1;
-            ClosableTabComponent tabComponent = new ClosableTabComponent(name, item.getProtocol());
-            tabComponent.setPreviewMode(true);
-            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
-            tabbedPane.setSelectedIndex(previewTabIndex);
-            addPlusTab();
-        }
+        showOrUpdatePreviewTab(newPanel, name, item.getProtocol());
     }
 
     /**
@@ -199,31 +158,12 @@ public class RequestEditPanel extends SingletonBasePanel {
         String groupId = group.getId();
 
         // 1. 先查找是否已有固定的 Group tab（不包括预览 tab）
-        if (groupId != null && !groupId.isEmpty()) {
-            for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-                if (i != previewTabIndex) {
-                    Component comp = tabbedPane.getComponentAt(i);
-                    if (comp instanceof GroupEditPanel existingPanel) {
-                        if (groupId.equals(existingPanel.getGroup().getId())) {
-                            tabbedPane.setSelectedIndex(i);
-                            return;
-                        }
-                    }
-                }
-            }
+        if (switchToExistingGroupTab(groupId)) {
+            return;
         }
 
-        // 2. 检查预览 tab 是否存在且有效
-        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
-            Component currentPreview = tabbedPane.getComponentAt(previewTabIndex);
-            if (currentPreview != previewTab) {
-                previewTab = null;
-                previewTabIndex = -1;
-            }
-        } else {
-            previewTab = null;
-            previewTabIndex = -1;
-        }
+        // 2. 验证并清理无效的预览 tab
+        validatePreviewTab();
 
         // 3. 复用或创建预览 tab
         String groupName = group.getName();
@@ -233,30 +173,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             leftPanel.getPersistence().saveRequestGroups();
         });
 
-        if (previewTab != null && previewTabIndex >= 0) {
-            // 复用现有预览 tab：替换内容
-            previewTab = groupEditPanel;
-            tabbedPane.setComponentAt(previewTabIndex, previewTab);
-            tabbedPane.setTitleAt(previewTabIndex, groupName);
-            ClosableTabComponent tabComponent = new ClosableTabComponent(groupName, null);
-            tabComponent.setPreviewMode(true);
-            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
-            tabbedPane.setSelectedIndex(previewTabIndex);
-        } else {
-            // 创建新的预览 tab
-            int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
-            if (isPlusTab(plusTabIdx)) {
-                tabbedPane.removeTabAt(plusTabIdx);
-            }
-            previewTab = groupEditPanel;
-            tabbedPane.addTab(groupName, previewTab);
-            previewTabIndex = tabbedPane.getTabCount() - 1;
-            ClosableTabComponent tabComponent = new ClosableTabComponent(groupName, null);
-            tabComponent.setPreviewMode(true);
-            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
-            tabbedPane.setSelectedIndex(previewTabIndex);
-            addPlusTab();
-        }
+        showOrUpdatePreviewTab(groupEditPanel, groupName, null);
     }
 
     // showOrCreateTab 需适配 "+" Tab（双击时调用，创建固定 tab）
@@ -390,6 +307,17 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 保存当前请求
      */
     public boolean saveCurrentRequest() {
+        // 检查当前 tab 是否是 saved-response 类型
+        RequestEditSubPanel currentSubPanel = getCurrentSubPanel();
+        if (currentSubPanel != null) {
+            // 如果是 saved-response 类型，不保存
+            if (currentSubPanel.isSavedResponseTab()) {
+                log.info("当前是 saved-response tab，不执行保存");
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVED_RESPONSE_READONLY));
+                return false;
+            }
+        }
+
         // 保存请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
         promotePreviewTabToPermanent();
 
@@ -566,7 +494,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         dialog.setResizable(false);
 
         // 显示对话框后自动聚焦到名称输入框
-        SwingUtilities.invokeLater(() -> nameField.requestFocusInWindow());
+        SwingUtilities.invokeLater(nameField::requestFocusInWindow);
 
         dialog.setVisible(true);
 
@@ -819,56 +747,6 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     /**
-     * 将当前 HTTP 协议的 tab 切换为 SSE 协议
-     * 这会重新创建一个 SSE 类型的 RequestEditSubPanel，保留原有的请求数据
-     */
-    public void switchCurrentTabToSseProtocol() {
-        int currentIndex = tabbedPane.getSelectedIndex();
-        if (currentIndex < 0 || isPlusTab(currentIndex)) {
-            return;
-        }
-
-        Component comp = tabbedPane.getComponentAt(currentIndex);
-        if (!(comp instanceof RequestEditSubPanel oldPanel)) {
-            return;
-        }
-
-        // 获取当前的请求数据
-        HttpRequestItem currentItem = oldPanel.getCurrentRequest();
-        if (currentItem == null) {
-            return;
-        }
-
-        // 如果已经是 SSE 协议，不需要切换
-        if (currentItem.getProtocol() == RequestItemProtocolEnum.SSE) {
-            return;
-        }
-
-        // 修改协议为 SSE
-        currentItem.setProtocol(RequestItemProtocolEnum.SSE);
-
-        // 获取当前 tab 的标题
-        String tabTitle = tabbedPane.getTitleAt(currentIndex);
-
-        // 创建新的 SSE 协议的 RequestEditSubPanel
-        RequestEditSubPanel newPanel = new RequestEditSubPanel(currentItem.getId(), RequestItemProtocolEnum.SSE);
-
-        // 将请求数据填充到新面板
-        newPanel.initPanelData(currentItem);
-
-        // 替换 tab
-        tabbedPane.setComponentAt(currentIndex, newPanel);
-        ClosableTabComponent newTabComponent = new ClosableTabComponent(tabTitle, RequestItemProtocolEnum.SSE);
-        newTabComponent.setNewRequest(true);
-        tabbedPane.setTabComponentAt(currentIndex, newTabComponent);
-
-        // 保持选中状态
-        tabbedPane.setSelectedIndex(currentIndex);
-        // click send button
-        newPanel.clickSendButton();
-    }
-
-    /**
      * 显示分组编辑面板（参考 Postman，不使用弹窗）
      * 双击时调用，创建固定 tab
      */
@@ -1040,4 +918,163 @@ public class RequestEditPanel extends SingletonBasePanel {
             tabbedPane.remove(comp);
         }
     }
+
+    /**
+     * 单击保存的响应：在预览 Tab 中显示
+     */
+    public void showOrCreatePreviewTabForSavedResponse(SavedResponse savedResponse) {
+        if (savedResponse == null) {
+            return;
+        }
+
+        String savedResponseId = savedResponse.getId();
+
+        if (savedResponseId == null || savedResponseId.isEmpty()) {
+            return;
+        }
+
+        if (switchToExistingRequestTab(savedResponseId)) {
+            return;
+        }
+
+        // 2. 验证并清理无效的预览 tab
+        validatePreviewTab();
+
+        // 3. 创建新 panel
+        String name = savedResponse.getName();
+        RequestEditSubPanel newPanel = new RequestEditSubPanel(savedResponse);
+        newPanel.loadSavedResponse(savedResponse);
+
+        showOrUpdatePreviewTab(newPanel, name, RequestItemProtocolEnum.SAVED_RESPONSE);
+    }
+
+    /**
+     * 双击保存的响应：在固定 Tab 中显示
+     */
+    public void showOrCreateTabForSavedResponse(SavedResponse savedResponse) {
+        String savedResponseId = savedResponse.getId();
+
+        if (savedResponseId == null || savedResponseId.isEmpty()) {
+            return;
+        }
+
+        // 1. 如果当前预览的就是这个 savedResponse，则将预览 tab 转为固定 tab
+        if (previewTab instanceof RequestEditSubPanel subPanel && savedResponseId.equals(subPanel.getId())) {
+            promotePreviewTabToPermanent();
+            return;
+        }
+
+        // 2. 查找同样 savedResponse 的固定 Tab（不查"+"Tab）
+        // 使用统一的 switchToExistingRequestTab 方法
+        if (switchToExistingRequestTab(savedResponseId)) {
+            return;
+        }
+
+        // 3. 创建新的固定 tab
+        String name = savedResponse.getName();
+        RequestEditSubPanel newPanel = new RequestEditSubPanel(savedResponse);
+        newPanel.loadSavedResponse(savedResponse);
+
+        int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0; // 插入到"+"Tab前
+        tabbedPane.insertTab(name, null, newPanel, null, plusTabIdx);
+        ClosableTabComponent tabComponent = new ClosableTabComponent(name, RequestItemProtocolEnum.SAVED_RESPONSE);
+        tabbedPane.setTabComponentAt(plusTabIdx, tabComponent);
+        tabbedPane.setSelectedIndex(plusTabIdx);
+    }
+
+    // ==================== Helper Methods ====================
+
+    /**
+     * 验证预览 tab 是否有效，如果无效则清理
+     */
+    private void validatePreviewTab() {
+        if (previewTab != null && previewTabIndex >= 0 && previewTabIndex < tabbedPane.getTabCount()) {
+            Component currentPreview = tabbedPane.getComponentAt(previewTabIndex);
+            if (currentPreview != previewTab) {
+                previewTab = null;
+                previewTabIndex = -1;
+            }
+        } else {
+            previewTab = null;
+            previewTabIndex = -1;
+        }
+    }
+
+    /**
+     * 显示或更新预览 tab
+     *
+     * @param panel    要显示的面板
+     * @param name     tab 名称
+     * @param protocol 协议类型
+     */
+    private void showOrUpdatePreviewTab(Component panel, String name, RequestItemProtocolEnum protocol) {
+        if (previewTab != null && previewTabIndex >= 0) {
+            previewTab = panel;
+            tabbedPane.setComponentAt(previewTabIndex, previewTab);
+            tabbedPane.setTitleAt(previewTabIndex, name);
+            ClosableTabComponent tabComponent = new ClosableTabComponent(name, protocol);
+            tabComponent.setPreviewMode(true);
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+        } else {
+            // 创建新的预览 tab
+            int plusTabIdx = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
+            if (isPlusTab(plusTabIdx)) {
+                tabbedPane.removeTabAt(plusTabIdx);
+            }
+            previewTab = panel;
+            tabbedPane.addTab(name, previewTab);
+            previewTabIndex = tabbedPane.getTabCount() - 1;
+            ClosableTabComponent tabComponent = new ClosableTabComponent(name, protocol);
+            tabComponent.setPreviewMode(true);
+            tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
+            tabbedPane.setSelectedIndex(previewTabIndex);
+            addPlusTab();
+        }
+    }
+
+    /**
+     * 切换到已存在的 Request 或 SavedResponse tab
+     *
+     * @param id 请求ID 或 SavedResponse ID
+     * @return 如果找到并切换成功返回true，否则返回false
+     */
+    private boolean switchToExistingRequestTab(String id) {
+        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+            if (i != previewTabIndex) {
+                Component comp = tabbedPane.getComponentAt(i);
+                if (comp instanceof RequestEditSubPanel subPanel) {
+                    if (id.equals(subPanel.getId())) {
+                        tabbedPane.setSelectedIndex(i);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 切换到已存在的 Group tab
+     *
+     * @param groupId 分组ID
+     * @return 如果找到并切换成功返回true，否则返回false
+     */
+    private boolean switchToExistingGroupTab(String groupId) {
+        if (groupId != null && !groupId.isEmpty()) {
+            for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+                if (i != previewTabIndex) {
+                    Component comp = tabbedPane.getComponentAt(i);
+                    if (comp instanceof GroupEditPanel existingPanel) {
+                        if (groupId.equals(existingPanel.getGroup().getId())) {
+                            tabbedPane.setSelectedIndex(i);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
 }

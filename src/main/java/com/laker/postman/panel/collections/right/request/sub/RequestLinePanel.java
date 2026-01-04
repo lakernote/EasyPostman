@@ -6,6 +6,7 @@ import com.laker.postman.common.component.EasyPostmanTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -81,7 +82,7 @@ public class RequestLinePanel extends JPanel {
         combo.setMinimumSize(size);
 
         // 设置字体
-        combo.setFont(combo.getFont().deriveFont(Font.BOLD, 12f));
+        combo.setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
         // WebSocket 协议特殊处理
         if (protocol.isWebSocketProtocol()) {
@@ -107,7 +108,7 @@ public class RequestLinePanel extends JPanel {
         field.setMinimumSize(new Dimension(300, COMPONENT_HEIGHT));
 
         // 设置字体
-        field.setFont(field.getFont().deriveFont(Font.PLAIN, 13f));
+        field.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
         return field;
     }
@@ -204,7 +205,7 @@ public class RequestLinePanel extends JPanel {
         button.setIconTextGap(4);
 
         // 设置字体和样式
-        button.setFont(button.getFont().deriveFont(Font.BOLD, 12f));
+        button.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         button.setForeground(ModernColors.TEXT_INVERSE);
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
@@ -264,7 +265,7 @@ public class RequestLinePanel extends JPanel {
         button.setIconTextGap(4);
 
         // 设置字体和样式
-        button.setFont(button.getFont().deriveFont(Font.PLAIN, 12f));
+        button.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         button.setForeground(ModernColors.TEXT_PRIMARY);
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);

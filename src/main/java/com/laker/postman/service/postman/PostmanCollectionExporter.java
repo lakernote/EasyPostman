@@ -320,7 +320,165 @@ public class PostmanCollectionExporter {
         if (!events.isEmpty()) {
             postmanItem.put("event", events);
         }
+
+        // 导出 response（Postman 的 Examples/Saved Responses）
+        if (item.getResponse() != null && !item.getResponse().isEmpty()) {
+            JSONArray responsesArray = new JSONArray();
+            for (SavedResponse savedResp : item.getResponse()) {
+                JSONObject respJson = toPostmanResponse(savedResp);
+                responsesArray.add(respJson);
+            }
+            postmanItem.put("response", responsesArray);
+        }
+
         return postmanItem;
+    }
+
+    /**
+     * 将 SavedResponse 转换为 Postman 响应格式
+     */
+    private static JSONObject toPostmanResponse(SavedResponse savedResp) {
+        JSONObject respJson = new JSONObject();
+
+        // 基本信息
+        respJson.put("name", savedResp.getName());
+        respJson.put("status", savedResp.getStatus());
+        respJson.put("code", savedResp.getCode());
+
+        if (savedResp.getPreviewLanguage() != null && !savedResp.getPreviewLanguage().isEmpty()) {
+            respJson.put("_postman_previewlanguage", savedResp.getPreviewLanguage());
+        }
+
+        // 响应头
+        if (savedResp.getHeaders() != null && !savedResp.getHeaders().isEmpty()) {
+            JSONArray headersArray = new JSONArray();
+            for (HttpHeader header : savedResp.getHeaders()) {
+                JSONObject headerObj = new JSONObject();
+                headerObj.put("key", header.getKey());
+                headerObj.put("value", header.getValue());
+                headersArray.add(headerObj);
+            }
+            respJson.put("header", headersArray);
+        }
+
+        // Cookies (如果有)
+        if (savedResp.getCookies() != null && !savedResp.getCookies().isEmpty()) {
+            JSONArray cookiesArray = new JSONArray();
+            // Postman cookie 格式可以在这里添加
+            respJson.put("cookie", cookiesArray);
+        }
+
+        // 响应体
+        if (savedResp.getBody() != null) {
+            respJson.put("body", savedResp.getBody());
+        }
+
+        // 原始请求信息
+        if (savedResp.getOriginalRequest() != null) {
+            SavedResponse.OriginalRequest origReq = savedResp.getOriginalRequest();
+            JSONObject originalRequest = new JSONObject();
+
+            originalRequest.put("method", origReq.getMethod());
+
+            // URL
+            JSONObject url = new JSONObject();
+            url.put("raw", origReq.getUrl());
+
+            // 解析 URL 的各个部分
+            try {
+                java.net.URI uri = new java.net.URI(origReq.getUrl());
+                if (uri.getScheme() != null) {
+                    url.put("protocol", uri.getScheme());
+                }
+                if (uri.getHost() != null) {
+                    String[] hostParts = uri.getHost().split("\\.");
+                    url.put("host", Arrays.asList(hostParts));
+                }
+                if (uri.getPath() != null && !uri.getPath().isEmpty()) {
+                    String[] pathParts = uri.getPath().replaceFirst("^/", "").split("/");
+                    url.put("path", Arrays.asList(pathParts));
+                }
+            } catch (Exception ignore) {
+            }
+
+            // Query 参数
+            if (origReq.getParams() != null && !origReq.getParams().isEmpty()) {
+                JSONArray queryArray = new JSONArray();
+                for (HttpParam param : origReq.getParams()) {
+                    JSONObject paramObj = new JSONObject();
+                    paramObj.put("key", param.getKey());
+                    paramObj.put("value", param.getValue());
+                    if (!param.isEnabled()) {
+                        paramObj.put("disabled", true);
+                    }
+                    queryArray.add(paramObj);
+                }
+                url.put("query", queryArray);
+            }
+
+            originalRequest.put("url", url);
+
+            // 请求头
+            if (origReq.getHeaders() != null && !origReq.getHeaders().isEmpty()) {
+                JSONArray headersArray = new JSONArray();
+                for (HttpHeader header : origReq.getHeaders()) {
+                    JSONObject headerObj = new JSONObject();
+                    headerObj.put("key", header.getKey());
+                    headerObj.put("value", header.getValue());
+                    if (!header.isEnabled()) {
+                        headerObj.put("disabled", true);
+                    }
+                    headersArray.add(headerObj);
+                }
+                originalRequest.put("header", headersArray);
+            }
+
+            // 请求体
+            if (origReq.getBodyType() != null && !origReq.getBodyType().isEmpty()) {
+                JSONObject body = new JSONObject();
+                body.put("mode", origReq.getBodyType());
+
+                if ("raw".equals(origReq.getBodyType()) && origReq.getBody() != null) {
+                    body.put("raw", origReq.getBody());
+                } else if ("formdata".equals(origReq.getBodyType()) && origReq.getFormDataList() != null) {
+                    JSONArray formDataArray = new JSONArray();
+                    for (HttpFormData formData : origReq.getFormDataList()) {
+                        JSONObject formDataObj = new JSONObject();
+                        formDataObj.put("key", formData.getKey());
+                        if (formData.isText()) {
+                            formDataObj.put("value", formData.getValue());
+                            formDataObj.put("type", "text");
+                        } else if (formData.isFile()) {
+                            formDataObj.put("src", formData.getValue());
+                            formDataObj.put("type", "file");
+                        }
+                        if (!formData.isEnabled()) {
+                            formDataObj.put("disabled", true);
+                        }
+                        formDataArray.add(formDataObj);
+                    }
+                    body.put("formdata", formDataArray);
+                } else if ("urlencoded".equals(origReq.getBodyType()) && origReq.getUrlencodedList() != null) {
+                    JSONArray urlencodedArray = new JSONArray();
+                    for (HttpFormUrlencoded encoded : origReq.getUrlencodedList()) {
+                        JSONObject encodedObj = new JSONObject();
+                        encodedObj.put("key", encoded.getKey());
+                        encodedObj.put("value", encoded.getValue());
+                        if (!encoded.isEnabled()) {
+                            encodedObj.put("disabled", true);
+                        }
+                        urlencodedArray.add(encodedObj);
+                    }
+                    body.put("urlencoded", urlencodedArray);
+                }
+
+                originalRequest.put("body", body);
+            }
+
+            respJson.put("originalRequest", originalRequest);
+        }
+
+        return respJson;
     }
 }
 

@@ -12,8 +12,7 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
 /**
  * 请求树右键弹出菜单
@@ -56,6 +55,13 @@ public class RequestTreePopupMenu {
         // 请求节点菜单
         if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
             addRequestMenuItems(menu, isMultipleSelection);
+        }
+
+        // 保存的响应节点菜单 - 只显示重命名和删除，不显示粘贴等其他选项
+        if (userObj instanceof Object[] && SAVED_RESPONSE.equals(((Object[]) userObj)[0])) {
+            addRenameAndDeleteMenuItems(menu, isMultipleSelection);
+            menu.show(requestTree, x, y);
+            return;
         }
 
         // 粘贴选项
@@ -188,6 +194,7 @@ public class RequestTreePopupMenu {
         menu.addSeparator();
     }
 
+
     /**
      * 添加粘贴菜单项
      */
@@ -239,4 +246,3 @@ public class RequestTreePopupMenu {
         return item;
     }
 }
-

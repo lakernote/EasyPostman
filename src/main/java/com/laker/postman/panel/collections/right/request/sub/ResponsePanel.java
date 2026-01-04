@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -43,8 +44,14 @@ public class ResponsePanel extends JPanel {
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
     private final SSEResponsePanel sseResponsePanel;
+    private JButton saveResponseButton;
+    private JLabel saveButtonSeparator; // 按钮前的分隔符
 
     public ResponsePanel(RequestItemProtocolEnum protocol) {
+        this(protocol, true); // 默认启用保存按钮
+    }
+
+    public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
         setLayout(new BorderLayout());
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -63,7 +70,7 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -92,7 +99,7 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
@@ -129,10 +136,32 @@ public class ResponsePanel extends JPanel {
                 }
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 4));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
+
             statusBar.add(statusCodeLabel);
             statusBar.add(responseTimeLabel);
             statusBar.add(responseSizeLabel);
+
+            // 仅在 enableSaveButton 为 true 时创建保存按钮
+            if (enableSaveButton) {
+                // 添加分隔符
+                saveButtonSeparator = new JLabel("|");
+                saveButtonSeparator.setForeground(new Color(180, 180, 180));
+                saveButtonSeparator.setVisible(false); // 默认隐藏，与保存按钮同步显示
+
+                // 创建保存响应按钮（仅HTTP协议）- 默认隐藏，有响应后显示
+                saveResponseButton = new JButton(new FlatSVGIcon("icons/save-response.svg", 24, 24));
+                saveResponseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_TOOLTIP));
+                saveResponseButton.setFocusPainted(false);
+                saveResponseButton.setBorderPainted(false);
+                saveResponseButton.setContentAreaFilled(false);
+                saveResponseButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                saveResponseButton.setMargin(new Insets(0, 0, 0, 0));
+                saveResponseButton.setVisible(false); // 默认隐藏，有响应后才显示
+
+                statusBar.add(saveButtonSeparator);
+                statusBar.add(saveResponseButton);
+            }
             JPanel topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
@@ -598,4 +627,17 @@ public class ResponsePanel extends JPanel {
             }
         }
     }
+
+    /**
+     * 显示/隐藏保存响应按钮（当有响应数据时显示）
+     */
+    public void enableSaveResponseButton(boolean enable) {
+        if (saveResponseButton != null) {
+            saveResponseButton.setVisible(enable);
+        }
+        if (saveButtonSeparator != null) {
+            saveButtonSeparator.setVisible(enable);
+        }
+    }
+
 }

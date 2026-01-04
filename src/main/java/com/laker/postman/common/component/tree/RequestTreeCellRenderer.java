@@ -14,6 +14,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * 自定义树节点渲染器，用于美化 JTree 的节点显示
@@ -73,7 +74,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         long timestamp = savedResponse.getTimestamp();
 
         // 格式化时间
-        String timeStr = new SimpleDateFormat("MM-dd HH:mm").format(new java.util.Date(timestamp));
+        String timeStr = new SimpleDateFormat("MM-dd HH:mm:ss").format(new Date(timestamp));
 
         // 根据状态码设置颜色
         String statusColor = getStatusColor(code);

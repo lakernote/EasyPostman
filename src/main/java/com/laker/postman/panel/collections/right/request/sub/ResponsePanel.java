@@ -44,8 +44,6 @@ public class ResponsePanel extends JPanel {
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
     private final SSEResponsePanel sseResponsePanel;
-
-    // 保存响应的按钮（加载响应通过左侧树节点实现）
     private JButton saveResponseButton;
     private JLabel saveButtonSeparator; // 按钮前的分隔符
 
@@ -642,10 +640,4 @@ public class ResponsePanel extends JPanel {
         }
     }
 
-    /**
-     * 获取保存响应按钮（用于添加监听器）
-     */
-    public JButton getSaveResponseButton() {
-        return saveResponseButton;
-    }
 }

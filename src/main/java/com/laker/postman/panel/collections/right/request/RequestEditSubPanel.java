@@ -44,6 +44,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.io.InterruptedIOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -1271,7 +1272,7 @@ public class RequestEditSubPanel extends JPanel {
         }
 
         // 默认名称：当前时间
-        String defaultName = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+        String defaultName = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
 
         String name = (String) JOptionPane.showInputDialog(
                 this,

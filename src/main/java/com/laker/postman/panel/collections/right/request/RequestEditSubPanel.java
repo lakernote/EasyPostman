@@ -52,15 +52,6 @@ import java.util.List;
 import static com.laker.postman.service.http.HttpUtil.getStatusColor;
 import static com.laker.postman.service.http.HttpUtil.validateRequest;
 
-/**
- * 请求编辑子面板的类型
- */
-enum RequestEditSubPanelType {
-    /** 普通请求编辑面板 */
-    NORMAL,
-    /** 保存的响应预览面板 */
-    SAVED_RESPONSE
-}
 
 /**
  * 单个请求编辑子面板，包含 URL、方法选择、Headers、Body 和响应展示
@@ -134,7 +125,7 @@ public class RequestEditSubPanel extends JPanel {
      * 保存的响应面板构造函数
      */
     public RequestEditSubPanel(RequestItemProtocolEnum protocol, SavedResponse savedResponse, HttpRequestItem parentRequest) {
-        this(java.util.UUID.randomUUID().toString(), protocol, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse, parentRequest);
+        this(UUID.randomUUID().toString(), protocol, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse, parentRequest);
     }
 
     /**
@@ -1191,9 +1182,25 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
 
-        String method = item.getMethod();
-        String bodyType = item.getBodyType();
+        selectDefaultTab(
+                item.getMethod(),
+                item.getBodyType(),
+                item.getBody(),
+                CollUtil.isNotEmpty(item.getFormDataList()) || CollUtil.isNotEmpty(item.getUrlencodedList()),
+                CollUtil.isNotEmpty(item.getParamsList())
+        );
+    }
 
+    /**
+     * 通用的Tab选择逻辑
+     *
+     * @param method      HTTP方法
+     * @param bodyType    Body类型
+     * @param body        Body内容
+     * @param hasFormData 是否有form-data或urlencoded数据
+     * @param hasParams   是否有参数
+     */
+    private void selectDefaultTab(String method, String bodyType, String body, boolean hasFormData, boolean hasParams) {
         // WebSocket协议：默认选择Body Tab（用于发送消息）
         if (protocol.isWebSocketProtocol()) {
             reqTabs.setSelectedComponent(requestBodyPanel);
@@ -1208,15 +1215,13 @@ public class RequestEditSubPanel extends JPanel {
 
         // HTTP协议智能判断
         // 1. 如果有Body内容（非空且非none类型），优先显示Body Tab
-        if (CharSequenceUtil.isNotBlank(item.getBody())
-                && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
+        if (CharSequenceUtil.isNotBlank(body) && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
             reqTabs.setSelectedComponent(requestBodyPanel);
             return;
         }
 
         // 2. 如果有form-data或urlencoded数据，显示Body Tab
-        if (CollUtil.isNotEmpty(item.getFormDataList())
-                || CollUtil.isNotEmpty(item.getUrlencodedList())) {
+        if (hasFormData) {
             reqTabs.setSelectedComponent(requestBodyPanel);
             return;
         }
@@ -1224,9 +1229,6 @@ public class RequestEditSubPanel extends JPanel {
         // 3. POST/PUT/PATCH请求：智能判断
         // 如果没有任何Body数据，优先显示Params Tab（更符合实际使用场景）
         if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
-            // 检查是否有有效的参数数据
-            boolean hasParams = CollUtil.isNotEmpty(item.getParamsList());
-
             // 如果有参数但没有Body数据，显示Params Tab
             if (hasParams) {
                 reqTabs.setSelectedComponent(paramsPanel);
@@ -1446,6 +1448,9 @@ public class RequestEditSubPanel extends JPanel {
                         EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
                         urlencodedTablePanel.setFormDataList(new ArrayList<>(originalRequest.getUrlencodedList()));
                     }
+
+                    // 根据请求类型智能选择默认Tab（参考 initPanelData）
+                    selectDefaultTabByRequestTypeForSavedResponse(originalRequest);
                 } finally {
                     isLoadingData = false; // 恢复标志
                 }
@@ -1498,6 +1503,23 @@ public class RequestEditSubPanel extends JPanel {
             log.error("加载保存的响应失败", ex);
             NotificationUtil.showError(I18nUtil.getMessage("加载响应失败: {0}", ex.getMessage()));
         }
+    }
+
+    /**
+     * 根据保存的响应的请求类型智能选择默认Tab（用于 loadSavedResponse）
+     */
+    private void selectDefaultTabByRequestTypeForSavedResponse(SavedResponse.OriginalRequest originalRequest) {
+        if (originalRequest == null) {
+            return;
+        }
+
+        selectDefaultTab(
+                originalRequest.getMethod(),
+                originalRequest.getBodyType(),
+                originalRequest.getBody(),
+                CollUtil.isNotEmpty(originalRequest.getFormDataList()) || CollUtil.isNotEmpty(originalRequest.getUrlencodedList()),
+                CollUtil.isNotEmpty(originalRequest.getParams())
+        );
     }
 }
 

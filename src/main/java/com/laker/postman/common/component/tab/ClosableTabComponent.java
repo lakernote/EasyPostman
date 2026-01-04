@@ -252,4 +252,3 @@ public class ClosableTabComponent extends JPanel {
         repaint();
     }
 }
-

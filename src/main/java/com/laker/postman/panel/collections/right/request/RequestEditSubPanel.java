@@ -123,7 +123,7 @@ public class RequestEditSubPanel extends JPanel {
      * 保存的响应面板构造函数
      */
     public RequestEditSubPanel(SavedResponse savedResponse) {
-        this(UUID.randomUUID().toString(), RequestItemProtocolEnum.HTTP, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse);
+        this(savedResponse.getId(), RequestItemProtocolEnum.HTTP, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse);
     }
 
     /**

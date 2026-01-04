@@ -933,8 +933,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             return;
         }
 
-        // 1. 先查找是否已有固定的 tab 显示这个 savedResponse（不包括预览 tab）
-        if (switchToExistingSavedResponseTab(savedResponseId)) {
+        if (switchToExistingRequestTab(savedResponseId)) {
             return;
         }
 
@@ -960,24 +959,15 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 1. 如果当前预览的就是这个 savedResponse，则将预览 tab 转为固定 tab
-        if (previewTab instanceof RequestEditSubPanel subPanel) {
-            if (subPanel.isSavedResponseTab() &&
-                    savedResponseId.equals(subPanel.getSavedResponse().getId())) {
-                promotePreviewTabToPermanent();
-                return;
-            }
+        if (previewTab instanceof RequestEditSubPanel subPanel && savedResponseId.equals(subPanel.getId())) {
+            promotePreviewTabToPermanent();
+            return;
         }
 
         // 2. 查找同样 savedResponse 的固定 Tab（不查"+"Tab）
-        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-            Component comp = tabbedPane.getComponentAt(i);
-            if (comp instanceof RequestEditSubPanel existingSubPanel) {
-                if (existingSubPanel.isSavedResponseTab() &&
-                        savedResponseId.equals(existingSubPanel.getSavedResponse().getId())) {
-                    tabbedPane.setSelectedIndex(i);
-                    return;
-                }
-            }
+        // 使用统一的 switchToExistingRequestTab 方法
+        if (switchToExistingRequestTab(savedResponseId)) {
+            return;
         }
 
         // 3. 创建新的固定 tab
@@ -1044,17 +1034,17 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     /**
-     * 切换到已存在的 Request tab
+     * 切换到已存在的 Request 或 SavedResponse tab
      *
-     * @param requestId 请求ID
+     * @param id 请求ID 或 SavedResponse ID
      * @return 如果找到并切换成功返回true，否则返回false
      */
-    private boolean switchToExistingRequestTab(String requestId) {
+    private boolean switchToExistingRequestTab(String id) {
         for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
             if (i != previewTabIndex) {
                 Component comp = tabbedPane.getComponentAt(i);
                 if (comp instanceof RequestEditSubPanel subPanel) {
-                    if (requestId.equals(subPanel.getId())) {
+                    if (id.equals(subPanel.getId())) {
                         tabbedPane.setSelectedIndex(i);
                         return true;
                     }
@@ -1087,25 +1077,4 @@ public class RequestEditPanel extends SingletonBasePanel {
         return false;
     }
 
-    /**
-     * 切换到已存在的 SavedResponse tab
-     *
-     * @param savedResponseId 保存的响应ID
-     * @return 如果找到并切换成功返回true，否则返回false
-     */
-    private boolean switchToExistingSavedResponseTab(String savedResponseId) {
-        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-            if (i != previewTabIndex) {
-                Component comp = tabbedPane.getComponentAt(i);
-                if (comp instanceof RequestEditSubPanel subPanel) {
-                    if (subPanel.isSavedResponseTab() &&
-                            savedResponseId.equals(subPanel.getSavedResponse().getId())) {
-                        tabbedPane.setSelectedIndex(i);
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
 }

@@ -332,31 +332,36 @@ public class RequestEditSubPanel extends JPanel {
 
     /**
      * 比较两个 HttpRequestItem 是否相等（排除 savedResponses 字段）
-     * 使用字段级别比较，避免序列化开销，提升性能
+     * 使用 JSON 序列化比较，忽略 savedResponses 字段的变化
      */
     private boolean equalsIgnoringSavedResponses(HttpRequestItem ori, HttpRequestItem cur) {
         if (ori == cur) return true;
         if (ori == null || cur == null) return false;
 
-        // 比较所有请求配置字段（排除 savedResponses）
-        return java.util.Objects.equals(ori.getId(), cur.getId())
-                && java.util.Objects.equals(ori.getName(), cur.getName())
-                && java.util.Objects.equals(ori.getUrl(), cur.getUrl())
-                && java.util.Objects.equals(ori.getMethod(), cur.getMethod())
-                && java.util.Objects.equals(ori.getProtocol(), cur.getProtocol())
-                && java.util.Objects.equals(ori.getHeadersList(), cur.getHeadersList())
-                && java.util.Objects.equals(ori.getBodyType(), cur.getBodyType())
-                && java.util.Objects.equals(ori.getBody(), cur.getBody())
-                && java.util.Objects.equals(ori.getParamsList(), cur.getParamsList())
-                && java.util.Objects.equals(ori.getFormDataList(), cur.getFormDataList())
-                && java.util.Objects.equals(ori.getUrlencodedList(), cur.getUrlencodedList())
-                && java.util.Objects.equals(ori.getAuthType(), cur.getAuthType())
-                && java.util.Objects.equals(ori.getAuthUsername(), cur.getAuthUsername())
-                && java.util.Objects.equals(ori.getAuthPassword(), cur.getAuthPassword())
-                && java.util.Objects.equals(ori.getAuthToken(), cur.getAuthToken())
-                && java.util.Objects.equals(ori.getPrescript(), cur.getPrescript())
-                && java.util.Objects.equals(ori.getPostscript(), cur.getPostscript());
-        // 注意：故意不比较 savedResponses 字段
+        try {
+            // 临时保存 savedResponses
+            List<SavedResponse> oriSaved = ori.getSavedResponses();
+            List<SavedResponse> curSaved = cur.getSavedResponses();
+
+            try {
+                // 将两个对象的 savedResponses 都设为 null，使其不参与比较
+                ori.setSavedResponses(null);
+                cur.setSavedResponses(null);
+
+                // 通过 JSON 序列化进行深度比较
+                String oriJson = JsonUtil.toJsonStr(ori);
+                String curJson = JsonUtil.toJsonStr(cur);
+
+                return oriJson.equals(curJson);
+            } finally {
+                // 恢复原始的 savedResponses
+                ori.setSavedResponses(oriSaved);
+                cur.setSavedResponses(curSaved);
+            }
+        } catch (Exception e) {
+            log.error("比较请求时发生异常", e);
+            return false;
+        }
     }
 
     /**

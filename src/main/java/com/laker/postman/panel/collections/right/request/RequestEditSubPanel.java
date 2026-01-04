@@ -945,6 +945,12 @@ public class RequestEditSubPanel extends JPanel {
         // 脚本内容
         item.setPrescript(scriptPanel.getPrescript());
         item.setPostscript(scriptPanel.getPostscript());
+
+        // 保留 savedResponses，避免在保存请求时丢失已保存的响应
+        if (originalRequestItem != null && originalRequestItem.getSavedResponses() != null) {
+            item.setSavedResponses(originalRequestItem.getSavedResponses());
+        }
+
         return item;
     }
 

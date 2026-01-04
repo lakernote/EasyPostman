@@ -228,6 +228,12 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         HttpRequestItem originalItem = (HttpRequestItem) userObj[1];
         String originalName = originalItem.getName();
         item.setName(originalName);
+
+        // 保留原对象的 savedResponses，避免在保存请求时丢失已保存的响应
+        if (originalItem.getSavedResponses() != null && !originalItem.getSavedResponses().isEmpty()) {
+            item.setSavedResponses(originalItem.getSavedResponses());
+        }
+
         userObj[1] = item;
         treeModel.nodeChanged(requestNode);
         persistence.saveRequestGroups();

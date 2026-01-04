@@ -96,7 +96,48 @@ public class SavedResponse implements Serializable {
         saved.setBodySize(response.bodySize);
         saved.setHeadersSize(response.headersSize);
 
+        // 保存预览语言类型（根据 Content-Type 自动检测）
+        saved.setPreviewLanguage(detectPreviewLanguage(response));
+
         return saved;
+    }
+
+    /**
+     * 根据响应自动检测预览语言类型
+     */
+    private static String detectPreviewLanguage(HttpResponse response) {
+        if (response.headers != null) {
+            for (Map.Entry<String, List<String>> entry : response.headers.entrySet()) {
+                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("Content-Type")) {
+                    List<String> values = entry.getValue();
+                    if (values != null && !values.isEmpty()) {
+                        String contentType = values.get(0).toLowerCase();
+                        if (contentType.contains("json")) return "json";
+                        if (contentType.contains("xml")) return "xml";
+                        if (contentType.contains("html")) return "html";
+                        if (contentType.contains("javascript")) return "javascript";
+                        if (contentType.contains("css")) return "css";
+                        if (contentType.contains("text")) return "text";
+                    }
+                }
+            }
+        }
+
+        // 基于内容自动识别
+        String body = response.body;
+        if (body != null && !body.isEmpty()) {
+            String trimmed = body.trim();
+            if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                    (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+                return "json";
+            }
+            if (trimmed.startsWith("<") && trimmed.endsWith(">")) {
+                if (trimmed.toLowerCase().contains("<html")) return "html";
+                if (trimmed.toLowerCase().contains("<?xml")) return "xml";
+            }
+        }
+
+        return "text"; // 默认为文本
     }
 }
 

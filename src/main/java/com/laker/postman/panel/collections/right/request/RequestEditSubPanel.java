@@ -316,14 +316,14 @@ public class RequestEditSubPanel extends JPanel {
 
     /**
      * 判断当前表单内容是否被修改（与原始请求对比）
-     * 注意：比较时排除 savedResponses 字段，因为它是历史响应数据，不属于表单编辑内容
+     * 注意：比较时排除 response 字段，因为它是历史响应数据，不属于表单编辑内容
      */
     public boolean isModified() {
         if (originalRequestItem == null) return false;
         HttpRequestItem current = getCurrentRequest();
 
-        // 使用字段级别比较，排除 savedResponses（优化性能，避免JSON序列化）
-        boolean isModified = !equalsIgnoringSavedResponses(originalRequestItem, current);
+        // 使用字段级别比较，排除 response（优化性能，避免JSON序列化）
+        boolean isModified = !equalsIgnoringResponse(originalRequestItem, current);
 
         if (isModified) {
             log.debug("Request form has been modified, Request Name: {}", current.getName());
@@ -332,22 +332,22 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 比较两个 HttpRequestItem 是否相等（排除 savedResponses 字段）
-     * 使用 JSON 序列化比较，忽略 savedResponses 字段的变化
+     * 比较两个 HttpRequestItem 是否相等（排除 response 字段）
+     * 使用 JSON 序列化比较，忽略 response 字段的变化
      */
-    private boolean equalsIgnoringSavedResponses(HttpRequestItem ori, HttpRequestItem cur) {
+    private boolean equalsIgnoringResponse(HttpRequestItem ori, HttpRequestItem cur) {
         if (ori == cur) return true;
         if (ori == null || cur == null) return false;
 
         try {
-            // 临时保存 savedResponses
-            List<SavedResponse> oriSaved = ori.getSavedResponses();
-            List<SavedResponse> curSaved = cur.getSavedResponses();
+            // 临时保存 response
+            List<SavedResponse> oriSaved = ori.getResponse();
+            List<SavedResponse> curSaved = cur.getResponse();
 
             try {
-                // 将两个对象的 savedResponses 都设为 null，使其不参与比较
-                ori.setSavedResponses(null);
-                cur.setSavedResponses(null);
+                // 将两个对象的 response 都设为 null，使其不参与比较
+                ori.setResponse(null);
+                cur.setResponse(null);
 
                 // 通过 JSON 序列化进行深度比较
                 String oriJson = JsonUtil.toJsonStr(ori);
@@ -355,9 +355,9 @@ public class RequestEditSubPanel extends JPanel {
 
                 return oriJson.equals(curJson);
             } finally {
-                // 恢复原始的 savedResponses
-                ori.setSavedResponses(oriSaved);
-                cur.setSavedResponses(curSaved);
+                // 恢复原始的 response
+                ori.setResponse(oriSaved);
+                cur.setResponse(curSaved);
             }
         } catch (Exception e) {
             log.error("比较请求时发生异常", e);
@@ -942,9 +942,9 @@ public class RequestEditSubPanel extends JPanel {
         item.setPrescript(scriptPanel.getPrescript());
         item.setPostscript(scriptPanel.getPostscript());
 
-        // 保留 savedResponses，避免在保存请求时丢失已保存的响应
-        if (originalRequestItem != null && originalRequestItem.getSavedResponses() != null) {
-            item.setSavedResponses(originalRequestItem.getSavedResponses());
+        // 保留 response，避免在保存请求时丢失已保存的响应
+        if (originalRequestItem != null && originalRequestItem.getResponse() != null) {
+            item.setResponse(originalRequestItem.getResponse());
         }
 
         return item;
@@ -1318,16 +1318,16 @@ public class RequestEditSubPanel extends JPanel {
                 HttpRequestItem treeRequestItem = (HttpRequestItem) nodeObj[1];
 
                 // 添加到树节点中的请求对象
-                if (treeRequestItem.getSavedResponses() == null) {
-                    treeRequestItem.setSavedResponses(new ArrayList<>());
+                if (treeRequestItem.getResponse() == null) {
+                    treeRequestItem.setResponse(new ArrayList<>());
                 }
-                treeRequestItem.getSavedResponses().add(savedResponse);
+                treeRequestItem.getResponse().add(savedResponse);
 
                 // 同时更新 originalRequestItem（保持一致性）
-                if (originalRequestItem.getSavedResponses() == null) {
-                    originalRequestItem.setSavedResponses(new ArrayList<>());
+                if (originalRequestItem.getResponse() == null) {
+                    originalRequestItem.setResponse(new ArrayList<>());
                 }
-                originalRequestItem.getSavedResponses().add(savedResponse);
+                originalRequestItem.getResponse().add(savedResponse);
 
                 // 创建响应节点
                 DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(

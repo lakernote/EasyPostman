@@ -372,8 +372,8 @@ public class RequestTreeActions {
         if (REQUEST.equals(obj[0])) {
             HttpRequestItem item = (HttpRequestItem) obj[1];
             // 清空保存的响应列表，确保删除时不会保留已保存的响应
-            if (item.getSavedResponses() != null) {
-                item.getSavedResponses().clear();
+            if (item.getResponse() != null) {
+                item.getResponse().clear();
             }
             closeRequestTabs(item, tabbedPane);
         } else if (GROUP.equals(obj[0])) {
@@ -810,9 +810,9 @@ public class RequestTreeActions {
 
         SavedResponse toDelete = (SavedResponse) respObj[1];
 
-        // 从父请求的 savedResponses 列表中删除
-        if (parentRequest.getSavedResponses() != null) {
-            parentRequest.getSavedResponses().removeIf(resp ->
+        // 从父请求的 response 列表中删除
+        if (parentRequest.getResponse() != null) {
+            parentRequest.getResponse().removeIf(resp ->
                     resp.getId() != null && resp.getId().equals(toDelete.getId())
             );
         }

@@ -207,9 +207,9 @@ public class RequestsPersistence {
                     // 创建请求节点
                     DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{"request", item});
 
-                    // 为 savedResponses 创建子节点
-                    if (item.getSavedResponses() != null && !item.getSavedResponses().isEmpty()) {
-                        for (SavedResponse savedResp : item.getSavedResponses()) {
+                    // 为 response 创建子节点
+                    if (item.getResponse() != null && !item.getResponse().isEmpty()) {
+                        for (SavedResponse savedResp : item.getResponse()) {
                             DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
                                     new Object[]{"response", savedResp}
                             );

@@ -1273,6 +1273,12 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
 
+        // 检查是否是临时请求（未保存的请求）
+        if (originalRequestItem == null || originalRequestItem.isNewRequest()) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_REQUEST_NOT_SAVED));
+            return;
+        }
+
         // 默认名称：当前时间
         String defaultName = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
 
@@ -1359,11 +1365,16 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private DefaultMutableTreeNode findRequestNodeRecursively(DefaultMutableTreeNode node, HttpRequestItem item) {
+        // 防御性检查
+        if (node == null || item == null || item.getId() == null) {
+            return null;
+        }
+
         // 检查当前节点
         Object userObj = node.getUserObject();
         if (userObj instanceof Object[] obj && RequestCollectionsLeftPanel.REQUEST.equals(obj[0])) {
             HttpRequestItem nodeItem = (HttpRequestItem) obj[1];
-            if (nodeItem.getId().equals(item.getId())) {
+            if (nodeItem != null && nodeItem.getId() != null && nodeItem.getId().equals(item.getId())) {
                 return node;
             }
         }

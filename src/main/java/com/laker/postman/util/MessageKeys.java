@@ -767,6 +767,7 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_SUCCESS = "response.save.success";
     public static final String RESPONSE_SAVE_ERROR = "response.save.error";
     public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
+    public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
 
     // ============ CSV Data Panel related ============
     public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";

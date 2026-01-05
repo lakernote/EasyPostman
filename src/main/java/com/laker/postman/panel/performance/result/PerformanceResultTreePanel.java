@@ -87,7 +87,7 @@ public class PerformanceResultTreePanel extends JPanel {
             tableModel.append(batch);
 
             if (tableModel.getTotalSize() > MAX_ROWS) {
-                tableModel.trimTo(MAX_ROWS); // ✅ 仅在 EDT 中 trim，避免并发异常
+                tableModel.trimTo(MAX_ROWS); // ✅ 仅在 EDT 中 trim，避免并发异常1
             }
         }
     }

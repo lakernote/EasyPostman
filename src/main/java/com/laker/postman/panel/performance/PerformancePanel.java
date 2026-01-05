@@ -487,7 +487,7 @@ public class PerformancePanel extends SingletonBasePanel {
         int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
         long samplingIntervalMs = samplingIntervalSeconds * 1000L;
         startReportRefreshTimer();
-        trendTimer.scheduleAtFixedRate(new TimerTask() {1
+        trendTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 SwingUtilities.invokeLater(() -> sampleTrendData());

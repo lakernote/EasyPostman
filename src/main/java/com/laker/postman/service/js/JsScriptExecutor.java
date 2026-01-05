@@ -64,6 +64,7 @@ public class JsScriptExecutor {
 
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
+                .allowNativeAccess(true)
                 .out(outputStream)
                 .err(outputStream)
                 .engine(ENGINE)

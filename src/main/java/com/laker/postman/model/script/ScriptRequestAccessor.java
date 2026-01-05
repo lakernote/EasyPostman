@@ -83,9 +83,14 @@ public class ScriptRequestAccessor {
     public String id;
 
     /**
-     * 请求 URL
+     * 请求 URL 对象（支持 pm.request.url.query.all() 访问）
      */
-    public String url;
+    public UrlWrapper url;
+
+    /**
+     * 请求 URL 字符串（用于向后兼容）
+     */
+    public String urlStr;
 
     /**
      * 请求方法 (GET, POST, PUT, DELETE 等)
@@ -145,7 +150,8 @@ public class ScriptRequestAccessor {
         this.params = new JsListWrapper<>(req.paramsList, JsListWrapper.ListType.PARAM);
 
         this.id = req.id;
-        this.url = req.url;
+        this.urlStr = req.url;
+        this.url = new UrlWrapper(req.url, req.paramsList);
         this.method = req.method;
         this.body = req.body;
         this.isMultipart = req.isMultipart;

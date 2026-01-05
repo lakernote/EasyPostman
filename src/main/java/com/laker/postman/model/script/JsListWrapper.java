@@ -34,6 +34,14 @@ public class JsListWrapper<T> {
     }
 
     /**
+     * Postman API: pm.request.params.all()
+     * 返回所有元素的列表，供 JavaScript 访问
+     */
+    public List<T> all() {
+        return list;
+    }
+
+    /**
      * JS 脚本调用：pm.request.headers.add({key: 'X-Custom', value: 'Value'})
      */
     public void add(Map<String, Object> obj) {

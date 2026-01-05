@@ -36,6 +36,152 @@ public class UrlWrapper {
     }
 
     /**
+     * 获取 URL 的路径部分（不包含协议、域名、端口和查询参数）
+     * <p>
+     * 例如: {@code "https://api.example.com:8080/users/123?id=1" -> "/users/123"}
+     * </p>
+     *
+     * @return URL 路径，如果解析失败则返回空字符串
+     */
+    public String getPath() {
+        if (url == null || url.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 移除协议部分（http:// 或 https://）
+            String urlWithoutProtocol = url;
+            int protocolEnd = url.indexOf("://");
+            if (protocolEnd > 0) {
+                urlWithoutProtocol = url.substring(protocolEnd + 3);
+            }
+
+            // 找到第一个 '/' 的位置（路径开始）
+            int pathStart = urlWithoutProtocol.indexOf('/');
+            if (pathStart == -1) {
+                // 没有路径部分，返回 "/"
+                return "/";
+            }
+
+            // 找到查询参数的位置（如果有）
+            int queryStart = urlWithoutProtocol.indexOf('?', pathStart);
+            if (queryStart > 0) {
+                // 返回从路径开始到查询参数之前的部分
+                return urlWithoutProtocol.substring(pathStart, queryStart);
+            } else {
+                // 没有查询参数，返回从路径开始到结尾
+                return urlWithoutProtocol.substring(pathStart);
+            }
+        } catch (Exception e) {
+            // 解析失败，返回空字符串
+            return "";
+        }
+    }
+
+    /**
+     * 获取 URL 的主机名部分（不包含协议和端口）
+     * <p>
+     * 例如: {@code "https://api.example.com:8080/users" -> "api.example.com"}
+     * </p>
+     *
+     * @return 主机名，如果解析失败则返回空字符串
+     */
+    public String getHost() {
+        if (url == null || url.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 移除协议部分
+            String urlWithoutProtocol = url;
+            int protocolEnd = url.indexOf("://");
+            if (protocolEnd > 0) {
+                urlWithoutProtocol = url.substring(protocolEnd + 3);
+            }
+
+            // 找到路径开始的位置
+            int pathStart = urlWithoutProtocol.indexOf('/');
+            String hostPart = pathStart > 0 ? urlWithoutProtocol.substring(0, pathStart) : urlWithoutProtocol;
+
+            // 移除端口部分（如果有）
+            int portStart = hostPart.indexOf(':');
+            if (portStart > 0) {
+                return hostPart.substring(0, portStart);
+            }
+
+            return hostPart;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * 获取查询参数字符串（不包含 '?'）
+     * <p>
+     * 例如: {@code "https://api.example.com/users?id=1&name=test" -> "id=1&name=test"}
+     * </p>
+     *
+     * @return 查询参数字符串，如果没有查询参数则返回空字符串
+     */
+    public String getQueryString() {
+        if (url == null || url.isEmpty()) {
+            return "";
+        }
+
+        try {
+            int queryStart = url.indexOf('?');
+            if (queryStart > 0 && queryStart < url.length() - 1) {
+                return url.substring(queryStart + 1);
+            }
+            return "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * 获取路径和查询参数（从第一个 '/' 开始）
+     * <p>
+     * 例如: {@code "https://api.example.com/users?id=1" -> "/users?id=1"}
+     * </p>
+     *
+     * @return 路径和查询参数，如果解析失败则返回 "/"
+     */
+    public String getPathWithQuery() {
+        if (url == null || url.isEmpty()) {
+            return "/";
+        }
+
+        try {
+            // 移除协议部分
+            String urlWithoutProtocol = url;
+            int protocolEnd = url.indexOf("://");
+            if (protocolEnd > 0) {
+                urlWithoutProtocol = url.substring(protocolEnd + 3);
+            }
+
+            // 找到第一个 '/' 的位置
+            int pathStart = urlWithoutProtocol.indexOf('/');
+            if (pathStart == -1) {
+                return "/";
+            }
+
+            return urlWithoutProtocol.substring(pathStart);
+        } catch (Exception e) {
+            return "/";
+        }
+    }
+
+    /**
+     * 获取完整的 URL 字符串
+     *
+     * @return URL 字符串
+     */
+    public String toString() {
+        return url != null ? url : "";
+    }
+
+    /**
      * 查询参数包装器类
      */
     public static class QueryWrapper {

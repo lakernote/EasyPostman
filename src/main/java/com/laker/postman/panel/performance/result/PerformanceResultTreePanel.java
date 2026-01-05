@@ -394,7 +394,7 @@ public class PerformanceResultTreePanel extends JPanel {
         }
 
         /**
-         * 关键字匹配：接口名 OR 成功/失败文本
+         * 关键字匹配：接口名 OR 成功/失败文本1
          * - 空关键字：直接通过
          * - 关键字包含 “成功/失败/success/fail/ok/error” 时也能匹配状态
          */

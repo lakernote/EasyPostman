@@ -352,7 +352,7 @@ public class PerformanceResultTreePanel extends JPanel {
                 all.remove(0);
             }
 
-            // trim 后如果有过滤，需要重建 view（因为引用对象还在，但位置变了）
+            // trim 后如果有过滤，需要重建 view（因为引用对象还在，但位置变了1）
             rebuildView();
             dirty = true;
         }

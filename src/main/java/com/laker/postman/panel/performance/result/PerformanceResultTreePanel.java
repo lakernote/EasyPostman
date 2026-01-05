@@ -84,18 +84,26 @@ public class PerformanceResultTreePanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
 
+        // 搜索框
         searchField = new SearchTextField();
 
+        // 表格
         tableModel = new ResultTableModel();
         table = new JTable(tableModel);
         table.setRowHeight(24);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 
-        DefaultTableCellRenderer left = new DefaultTableCellRenderer();
-        left.setHorizontalAlignment(SwingConstants.LEFT);
-        table.getColumnModel().getColumn(0).setCellRenderer(left);
-        table.getColumnModel().getColumn(1).setCellRenderer(left);
+        // ===== 单元格：Name/Cost 居左 =====
+        DefaultTableCellRenderer cellLeft = new DefaultTableCellRenderer();
+        cellLeft.setHorizontalAlignment(SwingConstants.LEFT);
+        table.getColumnModel().getColumn(0).setCellRenderer(cellLeft);
+        table.getColumnModel().getColumn(1).setCellRenderer(cellLeft);
+
+        // ===== 表头：也居左（你之前缺的就是这个）=====
+        DefaultTableCellRenderer headerLeft = new DefaultTableCellRenderer();
+        headerLeft.setHorizontalAlignment(SwingConstants.LEFT);
+        table.getTableHeader().setDefaultRenderer(headerLeft);
 
         JScrollPane tableScroll = new JScrollPane(table);
 
@@ -103,6 +111,7 @@ public class PerformanceResultTreePanel extends JPanel {
         leftPanel.add(searchField, BorderLayout.NORTH);
         leftPanel.add(tableScroll, BorderLayout.CENTER);
 
+        // 详情 Tabs
         detailTabs = new JTabbedPane();
         for (String key : new String[]{
                 MessageKeys.PERFORMANCE_TAB_REQUEST,

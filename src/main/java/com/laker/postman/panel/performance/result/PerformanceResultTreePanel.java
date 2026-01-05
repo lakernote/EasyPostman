@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 性能测试结果表（DevTools Network 风格）
- *
  * ✔ Space：暂停 / 恢复刷新
  * ✔ selection 不影响刷新
  * ✔ EDT 16ms 合帧刷新
@@ -201,24 +200,6 @@ public class PerformanceResultTreePanel extends JPanel {
         clearDetailTabs();
     }
 
-    /* ======================= 后台 → Model ======================= */
-
-    private void flushToModel() {
-        List<ResultNodeInfo> batch = new ArrayList<>(1024);
-        ResultNodeInfo info;
-
-        while ((info = pendingQueue.poll()) != null) {
-            batch.add(info);
-            if (batch.size() >= 2000) break;
-        }
-
-        if (!batch.isEmpty()) {
-            tableModel.append(batch);
-            if (tableModel.getTotalSize() > MAX_ROWS) {
-                tableModel.trimTo(MAX_ROWS);
-            }
-        }
-    }
 
     /* ======================= 详情 ======================= */
 

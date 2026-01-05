@@ -322,8 +322,8 @@ public class PerformanceResultTreePanel extends JPanel {
             boolean failOnly = onlyFail;
 
             for (ResultNodeInfo r : batch) {
-                if (!passFailFilter(r, failOnly)) continue;
-                if (!matchKeyword(r, k)) continue;
+                if (passFailFilter(r, failOnly)) continue;
+                if (matchKeyword(r, k)) continue;
                 view.add(r);
             }
         }
@@ -378,8 +378,8 @@ public class PerformanceResultTreePanel extends JPanel {
             List<ResultNodeInfo> filtered = new ArrayList<>();
 
             for (ResultNodeInfo r : all) {
-                if (!passFailFilter(r, onlyFail)) continue;
-                if (!matchKeyword(r, k)) continue;
+                if (passFailFilter(r, onlyFail)) continue;
+                if (matchKeyword(r, k)) continue;
                 filtered.add(r);
             }
             view = filtered;
@@ -389,29 +389,27 @@ public class PerformanceResultTreePanel extends JPanel {
          * “只看失败”过滤
          */
         private boolean passFailFilter(ResultNodeInfo r, boolean onlyFail) {
-            if (!onlyFail) return true;
-            return r != null && !r.success;
+            if (!onlyFail) return false;
+            return r == null || r.success;
         }
 
         /**
-         * 关键字匹配：接口名 OR 成功/失败文本1
+         * 关键字匹配：接口名 OR 成功/失败文本
          * - 空关键字：直接通过
          * - 关键字包含 “成功/失败/success/fail/ok/error” 时也能匹配状态
          */
         private boolean matchKeyword(ResultNodeInfo r, String k) {
-            if (k == null || k.isEmpty()) return true;
-            if (r == null) return false;
+            if (k == null || k.isEmpty()) return false;
+            if (r == null) return true;
 
             String name = r.name == null ? "" : r.name.toLowerCase();
-            if (name.contains(k)) return true;
+            if (name.contains(k)) return false;
 
             boolean wantSuccess = containsAny(k, "成功", "success", "ok", "pass", "passed");
             boolean wantFail = containsAny(k, "失败", "fail", "error", "err", "failed");
 
-            if (wantSuccess && r.success) return true;
-            if (wantFail && !r.success) return true;
-
-            return false;
+            if (wantSuccess && r.success) return false;
+            return !wantFail || r.success;
         }
 
         private boolean containsAny(String text, String... keys) {

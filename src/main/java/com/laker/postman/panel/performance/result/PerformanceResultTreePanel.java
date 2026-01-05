@@ -99,7 +99,7 @@ public class PerformanceResultTreePanel extends JPanel {
 
         // ===== 搜索区：输入框 + 复选框（只看失败）=====
         searchField = new SearchTextField();
-        onlyFailCheckBox = new JCheckBox("只看失败", false);
+        onlyFailCheckBox = new JCheckBox("只看失败接口", false);
 
         JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
         searchPanel.add(searchField, BorderLayout.CENTER);

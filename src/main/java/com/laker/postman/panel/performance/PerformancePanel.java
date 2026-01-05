@@ -111,7 +111,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
     // ===== 实时报表刷新（不新增任何类，只用 Swing Timer） =====
     private javax.swing.Timer reportRefreshTimer;
-    private static final int REPORT_REFRESH_INTERVAL_MS = 1000; // 1s 刷一次，稳定不卡 UI
+    private static final int REPORT_REFRESH_INTERVAL_MS = 1000; // 1s 刷一次UI
 
     // CSV 数据管理面板
     private CsvDataPanel csvDataPanel;
@@ -584,13 +584,12 @@ public class PerformancePanel extends SingletonBasePanel {
     }
     /**
      * 启动：报表实时刷新（EDT 线程执行）
-     * 不新增任何类，只用 javax.swing.Timer
      */
     private void startReportRefreshTimer() {
         stopReportRefreshTimer();
 
         reportRefreshTimer = new javax.swing.Timer(REPORT_REFRESH_INTERVAL_MS, e -> {
-            if (!running) return; // running 是你面板里控制压测状态的布尔值
+            if (!running) return; // running 面板里控制压测状态的布尔值
             refreshReportOnce();
         });
         reportRefreshTimer.setRepeats(true);
@@ -633,7 +632,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
             }
 
-            // 3) 更新报表（你原来的 panel，不换类）
+            // 3) 更新报表
             performanceReportPanel.updateReport(
                     apiCostMapCopy,
                     apiSuccessMap,

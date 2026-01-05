@@ -772,7 +772,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 waitTimeSeconds = durationSeconds + 5;
                 terminated = executor.awaitTermination(waitTimeSeconds, TimeUnit.SECONDS);
             } else {
-                // 对于循环次数测试，最多等待 1 小时
+                // 对于循环次数测试，最多等待 1 小时.
                 terminated = executor.awaitTermination(1, TimeUnit.HOURS);
             }
 

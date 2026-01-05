@@ -108,6 +108,11 @@ public class PerformancePanel extends SingletonBasePanel {
     private PerformanceResultTreePanel performanceResultTreePanel;
     private PerformanceTrendPanel performanceTrendPanel;
 
+
+    // ===== 实时报表刷新（不新增任何类，只用 Swing Timer） =====
+    private javax.swing.Timer reportRefreshTimer;
+    private static final int REPORT_REFRESH_INTERVAL_MS = 1000; // 1s 刷一次，稳定不卡 UI
+
     // CSV 数据管理面板
     private CsvDataPanel csvDataPanel;
     // CSV行索引分配器
@@ -481,6 +486,7 @@ public class PerformancePanel extends SingletonBasePanel {
         // 从设置中读取采样间隔，默认1秒
         int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
         long samplingIntervalMs = samplingIntervalSeconds * 1000L;
+        startReportRefreshTimer();
         trendTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -574,6 +580,70 @@ public class PerformancePanel extends SingletonBasePanel {
         if (trendTimer != null) {
             trendTimer.cancel();
             trendTimer = null;
+        }
+    }
+    /**
+     * 启动：报表实时刷新（EDT 线程执行）
+     * 不新增任何类，只用 javax.swing.Timer
+     */
+    private void startReportRefreshTimer() {
+        stopReportRefreshTimer();
+
+        reportRefreshTimer = new javax.swing.Timer(REPORT_REFRESH_INTERVAL_MS, e -> {
+            if (!running) return; // running 是你面板里控制压测状态的布尔值
+            refreshReportOnce();
+        });
+        reportRefreshTimer.setRepeats(true);
+        reportRefreshTimer.start();
+    }
+
+    /**
+     * 停止：报表实时刷新
+     */
+    private void stopReportRefreshTimer() {
+        if (reportRefreshTimer != null) {
+            reportRefreshTimer.stop();
+            reportRefreshTimer = null;
+        }
+    }
+
+    /**
+     * 执行一次报表刷新（完全复用你“停止时 updateReport”的逻辑）
+     * 关键：必须先 copy，再 update，避免并发修改异常
+     */
+    private void refreshReportOnce() {
+        try {
+            // 1) copy allRequestStartTimes / allRequestResults
+            List<Long> startTimesCopy;
+            List<RequestResult> resultsCopy;
+
+            synchronized (allRequestStartTimes) {
+                startTimesCopy = new ArrayList<>(allRequestStartTimes);
+            }
+            synchronized (allRequestResults) {
+                resultsCopy = new ArrayList<>(allRequestResults);
+            }
+
+            // 2) copy apiCostMap（每个 value 也要同步 copy）
+            Map<String, List<Long>> apiCostMapCopy = new HashMap<>();
+            for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                List<Long> costs = entry.getValue();
+                synchronized (costs) {
+                    apiCostMapCopy.put(entry.getKey(), new ArrayList<>(costs));
+                }
+            }
+
+            // 3) 更新报表（你原来的 panel，不换类）
+            performanceReportPanel.updateReport(
+                    apiCostMapCopy,
+                    apiSuccessMap,
+                    apiFailMap,
+                    startTimesCopy,
+                    resultsCopy
+            );
+        } catch (Exception ex) {
+            // 不要让 Timer 因异常中断
+            log.warn("实时刷新报表失败: {}", ex.getMessage(), ex);
         }
     }
 
@@ -1810,6 +1880,7 @@ public class PerformancePanel extends SingletonBasePanel {
         OkHttpClientManager.setDefaultConnectionPoolConfig();
         // 停止趋势图定时采样
         stopTrendTimer();
+        stopReportRefreshTimer();
     }
 
     /**

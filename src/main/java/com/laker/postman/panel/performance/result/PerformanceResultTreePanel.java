@@ -311,7 +311,7 @@ public class PerformanceResultTreePanel extends JPanel {
             all.addAll(batch);
             // 有过滤时，需要把 view 跟着更新，否则 view 不会包含新数据
             if (hasFilter()) {
-                // 增量过滤：只过滤新来的 batch（避免全量扫描）
+                // 增量过滤：只过滤新来的 batch（避免全量扫描）1
                 appendFiltered(batch);
             }
             dirty = true;

@@ -1,0 +1,116 @@
+package com.laker.postman.model.script;
+
+import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+
+import static org.testng.Assert.assertEquals;
+
+/**
+ * UrlWrapper 测试
+ */
+public class UrlWrapperTest {
+
+    @Test
+    public void testGetPath_withFullUrl() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com:8080/users/123?id=1&name=test", new ArrayList<>());
+        assertEquals(url.getPath(), "/users/123");
+    }
+
+    @Test
+    public void testGetPath_withoutQueryParams() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users/123", new ArrayList<>());
+        assertEquals(url.getPath(), "/users/123");
+    }
+
+    @Test
+    public void testGetPath_rootPath() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com", new ArrayList<>());
+        assertEquals(url.getPath(), "/");
+    }
+
+    @Test
+    public void testGetPath_withoutProtocol() {
+        UrlWrapper url = new UrlWrapper("api.example.com/users/123", new ArrayList<>());
+        assertEquals(url.getPath(), "/users/123");
+    }
+
+    @Test
+    public void testGetPath_complexPath() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/api/v1/users/123/orders/456?sort=desc", new ArrayList<>());
+        assertEquals(url.getPath(), "/api/v1/users/123/orders/456");
+    }
+
+    @Test
+    public void testGetPath_emptyUrl() {
+        UrlWrapper url = new UrlWrapper("", new ArrayList<>());
+        assertEquals(url.getPath(), "");
+    }
+
+    @Test
+    public void testGetPath_nullUrl() {
+        UrlWrapper url = new UrlWrapper(null, new ArrayList<>());
+        assertEquals(url.getPath(), "");
+    }
+
+    @Test
+    public void testGetHost_withPort() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com:8080/users", new ArrayList<>());
+        assertEquals(url.getHost(), "api.example.com");
+    }
+
+    @Test
+    public void testGetHost_withoutPort() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users", new ArrayList<>());
+        assertEquals(url.getHost(), "api.example.com");
+    }
+
+    @Test
+    public void testGetHost_withSubdomain() {
+        UrlWrapper url = new UrlWrapper("https://api.staging.example.com/users", new ArrayList<>());
+        assertEquals(url.getHost(), "api.staging.example.com");
+    }
+
+    @Test
+    public void testGetQueryString_withParams() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users?id=1&name=test", new ArrayList<>());
+        assertEquals(url.getQueryString(), "id=1&name=test");
+    }
+
+    @Test
+    public void testGetQueryString_withoutParams() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users", new ArrayList<>());
+        assertEquals(url.getQueryString(), "");
+    }
+
+    @Test
+    public void testGetQueryString_emptyParams() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users?", new ArrayList<>());
+        assertEquals(url.getQueryString(), "");
+    }
+
+    @Test
+    public void testGetPathWithQuery_withParams() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users?id=1&name=test", new ArrayList<>());
+        assertEquals(url.getPathWithQuery(), "/users?id=1&name=test");
+    }
+
+    @Test
+    public void testGetPathWithQuery_withoutParams() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users", new ArrayList<>());
+        assertEquals(url.getPathWithQuery(), "/users");
+    }
+
+    @Test
+    public void testGetPathWithQuery_rootPath() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com", new ArrayList<>());
+        assertEquals(url.getPathWithQuery(), "/");
+    }
+
+    @Test
+    public void testToString() {
+        UrlWrapper url = new UrlWrapper("https://api.example.com/users/123", new ArrayList<>());
+        assertEquals(url.toString(), "https://api.example.com/users/123");
+    }
+}
+

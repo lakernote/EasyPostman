@@ -188,6 +188,80 @@ public class ScriptSnippetManager {
         provider.addCompletion(new BasicCompletion(provider, "SHA256",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SHA256)));
 
+        // ========== 内置库对象 ==========
+        // CryptoJS
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS",
+                "加密库 - 支持 AES、DES、MD5、SHA 等算法"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.AES",
+                "AES 加密/解密"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.DES",
+                "DES 加密/解密"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.MD5",
+                "MD5 哈希"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.SHA1",
+                "SHA1 哈希"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.SHA256",
+                "SHA256 哈希"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.HmacSHA256",
+                "HMAC-SHA256 签名"));
+        provider.addCompletion(new BasicCompletion(provider, "CryptoJS.enc",
+                "编码转换 (Base64, Utf8, Latin1 等)"));
+
+        // Lodash
+        provider.addCompletion(new BasicCompletion(provider, "_",
+                "Lodash - JavaScript 实用工具库"));
+        provider.addCompletion(new BasicCompletion(provider, "_.map",
+                "映射数组元素"));
+        provider.addCompletion(new BasicCompletion(provider, "_.filter",
+                "过滤数组元素"));
+        provider.addCompletion(new BasicCompletion(provider, "_.find",
+                "查找元素"));
+        provider.addCompletion(new BasicCompletion(provider, "_.uniq",
+                "数组去重"));
+        provider.addCompletion(new BasicCompletion(provider, "_.pick",
+                "提取对象属性"));
+        provider.addCompletion(new BasicCompletion(provider, "_.omit",
+                "排除对象属性"));
+        provider.addCompletion(new BasicCompletion(provider, "_.groupBy",
+                "分组"));
+        provider.addCompletion(new BasicCompletion(provider, "_.sortBy",
+                "排序"));
+        provider.addCompletion(new BasicCompletion(provider, "_.has",
+                "检查属性是否存在"));
+        provider.addCompletion(new BasicCompletion(provider, "_.every",
+                "检查所有元素是否满足条件"));
+        provider.addCompletion(new BasicCompletion(provider, "_.some",
+                "检查是否有元素满足条件"));
+
+        // Moment
+        provider.addCompletion(new BasicCompletion(provider, "moment",
+                "Moment.js - 日期时间处理库"));
+        provider.addCompletion(new BasicCompletion(provider, "moment()",
+                "创建当前时间对象"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().format",
+                "格式化日期"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().add",
+                "日期加法"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().subtract",
+                "日期减法"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().isBefore",
+                "日期比较 (之前)"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().isAfter",
+                "日期比较 (之后)"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().unix",
+                "获取 Unix 时间戳"));
+        provider.addCompletion(new BasicCompletion(provider, "moment().valueOf",
+                "获取毫秒时间戳"));
+
+
+        // 实用函数
+        provider.addCompletion(new BasicCompletion(provider, "uuid",
+                "生成 UUID (Java 实现)"));
+        provider.addCompletion(new BasicCompletion(provider, "timestamp",
+                "获取当前时间戳 (Java 实现)"));
+        provider.addCompletion(new BasicCompletion(provider, "require",
+                "加载 JavaScript 库"));
+
         // ========== JavaScript关键字 ==========
         provider.addCompletion(new BasicCompletion(provider, "if",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_IF)));
@@ -338,6 +412,153 @@ public class ScriptSnippetManager {
                 "JSON.stringify",
                 "var jsonString = JSON.stringify(obj);",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_SNIPPET_JSON_STRINGIFY)));
+
+        // ========== CryptoJS 加密库 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "CryptoJS.MD5",
+                "var hash = CryptoJS.MD5('message').toString();",
+                "CryptoJS MD5 哈希"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "CryptoJS.SHA256",
+                "var hash = CryptoJS.SHA256('message').toString();",
+                "CryptoJS SHA256 哈希"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "CryptoJS.AES.encrypt",
+                "var encrypted = CryptoJS.AES.encrypt('message', 'secret').toString();",
+                "CryptoJS AES 加密"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "CryptoJS.AES.decrypt",
+                "var decrypted = CryptoJS.AES.decrypt(encrypted, 'secret').toString(CryptoJS.enc.Utf8);",
+                "CryptoJS AES 解密"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "CryptoJS.HmacSHA256",
+                "var signature = CryptoJS.HmacSHA256('message', 'secret').toString();",
+                "CryptoJS HMAC-SHA256 签名"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "CryptoJS.Base64",
+                "var encoded = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse('text'));",
+                "CryptoJS Base64 编码"));
+
+        // ========== Lodash 工具库 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.filter",
+                "var filtered = _.filter([1, 2, 3, 4], n => n > 2);",
+                "Lodash 过滤数组"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.map",
+                "var mapped = _.map([1, 2, 3], n => n * 2);",
+                "Lodash 映射数组"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.uniq",
+                "var unique = _.uniq([1, 2, 2, 3]);",
+                "Lodash 数组去重"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.pick",
+                "var picked = _.pick(obj, ['name', 'age']);",
+                "Lodash 提取对象属性"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.groupBy",
+                "var grouped = _.groupBy([6.1, 4.2, 6.3], Math.floor);",
+                "Lodash 分组"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.find",
+                "var found = _.find(users, {age: 30});",
+                "Lodash 查找元素"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "_.sortBy",
+                "var sorted = _.sortBy(users, ['name', 'age']);",
+                "Lodash 排序"));
+
+        // ========== Moment 日期时间库 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "moment().format",
+                "var dateStr = moment().format('YYYY-MM-DD HH:mm:ss');",
+                "Moment 格式化当前日期"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "moment.parse",
+                "var date = moment('2024-01-15', 'YYYY-MM-DD');",
+                "Moment 解析日期"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "moment.add",
+                "var tomorrow = moment().add(1, 'days').format('YYYY-MM-DD');",
+                "Moment 日期加法"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "moment.subtract",
+                "var yesterday = moment().subtract(1, 'days').format('YYYY-MM-DD');",
+                "Moment 日期减法"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "moment.isBefore",
+                "var isBefore = moment('2024-01-01').isBefore('2024-12-31');",
+                "Moment 日期比较"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "moment.unix",
+                "var timestamp = moment().unix();",
+                "Moment 获取 Unix 时间戳"));
+
+
+        // ========== 实用函数 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "uuid",
+                "var id = uuid();",
+                "生成 UUID (Java 实现)"));
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "timestamp",
+                "var now = timestamp();",
+                "获取当前时间戳 (Java 实现)"));
+
+        // ========== 完整示例：API 签名 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "apiSignature",
+                "// 生成 API 签名\n" +
+                "var requestId = uuid();\n" +
+                "var timestamp = moment().unix();\n" +
+                "var signData = {\n" +
+                "    requestId: requestId,\n" +
+                "    timestamp: timestamp,\n" +
+                "    method: pm.request.method,\n" +
+                "    path: pm.request.url.getPath()\n" +
+                "};\n" +
+                "var signString = _.map(\n" +
+                "    _.sortBy(_.toPairs(signData), 0),\n" +
+                "    pair => pair[0] + '=' + pair[1]\n" +
+                ").join('&');\n" +
+                "var signature = CryptoJS.HmacSHA256(signString, pm.environment.get('api_secret')).toString();\n" +
+                "pm.request.headers.add({key: 'X-Signature', value: signature});",
+                "完整示例：生成 API 请求签名"));
+
+        // ========== 完整示例：密码加密 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "encryptPassword",
+                "// AES 加密密码\n" +
+                "var secret_key = pm.environment.get('secret_key');\n" +
+                "var password = pm.request.url.query.get('password');\n" +
+                "var key = CryptoJS.enc.Latin1.parse(secret_key);\n" +
+                "var encrypted = CryptoJS.AES.encrypt(password, key, {\n" +
+                "    iv: key,\n" +
+                "    mode: CryptoJS.mode.CBC,\n" +
+                "    padding: CryptoJS.pad.Pkcs7\n" +
+                "});\n" +
+                "var encrypted_password = encodeURIComponent(encrypted.toString());\n" +
+                "pm.request.url.query.upsert({key: 'password', value: encrypted_password});",
+                "完整示例：加密密码参数"));
+
+        // ========== 完整示例：响应验证 ==========
+        provider.addCompletion(new ShorthandCompletion(provider,
+                "validateResponse",
+                "// 完整的响应验证\n" +
+                "pm.test('响应验证', function() {\n" +
+                "    var jsonData = pm.response.json();\n" +
+                "    \n" +
+                "    // 验证必需字段\n" +
+                "    var requiredFields = ['code', 'message', 'data'];\n" +
+                "    var hasAllFields = _.every(requiredFields, field => _.has(jsonData, field));\n" +
+                "    pm.expect(hasAllFields).to.equal(true);\n" +
+                "    \n" +
+                "    // 验证字段类型\n" +
+                "    pm.expect(jsonData.code).to.be.a('number');\n" +
+                "    pm.expect(jsonData.message).to.be.a('string');\n" +
+                "});",
+                "完整示例：验证响应数据"));
     }
 
 }

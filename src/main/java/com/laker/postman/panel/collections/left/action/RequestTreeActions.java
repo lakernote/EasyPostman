@@ -5,10 +5,7 @@ import cn.hutool.json.JSONObject;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.Workspace;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.left.dialog.AddRequestDialog;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -104,7 +101,7 @@ public class RequestTreeActions {
     }
 
     /**
-     * 重命名选中的项（分组或请求）
+     * 重命名选中的项（分组、请求或保存的响应）
      */
     public void renameSelectedItem() {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
@@ -117,6 +114,8 @@ public class RequestTreeActions {
             renameGroup(selectedNode, obj);
         } else if (REQUEST.equals(obj[0])) {
             renameRequest(selectedNode, obj);
+        } else if (SAVED_RESPONSE.equals(obj[0])) {
+            renameSavedResponse(selectedNode, obj);
         }
     }
 
@@ -223,6 +222,67 @@ public class RequestTreeActions {
     }
 
     /**
+     * 重命名保存的响应
+     */
+    private void renameSavedResponse(DefaultMutableTreeNode selectedNode, Object[] obj) {
+        SavedResponse savedResponse = (SavedResponse) obj[1];
+        String oldName = savedResponse.getName();
+
+        Object result = JOptionPane.showInputDialog(
+                SingletonFactory.getInstance(MainFrame.class),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_PROMPT),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_TITLE),
+                JOptionPane.PLAIN_MESSAGE,
+                null, null, oldName
+        );
+
+        if (result != null) {
+            String newName = result.toString().trim();
+            if (!newName.isEmpty() && !newName.equals(oldName)) {
+                updateSavedResponseName(selectedNode, savedResponse, newName);
+            } else if (newName.isEmpty()) {
+                NotificationUtil.showWarning(
+                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY)
+                );
+            }
+        }
+    }
+
+    /**
+     * 更新保存的响应名称
+     */
+    private void updateSavedResponseName(DefaultMutableTreeNode node, SavedResponse savedResponse, String newName) {
+        savedResponse.setName(newName);
+        leftPanel.getTreeModel().nodeChanged(node);
+        leftPanel.getPersistence().saveRequestGroups();
+
+        // 同步更新已打开Tab的标题
+        updateOpenedSavedResponseTabsTitle(savedResponse, newName);
+    }
+
+    /**
+     * 更新已打开的保存响应Tab的标题
+     */
+    private void updateOpenedSavedResponseTabsTitle(SavedResponse savedResponse, String newName) {
+        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        JTabbedPane tabbedPane = editPanel.getTabbedPane();
+
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel subPanel) {
+                if (subPanel.isSavedResponseTab()) {
+                    SavedResponse tabSavedResponse = subPanel.getSavedResponse();
+                    if (tabSavedResponse != null && savedResponse.getId().equals(tabSavedResponse.getId())) {
+                        tabbedPane.setTitleAt(i, newName);
+                        tabbedPane.setTabComponentAt(i,
+                                new ClosableTabComponent(newName, RequestItemProtocolEnum.SAVED_RESPONSE));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * 删除选中的项（支持多选）
      */
     public void deleteSelectedItem() {
@@ -310,9 +370,17 @@ public class RequestTreeActions {
         if (!(userObj instanceof Object[] obj)) return;
 
         if (REQUEST.equals(obj[0])) {
-            closeRequestTabs((HttpRequestItem) obj[1], tabbedPane);
+            HttpRequestItem item = (HttpRequestItem) obj[1];
+            // 清空保存的响应列表，确保删除时不会保留已保存的响应
+            if (item.getResponse() != null) {
+                item.getResponse().clear();
+            }
+            closeRequestTabs(item, tabbedPane);
         } else if (GROUP.equals(obj[0])) {
             closeTabsForGroup(node, tabbedPane);
+        } else if (SAVED_RESPONSE.equals(obj[0])) {
+            // 处理删除保存的响应节点
+            deleteSavedResponseNode(node);
         }
     }
 
@@ -720,6 +788,34 @@ public class RequestTreeActions {
 
     public boolean isCopiedRequestsEmpty() {
         return copiedRequests.isEmpty();
+    }
+
+    /**
+     * 从父请求中删除保存的响应
+     */
+    private void deleteSavedResponseNode(DefaultMutableTreeNode savedResponseNode) {
+        // 获取父节点（应该是 REQUEST 节点）
+        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) savedResponseNode.getParent();
+        if (parentNode == null) return;
+
+        Object parentUserObj = parentNode.getUserObject();
+        if (!(parentUserObj instanceof Object[] parentObj)) return;
+        if (!REQUEST.equals(parentObj[0])) return;
+
+        // 获取父请求和要删除的响应
+        HttpRequestItem parentRequest = (HttpRequestItem) parentObj[1];
+        Object savedRespUserObj = savedResponseNode.getUserObject();
+        if (!(savedRespUserObj instanceof Object[] respObj)) return;
+        if (!SAVED_RESPONSE.equals(respObj[0])) return;
+
+        SavedResponse toDelete = (SavedResponse) respObj[1];
+
+        // 从父请求的 response 列表中删除
+        if (parentRequest.getResponse() != null) {
+            parentRequest.getResponse().removeIf(resp ->
+                    resp.getId() != null && resp.getId().equals(toDelete.getId())
+            );
+        }
     }
 
     /**

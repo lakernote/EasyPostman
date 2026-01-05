@@ -700,19 +700,32 @@ public class PerformancePanel extends SingletonBasePanel {
         try {
             // 等待所有线程完成，或者超时
             boolean terminated;
+            int waitTimeSeconds;
             if (useTime) {
-                terminated = executor.awaitTermination(durationSeconds + 10L, TimeUnit.SECONDS);
+                // 对于定时测试，额外等待时间 5 秒
+                waitTimeSeconds = durationSeconds + 5;
+                terminated = executor.awaitTermination(waitTimeSeconds, TimeUnit.SECONDS);
             } else {
+                // 对于循环次数测试，最多等待 1 小时
                 terminated = executor.awaitTermination(1, TimeUnit.HOURS);
             }
 
             // 如果线程池未能正常终止（例如用户点击了停止按钮），则强制关闭
             if (!terminated || !running) {
                 log.warn("线程池未能在预期时间内完成，强制关闭剩余线程");
-                executor.shutdownNow();
-                // 再等待一小段时间确保强制关闭完成
-                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                    log.warn("部分线程在强制关闭后仍未终止");
+
+                // 取消所有正在执行的 HTTP 请求
+                cancelAllHttpCalls();
+
+                // 强制关闭线程池
+                List<Runnable> pendingTasks = executor.shutdownNow();
+                log.debug("已取消 {} 个待执行任务", pendingTasks.size());
+
+                // 再等待 3 秒确保强制关闭完成（缩短等待时间）
+                if (!executor.awaitTermination(3, TimeUnit.SECONDS)) {
+                    log.warn("部分线程在强制关闭后仍未终止，这是正常的，线程会在网络操作完成后自动退出");
+                } else {
+                    log.info("所有线程已成功终止");
                 }
             }
         } catch (InterruptedException exception) {
@@ -1215,6 +1228,38 @@ public class PerformancePanel extends SingletonBasePanel {
         }
     }
 
+    /**
+     * 检查异常是否是被取消或中断的请求
+     * 包括：InterruptedIOException、IOException: Canceled 等
+     */
+    private boolean isCancelledOrInterrupted(Exception ex) {
+        // 1. InterruptedIOException（线程中断）
+        if (ex instanceof java.io.InterruptedIOException) {
+            return true;
+        }
+
+        // 2. IOException with "Canceled" message（OkHttp 取消请求）
+        if (ex instanceof java.io.IOException) {
+            String message = ex.getMessage();
+            if (message != null && message.contains("Canceled")) {
+                return true;
+            }
+        }
+
+        // 3. InterruptedException
+        if (ex instanceof InterruptedException) {
+            return true;
+        }
+
+        // 4. 检查异常链中是否包含上述异常
+        Throwable cause = ex.getCause();
+        if (cause instanceof Exception exception) {
+            return isCancelledOrInterrupted(exception);
+        }
+
+        return false;
+    }
+
     // 执行单个请求节点
     private void executeRequestNode(Object userObj, DefaultMutableTreeNode child) {
         // 如果测试已停止，立即返回，不执行请求
@@ -1279,15 +1324,27 @@ public class PerformancePanel extends SingletonBasePanel {
             long startTime = System.currentTimeMillis();
             allRequestStartTimes.add(startTime); // 记录开始时间
             long costMs = 0;
+            boolean interrupted = false; // 标记是否被中断
 
             if (preOk && running) {  // 执行HTTP请求前再次检查running状态
                 try {
                     req.logEvent = !efficientMode; // 记录事件日志
                     resp = HttpSingleRequestExecutor.executeHttp(req);
                 } catch (Exception ex) {
-                    log.error("请求执行失败: {}", ex.getMessage(), ex);
-                    errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_FAILED, ex.getMessage());
-                    success = false;
+                    // 检查是否是被取消/中断的请求
+                    // 注意：cancelAllHttpCalls() 只在停止时调用，所以 Canceled 异常就是停止导致的
+                    boolean isCancelled = isCancelledOrInterrupted(ex);
+
+                    if (isCancelled) {
+                        // 被取消/中断的请求，不算作失败
+                        log.debug("请求被取消/中断（压测已停止）: {}", ex.getMessage());
+                        interrupted = true; // 标记为中断
+                    } else {
+                        // 真正的错误
+                        log.error("请求执行失败: {}", ex.getMessage(), ex);
+                        errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_FAILED, ex.getMessage());
+                        success = false;
+                    }
                 } finally {
                     costMs = System.currentTimeMillis() - startTime;
                 }
@@ -1353,14 +1410,21 @@ public class PerformancePanel extends SingletonBasePanel {
             if (resp != null) {
                 endTime = resp.endTime > 0 ? resp.endTime : startTime + cost;
             }
-            allRequestResults.add(new RequestResult(endTime, success, cost)); // 记录结束时间和实际响应时间
-            apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-            if (success) {
-                apiSuccessMap.merge(apiName, 1, Integer::sum);
+
+            // 如果请求被中断（压测停止），跳过统计，不计入成功或失败
+            if (!interrupted) {
+                allRequestResults.add(new RequestResult(endTime, success, cost)); // 记录结束时间和实际响应时间
+                apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                if (success) {
+                    apiSuccessMap.merge(apiName, 1, Integer::sum);
+                } else {
+                    apiFailMap.merge(apiName, 1, Integer::sum);
+                }
+                performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
             } else {
-                apiFailMap.merge(apiName, 1, Integer::sum);
+                // 被中断的请求，记录日志但不计入统计
+                log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());
             }
-            performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
 
             // ====== 定时器延迟（sleep） ======
             // 如果测试已停止，跳过定时器延迟

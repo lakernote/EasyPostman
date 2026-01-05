@@ -99,6 +99,11 @@ public class OpenedRequestsService {
             Component tabComp = tabbedPane.getTabComponentAt(i);
             Component comp = tabbedPane.getComponentAt(i);
             if (tabComp instanceof ClosableTabComponent closable && comp instanceof RequestEditSubPanel subPanel) {
+                // 跳过 save-response 类型的 tab
+                if (subPanel.isSavedResponseTab()) {
+                    continue;
+                }
+
                 HttpRequestItem item;
                 if (closable.isNewRequest()) {
                     item = subPanel.getCurrentRequest();

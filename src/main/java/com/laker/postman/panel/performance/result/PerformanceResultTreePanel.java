@@ -249,30 +249,37 @@ public class PerformanceResultTreePanel extends JPanel {
             return;
         }
 
-        int addedCount = 0;
-        for (ResultNodeInfo nodeInfo : batch) {
-            // 检查是否超过最大数量限制
+        // 先处理需要移除的节点
+        int removedCount = 0;
+        for (int i = 0; i < batch.size(); i++) {
             if (currentResultCount.get() >= MAX_RESULT_NODES && resultRootNode.getChildCount() > 0) {
                 // 移除最旧的节点（FIFO）
                 resultRootNode.remove(0);
                 currentResultCount.decrementAndGet();
+                removedCount++;
             }
+        }
 
+        // 通知模型节点被移除（如果有移除操作）
+        if (removedCount > 0) {
+            resultTreeModel.nodeStructureChanged(resultRootNode);
+        }
+
+        // 添加新节点
+        List<Integer> insertedIndices = new ArrayList<>();
+        for (ResultNodeInfo nodeInfo : batch) {
             DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(nodeInfo);
             int insertIndex = resultRootNode.getChildCount();
             resultRootNode.insert(reqNode, insertIndex);
             currentResultCount.incrementAndGet();
-            addedCount++;
+            insertedIndices.add(insertIndex);
         }
 
-        // 使用增量更新而不是全量reload，性能更好
-        if (addedCount > 0) {
-            // 通知模型节点结构已改变
-            int[] childIndices = new int[addedCount];
-            int startIndex = resultRootNode.getChildCount() - addedCount;
-
-            for (int i = 0; i < addedCount; i++) {
-                childIndices[i] = startIndex + i;
+        // 通知模型节点被插入
+        if (!insertedIndices.isEmpty()) {
+            int[] childIndices = new int[insertedIndices.size()];
+            for (int i = 0; i < insertedIndices.size(); i++) {
+                childIndices[i] = insertedIndices.get(i);
             }
 
             resultTreeModel.nodesWereInserted(resultRootNode, childIndices);

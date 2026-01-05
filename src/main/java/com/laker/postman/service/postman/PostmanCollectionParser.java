@@ -115,7 +115,19 @@ public class PostmanCollectionParser {
             } else if (item.containsKey(REQUEST)) {
                 // 纯请求节点
                 HttpRequestItem req = parsePostmanSingleItem(item);
-                nodeList.add(new DefaultMutableTreeNode(new Object[]{REQUEST, req}));
+                DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{REQUEST, req});
+
+                // 为响应创建子节点（类似 RequestsPersistence 的逻辑）
+                if (req.getResponse() != null && !req.getResponse().isEmpty()) {
+                    for (SavedResponse savedResp : req.getResponse()) {
+                        DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
+                                new Object[]{"response", savedResp}
+                        );
+                        requestNode.add(responseNode);
+                    }
+                }
+
+                nodeList.add(requestNode);
             }
         }
         return nodeList;
@@ -321,6 +333,134 @@ public class PostmanCollectionParser {
                 req.setPostscript(testScript.toString());
             }
         }
+
+        // 解析 response（Postman 的 Examples/Saved Responses）
+        JSONArray responses = item.getJSONArray("response");
+        if (responses != null && !responses.isEmpty()) {
+            List<SavedResponse> savedResponsesList = new ArrayList<>();
+            for (Object respObj : responses) {
+                JSONObject respJson = (JSONObject) respObj;
+                SavedResponse savedResponse = parsePostmanResponse(respJson);
+                if (savedResponse != null) {
+                    savedResponsesList.add(savedResponse);
+                }
+            }
+            req.setResponse(savedResponsesList);
+        }
+
         return req;
+    }
+
+    /**
+     * 解析 Postman 的单个响应（Example/Saved Response）
+     */
+    private static SavedResponse parsePostmanResponse(JSONObject respJson) {
+        SavedResponse savedResponse = new SavedResponse();
+
+        // 基本信息
+        savedResponse.setId(respJson.getStr("_postman_previewlanguage", UUID.randomUUID().toString()));
+        savedResponse.setName(respJson.getStr("name", "Response"));
+        savedResponse.setTimestamp(System.currentTimeMillis());
+
+        // 状态信息
+        savedResponse.setCode(respJson.getInt("code", 200));
+        savedResponse.setStatus(respJson.getStr("status", "OK"));
+        savedResponse.setPreviewLanguage(respJson.getStr("_postman_previewlanguage", "text"));
+
+        // 响应头
+        JSONArray headers = respJson.getJSONArray("header");
+        if (headers != null && !headers.isEmpty()) {
+            List<HttpHeader> headersList = new ArrayList<>();
+            for (Object h : headers) {
+                JSONObject hObj = (JSONObject) h;
+                headersList.add(new HttpHeader(true, hObj.getStr("key", ""), hObj.getStr("value", "")));
+            }
+            savedResponse.setHeaders(headersList);
+        }
+
+        // 响应体
+        savedResponse.setBody(respJson.getStr("body", ""));
+
+        // 原始请求信息
+        JSONObject originalRequest = respJson.getJSONObject("originalRequest");
+        if (originalRequest != null) {
+            SavedResponse.OriginalRequest origReq = new SavedResponse.OriginalRequest();
+            origReq.setMethod(originalRequest.getStr("method", "GET"));
+
+            // 解析 URL
+            Object urlObj = originalRequest.get("url");
+            if (urlObj instanceof JSONObject urlJson) {
+                origReq.setUrl(urlJson.getStr("raw", ""));
+
+                // 解析 query 参数
+                JSONArray queryArr = urlJson.getJSONArray("query");
+                if (queryArr != null) {
+                    List<HttpParam> paramsList = new ArrayList<>();
+                    for (Object q : queryArr) {
+                        JSONObject qObj = (JSONObject) q;
+                        boolean enabled = !qObj.getBool("disabled", false);
+                        paramsList.add(new HttpParam(enabled, qObj.getStr("key", ""), qObj.getStr("value", "")));
+                    }
+                    origReq.setParams(paramsList);
+                }
+            } else if (urlObj instanceof String urlStr) {
+                origReq.setUrl(urlStr);
+            }
+
+            // 解析请求头
+            JSONArray reqHeaders = originalRequest.getJSONArray("header");
+            if (reqHeaders != null && !reqHeaders.isEmpty()) {
+                List<HttpHeader> headersList = new ArrayList<>();
+                for (Object h : reqHeaders) {
+                    JSONObject hObj = (JSONObject) h;
+                    boolean enabled = !hObj.getBool("disabled", false);
+                    headersList.add(new HttpHeader(enabled, hObj.getStr("key", ""), hObj.getStr("value", "")));
+                }
+                origReq.setHeaders(headersList);
+            }
+
+            // 解析请求体
+            JSONObject body = originalRequest.getJSONObject("body");
+            if (body != null) {
+                String mode = body.getStr("mode", "");
+                origReq.setBodyType(mode);
+
+                if ("raw".equals(mode)) {
+                    origReq.setBody(body.getStr("raw", ""));
+                } else if ("formdata".equals(mode)) {
+                    JSONArray arr = body.getJSONArray("formdata");
+                    if (arr != null && !arr.isEmpty()) {
+                        List<HttpFormData> formDataList = new ArrayList<>();
+                        for (Object o : arr) {
+                            JSONObject oObj = (JSONObject) o;
+                            String formType = oObj.getStr("type", "text");
+                            String key = oObj.getStr("key", "");
+                            boolean enabled = !oObj.getBool("disabled", false);
+                            if ("file".equals(formType)) {
+                                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, oObj.getStr("src", "")));
+                            } else {
+                                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, oObj.getStr("value", "")));
+                            }
+                        }
+                        origReq.setFormDataList(formDataList);
+                    }
+                } else if ("urlencoded".equals(mode)) {
+                    JSONArray arr = body.getJSONArray("urlencoded");
+                    if (arr != null && !arr.isEmpty()) {
+                        List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+                        for (Object o : arr) {
+                            JSONObject oObj = (JSONObject) o;
+                            boolean enabled = !oObj.getBool("disabled", false);
+                            urlencodedList.add(new HttpFormUrlencoded(enabled, oObj.getStr("key", ""), oObj.getStr("value", "")));
+                        }
+                        origReq.setUrlencodedList(urlencodedList);
+                    }
+                }
+            }
+
+            savedResponse.setOriginalRequest(origReq);
+        }
+
+        return savedResponse;
     }
 }

@@ -98,7 +98,7 @@ public class SnippetDialog extends JDialog {
                         case LOCAL_VAR -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                         case ENV_VAR -> label.setIcon(new FlatSVGIcon("icons/environments.svg", 16, 16));
                         case ENCODE -> label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
-                        case ENCRYPT -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                        case ENCRYPT, CRYPTOJS -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
                         case ARRAY -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
                         case JSON -> label.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
                         case DATE -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));

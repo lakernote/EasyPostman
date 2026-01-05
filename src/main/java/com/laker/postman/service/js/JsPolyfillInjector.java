@@ -38,6 +38,13 @@ public class JsPolyfillInjector {
         // 工具函数
         injectUtilityFunctions(context);
 
+        // URL 编解码函数
+        injectUrlEncodingFunctions(context);
+
+        // 外部 JS 库支持
+        JsLibraryLoader.injectBuiltinLibraries(context);
+        JsLibraryLoader.injectRequireFunction(context);
+
         log.debug("Polyfills injected successfully");
     }
 
@@ -97,6 +104,61 @@ public class JsPolyfillInjector {
 
         // timestamp - 获取当前时间戳（毫秒）
         injectFunction(context, "timestamp", args -> System.currentTimeMillis());
+    }
+
+    /**
+     * 注入 URL 编解码函数
+     */
+    private static void injectUrlEncodingFunctions(Context context) {
+        // encodeURIComponent - URL 编码
+        injectFunction(context, "encodeURIComponent", args -> {
+            String str = args[0].asString();
+            return java.net.URLEncoder.encode(str, StandardCharsets.UTF_8)
+                    .replace("+", "%20")  // 空格编码为 %20 而非 +
+                    .replace("%21", "!")
+                    .replace("%27", "'")
+                    .replace("%28", "(")
+                    .replace("%29", ")")
+                    .replace("%7E", "~");
+        });
+
+        // decodeURIComponent - URL 解码
+        injectFunction(context, "decodeURIComponent", args -> {
+            String str = args[0].asString();
+            return java.net.URLDecoder.decode(str, StandardCharsets.UTF_8);
+        });
+
+        // encodeURI - URL 编码（保留特殊字符）
+        injectFunction(context, "encodeURI", args -> {
+            String str = args[0].asString();
+            return java.net.URLEncoder.encode(str, StandardCharsets.UTF_8)
+                    .replace("+", "%20")
+                    .replace("%3A", ":")
+                    .replace("%2F", "/")
+                    .replace("%3F", "?")
+                    .replace("%23", "#")
+                    .replace("%5B", "[")
+                    .replace("%5D", "]")
+                    .replace("%40", "@")
+                    .replace("%21", "!")
+                    .replace("%24", "$")
+                    .replace("%26", "&")
+                    .replace("%27", "'")
+                    .replace("%28", "(")
+                    .replace("%29", ")")
+                    .replace("%2A", "*")
+                    .replace("%2B", "+")
+                    .replace("%2C", ",")
+                    .replace("%3B", ";")
+                    .replace("%3D", "=")
+                    .replace("%7E", "~");
+        });
+
+        // decodeURI - URL 解码
+        injectFunction(context, "decodeURI", args -> {
+            String str = args[0].asString();
+            return java.net.URLDecoder.decode(str, StandardCharsets.UTF_8);
+        });
     }
 
     /**

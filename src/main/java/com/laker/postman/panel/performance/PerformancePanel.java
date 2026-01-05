@@ -1857,7 +1857,6 @@ public class PerformancePanel extends SingletonBasePanel {
      */
     private void refreshRequestsFromCollections() {
         saveAllPropertyPanelData();
-
         int updatedCount = 0;
         int removedCount = 0;
         List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<>();

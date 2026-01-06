@@ -84,6 +84,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private StartButton runBtn;
     private StopButton stopBtn;
     private JButton refreshBtn;
+    private JCheckBox efficientCheckBox; // 高效模式复选框
     private JLabel progressLabel; // 进度标签
     private long startTime;
     // 记录所有请求的开始和结束时间
@@ -221,28 +222,44 @@ public class PerformancePanel extends SingletonBasePanel {
         refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
         btnPanel.add(refreshBtn);
 
-        // 高效模式checkbox和问号提示
-        JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
+        // 高效模式checkbox - 更醒目的样式和更好的交互
+        efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
         efficientCheckBox.setSelected(efficientMode); // 使用加载的高效模式设置
-        efficientCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP));
+        // 设置为粗体并增大字体
+        efficientCheckBox.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        // 设置醒目的前景色
+        efficientCheckBox.setForeground(new Color(0, 128, 0)); // 深绿色表示推荐
+
+        // 创建多行HTML格式的详细提示
+        String htmlTooltip = "<html><body style='width: 400px; padding: 10px;'>" +
+                "<b style='color: #008000; font-size: 13px;'>" + I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE) + "</b><br><br>" +
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP_HTML) +
+                "</body></html>";
+        efficientCheckBox.setToolTipText(htmlTooltip);
+
+
         efficientCheckBox.addActionListener(e -> {
+            // 如果用户尝试关闭高效模式，给出强烈警告
+            if (!efficientCheckBox.isSelected()) {
+                // 显示警告对话框，让用户确认是否真的要关闭
+                int result = JOptionPane.showConfirmDialog(PerformancePanel.this,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING),
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+
+                // 如果用户选择NO（不关闭），则保持开启状态
+                if (result != JOptionPane.YES_OPTION) {
+                    efficientCheckBox.setSelected(true);
+                    return;
+                }
+                // 如果用户坚持要关闭，则允许但更新状态
+            }
             efficientMode = efficientCheckBox.isSelected();
             // 保存高效模式设置
             saveAllPropertyPanelData();
         });
         btnPanel.add(efficientCheckBox);
-        JLabel efficientHelp = new JLabel(new FlatSVGIcon("icons/help.svg", 16, 16));
-        efficientHelp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        efficientHelp.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_HELP));
-        efficientHelp.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                JOptionPane.showMessageDialog(PerformancePanel.this,
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_DESC),
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_HELP_TITLE), JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        btnPanel.add(efficientHelp);
         csvDataPanel = new CsvDataPanel();
         btnPanel.add(csvDataPanel);
         topPanel.add(btnPanel, BorderLayout.WEST);
@@ -467,6 +484,32 @@ public class PerformancePanel extends SingletonBasePanel {
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
         saveAllPropertyPanelData();
+
+        // 检查高并发场景下是否开启高效模式
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
+        long estimatedRequests = estimateTotalRequests(rootNode);
+
+        // 如果预计请求数超过阈值（例如1000）且未开启高效模式，给出警告
+        final int HIGH_CONCURRENCY_THRESHOLD = 1000;
+        if (estimatedRequests >= HIGH_CONCURRENCY_THRESHOLD && !efficientMode) {
+            String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_MSG,
+                    String.format("%,d", estimatedRequests));
+            int result = JOptionPane.showConfirmDialog(this,
+                    message,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (result == JOptionPane.YES_OPTION) {
+                // 用户选择开启高效模式
+                efficientMode = true;
+                efficientCheckBox.setSelected(true); // 更新UI状态
+                saveAllPropertyPanelData();
+                NotificationUtil.showInfo("✅ " + I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE) + " enabled");
+            }
+            // 如果用户选择NO，继续执行但可能面临内存问题
+        }
+
         OkHttpClientManager.setConnectionPoolConfig(getJmeterMaxIdleConnections(), getJmeterKeepAliveSeconds());
         if (running) return;
         running = true;
@@ -506,7 +549,6 @@ public class PerformancePanel extends SingletonBasePanel {
         startTime = System.currentTimeMillis();
 
         // 统计总用户数
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
         int totalThreads = getTotalThreads(rootNode);
         // 当前已启动线程数 = 0，启动后动态刷新
         progressLabel.setText(0 + "/" + totalThreads);
@@ -577,6 +619,73 @@ public class PerformancePanel extends SingletonBasePanel {
                     case RAMP_UP -> total += tg.rampUpEndThreads;
                     case SPIKE -> total += tg.spikeMaxThreads;
                     case STAIRS -> total += tg.stairsEndThreads;
+                }
+            }
+        }
+        return total;
+    }
+
+    /**
+     * 估算总请求数，用于判断是否需要提示用户开启高效模式
+     * 计算公式：所有线程组的 (线程数 × 循环次数 × 请求数) 之和
+     */
+    private long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
+        long total = 0;
+        for (int i = 0; i < rootNode.getChildCount(); i++) {
+            DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+            Object userObj = groupNode.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
+                // 只计算已启用的线程组
+                if (!jtNode.enabled) {
+                    continue;
+                }
+
+                ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
+
+                // 统计该线程组下的请求数（只计算已启用的）
+                int enabledRequests = 0;
+                for (int j = 0; j < groupNode.getChildCount(); j++) {
+                    DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(j);
+                    Object reqObj = requestNode.getUserObject();
+                    if (reqObj instanceof JMeterTreeNode reqJtNode
+                            && reqJtNode.type == NodeType.REQUEST
+                            && reqJtNode.enabled) {
+                        enabledRequests++;
+                    }
+                }
+
+                if (enabledRequests == 0) {
+                    continue; // 没有启用的请求，跳过
+                }
+
+                // 根据不同模式估算请求数
+                switch (tg.threadMode) {
+                    case FIXED -> {
+                        // 固定模式：线程数 × 循环次数 × 请求数
+                        if (tg.useTime) {
+                            // 使用时间模式：粗略估算，假设每个请求平均1秒
+                            total += (long) tg.numThreads * tg.duration * enabledRequests;
+                        } else {
+                            // 使用循环次数
+                            total += (long) tg.numThreads * tg.loops * enabledRequests;
+                        }
+                    }
+                    case RAMP_UP -> {
+                        // 递增模式：平均线程数 × 持续时间 × 请求数（粗略估算）
+                        int avgThreads = (tg.rampUpStartThreads + tg.rampUpEndThreads) / 2;
+                        total += (long) avgThreads * tg.rampUpDuration * enabledRequests;
+                    }
+                    case SPIKE -> {
+                        // 尖刺模式：按各阶段时间加权估算
+                        int totalTime = tg.spikeRampUpTime + tg.spikeHoldTime + tg.spikeRampDownTime;
+                        int avgThreads = (tg.spikeMinThreads + tg.spikeMaxThreads) / 2;
+                        total += (long) avgThreads * totalTime * enabledRequests;
+                    }
+                    case STAIRS -> {
+                        // 阶梯模式：使用总持续时间和平均线程数估算
+                        int avgThreads = (tg.stairsStartThreads + tg.stairsEndThreads) / 2;
+                        total += (long) avgThreads * tg.stairsDuration * enabledRequests;
+                    }
                 }
             }
         }

@@ -390,10 +390,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_NO_ASSERTION_RESULTS = "performance.no_assertion_results";
     public static final String PERFORMANCE_PROPERTY_SELECT_NODE = "performance.property.select_node";
     public static final String PERFORMANCE_EFFICIENT_MODE = "performance.efficient_mode";
-    public static final String PERFORMANCE_EFFICIENT_MODE_TOOLTIP = "performance.efficient_mode.tooltip";
-    public static final String PERFORMANCE_EFFICIENT_MODE_HELP = "performance.efficient_mode.help";
-    public static final String PERFORMANCE_EFFICIENT_MODE_DESC = "performance.efficient_mode.desc";
-    public static final String PERFORMANCE_EFFICIENT_MODE_HELP_TITLE = "performance.efficient_mode.help_title";
+    public static final String PERFORMANCE_EFFICIENT_MODE_TOOLTIP_HTML = "performance.efficient_mode.tooltip.html";
+    public static final String PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE = "performance.efficient_mode.warning.title";
+    public static final String PERFORMANCE_EFFICIENT_MODE_WARNING_MSG = "performance.efficient_mode.warning.msg";
+    public static final String PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING = "performance.efficient_mode.disable.warning";
     public static final String PERFORMANCE_PROGRESS_TOOLTIP = "performance.progress.tooltip";
     public static final String PERFORMANCE_MSG_REFRESH_SUCCESS = "performance.msg.refresh_success";
     public static final String PERFORMANCE_MSG_REFRESH_WARNING = "performance.msg.refresh_warning";
@@ -454,7 +454,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_RESULT_TREE_SUCCESS = "performance.result_tree.success";
     public static final String PERFORMANCE_RESULT_TREE_FAIL = "performance.result_tree.fail";
     public static final String PERFORMANCE_RESULT_TREE_ASSERTION_FAILED = "performance.result_tree.assertion_failed";
-    public static final String PERFORMANCE_RESULT_TREE_PAUSED = "performance.result_tree.paused";
     public static final String PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER = "performance.result_tree.search_placeholder";
 
     // ============ 历史记录相关 ============

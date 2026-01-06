@@ -488,6 +488,7 @@ public class PerformancePanel extends SingletonBasePanel {
         // 启动趋势图定时采样
         if (trendTimer != null) {
             trendTimer.cancel();
+            trendTimer.purge(); // 清理已取消的任务，避免内存泄漏
         }
         trendTimer = new Timer();
         // 从设置中读取采样间隔，默认1秒
@@ -586,6 +587,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private void stopTrendTimer() {
         if (trendTimer != null) {
             trendTimer.cancel();
+            trendTimer.purge(); // 清理已取消的任务
             trendTimer = null;
         }
     }
@@ -644,11 +646,15 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
             }
 
-            // 3) 更新报表
+            // 3) copy apiSuccessMap 和 apiFailMap（创建快照避免数据竞争）
+            Map<String, Integer> apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
+            Map<String, Integer> apiFailMapCopy = new HashMap<>(apiFailMap);
+
+            // 4) 更新报表
             performanceReportPanel.updateReport(
                     apiCostMapCopy,
-                    apiSuccessMap,
-                    apiFailMap,
+                    apiSuccessMapCopy,
+                    apiFailMapCopy,
                     startTimesCopy,
                     resultsCopy
             );
@@ -672,18 +678,26 @@ public class PerformancePanel extends SingletonBasePanel {
         int totalReq = 0;
         int errorReq = 0;
         long totalRespTime = 0;
+
+        // 先复制列表，避免并发修改异常
+        List<RequestResult> resultsCopy;
         synchronized (allRequestResults) {
-            for (int i = allRequestResults.size() - 1; i >= 0; i--) {
-                RequestResult result = allRequestResults.get(i);
-                if (result.endTime >= now - samplingIntervalMs && result.endTime <= now) {
-                    totalReq++;
-                    if (!result.success) errorReq++;
-                    totalRespTime += result.responseTime; // 使用实际响应时间
-                } else if (result.endTime < now - samplingIntervalMs) {
-                    break;
-                }
+            resultsCopy = new ArrayList<>(allRequestResults);
+        }
+
+        // 在副本上遍历，从后向前查找（假设结果按时间顺序添加）
+        for (int i = resultsCopy.size() - 1; i >= 0; i--) {
+            RequestResult result = resultsCopy.get(i);
+            if (result.endTime >= now - samplingIntervalMs && result.endTime <= now) {
+                totalReq++;
+                if (!result.success) errorReq++;
+                totalRespTime += result.responseTime; // 使用实际响应时间
+            } else if (result.endTime < now - samplingIntervalMs) {
+                // 由于是从后向前遍历，且假设按时间排序，可以提前终止
+                break;
             }
         }
+
         double avgRespTime = totalReq > 0 ?
                 BigDecimal.valueOf((double) totalRespTime / totalReq)
                         .setScale(2, RoundingMode.HALF_UP)

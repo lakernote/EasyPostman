@@ -451,9 +451,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_NAME = "performance.result_tree.column.name";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_COST = "performance.result_tree.column.cost";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_RESULT = "performance.result_tree.column.result";
-    public static final String PERFORMANCE_RESULT_TREE_SUCCESS = "performance.result_tree.success";
-    public static final String PERFORMANCE_RESULT_TREE_FAIL = "performance.result_tree.fail";
-    public static final String PERFORMANCE_RESULT_TREE_ASSERTION_FAILED = "performance.result_tree.assertion_failed";
     public static final String PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER = "performance.result_tree.search_placeholder";
 
     // ============ 历史记录相关 ============

@@ -454,39 +454,7 @@ public class PerformanceResultTablePanel extends JPanel {
                     break;
             }
 
-            // 从 TableModel 获取数据，设置工具提示
-            if (table.getModel() instanceof ResultTableModel model) {
-                int modelRow = table.convertRowIndexToModel(row);
-                ResultNodeInfo info = model.getRow(modelRow);
-
-                if (info != null) {
-                    // 设置工具提示
-                    String tooltip = buildTooltip(info, modelColumn);
-                    setToolTipText(tooltip);
-                }
-            }
-
             return this;
-        }
-
-        /**
-         * 构建工具提示
-         */
-        private String buildTooltip(ResultNodeInfo info, int column) {
-            return switch (column) {
-                case 0 -> info.name; // 接口名称
-                case 1 -> info.costMs + " ms"; // 耗时
-                case 2 -> { // 结果列
-                    if (info.hasAssertionFailed()) {
-                        yield I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_ASSERTION_FAILED);
-                    } else if (info.isActuallySuccessful()) {
-                        yield I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SUCCESS);
-                    } else {
-                        yield I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_FAIL);
-                    }
-                }
-                default -> null;
-            };
         }
     }
 }

@@ -82,6 +82,9 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
+        // 设置Y轴上边距，避免曲线贴到顶部
+        rangeAxis.setUpperMargin(0.2);
+
         if (integerFormat) {
             rangeAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());
             rangeAxis.setAutoRangeIncludesZero(true);

@@ -99,6 +99,14 @@ public class PerformancePanel extends SingletonBasePanel {
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
+    // 内存保护：最大保存的结果数量（防止OOM）
+    private static final int MAX_RESULTS_IN_MEMORY = 500_000;
+    // 当达到最大值时，清理掉最旧的数据（保留后80%）
+    private static final int TRIM_TO_SIZE = (int) (MAX_RESULTS_IN_MEMORY * 0.8);
+
+    // 统计数据保护锁
+    private final transient Object statsLock = new Object();
+
     // 定时采样线程
     private transient Timer trendTimer;
 
@@ -731,35 +739,30 @@ public class PerformancePanel extends SingletonBasePanel {
      */
     private void refreshReportOnce() {
         try {
-            // 1) copy allRequestStartTimes / allRequestResults
+            // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
             List<Long> startTimesCopy;
             List<RequestResult> resultsCopy;
+            Map<String, List<Long>> apiCostMapCopy;
+            Map<String, Integer> apiSuccessMapCopy;
+            Map<String, Integer> apiFailMapCopy;
 
-            synchronized (allRequestStartTimes) {
+            synchronized (statsLock) {
+                // 1) copy allRequestStartTimes / allRequestResults
                 startTimesCopy = new ArrayList<>(allRequestStartTimes);
-            }
-            synchronized (allRequestResults) {
                 resultsCopy = new ArrayList<>(allRequestResults);
-            }
 
-            // 2) copy apiCostMap（每个 value 也要同步 copy）
-            Map<String, List<Long>> apiCostMapCopy = new HashMap<>();
-            // 先获取所有 key 的快照，避免遍历期间添加新 key
-            Set<String> keys = new HashSet<>(apiCostMap.keySet());
-            for (String key : keys) {
-                List<Long> costs = apiCostMap.get(key);
-                if (costs != null) {
-                    synchronized (costs) {
-                        apiCostMapCopy.put(key, new ArrayList<>(costs));
-                    }
+                // 2) copy apiCostMap（深拷贝每个value列表）
+                apiCostMapCopy = new HashMap<>();
+                for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                    apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
                 }
+
+                // 3) copy apiSuccessMap 和 apiFailMap
+                apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
+                apiFailMapCopy = new HashMap<>(apiFailMap);
             }
 
-            // 3) copy apiSuccessMap 和 apiFailMap（创建快照避免数据竞争）
-            Map<String, Integer> apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
-            Map<String, Integer> apiFailMapCopy = new HashMap<>(apiFailMap);
-
-            // 4) 更新报表
+            // 4) 更新报表（在锁外执行，避免阻塞统计数据写入）
             performanceReportPanel.updateReport(
                     apiCostMapCopy,
                     apiSuccessMapCopy,
@@ -782,28 +785,27 @@ public class PerformancePanel extends SingletonBasePanel {
         // 从设置中读取采样间隔
         int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
         long samplingIntervalMs = samplingIntervalSeconds * 1000L;
+        long windowStart = now - samplingIntervalMs;
 
         // 统计本采样间隔内的请求
         int totalReq = 0;
         int errorReq = 0;
         long totalRespTime = 0;
+        long actualMinTime = Long.MAX_VALUE;
+        long actualMaxTime = 0;
 
-        // 先复制列表，避免并发修改异常
-        List<RequestResult> resultsCopy;
-        synchronized (allRequestResults) {
-            resultsCopy = new ArrayList<>(allRequestResults);
-        }
-
-        // 在副本上遍历，从后向前查找（假设结果按时间顺序添加）
-        for (int i = resultsCopy.size() - 1; i >= 0; i--) {
-            RequestResult result = resultsCopy.get(i);
-            if (result.endTime >= now - samplingIntervalMs && result.endTime <= now) {
-                totalReq++;
-                if (!result.success) errorReq++;
-                totalRespTime += result.responseTime; // 使用实际响应时间
-            } else if (result.endTime < now - samplingIntervalMs) {
-                // 由于是从后向前遍历，且假设按时间排序，可以提前终止
-                break;
+        // 使用statsLock保护，确保数据一致性
+        synchronized (statsLock) {
+            // 遍历所有结果（不能假设顺序，因为多线程并发添加）
+            for (RequestResult result : allRequestResults) {
+                // 只统计在时间窗口内的请求
+                if (result.endTime >= windowStart && result.endTime <= now) {
+                    totalReq++;
+                    if (!result.success) errorReq++;
+                    totalRespTime += result.responseTime;
+                    actualMinTime = Math.min(actualMinTime, result.endTime);
+                    actualMaxTime = Math.max(actualMaxTime, result.endTime);
+                }
             }
         }
 
@@ -812,11 +814,21 @@ public class PerformancePanel extends SingletonBasePanel {
                         .setScale(2, RoundingMode.HALF_UP)
                         .doubleValue()
                 : 0;
-        // QPS = 请求总数 / 采样间隔（秒）
-        double qps = totalReq / (double) samplingIntervalSeconds;
+
+        // 修复QPS计算：使用实际时间跨度，而不是采样间隔
+        double qps = 0;
+        if (totalReq > 0 && actualMaxTime > actualMinTime) {
+            long actualSpanMs = actualMaxTime - actualMinTime;
+            qps = totalReq * 1000.0 / actualSpanMs;
+        } else if (totalReq > 0) {
+            // 如果只有一个请求，使用采样间隔作为分母
+            qps = totalReq / (double) samplingIntervalSeconds;
+        }
+
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
         // 更新趋势图数据
-        log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);
+        log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
+                second, users, avgRespTime, qps, errorPercent, totalReq);
         performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
     }
 
@@ -1614,13 +1626,34 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // 如果请求被中断（压测停止），跳过统计，不计入成功或失败
             if (!interrupted) {
-                allRequestResults.add(new RequestResult(endTime, success, cost)); // 记录结束时间和实际响应时间
-                apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-                if (success) {
-                    apiSuccessMap.merge(apiName, 1, Integer::sum);
-                } else {
-                    apiFailMap.merge(apiName, 1, Integer::sum);
+                // 使用statsLock保护统计数据写入，确保与读取的一致性
+                synchronized (statsLock) {
+                    allRequestResults.add(new RequestResult(endTime, success, cost));
+
+                    // 内存保护：如果结果数量超过阈值，清理最旧的数据
+                    if (allRequestResults.size() > MAX_RESULTS_IN_MEMORY) {
+                        int toRemove = allRequestResults.size() - TRIM_TO_SIZE;
+                        // 使用subList().clear()优化删除性能
+                        allRequestResults.subList(0, toRemove).clear();
+                        log.warn("结果集超过{}条，已清理最旧的{}条数据，当前保留{}条",
+                                MAX_RESULTS_IN_MEMORY, toRemove, allRequestResults.size());
+                    }
+
+                    // 记录开始时间（同时也进行内存保护）
+                    if (allRequestStartTimes.size() > MAX_RESULTS_IN_MEMORY) {
+                        int toRemove = allRequestStartTimes.size() - TRIM_TO_SIZE;
+                        allRequestStartTimes.subList(0, toRemove).clear();
+                    }
+
+                    // 更新API统计数据
+                    apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                    if (success) {
+                        apiSuccessMap.merge(apiName, 1, Integer::sum);
+                    } else {
+                        apiFailMap.merge(apiName, 1, Integer::sum);
+                    }
                 }
+
                 performanceResultTablePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
             } else {
                 // 被中断的请求，记录日志但不计入统计
@@ -2223,3 +2256,4 @@ public class PerformancePanel extends SingletonBasePanel {
         return new TreePath(newPath.toArray());
     }
 }
+

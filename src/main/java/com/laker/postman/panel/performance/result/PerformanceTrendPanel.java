@@ -142,17 +142,17 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             qpsSeries.addOrUpdate(period, qps);
             errorPercentSeries.addOrUpdate(period, errorPercent);
         } finally {
-            // 恢复通知并手动触发一次更新
+            // 恢复通知并只触发一次更新（触发dataset的通知即可，无需逐个series通知）
             userCountSeries.setNotify(true);
             responseTimeSeries.setNotify(true);
             qpsSeries.setNotify(true);
             errorPercentSeries.setNotify(true);
 
-            // 手动触发图表更新，统一重绘（从4次优化为4次，但每个图表只绘制自己的数据）
-            userCountSeries.fireSeriesChanged();
-            responseTimeSeries.fireSeriesChanged();
-            qpsSeries.fireSeriesChanged();
-            errorPercentSeries.fireSeriesChanged();
+            // 只触发一次dataset更新，减少重绘次数
+            userCountDataset.setNotify(true);
+            responseTimeDataset.setNotify(true);
+            qpsDataset.setNotify(true);
+            errorPercentDataset.setNotify(true);
         }
     }
 }

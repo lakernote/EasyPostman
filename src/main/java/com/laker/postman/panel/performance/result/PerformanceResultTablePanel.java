@@ -38,7 +38,7 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
 
-    private static final int MAX_ROWS = 200_000;
+    private static final int MAX_ROWS = 10_000;
     private static final int BATCH_SIZE = 2000;
 
     /**

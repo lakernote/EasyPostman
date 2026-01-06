@@ -132,6 +132,9 @@ public class PerformancePanel extends SingletonBasePanel {
         // 初始化持久化服务
         this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
 
+        // 加载高效模式设置
+        efficientMode = persistenceService.loadEfficientMode();
+
         // 1. 左侧树结构
         DefaultMutableTreeNode root;
         // 尝试加载保存的配置
@@ -220,9 +223,13 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 高效模式checkbox和问号提示
         JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
-        efficientCheckBox.setSelected(true); // 默认开启高效模式
+        efficientCheckBox.setSelected(efficientMode); // 使用加载的高效模式设置
         efficientCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP));
-        efficientCheckBox.addActionListener(e -> efficientMode = efficientCheckBox.isSelected());
+        efficientCheckBox.addActionListener(e -> {
+            efficientMode = efficientCheckBox.isSelected();
+            // 保存高效模式设置
+            saveAllPropertyPanelData();
+        });
         btnPanel.add(efficientCheckBox);
         JLabel efficientHelp = new JLabel(new FlatSVGIcon("icons/help.svg", 16, 16));
         efficientHelp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -437,7 +444,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 3. 持久化到文件
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        persistenceService.save(root);
+        persistenceService.save(root, efficientMode);
 
         // 4. 显示成功提示
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
@@ -1913,7 +1920,7 @@ public class PerformancePanel extends SingletonBasePanel {
             // 获取根节点
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
             // 异步保存配置
-            persistenceService.saveAsync(root);
+            persistenceService.saveAsync(root, efficientMode);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }

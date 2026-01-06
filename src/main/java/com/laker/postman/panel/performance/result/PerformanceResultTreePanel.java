@@ -1,5 +1,3 @@
-// 类：PerformanceResultTreePanel
-// 包：com.laker.postman.panel.performance.result
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.component.SearchTextField;
@@ -10,14 +8,16 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,19 +27,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 性能测试结果表（DevTools Network 风格）
  * - Space 键暂停/恢复刷新
  * - 16ms 帧刷新机制
- * - 支持关键字搜索和"只看失败"过滤
+ * - 支持表头点击排序和搜索过滤
  */
 @Slf4j
 public class PerformanceResultTreePanel extends JPanel {
 
-
     private JTable table;
     private ResultTableModel tableModel;
     private JTabbedPane detailTabs;
+    private TableRowSorter<ResultTableModel> rowSorter;
 
     private JTextField searchField;
-    private JCheckBox onlyFailCheckBox;
-
+    private JLabel pauseStatusLabel;
 
     private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
 
@@ -48,12 +47,13 @@ public class PerformanceResultTreePanel extends JPanel {
      */
     private final AtomicBoolean paused = new AtomicBoolean(false);
 
-    /**
-     * 当前选中行（仅用于详情显示）
-     */
-    private volatile ResultNodeInfo selected;
-
     private static final int MAX_ROWS = 200_000;
+    private static final int BATCH_SIZE = 2000;
+
+    /**
+     * 搜索防抖定时器 - 延迟 300ms 执行
+     */
+    private Timer searchDebounceTimer;
 
     /**
      * 16ms UI 帧刷新
@@ -80,7 +80,7 @@ public class PerformanceResultTreePanel extends JPanel {
 
         while ((info = pendingQueue.poll()) != null) {
             batch.add(info);
-            if (batch.size() >= 2000) break;
+            if (batch.size() >= BATCH_SIZE) break;
         }
 
         if (!batch.isEmpty()) {
@@ -96,30 +96,36 @@ public class PerformanceResultTreePanel extends JPanel {
         setLayout(new BorderLayout(5, 5));
 
         searchField = new SearchTextField();
-        onlyFailCheckBox = new JCheckBox("只看失败接口", false);
+        searchField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER));
+
+        pauseStatusLabel = new JLabel();
+        pauseStatusLabel.setForeground(new Color(255, 140, 0)); // Orange color
+        pauseStatusLabel.setVisible(false);
 
         JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
         searchPanel.add(searchField, BorderLayout.CENTER);
-
-        JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        rightBox.add(onlyFailCheckBox);
-        searchPanel.add(rightBox, BorderLayout.EAST);
+        searchPanel.add(pauseStatusLabel, BorderLayout.EAST);
 
         tableModel = new ResultTableModel();
         table = new JTable(tableModel);
         table.setRowHeight(24);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoCreateRowSorter(false);
+
+        // ✅ 显示表格线
+        table.setShowGrid(true);
+        table.setGridColor(new Color(230, 230, 230)); // 浅灰色网格线
+
+        // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 
-        DefaultTableCellRenderer cellLeft = new DefaultTableCellRenderer();
-        cellLeft.setHorizontalAlignment(SwingConstants.LEFT);
-        for (int i = 0; i < tableModel.getColumnCount(); i++) {
-            table.getColumnModel().getColumn(i).setCellRenderer(cellLeft);
-        }
+        // 创建并配置 TableRowSorter
+        rowSorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(rowSorter);
+        configureSorterComparators();
 
-        DefaultTableCellRenderer headerLeft = new DefaultTableCellRenderer();
-        headerLeft.setHorizontalAlignment(SwingConstants.LEFT);
-        table.getTableHeader().setDefaultRenderer(headerLeft);
+        // ✅ 优化列宽
+        configureColumnWidths();
 
         JScrollPane tableScroll = new JScrollPane(table);
 
@@ -141,54 +147,111 @@ public class PerformanceResultTreePanel extends JPanel {
         }
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
-        split.setDividerLocation(520);
+        split.setDividerLocation(0.3);
         add(split, BorderLayout.CENTER);
     }
 
-    private void registerListeners() {
+    /**
+     * 配置排序比较器
+     */
+    private void configureSorterComparators() {
+        // 列 0: Name - 字符串排序
+        rowSorter.setComparator(0, Comparator.comparing(String::toString, String.CASE_INSENSITIVE_ORDER));
 
+        // 列 1: Cost (ms) - 数值排序
+        rowSorter.setComparator(1, Comparator.comparingLong(Long.class::cast));
+
+        // 列 2: Result - 按成功/失败排序
+        rowSorter.setComparator(2, Comparator.comparing(String::toString));
+    }
+
+    /**
+     * 配置列宽度
+     * - 接口名称：自动填充剩余空间
+     * - 耗时：固定 100px
+     * - 结果：固定 60px（只显示 Emoji）
+     */
+    private void configureColumnWidths() {
+        table.getColumnModel().getColumn(0).setPreferredWidth(300); // 接口名称
+        table.getColumnModel().getColumn(1).setPreferredWidth(100); // 耗时
+        table.getColumnModel().getColumn(1).setMaxWidth(120);
+        table.getColumnModel().getColumn(1).setMinWidth(80);
+
+        table.getColumnModel().getColumn(2).setPreferredWidth(60);  // 结果（只有 Emoji）
+        table.getColumnModel().getColumn(2).setMaxWidth(60);
+        table.getColumnModel().getColumn(2).setMinWidth(60);
+    }
+
+    private void registerListeners() {
+        // 选择监听器 - 显示详情
         table.getSelectionModel().addListSelectionListener(this::onRowSelected);
 
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.getSelectedRow();
-                    if (row >= 0) {
-                        ResultNodeInfo info = tableModel.getRow(row);
-                        JOptionPane.showMessageDialog(
-                                PerformanceResultTreePanel.this,
-                                HttpHtmlRenderer.renderResponse(info.resp),
-                                info.name,
-                                JOptionPane.INFORMATION_MESSAGE
-                        );
-                    }
-                }
-            }
-        });
-
+        // 空格键暂停/恢复
         table.getInputMap(JComponent.WHEN_FOCUSED)
                 .put(KeyStroke.getKeyStroke("SPACE"), "togglePause");
         table.getActionMap().put("togglePause", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                boolean newValue = !paused.getAndSet(!paused.get());
-                if (newValue) {
+                boolean isPaused = !paused.getAndSet(!paused.get());
+                updatePauseStatus(isPaused);
+                if (!isPaused) {
                     tableModel.flushIfDirty();
                 }
             }
         });
 
-        searchField.addActionListener(e -> applyFilters());
+        // 搜索防抖
+        searchDebounceTimer = new Timer(300, e -> doFilter());
+        searchDebounceTimer.setRepeats(false);
 
-        onlyFailCheckBox.addActionListener(e -> applyFilters());
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                scheduleFilter();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                scheduleFilter();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                scheduleFilter();
+            }
+
+            private void scheduleFilter() {
+                searchDebounceTimer.restart();
+            }
+        });
+
+        // Enter 键立即过滤
+        searchField.addActionListener(e -> {
+            searchDebounceTimer.stop();
+            doFilter();
+        });
     }
 
     /**
-     * 应用过滤条件：关键字 + “只看失败”
+     * 更新暂停状态显示
      */
-    private void applyFilters() {
-        tableModel.applyFilter(searchField.getText(), onlyFailCheckBox.isSelected());
+    private void updatePauseStatus(boolean isPaused) {
+        pauseStatusLabel.setVisible(isPaused);
+        if (isPaused) {
+            pauseStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_PAUSED));
+        }
+    }
+
+    /**
+     * 执行过滤
+     */
+    private void doFilter() {
+        String text = searchField.getText();
+        if (text == null || text.trim().isEmpty()) {
+            rowSorter.setRowFilter(null);
+        } else {
+            rowSorter.setRowFilter(new ResultRowFilter(text.trim().toLowerCase()));
+        }
     }
 
     private void onRowSelected(ListSelectionEvent e) {
@@ -196,15 +259,15 @@ public class PerformanceResultTreePanel extends JPanel {
 
         int row = table.getSelectedRow();
         if (row < 0) {
-            selected = null;
             clearDetailTabs();
             return;
         }
 
-        selected = tableModel.getRow(row);
-        renderDetail(selected);
+        // 转换视图索引到模型索引
+        int modelRow = table.convertRowIndexToModel(row);
+        ResultNodeInfo info = tableModel.getRow(modelRow);
+        renderDetail(info);
     }
-
 
     public void addResult(ResultNodeInfo info, boolean efficientMode) {
         if (info == null) return;
@@ -215,12 +278,10 @@ public class PerformanceResultTreePanel extends JPanel {
 
     public void clearResults() {
         pendingQueue.clear();
-        selected = null;
         table.clearSelection();
         tableModel.clear();
         clearDetailTabs();
     }
-
 
     private void renderDetail(ResultNodeInfo info) {
         setTabHtml(0, HttpHtmlRenderer.renderRequest(info.req));
@@ -247,73 +308,135 @@ public class PerformanceResultTreePanel extends JPanel {
         }
     }
 
+    /**
+     * 资源清理
+     */
+    public void dispose() {
+        uiFrameTimer.stop();
+        if (searchDebounceTimer != null) {
+            searchDebounceTimer.stop();
+        }
+    }
+
+    /**
+     * 自定义 RowFilter - 支持名称和状态过滤
+     */
+    static class ResultRowFilter extends RowFilter<ResultTableModel, Integer> {
+        private final String keyword;
+
+        public ResultRowFilter(String keyword) {
+            this.keyword = keyword;
+        }
+
+        @Override
+        public boolean include(Entry<? extends ResultTableModel, ? extends Integer> entry) {
+            ResultTableModel model = entry.getModel();
+            int row = entry.getIdentifier();
+            ResultNodeInfo info = model.getRow(row);
+
+            if (info == null) return false;
+
+            // 1. 检查接口名称
+            if (info.name != null && info.name.toLowerCase().contains(keyword)) {
+                return true;
+            }
+
+            // 2. 检查状态关键字
+            return matchesStatusKeyword(info);
+        }
+
+        private boolean matchesStatusKeyword(ResultNodeInfo info) {
+            // 成功关键字
+            if (containsAny(keyword, "成功", "success", "ok", "pass")) {
+                return info.isActuallySuccessful();
+            }
+            // 失败关键字
+            return containsAny(keyword, "失败", "fail", "error", "err") && !info.isActuallySuccessful();
+        }
+
+        private boolean containsAny(String text, String... keys) {
+            for (String key : keys) {
+                if (text.contains(key)) return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 简化的 TableModel
+     */
     static class ResultTableModel extends AbstractTableModel {
 
         private static final int COL_NAME = 0;
         private static final int COL_COST = 1;
         private static final int COL_RESULT = 2;
 
-        private final String[] columns = {"Name", "Cost (ms)", "Result"};
-
-        private final List<ResultNodeInfo> all = new ArrayList<>();
-        private List<ResultNodeInfo> view = all;
-
+        private final List<ResultNodeInfo> dataList = new ArrayList<>();
         private boolean dirty = false;
-
-        private String keyword = "";
-        private boolean onlyFail = false;
 
         @Override
         public int getRowCount() {
-            return view.size();
+            return dataList.size();
         }
 
         @Override
         public int getColumnCount() {
-            return columns.length;
+            return 3;
         }
 
         @Override
         public String getColumnName(int col) {
-            return columns[col];
-        }
-
-        @Override
-        public Object getValueAt(int row, int col) {
-            ResultNodeInfo r = view.get(row);
             return switch (col) {
-                case COL_NAME -> r.name;
-                case COL_RESULT -> r.success ? "success" : "fail";
-                case COL_COST -> r.costMs;
+                case COL_NAME -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_NAME);
+                case COL_COST -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_COST);
+                case COL_RESULT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_RESULT);
                 default -> "";
             };
         }
 
+        @Override
+        public Object getValueAt(int row, int col) {
+            ResultNodeInfo r = dataList.get(row);
+            return switch (col) {
+                case COL_NAME -> r.name;
+                case COL_COST -> r.costMs;
+                case COL_RESULT -> formatResult(r);
+                default -> "";
+            };
+        }
+
+        /**
+         * 格式化结果列：只显示 Emoji
+         * ✅ 成功 或 ❌ 失败
+         */
+        private String formatResult(ResultNodeInfo r) {
+            return r.isActuallySuccessful() ? "✅" : "❌";
+        }
+
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            return switch (columnIndex) {
+                case COL_NAME -> String.class;
+                case COL_COST -> Long.class;
+                case COL_RESULT -> String.class;
+                default -> Object.class;
+            };
+        }
+
         ResultNodeInfo getRow(int row) {
-            return view.get(row);
+            if (row < 0 || row >= dataList.size()) {
+                return null;
+            }
+            return dataList.get(row);
         }
 
         int getTotalSize() {
-            return all.size();
+            return dataList.size();
         }
 
         void append(List<ResultNodeInfo> batch) {
-            all.addAll(batch);
-            if (hasFilter()) {
-                appendFiltered(batch);
-            }
+            dataList.addAll(batch);
             dirty = true;
-        }
-
-        private void appendFiltered(List<ResultNodeInfo> batch) {
-            String k = (keyword == null) ? "" : keyword.trim().toLowerCase();
-            boolean failOnly = onlyFail;
-
-            for (ResultNodeInfo r : batch) {
-                if (passFailFilter(r, failOnly)) continue;
-                if (matchKeyword(r, k)) continue;
-                view.add(r);
-            }
         }
 
         void flushIfDirty() {
@@ -323,93 +446,25 @@ public class PerformanceResultTreePanel extends JPanel {
         }
 
         void clear() {
-            all.clear();
-            view = all;
+            dataList.clear();
             dirty = false;
-            keyword = "";
-            onlyFail = false;
             fireTableDataChanged();
         }
 
         void trimTo(int max) {
-            int remove = all.size() - max;
+            int remove = dataList.size() - max;
             if (remove <= 0) return;
 
-            all.subList(0, remove).clear();
-
-            rebuildView();
+            dataList.subList(0, remove).clear();
             dirty = true;
-        }
-
-        void applyFilter(String keyword, boolean onlyFail) {
-            this.keyword = keyword == null ? "" : keyword;
-            this.onlyFail = onlyFail;
-            rebuildView();
-            fireTableDataChanged();
-        }
-
-        private boolean hasFilter() {
-            return (keyword != null && !keyword.trim().isEmpty()) || onlyFail;
-        }
-
-        private void rebuildView() {
-            if (!hasFilter()) {
-                view = all;
-                return;
-            }
-
-            String k = keyword.trim().toLowerCase();
-            List<ResultNodeInfo> filtered = new ArrayList<>();
-
-            for (ResultNodeInfo r : all) {
-                if (passFailFilter(r, onlyFail)) continue;
-                if (matchKeyword(r, k)) continue;
-                filtered.add(r);
-            }
-            view = filtered;
-        }
-
-        private boolean passFailFilter(ResultNodeInfo r, boolean onlyFail) {
-            if (!onlyFail) return false;
-            return r == null || r.success;
-        }
-
-        /**
-         * 关键字匹配：接口名或状态文本
-         *
-         * @return true=跳过此记录，false=保留此记录
-         */
-        private boolean matchKeyword(ResultNodeInfo r, String k) {
-            if (k == null || k.isEmpty()) return false;
-            if (r == null) return true;
-
-            String name = r.name == null ? "" : r.name.toLowerCase();
-            if (name.contains(k)) return false;
-
-            boolean wantSuccess = containsAny(k, "成功", "success", "ok", "pass", "passed");
-            boolean wantFail = containsAny(k, "失败", "fail", "error", "err", "failed");
-
-            if (!wantSuccess && !wantFail) {
-                return true;
-            }
-
-            if (wantSuccess && r.success) return false;
-            if (wantFail && !r.success) return false;
-
-            return true;
-        }
-
-        private boolean containsAny(String text, String... keys) {
-            if (text == null) return false;
-            for (String key : keys) {
-                if (key != null && !key.isEmpty() && text.contains(key)) return true;
-            }
-            return false;
         }
     }
 
-
+    /**
+     * 优化的行渲染器 - 根据列设置不同的对齐方式
+     */
     static class ResultRowRenderer extends DefaultTableCellRenderer {
+
         @Override
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected,
@@ -417,22 +472,59 @@ public class PerformanceResultTreePanel extends JPanel {
 
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            ResultTableModel model = (ResultTableModel) table.getModel();
-            ResultNodeInfo r = model.getRow(row);
+            // 获取列索引
+            int modelColumn = table.convertColumnIndexToModel(column);
 
-            if (!isSelected) {
-                setBackground(
-                        r.success
-                                ? new Color(235, 255, 235)
-                                : new Color(255, 235, 235)
-                );
+            // 设置对齐方式
+            switch (modelColumn) {
+                case 0: // 接口名称 - 左对齐
+                    setHorizontalAlignment(SwingConstants.LEFT);
+                    break;
+                case 1: // 耗时 - 右对齐
+                    setHorizontalAlignment(SwingConstants.RIGHT);
+                    break;
+                case 2: // 结果 - 居中
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    break;
+                default: // 其他列 - 左对齐
+                    setHorizontalAlignment(SwingConstants.LEFT);
+                    break;
             }
 
-            setToolTipText(r.hasAssertionFailed() ? "Assertion Failed" : null);
+            // 从 TableModel 获取数据，设置工具提示
+            if (table.getModel() instanceof ResultTableModel model) {
+                int modelRow = table.convertRowIndexToModel(row);
+                ResultNodeInfo info = model.getRow(modelRow);
 
-            setHorizontalAlignment(SwingConstants.LEFT);
+                if (info != null) {
+                    // 设置工具提示
+                    String tooltip = buildTooltip(info, modelColumn);
+                    setToolTipText(tooltip);
+                }
+            }
 
             return this;
         }
+
+        /**
+         * 构建工具提示
+         */
+        private String buildTooltip(ResultNodeInfo info, int column) {
+            return switch (column) {
+                case 0 -> info.name; // 接口名称
+                case 1 -> info.costMs + " ms"; // 耗时
+                case 2 -> { // 结果列
+                    if (info.hasAssertionFailed()) {
+                        yield I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_ASSERTION_FAILED);
+                    } else if (info.isActuallySuccessful()) {
+                        yield I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SUCCESS);
+                    } else {
+                        yield I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_FAIL);
+                    }
+                }
+                default -> null;
+            };
+        }
     }
 }
+

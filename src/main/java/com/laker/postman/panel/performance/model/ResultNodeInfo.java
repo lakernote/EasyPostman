@@ -56,4 +56,26 @@ public class ResultNodeInfo {
         }
         return false;
     }
+
+    /**
+     * 智能判断是否成功
+     * 优先级：
+     * 1. 如果有断言，以断言结果为准
+     * 2. 如果没有断言，以 HTTP 状态码为准（2xx/3xx 为成功）
+     * 3. 如果没有响应，以构造函数传入的 success 为准
+     */
+    public boolean isActuallySuccessful() {
+        // 1. 如果有断言结果，以断言为准
+        if (testResults != null && !testResults.isEmpty()) {
+            return !hasAssertionFailed();
+        }
+
+        // 2. 如果没有断言，以 HTTP 状态码为准
+        if (resp != null && resp.code > 0) {
+            return resp.code >= 200 && resp.code < 400;
+        }
+
+        // 3. 兜底：使用构造函数传入的 success
+        return success;
+    }
 }

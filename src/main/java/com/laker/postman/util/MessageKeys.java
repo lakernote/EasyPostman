@@ -455,6 +455,17 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TREND_METRICS = "performance.trend.metrics";
     public static final String PERFORMANCE_TREND_NO_METRIC_SELECTED = "performance.trend.no_metric_selected";
 
+    // ============ 性能结果树相关 ============
+    public static final String PERFORMANCE_RESULT_TREE_ONLY_FAIL = "performance.result_tree.only_fail";
+    public static final String PERFORMANCE_RESULT_TREE_COLUMN_NAME = "performance.result_tree.column.name";
+    public static final String PERFORMANCE_RESULT_TREE_COLUMN_COST = "performance.result_tree.column.cost";
+    public static final String PERFORMANCE_RESULT_TREE_COLUMN_RESULT = "performance.result_tree.column.result";
+    public static final String PERFORMANCE_RESULT_TREE_SUCCESS = "performance.result_tree.success";
+    public static final String PERFORMANCE_RESULT_TREE_FAIL = "performance.result_tree.fail";
+    public static final String PERFORMANCE_RESULT_TREE_ASSERTION_FAILED = "performance.result_tree.assertion_failed";
+    public static final String PERFORMANCE_RESULT_TREE_PAUSED = "performance.result_tree.paused";
+    public static final String PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER = "performance.result_tree.search_placeholder";
+
     // ============ 历史记录相关 ============
     public static final String HISTORY_EMPTY_BODY = "history.empty_body";
     public static final String HISTORY_TODAY = "history.today";

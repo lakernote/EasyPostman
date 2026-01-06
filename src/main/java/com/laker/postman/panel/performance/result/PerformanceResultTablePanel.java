@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
@@ -34,7 +35,7 @@ public class PerformanceResultTablePanel extends JPanel {
     private JTabbedPane detailTabs;
     private TableRowSorter<ResultTableModel> rowSorter;
 
-    private JTextField searchField;
+    private SearchTextField searchField;
 
     private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
 
@@ -86,7 +87,7 @@ public class PerformanceResultTablePanel extends JPanel {
         setLayout(new BorderLayout(5, 5));
 
         searchField = new SearchTextField();
-        searchField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER));
+        searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER));
 
         JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
         searchPanel.add(searchField, BorderLayout.CENTER);
@@ -282,7 +283,7 @@ public class PerformanceResultTablePanel extends JPanel {
     }
 
     /**
-     * 自定义 RowFilter - 支持名称和状态过滤
+     * 自定义 RowFilter - 支持名称、请求、响应内容过滤
      */
     static class ResultRowFilter extends RowFilter<ResultTableModel, Integer> {
         private final String keyword;
@@ -304,24 +305,61 @@ public class PerformanceResultTablePanel extends JPanel {
                 return true;
             }
 
-            // 2. 检查状态关键字
-            return matchesStatusKeyword(info);
+            // 2. 检查请求内容（URL、Headers、Body）
+            if (matchesRequest(info)) {
+                return true;
+            }
+
+            // 3. 检查响应内容（Headers、Body）
+            return matchesResponse(info);
         }
 
-        private boolean matchesStatusKeyword(ResultNodeInfo info) {
-            // 成功关键字
-            if (containsAny(keyword, "成功", "success", "ok", "pass")) {
-                return info.isActuallySuccessful();
+        /**
+         * 检查请求内容是否匹配关键字
+         */
+        private boolean matchesRequest(ResultNodeInfo info) {
+            if (info.req == null) return false;
+
+            // 检查 URL
+            if (info.req.url != null && info.req.url.toLowerCase().contains(keyword)) {
+                return true;
             }
-            // 失败关键字
-            return containsAny(keyword, "失败", "fail", "error", "err") && !info.isActuallySuccessful();
+
+            // 检查请求 Headers
+            if (info.req.headersList != null) {
+                for (HttpHeader header : info.req.headersList) {
+                    if (!header.isEnabled()) continue;
+                    String headerStr = (header.getKey() + ": " + header.getValue()).toLowerCase();
+                    if (headerStr.contains(keyword)) {
+                        return true;
+                    }
+                }
+            }
+
+            // 检查请求 Body
+            return info.req.body != null && info.req.body.toLowerCase().contains(keyword);
         }
 
-        private boolean containsAny(String text, String... keys) {
-            for (String key : keys) {
-                if (text.contains(key)) return true;
+        /**
+         * 检查响应内容是否匹配关键字
+         */
+        private boolean matchesResponse(ResultNodeInfo info) {
+            if (info.resp == null) return false;
+
+            // 检查响应 Headers
+            if (info.resp.headers != null) {
+                for (var entry : info.resp.headers.entrySet()) {
+                    String key = entry.getKey();
+                    List<String> values = entry.getValue();
+                    String headerStr = (key + ": " + String.join(", ", values)).toLowerCase();
+                    if (headerStr.contains(keyword)) {
+                        return true;
+                    }
+                }
             }
-            return false;
+
+            // 检查响应 Body
+            return info.resp.body != null && info.resp.body.toLowerCase().contains(keyword);
         }
     }
 
@@ -458,4 +496,3 @@ public class PerformanceResultTablePanel extends JPanel {
         }
     }
 }
-

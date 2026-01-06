@@ -2095,6 +2095,21 @@ public class PerformancePanel extends SingletonBasePanel {
      */
     private void refreshRequestsFromCollections() {
         saveAllPropertyPanelData();
+
+        // 清除缓存的测试结果数据，避免显示过时的结果
+        performanceResultTablePanel.clearResults();
+        performanceReportPanel.clearReport();
+        performanceTrendPanel.clearTrendDataset();
+        apiCostMap.clear();
+        apiSuccessMap.clear();
+        apiFailMap.clear();
+        allRequestStartTimes.clear();
+        allRequestResults.clear();
+        csvRowIndex.set(0);
+
+        // 主动触发GC，及时释放清除的缓存数据占用的内存
+        System.gc();
+
         int updatedCount = 0;
         int removedCount = 0;
         List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<>();

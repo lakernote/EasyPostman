@@ -15,17 +15,14 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 性能测试结果表（DevTools Network 风格）
- * - Space 键暂停/恢复刷新
  * - 16ms 帧刷新机制
  * - 支持表头点击排序和搜索过滤
  */
@@ -38,14 +35,8 @@ public class PerformanceResultTreePanel extends JPanel {
     private TableRowSorter<ResultTableModel> rowSorter;
 
     private JTextField searchField;
-    private JLabel pauseStatusLabel;
 
     private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
-
-    /**
-     * 是否暂停刷新（Space 控制）
-     */
-    private final AtomicBoolean paused = new AtomicBoolean(false);
 
     private static final int MAX_ROWS = 200_000;
     private static final int BATCH_SIZE = 2000;
@@ -59,7 +50,6 @@ public class PerformanceResultTreePanel extends JPanel {
      * 16ms UI 帧刷新
      */
     private final Timer uiFrameTimer = new Timer(16, e -> {
-        if (paused.get()) return;
 
         flushQueueOnEDT();
         tableModel.flushIfDirty();
@@ -98,13 +88,8 @@ public class PerformanceResultTreePanel extends JPanel {
         searchField = new SearchTextField();
         searchField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER));
 
-        pauseStatusLabel = new JLabel();
-        pauseStatusLabel.setForeground(new Color(255, 140, 0)); // Orange color
-        pauseStatusLabel.setVisible(false);
-
         JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
         searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(pauseStatusLabel, BorderLayout.EAST);
 
         tableModel = new ResultTableModel();
         table = new JTable(tableModel);
@@ -186,19 +171,6 @@ public class PerformanceResultTreePanel extends JPanel {
         // 选择监听器 - 显示详情
         table.getSelectionModel().addListSelectionListener(this::onRowSelected);
 
-        // 空格键暂停/恢复
-        table.getInputMap(JComponent.WHEN_FOCUSED)
-                .put(KeyStroke.getKeyStroke("SPACE"), "togglePause");
-        table.getActionMap().put("togglePause", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                boolean isPaused = !paused.getAndSet(!paused.get());
-                updatePauseStatus(isPaused);
-                if (!isPaused) {
-                    tableModel.flushIfDirty();
-                }
-            }
-        });
 
         // 搜索防抖
         searchDebounceTimer = new Timer(300, e -> doFilter());
@@ -232,15 +204,6 @@ public class PerformanceResultTreePanel extends JPanel {
         });
     }
 
-    /**
-     * 更新暂停状态显示
-     */
-    private void updatePauseStatus(boolean isPaused) {
-        pauseStatusLabel.setVisible(isPaused);
-        if (isPaused) {
-            pauseStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_PAUSED));
-        }
-    }
 
     /**
      * 执行过滤
@@ -527,4 +490,3 @@ public class PerformanceResultTreePanel extends JPanel {
         }
     }
 }
-

@@ -21,22 +21,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 性能测试结果表（DevTools Network 风格）
- * ✔ Space：暂停 / 恢复刷新
- * ✔ selection 不影响刷新
- * ✔ EDT 16ms 合帧刷新
- *
- * 新增：
- * ✔ 列表字段加 “结果(成功/失败)”
- * ✔ 搜索区加复选框 “只看失败”
- * ✔ 两个过滤条件同时生效（接口名称 OR 成功失败结果文本匹配；勾选则只看失败）
+ * - Space 键暂停/恢复刷新
+ * - 16ms 帧刷新机制
+ * - 支持关键字搜索和"只看失败"过滤
  */
 @Slf4j
 public class PerformanceResultTreePanel extends JPanel {
 
-    /* ======================= UI ======================= */
 
     private JTable table;
     private ResultTableModel tableModel;
@@ -45,24 +40,29 @@ public class PerformanceResultTreePanel extends JPanel {
     private JTextField searchField;
     private JCheckBox onlyFailCheckBox;
 
-    /* ======================= 数据 ======================= */
 
     private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
 
-    /** 是否暂停刷新（Space 控制） */
-    private volatile boolean paused = false;
+    /**
+     * 是否暂停刷新（Space 控制）
+     */
+    private final AtomicBoolean paused = new AtomicBoolean(false);
 
-    /** 当前选中行（仅用于详情显示） */
+    /**
+     * 当前选中行（仅用于详情显示）
+     */
     private volatile ResultNodeInfo selected;
 
     private static final int MAX_ROWS = 200_000;
 
-    /** 16ms UI 帧刷新 */
+    /**
+     * 16ms UI 帧刷新
+     */
     private final Timer uiFrameTimer = new Timer(16, e -> {
-        if (paused) return;
+        if (paused.get()) return;
 
-        flushQueueOnEDT();     // ✅ 将队列数据搬到 all（EDT 内）
-        tableModel.flushIfDirty(); // ✅ 合帧刷新 UI
+        flushQueueOnEDT();
+        tableModel.flushIfDirty();
     });
 
     public PerformanceResultTreePanel() {
@@ -72,7 +72,7 @@ public class PerformanceResultTreePanel extends JPanel {
     }
 
     /**
-     * 把 pendingQueue 中的数据搬到 TableModel（必须在 EDT 调用）
+     * 将队列中的数据批量添加到 TableModel
      */
     private void flushQueueOnEDT() {
         List<ResultNodeInfo> batch = new ArrayList<>(1024);
@@ -87,17 +87,14 @@ public class PerformanceResultTreePanel extends JPanel {
             tableModel.append(batch);
 
             if (tableModel.getTotalSize() > MAX_ROWS) {
-                tableModel.trimTo(MAX_ROWS); // ✅ 仅在 EDT 中 trim，避免并发异常
+                tableModel.trimTo(MAX_ROWS);
             }
         }
     }
 
-    /* ======================= UI ======================= */
-
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
 
-        // ===== 搜索区：输入框 + 复选框（只看失败）=====
         searchField = new SearchTextField();
         onlyFailCheckBox = new JCheckBox("只看失败接口", false);
 
@@ -108,21 +105,18 @@ public class PerformanceResultTreePanel extends JPanel {
         rightBox.add(onlyFailCheckBox);
         searchPanel.add(rightBox, BorderLayout.EAST);
 
-        // ===== 表格 =====
         tableModel = new ResultTableModel();
         table = new JTable(tableModel);
         table.setRowHeight(24);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 
-        // ===== 单元格：全部居左（你要求的：列表字段文字居左）=====
         DefaultTableCellRenderer cellLeft = new DefaultTableCellRenderer();
         cellLeft.setHorizontalAlignment(SwingConstants.LEFT);
         for (int i = 0; i < tableModel.getColumnCount(); i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(cellLeft);
         }
 
-        // ===== 表头：居左（你要求的：表头也居左）=====
         DefaultTableCellRenderer headerLeft = new DefaultTableCellRenderer();
         headerLeft.setHorizontalAlignment(SwingConstants.LEFT);
         table.getTableHeader().setDefaultRenderer(headerLeft);
@@ -133,7 +127,6 @@ public class PerformanceResultTreePanel extends JPanel {
         leftPanel.add(searchPanel, BorderLayout.NORTH);
         leftPanel.add(tableScroll, BorderLayout.CENTER);
 
-        // ===== 详情 Tabs =====
         detailTabs = new JTabbedPane();
         for (String key : new String[]{
                 MessageKeys.PERFORMANCE_TAB_REQUEST,
@@ -148,18 +141,14 @@ public class PerformanceResultTreePanel extends JPanel {
         }
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
-        split.setDividerLocation(520); // 结果表更宽一点
+        split.setDividerLocation(520);
         add(split, BorderLayout.CENTER);
     }
 
-    /* ======================= 监听 ======================= */
-
     private void registerListeners() {
 
-        // 行选择 → 仅渲染详情（不会影响刷新）
         table.getSelectionModel().addListSelectionListener(this::onRowSelected);
 
-        // 双击 → 弹出响应
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -178,24 +167,20 @@ public class PerformanceResultTreePanel extends JPanel {
             }
         });
 
-        // Space → 暂停 / 恢复
         table.getInputMap(JComponent.WHEN_FOCUSED)
                 .put(KeyStroke.getKeyStroke("SPACE"), "togglePause");
         table.getActionMap().put("togglePause", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                paused = !paused;
-                if (!paused) {
-                    // 恢复时立刻补一次刷新
+                boolean newValue = !paused.getAndSet(!paused.get());
+                if (newValue) {
                     tableModel.flushIfDirty();
                 }
             }
         });
 
-        // 搜索（回车触发）
         searchField.addActionListener(e -> applyFilters());
 
-        // 复选框触发过滤
         onlyFailCheckBox.addActionListener(e -> applyFilters());
     }
 
@@ -220,7 +205,6 @@ public class PerformanceResultTreePanel extends JPanel {
         renderDetail(selected);
     }
 
-    /* ======================= 对外 API ======================= */
 
     public void addResult(ResultNodeInfo info, boolean efficientMode) {
         if (info == null) return;
@@ -237,7 +221,6 @@ public class PerformanceResultTreePanel extends JPanel {
         clearDetailTabs();
     }
 
-    /* ======================= 详情 ======================= */
 
     private void renderDetail(ResultNodeInfo info) {
         setTabHtml(0, HttpHtmlRenderer.renderRequest(info.req));
@@ -264,29 +247,36 @@ public class PerformanceResultTreePanel extends JPanel {
         }
     }
 
-    /* ======================= TableModel ======================= */
-
     static class ResultTableModel extends AbstractTableModel {
 
-        // 新增：结果列
         private static final int COL_NAME = 0;
         private static final int COL_COST = 1;
         private static final int COL_RESULT = 2;
 
-        private final String[] columns = {"Name", "Cost (ms)" , "Result"};
+        private final String[] columns = {"Name", "Cost (ms)", "Result"};
 
         private final List<ResultNodeInfo> all = new ArrayList<>();
         private List<ResultNodeInfo> view = all;
 
         private boolean dirty = false;
 
-        // 当前过滤条件（用于实时追加时重算 view）
         private String keyword = "";
         private boolean onlyFail = false;
 
-        @Override public int getRowCount() { return view.size(); }
-        @Override public int getColumnCount() { return columns.length; }
-        @Override public String getColumnName(int col) { return columns[col]; }
+        @Override
+        public int getRowCount() {
+            return view.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columns.length;
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return columns[col];
+        }
 
         @Override
         public Object getValueAt(int row, int col) {
@@ -309,9 +299,7 @@ public class PerformanceResultTreePanel extends JPanel {
 
         void append(List<ResultNodeInfo> batch) {
             all.addAll(batch);
-            // 有过滤时，需要把 view 跟着更新，否则 view 不会包含新数据
             if (hasFilter()) {
-                // 增量过滤：只过滤新来的 batch（避免全量扫描）1
                 appendFiltered(batch);
             }
             dirty = true;
@@ -347,12 +335,8 @@ public class PerformanceResultTreePanel extends JPanel {
             int remove = all.size() - max;
             if (remove <= 0) return;
 
-            // 从头逐个 remove：保证安全（只在 EDT 执行）
-            for (int i = 0; i < remove; i++) {
-                all.remove(0);
-            }
+            all.subList(0, remove).clear();
 
-            // trim 后如果有过滤，需要重建 view（因为引用对象还在，但位置变了）
             rebuildView();
             dirty = true;
         }
@@ -385,18 +369,15 @@ public class PerformanceResultTreePanel extends JPanel {
             view = filtered;
         }
 
-        /**
-         * “只看失败”过滤
-         */
         private boolean passFailFilter(ResultNodeInfo r, boolean onlyFail) {
             if (!onlyFail) return false;
             return r == null || r.success;
         }
 
         /**
-         * 关键字匹配：接口名 OR 成功/失败文本
-         * - 空关键字：直接通过
-         * - 关键字包含 “成功/失败/success/fail/ok/error” 时也能匹配状态
+         * 关键字匹配：接口名或状态文本
+         *
+         * @return true=跳过此记录，false=保留此记录
          */
         private boolean matchKeyword(ResultNodeInfo r, String k) {
             if (k == null || k.isEmpty()) return false;
@@ -408,8 +389,14 @@ public class PerformanceResultTreePanel extends JPanel {
             boolean wantSuccess = containsAny(k, "成功", "success", "ok", "pass", "passed");
             boolean wantFail = containsAny(k, "失败", "fail", "error", "err", "failed");
 
+            if (!wantSuccess && !wantFail) {
+                return true;
+            }
+
             if (wantSuccess && r.success) return false;
-            return !wantFail || r.success;
+            if (wantFail && !r.success) return false;
+
+            return true;
         }
 
         private boolean containsAny(String text, String... keys) {
@@ -421,7 +408,6 @@ public class PerformanceResultTreePanel extends JPanel {
         }
     }
 
-    /* ======================= Renderer ======================= */
 
     static class ResultRowRenderer extends DefaultTableCellRenderer {
         @Override
@@ -434,7 +420,6 @@ public class PerformanceResultTreePanel extends JPanel {
             ResultTableModel model = (ResultTableModel) table.getModel();
             ResultNodeInfo r = model.getRow(row);
 
-            // 背景色（Network 风格：成功淡绿 / 失败淡红）
             if (!isSelected) {
                 setBackground(
                         r.success
@@ -443,10 +428,8 @@ public class PerformanceResultTreePanel extends JPanel {
                 );
             }
 
-            // 断言失败 tooltip
             setToolTipText(r.hasAssertionFailed() ? "Assertion Failed" : null);
 
-            // 全部居左（你要的：列表字段居左）
             setHorizontalAlignment(SwingConstants.LEFT);
 
             return this;

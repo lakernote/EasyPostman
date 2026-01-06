@@ -79,7 +79,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private AssertionPropertyPanel assertionPanel;
     private TimerPropertyPanel timerPanel;
     private RequestEditSubPanel requestEditSubPanel;
-    private boolean running = false;
+    private volatile boolean running = false;
     private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
@@ -582,6 +582,7 @@ public class PerformancePanel extends SingletonBasePanel {
             trendTimer = null;
         }
     }
+
     /**
      * 启动：报表实时刷新（EDT 线程执行）
      */
@@ -625,10 +626,14 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // 2) copy apiCostMap（每个 value 也要同步 copy）
             Map<String, List<Long>> apiCostMapCopy = new HashMap<>();
-            for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
-                List<Long> costs = entry.getValue();
-                synchronized (costs) {
-                    apiCostMapCopy.put(entry.getKey(), new ArrayList<>(costs));
+            // 先获取所有 key 的快照，避免遍历期间添加新 key
+            Set<String> keys = new HashSet<>(apiCostMap.keySet());
+            for (String key : keys) {
+                List<Long> costs = apiCostMap.get(key);
+                if (costs != null) {
+                    synchronized (costs) {
+                        apiCostMapCopy.put(key, new ArrayList<>(costs));
+                    }
                 }
             }
 

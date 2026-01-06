@@ -200,8 +200,8 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptPanel);
 
         // 3. 响应面板
-        // 对于 SAVED_RESPONSE 类型的面板，不创建保存按钮
-        boolean enableSaveButton = (panelType != RequestEditSubPanelType.SAVED_RESPONSE);
+        // 只有 HTTP 协议且非 SAVED_RESPONSE 类型才启用保存响应按钮
+        boolean enableSaveButton = protocol.isHttpProtocol() && panelType != RequestEditSubPanelType.SAVED_RESPONSE;
         responsePanel = new ResponsePanel(protocol, enableSaveButton);
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
         splitPane.setDividerSize(5); // 设置分割条的宽度（增大以提高拖拽灵敏度）
@@ -1076,11 +1076,6 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.setResponseSizeRequesting();
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
 
-        // 隐藏保存响应按钮
-        if (protocol.isHttpProtocol()) {
-            responsePanel.enableSaveResponseButton(false);
-        }
-
         if (protocol.isHttpProtocol()) {
             responsePanel.getNetworkLogPanel().clearLog();
             responsePanel.setResponseTabButtonsEnable(false);
@@ -1108,11 +1103,6 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.setStatus(statusText, statusColor);
         responsePanel.setResponseTime(resp.costMs);
         responsePanel.setResponseSize(resp.bodySize, resp.httpEventInfo);
-
-        // 显示保存响应按钮（仅HTTP协议且有响应数据）
-        if (protocol.isHttpProtocol()) {
-            responsePanel.enableSaveResponseButton(true);
-        }
     }
 
     private void setTestResults(List<TestResult> testResults) {
@@ -1505,12 +1495,6 @@ public class RequestEditSubPanel extends JPanel {
                 responsePanel.setStatus(statusText, statusColor);
                 responsePanel.setResponseTime(response.costMs);
                 responsePanel.setResponseSize(response.bodySize, null);
-
-                // 隐藏保存按钮（因为这已经是保存的响应）
-                if (protocol.isHttpProtocol()) {
-                    responsePanel.enableSaveResponseButton(false);
-                }
-
                 // 切换到 Response Body tab
                 responsePanel.getTabButtons()[0].doClick();
             });

@@ -38,6 +38,8 @@ public class ResponseBodyPanel extends JPanel {
     @Getter
     private final RSyntaxTextArea responseBodyPane;
     private final JButton downloadButton;
+    @Getter
+    private JButton saveResponseButton; // 保存响应按钮（仅HTTP请求）
     private String currentFilePath;
     private String fileName = DEFAULT_FILE_NAME; // 默认下载文件名
     private final SearchTextField searchField;
@@ -60,7 +62,7 @@ public class ResponseBodyPanel extends JPanel {
 
     private final JLabel sizeWarningLabel;
 
-    public ResponseBodyPanel() {
+    public ResponseBodyPanel(boolean enableSaveButton) {
         setLayout(new BorderLayout());
         responseBodyPane = new RSyntaxTextArea();
         responseBodyPane.setEditable(false);
@@ -109,6 +111,14 @@ public class ResponseBodyPanel extends JPanel {
         downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE));
         downloadButton.setToolTipText("Download");
         rightPanel.add(downloadButton);
+
+        // 只有 HTTP 请求才显示保存响应按钮，且放在最后面
+        if (enableSaveButton) {
+            saveResponseButton = new JButton(new FlatSVGIcon("icons/save.svg", ICON_SIZE, ICON_SIZE));
+            saveResponseButton.setToolTipText("Save Response");
+            rightPanel.add(saveResponseButton);
+        }
+
         toolBar.add(rightPanel, BorderLayout.EAST);
         add(toolBar, BorderLayout.NORTH);
 
@@ -528,6 +538,7 @@ public class ResponseBodyPanel extends JPanel {
         if (formatButton != null) formatButton.setEnabled(enabled);
         if (prevButton != null) prevButton.setEnabled(enabled);
         if (nextButton != null) nextButton.setEnabled(enabled);
+        if (saveResponseButton != null) saveResponseButton.setEnabled(enabled);
     }
 
     // ========== 辅助方法 ==========

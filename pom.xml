@@ -6,7 +6,7 @@
 
     <groupId>com.laker.tools</groupId>
     <artifactId>easy-postman</artifactId>
-    <version>4.2.24</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
+    <version>4.2.25</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
 
     <properties>
         <!-- 编译配置 -->
@@ -186,6 +186,7 @@
             <version>10.0.1</version>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <!-- Maven Compiler Plugin -->

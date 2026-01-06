@@ -23,7 +23,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
-import com.laker.postman.panel.performance.result.PerformanceResultTreePanel;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -79,11 +79,12 @@ public class PerformancePanel extends SingletonBasePanel {
     private AssertionPropertyPanel assertionPanel;
     private TimerPropertyPanel timerPanel;
     private RequestEditSubPanel requestEditSubPanel;
-    private boolean running = false;
+    private volatile boolean running = false;
     private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
     private JButton refreshBtn;
+    private JCheckBox efficientCheckBox; // 高效模式复选框
     private JLabel progressLabel; // 进度标签
     private long startTime;
     // 记录所有请求的开始和结束时间
@@ -98,6 +99,14 @@ public class PerformancePanel extends SingletonBasePanel {
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
+    // 内存保护：最大保存的结果数量（防止OOM）
+    private static final int MAX_RESULTS_IN_MEMORY = 500_000;
+    // 当达到最大值时，清理掉最旧的数据（保留后80%）
+    private static final int TRIM_TO_SIZE = (int) (MAX_RESULTS_IN_MEMORY * 0.8);
+
+    // 统计数据保护锁
+    private final transient Object statsLock = new Object();
+
     // 定时采样线程
     private transient Timer trendTimer;
 
@@ -105,8 +114,13 @@ public class PerformancePanel extends SingletonBasePanel {
     private boolean efficientMode = true;
 
     private PerformanceReportPanel performanceReportPanel;
-    private PerformanceResultTreePanel performanceResultTreePanel;
+    private PerformanceResultTablePanel performanceResultTablePanel;
     private PerformanceTrendPanel performanceTrendPanel;
+
+
+    // ===== 实时报表刷新（不新增任何类，只用 Swing Timer） =====
+    private javax.swing.Timer reportRefreshTimer;
+    private static final int REPORT_REFRESH_INTERVAL_MS = 1000; // 1s 刷一次UI
 
     // CSV 数据管理面板
     private CsvDataPanel csvDataPanel;
@@ -126,6 +140,9 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 初始化持久化服务
         this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
+
+        // 加载高效模式设置
+        efficientMode = persistenceService.loadEfficientMode();
 
         // 1. 左侧树结构
         DefaultMutableTreeNode root;
@@ -173,7 +190,7 @@ public class PerformancePanel extends SingletonBasePanel {
         // 3. 结果区
         resultTabbedPane = new JTabbedPane();
         // 结果树面板
-        performanceResultTreePanel = new PerformanceResultTreePanel();
+        performanceResultTablePanel = new PerformanceResultTablePanel();
         // 趋势图面板
         performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         // 报告面板
@@ -181,7 +198,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
-        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTreePanel);
+        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTablePanel);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -213,24 +230,44 @@ public class PerformancePanel extends SingletonBasePanel {
         refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
         btnPanel.add(refreshBtn);
 
-        // 高效模式checkbox和问号提示
-        JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
-        efficientCheckBox.setSelected(true); // 默认开启高效模式
-        efficientCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP));
-        efficientCheckBox.addActionListener(e -> efficientMode = efficientCheckBox.isSelected());
-        btnPanel.add(efficientCheckBox);
-        JLabel efficientHelp = new JLabel(new FlatSVGIcon("icons/help.svg", 16, 16));
-        efficientHelp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        efficientHelp.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_HELP));
-        efficientHelp.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                JOptionPane.showMessageDialog(PerformancePanel.this,
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_DESC),
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_HELP_TITLE), JOptionPane.INFORMATION_MESSAGE);
+        // 高效模式checkbox - 更醒目的样式和更好的交互
+        efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
+        efficientCheckBox.setSelected(efficientMode); // 使用加载的高效模式设置
+        // 设置为粗体并增大字体
+        efficientCheckBox.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        // 设置醒目的前景色
+        efficientCheckBox.setForeground(new Color(0, 128, 0)); // 深绿色表示推荐
+
+        // 创建多行HTML格式的详细提示
+        String htmlTooltip = "<html><body style='width: 400px; padding: 10px;'>" +
+                "<b style='color: #008000; font-size: 13px;'>" + I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE) + "</b><br><br>" +
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP_HTML) +
+                "</body></html>";
+        efficientCheckBox.setToolTipText(htmlTooltip);
+
+
+        efficientCheckBox.addActionListener(e -> {
+            // 如果用户尝试关闭高效模式，给出强烈警告
+            if (!efficientCheckBox.isSelected()) {
+                // 显示警告对话框，让用户确认是否真的要关闭
+                int result = JOptionPane.showConfirmDialog(PerformancePanel.this,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING),
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+
+                // 如果用户选择NO（不关闭），则保持开启状态
+                if (result != JOptionPane.YES_OPTION) {
+                    efficientCheckBox.setSelected(true);
+                    return;
+                }
+                // 如果用户坚持要关闭，则允许但更新状态
             }
+            efficientMode = efficientCheckBox.isSelected();
+            // 保存高效模式设置
+            saveAllPropertyPanelData();
         });
-        btnPanel.add(efficientHelp);
+        btnPanel.add(efficientCheckBox);
         csvDataPanel = new CsvDataPanel();
         btnPanel.add(csvDataPanel);
         topPanel.add(btnPanel, BorderLayout.WEST);
@@ -432,7 +469,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 3. 持久化到文件
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        persistenceService.save(root);
+        persistenceService.save(root, efficientMode);
 
         // 4. 显示成功提示
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
@@ -455,6 +492,32 @@ public class PerformancePanel extends SingletonBasePanel {
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
         saveAllPropertyPanelData();
+
+        // 检查高并发场景下是否开启高效模式
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
+        long estimatedRequests = estimateTotalRequests(rootNode);
+
+        // 如果预计请求数超过阈值（例如1000）且未开启高效模式，给出警告
+        final int HIGH_CONCURRENCY_THRESHOLD = 1000;
+        if (estimatedRequests >= HIGH_CONCURRENCY_THRESHOLD && !efficientMode) {
+            String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_MSG,
+                    String.format("%,d", estimatedRequests));
+            int result = JOptionPane.showConfirmDialog(this,
+                    message,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (result == JOptionPane.YES_OPTION) {
+                // 用户选择开启高效模式
+                efficientMode = true;
+                efficientCheckBox.setSelected(true); // 更新UI状态
+                saveAllPropertyPanelData();
+                NotificationUtil.showInfo("✅ " + I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE) + " enabled");
+            }
+            // 如果用户选择NO，继续执行但可能面临内存问题
+        }
+
         OkHttpClientManager.setConnectionPoolConfig(getJmeterMaxIdleConnections(), getJmeterKeepAliveSeconds());
         if (running) return;
         running = true;
@@ -462,7 +525,7 @@ public class PerformancePanel extends SingletonBasePanel {
         stopBtn.setEnabled(true);
         refreshBtn.setEnabled(false); // 运行时禁用刷新按钮
         resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
-        performanceResultTreePanel.clearResults(); // 清空结果树
+        performanceResultTablePanel.clearResults(); // 清空结果树
         performanceReportPanel.clearReport(); // 清空报表数据
         performanceTrendPanel.clearTrendDataset(); // 清理趋势图历史数据
         apiCostMap.clear();
@@ -476,11 +539,13 @@ public class PerformancePanel extends SingletonBasePanel {
         // 启动趋势图定时采样
         if (trendTimer != null) {
             trendTimer.cancel();
+            trendTimer.purge(); // 清理已取消的任务，避免内存泄漏
         }
         trendTimer = new Timer();
         // 从设置中读取采样间隔，默认1秒
         int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
         long samplingIntervalMs = samplingIntervalSeconds * 1000L;
+        startReportRefreshTimer();
         trendTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -492,7 +557,6 @@ public class PerformancePanel extends SingletonBasePanel {
         startTime = System.currentTimeMillis();
 
         // 统计总用户数
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
         int totalThreads = getTotalThreads(rootNode);
         // 当前已启动线程数 = 0，启动后动态刷新
         progressLabel.setText(0 + "/" + totalThreads);
@@ -530,9 +594,6 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
 
                     performanceReportPanel.updateReport(apiCostMapCopy, apiSuccessMap, apiFailMap, startTimesCopy, resultsCopy);
-
-                    // 刷新所有待处理的结果树节点
-                    performanceResultTreePanel.flushPendingResults();
 
                     // 显示执行完成提示
                     long totalTime = System.currentTimeMillis() - startTime;
@@ -572,11 +633,146 @@ public class PerformancePanel extends SingletonBasePanel {
         return total;
     }
 
+    /**
+     * 估算总请求数，用于判断是否需要提示用户开启高效模式
+     * 计算公式：所有线程组的 (线程数 × 循环次数 × 请求数) 之和
+     */
+    private long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
+        long total = 0;
+        for (int i = 0; i < rootNode.getChildCount(); i++) {
+            DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+            Object userObj = groupNode.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
+                // 只计算已启用的线程组
+                if (!jtNode.enabled) {
+                    continue;
+                }
+
+                ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
+
+                // 统计该线程组下的请求数（只计算已启用的）
+                int enabledRequests = 0;
+                for (int j = 0; j < groupNode.getChildCount(); j++) {
+                    DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(j);
+                    Object reqObj = requestNode.getUserObject();
+                    if (reqObj instanceof JMeterTreeNode reqJtNode
+                            && reqJtNode.type == NodeType.REQUEST
+                            && reqJtNode.enabled) {
+                        enabledRequests++;
+                    }
+                }
+
+                if (enabledRequests == 0) {
+                    continue; // 没有启用的请求，跳过
+                }
+
+                // 根据不同模式估算请求数
+                switch (tg.threadMode) {
+                    case FIXED -> {
+                        // 固定模式：线程数 × 循环次数 × 请求数
+                        if (tg.useTime) {
+                            // 使用时间模式：粗略估算，假设每个请求平均1秒
+                            total += (long) tg.numThreads * tg.duration * enabledRequests;
+                        } else {
+                            // 使用循环次数
+                            total += (long) tg.numThreads * tg.loops * enabledRequests;
+                        }
+                    }
+                    case RAMP_UP -> {
+                        // 递增模式：平均线程数 × 持续时间 × 请求数（粗略估算）
+                        int avgThreads = (tg.rampUpStartThreads + tg.rampUpEndThreads) / 2;
+                        total += (long) avgThreads * tg.rampUpDuration * enabledRequests;
+                    }
+                    case SPIKE -> {
+                        // 尖刺模式：按各阶段时间加权估算
+                        int totalTime = tg.spikeRampUpTime + tg.spikeHoldTime + tg.spikeRampDownTime;
+                        int avgThreads = (tg.spikeMinThreads + tg.spikeMaxThreads) / 2;
+                        total += (long) avgThreads * totalTime * enabledRequests;
+                    }
+                    case STAIRS -> {
+                        // 阶梯模式：使用总持续时间和平均线程数估算
+                        int avgThreads = (tg.stairsStartThreads + tg.stairsEndThreads) / 2;
+                        total += (long) avgThreads * tg.stairsDuration * enabledRequests;
+                    }
+                }
+            }
+        }
+        return total;
+    }
+
     // 停止定时采样方法
     private void stopTrendTimer() {
         if (trendTimer != null) {
             trendTimer.cancel();
+            trendTimer.purge(); // 清理已取消的任务
             trendTimer = null;
+        }
+    }
+
+    /**
+     * 启动：报表实时刷新（EDT 线程执行）
+     */
+    private void startReportRefreshTimer() {
+        stopReportRefreshTimer();
+
+        reportRefreshTimer = new javax.swing.Timer(REPORT_REFRESH_INTERVAL_MS, e -> {
+            if (!running) return; // running 面板里控制压测状态的布尔值
+            refreshReportOnce();
+        });
+        reportRefreshTimer.setRepeats(true);
+        reportRefreshTimer.start();
+    }
+
+    /**
+     * 停止：报表实时刷新
+     */
+    private void stopReportRefreshTimer() {
+        if (reportRefreshTimer != null) {
+            reportRefreshTimer.stop();
+            reportRefreshTimer = null;
+        }
+    }
+
+    /**
+     * 执行一次报表刷新（完全复用你“停止时 updateReport”的逻辑）
+     * 关键：必须先 copy，再 update，避免并发修改异常
+     */
+    private void refreshReportOnce() {
+        try {
+            // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
+            List<Long> startTimesCopy;
+            List<RequestResult> resultsCopy;
+            Map<String, List<Long>> apiCostMapCopy;
+            Map<String, Integer> apiSuccessMapCopy;
+            Map<String, Integer> apiFailMapCopy;
+
+            synchronized (statsLock) {
+                // 1) copy allRequestStartTimes / allRequestResults
+                startTimesCopy = new ArrayList<>(allRequestStartTimes);
+                resultsCopy = new ArrayList<>(allRequestResults);
+
+                // 2) copy apiCostMap（深拷贝每个value列表）
+                apiCostMapCopy = new HashMap<>();
+                for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                    apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+                }
+
+                // 3) copy apiSuccessMap 和 apiFailMap
+                apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
+                apiFailMapCopy = new HashMap<>(apiFailMap);
+            }
+
+            // 4) 更新报表（在锁外执行，避免阻塞统计数据写入）
+            performanceReportPanel.updateReport(
+                    apiCostMapCopy,
+                    apiSuccessMapCopy,
+                    apiFailMapCopy,
+                    startTimesCopy,
+                    resultsCopy
+            );
+        } catch (Exception ex) {
+            // 不要让 Timer 因异常中断
+            log.warn("实时刷新报表失败: {}", ex.getMessage(), ex);
         }
     }
 
@@ -589,33 +785,50 @@ public class PerformancePanel extends SingletonBasePanel {
         // 从设置中读取采样间隔
         int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
         long samplingIntervalMs = samplingIntervalSeconds * 1000L;
+        long windowStart = now - samplingIntervalMs;
 
         // 统计本采样间隔内的请求
         int totalReq = 0;
         int errorReq = 0;
         long totalRespTime = 0;
-        synchronized (allRequestResults) {
-            for (int i = allRequestResults.size() - 1; i >= 0; i--) {
-                RequestResult result = allRequestResults.get(i);
-                if (result.endTime >= now - samplingIntervalMs && result.endTime <= now) {
+        long actualMinTime = Long.MAX_VALUE;
+        long actualMaxTime = 0;
+
+        // 使用statsLock保护，确保数据一致性
+        synchronized (statsLock) {
+            // 遍历所有结果（不能假设顺序，因为多线程并发添加）
+            for (RequestResult result : allRequestResults) {
+                // 只统计在时间窗口内的请求
+                if (result.endTime >= windowStart && result.endTime <= now) {
                     totalReq++;
                     if (!result.success) errorReq++;
-                    totalRespTime += result.responseTime; // 使用实际响应时间
-                } else if (result.endTime < now - samplingIntervalMs) {
-                    break;
+                    totalRespTime += result.responseTime;
+                    actualMinTime = Math.min(actualMinTime, result.endTime);
+                    actualMaxTime = Math.max(actualMaxTime, result.endTime);
                 }
             }
         }
+
         double avgRespTime = totalReq > 0 ?
                 BigDecimal.valueOf((double) totalRespTime / totalReq)
                         .setScale(2, RoundingMode.HALF_UP)
                         .doubleValue()
                 : 0;
-        // QPS = 请求总数 / 采样间隔（秒）
-        double qps = totalReq / (double) samplingIntervalSeconds;
+
+        // 修复QPS计算：使用实际时间跨度，而不是采样间隔
+        double qps = 0;
+        if (totalReq > 0 && actualMaxTime > actualMinTime) {
+            long actualSpanMs = actualMaxTime - actualMinTime;
+            qps = totalReq * 1000.0 / actualSpanMs;
+        } else if (totalReq > 0) {
+            // 如果只有一个请求，使用采样间隔作为分母
+            qps = totalReq / (double) samplingIntervalSeconds;
+        }
+
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
         // 更新趋势图数据
-        log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%", second, users, avgRespTime, qps, errorPercent);
+        log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
+                second, users, avgRespTime, qps, errorPercent, totalReq);
         performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
     }
 
@@ -1413,14 +1626,35 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // 如果请求被中断（压测停止），跳过统计，不计入成功或失败
             if (!interrupted) {
-                allRequestResults.add(new RequestResult(endTime, success, cost)); // 记录结束时间和实际响应时间
-                apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-                if (success) {
-                    apiSuccessMap.merge(apiName, 1, Integer::sum);
-                } else {
-                    apiFailMap.merge(apiName, 1, Integer::sum);
+                // 使用statsLock保护统计数据写入，确保与读取的一致性
+                synchronized (statsLock) {
+                    allRequestResults.add(new RequestResult(endTime, success, cost));
+
+                    // 内存保护：如果结果数量超过阈值，清理最旧的数据
+                    if (allRequestResults.size() > MAX_RESULTS_IN_MEMORY) {
+                        int toRemove = allRequestResults.size() - TRIM_TO_SIZE;
+                        // 使用subList().clear()优化删除性能
+                        allRequestResults.subList(0, toRemove).clear();
+                        log.warn("结果集超过{}条，已清理最旧的{}条数据，当前保留{}条",
+                                MAX_RESULTS_IN_MEMORY, toRemove, allRequestResults.size());
+                    }
+
+                    // 记录开始时间（同时也进行内存保护）
+                    if (allRequestStartTimes.size() > MAX_RESULTS_IN_MEMORY) {
+                        int toRemove = allRequestStartTimes.size() - TRIM_TO_SIZE;
+                        allRequestStartTimes.subList(0, toRemove).clear();
+                    }
+
+                    // 更新API统计数据
+                    apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                    if (success) {
+                        apiSuccessMap.merge(apiName, 1, Integer::sum);
+                    } else {
+                        apiFailMap.merge(apiName, 1, Integer::sum);
+                    }
                 }
-                performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
+
+                performanceResultTablePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
             } else {
                 // 被中断的请求，记录日志但不计入统计
                 log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());
@@ -1813,8 +2047,7 @@ public class PerformancePanel extends SingletonBasePanel {
         OkHttpClientManager.setDefaultConnectionPoolConfig();
         // 停止趋势图定时采样
         stopTrendTimer();
-        // 刷新所有待处理的结果树节点
-        performanceResultTreePanel.flushPendingResults();
+        stopReportRefreshTimer();
     }
 
     /**
@@ -1843,7 +2076,7 @@ public class PerformancePanel extends SingletonBasePanel {
             // 获取根节点
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
             // 异步保存配置
-            persistenceService.saveAsync(root);
+            persistenceService.saveAsync(root, efficientMode);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }
@@ -1862,6 +2095,20 @@ public class PerformancePanel extends SingletonBasePanel {
      */
     private void refreshRequestsFromCollections() {
         saveAllPropertyPanelData();
+
+        // 清除缓存的测试结果数据，避免显示过时的结果
+        performanceResultTablePanel.clearResults();
+        performanceReportPanel.clearReport();
+        performanceTrendPanel.clearTrendDataset();
+        apiCostMap.clear();
+        apiSuccessMap.clear();
+        apiFailMap.clear();
+        allRequestStartTimes.clear();
+        allRequestResults.clear();
+        csvRowIndex.set(0);
+
+        // 主动触发GC，及时释放清除的缓存数据占用的内存
+        System.gc();
 
         int updatedCount = 0;
         int removedCount = 0;
@@ -2024,3 +2271,4 @@ public class PerformancePanel extends SingletonBasePanel {
         return new TreePath(newPath.toArray());
     }
 }
+

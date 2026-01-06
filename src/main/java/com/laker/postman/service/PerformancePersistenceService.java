@@ -56,16 +56,27 @@ public class PerformancePersistenceService {
      * 只保存请求ID引用，不保存完整请求配置，确保与集合中的请求保持同步
      */
     public void save(DefaultMutableTreeNode rootNode) {
+        save(rootNode, true);
+    }
+
+    /**
+     * 保存性能测试配置树结构
+     *
+     * @param rootNode      树根节点
+     * @param efficientMode 是否开启高效模式
+     */
+    public void save(DefaultMutableTreeNode rootNode, boolean efficientMode) {
         try {
             JSONObject jsonRoot = new JSONObject();
             jsonRoot.set("version", "1.0");
+            jsonRoot.set("efficientMode", efficientMode);
             jsonRoot.set("tree", serializeTreeNode(rootNode));
 
             // 写入文件
             String jsonString = JSONUtil.toJsonPrettyStr(jsonRoot);
             Files.writeString(Paths.get(FILE_PATH), jsonString, StandardCharsets.UTF_8);
 
-            log.info("Successfully saved performance test configuration");
+            log.info("Successfully saved performance test configuration (efficientMode: {})", efficientMode);
         } catch (IOException e) {
             log.error("Failed to save performance test config: {}", e.getMessage(), e);
         }
@@ -75,7 +86,17 @@ public class PerformancePersistenceService {
      * 异步保存配置
      */
     public void saveAsync(DefaultMutableTreeNode rootNode) {
-        Thread saveThread = new Thread(() -> save(rootNode));
+        saveAsync(rootNode, true);
+    }
+
+    /**
+     * 异步保存配置
+     *
+     * @param rootNode      树根节点
+     * @param efficientMode 是否开启高效模式
+     */
+    public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode) {
+        Thread saveThread = new Thread(() -> save(rootNode, efficientMode));
         saveThread.setDaemon(true);
         saveThread.start();
     }
@@ -239,6 +260,42 @@ public class PerformancePersistenceService {
         }
 
         return null;
+    }
+
+    /**
+     * 加载高效模式设置
+     *
+     * @return 高效模式设置，如果配置文件不存在或读取失败则返回 true（默认值）
+     */
+    public boolean loadEfficientMode() {
+        File file = new File(FILE_PATH);
+
+        if (!file.exists()) {
+            log.debug("No performance test config file found, using default efficientMode: true");
+            return true;
+        }
+
+        try {
+            long fileSizeInBytes = file.length();
+            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
+                return true;
+            }
+
+            String jsonString = Files.readString(Paths.get(FILE_PATH), StandardCharsets.UTF_8);
+            if (jsonString.trim().isEmpty()) {
+                return true;
+            }
+
+            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
+            Boolean efficientMode = jsonRoot.getBool("efficientMode", true);
+
+            log.debug("Loaded efficientMode: {}", efficientMode);
+            return efficientMode;
+
+        } catch (Exception e) {
+            log.error("Failed to load efficientMode: {}", e.getMessage());
+            return true;
+        }
     }
 
     /**

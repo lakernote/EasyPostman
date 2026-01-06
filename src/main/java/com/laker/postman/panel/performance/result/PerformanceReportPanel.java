@@ -23,9 +23,24 @@ public class PerformanceReportPanel extends JPanel {
     private static final int FAIL_COLUMN_INDEX = 3;
     private static final int SUCCESS_RATE_COLUMN_INDEX = 4;
 
+    // 百分位数常量
+    private static final double PERCENTILE_90 = 0.90;
+    private static final double PERCENTILE_95 = 0.95;
+    private static final double PERCENTILE_99 = 0.99;
+    private static final int MIN_SAMPLE_SIZE_FOR_INTERPOLATION = 10;
+
+    // 成功率阈值
+    private static final double SUCCESS_RATE_EXCELLENT = 99.0;
+    private static final double SUCCESS_RATE_GOOD = 90.0;
+
     private final DefaultTableModel reportTableModel;
     private final String[] columns;
     private final String totalRowName;
+
+    // 单例渲染器，避免重复创建
+    private final DefaultTableCellRenderer failRenderer;
+    private final DefaultTableCellRenderer rateRenderer;
+    private final DefaultTableCellRenderer generalRenderer;
 
     public PerformanceReportPanel() {
         // Initialize internationalized column names
@@ -44,6 +59,11 @@ public class PerformanceReportPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99)
         };
         this.totalRowName = I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_TOTAL_ROW);
+
+        // 创建单例渲染器
+        this.failRenderer = createFailRenderer();
+        this.rateRenderer = createRateRenderer();
+        this.generalRenderer = createGeneralRenderer();
 
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -75,10 +95,7 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private void configureColumnRenderers(JTable table) {
-        DefaultTableCellRenderer failRenderer = createFailRenderer();
-        DefaultTableCellRenderer rateRenderer = createRateRenderer();
-        DefaultTableCellRenderer generalRenderer = createGeneralRenderer();
-
+        // 使用单例渲染器，避免重复创建
         // 需要居中的列索引（从第2列到最后一列）
         for (int col = 1; col < columns.length; col++) {
             if (col == FAIL_COLUMN_INDEX) {
@@ -180,9 +197,9 @@ public class PerformanceReportPanel extends JPanel {
         if (rateStr.endsWith("%")) {
             try {
                 double rate = Double.parseDouble(rateStr.replace("%", ""));
-                if (rate >= 99) {
+                if (rate >= SUCCESS_RATE_EXCELLENT) {
                     c.setForeground(SUCCESS_GREEN);
-                } else if (rate >= 90) {
+                } else if (rate >= SUCCESS_RATE_GOOD) {
                     c.setForeground(WARNING_BLUE);
                 } else {
                     c.setForeground(Color.RED);
@@ -207,11 +224,15 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private void addReportRow(Object[] rowData) {
-        if (rowData != null && rowData.length == reportTableModel.getColumnCount()) {
-            reportTableModel.addRow(rowData);
-        } else {
-            throw new IllegalArgumentException("Row data must match the number of columns in the report table.");
+        if (rowData == null) {
+            throw new IllegalArgumentException("Row data cannot be null");
         }
+        if (rowData.length != reportTableModel.getColumnCount()) {
+            throw new IllegalArgumentException(
+                    String.format("Row data must match the number of columns. Expected: %d, Actual: %d",
+                            reportTableModel.getColumnCount(), rowData.length));
+        }
+        reportTableModel.addRow(rowData);
     }
 
     public void updateReport(Map<String, List<Long>> apiCostMap,
@@ -419,13 +440,17 @@ public class PerformanceReportPanel extends JPanel {
         Collections.sort(sorted);
 
         int size = sorted.size();
-        long sum = sorted.stream().mapToLong(Long::longValue).sum();
-        long avg = sum / size;
+        // 优化：在遍历中同时计算sum和min/max，避免多次遍历
+        long sum = 0;
         long min = sorted.get(0);
         long max = sorted.get(size - 1);
-        long p90 = getPercentileFromSorted(sorted, 0.90);
-        long p95 = getPercentileFromSorted(sorted, 0.95);
-        long p99 = getPercentileFromSorted(sorted, 0.99);
+        for (Long cost : sorted) {
+            sum += cost;
+        }
+        long avg = sum / size;
+        long p90 = getPercentileFromSorted(sorted, PERCENTILE_90);
+        long p95 = getPercentileFromSorted(sorted, PERCENTILE_95);
+        long p99 = getPercentileFromSorted(sorted, PERCENTILE_99);
 
         return new PerformanceStats(avg, min, max, p90, p95, p99);
     }
@@ -441,8 +466,13 @@ public class PerformanceReportPanel extends JPanel {
         if (size == 1) {
             return sortedCosts.get(0);
         }
+        // 对于小样本（少于10个），直接取最接近的值，避免插值误导
+        if (size < MIN_SAMPLE_SIZE_FOR_INTERPOLATION) {
+            int index = Math.min((int) Math.ceil(percentile * size) - 1, size - 1);
+            return sortedCosts.get(Math.max(0, index));
+        }
 
-        // 使用更准确的百分位数计算方法
+        // 使用更准确的百分位数计算方法（线性插值）
         double index = percentile * (size - 1);
         int lowerIndex = (int) Math.floor(index);
         int upperIndex = (int) Math.ceil(index);

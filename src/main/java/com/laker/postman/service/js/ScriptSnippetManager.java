@@ -509,55 +509,58 @@ public class ScriptSnippetManager {
         // ========== 完整示例：API 签名 ==========
         provider.addCompletion(new ShorthandCompletion(provider,
                 "apiSignature",
-                "// 生成 API 签名\n" +
-                "var requestId = uuid();\n" +
-                "var timestamp = moment().unix();\n" +
-                "var signData = {\n" +
-                "    requestId: requestId,\n" +
-                "    timestamp: timestamp,\n" +
-                "    method: pm.request.method,\n" +
-                "    path: pm.request.url.getPath()\n" +
-                "};\n" +
-                "var signString = _.map(\n" +
-                "    _.sortBy(_.toPairs(signData), 0),\n" +
-                "    pair => pair[0] + '=' + pair[1]\n" +
-                ").join('&');\n" +
-                "var signature = CryptoJS.HmacSHA256(signString, pm.environment.get('api_secret')).toString();\n" +
-                "pm.request.headers.add({key: 'X-Signature', value: signature});",
+                """
+                        // 生成 API 签名
+                        var requestId = uuid();
+                        var timestamp = moment().unix();
+                        var signData = {
+                            requestId: requestId,
+                            timestamp: timestamp,
+                            method: pm.request.method,
+                            path: pm.request.url.getPath()
+                        };
+                        var signString = _.map(
+                            _.sortBy(_.toPairs(signData), 0),
+                            pair => pair[0] + '=' + pair[1]
+                        ).join('&');
+                        var signature = CryptoJS.HmacSHA256(signString, pm.environment.get('api_secret')).toString();
+                        pm.request.headers.add({key: 'X-Signature', value: signature});""",
                 "完整示例：生成 API 请求签名"));
 
         // ========== 完整示例：密码加密 ==========
         provider.addCompletion(new ShorthandCompletion(provider,
                 "encryptPassword",
-                "// AES 加密密码\n" +
-                "var secret_key = pm.environment.get('secret_key');\n" +
-                "var password = pm.request.url.query.get('password');\n" +
-                "var key = CryptoJS.enc.Latin1.parse(secret_key);\n" +
-                "var encrypted = CryptoJS.AES.encrypt(password, key, {\n" +
-                "    iv: key,\n" +
-                "    mode: CryptoJS.mode.CBC,\n" +
-                "    padding: CryptoJS.pad.Pkcs7\n" +
-                "});\n" +
-                "var encrypted_password = encodeURIComponent(encrypted.toString());\n" +
-                "pm.request.url.query.upsert({key: 'password', value: encrypted_password});",
+                """
+                        // AES 加密密码
+                        var secret_key = pm.environment.get('secret_key');
+                        var password = pm.request.url.query.get('password');
+                        var key = CryptoJS.enc.Latin1.parse(secret_key);
+                        var encrypted = CryptoJS.AES.encrypt(password, key, {
+                            iv: key,
+                            mode: CryptoJS.mode.CBC,
+                            padding: CryptoJS.pad.Pkcs7
+                        });
+                        var encrypted_password = encodeURIComponent(encrypted.toString());
+                        pm.request.url.query.upsert({key: 'password', value: encrypted_password});""",
                 "完整示例：加密密码参数"));
 
         // ========== 完整示例：响应验证 ==========
         provider.addCompletion(new ShorthandCompletion(provider,
                 "validateResponse",
-                "// 完整的响应验证\n" +
-                "pm.test('响应验证', function() {\n" +
-                "    var jsonData = pm.response.json();\n" +
-                "    \n" +
-                "    // 验证必需字段\n" +
-                "    var requiredFields = ['code', 'message', 'data'];\n" +
-                "    var hasAllFields = _.every(requiredFields, field => _.has(jsonData, field));\n" +
-                "    pm.expect(hasAllFields).to.equal(true);\n" +
-                "    \n" +
-                "    // 验证字段类型\n" +
-                "    pm.expect(jsonData.code).to.be.a('number');\n" +
-                "    pm.expect(jsonData.message).to.be.a('string');\n" +
-                "});",
+                """
+                        // 完整的响应验证
+                        pm.test('响应验证', function() {
+                            var jsonData = pm.response.json();
+                        
+                            // 验证必需字段
+                            var requiredFields = ['code', 'message', 'data'];
+                            var hasAllFields = _.every(requiredFields, field => _.has(jsonData, field));
+                            pm.expect(hasAllFields).to.equal(true);
+                        
+                            // 验证字段类型
+                            pm.expect(jsonData.code).to.be.a('number');
+                            pm.expect(jsonData.message).to.be.a('string');
+                        });""",
                 "完整示例：验证响应数据"));
     }
 

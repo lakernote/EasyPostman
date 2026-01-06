@@ -1,9 +1,8 @@
+// 类：PerformanceResultTreePanel
+// 包：com.laker.postman.panel.performance.result
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.component.ResultTreeCellRenderer;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
@@ -11,323 +10,446 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 结果树面板
- * 包含搜索框、结果树和详情区域
+ * 性能测试结果表（DevTools Network 风格）
+ * ✔ Space：暂停 / 恢复刷新
+ * ✔ selection 不影响刷新
+ * ✔ EDT 16ms 合帧刷新
+ *
+ * 新增：
+ * ✔ 列表字段加 “结果(成功/失败)”
+ * ✔ 搜索区加复选框 “只看失败”
+ * ✔ 两个过滤条件同时生效（接口名称 OR 成功失败结果文本匹配；勾选则只看失败）
  */
 @Slf4j
 public class PerformanceResultTreePanel extends JPanel {
 
-    private JTree resultTree;
+    /* ======================= UI ======================= */
 
-    private DefaultTreeModel resultTreeModel;
-
-    private DefaultMutableTreeNode resultRootNode;
-
-    private JTabbedPane resultDetailTabbedPane;
+    private JTable table;
+    private ResultTableModel tableModel;
+    private JTabbedPane detailTabs;
 
     private JTextField searchField;
+    private JCheckBox onlyFailCheckBox;
 
-    // 批量更新控制
-    private final Queue<ResultNodeInfo> pendingResults = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean batchUpdateScheduled = new AtomicBoolean(false);
-    private static final int BATCH_UPDATE_DELAY_MS = 500; // 每500ms批量更新一次
-    private static final int MAX_RESULT_NODES = 10000; // 最多保留10000个结果节点，防止内存溢出
-    private final AtomicInteger currentResultCount = new AtomicInteger(0); // 当前结果数量
+    /* ======================= 数据 ======================= */
+
+    private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
+
+    /** 是否暂停刷新（Space 控制） */
+    private volatile boolean paused = false;
+
+    /** 当前选中行（仅用于详情显示） */
+    private volatile ResultNodeInfo selected;
+
+    private static final int MAX_ROWS = 200_000;
+
+    /** 16ms UI 帧刷新 */
+    private final Timer uiFrameTimer = new Timer(16, e -> {
+        if (paused) return;
+
+        flushQueueOnEDT();     // ✅ 将队列数据搬到 all（EDT 内）
+        tableModel.flushIfDirty(); // ✅ 合帧刷新 UI
+    });
 
     public PerformanceResultTreePanel() {
         initUI();
         registerListeners();
+        uiFrameTimer.start();
     }
 
-    private void initUI() {
-        setLayout(new BorderLayout());
-        // 设置面板边距
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    /**
+     * 把 pendingQueue 中的数据搬到 TableModel（必须在 EDT 调用）
+     */
+    private void flushQueueOnEDT() {
+        List<ResultNodeInfo> batch = new ArrayList<>(1024);
+        ResultNodeInfo info;
 
-        // ========== 结果树搜索框 ==========
-        JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
-        searchField = new SearchTextField();
-        searchPanel.add(searchField, BorderLayout.CENTER);
+        while ((info = pendingQueue.poll()) != null) {
+            batch.add(info);
+            if (batch.size() >= 2000) break;
+        }
 
-        // 结果树
-        resultRootNode = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE));
-        resultTreeModel = new DefaultTreeModel(resultRootNode);
-        resultTree = new JTree(resultTreeModel);
-        resultTree.setRootVisible(true);
-        resultTree.setShowsRootHandles(true);
-        resultTree.setCellRenderer(new ResultTreeCellRenderer());
-        JScrollPane resultTreeScroll = new JScrollPane(resultTree);
+        if (!batch.isEmpty()) {
+            tableModel.append(batch);
 
-        // 左侧面板 - 包含搜索框和结果树
-        JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.add(searchPanel, BorderLayout.NORTH);
-        leftPanel.add(resultTreeScroll, BorderLayout.CENTER);
-
-        // 详情tab
-        resultDetailTabbedPane = new JTabbedPane();
-        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REQUEST), new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESPONSE), new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TESTS), new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TIMING), new JScrollPane(new JEditorPane()));
-        resultDetailTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_EVENT_INFO), new JScrollPane(new JEditorPane()));
-
-        // 主分割面板 - 左侧结果树，右侧详情
-        JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, resultDetailTabbedPane);
-        resultSplit.setDividerLocation(260);
-
-        // 将分割面板添加到当前面板
-        add(resultSplit, BorderLayout.CENTER);
-    }
-
-    private void registerListeners() {
-        // 结果树节点点击，展示请求响应详情
-        resultTree.addTreeSelectionListener(e -> {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) resultTree.getLastSelectedPathComponent();
-            if (node == null) {
-                clearDetailTabs();
-                return;
+            if (tableModel.getTotalSize() > MAX_ROWS) {
+                tableModel.trimTo(MAX_ROWS); // ✅ 仅在 EDT 中 trim，避免并发异常
             }
-            Object userObj = node.getUserObject();
-            if (userObj instanceof ResultNodeInfo info) {
-                // 构建HTML内容
-                PreparedRequest req = info.req;
-                HttpResponse resp = info.resp;
-                // Request
-                setTabHtml(0, HttpHtmlRenderer.renderRequest(req));
-                // Response
-                setTabHtml(1, HttpHtmlRenderer.renderResponse(resp));
-                // Tests
-                if (info.testResults != null && !info.testResults.isEmpty()) {
-                    setTabHtml(2, HttpHtmlRenderer.renderTestResults(info.testResults));
-                } else {
-                    setTabHtml(2, I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_ASSERTION_RESULTS));
-                }
-                // Timing
-                if (resp != null && resp.httpEventInfo != null) {
-                    setTabHtml(3, HttpHtmlRenderer.renderTimingInfo(resp));
-                    setTabHtml(4, HttpHtmlRenderer.renderEventInfo(resp));
-                } else {
-                    setTabHtml(3, I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_TIMING_INFO));
-                    setTabHtml(4, I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_EVENT_INFO));
-                }
-            } else {
-                clearDetailTabs();
-            }
-        });
-
-        searchField.addActionListener(e -> searchResultTree(searchField.getText()));
-    }
-
-    private void clearDetailTabs() {
-        for (int i = 0; i < resultDetailTabbedPane.getTabCount(); i++) {
-            JScrollPane scroll = (JScrollPane) resultDetailTabbedPane.getComponentAt(i);
-            JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
-            pane.setText("");
         }
     }
 
-    // 设置tab页内容
-    private void setTabHtml(int tabIdx, String html) {
-        JScrollPane scroll = (JScrollPane) resultDetailTabbedPane.getComponentAt(tabIdx);
+    /* ======================= UI ======================= */
+
+    private void initUI() {
+        setLayout(new BorderLayout(5, 5));
+
+        // ===== 搜索区：输入框 + 复选框（只看失败）=====
+        searchField = new SearchTextField();
+        onlyFailCheckBox = new JCheckBox("只看失败接口", false);
+
+        JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
+        searchPanel.add(searchField, BorderLayout.CENTER);
+
+        JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        rightBox.add(onlyFailCheckBox);
+        searchPanel.add(rightBox, BorderLayout.EAST);
+
+        // ===== 表格 =====
+        tableModel = new ResultTableModel();
+        table = new JTable(tableModel);
+        table.setRowHeight(24);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setDefaultRenderer(Object.class, new ResultRowRenderer());
+
+        // ===== 单元格：全部居左（你要求的：列表字段文字居左）=====
+        DefaultTableCellRenderer cellLeft = new DefaultTableCellRenderer();
+        cellLeft.setHorizontalAlignment(SwingConstants.LEFT);
+        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(cellLeft);
+        }
+
+        // ===== 表头：居左（你要求的：表头也居左）=====
+        DefaultTableCellRenderer headerLeft = new DefaultTableCellRenderer();
+        headerLeft.setHorizontalAlignment(SwingConstants.LEFT);
+        table.getTableHeader().setDefaultRenderer(headerLeft);
+
+        JScrollPane tableScroll = new JScrollPane(table);
+
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.add(searchPanel, BorderLayout.NORTH);
+        leftPanel.add(tableScroll, BorderLayout.CENTER);
+
+        // ===== 详情 Tabs =====
+        detailTabs = new JTabbedPane();
+        for (String key : new String[]{
+                MessageKeys.PERFORMANCE_TAB_REQUEST,
+                MessageKeys.PERFORMANCE_TAB_RESPONSE,
+                MessageKeys.PERFORMANCE_TAB_TESTS,
+                MessageKeys.PERFORMANCE_TAB_TIMING,
+                MessageKeys.PERFORMANCE_TAB_EVENT_INFO
+        }) {
+            JEditorPane pane = new JEditorPane("text/html", "");
+            pane.setEditable(false);
+            detailTabs.addTab(I18nUtil.getMessage(key), new JScrollPane(pane));
+        }
+
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
+        split.setDividerLocation(520); // 结果表更宽一点
+        add(split, BorderLayout.CENTER);
+    }
+
+    /* ======================= 监听 ======================= */
+
+    private void registerListeners() {
+
+        // 行选择 → 仅渲染详情（不会影响刷新）
+        table.getSelectionModel().addListSelectionListener(this::onRowSelected);
+
+        // 双击 → 弹出响应
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row >= 0) {
+                        ResultNodeInfo info = tableModel.getRow(row);
+                        JOptionPane.showMessageDialog(
+                                PerformanceResultTreePanel.this,
+                                HttpHtmlRenderer.renderResponse(info.resp),
+                                info.name,
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    }
+                }
+            }
+        });
+
+        // Space → 暂停 / 恢复
+        table.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke("SPACE"), "togglePause");
+        table.getActionMap().put("togglePause", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                paused = !paused;
+                if (!paused) {
+                    // 恢复时立刻补一次刷新
+                    tableModel.flushIfDirty();
+                }
+            }
+        });
+
+        // 搜索（回车触发）
+        searchField.addActionListener(e -> applyFilters());
+
+        // 复选框触发过滤
+        onlyFailCheckBox.addActionListener(e -> applyFilters());
+    }
+
+    /**
+     * 应用过滤条件：关键字 + “只看失败”
+     */
+    private void applyFilters() {
+        tableModel.applyFilter(searchField.getText(), onlyFailCheckBox.isSelected());
+    }
+
+    private void onRowSelected(ListSelectionEvent e) {
+        if (e.getValueIsAdjusting()) return;
+
+        int row = table.getSelectedRow();
+        if (row < 0) {
+            selected = null;
+            clearDetailTabs();
+            return;
+        }
+
+        selected = tableModel.getRow(row);
+        renderDetail(selected);
+    }
+
+    /* ======================= 对外 API ======================= */
+
+    public void addResult(ResultNodeInfo info, boolean efficientMode) {
+        if (info == null) return;
+        if (efficientMode && info.success) return;
+
+        pendingQueue.offer(info);
+    }
+
+    public void clearResults() {
+        pendingQueue.clear();
+        selected = null;
+        table.clearSelection();
+        tableModel.clear();
+        clearDetailTabs();
+    }
+
+    /* ======================= 详情 ======================= */
+
+    private void renderDetail(ResultNodeInfo info) {
+        setTabHtml(0, HttpHtmlRenderer.renderRequest(info.req));
+        setTabHtml(1, HttpHtmlRenderer.renderResponse(info.resp));
+        setTabHtml(2,
+                info.testResults == null || info.testResults.isEmpty()
+                        ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_ASSERTION_RESULTS)
+                        : HttpHtmlRenderer.renderTestResults(info.testResults)
+        );
+        setTabHtml(3, HttpHtmlRenderer.renderTimingInfo(info.resp));
+        setTabHtml(4, HttpHtmlRenderer.renderEventInfo(info.resp));
+    }
+
+    private void setTabHtml(int idx, String html) {
+        JScrollPane scroll = (JScrollPane) detailTabs.getComponentAt(idx);
         JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
-        pane.setContentType("text/html");
-        pane.setEditable(false);
         pane.setText(html);
         pane.setCaretPosition(0);
     }
 
-    // ========== 结果树搜索方法 ==========
-    public void searchResultTree(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            // 关键字为空，显示全部
-            resultTreeModel.setRoot(resultRootNode);
-            resultTree.updateUI();
-            return;
-        }
-        // 过滤结果树，仅显示匹配的节点及其父节点
-        DefaultMutableTreeNode filteredRoot = filterResultTree(resultRootNode, keyword);
-        resultTreeModel.setRoot(filteredRoot);
-        resultTree.updateUI();
-        // 展开所有节点
-        for (int i = 0; i < resultTree.getRowCount(); i++) {
-            resultTree.expandRow(i);
+    private void clearDetailTabs() {
+        for (int i = 0; i < detailTabs.getTabCount(); i++) {
+            setTabHtml(i, "");
         }
     }
 
-    private DefaultMutableTreeNode filterResultTree(DefaultMutableTreeNode node, String keyword) {
-        boolean matched = node.toString().toLowerCase().contains(keyword.toLowerCase());
-        DefaultMutableTreeNode filteredNode = new DefaultMutableTreeNode(node.getUserObject());
-        for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            DefaultMutableTreeNode filteredChild = filterResultTree(child, keyword);
-            if (filteredChild != null) {
-                filteredNode.add(filteredChild);
-                matched = true;
+    /* ======================= TableModel ======================= */
+
+    static class ResultTableModel extends AbstractTableModel {
+
+        // 新增：结果列
+        private static final int COL_NAME = 0;
+        private static final int COL_COST = 1;
+        private static final int COL_RESULT = 2;
+
+        private final String[] columns = {"Name", "Cost (ms)" , "Result"};
+
+        private final List<ResultNodeInfo> all = new ArrayList<>();
+        private List<ResultNodeInfo> view = all;
+
+        private boolean dirty = false;
+
+        // 当前过滤条件（用于实时追加时重算 view）
+        private String keyword = "";
+        private boolean onlyFail = false;
+
+        @Override public int getRowCount() { return view.size(); }
+        @Override public int getColumnCount() { return columns.length; }
+        @Override public String getColumnName(int col) { return columns[col]; }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            ResultNodeInfo r = view.get(row);
+            return switch (col) {
+                case COL_NAME -> r.name;
+                case COL_RESULT -> r.success ? "success" : "fail";
+                case COL_COST -> r.costMs;
+                default -> "";
+            };
+        }
+
+        ResultNodeInfo getRow(int row) {
+            return view.get(row);
+        }
+
+        int getTotalSize() {
+            return all.size();
+        }
+
+        void append(List<ResultNodeInfo> batch) {
+            all.addAll(batch);
+            // 有过滤时，需要把 view 跟着更新，否则 view 不会包含新数据
+            if (hasFilter()) {
+                // 增量过滤：只过滤新来的 batch（避免全量扫描）1
+                appendFiltered(batch);
             }
-        }
-        return matched ? filteredNode : null;
-    }
-
-    /**
-     * 添加结果节点
-     *
-     * @param nodeInfo      结果节点信息
-     * @param efficientMode 是否为高效模式（只记录失败结果）
-     */
-    public void addResult(ResultNodeInfo nodeInfo, boolean efficientMode) {
-        if (nodeInfo == null) return;
-        if (efficientMode && nodeInfo.success) return; // 高效模式下只记录失败结果
-
-        // 将结果加入待处理队列
-        pendingResults.offer(nodeInfo);
-
-        // 调度批量更新（避免重复调度）
-        scheduleBatchUpdate();
-    }
-
-    /**
-     * 调度批量更新任务
-     */
-    private void scheduleBatchUpdate() {
-        // 使用compareAndSet实现无锁的原子操作
-        // 如果当前值是false，则设置为true并返回true
-        // 如果当前值已经是true，则返回false（表示已经有调度任务）
-        if (!batchUpdateScheduled.compareAndSet(false, true)) {
-            return; // 已经有调度任务在执行，不重复调度
+            dirty = true;
         }
 
-        // 延迟执行批量更新（使用Swing Timer，自动在EDT线程执行）
-        Timer timer = new Timer(BATCH_UPDATE_DELAY_MS, e -> {
-            processPendingResults();
-            batchUpdateScheduled.set(false);
-        });
-        timer.setRepeats(false);
-        timer.start();
-    }
+        private void appendFiltered(List<ResultNodeInfo> batch) {
+            String k = (keyword == null) ? "" : keyword.trim().toLowerCase();
+            boolean failOnly = onlyFail;
 
-    /**
-     * 批量处理待添加的结果节点
-     */
-    private void processPendingResults() {
-        if (pendingResults.isEmpty()) {
-            return;
-        }
-
-        // 批量取出所有待处理的结果
-        List<ResultNodeInfo> batch = new ArrayList<>();
-        ResultNodeInfo info;
-        while ((info = pendingResults.poll()) != null) {
-            batch.add(info);
-        }
-
-        // 使用invokeLater确保在EDT线程中执行（如果不是从Swing Timer调用）
-        if (SwingUtilities.isEventDispatchThread()) {
-            // 已经在EDT线程，直接执行
-            addBatchToTree(batch);
-        } else {
-            // 不在EDT线程，需要切换
-            SwingUtilities.invokeLater(() -> addBatchToTree(batch));
-        }
-    }
-
-    /**
-     * 将批量结果添加到树中（必须在EDT线程调用）
-     */
-    private void addBatchToTree(List<ResultNodeInfo> batch) {
-        if (batch.isEmpty()) {
-            return;
-        }
-
-        // 先处理需要移除的节点
-        int removedCount = 0;
-        for (int i = 0; i < batch.size(); i++) {
-            if (currentResultCount.get() >= MAX_RESULT_NODES && resultRootNode.getChildCount() > 0) {
-                // 移除最旧的节点（FIFO）
-                resultRootNode.remove(0);
-                currentResultCount.decrementAndGet();
-                removedCount++;
+            for (ResultNodeInfo r : batch) {
+                if (passFailFilter(r, failOnly)) continue;
+                if (matchKeyword(r, k)) continue;
+                view.add(r);
             }
         }
 
-        // 通知模型节点被移除（如果有移除操作）
-        if (removedCount > 0) {
-            resultTreeModel.nodeStructureChanged(resultRootNode);
+        void flushIfDirty() {
+            if (!dirty) return;
+            dirty = false;
+            fireTableDataChanged();
         }
 
-        // 添加新节点
-        List<Integer> insertedIndices = new ArrayList<>();
-        for (ResultNodeInfo nodeInfo : batch) {
-            DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(nodeInfo);
-            int insertIndex = resultRootNode.getChildCount();
-            resultRootNode.insert(reqNode, insertIndex);
-            currentResultCount.incrementAndGet();
-            insertedIndices.add(insertIndex);
+        void clear() {
+            all.clear();
+            view = all;
+            dirty = false;
+            keyword = "";
+            onlyFail = false;
+            fireTableDataChanged();
         }
 
-        // 通知模型节点被插入
-        if (!insertedIndices.isEmpty()) {
-            int[] childIndices = new int[insertedIndices.size()];
-            for (int i = 0; i < insertedIndices.size(); i++) {
-                childIndices[i] = insertedIndices.get(i);
+        void trimTo(int max) {
+            int remove = all.size() - max;
+            if (remove <= 0) return;
+
+            // 从头逐个 remove：保证安全（只在 EDT 执行）
+            for (int i = 0; i < remove; i++) {
+                all.remove(0);
             }
 
-            resultTreeModel.nodesWereInserted(resultRootNode, childIndices);
-
-            // 自动展开根节点，让所有结果可见
-            expandRootNode();
+            // trim 后如果有过滤，需要重建 view（因为引用对象还在，但位置变了）
+            rebuildView();
+            dirty = true;
         }
 
-        // 显示警告信息（如果达到上限）
-        if (currentResultCount.get() >= MAX_RESULT_NODES && !limitWarningShown) {
-            limitWarningShown = true;
-            log.warn("结果树已达到最大限制 {} 个节点，旧结果将被自动移除", MAX_RESULT_NODES);
+        void applyFilter(String keyword, boolean onlyFail) {
+            this.keyword = keyword == null ? "" : keyword;
+            this.onlyFail = onlyFail;
+            rebuildView();
+            fireTableDataChanged();
+        }
+
+        private boolean hasFilter() {
+            return (keyword != null && !keyword.trim().isEmpty()) || onlyFail;
+        }
+
+        private void rebuildView() {
+            if (!hasFilter()) {
+                view = all;
+                return;
+            }
+
+            String k = keyword.trim().toLowerCase();
+            List<ResultNodeInfo> filtered = new ArrayList<>();
+
+            for (ResultNodeInfo r : all) {
+                if (passFailFilter(r, onlyFail)) continue;
+                if (matchKeyword(r, k)) continue;
+                filtered.add(r);
+            }
+            view = filtered;
+        }
+
+        /**
+         * “只看失败”过滤
+         */
+        private boolean passFailFilter(ResultNodeInfo r, boolean onlyFail) {
+            if (!onlyFail) return false;
+            return r == null || r.success;
+        }
+
+        /**
+         * 关键字匹配：接口名 OR 成功/失败文本
+         * - 空关键字：直接通过
+         * - 关键字包含 “成功/失败/success/fail/ok/error” 时也能匹配状态
+         */
+        private boolean matchKeyword(ResultNodeInfo r, String k) {
+            if (k == null || k.isEmpty()) return false;
+            if (r == null) return true;
+
+            String name = r.name == null ? "" : r.name.toLowerCase();
+            if (name.contains(k)) return false;
+
+            boolean wantSuccess = containsAny(k, "成功", "success", "ok", "pass", "passed");
+            boolean wantFail = containsAny(k, "失败", "fail", "error", "err", "failed");
+
+            if (wantSuccess && r.success) return false;
+            return !wantFail || r.success;
+        }
+
+        private boolean containsAny(String text, String... keys) {
+            if (text == null) return false;
+            for (String key : keys) {
+                if (key != null && !key.isEmpty() && text.contains(key)) return true;
+            }
+            return false;
         }
     }
 
-    /**
-     * 展开根节点，显示所有第一级子节点
-     */
-    private void expandRootNode() {
-        if (resultTree.getRowCount() > 0) {
-            resultTree.expandRow(0);
+    /* ======================= Renderer ======================= */
+
+    static class ResultRowRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column) {
+
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            ResultTableModel model = (ResultTableModel) table.getModel();
+            ResultNodeInfo r = model.getRow(row);
+
+            // 背景色（Network 风格：成功淡绿 / 失败淡红）
+            if (!isSelected) {
+                setBackground(
+                        r.success
+                                ? new Color(235, 255, 235)
+                                : new Color(255, 235, 235)
+                );
+            }
+
+            // 断言失败 tooltip
+            setToolTipText(r.hasAssertionFailed() ? "Assertion Failed" : null);
+
+            // 全部居左（你要的：列表字段居左）
+            setHorizontalAlignment(SwingConstants.LEFT);
+
+            return this;
         }
     }
-
-    private boolean limitWarningShown = false;
-
-    /**
-     * 立即刷新所有待处理的结果（在测试结束时调用）
-     */
-    public void flushPendingResults() {
-        batchUpdateScheduled.set(false); // 取消调度标记
-        processPendingResults();
-    }
-
-    /**
-     * 清空结果树
-     */
-    public void clearResults() {
-        // 清空待处理队列
-        pendingResults.clear();
-        batchUpdateScheduled.set(false);
-        currentResultCount.set(0);
-        limitWarningShown = false;
-
-        resultRootNode.removeAllChildren();
-        resultTreeModel.reload();
-        resultTree.clearSelection();
-        clearDetailTabs();
-    }
-
 }

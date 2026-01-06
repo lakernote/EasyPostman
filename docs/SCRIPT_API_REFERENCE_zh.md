@@ -15,6 +15,7 @@
 - [pm.expect - 断言](#pmexpect---断言)
 - [pm.test - 测试](#pmtest---测试)
 - [console - 控制台](#console---控制台)
+- [内置 JavaScript 库](#内置-javascript-库)
 - [完整示例](#完整示例)
 - [注意事项](#注意事项)
 - [快速参考](#快速参考)
@@ -530,6 +531,191 @@ results.forEach(function (result) {
 | `info(message, ...)`  | message: Any | 输出信息 | `console.info('Info message')`    |
 | `warn(message, ...)`  | message: Any | 输出警告 | `console.warn('Warning message')` |
 | `error(message, ...)` | message: Any | 输出错误 | `console.error('Error message')`  |
+
+---
+
+## 内置 JavaScript 库
+
+EasyPostman 内置了三个常用的 JavaScript 库，这些库**已预加载到全局作用域**，可以直接使用，无需 `require()`。
+
+### 支持的库列表
+
+| 库名         | 全局变量名       | 版本       | 说明                                    | 官方文档                                      |
+|------------|-------------|----------|---------------------------------------|--------------------------------------------|
+| crypto-js  | `CryptoJS`  | 4.1.1    | 加密库，支持 AES、DES、MD5、SHA、HMAC 等多种加密算法 | [crypto-js](https://cryptojs.gitbook.io/docs/) |
+| lodash     | `_`         | 4.17.21  | JavaScript 实用工具库，提供丰富的函数式编程辅助方法      | [lodash](https://lodash.com/docs/)          |
+| moment     | `moment`    | 2.29.4   | 日期时间处理库，用于格式化、解析和操作日期时间             | [moment.js](https://momentjs.com/docs/)     |
+
+### 使用方式
+
+```javascript
+// ✅ 推荐：直接使用全局变量（无需 require）
+var hash = CryptoJS.MD5('message').toString();
+var randomNum = _.random(1, 100);
+var now = moment().format('YYYY-MM-DD HH:mm:ss');
+
+// ✅ 也支持：使用 require() 加载（兼容 Postman）
+var CryptoJS = require('crypto-js');
+var _ = require('lodash');
+var moment = require('moment');
+```
+
+### crypto-js - 加密库
+
+提供多种加密和哈希算法，常用于生成签名、加密敏感数据等场景。
+
+#### 常用功能
+
+| 功能          | 方法                                  | 说明            | 示例                                                   |
+|-------------|-------------------------------------|---------------|------------------------------------------------------|
+| MD5 哈希      | `CryptoJS.MD5(message)`             | 生成 MD5 哈希     | `CryptoJS.MD5('text').toString()`                    |
+| SHA1 哈希     | `CryptoJS.SHA1(message)`            | 生成 SHA1 哈希    | `CryptoJS.SHA1('text').toString()`                   |
+| SHA256 哈希   | `CryptoJS.SHA256(message)`          | 生成 SHA256 哈希  | `CryptoJS.SHA256('text').toString()`                 |
+| HMAC-SHA256 | `CryptoJS.HmacSHA256(message, key)` | HMAC 签名       | `CryptoJS.HmacSHA256('data', 'secret').toString()`   |
+| AES 加密      | `CryptoJS.AES.encrypt(msg, key)`    | AES 对称加密      | `CryptoJS.AES.encrypt('text', 'secret').toString()`  |
+| AES 解密      | `CryptoJS.AES.decrypt(cipher, key)` | AES 解密        | `CryptoJS.AES.decrypt(cipher, 'secret').toString()`  |
+| Base64 编码   | `CryptoJS.enc.Base64.stringify()`   | Base64 编码     | `CryptoJS.enc.Base64.stringify(wordArray)`           |
+| 随机字节        | `CryptoJS.lib.WordArray.random(n)`  | 生成 n 字节随机数据   | `CryptoJS.lib.WordArray.random(16).toString()`       |
+
+#### 使用示例
+
+```javascript
+// 直接使用全局变量 CryptoJS（无需 require）
+
+// MD5 哈希
+var md5 = CryptoJS.MD5('password123').toString();
+pm.environment.set('passwordHash', md5);
+
+// HMAC-SHA256 签名
+var data = 'userId=123&timestamp=' + Date.now();
+var signature = CryptoJS.HmacSHA256(data, 'secret-key').toString();
+pm.environment.set('signature', signature);
+
+// AES 加密解密
+var encrypted = CryptoJS.AES.encrypt('sensitive data', 'my-key').toString();
+var decrypted = CryptoJS.AES.decrypt(encrypted, 'my-key').toString(CryptoJS.enc.Utf8);
+```
+
+### lodash - 工具库
+
+提供数组、对象、字符串等数据类型的实用操作方法，简化数据处理逻辑。
+
+#### 常用功能
+
+| 分类   | 方法                          | 说明           | 示例                                      |
+|------|-----------------------------|--------------|-----------------------------------------|
+| 数组   | `_.random(min, max)`        | 生成随机数        | `_.random(1, 100)`                      |
+|      | `_.shuffle(array)`          | 打乱数组         | `_.shuffle([1, 2, 3])`                  |
+|      | `_.sample(array)`           | 随机取一个元素      | `_.sample(['a', 'b', 'c'])`             |
+|      | `_.uniq(array)`             | 数组去重         | `_.uniq([1, 2, 2, 3])`                  |
+| 集合   | `_.map(collection, fn)`     | 映射转换         | `_.map([1,2], n => n*2)`                |
+|      | `_.filter(collection, fn)`  | 过滤           | `_.filter([1,2,3], n => n>1)`           |
+|      | `_.find(collection, fn)`    | 查找第一个匹配项     | `_.find(users, {role: 'admin'})`        |
+|      | `_.groupBy(collection, fn)` | 分组           | `_.groupBy(users, 'role')`              |
+|      | `_.sortBy(collection, fn)`  | 排序           | `_.sortBy(users, 'age')`                |
+| 对象   | `_.pick(object, keys)`      | 提取指定属性       | `_.pick(user, ['id', 'name'])`          |
+|      | `_.omit(object, keys)`      | 排除指定属性       | `_.omit(user, ['password'])`            |
+|      | `_.merge(obj1, obj2)`       | 深度合并对象       | `_.merge({a:1}, {b:2})`                 |
+|      | `_.cloneDeep(object)`       | 深度克隆         | `_.cloneDeep(complexObject)`            |
+| 字符串  | `_.camelCase(string)`       | 转驼峰命名        | `_.camelCase('hello-world')`            |
+|      | `_.snakeCase(string)`       | 转蛇形命名        | `_.snakeCase('helloWorld')`             |
+|      | `_.capitalize(string)`      | 首字母大写        | `_.capitalize('hello')`                 |
+| 其他   | `_.times(n, fn)`            | 执行 n 次       | `_.times(3, i => console.log(i))`       |
+|      | `_.debounce(fn, wait)`      | 防抖函数         | `_.debounce(func, 300)`                 |
+
+#### 使用示例
+
+```javascript
+// 直接使用全局变量 _（无需 require）
+
+// 生成随机测试数据
+var userId = _.random(10000, 99999);
+var status = _.sample(['pending', 'approved', 'rejected']);
+
+// 数组操作
+var nums = [1, 2, 3, 4, 5];
+var doubled = _.map(nums, n => n * 2);
+var filtered = _.filter(nums, n => n > 2);
+
+// 对象操作
+var user = {id: 1, name: 'John', password: 'secret', age: 30};
+var safeUser = _.omit(user, ['password']);
+pm.environment.set('user', JSON.stringify(safeUser));
+```
+
+### moment - 日期时间库
+
+强大的日期时间处理库，支持格式化、解析、计算和验证日期。
+
+#### 常用功能
+
+| 功能       | 方法                                  | 说明             | 示例                                          |
+|----------|-------------------------------------|----------------|---------------------------------------------|
+| 获取当前时间   | `moment()`                          | 创建当前时间对象       | `moment()`                                  |
+| 格式化      | `moment().format(format)`           | 格式化日期          | `moment().format('YYYY-MM-DD HH:mm:ss')`    |
+| ISO格式    | `moment().toISOString()`            | 转 ISO 8601 格式  | `moment().toISOString()`                    |
+| 时间戳      | `moment().valueOf()`                | 获取毫秒时间戳        | `moment().valueOf()`                        |
+|          | `moment().unix()`                   | 获取秒级时间戳        | `moment().unix()`                           |
+| 解析日期     | `moment(str, format)`               | 解析字符串为日期       | `moment('2024-01-01', 'YYYY-MM-DD')`        |
+| 日期加减     | `moment().add(n, unit)`             | 增加时间           | `moment().add(7, 'days')`                   |
+|          | `moment().subtract(n, unit)`        | 减少时间           | `moment().subtract(1, 'months')`            |
+| 日期比较     | `moment().isBefore(date)`           | 是否在之前          | `moment().isBefore('2025-01-01')`           |
+|          | `moment().isAfter(date)`            | 是否在之后          | `moment().isAfter('2023-01-01')`            |
+|          | `moment().isSame(date)`             | 是否相同           | `moment().isSame('2024-01-01', 'day')`      |
+| 时间差      | `moment().diff(date, unit)`         | 计算时间差          | `moment().diff('2024-01-01', 'days')`       |
+| 开始/结束时间 | `moment().startOf(unit)`            | 获取单位开始时间       | `moment().startOf('day')`                   |
+|          | `moment().endOf(unit)`              | 获取单位结束时间       | `moment().endOf('month')`                   |
+| 验证       | `moment(str, format, true).isValid()` | 验证日期是否有效       | `moment('2024-13-01', 'YYYY-MM-DD', true).isValid()` |
+
+#### 使用示例
+
+```javascript
+// 直接使用全局变量 moment（无需 require）
+
+// 生成各种时间格式
+pm.environment.set('currentDate', moment().format('YYYY-MM-DD'));
+pm.environment.set('currentTime', moment().format('YYYY-MM-DD HH:mm:ss'));
+pm.environment.set('timestamp', moment().valueOf().toString());
+pm.environment.set('isoTime', moment().toISOString());
+
+// 日期计算
+var tomorrow = moment().add(1, 'days').format('YYYY-MM-DD');
+var lastMonth = moment().subtract(1, 'months').format('YYYY-MM');
+var startOfDay = moment().startOf('day').valueOf();
+var endOfDay = moment().endOf('day').valueOf();
+```
+
+### 组合使用示例
+
+```javascript
+// 直接使用全局变量（无需 require）
+// CryptoJS、_（lodash）、moment 都已预加载
+
+// 生成带签名的 API 请求参数
+var params = {
+    userId: pm.environment.get('userId') || '123',
+    timestamp: moment().valueOf().toString(),
+    nonce: CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex),
+    action: 'getUserInfo'
+};
+
+// 按键名排序并拼接签名字符串
+var sortedKeys = _.keys(params).sort();
+var signString = _.map(sortedKeys, key => key + '=' + params[key]).join('&');
+
+// 生成 HMAC-SHA256 签名
+var secretKey = pm.environment.get('secretKey') || 'default-secret';
+var signature = CryptoJS.HmacSHA256(signString, secretKey).toString();
+
+// 保存到环境变量
+pm.environment.set('requestTimestamp', params.timestamp);
+pm.environment.set('requestNonce', params.nonce);
+pm.environment.set('requestSignature', signature);
+
+console.log('请求参数已准备完成');
+console.log('签名字符串:', signString);
+console.log('签名:', signature);
+```
 
 ---
 
@@ -1837,7 +2023,8 @@ console.log('活跃用户数:', activeCount);
 
 7. **内置库**
     - 支持 `crypto-js`、`lodash`、`moment` 三个内置库
-    - 使用 `require('library-name')` 加载库
+    - ✅ **推荐**：直接使用全局变量 `CryptoJS`、`_`、`moment`（已预加载）
+    - ✅ **也支持**：使用 `require('library-name')` 加载（兼容 Postman）
     - 库代码会被缓存，重复加载不会影响性能
 
 8. **不支持的功能**
@@ -1906,10 +2093,15 @@ pm.uuid()                                 // 生成 UUID
 pm.getTimestamp()                         // 获取时间戳
 console.log(message)                      // 输出日志
 
-// ===== 内置库 =====
-var CryptoJS = require('crypto-js')       // 加密库
-var _ = require('lodash')                 // 工具库
-var moment = require('moment')            // 日期库
+// ===== 内置库（全局变量，直接使用）=====
+CryptoJS.MD5('text').toString()           // 加密库（全局变量 CryptoJS）
+_.random(1, 100)                          // 工具库（全局变量 _）
+moment().format('YYYY-MM-DD')             // 日期库（全局变量 moment）
+
+// 也支持 require()（兼容 Postman）
+var CryptoJS = require('crypto-js')
+var _ = require('lodash')
+var moment = require('moment')
 ```
 
 ---

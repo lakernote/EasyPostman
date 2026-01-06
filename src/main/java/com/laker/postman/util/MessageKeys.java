@@ -388,8 +388,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TAB_TIMING = "performance.tab.timing";
     public static final String PERFORMANCE_TAB_EVENT_INFO = "performance.tab.event_info";
     public static final String PERFORMANCE_NO_ASSERTION_RESULTS = "performance.no_assertion_results";
-    public static final String PERFORMANCE_NO_TIMING_INFO = "performance.no_timing_info";
-    public static final String PERFORMANCE_NO_EVENT_INFO = "performance.no_event_info";
     public static final String PERFORMANCE_PROPERTY_SELECT_NODE = "performance.property.select_node";
     public static final String PERFORMANCE_EFFICIENT_MODE = "performance.efficient_mode";
     public static final String PERFORMANCE_EFFICIENT_MODE_TOOLTIP = "performance.efficient_mode.tooltip";
@@ -445,18 +443,11 @@ public final class MessageKeys {
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";
     public static final String PERFORMANCE_TREND_RESPONSE_TIME_MS = "performance.trend.response_time_ms";
-    public static final String PERFORMANCE_TREND_RESPONSE_TIME = "performance.trend.response_time";
     public static final String PERFORMANCE_TREND_QPS = "performance.trend.qps";
     public static final String PERFORMANCE_TREND_ERROR_RATE_PERCENT = "performance.trend.error_rate_percent";
-    public static final String PERFORMANCE_TREND_ERROR_RATE = "performance.trend.error_rate";
-    public static final String PERFORMANCE_TREND_CHART_TITLE = "performance.trend.chart_title";
     public static final String PERFORMANCE_TREND_TIME = "performance.trend.time";
-    public static final String PERFORMANCE_TREND_METRIC_VALUE = "performance.trend.metric_value";
-    public static final String PERFORMANCE_TREND_METRICS = "performance.trend.metrics";
-    public static final String PERFORMANCE_TREND_NO_METRIC_SELECTED = "performance.trend.no_metric_selected";
 
     // ============ 性能结果树相关 ============
-    public static final String PERFORMANCE_RESULT_TREE_ONLY_FAIL = "performance.result_tree.only_fail";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_NAME = "performance.result_tree.column.name";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_COST = "performance.result_tree.column.cost";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_RESULT = "performance.result_tree.column.result";

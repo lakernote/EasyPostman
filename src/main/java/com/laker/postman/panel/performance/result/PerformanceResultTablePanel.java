@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * - 支持表头点击排序和搜索过滤
  */
 @Slf4j
-public class PerformanceResultTreePanel extends JPanel {
+public class PerformanceResultTablePanel extends JPanel {
 
     private JTable table;
     private ResultTableModel tableModel;
@@ -55,7 +55,7 @@ public class PerformanceResultTreePanel extends JPanel {
         tableModel.flushIfDirty();
     });
 
-    public PerformanceResultTreePanel() {
+    public PerformanceResultTablePanel() {
         initUI();
         registerListeners();
         uiFrameTimer.start();
@@ -490,3 +490,4 @@ public class PerformanceResultTreePanel extends JPanel {
         }
     }
 }
+

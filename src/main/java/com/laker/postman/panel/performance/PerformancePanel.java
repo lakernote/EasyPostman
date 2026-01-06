@@ -23,7 +23,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
-import com.laker.postman.panel.performance.result.PerformanceResultTreePanel;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -105,7 +105,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private boolean efficientMode = true;
 
     private PerformanceReportPanel performanceReportPanel;
-    private PerformanceResultTreePanel performanceResultTreePanel;
+    private PerformanceResultTablePanel performanceResultTablePanel;
     private PerformanceTrendPanel performanceTrendPanel;
 
 
@@ -181,7 +181,7 @@ public class PerformancePanel extends SingletonBasePanel {
         // 3. 结果区
         resultTabbedPane = new JTabbedPane();
         // 结果树面板
-        performanceResultTreePanel = new PerformanceResultTreePanel();
+        performanceResultTablePanel = new PerformanceResultTablePanel();
         // 趋势图面板
         performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         // 报告面板
@@ -189,7 +189,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
-        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTreePanel);
+        resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTablePanel);
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -474,7 +474,7 @@ public class PerformancePanel extends SingletonBasePanel {
         stopBtn.setEnabled(true);
         refreshBtn.setEnabled(false); // 运行时禁用刷新按钮
         resultTabbedPane.setSelectedIndex(0); // 切换到趋势图Tab
-        performanceResultTreePanel.clearResults(); // 清空结果树
+        performanceResultTablePanel.clearResults(); // 清空结果树
         performanceReportPanel.clearReport(); // 清空报表数据
         performanceTrendPanel.clearTrendDataset(); // 清理趋势图历史数据
         apiCostMap.clear();
@@ -1512,7 +1512,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 } else {
                     apiFailMap.merge(apiName, 1, Integer::sum);
                 }
-                performanceResultTreePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
+                performanceResultTablePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
             } else {
                 // 被中断的请求，记录日志但不计入统计
                 log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());

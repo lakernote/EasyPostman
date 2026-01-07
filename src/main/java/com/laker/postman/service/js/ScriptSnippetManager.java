@@ -148,16 +148,6 @@ public class ScriptSnippetManager {
         provider.addCompletion(new BasicCompletion(provider, "getEnvironmentVariable",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_GET_ENV)));
 
-        // ========== Console 对象 ==========
-        provider.addCompletion(new BasicCompletion(provider, "console.log",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE_LOG)));
-        provider.addCompletion(new BasicCompletion(provider, "console.warn",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE_WARN)));
-        provider.addCompletion(new BasicCompletion(provider, "console.error",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE_ERROR)));
-        provider.addCompletion(new BasicCompletion(provider, "console.info",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE_INFO)));
-
         // ========== JavaScript 内置对象 ==========
         provider.addCompletion(new BasicCompletion(provider, "JSON.parse",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_JSON_PARSE)));
@@ -252,15 +242,6 @@ public class ScriptSnippetManager {
                 "获取 Unix 时间戳"));
         provider.addCompletion(new BasicCompletion(provider, "moment().valueOf",
                 "获取毫秒时间戳"));
-
-
-        // 实用函数
-        provider.addCompletion(new BasicCompletion(provider, "uuid",
-                "生成 UUID (Java 实现)"));
-        provider.addCompletion(new BasicCompletion(provider, "timestamp",
-                "获取当前时间戳 (Java 实现)"));
-        provider.addCompletion(new BasicCompletion(provider, "require",
-                "加载 JavaScript 库"));
 
         // ========== JavaScript关键字 ==========
         provider.addCompletion(new BasicCompletion(provider, "if",
@@ -505,63 +486,6 @@ public class ScriptSnippetManager {
                 "timestamp",
                 "var now = timestamp();",
                 "获取当前时间戳 (Java 实现)"));
-
-        // ========== 完整示例：API 签名 ==========
-        provider.addCompletion(new ShorthandCompletion(provider,
-                "apiSignature",
-                """
-                        // 生成 API 签名
-                        var requestId = uuid();
-                        var timestamp = moment().unix();
-                        var signData = {
-                            requestId: requestId,
-                            timestamp: timestamp,
-                            method: pm.request.method,
-                            path: pm.request.url.getPath()
-                        };
-                        var signString = _.map(
-                            _.sortBy(_.toPairs(signData), 0),
-                            pair => pair[0] + '=' + pair[1]
-                        ).join('&');
-                        var signature = CryptoJS.HmacSHA256(signString, pm.environment.get('api_secret')).toString();
-                        pm.request.headers.add({key: 'X-Signature', value: signature});""",
-                "完整示例：生成 API 请求签名"));
-
-        // ========== 完整示例：密码加密 ==========
-        provider.addCompletion(new ShorthandCompletion(provider,
-                "encryptPassword",
-                """
-                        // AES 加密密码
-                        var secret_key = pm.environment.get('secret_key');
-                        var password = pm.request.url.query.get('password');
-                        var key = CryptoJS.enc.Latin1.parse(secret_key);
-                        var encrypted = CryptoJS.AES.encrypt(password, key, {
-                            iv: key,
-                            mode: CryptoJS.mode.CBC,
-                            padding: CryptoJS.pad.Pkcs7
-                        });
-                        var encrypted_password = encodeURIComponent(encrypted.toString());
-                        pm.request.url.query.upsert({key: 'password', value: encrypted_password});""",
-                "完整示例：加密密码参数"));
-
-        // ========== 完整示例：响应验证 ==========
-        provider.addCompletion(new ShorthandCompletion(provider,
-                "validateResponse",
-                """
-                        // 完整的响应验证
-                        pm.test('响应验证', function() {
-                            var jsonData = pm.response.json();
-                        
-                            // 验证必需字段
-                            var requiredFields = ['code', 'message', 'data'];
-                            var hasAllFields = _.every(requiredFields, field => _.has(jsonData, field));
-                            pm.expect(hasAllFields).to.equal(true);
-                        
-                            // 验证字段类型
-                            pm.expect(jsonData.code).to.be.a('number');
-                            pm.expect(jsonData.message).to.be.a('string');
-                        });""",
-                "完整示例：验证响应数据"));
     }
 
 }

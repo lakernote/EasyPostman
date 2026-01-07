@@ -110,9 +110,23 @@ jpackage \
     --linux-shortcut \
     --linux-menu-group "Development" \
     --linux-app-category "Development" \
-    --java-options "-Xms256m" \
-    --java-options "-Xmx512m" \
-    --java-options "-Dfile.encoding=UTF-8"
+    --java-options "-Xms512m" \
+    --java-options "-Xmx1g" \
+    --java-options "-XX:MaxMetaspaceSize=256m" \
+    --java-options "-XX:MetaspaceSize=128m" \
+    --java-options "-XX:MaxDirectMemorySize=256m" \
+    --java-options "-XX:+UseG1GC" \
+    --java-options "-XX:MaxGCPauseMillis=200" \
+    --java-options "-XX:InitiatingHeapOccupancyPercent=45" \
+    --java-options "-XX:+UseStringDeduplication" \
+    --java-options "-XX:+HeapDumpOnOutOfMemoryError" \
+    --java-options "-XX:HeapDumpPath=./dumps" \
+    --java-options "-Dfile.encoding=UTF-8" \
+    --java-options "-Dawt.useSystemAAFontSettings=on" \
+    --java-options "-Dswing.aatext=true" \
+    --java-options "-Djava.net.preferIPv4Stack=true" \
+    --java-options "-Dhttp.keepAlive=true" \
+    --java-options "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
 
 if [ $? -ne 0 ]; then
     echo "❌ jpackage 打包失败"

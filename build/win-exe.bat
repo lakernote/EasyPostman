@@ -138,9 +138,21 @@ jpackage ^
     --app-version %VERSION% ^
     --vendor "Laker" ^
     --copyright "© 2025 Laker" ^
-    --java-options "-Xms256m" ^
-    --java-options "-Xmx512m" ^
+    --java-options "-Xms512m" ^
+    --java-options "-Xmx1g" ^
+    --java-options "-XX:MaxMetaspaceSize=256m" ^
+    --java-options "-XX:MetaspaceSize=128m" ^
+    --java-options "-XX:MaxDirectMemorySize=256m" ^
+    --java-options "-XX:+UseG1GC" ^
+    --java-options "-XX:MaxGCPauseMillis=200" ^
+    --java-options "-XX:InitiatingHeapOccupancyPercent=45" ^
+    --java-options "-XX:+UseStringDeduplication" ^
+    --java-options "-XX:+HeapDumpOnOutOfMemoryError" ^
+    --java-options "-XX:HeapDumpPath=./dumps" ^
     --java-options "-Dfile.encoding=UTF-8" ^
+    --java-options "-Dswing.aatext=true" ^
+    --java-options "-Djava.net.preferIPv4Stack=true" ^
+    --java-options "-Dhttp.keepAlive=true" ^
     --java-options "-Djavax.accessibility.assistive_technologies="
 
 if errorlevel 1 (

@@ -12,7 +12,14 @@ env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'jetbrains'  # 使用 JetBrains Runtime（JBR），为 Swing 应用优化
   JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
-  JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
+  # 通用 Java 选项（所有平台共享）
+  JAVA_OPTIONS_COMMON: '-Xms512m|-Xmx1g|-XX:MaxMetaspaceSize=256m|-XX:MetaspaceSize=128m|-XX:MaxDirectMemorySize=256m|-XX:+UseG1GC|-XX:MaxGCPauseMillis=200|-XX:InitiatingHeapOccupancyPercent=45|-XX:+UseStringDeduplication|-XX:+HeapDumpOnOutOfMemoryError|-XX:HeapDumpPath=./dumps|-Dfile.encoding=UTF-8|-Dswing.aatext=true|-Djava.net.preferIPv4Stack=true|-Dhttp.keepAlive=true'
+  # Windows 特定选项
+  JAVA_OPTIONS_WINDOWS: '-Djavax.accessibility.assistive_technologies='
+  # macOS 特定选项
+  JAVA_OPTIONS_MACOS: '-Dsun.java2d.metal=true|-Dapple.awt.application.appearance=system|--add-opens java.desktop/java.awt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED|--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'
+  # Linux 特定选项
+  JAVA_OPTIONS_LINUX: '-Dawt.useSystemAAFontSettings=on|--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED'
 
 jobs:
   # 提取版本号，供所有 job 复用
@@ -142,26 +149,42 @@ jobs:
           
           if (Test-Path $appImageDir) { Remove-Item -Recurse -Force $appImageDir }
           
-          # 解析 Java 选项
-          $javaOpts = $env:JAVA_OPTIONS -split '\|'
+          # 解析通用 Java 选项
+          $javaOptsCommon = $env:JAVA_OPTIONS_COMMON -split '\|'
+          # 解析 Windows 特定选项
+          $javaOptsWindows = $env:JAVA_OPTIONS_WINDOWS -split '\|'
           
-          # 创建应用镜像（app-image 类型，不是安装包）
-          jpackage `
-            --type app-image `
-            --input target\dist-input `
-            --main-jar $jarName `
-            --main-class com.laker.postman.App `
-            --runtime-image target\runtime `
-            --dest target `
-            --icon assets\win\EasyPostman.ico `
-            --name EasyPostman `
-            --app-version $version `
-            --vendor "Laker" `
-            --copyright "© 2025 Laker" `
-            --java-options $javaOpts[0] `
-            --java-options $javaOpts[1] `
-            --java-options $javaOpts[2] `
-            --java-options "-Djavax.accessibility.assistive_technologies="
+          # 构建 jpackage 参数列表
+          $jpackageArgs = @(
+            '--type', 'app-image',
+            '--input', 'target\dist-input',
+            '--main-jar', $jarName,
+            '--main-class', 'com.laker.postman.App',
+            '--runtime-image', 'target\runtime',
+            '--dest', 'target',
+            '--icon', 'assets\win\EasyPostman.ico',
+            '--name', 'EasyPostman',
+            '--app-version', $version,
+            '--vendor', 'Laker',
+            '--copyright', '© 2025 Laker'
+          )
+          
+          # 添加通用 Java 选项
+          foreach ($opt in $javaOptsCommon) {
+            $jpackageArgs += '--java-options'
+            $jpackageArgs += $opt
+          }
+          
+          # 添加 Windows 特定选项
+          foreach ($opt in $javaOptsWindows) {
+            if ($opt -ne '') {
+              $jpackageArgs += '--java-options'
+              $jpackageArgs += $opt
+            }
+          }
+          
+          # 执行 jpackage
+          & jpackage @jpackageArgs
 
       - name: Package portable version（打包绿色版为 ZIP）
         shell: pwsh
@@ -293,26 +316,42 @@ jobs:
           $version = "${{ needs.get-version.outputs.version }}"
           $jarName = "easy-postman.jar"
           
-          # 解析 Java 选项
-          $javaOpts = $env:JAVA_OPTIONS -split '\|'
+          # 解析通用 Java 选项
+          $javaOptsCommon = $env:JAVA_OPTIONS_COMMON -split '\|'
+          # 解析 Windows 特定选项
+          $javaOptsWindows = $env:JAVA_OPTIONS_WINDOWS -split '\|'
           
-          # 创建应用镜像（供 Inno Setup 使用）
-          jpackage `
-            --type app-image `
-            --input target\dist-input `
-            --main-jar $jarName `
-            --main-class com.laker.postman.App `
-            --runtime-image target\runtime `
-            --dest target `
-            --icon assets\win\EasyPostman.ico `
-            --name EasyPostman `
-            --app-version $version `
-            --vendor "Laker" `
-            --copyright "© 2025 Laker" `
-            --java-options $javaOpts[0] `
-            --java-options $javaOpts[1] `
-            --java-options $javaOpts[2] `
-            --java-options "-Djavax.accessibility.assistive_technologies="
+          # 构建 jpackage 参数列表
+          $jpackageArgs = @(
+            '--type', 'app-image',
+            '--input', 'target\dist-input',
+            '--main-jar', $jarName,
+            '--main-class', 'com.laker.postman.App',
+            '--runtime-image', 'target\runtime',
+            '--dest', 'target',
+            '--icon', 'assets\win\EasyPostman.ico',
+            '--name', 'EasyPostman',
+            '--app-version', $version,
+            '--vendor', 'Laker',
+            '--copyright', '© 2025 Laker'
+          )
+          
+          # 添加通用 Java 选项
+          foreach ($opt in $javaOptsCommon) {
+            $jpackageArgs += '--java-options'
+            $jpackageArgs += $opt
+          }
+          
+          # 添加 Windows 特定选项
+          foreach ($opt in $javaOptsWindows) {
+            if ($opt -ne '') {
+              $jpackageArgs += '--java-options'
+              $jpackageArgs += $opt
+            }
+          }
+          
+          # 执行 jpackage
+          & jpackage @jpackageArgs
           
           Write-Host "✅ App image created at: target\EasyPostman"
 
@@ -455,25 +494,40 @@ jobs:
           
           mkdir -p dist
           
-          # 解析 Java 选项
-          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
+          # 解析通用 Java 选项
+          IFS='|' read -ra JAVA_OPTS_COMMON <<< "${{ env.JAVA_OPTIONS_COMMON }}"
+          # 解析 macOS 特定选项
+          IFS='|' read -ra JAVA_OPTS_MACOS <<< "${{ env.JAVA_OPTIONS_MACOS }}"
           
-          # 创建 macOS Intel DMG
-          jpackage \
-            --input target/dist-input \
-            --main-jar $JAR_NAME \
-            --main-class com.laker.postman.App \
-            --runtime-image target/runtime \
-            --type dmg \
-            --name "EasyPostman" \
-            --app-version "$VERSION" \
-            --dest dist \
-            --icon assets/mac/EasyPostman.icns \
-            --vendor "Laker" \
-            --copyright "© 2025 Laker" \
-            --java-options "${JAVA_OPTS[0]}" \
-            --java-options "${JAVA_OPTS[1]}" \
-            --java-options "${JAVA_OPTS[2]}"
+          # 构建 jpackage 参数数组
+          JPACKAGE_ARGS=(
+            --input target/dist-input
+            --main-jar "$JAR_NAME"
+            --main-class com.laker.postman.App
+            --runtime-image target/runtime
+            --type dmg
+            --name "EasyPostman"
+            --app-version "$VERSION"
+            --dest dist
+            --icon assets/mac/EasyPostman.icns
+            --vendor "Laker"
+            --copyright "© 2025 Laker"
+          )
+          
+          # 添加通用 Java 选项
+          for opt in "${JAVA_OPTS_COMMON[@]}"; do
+            JPACKAGE_ARGS+=(--java-options "$opt")
+          done
+          
+          # 添加 macOS 特定选项
+          for opt in "${JAVA_OPTS_MACOS[@]}"; do
+            if [ -n "$opt" ]; then
+              JPACKAGE_ARGS+=(--java-options "$opt")
+            fi
+          done
+          
+          # 执行 jpackage
+          jpackage "${JPACKAGE_ARGS[@]}"
           
           # 重命名为 Intel 版本（使用标准架构标识）
           mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-macos-x86_64.dmg
@@ -564,25 +618,40 @@ jobs:
           
           mkdir -p dist
           
-          # 解析 Java 选项
-          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
+          # 解析通用 Java 选项
+          IFS='|' read -ra JAVA_OPTS_COMMON <<< "${{ env.JAVA_OPTIONS_COMMON }}"
+          # 解析 macOS 特定选项
+          IFS='|' read -ra JAVA_OPTS_MACOS <<< "${{ env.JAVA_OPTIONS_MACOS }}"
           
-          # 创建 macOS Apple Silicon DMG
-          jpackage \
-            --input target/dist-input \
-            --main-jar $JAR_NAME \
-            --main-class com.laker.postman.App \
-            --runtime-image target/runtime \
-            --type dmg \
-            --name "EasyPostman" \
-            --app-version "$VERSION" \
-            --dest dist \
-            --icon assets/mac/EasyPostman.icns \
-            --vendor "Laker" \
-            --copyright "© 2025 Laker" \
-            --java-options "${JAVA_OPTS[0]}" \
-            --java-options "${JAVA_OPTS[1]}" \
-            --java-options "${JAVA_OPTS[2]}"
+          # 构建 jpackage 参数数组
+          JPACKAGE_ARGS=(
+            --input target/dist-input
+            --main-jar "$JAR_NAME"
+            --main-class com.laker.postman.App
+            --runtime-image target/runtime
+            --type dmg
+            --name "EasyPostman"
+            --app-version "$VERSION"
+            --dest dist
+            --icon assets/mac/EasyPostman.icns
+            --vendor "Laker"
+            --copyright "© 2025 Laker"
+          )
+          
+          # 添加通用 Java 选项
+          for opt in "${JAVA_OPTS_COMMON[@]}"; do
+            JPACKAGE_ARGS+=(--java-options "$opt")
+          done
+          
+          # 添加 macOS 特定选项
+          for opt in "${JAVA_OPTS_MACOS[@]}"; do
+            if [ -n "$opt" ]; then
+              JPACKAGE_ARGS+=(--java-options "$opt")
+            fi
+          done
+          
+          # 执行 jpackage
+          jpackage "${JPACKAGE_ARGS[@]}"
           
           # 重命名为 ARM 版本（使用标准架构标识）
           mv dist/EasyPostman-$VERSION.dmg dist/EasyPostman-$VERSION-macos-arm64.dmg
@@ -704,28 +773,43 @@ jobs:
           
           mkdir -p dist
           
-          # 解析 Java 选项
-          IFS='|' read -ra JAVA_OPTS <<< "${{ env.JAVA_OPTIONS }}"
+          # 解析通用 Java 选项
+          IFS='|' read -ra JAVA_OPTS_COMMON <<< "${{ env.JAVA_OPTIONS_COMMON }}"
+          # 解析 Linux 特定选项
+          IFS='|' read -ra JAVA_OPTS_LINUX <<< "${{ env.JAVA_OPTIONS_LINUX }}"
           
-          # 创建 Ubuntu/Debian DEB 安装包
-          jpackage \
-            --input target/dist-input \
-            --main-jar $JAR_NAME \
-            --main-class com.laker.postman.App \
-            --runtime-image target/runtime \
-            --type deb \
-            --name "EasyPostman" \
-            --app-version "$VERSION" \
-            --dest dist \
-            --vendor "Laker" \
-            --copyright "© 2025 Laker" \
-            --description "A modern API testing tool similar to Postman" \
-            --linux-shortcut \
-            --linux-menu-group "Development" \
-            --linux-app-category "Development" \
-            --java-options "${JAVA_OPTS[0]}" \
-            --java-options "${JAVA_OPTS[1]}" \
-            --java-options "${JAVA_OPTS[2]}"
+          # 构建 jpackage 参数数组
+          JPACKAGE_ARGS=(
+            --input target/dist-input
+            --main-jar "$JAR_NAME"
+            --main-class com.laker.postman.App
+            --runtime-image target/runtime
+            --type deb
+            --name "EasyPostman"
+            --app-version "$VERSION"
+            --dest dist
+            --vendor "Laker"
+            --copyright "© 2025 Laker"
+            --description "A modern API testing tool similar to Postman"
+            --linux-shortcut
+            --linux-menu-group "Development"
+            --linux-app-category "Development"
+          )
+          
+          # 添加通用 Java 选项
+          for opt in "${JAVA_OPTS_COMMON[@]}"; do
+            JPACKAGE_ARGS+=(--java-options "$opt")
+          done
+          
+          # 添加 Linux 特定选项
+          for opt in "${JAVA_OPTS_LINUX[@]}"; do
+            if [ -n "$opt" ]; then
+              JPACKAGE_ARGS+=(--java-options "$opt")
+            fi
+          done
+          
+          # 执行 jpackage
+          jpackage "${JPACKAGE_ARGS[@]}"
 
       - name: Upload to Release（上传到 GitHub Release）
         if: github.event_name == 'release'  # 只在 Release 触发时上传

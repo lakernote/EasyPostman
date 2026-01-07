@@ -102,9 +102,27 @@ jpackage \
     --icon "${ICON_DIR}" \
     --vendor "Laker" \
     --copyright "© 2025 Laker" \
-    --java-options "-Xms256m" \
-    --java-options "-Xmx512m" \
-    --java-options "-Dfile.encoding=UTF-8"
+    --java-options "-Xms512m" \
+    --java-options "-Xmx1g" \
+    --java-options "-XX:MaxMetaspaceSize=256m" \
+    --java-options "-XX:MetaspaceSize=128m" \
+    --java-options "-XX:MaxDirectMemorySize=256m" \
+    --java-options "-XX:+UseG1GC" \
+    --java-options "-XX:MaxGCPauseMillis=200" \
+    --java-options "-XX:InitiatingHeapOccupancyPercent=45" \
+    --java-options "-XX:+UseStringDeduplication" \
+    --java-options "-XX:+HeapDumpOnOutOfMemoryError" \
+    --java-options "-XX:HeapDumpPath=./dumps" \
+    --java-options "-Dfile.encoding=UTF-8" \
+    --java-options "-Dsun.java2d.metal=true" \
+    --java-options "-Dapple.awt.application.appearance=system" \
+    --java-options "-Dswing.aatext=true" \
+    --java-options "-Djava.net.preferIPv4Stack=true" \
+    --java-options "-Dhttp.keepAlive=true" \
+    --java-options "--add-opens java.desktop/java.awt=ALL-UNNAMED" \
+    --java-options "--add-opens java.desktop/sun.lwawt=ALL-UNNAMED" \
+    --java-options "--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED" \
+    --java-options "--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED"
 
 # 显示文件大小统计
 JAR_SIZE=$(du -h "target/${JAR_NAME}" | awk '{print $1}')

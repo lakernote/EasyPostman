@@ -15,6 +15,7 @@ import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
+import javax.swing.*;
 import java.awt.*;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -31,14 +32,71 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     private final TimeSeriesCollection qpsDataset = new TimeSeriesCollection(qpsSeries);
     private final TimeSeriesCollection errorPercentDataset = new TimeSeriesCollection(errorPercentSeries);
 
+
+    private boolean isCombinedView = false;
+    private JPanel chartContainer;
+    private JButton toggleButton;
+
+    // 缓存图表面板，避免切换时重复创建
+    private JPanel separateChartsPanel;
+    private ChartPanel combinedChartPanel;
+
+    // 合并视图的指标选择复选框
+    private JCheckBox threadsCheckBox;
+    private JCheckBox responseTimeCheckBox;
+    private JCheckBox qpsCheckBox;
+    private JCheckBox errorRateCheckBox;
+
+    // 日期格式化器（实例变量，避免线程安全问题）
+    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+
     @Override
     protected void initUI() {
-        setLayout(new GridLayout(2, 2, 10, 10));
+        setLayout(new BorderLayout());
 
-        add(createChartPanel(userCountDataset, MessageKeys.PERFORMANCE_TREND_THREADS, Color.BLUE, true, false));
-        add(createChartPanel(responseTimeDataset, MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS, Color.ORANGE, false, false));
-        add(createChartPanel(qpsDataset, MessageKeys.PERFORMANCE_TREND_QPS, Color.GREEN.darker(), false, false));
-        add(createChartPanel(errorPercentDataset, MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT, Color.RED, false, true));
+
+        // 先创建复选框（默认全选）- 必须在创建图表面板之前
+        threadsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS), true);
+        responseTimeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS), false);
+        qpsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS), true);
+        errorRateCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT), true);
+
+        // 预创建图表面板（避免切换时重复创建）
+        separateChartsPanel = createSeparateChartsPanel();
+        combinedChartPanel = createCombinedChartPanel();
+
+        // 为复选框添加监听器，动态更新合并图表
+        threadsCheckBox.addActionListener(e -> updateCombinedChart());
+        responseTimeCheckBox.addActionListener(e -> updateCombinedChart());
+        qpsCheckBox.addActionListener(e -> updateCombinedChart());
+        errorRateCheckBox.addActionListener(e -> updateCombinedChart());
+
+        // Create toggle button
+        toggleButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART));
+        toggleButton.addActionListener(e -> toggleChartView());
+
+        // 创建顶部面板（包含切换按钮和复选框）
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        topPanel.add(threadsCheckBox);
+        topPanel.add(responseTimeCheckBox);
+        topPanel.add(qpsCheckBox);
+        topPanel.add(errorRateCheckBox);
+        topPanel.add(new JSeparator(SwingConstants.VERTICAL));
+        topPanel.add(toggleButton);
+        add(topPanel, BorderLayout.NORTH);
+
+        // 初始时隐藏复选框（仅在合并视图时显示）
+        threadsCheckBox.setVisible(false);
+        responseTimeCheckBox.setVisible(false);
+        qpsCheckBox.setVisible(false);
+        errorRateCheckBox.setVisible(false);
+
+        // Create chart container
+        chartContainer = new JPanel(new BorderLayout());
+        add(chartContainer, BorderLayout.CENTER);
+
+        // Show separate charts by default
+        showSeparateCharts();
     }
 
     /**
@@ -73,7 +131,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         plot.setRenderer(renderer);
 
         DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
-        dateAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
+        dateAxis.setDateFormatOverride(timeFormat);
         dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         plot.setDomainAxis(dateAxis);
@@ -109,9 +167,190 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         return panel;
     }
 
+    /**
+     * 创建合并图表面板（所有指标在一个图表中）
+     */
+    private ChartPanel createCombinedChartPanel() {
+        // 根据复选框状态创建dataset
+        TimeSeriesCollection dataset = createDynamicDataset();
+
+        String title = I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_METRICS);
+        JFreeChart chart = ChartFactory.createTimeSeriesChart(
+                title,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_METRICS),
+                dataset,
+                true,  // 显示图例
+                true,
+                false
+        );
+
+        XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(new Color(194, 211, 236));
+        plot.setRangeGridlinePaint(new Color(194, 211, 236));
+
+        // 设置渲染器颜色
+        plot.setRenderer(createCombinedChartRenderer());
+
+        DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
+        dateAxis.setDateFormatOverride(timeFormat);
+        dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        plot.setDomainAxis(dateAxis);
+
+        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        rangeAxis.setUpperMargin(0.2);
+        rangeAxis.setAutoRangeIncludesZero(false);
+
+        ChartPanel panel = new ChartPanel(chart);
+        panel.setMouseWheelEnabled(true);
+        panel.setPreferredSize(new Dimension(800, 600));
+        panel.setBackground(Color.WHITE);
+        panel.setDisplayToolTips(true);
+
+        chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        chart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN));
+
+        return panel;
+    }
+
+    /**
+     * 创建合并图表的渲染器，根据复选框状态设置颜色
+     */
+    private XYLineAndShapeRenderer createCombinedChartRenderer() {
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        int seriesIndex = 0;
+        if (threadsCheckBox.isSelected()) {
+            renderer.setSeriesPaint(seriesIndex++, Color.BLUE);
+        }
+        if (responseTimeCheckBox.isSelected()) {
+            renderer.setSeriesPaint(seriesIndex++, Color.ORANGE);
+        }
+        if (qpsCheckBox.isSelected()) {
+            renderer.setSeriesPaint(seriesIndex++, Color.GREEN.darker());
+        }
+        if (errorRateCheckBox.isSelected()) {
+            renderer.setSeriesPaint(seriesIndex, Color.RED);
+        }
+        return renderer;
+    }
+
+    /**
+     * 根据复选框状态创建动态数据集
+     */
+    private TimeSeriesCollection createDynamicDataset() {
+        TimeSeriesCollection dataset = new TimeSeriesCollection();
+        if (threadsCheckBox.isSelected()) {
+            dataset.addSeries(userCountSeries);
+        }
+        if (responseTimeCheckBox.isSelected()) {
+            dataset.addSeries(responseTimeSeries);
+        }
+        if (qpsCheckBox.isSelected()) {
+            dataset.addSeries(qpsSeries);
+        }
+        if (errorRateCheckBox.isSelected()) {
+            dataset.addSeries(errorPercentSeries);
+        }
+        return dataset;
+    }
+
+    /**
+     * 更新合并图表（当复选框状态改变时）
+     */
+    private void updateCombinedChart() {
+        if (!isCombinedView || combinedChartPanel == null) {
+            return;
+        }
+
+        JFreeChart chart = combinedChartPanel.getChart();
+        if (chart == null) {
+            return;
+        }
+
+        XYPlot plot = chart.getXYPlot();
+
+        // 更新数据集
+        TimeSeriesCollection newDataset = createDynamicDataset();
+        plot.setDataset(newDataset);
+
+        // 更新渲染器颜色（复用提取的方法）
+        plot.setRenderer(createCombinedChartRenderer());
+
+        // 刷新图表
+        combinedChartPanel.repaint();
+    }
+
+    /**
+     * 创建分离图表面板（4个独立图表）
+     */
+    private JPanel createSeparateChartsPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
+
+        panel.add(createChartPanel(userCountDataset, MessageKeys.PERFORMANCE_TREND_THREADS, Color.BLUE, true, false));
+        panel.add(createChartPanel(responseTimeDataset, MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS, Color.ORANGE, false, false));
+        panel.add(createChartPanel(qpsDataset, MessageKeys.PERFORMANCE_TREND_QPS, Color.GREEN.darker(), false, false));
+        panel.add(createChartPanel(errorPercentDataset, MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT, Color.RED, false, true));
+
+        return panel;
+    }
+
+    /**
+     * 切换图表视图模式
+     */
+    private void toggleChartView() {
+        isCombinedView = !isCombinedView;
+
+        if (isCombinedView) {
+            // 显示复选框
+            threadsCheckBox.setVisible(true);
+            responseTimeCheckBox.setVisible(true);
+            qpsCheckBox.setVisible(true);
+            errorRateCheckBox.setVisible(true);
+
+            showCombinedChart();
+            toggleButton.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS));
+        } else {
+            // 隐藏复选框
+            threadsCheckBox.setVisible(false);
+            responseTimeCheckBox.setVisible(false);
+            qpsCheckBox.setVisible(false);
+            errorRateCheckBox.setVisible(false);
+
+            showSeparateCharts();
+            toggleButton.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART));
+        }
+    }
+
+    /**
+     * 显示4个分离的图表
+     */
+    private void showSeparateCharts() {
+        chartContainer.removeAll();
+        chartContainer.add(separateChartsPanel, BorderLayout.CENTER);
+        chartContainer.revalidate();
+        chartContainer.repaint();
+    }
+
+    /**
+     * 显示1个合并的图表
+     */
+    private void showCombinedChart() {
+        chartContainer.removeAll();
+        chartContainer.add(combinedChartPanel, BorderLayout.CENTER);
+        chartContainer.revalidate();
+        chartContainer.repaint();
+    }
+
     @Override
     protected void registerListeners() {
+        // 监听器已在initUI中通过toggleButton.addActionListener注册
+        // 无需额外的监听器注册
     }
+
 
     public void clearTrendDataset() {
         userCountSeries.clear();
@@ -145,17 +384,18 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             qpsSeries.addOrUpdate(period, qps);
             errorPercentSeries.addOrUpdate(period, errorPercent);
         } finally {
-            // 恢复通知并只触发一次更新（触发dataset的通知即可，无需逐个series通知）
+            // 恢复通知
             userCountSeries.setNotify(true);
             responseTimeSeries.setNotify(true);
             qpsSeries.setNotify(true);
             errorPercentSeries.setNotify(true);
 
-            // 只触发一次dataset更新，减少重绘次数
-            userCountDataset.setNotify(true);
-            responseTimeDataset.setNotify(true);
-            qpsDataset.setNotify(true);
-            errorPercentDataset.setNotify(true);
+            // 手动触发所有图表更新
+            // 因为有4个独立的dataset，需要触发每个series的更新
+            userCountSeries.fireSeriesChanged();
+            responseTimeSeries.fireSeriesChanged();
+            qpsSeries.fireSeriesChanged();
+            errorPercentSeries.fireSeriesChanged();
         }
     }
 }

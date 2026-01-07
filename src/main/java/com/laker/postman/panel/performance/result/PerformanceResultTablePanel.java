@@ -39,7 +39,6 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
 
-    private static final int MAX_ROWS = 10_000;
     private static final int BATCH_SIZE = 2000;
 
     /**
@@ -76,10 +75,6 @@ public class PerformanceResultTablePanel extends JPanel {
 
         if (!batch.isEmpty()) {
             tableModel.append(batch);
-
-            if (tableModel.getTotalSize() > MAX_ROWS) {
-                tableModel.trimTo(MAX_ROWS);
-            }
         }
     }
 
@@ -431,9 +426,6 @@ public class PerformanceResultTablePanel extends JPanel {
             return dataList.get(row);
         }
 
-        int getTotalSize() {
-            return dataList.size();
-        }
 
         void append(List<ResultNodeInfo> batch) {
             dataList.addAll(batch);
@@ -450,14 +442,6 @@ public class PerformanceResultTablePanel extends JPanel {
             dataList.clear();
             dirty = false;
             fireTableDataChanged();
-        }
-
-        void trimTo(int max) {
-            int remove = dataList.size() - max;
-            if (remove <= 0) return;
-
-            dataList.subList(0, remove).clear();
-            dirty = true;
         }
     }
 

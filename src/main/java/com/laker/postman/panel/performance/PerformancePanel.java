@@ -99,10 +99,6 @@ public class PerformancePanel extends SingletonBasePanel {
     // 活跃线程计数器
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
-    // 内存保护：最大保存的结果数量（防止OOM）
-    private static final int MAX_RESULTS_IN_MEMORY = 500_000;
-    // 当达到最大值时，清理掉最旧的数据（保留后80%）
-    private static final int TRIM_TO_SIZE = (int) (MAX_RESULTS_IN_MEMORY * 0.8);
 
     // 统计数据保护锁
     private final transient Object statsLock = new Object();
@@ -1630,20 +1626,6 @@ public class PerformancePanel extends SingletonBasePanel {
                 synchronized (statsLock) {
                     allRequestResults.add(new RequestResult(endTime, success, cost));
 
-                    // 内存保护：如果结果数量超过阈值，清理最旧的数据
-                    if (allRequestResults.size() > MAX_RESULTS_IN_MEMORY) {
-                        int toRemove = allRequestResults.size() - TRIM_TO_SIZE;
-                        // 使用subList().clear()优化删除性能
-                        allRequestResults.subList(0, toRemove).clear();
-                        log.warn("结果集超过{}条，已清理最旧的{}条数据，当前保留{}条",
-                                MAX_RESULTS_IN_MEMORY, toRemove, allRequestResults.size());
-                    }
-
-                    // 记录开始时间（同时也进行内存保护）
-                    if (allRequestStartTimes.size() > MAX_RESULTS_IN_MEMORY) {
-                        int toRemove = allRequestStartTimes.size() - TRIM_TO_SIZE;
-                        allRequestStartTimes.subList(0, toRemove).clear();
-                    }
 
                     // 更新API统计数据
                     apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);

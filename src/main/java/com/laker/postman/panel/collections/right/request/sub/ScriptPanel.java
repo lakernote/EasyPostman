@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
@@ -14,6 +15,7 @@ import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
@@ -42,23 +44,32 @@ public class ScriptPanel extends JPanel {
 
         // 创建选项卡面板
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_PRESCRIPT), new RTextScrollPane(prescriptArea));
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_POSTSCRIPT), new RTextScrollPane(postscriptArea));
 
-        // 创建帮助区域
-        JTextArea helpArea = new JTextArea();
-        helpArea.setEditable(false);
-        helpArea.setLineWrap(true);
-        helpArea.setWrapStyleWord(true);
-        helpArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
-        helpArea.setMargin(new Insets(10, 10, 10, 10));
-        helpArea.setText(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TEXT));
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_HELP), new JScrollPane(helpArea));
+        // Pre-script 标签带图标
+        JLabel preLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_PRESCRIPT));
+        preLabel.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 14, 14));
+        tabbedPane.addTab(null, new RTextScrollPane(prescriptArea));
+        tabbedPane.setTabComponentAt(0, preLabel);
+
+        // Post-script 标签带图标
+        JLabel postLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_POSTSCRIPT));
+        postLabel.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 14, 14));
+        tabbedPane.addTab(null, new RTextScrollPane(postscriptArea));
+        tabbedPane.setTabComponentAt(1, postLabel);
+
+        // 创建帮助面板
+        JPanel helpPanel = createHelpPanel();
+        JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_HELP));
+        helpLabel.setIcon(new FlatSVGIcon("icons/help.svg", 14, 14));
+        tabbedPane.addTab(null, helpPanel);
+        tabbedPane.setTabComponentAt(2, helpLabel);
 
         add(tabbedPane, BorderLayout.CENTER);
 
         // 右下角添加 Snippets 按钮
         snippetBtn = new JButton(I18nUtil.getMessage(MessageKeys.SCRIPT_BUTTON_SNIPPETS));
+        snippetBtn.setIcon(new FlatSVGIcon("icons/code.svg", 14, 14));
+
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         btnPanel.add(snippetBtn);
         add(btnPanel, BorderLayout.SOUTH);
@@ -72,6 +83,73 @@ public class ScriptPanel extends JPanel {
         // Snippets 按钮点击事件
         snippetBtn.addActionListener(e -> openSnippetDialog());
     }
+
+    /**
+     * 创建帮助面板
+     */
+    private JPanel createHelpPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(15, 20, 15, 20));
+
+        // 主内容面板
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+
+        // 标题
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TITLE));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createVerticalStrut(10));
+
+        // 简介
+        JTextArea introArea = createHelpTextArea(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_INTRO));
+        introArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentPanel.add(introArea);
+        contentPanel.add(Box.createVerticalStrut(15));
+
+        // 主要功能
+        JTextArea featuresArea = createHelpTextArea(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_FEATURES));
+        featuresArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentPanel.add(featuresArea);
+        contentPanel.add(Box.createVerticalStrut(15));
+
+        // 快捷键
+        JTextArea shortcutsArea = createHelpTextArea(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_SHORTCUTS));
+        shortcutsArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentPanel.add(shortcutsArea);
+        contentPanel.add(Box.createVerticalStrut(15));
+
+        // 常用示例
+        JTextArea examplesArea = createHelpTextArea(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_EXAMPLES));
+        examplesArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        examplesArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentPanel.add(examplesArea);
+
+        // 将内容面板放入滚动面板
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * 创建帮助文本区域
+     */
+    private JTextArea createHelpTextArea(String text) {
+        JTextArea area = new JTextArea(text);
+        area.setEditable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
+        area.setBackground(getBackground());
+        area.setBorder(null);
+        return area;
+    }
+
 
     /**
      * 配置编辑器的通用设置

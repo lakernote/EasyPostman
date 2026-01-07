@@ -205,7 +205,11 @@ public final class MessageKeys {
     public static final String SCRIPT_TAB_POSTSCRIPT = "script.tab.postscript";
     public static final String SCRIPT_TAB_HELP = "script.tab.help";
     public static final String SCRIPT_BUTTON_SNIPPETS = "script.button.snippets";
-    public static final String SCRIPT_HELP_TEXT = "script.help.text";
+    public static final String SCRIPT_HELP_TITLE = "script.help.title";
+    public static final String SCRIPT_HELP_INTRO = "script.help.intro";
+    public static final String SCRIPT_HELP_FEATURES = "script.help.features";
+    public static final String SCRIPT_HELP_SHORTCUTS = "script.help.shortcuts";
+    public static final String SCRIPT_HELP_EXAMPLES = "script.help.examples";
 
     // ============ 认证相关 ============
     public static final String AUTH_TYPE_LABEL = "auth.type.label";

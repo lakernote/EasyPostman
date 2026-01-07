@@ -92,22 +92,45 @@ public class SnippetDialog extends JDialog {
                     label.setBorder(new EmptyBorder(5, 10, 5, 10));
                     // 根据类型设置图标
                     switch (snippet.type.type) {
+                        // 基础分类
                         case PRE_SCRIPT -> label.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
                         case ASSERT -> label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
                         case EXTRACT -> label.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
                         case LOCAL_VAR -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                         case ENV_VAR -> label.setIcon(new FlatSVGIcon("icons/environments.svg", 16, 16));
+
+                        // 编码和加密
                         case ENCODE -> label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
-                        case ENCRYPT, CRYPTOJS -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                        case ENCRYPT -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+
+                        // 数据类型
                         case ARRAY -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
                         case JSON -> label.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
-                        case DATE -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
-                        case LOG -> label.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
-                        case REGEX -> label.setIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
                         case STRING -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
+                        case DATE -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+                        case REGEX -> label.setIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
+
+                        // 其他基础
+                        case LOG -> label.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
                         case CONTROL -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
                         case TOKEN -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
                         case COOKIES -> label.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
+
+                        // 内置库分类
+                        case CRYPTOJS -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                        case LODASH -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
+                        case MOMENT -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+
+                        // 高级场景分类
+                        case AUTHENTICATION -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                        case PERFORMANCE -> label.setIcon(new FlatSVGIcon("icons/performance.svg", 16, 16));
+                        case VALIDATION -> label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
+                        case DATA_PROCESSING -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
+                        case REQUEST_MODIFICATION -> label.setIcon(new FlatSVGIcon("icons/edit.svg", 16, 16));
+                        case EXAMPLES -> label.setIcon(new FlatSVGIcon("icons/collections.svg", 16, 16));
+
+                        // 其他
+                        case OTHER -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                         default -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
                     }
                 }
@@ -326,41 +349,96 @@ public class SnippetDialog extends JDialog {
         snippetCategories.put(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ALL), this.snippets);
         Map<String, List<Snippet>> categorized = this.snippets.stream()
                 .collect(Collectors.groupingBy(snippet -> switch (snippet.type.type) {
+                    // 基础分类
                     case PRE_SCRIPT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_PRE_SCRIPT);
                     case ASSERT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ASSERT);
                     case EXTRACT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_EXTRACT);
                     case LOCAL_VAR -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOCAL_VAR);
                     case ENV_VAR -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENV_VAR);
+
+                    // 高级场景分类
+                    case AUTHENTICATION -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_AUTHENTICATION);
+                    case PERFORMANCE -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_PERFORMANCE);
+                    case VALIDATION -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_VALIDATION);
+                    case DATA_PROCESSING -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_DATA_PROCESSING);
+                    case REQUEST_MODIFICATION ->
+                            I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_REQUEST_MODIFICATION);
+
+                    // Cookie 操作
+                    case COOKIES -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_COOKIES);
+
+                    // 编码和加密
                     case ENCRYPT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCRYPT);
                     case ENCODE -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCODE);
+
+                    // 数据类型
                     case STRING -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_STRING);
                     case ARRAY -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ARRAY);
                     case JSON -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_JSON);
                     case DATE -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_DATE);
                     case REGEX -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_REGEX);
+
+                    // 内置库分类
+                    case CRYPTOJS -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_CRYPTOJS);
+                    case LODASH -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LODASH);
+                    case MOMENT -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_MOMENT);
+
+                    // 完整示例
+                    case EXAMPLES -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_EXAMPLES);
+
+                    // 其他
                     case LOG -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOG);
                     case CONTROL -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_CONTROL);
                     case TOKEN -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_TOKEN);
+                    case OTHER -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_OTHER);
                     default -> I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_OTHER);
                 }));
+
+        // 按照使用频率和重要性排序的分类列表
         String[] orderedCategories = {
+                // 常用基础
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_PRE_SCRIPT),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ASSERT),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_EXTRACT),
+
+                // 高级场景（新增，放在前面）
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_AUTHENTICATION),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_PERFORMANCE),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_VALIDATION),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_DATA_PROCESSING),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_REQUEST_MODIFICATION),
+
+                // 变量和Cookie
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOCAL_VAR),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENV_VAR),
-                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCRYPT),
-                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCODE),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_COOKIES),
+
+                // 数据类型
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_STRING),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ARRAY),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_JSON),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_DATE),
+
+                // 内置库
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_CRYPTOJS),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LODASH),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_MOMENT),
+
+                // 编码加密
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCRYPT),
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_ENCODE),
+
+                // 完整示例
+                I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_EXAMPLES),
+
+                // 其他辅助
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_REGEX),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_CONTROL),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_LOG),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_TOKEN),
                 I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CATEGORY_OTHER)
         };
+
         for (String category : orderedCategories) {
             List<Snippet> categorySnippets = categorized.get(category);
             if (categorySnippets != null && !categorySnippets.isEmpty()) {

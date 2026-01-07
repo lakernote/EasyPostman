@@ -269,7 +269,6 @@ public final class MessageKeys {
     public static final String ENV_BUTTON_EXPORT_POSTMAN = "env.button.export_postman";
     public static final String ENV_MENU_IMPORT_EASY = "env.menu.import_easy";
     public static final String ENV_MENU_IMPORT_POSTMAN = "env.menu.import_postman";
-    public static final String ENV_DIALOG_SAVE_CHANGES = "env.dialog.save_changes";
     public static final String ENV_DIALOG_SAVE_CHANGES_TITLE = "env.dialog.save_changes.title";
     public static final String ENV_DIALOG_SAVE_SUCCESS = "env.dialog.save.success";
     public static final String ENV_DIALOG_EXPORT_TITLE = "env.dialog.export.title";
@@ -759,7 +758,6 @@ public final class MessageKeys {
     public static final String RESPONSE_HEADERS_COPY_CELL = "response.headers.copy_cell";
     public static final String RESPONSE_HEADERS_COPY_ALL = "response.headers.copy_all";
     public static final String RESPONSE_HEADERS_SELECT_ALL = "response.headers.select_all";
-    public static final String RESPONSE_SAVE_TOOLTIP = "response.save.tooltip";
     public static final String RESPONSE_SAVE_DIALOG_TITLE = "response.save.dialog.title";
     public static final String RESPONSE_SAVE_DIALOG_MESSAGE = "response.save.dialog.message";
     public static final String RESPONSE_SAVE_SUCCESS = "response.save.success";
@@ -855,31 +853,6 @@ public final class MessageKeys {
 
     // ============ ScriptPanel AutoCompletion 国际化 ============
     public static final String AUTOCOMPLETE_PM = "autocomplete.pm";
-    public static final String AUTOCOMPLETE_POSTMAN = "autocomplete.postman";
-    public static final String AUTOCOMPLETE_REQUEST = "autocomplete.request";
-    public static final String AUTOCOMPLETE_RESPONSE = "autocomplete.response";
-    public static final String AUTOCOMPLETE_ENV = "autocomplete.env";
-    public static final String AUTOCOMPLETE_RESPONSE_BODY = "autocomplete.response_body";
-    public static final String AUTOCOMPLETE_RESPONSE_HEADERS = "autocomplete.response_headers";
-    public static final String AUTOCOMPLETE_STATUS = "autocomplete.status";
-    public static final String AUTOCOMPLETE_STATUS_CODE = "autocomplete.status_code";
-    public static final String AUTOCOMPLETE_SET_ENV = "autocomplete.set_env";
-    public static final String AUTOCOMPLETE_GET_ENV = "autocomplete.get_env";
-    public static final String AUTOCOMPLETE_IF = "autocomplete.if";
-    public static final String AUTOCOMPLETE_ELSE = "autocomplete.else";
-    public static final String AUTOCOMPLETE_FOR = "autocomplete.for";
-    public static final String AUTOCOMPLETE_WHILE = "autocomplete.while";
-    public static final String AUTOCOMPLETE_FUNCTION = "autocomplete.function";
-    public static final String AUTOCOMPLETE_RETURN = "autocomplete.return";
-    public static final String AUTOCOMPLETE_SNIPPET_SET_ENV = "autocomplete.snippet.set_env";
-    public static final String AUTOCOMPLETE_SNIPPET_GET_ENV = "autocomplete.snippet.get_env";
-    public static final String AUTOCOMPLETE_SNIPPET_BTOA = "autocomplete.snippet.btoa";
-    public static final String AUTOCOMPLETE_SNIPPET_ATOB = "autocomplete.snippet.atob";
-    public static final String AUTOCOMPLETE_SNIPPET_ENCODE_URI = "autocomplete.snippet.encode_uri";
-    public static final String AUTOCOMPLETE_SNIPPET_DECODE_URI = "autocomplete.snippet.decode_uri";
-    public static final String AUTOCOMPLETE_SNIPPET_CONSOLE_LOG = "autocomplete.snippet.console_log";
-    public static final String AUTOCOMPLETE_SNIPPET_JSON_PARSE = "autocomplete.snippet.json_parse";
-    public static final String AUTOCOMPLETE_SNIPPET_JSON_STRINGIFY = "autocomplete.snippet.json_stringify";
 
     // ========== pm 对象方法自动补全 ==========
     public static final String AUTOCOMPLETE_PM_TEST = "autocomplete.pm.test";
@@ -912,7 +885,6 @@ public final class MessageKeys {
     public static final String AUTOCOMPLETE_PM_REQUEST_PARAMS = "autocomplete.pm.request.params";
     public static final String AUTOCOMPLETE_PM_REQUEST_FORMDATA = "autocomplete.pm.request.formData";
     public static final String AUTOCOMPLETE_PM_REQUEST_URLENCODED = "autocomplete.pm.request.urlencoded";
-    public static final String AUTOCOMPLETE_PM_REQUEST_FORMFILES = "autocomplete.pm.request.formFiles";
 
     // ========== pm.response 方法 ==========
     public static final String AUTOCOMPLETE_PM_RESPONSE_CODE = "autocomplete.pm.response.code";
@@ -925,16 +897,95 @@ public final class MessageKeys {
     public static final String AUTOCOMPLETE_PM_RESPONSE_TO_HAVE_HEADER = "autocomplete.pm.response.to.have.header";
 
     // ========== pm.cookies 方法 ==========
+    public static final String AUTOCOMPLETE_PM_COOKIES = "autocomplete.pm.cookies";
     public static final String AUTOCOMPLETE_PM_COOKIES_GET = "autocomplete.pm.cookies.get";
     public static final String AUTOCOMPLETE_PM_COOKIES_HAS = "autocomplete.pm.cookies.has";
-    public static final String AUTOCOMPLETE_PM_COOKIES_ALL = "autocomplete.pm.cookies.all";
+    public static final String AUTOCOMPLETE_PM_COOKIES_GET_ALL = "autocomplete.pm.cookies.getAll";
     public static final String AUTOCOMPLETE_PM_COOKIES_JAR = "autocomplete.pm.cookies.jar";
+    public static final String AUTOCOMPLETE_PM_COOKIES_TO_OBJECT = "autocomplete.pm.cookies.toObject";
 
     // ========== Console 对象 ==========
+    public static final String AUTOCOMPLETE_CONSOLE = "autocomplete.console";
     public static final String AUTOCOMPLETE_CONSOLE_LOG = "autocomplete.console.log";
-    public static final String AUTOCOMPLETE_CONSOLE_WARN = "autocomplete.console.warn";
-    public static final String AUTOCOMPLETE_CONSOLE_ERROR = "autocomplete.console.error";
-    public static final String AUTOCOMPLETE_CONSOLE_INFO = "autocomplete.console.info";
+
+    // ========== pm 对象核心方法 ==========
+    public static final String AUTOCOMPLETE_PM_UUID = "autocomplete.pm.uuid";
+    public static final String AUTOCOMPLETE_PM_SET_GLOBAL_VARIABLE = "autocomplete.pm.setGlobalVariable";
+    public static final String AUTOCOMPLETE_PM_GET_GLOBAL_VARIABLE = "autocomplete.pm.getGlobalVariable";
+
+    // ========== pm 子对象 ==========
+    public static final String AUTOCOMPLETE_PM_ENVIRONMENT = "autocomplete.pm.environment";
+    public static final String AUTOCOMPLETE_PM_VARIABLES = "autocomplete.pm.variables";
+    public static final String AUTOCOMPLETE_PM_REQUEST = "autocomplete.pm.request";
+    public static final String AUTOCOMPLETE_PM_RESPONSE = "autocomplete.pm.response";
+
+    // ========== pm.variables 扩展 ==========
+    public static final String AUTOCOMPLETE_PM_VAR_TO_OBJECT = "autocomplete.pm.variables.toObject";
+
+    // ========== pm.response 扩展 ==========
+    public static final String AUTOCOMPLETE_PM_RESPONSE_SIZE = "autocomplete.pm.response.size";
+
+    // ========== pm.expect 断言方法 ==========
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_EQUAL = "autocomplete.pm.expect.to.equal";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_EQL = "autocomplete.pm.expect.to.eql";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_INCLUDE = "autocomplete.pm.expect.to.include";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_HAVE_PROPERTY = "autocomplete.pm.expect.to.have.property";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_MATCH = "autocomplete.pm.expect.to.match";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_BELOW = "autocomplete.pm.expect.to.be.below";
+
+    // ========== 内置库 - CryptoJS ==========
+    public static final String AUTOCOMPLETE_CRYPTOJS = "autocomplete.cryptojs";
+    public static final String AUTOCOMPLETE_CRYPTOJS_AES = "autocomplete.cryptojs.aes";
+    public static final String AUTOCOMPLETE_CRYPTOJS_DES = "autocomplete.cryptojs.des";
+    public static final String AUTOCOMPLETE_CRYPTOJS_MD5 = "autocomplete.cryptojs.md5";
+    public static final String AUTOCOMPLETE_CRYPTOJS_SHA1 = "autocomplete.cryptojs.sha1";
+    public static final String AUTOCOMPLETE_CRYPTOJS_SHA256 = "autocomplete.cryptojs.sha256";
+    public static final String AUTOCOMPLETE_CRYPTOJS_HMAC_SHA256 = "autocomplete.cryptojs.hmacsha256";
+    public static final String AUTOCOMPLETE_CRYPTOJS_ENC = "autocomplete.cryptojs.enc";
+    public static final String AUTOCOMPLETE_CRYPTOJS_WORD_ARRAY = "autocomplete.cryptojs.wordarray";
+
+    // ========== 内置库 - Lodash ==========
+    public static final String AUTOCOMPLETE_LODASH = "autocomplete.lodash";
+    public static final String AUTOCOMPLETE_LODASH_MAP = "autocomplete.lodash.map";
+    public static final String AUTOCOMPLETE_LODASH_FILTER = "autocomplete.lodash.filter";
+    public static final String AUTOCOMPLETE_LODASH_FIND = "autocomplete.lodash.find";
+    public static final String AUTOCOMPLETE_LODASH_UNIQ = "autocomplete.lodash.uniq";
+    public static final String AUTOCOMPLETE_LODASH_PICK = "autocomplete.lodash.pick";
+    public static final String AUTOCOMPLETE_LODASH_OMIT = "autocomplete.lodash.omit";
+    public static final String AUTOCOMPLETE_LODASH_GROUP_BY = "autocomplete.lodash.groupBy";
+    public static final String AUTOCOMPLETE_LODASH_SORT_BY = "autocomplete.lodash.sortBy";
+    public static final String AUTOCOMPLETE_LODASH_GET = "autocomplete.lodash.get";
+    public static final String AUTOCOMPLETE_LODASH_HAS = "autocomplete.lodash.has";
+    public static final String AUTOCOMPLETE_LODASH_SUM_BY = "autocomplete.lodash.sumBy";
+    public static final String AUTOCOMPLETE_LODASH_MEAN_BY = "autocomplete.lodash.meanBy";
+    public static final String AUTOCOMPLETE_LODASH_RANDOM = "autocomplete.lodash.random";
+    public static final String AUTOCOMPLETE_LODASH_SAMPLE = "autocomplete.lodash.sample";
+    public static final String AUTOCOMPLETE_LODASH_CLONE_DEEP = "autocomplete.lodash.cloneDeep";
+    public static final String AUTOCOMPLETE_LODASH_MERGE = "autocomplete.lodash.merge";
+
+    // ========== 内置库 - Moment ==========
+    public static final String AUTOCOMPLETE_MOMENT = "autocomplete.moment";
+    public static final String AUTOCOMPLETE_MOMENT_CALL = "autocomplete.moment.call";
+    public static final String AUTOCOMPLETE_MOMENT_FORMAT = "autocomplete.moment.format";
+    public static final String AUTOCOMPLETE_MOMENT_ADD = "autocomplete.moment.add";
+    public static final String AUTOCOMPLETE_MOMENT_SUBTRACT = "autocomplete.moment.subtract";
+    public static final String AUTOCOMPLETE_MOMENT_IS_BEFORE = "autocomplete.moment.isBefore";
+    public static final String AUTOCOMPLETE_MOMENT_IS_AFTER = "autocomplete.moment.isAfter";
+    public static final String AUTOCOMPLETE_MOMENT_IS_SAME = "autocomplete.moment.isSame";
+    public static final String AUTOCOMPLETE_MOMENT_DIFF = "autocomplete.moment.diff";
+    public static final String AUTOCOMPLETE_MOMENT_UNIX = "autocomplete.moment.unix";
+    public static final String AUTOCOMPLETE_MOMENT_VALUE_OF = "autocomplete.moment.valueOf";
+    public static final String AUTOCOMPLETE_MOMENT_TO_ISO_STRING = "autocomplete.moment.toISOString";
+    public static final String AUTOCOMPLETE_MOMENT_START_OF = "autocomplete.moment.startOf";
+    public static final String AUTOCOMPLETE_MOMENT_END_OF = "autocomplete.moment.endOf";
+
+    // ========== JavaScript 内置对象扩展 ==========
+    public static final String AUTOCOMPLETE_JSON = "autocomplete.json";
+    public static final String AUTOCOMPLETE_DATE = "autocomplete.date";
+    public static final String AUTOCOMPLETE_MATH = "autocomplete.math";
+    public static final String AUTOCOMPLETE_MATH_FLOOR = "autocomplete.math.floor";
+    public static final String AUTOCOMPLETE_MATH_CEIL = "autocomplete.math.ceil";
+    public static final String AUTOCOMPLETE_MATH_ROUND = "autocomplete.math.round";
 
     // ========== JavaScript 内置对象 ==========
     public static final String AUTOCOMPLETE_JSON_PARSE = "autocomplete.json.parse";
@@ -949,34 +1000,6 @@ public final class MessageKeys {
     public static final String AUTOCOMPLETE_DECODE_URI = "autocomplete.decodeURIComponent";
     public static final String AUTOCOMPLETE_ENCODE_URI_FULL = "autocomplete.encodeURI";
     public static final String AUTOCOMPLETE_DECODE_URI_FULL = "autocomplete.decodeURI";
-
-    // ========== 加密函数 ==========
-    public static final String AUTOCOMPLETE_MD5 = "autocomplete.md5";
-    public static final String AUTOCOMPLETE_SHA256 = "autocomplete.sha256";
-
-    // ========== JavaScript 关键字 ==========
-    public static final String AUTOCOMPLETE_VAR = "autocomplete.var";
-    public static final String AUTOCOMPLETE_LET = "autocomplete.let";
-    public static final String AUTOCOMPLETE_CONST = "autocomplete.const";
-
-    // ========== 代码片段自动补全 ==========
-    public static final String AUTOCOMPLETE_SNIPPET_VAR_SET = "autocomplete.snippet.var.set";
-    public static final String AUTOCOMPLETE_SNIPPET_VAR_GET = "autocomplete.snippet.var.get";
-    public static final String AUTOCOMPLETE_SNIPPET_GENERATE_UUID = "autocomplete.snippet.generateUUID";
-    public static final String AUTOCOMPLETE_SNIPPET_GET_TIMESTAMP = "autocomplete.snippet.getTimestamp";
-    public static final String AUTOCOMPLETE_SNIPPET_TEST = "autocomplete.snippet.test";
-    public static final String AUTOCOMPLETE_SNIPPET_STATUS_200 = "autocomplete.snippet.status200";
-    public static final String AUTOCOMPLETE_SNIPPET_RESPONSE_TIME = "autocomplete.snippet.responseTime";
-    public static final String AUTOCOMPLETE_SNIPPET_BODY_CONTAINS = "autocomplete.snippet.bodyContains";
-    public static final String AUTOCOMPLETE_SNIPPET_JSON_VALUE = "autocomplete.snippet.jsonValue";
-    public static final String AUTOCOMPLETE_SNIPPET_EXTRACT_JSON = "autocomplete.snippet.extractJson";
-    public static final String AUTOCOMPLETE_SNIPPET_EXTRACT_HEADER = "autocomplete.snippet.extractHeader";
-    public static final String AUTOCOMPLETE_SNIPPET_GET_COOKIE = "autocomplete.snippet.getCookie";
-    public static final String AUTOCOMPLETE_SNIPPET_SET_COOKIE = "autocomplete.snippet.setCookie";
-    public static final String AUTOCOMPLETE_SNIPPET_ADD_HEADER = "autocomplete.snippet.addHeader";
-    public static final String AUTOCOMPLETE_SNIPPET_ADD_PARAM = "autocomplete.snippet.addParam";
-    public static final String AUTOCOMPLETE_SNIPPET_MD5 = "autocomplete.snippet.md5";
-    public static final String AUTOCOMPLETE_SNIPPET_SHA256 = "autocomplete.snippet.sha256";
 
     // ============ 工作区远程配置相关 ============
     public static final String WORKSPACE_REMOTE_CONFIG_TITLE = "workspace.remote.config.title";
@@ -1071,7 +1094,20 @@ public final class MessageKeys {
     public static final String SNIPPET_DIALOG_CATEGORY_LOG = "snippet.dialog.category.log";
     public static final String SNIPPET_DIALOG_CATEGORY_CONTROL = "snippet.dialog.category.control";
     public static final String SNIPPET_DIALOG_CATEGORY_TOKEN = "snippet.dialog.category.token";
+    public static final String SNIPPET_DIALOG_CATEGORY_COOKIES = "snippet.dialog.category.cookies";
     public static final String SNIPPET_DIALOG_CATEGORY_OTHER = "snippet.dialog.category.other";
+    // 高级场景分类
+    public static final String SNIPPET_DIALOG_CATEGORY_AUTHENTICATION = "snippet.dialog.category.authentication";
+    public static final String SNIPPET_DIALOG_CATEGORY_PERFORMANCE = "snippet.dialog.category.performance";
+    public static final String SNIPPET_DIALOG_CATEGORY_VALIDATION = "snippet.dialog.category.validation";
+    public static final String SNIPPET_DIALOG_CATEGORY_DATA_PROCESSING = "snippet.dialog.category.data_processing";
+    public static final String SNIPPET_DIALOG_CATEGORY_REQUEST_MODIFICATION = "snippet.dialog.category.request_modification";
+    // 内置库分类
+    public static final String SNIPPET_DIALOG_CATEGORY_CRYPTOJS = "snippet.dialog.category.cryptojs";
+    public static final String SNIPPET_DIALOG_CATEGORY_LODASH = "snippet.dialog.category.lodash";
+    public static final String SNIPPET_DIALOG_CATEGORY_MOMENT = "snippet.dialog.category.moment";
+    // 完整示例
+    public static final String SNIPPET_DIALOG_CATEGORY_EXAMPLES = "snippet.dialog.category.examples";
     public static final String SNIPPET_DIALOG_NOT_FOUND = "snippet.dialog.not_found";
 
     // ============ WaterfallChartPanel 国际化 ============

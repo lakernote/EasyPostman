@@ -82,7 +82,7 @@ public class RequestLinePanel extends JPanel {
         combo.setMinimumSize(size);
 
         // 设置字体
-        combo.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        combo.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
 
         // WebSocket 协议特殊处理
         if (protocol.isWebSocketProtocol()) {

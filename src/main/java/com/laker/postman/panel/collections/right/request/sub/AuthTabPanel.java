@@ -40,7 +40,7 @@ public class AuthTabPanel extends JPanel {
         // 初始化所有字段
         typeCombo = new JComboBox<>(AuthType.values());
         typeCombo.setPreferredSize(new Dimension(220, 32));
-        typeCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
+        typeCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
 
         usernameField = new EasyPostmanTextField(20);
         usernameField.setPreferredSize(new Dimension(200, 32));
@@ -54,7 +54,7 @@ public class AuthTabPanel extends JPanel {
         // 顶部：认证类型选择
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         JLabel typeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_LABEL));
-        typeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1)); // 比标准字体大1号（粗体）
+        typeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
         typeLabel.setForeground(ModernColors.TEXT_PRIMARY);
         topPanel.add(typeLabel);
         topPanel.add(typeCombo);
@@ -206,7 +206,7 @@ public class AuthTabPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel usernameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_USERNAME));
-        usernameLabel.setFont(usernameLabel.getFont().deriveFont(13f));
+        usernameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         usernameLabel.setForeground(ModernColors.TEXT_SECONDARY);
         formPanel.add(usernameLabel, gbc);
 
@@ -227,7 +227,7 @@ public class AuthTabPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel passwordLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_PASSWORD));
-        passwordLabel.setFont(passwordLabel.getFont().deriveFont(13f));
+        passwordLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         passwordLabel.setForeground(ModernColors.TEXT_SECONDARY);
         formPanel.add(passwordLabel, gbc);
 
@@ -296,7 +296,7 @@ public class AuthTabPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel tokenLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TOKEN));
-        tokenLabel.setFont(tokenLabel.getFont().deriveFont(13f));
+        tokenLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         tokenLabel.setForeground(ModernColors.TEXT_SECONDARY);
         formPanel.add(tokenLabel, gbc);
 

@@ -97,7 +97,7 @@ public class ScriptPanel extends JPanel {
 
         // 标题
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         contentPanel.add(titleLabel);
         contentPanel.add(Box.createVerticalStrut(10));
@@ -144,7 +144,7 @@ public class ScriptPanel extends JPanel {
         area.setEditable(false);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
+        area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         area.setBackground(getBackground());
         area.setBorder(null);
         return area;

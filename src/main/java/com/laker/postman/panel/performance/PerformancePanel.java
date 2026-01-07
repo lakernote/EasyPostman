@@ -493,8 +493,8 @@ public class PerformancePanel extends SingletonBasePanel {
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
         long estimatedRequests = estimateTotalRequests(rootNode);
 
-        // 如果预计请求数超过阈值（例如1000）且未开启高效模式，给出警告
-        final int HIGH_CONCURRENCY_THRESHOLD = 1000;
+        // 如果预计请求数超过阈值（例如5000）且未开启高效模式，给出警告
+        final int HIGH_CONCURRENCY_THRESHOLD = 5000;
         if (estimatedRequests >= HIGH_CONCURRENCY_THRESHOLD && !efficientMode) {
             String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_MSG,
                     String.format("%,d", estimatedRequests));
@@ -634,6 +634,9 @@ public class PerformancePanel extends SingletonBasePanel {
      * 计算公式：所有线程组的 (线程数 × 循环次数 × 请求数) 之和
      */
     private long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
+        // 平均每个请求耗时（秒），实际大部分请求在 300-500ms，这里取 0.3 秒
+        final double AVG_REQUEST_DURATION = 0.3;
+
         long total = 0;
         for (int i = 0; i < rootNode.getChildCount(); i++) {
             DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
@@ -667,28 +670,33 @@ public class PerformancePanel extends SingletonBasePanel {
                     case FIXED -> {
                         // 固定模式：线程数 × 循环次数 × 请求数
                         if (tg.useTime) {
-                            // 使用时间模式：粗略估算，假设每个请求平均1秒
-                            total += (long) tg.numThreads * tg.duration * enabledRequests;
+                            // 使用时间模式：每秒可执行 (1 / AVG_REQUEST_DURATION) 个请求
+                            // 总请求数 = 线程数 × 持续时间(秒) × 每秒请求数 × 请求种类数
+                            double requestsPerSecondPerThread = 1.0 / AVG_REQUEST_DURATION;
+                            total += (long) (tg.numThreads * tg.duration * requestsPerSecondPerThread * enabledRequests);
                         } else {
                             // 使用循环次数
                             total += (long) tg.numThreads * tg.loops * enabledRequests;
                         }
                     }
                     case RAMP_UP -> {
-                        // 递增模式：平均线程数 × 持续时间 × 请求数（粗略估算）
+                        // 递增模式：平均线程数 × 持续时间 × 每秒请求数 × 请求种类数
                         int avgThreads = (tg.rampUpStartThreads + tg.rampUpEndThreads) / 2;
-                        total += (long) avgThreads * tg.rampUpDuration * enabledRequests;
+                        double requestsPerSecondPerThread = 1.0 / AVG_REQUEST_DURATION;
+                        total += (long) (avgThreads * tg.rampUpDuration * requestsPerSecondPerThread * enabledRequests);
                     }
                     case SPIKE -> {
                         // 尖刺模式：按各阶段时间加权估算
                         int totalTime = tg.spikeRampUpTime + tg.spikeHoldTime + tg.spikeRampDownTime;
                         int avgThreads = (tg.spikeMinThreads + tg.spikeMaxThreads) / 2;
-                        total += (long) avgThreads * totalTime * enabledRequests;
+                        double requestsPerSecondPerThread = 1.0 / AVG_REQUEST_DURATION;
+                        total += (long) (avgThreads * totalTime * requestsPerSecondPerThread * enabledRequests);
                     }
                     case STAIRS -> {
                         // 阶梯模式：使用总持续时间和平均线程数估算
                         int avgThreads = (tg.stairsStartThreads + tg.stairsEndThreads) / 2;
-                        total += (long) avgThreads * tg.stairsDuration * enabledRequests;
+                        double requestsPerSecondPerThread = 1.0 / AVG_REQUEST_DURATION;
+                        total += (long) (avgThreads * tg.stairsDuration * requestsPerSecondPerThread * enabledRequests);
                     }
                 }
             }

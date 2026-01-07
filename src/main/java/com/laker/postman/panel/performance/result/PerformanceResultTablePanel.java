@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 性能测试结果表（DevTools Network 风格）
- * - 16ms 帧刷新机制
- * - 支持表头点击排序和搜索过滤
+ * - 200ms 增量刷新机制
+ * - 支持排序和深度搜索过滤
  */
 @Slf4j
 public class PerformanceResultTablePanel extends JPanel {
@@ -41,15 +41,11 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private static final int BATCH_SIZE = 2000;
 
-    /**
-     * 搜索防抖定时器 - 延迟 300ms 执行
-     */
+    // 搜索防抖定时器（300ms）
     private Timer searchDebounceTimer;
 
-    /**
-     * 16ms UI 帧刷新
-     */
-    private final Timer uiFrameTimer = new Timer(16, e -> {
+    // UI 帧刷新定时器（200ms）
+    private final Timer uiFrameTimer = new Timer(200, e -> {
 
         flushQueueOnEDT();
         tableModel.flushIfDirty();
@@ -61,9 +57,7 @@ public class PerformanceResultTablePanel extends JPanel {
         uiFrameTimer.start();
     }
 
-    /**
-     * 将队列中的数据批量添加到 TableModel
-     */
+    // 批量刷新队列数据到 TableModel
     private void flushQueueOnEDT() {
         List<ResultNodeInfo> batch = new ArrayList<>(1024);
         ResultNodeInfo info;
@@ -93,19 +87,19 @@ public class PerformanceResultTablePanel extends JPanel {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(false);
 
-        // ✅ 显示表格线
+        // 显示表格线
         table.setShowGrid(true);
-        table.setGridColor(new Color(230, 230, 230)); // 浅灰色网格线
+        table.setGridColor(new Color(230, 230, 230));
 
         // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 
-        // 创建并配置 TableRowSorter
+        // 配置 TableRowSorter
         rowSorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(rowSorter);
         configureSorterComparators();
 
-        // ✅ 优化列宽
+        // 配置列宽
         configureColumnWidths();
 
         JScrollPane tableScroll = new JScrollPane(table);
@@ -132,9 +126,7 @@ public class PerformanceResultTablePanel extends JPanel {
         add(split, BorderLayout.CENTER);
     }
 
-    /**
-     * 配置排序比较器
-     */
+    // 配置排序比较器
     private void configureSorterComparators() {
         // 列 0: Name - 字符串排序
         rowSorter.setComparator(0, Comparator.comparing(String::toString, String.CASE_INSENSITIVE_ORDER));
@@ -146,12 +138,7 @@ public class PerformanceResultTablePanel extends JPanel {
         rowSorter.setComparator(2, Comparator.comparing(String::toString));
     }
 
-    /**
-     * 配置列宽度
-     * - 接口名称：自动填充剩余空间
-     * - 耗时：固定 100px
-     * - 结果：固定 60px（只显示 Emoji）
-     */
+    // 配置列宽度
     private void configureColumnWidths() {
         table.getColumnModel().getColumn(0).setPreferredWidth(300); // 接口名称
         table.getColumnModel().getColumn(1).setPreferredWidth(100); // 耗时
@@ -267,9 +254,7 @@ public class PerformanceResultTablePanel extends JPanel {
         }
     }
 
-    /**
-     * 资源清理
-     */
+    // 资源清理
     public void dispose() {
         uiFrameTimer.stop();
         if (searchDebounceTimer != null) {
@@ -277,9 +262,7 @@ public class PerformanceResultTablePanel extends JPanel {
         }
     }
 
-    /**
-     * 自定义 RowFilter - 支持名称、请求、响应内容过滤
-     */
+    // 自定义 RowFilter - 支持深度搜索
     static class ResultRowFilter extends RowFilter<ResultTableModel, Integer> {
         private final String keyword;
 
@@ -309,9 +292,7 @@ public class PerformanceResultTablePanel extends JPanel {
             return matchesResponse(info);
         }
 
-        /**
-         * 检查请求内容是否匹配关键字
-         */
+        // 检查请求内容是否匹配关键字
         private boolean matchesRequest(ResultNodeInfo info) {
             if (info.req == null) return false;
 
@@ -335,9 +316,7 @@ public class PerformanceResultTablePanel extends JPanel {
             return info.req.body != null && info.req.body.toLowerCase().contains(keyword);
         }
 
-        /**
-         * 检查响应内容是否匹配关键字
-         */
+        // 检查响应内容是否匹配关键字
         private boolean matchesResponse(ResultNodeInfo info) {
             if (info.resp == null) return false;
 
@@ -356,19 +335,21 @@ public class PerformanceResultTablePanel extends JPanel {
             // 检查响应 Body
             return info.resp.body != null && info.resp.body.toLowerCase().contains(keyword);
         }
+
     }
 
-    /**
-     * 简化的 TableModel
-     */
+    // TableModel - 增量刷新优化
     static class ResultTableModel extends AbstractTableModel {
 
         private static final int COL_NAME = 0;
         private static final int COL_COST = 1;
         private static final int COL_RESULT = 2;
 
-        private final List<ResultNodeInfo> dataList = new ArrayList<>();
+        private final List<ResultNodeInfo> dataList = new ArrayList<>(1024);
         private boolean dirty = false;
+
+        // 追踪新增行的起始位置，用于增量刷新
+        private int firstNewRow = -1;
 
         @Override
         public int getRowCount() {
@@ -401,10 +382,7 @@ public class PerformanceResultTablePanel extends JPanel {
             };
         }
 
-        /**
-         * 格式化结果列：只显示 Emoji
-         * ✅ 成功 或 ❌ 失败
-         */
+        // 格式化结果列：✅ 成功 或 ❌ 失败
         private String formatResult(ResultNodeInfo r) {
             return r.isActuallySuccessful() ? "✅" : "❌";
         }
@@ -428,6 +406,13 @@ public class PerformanceResultTablePanel extends JPanel {
 
 
         void append(List<ResultNodeInfo> batch) {
+            if (batch.isEmpty()) return;
+
+            // 记录新增行的起始位置
+            if (firstNewRow == -1) {
+                firstNewRow = dataList.size();
+            }
+
             dataList.addAll(batch);
             dirty = true;
         }
@@ -435,19 +420,24 @@ public class PerformanceResultTablePanel extends JPanel {
         void flushIfDirty() {
             if (!dirty) return;
             dirty = false;
-            fireTableDataChanged();
+
+            // 增量刷新：仅通知新增的行
+            if (firstNewRow != -1 && firstNewRow < dataList.size()) {
+                int lastRow = dataList.size() - 1;
+                fireTableRowsInserted(firstNewRow, lastRow);
+                firstNewRow = -1; // 重置
+            }
         }
 
         void clear() {
             dataList.clear();
             dirty = false;
+            firstNewRow = -1; // 重置
             fireTableDataChanged();
         }
     }
 
-    /**
-     * 优化的行渲染器 - 根据列设置不同的对齐方式
-     */
+    // 行渲染器 - 设置不同列的对齐方式
     static class ResultRowRenderer extends DefaultTableCellRenderer {
 
         @Override

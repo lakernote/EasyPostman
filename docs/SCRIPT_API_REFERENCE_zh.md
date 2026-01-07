@@ -1586,7 +1586,8 @@ pm.test("商品库存充足", function () {
 #### 示例 1：CryptoJS 加密库
 
 ```javascript
-var CryptoJS = require('crypto-js');
+// 直接使用全局变量 CryptoJS（无需 require）
+// var CryptoJS = require('crypto-js'); // 可选，也支持这种方式
 
 // 1. AES 加密/解密
 const message = 'secret message';
@@ -1637,7 +1638,8 @@ pm.environment.set('nonce', randomString);
 #### 示例 2：Lodash 数据处理库
 
 ```javascript
-var _ = require('lodash');
+// 直接使用全局变量 _（无需 require）
+// var _ = require('lodash'); // 可选，也支持这种方式
 
 // 1. 数组操作
 const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -1787,7 +1789,8 @@ console.log('偶数平方和:', result);
 #### 示例 3：Moment.js 日期时间库
 
 ```javascript
-var moment = require('moment');
+// 直接使用全局变量 moment（无需 require）
+// var moment = require('moment'); // 可选，也支持这种方式
 
 // 1. 获取当前时间
 const now = moment();
@@ -1984,6 +1987,715 @@ const activeCount = _.filter(mockUsers, { isActive: true }).length;
 console.log('平均年龄:', _.round(avgAge, 1));
 console.log('平均得分:', _.round(avgScore, 2));
 console.log('活跃用户数:', activeCount);
+```
+
+---
+
+## 高级代码片段示例
+
+### 代码片段 1：OAuth 2.0 Token 自动刷新
+
+```javascript
+// Pre-request Script: 自动检查和刷新 Token
+const tokenExpireTime = pm.environment.get('tokenExpireTime');
+const currentTime = Date.now();
+
+// 检查 token 是否过期（提前5分钟刷新）
+if (!tokenExpireTime || currentTime > (parseInt(tokenExpireTime) - 300000)) {
+    console.log('Token 即将过期或已过期，需要刷新');
+    // 在实际环境中，这里应该触发刷新 token 的逻辑
+    // 由于不支持 pm.sendRequest，建议在测试流程中手动添加刷新 token 的请求
+} else {
+    const token = pm.environment.get('authToken');
+    if (token) {
+        pm.request.headers.upsert({
+            key: 'Authorization',
+            value: 'Bearer ' + token
+        });
+        console.log('✓ Token 有效，已添加认证头');
+    }
+}
+```
+
+### 代码片段 2：接口限流处理（本地计数）
+
+```javascript
+// Pre-request Script: 本地请求限流检查
+const lastRequestTime = pm.environment.get('lastRequestTime');
+const minInterval = 100; // 最小请求间隔（毫秒）
+
+if (lastRequestTime) {
+    const timeSinceLastRequest = Date.now() - parseInt(lastRequestTime);
+    if (timeSinceLastRequest < minInterval) {
+        const waitTime = minInterval - timeSinceLastRequest;
+        console.warn('⚠ 请求过于频繁，建议等待', waitTime, 'ms');
+    }
+}
+
+pm.environment.set('lastRequestTime', Date.now().toString());
+```
+
+### 代码片段 3：动态环境切换
+
+```javascript
+// Pre-request Script: 根据变量切换环境配置
+const env = pm.environment.get('ENV') || 'dev';
+
+const configs = {
+    dev: {
+        baseUrl: 'https://dev-api.example.com',
+        timeout: 10000,
+        debug: true
+    },
+    test: {
+        baseUrl: 'https://test-api.example.com',
+        timeout: 8000,
+        debug: true
+    },
+    staging: {
+        baseUrl: 'https://staging-api.example.com',
+        timeout: 5000,
+        debug: false
+    },
+    prod: {
+        baseUrl: 'https://api.example.com',
+        timeout: 5000,
+        debug: false
+    }
+};
+
+const config = configs[env];
+if (!config) {
+    throw new Error('未知环境: ' + env);
+}
+
+// 应用配置
+pm.environment.set('baseUrl', config.baseUrl);
+pm.environment.set('timeout', config.timeout.toString());
+pm.environment.set('debug', config.debug.toString());
+
+// 添加环境标识头
+pm.request.headers.upsert({
+    key: 'X-Environment',
+    value: env
+});
+
+console.log('✓ 已切换到', env, '环境');
+console.log('  Base URL:', config.baseUrl);
+console.log('  Timeout:', config.timeout);
+```
+
+### 代码片段 4：请求体动态模板填充
+
+```javascript
+// Pre-request Script: JSON 模板动态替换
+var _ = require('lodash');
+var moment = require('moment');
+
+// 定义请求体模板（可以从环境变量获取）
+const requestTemplate = {
+    "requestId": "{{requestId}}",
+    "timestamp": "{{timestamp}}",
+    "userId": "{{userId}}",
+    "action": "{{action}}",
+    "data": {
+        "startDate": "{{startDate}}",
+        "endDate": "{{endDate}}",
+        "pageNum": "{{pageNum}}",
+        "pageSize": "{{pageSize}}"
+    }
+};
+
+// 准备替换数据
+const templateData = {
+    requestId: pm.uuid(),
+    timestamp: moment().valueOf(),
+    userId: pm.environment.get('userId') || '123',
+    action: 'queryOrders',
+    startDate: moment().subtract(7, 'days').format('YYYY-MM-DD'),
+    endDate: moment().format('YYYY-MM-DD'),
+    pageNum: 1,
+    pageSize: 20
+};
+
+// 替换模板
+let requestBodyStr = JSON.stringify(requestTemplate);
+_.forEach(templateData, function(value, key) {
+    const placeholder = '{{' + key + '}}';
+    requestBodyStr = requestBodyStr.replace(new RegExp(placeholder, 'g'), value);
+});
+
+const requestBody = JSON.parse(requestBodyStr);
+console.log('生成的请求体:', JSON.stringify(requestBody, null, 2));
+
+// 保存到环境变量供请求使用
+pm.environment.set('dynamicRequestBody', JSON.stringify(requestBody));
+```
+
+### 代码片段 5：批量参数验证器
+
+```javascript
+// Pre-request Script: 请求参数验证
+const validationRules = {
+    userId: {
+        required: true,
+        type: 'string',
+        pattern: /^[0-9]+$/,
+        message: 'userId 必须是数字字符串'
+    },
+    email: {
+        required: false,
+        type: 'string',
+        pattern: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
+        message: 'email 格式不正确'
+    },
+    age: {
+        required: false,
+        type: 'number',
+        min: 0,
+        max: 150,
+        message: 'age 必须在 0-150 之间'
+    }
+};
+
+const params = {
+    userId: pm.environment.get('userId'),
+    email: pm.environment.get('email'),
+    age: parseInt(pm.environment.get('age'))
+};
+
+const errors = [];
+
+// 执行验证
+Object.keys(validationRules).forEach(function(key) {
+    const rule = validationRules[key];
+    const value = params[key];
+    
+    // 必填校验
+    if (rule.required && (!value || value === '')) {
+        errors.push(key + ' 是必填项');
+        return;
+    }
+    
+    if (value !== undefined && value !== null && value !== '') {
+        // 类型校验
+        if (rule.type === 'number' && typeof value !== 'number') {
+            errors.push(key + ' 必须是数字类型');
+        }
+        
+        // 正则校验
+        if (rule.pattern && !rule.pattern.test(String(value))) {
+            errors.push(rule.message || key + ' 格式不正确');
+        }
+        
+        // 范围校验
+        if (rule.type === 'number') {
+            if (rule.min !== undefined && value < rule.min) {
+                errors.push(key + ' 不能小于 ' + rule.min);
+            }
+            if (rule.max !== undefined && value > rule.max) {
+                errors.push(key + ' 不能大于 ' + rule.max);
+            }
+        }
+    }
+});
+
+if (errors.length > 0) {
+    console.error('参数验证失败:');
+    errors.forEach(function(error) {
+        console.error('  ✗', error);
+    });
+    throw new Error('参数验证失败: ' + errors.join('; '));
+} else {
+    console.log('✓ 所有参数验证通过');
+}
+```
+
+### 代码片段 6：响应数据提取链（链式调用场景）
+
+```javascript
+// Post-request Script: 从复杂嵌套响应中提取数据
+var _ = require('lodash');
+
+const jsonData = pm.response.json();
+
+pm.test("响应结构正确", function () {
+    pm.response.to.have.status(200);
+    pm.expect(jsonData.code).to.equal(0);
+});
+
+// 使用 lodash 从复杂结构提取数据
+const extractedData = {
+    // 提取用户 ID 列表
+    userIds: _.map(_.get(jsonData, 'data.users', []), 'id'),
+    
+    // 提取第一个用户的详细信息
+    firstUser: _.get(jsonData, 'data.users[0]', null),
+    
+    // 提取所有管理员
+    admins: _.filter(_.get(jsonData, 'data.users', []), { role: 'admin' }),
+    
+    // 计算总金额
+    totalAmount: _.sumBy(_.get(jsonData, 'data.orders', []), 'amount'),
+    
+    // 按状态分组订单
+    ordersByStatus: _.groupBy(_.get(jsonData, 'data.orders', []), 'status'),
+    
+    // 提取分页信息
+    pagination: _.pick(_.get(jsonData, 'data', {}), ['pageNum', 'pageSize', 'total'])
+};
+
+console.log('提取的数据:', JSON.stringify(extractedData, null, 2));
+
+// 保存关键信息到环境变量
+if (extractedData.firstUser) {
+    pm.environment.set('firstUserId', extractedData.firstUser.id);
+    pm.environment.set('firstUserName', extractedData.firstUser.name);
+}
+
+if (extractedData.userIds.length > 0) {
+    pm.environment.set('userIdList', JSON.stringify(extractedData.userIds));
+}
+
+pm.environment.set('totalAmount', extractedData.totalAmount.toString());
+
+console.log('✓ 提取了', extractedData.userIds.length, '个用户ID');
+console.log('✓ 总金额:', extractedData.totalAmount);
+```
+
+### 代码片段 7：性能基准测试
+
+```javascript
+// Post-request Script: 性能监控和基准对比
+var _ = require('lodash');
+
+const responseTime = pm.response.responseTime;
+const endpoint = pm.request.url.getPath();
+
+// 定义性能基准（毫秒）
+const benchmarks = {
+    '/api/user/login': 500,
+    '/api/user/profile': 300,
+    '/api/orders/list': 1000,
+    '/api/products/search': 800,
+    'default': 1000
+};
+
+const benchmark = benchmarks[endpoint] || benchmarks['default'];
+
+// 性能等级评估
+let performanceGrade = '';
+let performanceScore = 100;
+
+if (responseTime <= benchmark * 0.3) {
+    performanceGrade = 'A+ (优秀)';
+    performanceScore = 100;
+} else if (responseTime <= benchmark * 0.5) {
+    performanceGrade = 'A (良好)';
+    performanceScore = 90;
+} else if (responseTime <= benchmark * 0.8) {
+    performanceGrade = 'B (一般)';
+    performanceScore = 75;
+} else if (responseTime <= benchmark) {
+    performanceGrade = 'C (及格)';
+    performanceScore = 60;
+} else if (responseTime <= benchmark * 1.5) {
+    performanceGrade = 'D (较慢)';
+    performanceScore = 40;
+} else {
+    performanceGrade = 'F (缓慢)';
+    performanceScore = 20;
+}
+
+// 记录性能数据
+const perfKey = 'perf_' + endpoint.replace(/\//g, '_');
+let perfHistory = pm.environment.get(perfKey);
+if (!perfHistory) {
+    perfHistory = [];
+} else {
+    try {
+        perfHistory = JSON.parse(perfHistory);
+    } catch (e) {
+        perfHistory = [];
+    }
+}
+
+perfHistory.push(responseTime);
+
+// 只保留最近10次记录
+if (perfHistory.length > 10) {
+    perfHistory = _.takeRight(perfHistory, 10);
+}
+
+pm.environment.set(perfKey, JSON.stringify(perfHistory));
+
+// 计算平均响应时间
+const avgResponseTime = _.mean(perfHistory);
+const minResponseTime = _.min(perfHistory);
+const maxResponseTime = _.max(perfHistory);
+
+// 输出性能报告
+console.log('=== 性能测试报告 ===');
+console.log('接口:', endpoint);
+console.log('本次响应时间:', responseTime, 'ms');
+console.log('性能等级:', performanceGrade, '(得分:', performanceScore + ')');
+console.log('性能基准:', benchmark, 'ms');
+console.log('历史平均:', _.round(avgResponseTime, 2), 'ms');
+console.log('最快响应:', minResponseTime, 'ms');
+console.log('最慢响应:', maxResponseTime, 'ms');
+
+// 创建性能测试
+pm.test("性能测试: " + performanceGrade, function () {
+    pm.expect(responseTime).to.be.below(benchmark);
+});
+
+// 如果性能下降，发出警告
+if (responseTime > avgResponseTime * 1.5) {
+    console.warn('⚠️ 警告: 本次响应时间比平均值慢了', _.round((responseTime / avgResponseTime - 1) * 100, 1) + '%');
+}
+```
+
+### 代码片段 8：数据一致性校验
+
+```javascript
+// Post-request Script: 复杂业务逻辑验证
+var _ = require('lodash');
+var moment = require('moment');
+
+const jsonData = pm.response.json();
+
+pm.test("订单数据一致性校验", function () {
+    if (!jsonData.data || !jsonData.data.order) {
+        throw new Error('订单数据不存在');
+    }
+    
+    const order = jsonData.data.order;
+    
+    // 1. 金额计算验证
+    const calculatedSubtotal = _.sumBy(order.items, function(item) {
+        return item.price * item.quantity;
+    });
+    
+    pm.expect(_.round(calculatedSubtotal, 2)).to.equal(order.subtotal);
+    console.log('✓ 小计金额正确:', order.subtotal);
+    
+    // 2. 总金额验证（小计 + 运费 - 折扣）
+    const calculatedTotal = _.round(
+        order.subtotal + (order.shippingFee || 0) - (order.discount || 0),
+        2
+    );
+    pm.expect(calculatedTotal).to.equal(order.totalAmount);
+    console.log('✓ 总金额正确:', order.totalAmount);
+    
+    // 3. 状态转换逻辑验证
+    const validStatusFlow = {
+        'pending': ['processing', 'cancelled'],
+        'processing': ['shipped', 'cancelled'],
+        'shipped': ['delivered', 'return_requested'],
+        'delivered': ['completed', 'return_requested'],
+        'return_requested': ['refunding', 'delivered'],
+        'refunding': ['refunded'],
+        'completed': [],
+        'cancelled': [],
+        'refunded': []
+    };
+    
+    const currentStatus = order.status;
+    console.log('✓ 当前订单状态:', currentStatus);
+    
+    // 4. 日期逻辑验证
+    if (order.createTime && order.updateTime) {
+        const createTime = moment(order.createTime);
+        const updateTime = moment(order.updateTime);
+        
+        pm.expect(updateTime.isSameOrAfter(createTime)).to.equal(true);
+        console.log('✓ 更新时间不早于创建时间');
+    }
+    
+    // 5. 商品数量验证
+    pm.expect(order.items.length).to.be.above(0);
+    
+    order.items.forEach(function(item, index) {
+        // 数量必须大于0
+        pm.expect(item.quantity).to.be.above(0);
+        
+        // 价格必须大于等于0
+        pm.expect(item.price).to.be.below(999999);
+        
+        // SKU 不能为空
+        pm.expect(item.sku).to.be.a('string');
+        pm.expect(item.sku.length).to.be.above(0);
+        
+        console.log('✓ 商品', (index + 1), '验证通过:', item.name);
+    });
+});
+
+// 6. 数据完整性检查
+pm.test("必填字段检查", function () {
+    const requiredFields = [
+        'orderId',
+        'userId',
+        'status',
+        'totalAmount',
+        'createTime',
+        'items'
+    ];
+    
+    const order = jsonData.data.order;
+    requiredFields.forEach(function(field) {
+        pm.expect(order).to.have.property(field);
+        pm.expect(order[field]).to.not.equal(null);
+        pm.expect(order[field]).to.not.equal(undefined);
+        console.log('✓ 字段', field, '存在且有值');
+    });
+});
+```
+
+### 代码片段 9：自定义断言函数库
+
+```javascript
+// Post-request Script: 创建可复用的断言函数
+
+// 定义自定义断言函数库
+const customAssert = {
+    // 断言数组包含特定元素
+    arrayContains: function(array, element, message) {
+        const contains = array.indexOf(element) !== -1;
+        if (!contains) {
+            throw new Error(message || '数组不包含元素: ' + element);
+        }
+        return true;
+    },
+    
+    // 断言字符串长度在范围内
+    stringLengthBetween: function(str, min, max, message) {
+        if (str.length < min || str.length > max) {
+            throw new Error(message || '字符串长度应在 ' + min + '-' + max + ' 之间');
+        }
+        return true;
+    },
+    
+    // 断言日期在范围内
+    dateInRange: function(dateStr, startDate, endDate, message) {
+        const date = new Date(dateStr);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (date < start || date > end) {
+            throw new Error(message || '日期不在指定范围内');
+        }
+        return true;
+    },
+    
+    // 断言对象结构匹配
+    objectMatchesSchema: function(obj, schema, message) {
+        for (let key in schema) {
+            if (!obj.hasOwnProperty(key)) {
+                throw new Error(message || '对象缺少字段: ' + key);
+            }
+            
+            const expectedType = schema[key];
+            const actualType = typeof obj[key];
+            
+            if (actualType !== expectedType && !(expectedType === 'array' && Array.isArray(obj[key]))) {
+                throw new Error(message || '字段 ' + key + ' 类型错误，期望: ' + expectedType + '，实际: ' + actualType);
+            }
+        }
+        return true;
+    },
+    
+    // 断言枚举值
+    isOneOf: function(value, allowedValues, message) {
+        if (allowedValues.indexOf(value) === -1) {
+            throw new Error(message || '值必须是以下之一: ' + allowedValues.join(', '));
+        }
+        return true;
+    },
+    
+    // 断言数值范围
+    numberInRange: function(num, min, max, message) {
+        if (num < min || num > max) {
+            throw new Error(message || '数值应在 ' + min + '-' + max + ' 之间');
+        }
+        return true;
+    }
+};
+
+// 使用自定义断言
+const jsonData = pm.response.json();
+
+pm.test("自定义断言测试", function () {
+    const user = jsonData.data.user;
+    
+    // 测试对象结构
+    customAssert.objectMatchesSchema(user, {
+        id: 'string',
+        name: 'string',
+        age: 'number',
+        email: 'string',
+        roles: 'array'
+    });
+    console.log('✓ 对象结构匹配');
+    
+    // 测试枚举值
+    customAssert.isOneOf(user.status, ['active', 'inactive', 'suspended']);
+    console.log('✓ 状态值有效');
+    
+    // 测试数值范围
+    customAssert.numberInRange(user.age, 0, 150);
+    console.log('✓ 年龄在有效范围内');
+    
+    // 测试字符串长度
+    customAssert.stringLengthBetween(user.name, 1, 50);
+    console.log('✓ 名称长度有效');
+    
+    // 测试数组包含
+    customAssert.arrayContains(user.roles, 'user');
+    console.log('✓ 角色列表包含基础角色');
+});
+```
+
+### 代码片段 10：多语言国际化测试
+
+```javascript
+// Pre-request Script: 国际化多语言测试
+const languages = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'fr-FR'];
+const currentLang = pm.environment.get('testLanguage') || 'zh-CN';
+
+// 设置语言请求头
+pm.request.headers.upsert({
+    key: 'Accept-Language',
+    value: currentLang
+});
+
+pm.request.headers.upsert({
+    key: 'X-Locale',
+    value: currentLang
+});
+
+console.log('当前测试语言:', currentLang);
+
+// Post-request Script: 验证多语言响应
+pm.test("多语言响应验证", function () {
+    const jsonData = pm.response.json();
+    const lang = pm.request.headers.get('Accept-Language') || 'zh-CN';
+    
+    // 检查响应中的语言字段
+    if (jsonData.message) {
+        console.log('响应消息 (' + lang + '):', jsonData.message);
+        
+        // 验证中文响应包含中文字符
+        if (lang === 'zh-CN') {
+            pm.expect(jsonData.message).to.match(/[\u4e00-\u9fa5]/);
+        }
+        
+        // 验证英文响应只包含ASCII字符
+        if (lang === 'en-US') {
+            pm.expect(jsonData.message).to.match(/^[\x00-\x7F]*$/);
+        }
+    }
+});
+```
+
+### 代码片段 11：幂等性测试
+
+```javascript
+// Post-request Script: 幂等性验证（需要多次执行同一请求）
+const requestId = pm.environment.get('idempotencyTestId');
+const responseBody = pm.response.text();
+const responseHash = CryptoJS.MD5(responseBody).toString();
+
+if (!requestId) {
+    // 第一次请求，保存请求ID和响应哈希
+    pm.environment.set('idempotencyTestId', pm.uuid());
+    pm.environment.set('idempotencyResponseHash', responseHash);
+    pm.environment.set('idempotencyCount', '1');
+    console.log('幂等性测试：第1次请求，已保存响应基准');
+} else {
+    // 后续请求，验证响应是否一致
+    const savedHash = pm.environment.get('idempotencyResponseHash');
+    let count = parseInt(pm.environment.get('idempotencyCount') || '1');
+    count++;
+    pm.environment.set('idempotencyCount', count.toString());
+    
+    pm.test("幂等性验证 - 第" + count + "次请求", function () {
+        pm.expect(responseHash).to.equal(savedHash);
+        console.log('✓ 响应与第1次请求一致');
+    });
+    
+    console.log('幂等性测试：已执行', count, '次请求');
+    
+    // 完成5次测试后清理
+    if (count >= 5) {
+        pm.environment.unset('idempotencyTestId');
+        pm.environment.unset('idempotencyResponseHash');
+        pm.environment.unset('idempotencyCount');
+        console.log('✓ 幂等性测试完成，已清理测试数据');
+    }
+}
+```
+
+### 代码片段 12：响应时间统计图表数据生成
+
+```javascript
+// Post-request Script: 收集性能数据用于图表展示
+var moment = require('moment');
+var _ = require('lodash');
+
+const endpoint = pm.request.url.getPath();
+const responseTime = pm.response.responseTime;
+const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+
+// 获取历史数据
+let perfData = pm.environment.get('performanceChartData');
+if (!perfData) {
+    perfData = [];
+} else {
+    try {
+        perfData = JSON.parse(perfData);
+    } catch (e) {
+        perfData = [];
+    }
+}
+
+// 添加新数据点
+perfData.push({
+    endpoint: endpoint,
+    responseTime: responseTime,
+    timestamp: timestamp,
+    statusCode: pm.response.code,
+    success: pm.response.code === 200
+});
+
+// 保留最近100条记录
+if (perfData.length > 100) {
+    perfData = _.takeRight(perfData, 100);
+}
+
+pm.environment.set('performanceChartData', JSON.stringify(perfData));
+
+// 按接口分组统计
+const groupedByEndpoint = _.groupBy(perfData, 'endpoint');
+const stats = {};
+
+_.forEach(groupedByEndpoint, function(records, endpoint) {
+    const times = _.map(records, 'responseTime');
+    stats[endpoint] = {
+        count: records.length,
+        avg: _.round(_.mean(times), 2),
+        min: _.min(times),
+        max: _.max(times),
+        p50: _.round(times.sort()[Math.floor(times.length * 0.5)], 2),
+        p95: _.round(times.sort()[Math.floor(times.length * 0.95)], 2),
+        successRate: _.round(_.filter(records, { success: true }).length / records.length * 100, 2)
+    };
+});
+
+console.log('=== 性能统计数据 ===');
+console.log(JSON.stringify(stats, null, 2));
+
+// 保存统计数据
+pm.environment.set('performanceStats', JSON.stringify(stats));
 ```
 
 ---

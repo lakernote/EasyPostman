@@ -60,19 +60,20 @@ public class App {
 
     /**
      * 初始化外观主题。
-     * 1. FlatIntelliJLaf 内置配置
-     * 2. themes/FlatIntelliJLaf.properties 自定义配置
-     * 3. StyleUtils.apply() 程序化配置（优先级最高）
+     * <p>
+     * 配置加载顺序：
+     * 1. FlatLaf.properties - FlatLaf 基础配置
+     * 2. FlatLightLaf.properties - 浅色主题配置
+     * 3. themes/FlatIntelliJLaf.properties - 自定义配置（会自动加载）
+     * <p>
+     * 所有 UI 样式配置都在 themes/FlatIntelliJLaf.properties 中定义。
      */
     private static void initializeLookAndFeel() {
-        // 1. 注册自定义主题目录
+        // 注册自定义主题目录
         FlatLaf.registerCustomDefaultsSource("themes");
-        // 2. 加载 FlatLaf 主题（会自动加载 themes/FlatIntelliJLaf.properties）
+        // 加载 FlatLaf 主题（会自动加载 themes/FlatIntelliJLaf.properties）
         FlatIntelliJLaf.setup();
-        // 3. 应用程序化样式（会覆盖前面的配置）
-        // 注意：如果希望 properties 文件的配置生效，需要注释掉 StyleUtils 中对应的设置
-        StyleUtils.apply();
-        // 4. 应用用户保存的字体设置
+        // 应用用户保存的字体设置
         FontManager.applyFontSettings();
     }
 

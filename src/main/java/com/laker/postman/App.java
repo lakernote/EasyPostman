@@ -1,6 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
@@ -59,11 +60,19 @@ public class App {
 
     /**
      * 初始化外观主题。
+     * 1. FlatIntelliJLaf 内置配置
+     * 2. themes/FlatIntelliJLaf.properties 自定义配置
+     * 3. StyleUtils.apply() 程序化配置（优先级最高）
      */
     private static void initializeLookAndFeel() {
+        // 1. 注册自定义主题目录
+        FlatLaf.registerCustomDefaultsSource("themes");
+        // 2. 加载 FlatLaf 主题（会自动加载 themes/FlatIntelliJLaf.properties）
         FlatIntelliJLaf.setup();
+        // 3. 应用程序化样式（会覆盖前面的配置）
+        // 注意：如果希望 properties 文件的配置生效，需要注释掉 StyleUtils 中对应的设置
         StyleUtils.apply();
-        // 应用用户保存的字体设置
+        // 4. 应用用户保存的字体设置
         FontManager.applyFontSettings();
     }
 

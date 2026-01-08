@@ -127,7 +127,6 @@ public class StyleUtils {
      */
     private static void addRoundedCorners(Map<String, Object> properties) {
         properties.put("Component.arc", DEFAULT_ARC);
-        properties.put("Component.arrowType", "chevron");  // 设置所有组件的箭头样式为 chevron（V形）
         properties.put("Button.arc", BUTTON_ARC);
         properties.put("ProgressBar.arc", COMPONENT_ARC);
         properties.put("TextComponent.arc", COMPONENT_ARC);

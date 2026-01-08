@@ -1,12 +1,14 @@
 package com.laker.postman;
 
-import com.formdev.flatlaf.FlatIntelliJLaf;
-import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.util.SystemInfo;
+import com.laker.postman.common.themes.EasyLightLaf;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
-import com.laker.postman.util.*;
+import com.laker.postman.util.ExceptionUtil;
+import com.laker.postman.util.FontManager;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
@@ -61,19 +63,10 @@ public class App {
     /**
      * 初始化外观主题。
      * <p>
-     * 配置加载顺序：
-     * 1. FlatLaf.properties - FlatLaf 基础配置
-     * 2. FlatLightLaf.properties - 浅色主题配置
-     * 3. themes/FlatIntelliJLaf.properties - 自定义配置（会自动加载）
-     * <p>
-     * 所有 UI 样式配置都在 themes/FlatIntelliJLaf.properties 中定义。
+     * 样式配置文件：com/laker/postman/common/themes/EasyLightLaf.properties
      */
     private static void initializeLookAndFeel() {
-        // 注册自定义主题目录
-        FlatLaf.registerCustomDefaultsSource("themes");
-        // 加载 FlatLaf 主题（会自动加载 themes/FlatIntelliJLaf.properties）
-        FlatIntelliJLaf.setup();
-        // 应用用户保存的字体设置
+        EasyLightLaf.setup();
         FontManager.applyFontSettings();
     }
 

@@ -1,7 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.util.SystemInfo;
-import com.laker.postman.common.themes.EasyLightLaf;
+import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.service.UpdateService;
@@ -66,7 +66,7 @@ public class App {
      * 样式配置文件：com/laker/postman/common/themes/EasyLightLaf.properties
      */
     private static void initializeLookAndFeel() {
-        EasyLightLaf.setup();
+        SimpleThemeManager.initTheme();
         FontManager.applyFontSettings();
     }
 

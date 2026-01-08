@@ -14,6 +14,9 @@ public final class MessageKeys {
     public static final String MENU_FILE_LOG = "menu.file.log";
     public static final String MENU_FILE_EXIT = "menu.file.exit";
     public static final String MENU_LANGUAGE = "menu.language";
+    public static final String MENU_THEME = "menu.theme";
+    public static final String MENU_THEME_LIGHT = "menu.theme.light";
+    public static final String MENU_THEME_DARK = "menu.theme.dark";
     public static final String MENU_SETTINGS = "menu.settings";
     public static final String MENU_HELP = "menu.help";
     public static final String MENU_HELP_UPDATE = "menu.help.update";
@@ -31,6 +34,10 @@ public final class MessageKeys {
 
     // ============ 语言相关 ============
     public static final String LANGUAGE_CHANGED = "language.changed";
+
+    // ============ 主题相关 ============
+    public static final String THEME_SWITCHED_TO_LIGHT = "theme.switched.to.light";
+    public static final String THEME_SWITCHED_TO_DARK = "theme.switched.to.dark";
 
     // ============ 更新相关 ============
     public static final String UPDATE_NEW_VERSION_AVAILABLE = "update.new_version_available";

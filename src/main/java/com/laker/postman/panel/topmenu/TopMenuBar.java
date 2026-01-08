@@ -7,6 +7,7 @@ import com.laker.postman.common.SingletonBaseMenuBar;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.combobox.WorkspaceComboBox;
+import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.RemoteStatus;
@@ -87,6 +88,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
 
         addFileMenu();
         addLanguageMenu();
+        addThemeMenu();
         addSettingMenu();
         addHelpMenu();
         addAboutMenu();
@@ -152,6 +154,31 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     private void switchLanguage(String languageCode) {
         I18nUtil.setLocale(languageCode);
         NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
+    }
+
+    private void addThemeMenu() {
+        JMenu themeMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_THEME));
+        ButtonGroup themeGroup = new ButtonGroup();
+
+        JRadioButtonMenuItem lightItem = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_LIGHT));
+        JRadioButtonMenuItem darkItem = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_DARK));
+
+        themeGroup.add(lightItem);
+        themeGroup.add(darkItem);
+
+        // 设置当前选中的主题
+        if (SimpleThemeManager.isLightTheme()) {
+            lightItem.setSelected(true);
+        } else {
+            darkItem.setSelected(true);
+        }
+
+        lightItem.addActionListener(e -> SimpleThemeManager.switchToLightTheme());
+        darkItem.addActionListener(e -> SimpleThemeManager.switchToDarkTheme());
+
+        themeMenu.add(lightItem);
+        themeMenu.add(darkItem);
+        add(themeMenu);
     }
 
     private void addSettingMenu() {

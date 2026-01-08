@@ -30,6 +30,7 @@ import java.util.Map;
  * - 语法高亮显示（JSON、XML、HTML、JavaScript、CSS 等）
  * - 自动/手动格式化
  * - 文本搜索
+ * - 自动换行控制
  * - 下载响应内容
  * - 大文件优化处理
  * </p>
@@ -48,6 +49,7 @@ public class ResponseBodyPanel extends JPanel {
     private final JButton formatButton;
     private final JButton prevButton;
     private final JButton nextButton;
+    private final JToggleButton wrapButton;
     RTextScrollPane scrollPane;
 
     // 常量定义
@@ -105,6 +107,10 @@ public class ResponseBodyPanel extends JPanel {
         rightPanel.add(searchField);
         rightPanel.add(prevButton);
         rightPanel.add(nextButton);
+        wrapButton = new JToggleButton(new FlatSVGIcon("icons/wrap.svg", ICON_SIZE, ICON_SIZE));
+        wrapButton.setToolTipText("Toggle Line Wrap");
+        wrapButton.setSelected(false); // 默认不启用换行
+        rightPanel.add(wrapButton);
         formatButton = new JButton(new FlatSVGIcon("icons/format.svg", ICON_SIZE, ICON_SIZE));
         formatButton.setToolTipText("Format");
         rightPanel.add(formatButton);
@@ -124,6 +130,7 @@ public class ResponseBodyPanel extends JPanel {
 
         downloadButton.addActionListener(e -> saveFile());
         formatButton.addActionListener(e -> formatContent());
+        wrapButton.addActionListener(e -> toggleLineWrap());
         searchField.addActionListener(e -> search(true));
         prevButton.addActionListener(e -> search(false));
         nextButton.addActionListener(e -> search(true));
@@ -160,6 +167,14 @@ public class ResponseBodyPanel extends JPanel {
         }
 
         responseBodyPane.setSyntaxEditingStyle(syntax);
+    }
+
+    /**
+     * 切换自动换行状态
+     */
+    private void toggleLineWrap() {
+        boolean isWrapEnabled = wrapButton.isSelected();
+        responseBodyPane.setLineWrap(isWrapEnabled);
     }
 
     /**
@@ -538,6 +553,7 @@ public class ResponseBodyPanel extends JPanel {
         if (formatButton != null) formatButton.setEnabled(enabled);
         if (prevButton != null) prevButton.setEnabled(enabled);
         if (nextButton != null) nextButton.setEnabled(enabled);
+        if (wrapButton != null) wrapButton.setEnabled(enabled);
         if (saveResponseButton != null) saveResponseButton.setEnabled(enabled);
     }
 

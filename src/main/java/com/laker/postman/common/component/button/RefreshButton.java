@@ -12,7 +12,9 @@ import javax.swing.*;
 public class RefreshButton extends JButton {
     public RefreshButton() {
         super(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
-        setIcon(new FlatSVGIcon("icons/refresh.svg", 20, 20));
+        FlatSVGIcon icon = new FlatSVGIcon("icons/refresh.svg", 20, 20);
+        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        setIcon(icon);
         setFocusable(false); // 去掉按钮的焦点边框
     }
 }

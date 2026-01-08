@@ -12,7 +12,9 @@ import javax.swing.*;
 public class StartButton extends JButton {
     public StartButton() {
         super(I18nUtil.getMessage(MessageKeys.BUTTON_START));
-        setIcon(new FlatSVGIcon("icons/start.svg", 20, 20));
+        FlatSVGIcon icon = new FlatSVGIcon("icons/start.svg", 20, 20);
+        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        setIcon(icon);
         setFocusable(false); // 去掉按钮的焦点边框
     }
 }

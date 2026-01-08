@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
@@ -131,23 +132,39 @@ public class PerformanceResultTablePanel extends JPanel {
         // 列 0: Name - 字符串排序
         rowSorter.setComparator(0, Comparator.comparing(String::toString, String.CASE_INSENSITIVE_ORDER));
 
-        // 列 1: Cost (ms) - 数值排序
-        rowSorter.setComparator(1, Comparator.comparingLong(Long.class::cast));
+        // 列 1: Status - 数值排序（状态码）
+        rowSorter.setComparator(1, Comparator.comparing((Object o) -> {
+            String s = o.toString();
+            if ("-".equals(s)) return 0;
+            try {
+                return Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }));
 
-        // 列 2: Result - 按成功/失败排序
-        rowSorter.setComparator(2, Comparator.comparing(String::toString));
+        // 列 2: Cost (ms) - 数值排序
+        rowSorter.setComparator(2, Comparator.comparingInt(Integer.class::cast));
+
+        // 列 3: Assertion - 按成功/失败排序
+        rowSorter.setComparator(3, Comparator.comparing(String::toString));
     }
 
     // 配置列宽度
     private void configureColumnWidths() {
         table.getColumnModel().getColumn(0).setPreferredWidth(300); // 接口名称
-        table.getColumnModel().getColumn(1).setPreferredWidth(100); // 耗时
-        table.getColumnModel().getColumn(1).setMaxWidth(120);
-        table.getColumnModel().getColumn(1).setMinWidth(80);
 
-        table.getColumnModel().getColumn(2).setPreferredWidth(60);  // 结果（只有 Emoji）
-        table.getColumnModel().getColumn(2).setMaxWidth(60);
-        table.getColumnModel().getColumn(2).setMinWidth(60);
+        table.getColumnModel().getColumn(1).setPreferredWidth(80);  // 状态码
+        table.getColumnModel().getColumn(1).setMaxWidth(100);
+        table.getColumnModel().getColumn(1).setMinWidth(60);
+
+        table.getColumnModel().getColumn(2).setPreferredWidth(100); // 耗时
+        table.getColumnModel().getColumn(2).setMaxWidth(120);
+        table.getColumnModel().getColumn(2).setMinWidth(80);
+
+        table.getColumnModel().getColumn(3).setPreferredWidth(60);  // 断言（只有 Emoji）
+        table.getColumnModel().getColumn(3).setMaxWidth(60);
+        table.getColumnModel().getColumn(3).setMinWidth(60);
     }
 
     private void registerListeners() {
@@ -217,7 +234,7 @@ public class PerformanceResultTablePanel extends JPanel {
 
     public void addResult(ResultNodeInfo info, boolean efficientMode) {
         if (info == null) return;
-        if (efficientMode && info.success) return;
+        if (efficientMode && info.isActuallySuccessful()) return;
 
         pendingQueue.offer(info);
     }
@@ -342,8 +359,9 @@ public class PerformanceResultTablePanel extends JPanel {
     static class ResultTableModel extends AbstractTableModel {
 
         private static final int COL_NAME = 0;
-        private static final int COL_COST = 1;
-        private static final int COL_RESULT = 2;
+        private static final int COL_STATUS = 1;
+        private static final int COL_COST = 2;
+        private static final int COL_ASSERTION = 3;
 
         private final List<ResultNodeInfo> dataList = new ArrayList<>(1024);
         private boolean dirty = false;
@@ -358,15 +376,16 @@ public class PerformanceResultTablePanel extends JPanel {
 
         @Override
         public int getColumnCount() {
-            return 3;
+            return 4;
         }
 
         @Override
         public String getColumnName(int col) {
             return switch (col) {
                 case COL_NAME -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_NAME);
+                case COL_STATUS -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_STATUS);
                 case COL_COST -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_COST);
-                case COL_RESULT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_RESULT);
+                case COL_ASSERTION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_ASSERTION);
                 default -> "";
             };
         }
@@ -376,23 +395,31 @@ public class PerformanceResultTablePanel extends JPanel {
             ResultNodeInfo r = dataList.get(row);
             return switch (col) {
                 case COL_NAME -> r.name;
+                case COL_STATUS -> r.responseCode > 0 ? String.valueOf(r.responseCode) : "-";
                 case COL_COST -> r.costMs;
-                case COL_RESULT -> formatResult(r);
+                case COL_ASSERTION -> formatAssertion(r);
                 default -> "";
             };
         }
 
-        // 格式化结果列：✅ 成功 或 ❌ 失败
-        private String formatResult(ResultNodeInfo r) {
-            return r.isActuallySuccessful() ? "✅" : "❌";
+        // 格式化断言列：✅ 通过、❌ 失败、💨 无测试
+        private String formatAssertion(ResultNodeInfo r) {
+            // 1. 如果有断言结果
+            if (r.testResults != null && !r.testResults.isEmpty()) {
+                return r.hasAssertionFailed() ? "❌" : "✅";
+            }
+
+            // 2. 无断言测试
+            return "💨";
         }
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
             return switch (columnIndex) {
                 case COL_NAME -> String.class;
-                case COL_COST -> Long.class;
-                case COL_RESULT -> String.class;
+                case COL_STATUS -> String.class;
+                case COL_COST -> Integer.class;
+                case COL_ASSERTION -> String.class;
                 default -> Object.class;
             };
         }
@@ -437,7 +464,7 @@ public class PerformanceResultTablePanel extends JPanel {
         }
     }
 
-    // 行渲染器 - 设置不同列的对齐方式
+    // 行渲染器 - 设置不同列的对齐方式和颜色
     static class ResultRowRenderer extends DefaultTableCellRenderer {
 
         @Override
@@ -450,15 +477,26 @@ public class PerformanceResultTablePanel extends JPanel {
             // 获取列索引
             int modelColumn = table.convertColumnIndexToModel(column);
 
-            // 设置对齐方式
+            // 重置前景色为默认值（避免颜色污染其他列）
+            if (!isSelected) {
+                setForeground(table.getForeground());
+            }
+
+            // 设置对齐方式和颜色
             switch (modelColumn) {
                 case 0: // 接口名称 - 左对齐
                     setHorizontalAlignment(SwingConstants.LEFT);
                     break;
-                case 1: // 耗时 - 右对齐
+                case 1: // 状态码 - 居中对齐，带颜色
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    if (!isSelected && value != null && !"-".equals(value)) {
+                        applyStatusColors(this, value.toString());
+                    }
+                    break;
+                case 2: // 耗时 - 右对齐
                     setHorizontalAlignment(SwingConstants.RIGHT);
                     break;
-                case 2: // 结果 - 居中
+                case 3: // 断言 - 居中
                     setHorizontalAlignment(SwingConstants.CENTER);
                     break;
                 default: // 其他列 - 左对齐
@@ -467,6 +505,33 @@ public class PerformanceResultTablePanel extends JPanel {
             }
 
             return this;
+        }
+
+        /**
+         * 根据状态码应用颜色 - 参考 FunctionalRunnerTableModel
+         */
+        private void applyStatusColors(Component c, String status) {
+            Color foreground = ModernColors.TEXT_PRIMARY;
+
+            try {
+                int code = Integer.parseInt(status);
+                if (code >= 200 && code < 300) {
+                    // 成功：使用绿色
+                    foreground = ModernColors.SUCCESS_DARK;
+                } else if (code >= 400 && code < 500) {
+                    // 客户端错误：使用警告色
+                    foreground = ModernColors.WARNING_DARKER;
+                } else if (code >= 500) {
+                    // 服务器错误：使用错误色
+                    foreground = ModernColors.ERROR_DARKER;
+                }
+            } catch (NumberFormatException e) {
+                // 非数字状态（如错误消息）
+                foreground = ModernColors.ERROR_DARK;
+            }
+
+            // 只设置文字颜色
+            c.setForeground(foreground);
         }
     }
 }

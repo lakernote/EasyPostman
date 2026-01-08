@@ -2,6 +2,7 @@ package com.laker.postman.common.component.table;
 
 import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.util.FontsUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -29,15 +30,9 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
-    /**
-     * Flag to track if dragging is in progress
-     */
+    @Getter
     private boolean isDragging = false;
 
-    /**
-     * Flag to suppress auto-append during drag operations
-     */
-    private boolean suppressAutoDuringDrag = false;
 
     /**
      * 构造函数，创建默认的环境变量表格面板
@@ -117,7 +112,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
 
         // 传递回调函数，在拖拽期间控制自动补空行和编辑状态
         table.setTransferHandler(new ImprovedTableRowTransferHandler(tableModel, dragging -> {
-            suppressAutoDuringDrag = dragging;
             isDragging = dragging;
             log.debug("Drag state changed: {}", dragging);
         }));
@@ -176,7 +170,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
         super.initializeTableUI();
 
         // 设置 Drag+Enable 合并列的宽度（增加宽度以提供更好的视觉效果）
-        setEnabledColumnWidth(60);
+        setEnabledColumnWidth(50);
         setDeleteColumnWidth(40);
 
         // Setup Tab key navigation to move between columns in the same row
@@ -206,14 +200,15 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
         private final JCheckBox checkBox;
 
         public DragEnableRenderer() {
-            setLayout(new BorderLayout(0, 0)); // 减少间距从 2 到 0
+            // 使用 FlowLayout 让拖动手柄和复选框更紧凑
+            setLayout(new FlowLayout(FlowLayout.CENTER, 2, 0)); // 水平间距设为 2，垂直间距为 0
             setOpaque(true);
 
             // Drag handle label - 加粗的拖拽图标
             dragLabel = new JLabel("⋮⋮");
             dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20
+            dragLabel.setPreferredSize(new Dimension(16, 28)); // 宽度从 20 减到 16，更紧凑
             dragLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             // Checkbox
@@ -221,8 +216,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
             checkBox.setHorizontalAlignment(SwingConstants.CENTER);
             checkBox.setOpaque(false);
 
-            add(dragLabel, BorderLayout.WEST);
-            add(checkBox, BorderLayout.CENTER);
+            add(dragLabel);
+            add(checkBox);
         }
 
         @Override
@@ -255,7 +250,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
         public DragEnableEditor() {
             super(new JCheckBox());
 
-            panel = new JPanel(new BorderLayout(0, 0)); // 减少间距从 2 到 0
+            // 使用 FlowLayout 让拖动手柄和复选框更紧凑
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0)); // 水平间距设为 2，垂直间距为 0
             panel.setOpaque(true);
 
             // Drag handle label - 加粗的拖拽图标
@@ -263,7 +259,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
             dragLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4)); // 比标准字体大4号并加粗
             dragLabel.setForeground(new Color(100, 100, 100)); // 颜色稍深一点更明显
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            dragLabel.setPreferredSize(new Dimension(20, 28)); // 宽度从25减到20
+            dragLabel.setPreferredSize(new Dimension(16, 28)); // 宽度从 20 减到 16，更紧凑
             dragLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             // Checkbox
@@ -276,8 +272,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
                 fireEditingStopped();
             });
 
-            panel.add(dragLabel, BorderLayout.WEST);
-            panel.add(checkBox, BorderLayout.CENTER);
+            panel.add(dragLabel);
+            panel.add(checkBox);
 
             // Add mouse listener to handle clicks on drag area vs checkbox area
             panel.addMouseListener(new MouseAdapter() {
@@ -626,12 +622,4 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     }
 
 
-    /**
-     * Check if table is currently in dragging state
-     *
-     * @return true if dragging is in progress
-     */
-    public boolean isDragging() {
-        return isDragging;
-    }
 }

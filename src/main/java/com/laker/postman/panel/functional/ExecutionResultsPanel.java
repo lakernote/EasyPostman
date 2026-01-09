@@ -151,7 +151,8 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private JButton createIconButton(String iconPath, String tooltip) {
-        JButton button = new JButton(new FlatSVGIcon(iconPath, 14, 14));
+        JButton button = new JButton(new FlatSVGIcon(iconPath, 14, 14)
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
         button.setToolTipText(tooltip);
         button.setPreferredSize(new Dimension(24, 24));
         button.setContentAreaFilled(false);
@@ -470,7 +471,7 @@ public class ExecutionResultsPanel extends JPanel {
             respPane.setEditable(false);
             respPane.setText(HttpHtmlRenderer.renderResponse(request.getResponse()));
             respPane.setCaretPosition(0);
-            detailTabs.addTab("Response", new FlatSVGIcon("icons/check.svg", 16, 16), new JScrollPane(respPane));
+            detailTabs.addTab("Response", new FlatSVGIcon("icons/check.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(respPane));
         }
 
         // Timing & Event Info
@@ -480,14 +481,14 @@ public class ExecutionResultsPanel extends JPanel {
             timingPane.setEditable(false);
             timingPane.setText(HttpHtmlRenderer.renderTimingInfo(request.getResponse()));
             timingPane.setCaretPosition(0);
-            detailTabs.addTab("Timing", new FlatSVGIcon("icons/time.svg", 16, 16), new JScrollPane(timingPane));
+            detailTabs.addTab("Timing", new FlatSVGIcon("icons/time.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(timingPane));
 
             JEditorPane eventInfoPane = new JEditorPane();
             eventInfoPane.setContentType(TEXT_HTML);
             eventInfoPane.setEditable(false);
             eventInfoPane.setText(HttpHtmlRenderer.renderEventInfo(request.getResponse()));
             eventInfoPane.setCaretPosition(0);
-            detailTabs.addTab("Event Info", new FlatSVGIcon("icons/detail.svg", 16, 16), new JScrollPane(eventInfoPane));
+            detailTabs.addTab("Event Info", new FlatSVGIcon("icons/detail.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(eventInfoPane));
         }
 
         // Tests
@@ -497,7 +498,7 @@ public class ExecutionResultsPanel extends JPanel {
             testsPane.setEditable(false);
             testsPane.setText(HttpHtmlRenderer.renderTestResults(request.getTestResults()));
             testsPane.setCaretPosition(0);
-            detailTabs.addTab("Tests", new FlatSVGIcon("icons/code.svg", 16, 16), new JScrollPane(testsPane));
+            detailTabs.addTab("Tests", new FlatSVGIcon("icons/code.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(testsPane));
         }
 
         // 恢复上次选中的 tab
@@ -573,7 +574,7 @@ public class ExecutionResultsPanel extends JPanel {
                 renderRequestNode(requestData, sel);
             } else {
                 // 根节点
-                setIcon(new FlatSVGIcon("icons/history.svg", 16, 16));
+                setIcon(new FlatSVGIcon("icons/history.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
             }
 
             return this;
@@ -600,9 +601,9 @@ public class ExecutionResultsPanel extends JPanel {
                 }
             } else {
                 // 无测试：默认图标
-                setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
+                setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
                 if (!selected) {
-                    setForeground(ModernColors.TEXT_SECONDARY);
+                    setForeground(ModernColors.getTextSecondary());
                 }
             }
         }
@@ -615,15 +616,15 @@ public class ExecutionResultsPanel extends JPanel {
             if (skippedText.equals(status)) {
                 // 跳过状态：灰色图标和文字
                 setIcon(new FlatSVGIcon("icons/info.svg", 16, 16));
-                setForegroundIfNotSelected(ModernColors.TEXT_HINT, selected);
+                setForegroundIfNotSelected(ModernColors.getTextHint(), selected);
             } else if (assertion == null) {
                 // 未执行：灰色图标和文字
                 setIcon(new FlatSVGIcon(ExecutionResultsPanel.ICON_HTTP, 16, 16));
-                setForegroundIfNotSelected(ModernColors.TEXT_DISABLED, selected);
+                setForegroundIfNotSelected(ModernColors.getTextDisabled(), selected);
             } else if (AssertionResult.NO_TESTS.equals(assertion)) {
                 // 无测试：蓝色图标和文字
                 setIcon(new FlatSVGIcon("icons/nocheck.svg", 16, 16));
-                setForegroundIfNotSelected(ModernColors.TEXT_SECONDARY, selected);
+                setForegroundIfNotSelected(ModernColors.getTextSecondary(), selected);
             } else if (AssertionResult.PASS.equals(assertion)) {
                 // 通过：绿色图标和文字
                 setIcon(new FlatSVGIcon("icons/pass.svg", 16, 16));
@@ -635,7 +636,7 @@ public class ExecutionResultsPanel extends JPanel {
             } else {
                 // 其他状态：默认图标
                 setIcon(new FlatSVGIcon(ExecutionResultsPanel.ICON_HTTP, 16, 16));
-                setForegroundIfNotSelected(ModernColors.TEXT_SECONDARY, selected);
+                setForegroundIfNotSelected(ModernColors.getTextSecondary(), selected);
             }
         }
 
@@ -741,7 +742,7 @@ public class ExecutionResultsPanel extends JPanel {
         table.setRowHeight(28);
         table.setGridColor(ModernColors.TABLE_GRID_COLOR);
         table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
-        table.setSelectionForeground(ModernColors.TEXT_PRIMARY);
+        table.setSelectionForeground(ModernColors.getTextPrimary());
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -823,12 +824,12 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private void applyStatusColors(java.awt.Component c, String status) {
-        java.awt.Color foreground = ModernColors.TEXT_PRIMARY;
+        java.awt.Color foreground = ModernColors.getTextPrimary();
 
         // 检查是否是"跳过"状态
         String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
         if (skippedText.equals(status)) {
-            foreground = ModernColors.TEXT_HINT;
+            foreground = ModernColors.getTextHint();
         } else {
             try {
                 int code = Integer.parseInt(status);
@@ -885,12 +886,12 @@ public class ExecutionResultsPanel extends JPanel {
                     if (skippedText.equals(status)) {
                         // status是跳过状态
                         setText("💨");
-                        c.setForeground(ModernColors.TEXT_HINT);
+                        c.setForeground(ModernColors.getTextHint());
                     } else if (value instanceof AssertionResult assertionResult) {
                         setText(assertionResult.getDisplayValue());
                     }
                 } else {
-                    c.setForeground(ModernColors.TEXT_DISABLED);
+                    c.setForeground(ModernColors.getTextDisabled());
                 }
                 setHorizontalAlignment(CENTER);
                 return c;

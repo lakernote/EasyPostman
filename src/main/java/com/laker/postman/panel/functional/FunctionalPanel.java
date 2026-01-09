@@ -593,12 +593,12 @@ public class FunctionalPanel extends SingletonBasePanel {
      * 根据状态码应用颜色 - 只设置文字颜色
      */
     private void applyStatusColors(Component c, String status) {
-        Color foreground = ModernColors.TEXT_PRIMARY;
+        Color foreground = ModernColors.getTextPrimary();
 
         // 检查是否是"跳过"状态
         String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
         if (skippedText.equals(status)) {
-            foreground = ModernColors.TEXT_HINT;
+            foreground = ModernColors.getTextHint();
         } else {
             // 尝试解析状态码
             try {
@@ -647,12 +647,12 @@ public class FunctionalPanel extends SingletonBasePanel {
                     // 检查状态列是否为"跳过"（status是跳过，assertion会是描述信息）
                     if (skippedText.equals(status)) {
                         setText("💨"); // 跳过符号
-                        c.setForeground(ModernColors.TEXT_HINT);
+                        c.setForeground(ModernColors.getTextHint());
                     } else if (value instanceof AssertionResult assertionResult) {
                         setText(assertionResult.getDisplayValue());
                     }
                 } else {
-                    c.setForeground(ModernColors.TEXT_DISABLED);
+                    c.setForeground(ModernColors.getTextDisabled());
                 }
 
                 setHorizontalAlignment(CENTER);

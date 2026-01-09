@@ -5,6 +5,7 @@ import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Setter;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -25,6 +26,7 @@ public class ModernProgressDialog {
     private final JLabel speedLabel;
     private final JButton cancelButton;
 
+    @Setter
     private Runnable onCancelListener;
 
     public ModernProgressDialog(JFrame parent) {
@@ -108,7 +110,7 @@ public class ModernProgressDialog {
         // 大小信息
         JLabel sizeTitle = new JLabel(I18nUtil.isChinese() ? "已下载" : "Downloaded");
         sizeTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        sizeTitle.setForeground(ModernColors.TEXT_HINT);
+        sizeTitle.setForeground(ModernColors.getTextHint());
         panel.add(sizeTitle);
 
         sizeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
@@ -118,7 +120,7 @@ public class ModernProgressDialog {
         // 速度信息
         JLabel speedTitle = new JLabel(I18nUtil.isChinese() ? "下载速度" : "Speed");
         speedTitle.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        speedTitle.setForeground(ModernColors.TEXT_HINT);
+        speedTitle.setForeground(ModernColors.getTextHint());
         panel.add(speedTitle);
 
         speedLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
@@ -131,8 +133,7 @@ public class ModernProgressDialog {
     private JButton createCancelButton() {
         JButton button = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
-        button.setForeground(ModernColors.TEXT_SECONDARY);
-        button.setBackground(ModernColors.BG_LIGHT);
+        button.setForeground(ModernColors.getTextSecondary());
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -194,10 +195,6 @@ public class ModernProgressDialog {
             return String.format("%.1f KB/s", speed / 1024.0);
         }
         return String.format("%.0f B/s", speed);
-    }
-
-    public void setOnCancelListener(Runnable listener) {
-        this.onCancelListener = listener;
     }
 
     public void show() {

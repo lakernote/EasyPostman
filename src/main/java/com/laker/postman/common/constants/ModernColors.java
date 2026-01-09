@@ -258,32 +258,6 @@ public final class ModernColors {
         return new Color(248, 250, 252);
     }
 
-    // ==================== 保留旧的常量以保持向后兼容 ====================
-
-    /**
-     * @deprecated 请使用 getTextPrimary() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color TEXT_PRIMARY = new Color(15, 23, 42);
-
-    /**
-     * @deprecated 请使用 getTextSecondary() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color TEXT_SECONDARY = new Color(51, 65, 85);
-
-    /**
-     * @deprecated 请使用 getTextHint() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color TEXT_HINT = new Color(100, 116, 139);
-
-    /**
-     * @deprecated 请使用 getTextDisabled() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color TEXT_DISABLED = new Color(148, 163, 184);
-
     // ==================== 中性色系 - 背景 ====================
 
     /**

@@ -507,7 +507,7 @@ public class NotificationUtil {
         private JButton createCloseButton() {
             JButton button = new JButton("✕");
             button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +4)); // 比标准字体大4号
-            button.setForeground(ModernColors.TEXT_SECONDARY);
+            button.setForeground(ModernColors.getTextSecondary());
             button.setContentAreaFilled(false);
             button.setBorderPainted(false);
             button.setFocusPainted(false);
@@ -522,7 +522,7 @@ public class NotificationUtil {
 
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    button.setForeground(ModernColors.TEXT_SECONDARY);
+                    button.setForeground(ModernColors.getTextSecondary());
                 }
 
                 @Override

@@ -419,7 +419,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                 // 背景
                 if (isPrimary) {
                     if (!isEnabled()) {
-                        g2.setColor(ModernColors.TEXT_DISABLED);
+                        g2.setColor(ModernColors.getTextDisabled());
                     } else if (getModel().isPressed()) {
                         g2.setColor(ModernColors.PRIMARY_DARKER);
                     } else if (getModel().isRollover()) {

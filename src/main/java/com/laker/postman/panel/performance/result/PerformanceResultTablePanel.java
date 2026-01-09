@@ -511,7 +511,7 @@ public class PerformanceResultTablePanel extends JPanel {
          * 根据状态码应用颜色 - 参考 FunctionalRunnerTableModel
          */
         private void applyStatusColors(Component c, String status) {
-            Color foreground = ModernColors.TEXT_PRIMARY;
+            Color foreground = ModernColors.getTextPrimary();
 
             try {
                 int code = Integer.parseInt(status);

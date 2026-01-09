@@ -373,7 +373,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
                     label.setForeground(ModernColors.PRIMARY);
                     label.setFont(boldFont);
                 } else {
-                    label.setForeground(ModernColors.TEXT_SECONDARY);
+                    label.setForeground(ModernColors.getTextSecondary());
                     label.setFont(normalFont);
                 }
                 break;
@@ -412,7 +412,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private JTabbedPane createModernTabbedPane() {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
-        pane.setForeground(ModernColors.TEXT_PRIMARY);
+        pane.setForeground(ModernColors.getTextPrimary());
         pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, 14));
 
         // 自定义标签页UI
@@ -542,7 +542,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 titleLabel.setForeground(ModernColors.PRIMARY);
             } else {
                 titleLabel.setFont(normalFont);
-                titleLabel.setForeground(ModernColors.TEXT_SECONDARY);
+                titleLabel.setForeground(ModernColors.getTextSecondary());
             }
             titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 

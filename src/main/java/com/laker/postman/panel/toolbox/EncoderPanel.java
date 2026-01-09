@@ -1,5 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +61,8 @@ public class EncoderPanel extends JPanel {
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        inputArea.setBackground(Color.WHITE);
+        inputArea.setBackground(ModernColors.getInputBackgroundColor());
+        inputArea.setForeground(ModernColors.getTextPrimary());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
 
         // 输出区域
@@ -70,6 +72,8 @@ public class EncoderPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
+        outputArea.setBackground(ModernColors.getBackgroundColor());
+        outputArea.setForeground(ModernColors.getTextPrimary());
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);

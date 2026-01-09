@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +79,8 @@ public class CryptoPanel extends JPanel {
         row2.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_KEY) + ":"));
         keyField = new FlatTextField();
         keyField.setColumns(35);
-        keyField.setBackground(Color.WHITE);
+        keyField.setBackground(ModernColors.getInputBackgroundColor());
+        keyField.setForeground(ModernColors.getTextPrimary());
         row2.add(keyField);
 
         JButton generateKeyBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_GENERATE_KEY));
@@ -94,7 +96,8 @@ public class CryptoPanel extends JPanel {
         ivField = new FlatTextField();
         ivField.setColumns(35);
         ivField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_IV_PLACEHOLDER));
-        ivField.setBackground(Color.WHITE);
+        ivField.setBackground(ModernColors.getInputBackgroundColor());
+        ivField.setForeground(ModernColors.getTextPrimary());
         ivPanel.add(ivField);
 
         JButton generateIvBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_GENERATE_IV));
@@ -157,7 +160,8 @@ public class CryptoPanel extends JPanel {
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        inputArea.setBackground(Color.WHITE);
+        inputArea.setBackground(ModernColors.getInputBackgroundColor());
+        inputArea.setForeground(ModernColors.getTextPrimary());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
 
         // 输出区域
@@ -169,6 +173,8 @@ public class CryptoPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
+        outputArea.setBackground(ModernColors.getBackgroundColor());
+        outputArea.setForeground(ModernColors.getTextPrimary());
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);

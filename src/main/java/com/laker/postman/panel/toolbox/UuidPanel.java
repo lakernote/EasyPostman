@@ -1,5 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -205,11 +206,12 @@ public class UuidPanel extends JPanel {
         uuidArea.setLineWrap(true);
         uuidArea.setWrapStyleWord(false);
         uuidArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
-        uuidArea.setBackground(new Color(250, 250, 250));
+        uuidArea.setBackground(ModernColors.getBackgroundColor());
+        uuidArea.setForeground(ModernColors.getTextPrimary());
         uuidArea.setMargin(new Insets(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(uuidArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderMediumColor()));
         centerPanel.add(scrollPane, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);
@@ -221,12 +223,12 @@ public class UuidPanel extends JPanel {
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION_INFO));
         infoLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
-        infoLabel.setForeground(new Color(100, 100, 100));
+        infoLabel.setForeground(ModernColors.getTextSecondary());
         infoPanel.add(infoLabel);
 
         statusLabel = new JLabel("");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusLabel.setForeground(new Color(60, 150, 60));
+        statusLabel.setForeground(ModernColors.SUCCESS);
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         statusPanel.add(statusLabel);
 
@@ -325,13 +327,14 @@ public class UuidPanel extends JPanel {
         parseArea = new JTextArea();
         parseArea.setEditable(false);
         parseArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        parseArea.setBackground(new Color(250, 250, 250));
+        parseArea.setBackground(ModernColors.getBackgroundColor());
+        parseArea.setForeground(ModernColors.getTextPrimary());
         parseArea.setMargin(new Insets(10, 10, 10, 10));
         parseArea.setLineWrap(true);
         parseArea.setWrapStyleWord(true);
 
         JScrollPane scrollPane = new JScrollPane(parseArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderMediumColor()));
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 解析按钮事件

@@ -1,5 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +53,11 @@ public class DiffPanel extends JPanel {
         originalPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_ORIGINAL) + ":"), BorderLayout.NORTH);
         originalArea = new JTextArea();
         originalArea.setLineWrap(true);
-        originalArea.setBackground(Color.WHITE);
+        originalArea.setWrapStyleWord(true);
+        originalArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        originalArea.setBackground(ModernColors.getInputBackgroundColor());
+        originalArea.setForeground(ModernColors.getTextPrimary());
+        originalArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         originalPanel.add(new JScrollPane(originalArea), BorderLayout.CENTER);
 
         // 修改后文本
@@ -59,7 +65,11 @@ public class DiffPanel extends JPanel {
         modifiedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_MODIFIED) + ":"), BorderLayout.NORTH);
         modifiedArea = new JTextArea();
         modifiedArea.setLineWrap(true);
-        modifiedArea.setBackground(Color.WHITE);
+        modifiedArea.setWrapStyleWord(true);
+        modifiedArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        modifiedArea.setBackground(ModernColors.getInputBackgroundColor());
+        modifiedArea.setForeground(ModernColors.getTextPrimary());
+        modifiedArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         modifiedPanel.add(new JScrollPane(modifiedArea), BorderLayout.CENTER);
 
         topSplitPane.setLeftComponent(originalPanel);
@@ -75,6 +85,10 @@ public class DiffPanel extends JPanel {
         resultPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_RESULT) + ":"), BorderLayout.NORTH);
         resultPane = new JTextPane();
         resultPane.setEditable(false);
+        resultPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        resultPane.setBackground(ModernColors.getBackgroundColor());
+        resultPane.setForeground(ModernColors.getTextPrimary());
+        resultPane.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         resultPanel.add(new JScrollPane(resultPane), BorderLayout.CENTER);
 
         mainSplitPane.setBottomComponent(resultPanel);

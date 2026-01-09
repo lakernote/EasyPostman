@@ -1,5 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -151,7 +152,8 @@ public class HashPanel extends JPanel {
         inputArea.setWrapStyleWord(true);
         inputArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         inputArea.setMargin(new Insets(5, 5, 5, 5));
-        inputArea.setBackground(Color.WHITE);
+        inputArea.setBackground(ModernColors.getInputBackgroundColor());
+        inputArea.setForeground(ModernColors.getTextPrimary());
 
         // 添加实时计算功能
         inputArea.getDocument().addDocumentListener(new DocumentListener() {
@@ -184,6 +186,8 @@ public class HashPanel extends JPanel {
         outputArea.setEditable(false);
         outputArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         outputArea.setMargin(new Insets(5, 5, 5, 5));
+        outputArea.setBackground(ModernColors.getBackgroundColor());
+        outputArea.setForeground(ModernColors.getTextPrimary());
 
         JScrollPane outputScroll = new JScrollPane(outputArea);
         outputPanel.add(outputScroll, BorderLayout.CENTER);
@@ -201,7 +205,7 @@ public class HashPanel extends JPanel {
 
         statusLabel = new JLabel(" ");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setForeground(ModernColors.getTextSecondary());
 
         statusPanel.add(statusLabel, BorderLayout.WEST);
 

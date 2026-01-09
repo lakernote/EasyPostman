@@ -273,7 +273,8 @@ public class PerformancePanel extends SingletonBasePanel {
         progressLabel = new JLabel();
         progressLabel.setText("0/0");
         progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD)); // 设置粗体
-        progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)); // 使用FlatLaf SVG图标
+        progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")))); // 使用FlatLaf SVG图标
         progressLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
         progressPanel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROGRESS_TOOLTIP));
         progressPanel.add(progressLabel);
@@ -338,7 +339,7 @@ public class PerformancePanel extends SingletonBasePanel {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftPanel.setOpaque(false);
 
-        JLabel infoIcon = new JLabel(new FlatSVGIcon("icons/info.svg", 16, 16));
+        JLabel infoIcon = new JLabel(new FlatSVGIcon("icons/info.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
         leftPanel.add(infoIcon);
 
         JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));
@@ -353,7 +354,7 @@ public class PerformancePanel extends SingletonBasePanel {
         rightPanel.setOpaque(false);
 
         JButton refreshCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT));
-        refreshCurrentBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 14, 14));
+        refreshCurrentBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 14, 14).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
         refreshCurrentBtn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         refreshCurrentBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP));
         refreshCurrentBtn.addActionListener(e -> refreshCurrentRequest());

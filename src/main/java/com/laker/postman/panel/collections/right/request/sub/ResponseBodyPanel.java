@@ -7,6 +7,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FileExtensionUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.JsonUtil;
@@ -75,6 +76,9 @@ public class ResponseBodyPanel extends JPanel {
 
         // 设置字体 - 使用用户设置的字体大小
         updateEditorFont();
+
+        // 加载编辑器主题 - 支持亮色和暗色主题自适应
+        EditorThemeUtil.loadTheme(responseBodyPane);
 
         scrollPane = new RTextScrollPane(responseBodyPane);
         scrollPane.setLineNumbersEnabled(true); // 显示行号

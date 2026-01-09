@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
+import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -11,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
@@ -20,8 +20,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
-import java.io.InputStream;
 
 
 @Slf4j
@@ -163,10 +161,9 @@ public class ScriptPanel extends JPanel {
         area.setPaintTabLines(true);  // 显示缩进参考线
         area.setMarkOccurrences(true);  // 高亮显示相同的标识符
         area.setTabSize(4);  // 设置 Tab 为 4 个空格
-        loadEditorTheme(area);
+        EditorThemeUtil.loadTheme(area);  // 加载主题
         addAutoCompletion(area);
     }
-
 
     /**
      * 打开代码片段对话框
@@ -244,21 +241,6 @@ public class ScriptPanel extends JPanel {
         postscriptArea.getDocument().addDocumentListener(listener);
     }
 
-
-    private void loadEditorTheme(RSyntaxTextArea area) {
-        // 尝试加载主题文件
-        // 这里使用 IntelliJ IDEA 风格的主题
-        // dark.xml
-        // vs.xml
-        try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
-            if (in != null) {
-                Theme theme = Theme.load(in);
-                theme.apply(area);
-            }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
 
     /**
      * 为 RSyntaxTextArea 添加自动补全、悬浮提示和代码片段

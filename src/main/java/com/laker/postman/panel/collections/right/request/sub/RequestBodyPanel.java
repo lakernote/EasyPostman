@@ -13,7 +13,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
@@ -27,7 +26,6 @@ import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.InputStream;
 import java.util.Map;
 
 /**
@@ -252,14 +250,8 @@ public class RequestBodyPanel extends JPanel {
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
 
-        // 设置主题
-        try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
-            if (in != null) {
-                Theme theme = Theme.load(in);
-                theme.apply(bodyArea);
-            }
-        } catch (Exception ignored) {
-        }
+        // 加载编辑器主题 - 支持亮色和暗色主题自适应
+        EditorThemeUtil.loadTheme(bodyArea);
 
         // 设置字体 - 使用用户设置的字体大小（必须在主题应用之后，避免被主题覆盖）
         updateEditorFont();

@@ -36,6 +36,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     // Constants
     private static final String ICON_LABEL_NAME = "iconLabel";
     private static final String TITLE_LABEL_NAME = "titleLabel";
+    private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
 
     @Getter
     private JTabbedPane tabbedPane;
@@ -163,7 +164,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建侧边栏展开/收起按钮
      */
     private void createSidebarToggleLabel() {
-        sidebarToggleLabel = new JLabel(new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20));
+        FlatSVGIcon toggleIcon = new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20);
+        toggleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        sidebarToggleLabel = new JLabel(toggleIcon);
         sidebarToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);
@@ -194,7 +197,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createConsoleLabel() {
         consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-        consoleLabel.setIcon(new FlatSVGIcon("icons/console.svg", 20, 20));
+        FlatSVGIcon consoleIcon = new FlatSVGIcon("icons/console.svg", 20, 20);
+        consoleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        consoleLabel.setIcon(consoleIcon);
         consoleLabel.setFont(bottomBarFont); // 使用缓存的字体
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
@@ -213,7 +218,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createCookieLabel() {
         cookieLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
-        cookieLabel.setIcon(new FlatSVGIcon("icons/cookie.svg", 20, 20));
+        FlatSVGIcon cookieIcon = new FlatSVGIcon("icons/cookie.svg", 20, 20);
+        cookieLabel.setIcon(cookieIcon);
         cookieLabel.setFont(bottomBarFont); // 使用缓存的字体
         cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
@@ -250,7 +256,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(normalFont); // 使用缓存的字体（与normalFont共用）
-        versionLabel.setForeground(ModernColors.TEXT_SECONDARY);
         versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
         versionLabel.setToolTipText("EasyPostman version");
     }

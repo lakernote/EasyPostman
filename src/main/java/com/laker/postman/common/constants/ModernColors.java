@@ -324,28 +324,6 @@ public final class ModernColors {
      */
     public static final Color BORDER_MEDIUM = new Color(203, 213, 225);
 
-    /**
-     * 边框深色 - Slate-400
-     */
-    public static final Color BORDER_DARK = new Color(148, 163, 184);
-
-    // ==================== 阴影色 ====================
-
-    /**
-     * 阴影浅色
-     */
-    public static final Color SHADOW_LIGHT = new Color(15, 23, 42, 8);
-
-    /**
-     * 阴影中色
-     */
-    public static final Color SHADOW_MEDIUM = new Color(15, 23, 42, 15);
-
-    /**
-     * 阴影深色
-     */
-    public static final Color SHADOW_DARK = new Color(15, 23, 42, 25);
-
     // ==================== 特殊效果色 ====================
 
     /**
@@ -358,16 +336,6 @@ public final class ModernColors {
      */
     public static final Color SELECTED_BG = new Color(224, 231, 255);
 
-    /**
-     * 焦点边框
-     */
-    public static final Color FOCUS_BORDER = PRIMARY;
-
-    /**
-     * 分隔线
-     */
-    public static final Color DIVIDER = new Color(226, 232, 240);
-
     // ==================== EasyPostman 应用颜色（从 EasyPostManColors 迁移） ====================
 
     // 基础颜色
@@ -377,26 +345,18 @@ public final class ModernColors {
     public static final Color PANEL_BACKGROUND = new Color(245, 247, 250);
 
     /**
-     * 空值列配色
+     * 获取空单元格背景色 - 主题适配
+     * 亮色主题：白色（清晰区分）
+     * 暗色主题：比有值单元格稍亮的颜色（便于区分空单元格）
      */
-    public static final Color EMPTY_CELL = Color.WHITE;
-
-    // 菜单相关颜色
-    /**
-     * 菜单背景色
-     */
-    public static final Color MENU_BACKGROUND = new Color(242, 242, 242);
-
-    /**
-     * 选中背景色
-     */
-    public static final Color SELECTION_BACKGROUND = new Color(220, 230, 245);
-
-    // 主题色彩
-    /**
-     * 强调色/主色调
-     */
-    public static final Color ACCENT_COLOR = new Color(33, 150, 243);
+    public static Color getEmptyCellBackground() {
+        if (isDarkTheme()) {
+            return new Color(85, 87, 89);
+        } else {
+            // 亮色主题：保持白色
+            return Color.WHITE;
+        }
+    }
 
     // 表格相关颜色
     /**

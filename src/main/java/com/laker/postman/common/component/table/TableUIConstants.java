@@ -72,7 +72,7 @@ public class TableUIConstants {
         } else if (isHovered) {
             return HOVER_COLOR;
         } else if (isEmpty) {
-            return ModernColors.EMPTY_CELL;
+            return ModernColors.getEmptyCellBackground();
         } else {
             return table.getBackground();
         }

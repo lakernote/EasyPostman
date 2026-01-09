@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.table;
 
 import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
@@ -16,13 +17,18 @@ public class EasyPostmanTextFieldCellRenderer extends EasyPostmanTextField imple
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         setText(value == null ? "" : value.toString());
+
         if (value == null || value.toString().isEmpty()) {
-            setBackground(Color.WHITE);
+            // 空单元格：使用主题适配的空单元格背景色（有区分度）
+            setBackground(ModernColors.getEmptyCellBackground());
         } else if (isSelected) {
+            // 选中状态：使用选中背景色
             setBackground(table.getSelectionBackground());
         } else {
+            // 有值且非选中：使用表格背景色
             setBackground(table.getBackground());
         }
+
         return this;
     }
 }

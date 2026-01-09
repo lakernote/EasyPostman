@@ -60,6 +60,7 @@ public class ResponseBodyPanel extends JPanel {
     private static final String DEFAULT_FILE_NAME = "downloaded_file";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String SKIP_AUTO_FORMAT_MESSAGE = " Skip auto-format for large response.";
+    private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
 
 
     private final JLabel sizeWarningLabel;
@@ -100,27 +101,45 @@ public class ResponseBodyPanel extends JPanel {
         // 右侧搜索区
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         searchField = new SearchTextField();
-        prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", ICON_SIZE, ICON_SIZE));
+
+        FlatSVGIcon prevIcon = new FlatSVGIcon("icons/arrow-up.svg", ICON_SIZE, ICON_SIZE);
+        prevIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        prevButton = new JButton(prevIcon);
         prevButton.setToolTipText("Previous");
-        nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", ICON_SIZE, ICON_SIZE));
+
+        FlatSVGIcon nextIcon = new FlatSVGIcon("icons/arrow-down.svg", ICON_SIZE, ICON_SIZE);
+        nextIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        nextButton = new JButton(nextIcon);
         nextButton.setToolTipText("Next");
+
         rightPanel.add(searchField);
         rightPanel.add(prevButton);
         rightPanel.add(nextButton);
-        wrapButton = new JToggleButton(new FlatSVGIcon("icons/wrap.svg", ICON_SIZE, ICON_SIZE));
+
+        FlatSVGIcon wrapIcon = new FlatSVGIcon("icons/wrap.svg", ICON_SIZE, ICON_SIZE);
+        wrapIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        wrapButton = new JToggleButton(wrapIcon);
         wrapButton.setToolTipText("Toggle Line Wrap");
         wrapButton.setSelected(false); // 默认不启用换行
         rightPanel.add(wrapButton);
-        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", ICON_SIZE, ICON_SIZE));
+
+        FlatSVGIcon formatIcon = new FlatSVGIcon("icons/format.svg", ICON_SIZE, ICON_SIZE);
+        formatIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        formatButton = new JButton(formatIcon);
         formatButton.setToolTipText("Format");
         rightPanel.add(formatButton);
-        downloadButton = new JButton(new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE));
+
+        FlatSVGIcon downloadIcon = new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE);
+        downloadIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        downloadButton = new JButton(downloadIcon);
         downloadButton.setToolTipText("Download");
         rightPanel.add(downloadButton);
 
         // 只有 HTTP 请求才显示保存响应按钮，且放在最后面
         if (enableSaveButton) {
-            saveResponseButton = new JButton(new FlatSVGIcon("icons/save.svg", ICON_SIZE, ICON_SIZE));
+            FlatSVGIcon saveIcon = new FlatSVGIcon("icons/save.svg", ICON_SIZE, ICON_SIZE);
+            saveIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+            saveResponseButton = new JButton(saveIcon);
             saveResponseButton.setToolTipText("Save Response");
             rightPanel.add(saveResponseButton);
         }

@@ -161,8 +161,10 @@ public final class MessageKeys {
     public static final String TAB_NETWORK_LOG = "tab.network_log";
     public static final String TAB_REQUEST_HEADERS = "tab.request_headers";
     public static final String TAB_REQUEST_BODY = "tab.request_body";
+    public static final String TAB_REQUEST_DETAILS = "tab.request_details";
     public static final String TAB_RESPONSE_HEADERS = "tab.response_headers";
     public static final String TAB_RESPONSE_BODY = "tab.response_body";
+    public static final String TAB_RESPONSE_DETAILS = "tab.response_details";
     public static final String TAB_CLOSE_OTHERS = "tab.close_others";
     public static final String TAB_CLOSE_ALL = "tab.close_all";
     public static final String TAB_UNSAVED_CHANGES_SAVE_CURRENT = "tab.unsaved_changes.save_current";

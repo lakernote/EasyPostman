@@ -1,5 +1,11 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -10,11 +16,14 @@ import javax.swing.text.StyledDocument;
 import java.awt.*;
 
 /**
- * 网络日志面板，支持日志追加、清空、搜索等功能，并可显示重定向链
+ * 网络日志面板，包含网络日志、请求详情和响应详情三个子Tab
  */
 public class NetworkLogPanel extends JPanel {
     private final JTextPane logArea;
     private final StyledDocument doc;
+    private final JTabbedPane tabbedPane;
+    private final JTextPane requestDetailsPane;
+    private final JTextPane responseDetailsPane;
 
     // 性能优化配置 - 降低限制防止卡顿
     private static final int MAX_LINE_LENGTH = 500; // 单行最大长度
@@ -24,13 +33,43 @@ public class NetworkLogPanel extends JPanel {
     public NetworkLogPanel() {
         setLayout(new BorderLayout());
 
-        // 日志区
+        // 创建 TabbedPane
+        tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+
+        // 1. Network Log Tab
         logArea = new JTextPane();
         logArea.setEditable(false);
         doc = logArea.getStyledDocument();
-
         JScrollPane logScroll = new JScrollPane(logArea);
-        add(logScroll, BorderLayout.CENTER);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG), logScroll);
+
+        // 2. Request Details Tab
+        requestDetailsPane = createDetailPane();
+        JScrollPane requestDetailsScroll = new JScrollPane(requestDetailsPane);
+        requestDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        requestDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_DETAILS), requestDetailsScroll);
+
+        // 3. Response Details Tab
+        responseDetailsPane = createDetailPane();
+        JScrollPane responseDetailsScroll = new JScrollPane(responseDetailsPane);
+        responseDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        responseDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_DETAILS), responseDetailsScroll);
+
+        add(tabbedPane, BorderLayout.CENTER);
+    }
+
+    /**
+     * 创建详情面板
+     */
+    private JTextPane createDetailPane() {
+        JTextPane pane = new JTextPane();
+        pane.setEditable(false);
+        pane.setContentType("text/html");
+        pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        return pane;
     }
 
     public void appendLog(String msg, Color color, boolean bold) {
@@ -255,6 +294,46 @@ public class NetworkLogPanel extends JPanel {
                 // ignore
             }
         });
+    }
+
+    /**
+     * 更新请求详情
+     */
+    public void setRequestDetails(PreparedRequest request) {
+        if (requestDetailsPane == null) return;
+        if (request == null) {
+            requestDetailsPane.setText(I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY));
+            return;
+        }
+        String html = HttpHtmlRenderer.renderRequest(request);
+        requestDetailsPane.setText(html);
+        requestDetailsPane.setCaretPosition(0);
+    }
+
+    /**
+     * 更新响应详情
+     */
+    public void setResponseDetails(HttpResponse response) {
+        if (responseDetailsPane == null) return;
+        if (response == null) {
+            responseDetailsPane.setText(I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY));
+            return;
+        }
+        String html = HttpHtmlRenderer.renderResponse(response);
+        responseDetailsPane.setText(html);
+        responseDetailsPane.setCaretPosition(0);
+    }
+
+    /**
+     * 清空所有详情面板
+     */
+    public void clearAllDetails() {
+        if (requestDetailsPane != null) {
+            requestDetailsPane.setText("");
+        }
+        if (responseDetailsPane != null) {
+            responseDetailsPane.setText("");
+        }
     }
 }
 

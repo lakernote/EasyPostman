@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
@@ -156,6 +157,9 @@ public class ResponsePanel extends JPanel {
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
             timelinePanel = new TimelinePanel(new ArrayList<>(), null);
+
+            // 按照指定顺序添加到 cardPanel
+            // [Response Body] [Response Headers] [Tests] [Network Log] [Timing] [Log]
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
@@ -432,6 +436,7 @@ public class ResponsePanel extends JPanel {
             timelinePanel.revalidate();
             timelinePanel.repaint();
             networkLogPanel.clearLog();
+            networkLogPanel.clearAllDetails();
             sseResponsePanel.clearMessages();
         }
 
@@ -615,6 +620,24 @@ public class ResponsePanel extends JPanel {
             return responseBodyPanel.getSaveResponseButton();
         }
         return null;
+    }
+
+    /**
+     * 更新请求详情（委托给 NetworkLogPanel）
+     */
+    public void setRequestDetails(PreparedRequest request) {
+        if (networkLogPanel != null) {
+            networkLogPanel.setRequestDetails(request);
+        }
+    }
+
+    /**
+     * 更新响应详情（委托给 NetworkLogPanel）
+     */
+    public void setResponseDetails(HttpResponse response) {
+        if (networkLogPanel != null) {
+            networkLogPanel.setResponseDetails(response);
+        }
     }
 
 }

@@ -1120,6 +1120,10 @@ public class RequestEditSubPanel extends JPanel {
         this.lastRequest = req;
         this.lastResponse = resp;
 
+        // 更新请求和响应详情面板
+        responsePanel.setRequestDetails(req);
+        responsePanel.setResponseDetails(resp);
+
         try {
             // 执行后置脚本（自动清空旧结果、添加响应绑定、收集新结果）
             ScriptExecutionResult postResult = pipeline.executePostScript(resp);

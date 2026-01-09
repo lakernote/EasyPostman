@@ -3,11 +3,8 @@ package com.laker.postman.panel.functional;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.*;
-import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.StartButton;
-import com.laker.postman.common.component.button.StopButton;
+import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -76,10 +73,16 @@ public class FunctionalPanel extends SingletonBasePanel {
         executionPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
-        mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_REQUEST_CONFIG), new FlatSVGIcon("icons/functional.svg", 16, 16), executionPanel);
+        mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_REQUEST_CONFIG),
+                new FlatSVGIcon("icons/functional.svg", 16, 16)
+                        .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))),
+                executionPanel);
 
         resultsPanel = new ExecutionResultsPanel();
-        mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_EXECUTION_RESULTS), new FlatSVGIcon("icons/history.svg", 16, 16), resultsPanel);
+        mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_EXECUTION_RESULTS),
+                new FlatSVGIcon("icons/history.svg", 16, 16)
+                        .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))),
+                resultsPanel);
 
         add(mainTabbedPane, BorderLayout.CENTER);
 
@@ -112,7 +115,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         JPanel timePanel = new JPanel();
         timePanel.setLayout(new BoxLayout(timePanel, BoxLayout.X_AXIS));
         timePanel.setOpaque(false);
-        JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20));
+        JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
         timeLabel = new JLabel("0 ms");
         timeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         timePanel.add(timeIcon);
@@ -123,7 +126,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         JPanel taskPanel = new JPanel();
         taskPanel.setLayout(new BoxLayout(taskPanel, BoxLayout.X_AXIS));
         taskPanel.setOpaque(false);
-        JLabel taskIcon = new JLabel(new FlatSVGIcon("icons/functional.svg", 20, 20));
+        JLabel taskIcon = new JLabel(new FlatSVGIcon("icons/functional.svg", 20, 20).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
 
         // 创建进度文本标签
         progressLabel = new JLabel("0/0");
@@ -149,9 +152,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         btnPanel.setOpaque(false);
 
-        JButton loadBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_LOAD));
-        loadBtn.setIcon(new FlatSVGIcon("icons/load.svg", 20, 20));
-        loadBtn.setFocusable(false);
+        JButton loadBtn = new LoadButton();
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
         btnPanel.add(loadBtn);
 
@@ -516,9 +517,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         setTableRenderers();
 
         // 使用 ModernColors 统一配色
-        table.setGridColor(ModernColors.TABLE_GRID_COLOR);
-        table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
-        table.setSelectionForeground(ModernColors.TEXT_PRIMARY);
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setFillsViewportHeight(true);

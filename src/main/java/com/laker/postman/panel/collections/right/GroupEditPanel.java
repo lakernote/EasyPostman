@@ -128,7 +128,6 @@ public class GroupEditPanel extends JPanel {
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TITLE));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +6));
-        titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
         leftPanel.add(titleLabel);
 
         headerPanel.add(leftPanel, BorderLayout.WEST);
@@ -159,7 +158,6 @@ public class GroupEditPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_NAME_LABEL));
         nameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
-        nameLabel.setForeground(ModernColors.TEXT_PRIMARY);
         formPanel.add(nameLabel, gbc);
 
         gbc.gridx = 1;

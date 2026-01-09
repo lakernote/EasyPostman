@@ -90,7 +90,7 @@ public class PerformanceResultTablePanel extends JPanel {
 
         // 显示表格线
         table.setShowGrid(true);
-        table.setGridColor(new Color(230, 230, 230));
+        table.setGridColor(UIManager.getColor("Performance.resultTable.gridColor"));
 
         // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());

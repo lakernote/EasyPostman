@@ -273,7 +273,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(new RequestTreeCellRenderer());
         tree.setRowHeight(28);
-        tree.setBackground(new Color(245, 247, 250));
         // 支持多选
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         return tree;

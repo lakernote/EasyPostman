@@ -69,7 +69,6 @@ public class CronPanel extends JPanel {
         cronField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
         cronField.setText("0 0 12 * * ?");
         cronField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PLACEHOLDER));
-        cronField.setBackground(Color.WHITE);
         row1.add(cronField, BorderLayout.CENTER);
         topPanel.add(row1);
 

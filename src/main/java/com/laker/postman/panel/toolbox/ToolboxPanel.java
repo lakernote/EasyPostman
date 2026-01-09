@@ -40,58 +40,71 @@ public class ToolboxPanel extends SingletonBasePanel {
         // 1. 数据格式化工具
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON),
-                new FlatSVGIcon("icons/format.svg", 16, 16),
+                createThemedIcon("icons/format.svg"),
                 new JsonToolPanel()
         );
 
         // 2. 编码解码工具
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER),
-                new FlatSVGIcon("icons/code.svg", 16, 16),
+                createThemedIcon("icons/code.svg"),
                 new EncoderPanel()
         );
 
         // 3. 哈希计算工具（单向加密）
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH),
-                new FlatSVGIcon("icons/hash.svg", 16, 16),
+                createThemedIcon("icons/hash.svg"),
                 new HashPanel()
         );
 
         // 4. 加密解密工具（双向加密）
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO),
-                new FlatSVGIcon("icons/security.svg", 16, 16),
+                createThemedIcon("icons/security.svg"),
                 new CryptoPanel()
         );
 
         // 5. 时间戳转换工具
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP),
-                new FlatSVGIcon("icons/time.svg", 16, 16),
+                createThemedIcon("icons/time.svg"),
                 new TimestampPanel()
         );
 
         // 6. UUID生成器
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID),
-                new FlatSVGIcon("icons/plus.svg", 16, 16),
+                createThemedIcon("icons/plus.svg"),
                 new UuidPanel()
         );
 
         // 7. 文本对比工具
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF),
-                new FlatSVGIcon("icons/file.svg", 16, 16),
+                createThemedIcon("icons/file.svg"),
                 new DiffPanel()
         );
 
         // 8. Cron表达式工具
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON),
-                new FlatSVGIcon("icons/time.svg", 16, 16),
+                createThemedIcon("icons/time.svg"),
                 new CronPanel()
         );
+    }
+
+    /**
+     * 创建主题适配的 SVG 图标
+     * 使用 ColorFilter 使图标颜色自动跟随主题的按钮前景色
+     *
+     * @param iconPath SVG 图标路径
+     * @return 主题适配的图标
+     */
+    private Icon createThemedIcon(String iconPath) {
+        FlatSVGIcon icon = new FlatSVGIcon(iconPath, 16, 16);
+        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        return icon;
     }
 
     /**

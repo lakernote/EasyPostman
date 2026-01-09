@@ -1,13 +1,13 @@
 package com.laker.postman.panel.toolbox;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
@@ -16,8 +16,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -159,22 +157,8 @@ public class JsonToolPanel extends JPanel {
         textArea.setMarkOccurrences(true); // 标记相同内容
         textArea.setPaintTabLines(true); // 显示缩进线
         textArea.setAnimateBracketMatching(true); // 括号匹配动画
-        loadEditorTheme(textArea);
+        EditorThemeUtil.loadTheme(textArea);
         return textArea;
-    }
-
-    /**
-     * 加载编辑器主题
-     */
-    private void loadEditorTheme(RSyntaxTextArea area) {
-        try (InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/vs.xml")) {
-            if (in != null) {
-                Theme theme = Theme.load(in);
-                theme.apply(area);
-            }
-        } catch (IOException e) {
-            log.error("Failed to load editor theme", e);
-        }
     }
 
     /**

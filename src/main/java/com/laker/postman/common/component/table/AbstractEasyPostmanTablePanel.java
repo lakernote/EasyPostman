@@ -125,8 +125,6 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
         table.setRowHeight(28);
         table.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         table.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1)); // 比标准字体小1号（粗体）
-        table.getTableHeader().setBackground(new Color(240, 242, 245));
-        table.getTableHeader().setForeground(new Color(33, 33, 33));
         table.setGridColor(new Color(237, 237, 237));
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(true);

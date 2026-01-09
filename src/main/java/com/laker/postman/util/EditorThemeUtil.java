@@ -25,12 +25,22 @@ public class EditorThemeUtil {
      * @param area RSyntaxTextArea 编辑器实例
      */
     public static void loadTheme(RSyntaxTextArea area) {
-        // 根据 FlatLaf 主题选择对应的 RSyntaxTextArea 主题
-        // 暗色主题：使用 dark.xml
-        // 亮色主题：使用 vs.xml (Visual Studio 风格)
-        String themeFile = FlatLaf.isLafDark() ? "dark.xml" : "vs.xml";
-
-        try (InputStream in = EditorThemeUtil.class.getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/" + themeFile)) {
+        String themeFile;
+        InputStream in = null;
+        if (FlatLaf.isLafDark()) {
+            // 优先加载自定义暗色主题
+            themeFile = "/themes/easypostman-dark.xml";
+            in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+            if (in == null) {
+                // 回退到默认 dark.xml
+                themeFile = "/org/fife/ui/rsyntaxtextarea/themes/dark.xml";
+                in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+            }
+        } else {
+            themeFile = "/org/fife/ui/rsyntaxtextarea/themes/vs.xml";
+            in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+        }
+        try {
             if (in != null) {
                 Theme theme = Theme.load(in);
                 theme.apply(area);

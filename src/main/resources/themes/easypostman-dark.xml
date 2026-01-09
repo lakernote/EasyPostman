@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE RSyntaxTheme SYSTEM "theme.dtd">
+
+<!--
+	EasyPostman Dark Theme
+	Optimized dark theme for EasyPostman application
+	Based on modern dark color schemes with improved readability
+-->
+<RSyntaxTheme version="1.0">
+
+	<!-- Omitting baseFont will use a system-appropriate monospaced. -->
+	<!--<baseFont family="..." size="13"/>-->
+
+	<!--  General editor colors - 使用与应用主题一致的背景色 -->
+	<background color="3D3F41" />  <!-- 与应用暗色背景 (61,63,65) 一致 -->
+	<caret color="A9B7C6" />  <!-- 浅灰色光标，易于识别 -->
+	<selection useFG="false" bg="214283" roundedEdges="true" />  <!-- 蓝色选中背景，圆角 -->
+	<currentLineHighlight color="323232" fade="true" />  <!-- 当前行高亮 -->
+	<marginLine fg="505055" />  <!-- 边距线 -->
+	<markAllHighlight color="4A6B7C" />  <!-- 标记所有匹配项 -->
+	<markOccurrencesHighlight color="4A6B7C" border="false" />  <!-- 标记出现次数 -->
+	<matchedBracket fg="FFEF28" bg="3B514D" highlightBoth="true" animate="true" />  <!-- 匹配的括号 - 黄色 -->
+	<hyperlinks fg="589DF6" />  <!-- 超链接 - 蓝色 -->
+
+	<!-- 多语言支持 -->
+	<secondaryLanguages>
+		<language index="1" bg="2B2B2B" />
+		<language index="2" bg="2D2D2D" />
+		<language index="3" bg="2F2F2F" />
+	</secondaryLanguages>
+
+	<!-- Gutter styling - 行号区域样式 -->
+	<gutterBorder color="505055" />
+	<lineNumbers fg="606366" currentFG="A9B7C6"/>  <!-- 当前行号更亮 -->
+	<foldIndicator fg="8C8C8C" armedFg="BBBBBB" iconBg="3C3F41" iconArmedBg="4E5254" />
+	<iconRowHeader activeLineRange="3592C4" />
+
+	<!-- Syntax tokens - 语法高亮配色 -->
+	<tokenStyles>
+		<!-- 标识符 - 默认文字 -->
+		<style token="IDENTIFIER" fg="A9B7C6" />
+
+		<!-- 关键字 - 橙色系 -->
+		<style token="RESERVED_WORD" fg="CC7832" bold="true" />
+		<style token="RESERVED_WORD_2" fg="CC7832" bold="true" />
+
+		<!-- 注解 - 黄色 -->
+		<style token="ANNOTATION" fg="BBB529" />
+
+		<!-- 注释 - 灰色系 -->
+		<style token="COMMENT_DOCUMENTATION" fg="629755" italic="true" />
+		<style token="COMMENT_EOL" fg="808080" />
+		<style token="COMMENT_MULTILINE" fg="808080" />
+		<style token="COMMENT_KEYWORD" fg="629755" bold="true" />
+		<style token="COMMENT_MARKUP" fg="629755" />
+
+		<!-- 函数/方法 - 黄色 -->
+		<style token="FUNCTION" fg="FFC66D" />
+
+		<!-- 数据类型 - 蓝绿色 -->
+		<style token="DATA_TYPE" fg="6897BB" bold="true" />
+
+		<!-- 字面量 - 布尔值/数字 -->
+		<style token="LITERAL_BOOLEAN" fg="CC7832" bold="true" />
+		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="6897BB" />
+		<style token="LITERAL_NUMBER_FLOAT" fg="6897BB" />
+		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="6897BB" />
+
+		<!-- 字符串 - 绿色 -->
+		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="6A8759" />
+		<style token="LITERAL_CHAR" fg="6A8759" />
+		<style token="LITERAL_BACKQUOTE" fg="6A8759" />
+
+		<!-- HTML/XML 标签 -->
+		<style token="MARKUP_TAG_DELIMITER" fg="E8BF6A" />
+		<style token="MARKUP_TAG_NAME" fg="E8BF6A" bold="true" />
+		<style token="MARKUP_TAG_ATTRIBUTE" fg="BABABA" />
+		<style token="MARKUP_TAG_ATTRIBUTE_VALUE" fg="6A8759" />
+		<style token="MARKUP_COMMENT" fg="808080" />
+		<style token="MARKUP_DTD" fg="9876AA" />
+		<style token="MARKUP_PROCESSING_INSTRUCTION" fg="9876AA" />
+		<style token="MARKUP_CDATA" fg="BABABA" />
+		<style token="MARKUP_CDATA_DELIMITER" fg="9876AA" />
+		<style token="MARKUP_ENTITY_REFERENCE" fg="6897BB" />
+
+		<!-- 操作符 -->
+		<style token="OPERATOR" fg="A9B7C6" />
+
+		<!-- 预处理器 -->
+		<style token="PREPROCESSOR" fg="9876AA" />
+
+		<!-- 正则表达式 - 橙红色 -->
+		<style token="REGEX" fg="D5B778" />
+
+		<!-- 分隔符 -->
+		<style token="SEPARATOR" fg="CC7832" />
+
+		<!-- 变量 - 紫色 -->
+		<style token="VARIABLE" fg="9876AA" />
+
+		<!-- 空白 -->
+		<style token="WHITESPACE" fg="A9B7C6" />
+
+		<!-- 错误标记 - 红色背景 -->
+		<style token="ERROR_IDENTIFIER" fg="FF6B68" bg="52322B" />
+		<style token="ERROR_NUMBER_FORMAT" fg="FF6B68" bg="52322B" />
+		<style token="ERROR_STRING_DOUBLE" fg="FF6B68" bg="52322B" />
+		<style token="ERROR_CHAR" fg="FF6B68" bg="52322B" />
+	</tokenStyles>
+
+</RSyntaxTheme>
+

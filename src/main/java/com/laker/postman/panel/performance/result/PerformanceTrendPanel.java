@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.result;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -49,6 +50,49 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     // 日期格式化器（实例变量，避免线程安全问题）
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的图表背景色
+     */
+    private Color getChartBackgroundColor() {
+        return isDarkTheme() ? new Color(60, 63, 65) : Color.WHITE;
+    }
+
+    /**
+     * 获取主题适配的图表面板背景色
+     */
+    private Color getChartPanelBackgroundColor() {
+        return isDarkTheme() ? new Color(60, 63, 65) : Color.WHITE;
+    }
+
+    /**
+     * 获取主题适配的网格线颜色
+     */
+    private Color getGridLineColor() {
+        return isDarkTheme() ? new Color(80, 83, 85) : new Color(194, 211, 236);
+    }
+
+    /**
+     * 获取主题适配的文本颜色
+     */
+    private Color getTextColor() {
+        return isDarkTheme() ? new Color(187, 187, 187) : Color.BLACK;
+    }
+
+    /**
+     * 获取主题适配的边框颜色
+     */
+    private Color getChartBorderColor() {
+        return isDarkTheme() ? new Color(80, 83, 85) : new Color(194, 211, 236);
+    }
+
 
     @Override
     protected void initUI() {
@@ -121,10 +165,14 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 false
         );
 
+        // 设置图表背景色（主题适配）
+        chart.setBackgroundPaint(getChartBackgroundColor());
+
         XYPlot plot = chart.getXYPlot();
-        plot.setBackgroundPaint(Color.WHITE);
-        plot.setDomainGridlinePaint(new Color(194, 211, 236));
-        plot.setRangeGridlinePaint(new Color(194, 211, 236));
+        plot.setBackgroundPaint(getChartBackgroundColor());
+        plot.setDomainGridlinePaint(getGridLineColor());
+        plot.setRangeGridlinePaint(getGridLineColor());
+        plot.setOutlinePaint(getChartBorderColor());
 
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
         renderer.setSeriesPaint(0, lineColor);
@@ -134,11 +182,15 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         dateAxis.setDateFormatOverride(timeFormat);
         dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        dateAxis.setTickLabelPaint(getTextColor());
+        dateAxis.setLabelPaint(getTextColor());
         plot.setDomainAxis(dateAxis);
 
         NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
         rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        rangeAxis.setTickLabelPaint(getTextColor());
+        rangeAxis.setLabelPaint(getTextColor());
 
         // 设置Y轴上边距，避免曲线贴到顶部
         rangeAxis.setUpperMargin(0.2);
@@ -159,10 +211,11 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         ChartPanel panel = new ChartPanel(chart);
         panel.setMouseWheelEnabled(true);
         panel.setPreferredSize(new Dimension(400, 300));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(getChartPanelBackgroundColor());
         panel.setDisplayToolTips(true);
 
         chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        chart.getTitle().setPaint(getTextColor());
 
         return panel;
     }
@@ -185,10 +238,14 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 false
         );
 
+        // 设置图表背景色（主题适配）
+        chart.setBackgroundPaint(getChartBackgroundColor());
+
         XYPlot plot = chart.getXYPlot();
-        plot.setBackgroundPaint(Color.WHITE);
-        plot.setDomainGridlinePaint(new Color(194, 211, 236));
-        plot.setRangeGridlinePaint(new Color(194, 211, 236));
+        plot.setBackgroundPaint(getChartBackgroundColor());
+        plot.setDomainGridlinePaint(getGridLineColor());
+        plot.setRangeGridlinePaint(getGridLineColor());
+        plot.setOutlinePaint(getChartBorderColor());
 
         // 设置渲染器颜色
         plot.setRenderer(createCombinedChartRenderer());
@@ -197,22 +254,29 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         dateAxis.setDateFormatOverride(timeFormat);
         dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        dateAxis.setTickLabelPaint(getTextColor());
+        dateAxis.setLabelPaint(getTextColor());
         plot.setDomainAxis(dateAxis);
 
         NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
         rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        rangeAxis.setTickLabelPaint(getTextColor());
+        rangeAxis.setLabelPaint(getTextColor());
         rangeAxis.setUpperMargin(0.2);
         rangeAxis.setAutoRangeIncludesZero(false);
 
         ChartPanel panel = new ChartPanel(chart);
         panel.setMouseWheelEnabled(true);
         panel.setPreferredSize(new Dimension(800, 600));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(getChartPanelBackgroundColor());
         panel.setDisplayToolTips(true);
 
         chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        chart.getTitle().setPaint(getTextColor());
         chart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        chart.getLegend().setItemPaint(getTextColor());
+        chart.getLegend().setBackgroundPaint(getChartBackgroundColor());
 
         return panel;
     }

@@ -1,6 +1,7 @@
 
 package com.laker.postman.common.component.button;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -12,6 +13,7 @@ import java.awt.*;
 /**
  * 主按钮 - 现代化设计
  * 蓝色背景，白色文字，用于主要操作（如发送、连接等）
+ * 支持亮色和暗色主题自适应
  */
 public class PrimaryButton extends JButton {
     private static final int ICON_SIZE = 14;
@@ -30,13 +32,17 @@ public class PrimaryButton extends JButton {
         super(text);
 
         if (iconPath != null && !iconPath.isEmpty()) {
-            setIcon(new FlatSVGIcon(iconPath, ICON_SIZE, ICON_SIZE));
+            FlatSVGIcon icon = new FlatSVGIcon(iconPath, ICON_SIZE, ICON_SIZE);
+            // 设置图标颜色过滤器为白色，与按钮文字颜色一致
+            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> Color.WHITE));
+            setIcon(icon);
             setIconTextGap(4);
         }
 
         // 设置字体和样式
         setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        setForeground(ModernColors.TEXT_INVERSE);
+        // 文字颜色始终为白色（在蓝色背景上）
+        setForeground(Color.WHITE);
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
@@ -50,6 +56,26 @@ public class PrimaryButton extends JButton {
                 repaint();
             }
         });
+    }
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取禁用状态的背景色 - 主题适配
+     */
+    private Color getDisabledBackground() {
+        if (isDarkTheme()) {
+            // 暗色主题：使用深灰色
+            return new Color(60, 60, 65);
+        } else {
+            // 亮色主题：使用 TEXT_DISABLED
+            return ModernColors.getTextDisabled();
+        }
     }
 
     @Override
@@ -75,9 +101,9 @@ public class PrimaryButton extends JButton {
             colorsInitialized = true;
         }
 
-        // 背景颜色
+        // 背景颜色（主题适配禁用状态）
         if (!isEnabled()) {
-            g2.setColor(ModernColors.TEXT_DISABLED);
+            g2.setColor(getDisabledBackground());
         } else if (getModel().isPressed()) {
             g2.setColor(cachedPressColor);
         } else if (getModel().isRollover()) {

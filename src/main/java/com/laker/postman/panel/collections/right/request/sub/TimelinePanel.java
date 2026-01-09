@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -39,8 +40,55 @@ public class TimelinePanel extends JPanel {
     private static final int INFO_TEXT_EXTRA_GAP = 6; // 信息区每项之间额外空白
     private static final int INFO_TEXT_BOTTOM_PAD = 20;  // 信息区底部内边距
     private static final int INFO_TEXT_LEFT_PAD = 20; // 信息区左侧内边距
-    private static final Color INFO_BG_COLOR = new Color(247, 249, 252);
-    private static final Color INFO_BORDER_COLOR = new Color(225, 230, 235);
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取信息区背景色 - 主题适配
+     */
+    private Color getInfoBgColor() {
+        return isDarkTheme() ? new Color(50, 52, 54) : new Color(247, 249, 252);
+    }
+
+    /**
+     * 获取信息区边框色 - 主题适配
+     */
+    private Color getInfoBorderColor() {
+        return isDarkTheme() ? new Color(80, 82, 84) : new Color(225, 230, 235);
+    }
+
+    /**
+     * 获取标签文字颜色 - 主题适配
+     */
+    private Color getLabelTextColor() {
+        return isDarkTheme() ? new Color(200, 200, 200) : new Color(40, 40, 40);
+    }
+
+    /**
+     * 获取信息文字颜色 - 主题适配
+     */
+    private Color getInfoTextColor() {
+        return isDarkTheme() ? new Color(180, 180, 180) : Color.DARK_GRAY;
+    }
+
+    /**
+     * 获取描述文字颜色 - 主题适配
+     */
+    private Color getDescTextColor() {
+        return isDarkTheme() ? new Color(120, 120, 120) : new Color(140, 140, 140);
+    }
+
+    /**
+     * 获取分隔线颜色 - 主题适配
+     */
+    private Color getSeparatorColor() {
+        return isDarkTheme() ? new Color(80, 80, 80) : new Color(230, 230, 230);
+    }
 
     public TimelinePanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
@@ -71,7 +119,8 @@ public class TimelinePanel extends JPanel {
                 int w = g.getFontMetrics().stringWidth(s.label);
                 if (w > labelMaxWidth) labelMaxWidth = w;
             }
-            g.setFont(FontsUtil.getDefaultFont(Font.PLAIN));; // 使用用户设置的字体大小
+            g.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+            ; // 使用用户设置的字体大小
             for (Stage s : stages) {
                 if (s.desc != null && !s.desc.isEmpty()) {
                     int w = g.getFontMetrics().stringWidth(s.desc);
@@ -102,13 +151,13 @@ public class TimelinePanel extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         // 1. 绘制信息区
         int infoTextBlockHeight = getInfoBlockHeight();
-        g2.setColor(INFO_BG_COLOR);
+        g2.setColor(getInfoBgColor());
         g2.fillRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 8, 8);
-        g2.setColor(INFO_BORDER_COLOR);
+        g2.setColor(getInfoBorderColor());
         g2.drawRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 8, 8);
         int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_LINE_HEIGHT - 3;
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.setColor(Color.DARK_GRAY);
+        g2.setColor(getInfoTextColor());
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
         if (httpEventInfo != null) {
@@ -133,7 +182,7 @@ public class TimelinePanel extends JPanel {
         int remoteLineY = -1, cipherLineY = -1;
         // HTTP Version
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
-        g2.setColor(Color.DARK_GRAY);
+        g2.setColor(getInfoTextColor());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
         g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
@@ -152,9 +201,9 @@ public class TimelinePanel extends JPanel {
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (remoteLineY > 0) {
-            g2.setColor(new Color(230, 230, 230));
+            g2.setColor(getSeparatorColor());
             g2.drawLine(lineStartX, remoteLineY, lineEndX, remoteLineY);
-            g2.setColor(Color.DARK_GRAY);
+            g2.setColor(getInfoTextColor());
         }
         // TLS Protocol
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
@@ -170,9 +219,9 @@ public class TimelinePanel extends JPanel {
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (cipherLineY > 0) {
-            g2.setColor(new Color(230, 230, 230));
+            g2.setColor(getSeparatorColor());
             g2.drawLine(lineStartX, cipherLineY, lineEndX, cipherLineY);
-            g2.setColor(Color.DARK_GRAY);
+            g2.setColor(getInfoTextColor());
         }
         // Certificate CN
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
@@ -215,7 +264,7 @@ public class TimelinePanel extends JPanel {
             } else {
                 g2.drawString(warning, labelX + valueXOffset, infoY);
             }
-            g2.setColor(Color.DARK_GRAY); // 恢复默认颜色
+            g2.setColor(getInfoTextColor()); // 恢复默认颜色
         }
 
         // 2. 绘制瀑布条区
@@ -278,7 +327,7 @@ public class TimelinePanel extends JPanel {
             Color color = COLORS[i % COLORS.length];
             // label 区域
             g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
-            g2.setColor(new Color(40, 40, 40));
+            g2.setColor(getLabelTextColor());
             String label = s.label;
             int labelStrW = g2.getFontMetrics().stringWidth(label);
             boolean labelTruncated = false;
@@ -317,7 +366,7 @@ public class TimelinePanel extends JPanel {
             // desc 区域
             if (s.desc != null && !s.desc.isEmpty()) {
                 g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-                g2.setColor(new Color(140, 140, 140));
+                g2.setColor(getDescTextColor());
                 int descX = currentX + barW + DESC_LEFT_PAD;
                 int maxDescW = panelW - descX - RIGHT_PAD;
                 String desc = s.desc;

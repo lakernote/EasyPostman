@@ -74,7 +74,7 @@ public class SSEResponsePanel extends JPanel {
         };
         table = new JTable(tableModel);
         table.setRowHeight(26);
-        table.getColumnModel().getColumn(0).setMaxWidth(36);
+        table.getColumnModel().getColumn(0).setMaxWidth(50);
         table.getColumnModel().getColumn(0).setCellRenderer(new IconCellRenderer());
         table.getColumnModel().getColumn(1).setMaxWidth(100);
         // 设置第2列（时间列）居中
@@ -153,12 +153,9 @@ public class SSEResponsePanel extends JPanel {
 
         // 美化表格
         JTableHeader header = table.getTableHeader();
-        header.setFont(header.getFont().deriveFont(Font.BOLD, 11f));
-        table.setForeground(new Color(40, 40, 40));
+        header.setFont(header.getFont().deriveFont(Font.BOLD));
         table.setGridColor(new Color(220, 225, 235));
         table.setShowGrid(true);
-        table.setSelectionBackground(new Color(220, 235, 255));
-        table.setSelectionForeground(new Color(30, 60, 120));
         table.setRowHeight(24);
         table.setBorder(BorderFactory.createLineBorder(new Color(200, 210, 230), 1));
         // 选中行加粗

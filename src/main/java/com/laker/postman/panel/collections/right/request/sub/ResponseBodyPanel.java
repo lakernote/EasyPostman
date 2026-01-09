@@ -7,11 +7,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.EditorThemeUtil;
-import com.laker.postman.util.FileExtensionUtil;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -92,6 +88,7 @@ public class ResponseBodyPanel extends JPanel {
         // 左侧操作区
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
         syntaxComboBox = new JComboBox<>(SyntaxType.getDisplayNames());
+        syntaxComboBox.setFocusable(false);
         leftPanel.add(syntaxComboBox);
 
         // 添加大小提示标签
@@ -109,11 +106,13 @@ public class ResponseBodyPanel extends JPanel {
         FlatSVGIcon prevIcon = new FlatSVGIcon("icons/arrow-up.svg", ICON_SIZE, ICON_SIZE);
         prevIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
         prevButton = new JButton(prevIcon);
+        prevButton.setFocusable(false);
         prevButton.setToolTipText("Previous");
 
         FlatSVGIcon nextIcon = new FlatSVGIcon("icons/arrow-down.svg", ICON_SIZE, ICON_SIZE);
         nextIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
         nextButton = new JButton(nextIcon);
+        nextButton.setFocusable(false);
         nextButton.setToolTipText("Next");
 
         rightPanel.add(searchField);
@@ -125,17 +124,20 @@ public class ResponseBodyPanel extends JPanel {
         wrapButton = new JToggleButton(wrapIcon);
         wrapButton.setToolTipText("Toggle Line Wrap");
         wrapButton.setSelected(false); // 默认不启用换行
+        wrapButton.setFocusable(false); // 不可聚焦
         rightPanel.add(wrapButton);
 
         FlatSVGIcon formatIcon = new FlatSVGIcon("icons/format.svg", ICON_SIZE, ICON_SIZE);
         formatIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
         formatButton = new JButton(formatIcon);
+        formatButton.setFocusable(false);
         formatButton.setToolTipText("Format");
         rightPanel.add(formatButton);
 
         FlatSVGIcon downloadIcon = new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE);
         downloadIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
         downloadButton = new JButton(downloadIcon);
+        downloadButton.setFocusable(false);
         downloadButton.setToolTipText("Download");
         rightPanel.add(downloadButton);
 
@@ -144,6 +146,7 @@ public class ResponseBodyPanel extends JPanel {
             FlatSVGIcon saveIcon = new FlatSVGIcon("icons/save.svg", ICON_SIZE, ICON_SIZE);
             saveIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
             saveResponseButton = new JButton(saveIcon);
+            saveResponseButton.setFocusable(false);
             saveResponseButton.setToolTipText("Save Response");
             rightPanel.add(saveResponseButton);
         }

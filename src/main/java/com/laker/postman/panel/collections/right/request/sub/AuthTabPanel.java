@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.component.EasyPostmanTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.AuthType;
@@ -18,6 +19,7 @@ import java.util.List;
 /**
  * 认证Tab面板 - 现代化版本
  * 使用专业的布局和现代化配色方案
+ * 支持亮色和暗色主题自适应
  */
 public class AuthTabPanel extends JPanel {
     // Keep constants for backward compatibility
@@ -32,6 +34,34 @@ public class AuthTabPanel extends JPanel {
     private final JTextField tokenField;
     private AuthType currentType = AuthType.INHERIT;
     private final List<Runnable> dirtyListeners = new ArrayList<>();
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的标题颜色（HTML 样式用）
+     */
+    private String getTitleColorHex() {
+        return isDarkTheme() ? "#14b8a6" : "#0891b2"; // 暗色主题用稍亮的青色
+    }
+
+    /**
+     * 获取主题适配的描述文字颜色（HTML 样式用）
+     */
+    private String getDescColorHex() {
+        return isDarkTheme() ? "#94a3b8" : "#475569"; // 暗色主题用浅灰色
+    }
+
+    /**
+     * 获取主题适配的普通文字颜色（HTML 样式用）
+     */
+    private String getTextColorHex() {
+        return isDarkTheme() ? "#cbd5e1" : "#334155"; // 暗色主题用浅色
+    }
 
     public AuthTabPanel() {
         setLayout(new BorderLayout(5, 5));
@@ -55,7 +85,7 @@ public class AuthTabPanel extends JPanel {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         JLabel typeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_LABEL));
         typeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
-        typeLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        typeLabel.setForeground(ModernColors.getTextPrimary());
         topPanel.add(typeLabel);
         topPanel.add(typeCombo);
         add(topPanel, BorderLayout.NORTH);
@@ -126,8 +156,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: #0891b2; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT) + "</b><br>" +
-                        "<span style='color: #475569; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT_DESC) + "</span>" +
+                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT) + "</b><br>" +
+                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -155,8 +185,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: #334155; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE) + "</b><br>" +
-                        "<span style='color: #64748b; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC) + "</span>" +
+                        "<b style='color: " + getTextColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE) + "</b><br>" +
+                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -185,8 +215,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: #0891b2; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC) + "</b><br>" +
-                        "<span style='color: #475569; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC) + "</span>" +
+                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC) + "</b><br>" +
+                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -207,7 +237,7 @@ public class AuthTabPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         JLabel usernameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_USERNAME));
         usernameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        usernameLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        usernameLabel.setForeground(ModernColors.getTextSecondary());
         formPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
@@ -228,7 +258,7 @@ public class AuthTabPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         JLabel passwordLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_PASSWORD));
         passwordLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        passwordLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        passwordLabel.setForeground(ModernColors.getTextSecondary());
         formPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
@@ -275,8 +305,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: #0891b2; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER) + "</b><br>" +
-                        "<span style='color: #475569; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC) + "</span>" +
+                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER) + "</b><br>" +
+                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -297,7 +327,7 @@ public class AuthTabPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         JLabel tokenLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TOKEN));
         tokenLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        tokenLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        tokenLabel.setForeground(ModernColors.getTextSecondary());
         formPanel.add(tokenLabel, gbc);
 
         gbc.gridx = 1;

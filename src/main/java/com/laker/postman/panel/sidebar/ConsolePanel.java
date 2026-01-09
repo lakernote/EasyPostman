@@ -352,13 +352,17 @@ public class ConsolePanel extends SingletonBasePanel {
         searchField.setPreferredSize(new Dimension(200, 28));
 
         prevBtn = new JButton();
-        prevBtn.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
+        FlatSVGIcon prevIcon = new FlatSVGIcon("icons/arrow-up.svg", 16, 16);
+        prevIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        prevBtn.setIcon(prevIcon);
         prevBtn.setToolTipText("Previous match (Shift+Enter)");
         prevBtn.setFocusable(false);
         prevBtn.setPreferredSize(new Dimension(28, 28));
 
         nextBtn = new JButton();
-        nextBtn.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
+        FlatSVGIcon nextIcon = new FlatSVGIcon("icons/arrow-down.svg", 16, 16);
+        nextIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        nextBtn.setIcon(nextIcon);
         nextBtn.setToolTipText("Next match (Enter)");
         nextBtn.setFocusable(false);
         nextBtn.setPreferredSize(new Dimension(28, 28));
@@ -379,8 +383,9 @@ public class ConsolePanel extends SingletonBasePanel {
         rightPanel.setOpaque(false);
 
         autoScrollBtn = new JToggleButton();
-        // 使用新的自动滚动图标
-        autoScrollBtn.setIcon(new FlatSVGIcon("icons/auto-scroll.svg", 16, 16));
+        FlatSVGIcon autoScrollIcon = new FlatSVGIcon("icons/auto-scroll.svg", 16, 16);
+        autoScrollIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        autoScrollBtn.setIcon(autoScrollIcon);
         autoScrollBtn.setSelected(true);
         autoScrollBtn.setToolTipText("Auto-scroll to bottom");
         autoScrollBtn.setFocusable(false);
@@ -390,7 +395,9 @@ public class ConsolePanel extends SingletonBasePanel {
         clearBtn.setPreferredSize(new Dimension(28, 28));
 
         closeBtn = new JButton();
-        closeBtn.setIcon(new FlatSVGIcon("icons/close.svg", 16, 16));
+        FlatSVGIcon closeIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
+        closeIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        closeBtn.setIcon(closeIcon);
         closeBtn.setToolTipText("Hide console");
         closeBtn.setFocusable(false);
         closeBtn.setPreferredSize(new Dimension(28, 28));
@@ -408,7 +415,9 @@ public class ConsolePanel extends SingletonBasePanel {
 
     private JButton getClearBtn() {
         JButton clearBtn = new JButton();
-        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        FlatSVGIcon clearIcon = new FlatSVGIcon("icons/clear.svg", 16, 16);
+        clearIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        clearBtn.setIcon(clearIcon);
         clearBtn.setToolTipText("Clear console");
         clearBtn.setFocusable(false);
         clearBtn.addActionListener(e -> clearConsole());

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.render.HttpHtmlRenderer;
@@ -37,26 +38,45 @@ public class NetworkLogPanel extends JPanel {
         tabbedPane = new JTabbedPane();
         tabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
-        // 1. Network Log Tab
+        // 1. Network Log Tab - 添加图标
         logArea = new JTextPane();
         logArea.setEditable(false);
         doc = logArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(logArea);
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG), logScroll);
 
-        // 2. Request Details Tab
+        // 创建带图标的标签
+        JLabel networkLogLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG));
+        FlatSVGIcon networkLogIcon = new FlatSVGIcon("icons/console.svg", 14, 14);
+        networkLogIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("TabbedPane.foreground")));
+        networkLogLabel.setIcon(networkLogIcon);
+        tabbedPane.addTab(null, logScroll);
+        tabbedPane.setTabComponentAt(0, networkLogLabel);
+
+        // 2. Request Details Tab - 添加图标
         requestDetailsPane = createDetailPane();
         JScrollPane requestDetailsScroll = new JScrollPane(requestDetailsPane);
         requestDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         requestDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_DETAILS), requestDetailsScroll);
 
-        // 3. Response Details Tab
+        JLabel requestDetailsLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_DETAILS));
+        FlatSVGIcon requestDetailsIcon = new FlatSVGIcon("icons/arrow-up.svg", 14, 14);
+        requestDetailsIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("TabbedPane.foreground")));
+        requestDetailsLabel.setIcon(requestDetailsIcon);
+        tabbedPane.addTab(null, requestDetailsScroll);
+        tabbedPane.setTabComponentAt(1, requestDetailsLabel);
+
+        // 3. Response Details Tab - 添加图标
         responseDetailsPane = createDetailPane();
         JScrollPane responseDetailsScroll = new JScrollPane(responseDetailsPane);
         responseDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         responseDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_DETAILS), responseDetailsScroll);
+
+        JLabel responseDetailsLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_DETAILS));
+        FlatSVGIcon responseDetailsIcon = new FlatSVGIcon("icons/arrow-down.svg", 14, 14);
+        responseDetailsIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("TabbedPane.foreground")));
+        responseDetailsLabel.setIcon(responseDetailsIcon);
+        tabbedPane.addTab(null, responseDetailsScroll);
+        tabbedPane.setTabComponentAt(2, responseDetailsLabel);
 
         add(tabbedPane, BorderLayout.CENTER);
     }

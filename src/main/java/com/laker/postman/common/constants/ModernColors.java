@@ -284,12 +284,6 @@ public final class ModernColors {
     @Deprecated
     public static final Color TEXT_DISABLED = new Color(148, 163, 184);
 
-    /**
-     * @deprecated 请使用 getTextInverse() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color TEXT_INVERSE = new Color(248, 250, 252);
-
     // ==================== 中性色系 - 背景 ====================
 
     /**
@@ -656,109 +650,129 @@ public final class ModernColors {
         return isDarkTheme() ? new Color(45, 45, 50) : new Color(248, 250, 252);
     }
 
-    // ==================== 保留旧的常量以保持向后兼容 ====================
+    // ==================== UI 组件主题适配色（用于 Settings 等面板）====================
 
     /**
-     * @deprecated 请使用 getConsoleBackground() 以支持主题切换
+     * 获取主背景色 - 根据主题自适应
+     * 亮色主题：BG_LIGHT (248, 250, 252)
+     * 暗色主题：深灰色 (60, 63, 65) - 基于 IntelliJ IDEA Darcula
      */
-    @Deprecated
-    public static final Color CONSOLE_BACKGROUND = new Color(250, 251, 252);
+    public static Color getBackgroundColor() {
+        return isDarkTheme() ? new Color(60, 63, 65) : BG_LIGHT;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleTextAreaBg() 以支持主题切换
+     * 获取卡片/区域背景色 - 根据主题自适应
+     * 亮色主题：BG_WHITE (255, 255, 255)
+     * 暗色主题：稍浅的深灰色 (55, 57, 59)
      */
-    @Deprecated
-    public static final Color CONSOLE_TEXT_AREA_BG = new Color(255, 255, 255);
+    public static Color getCardBackgroundColor() {
+        return isDarkTheme() ? new Color(55, 57, 59) : BG_WHITE;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleText() 以支持主题切换
+     * 获取输入框背景色 - 根据主题自适应
+     * 亮色主题：BG_WHITE (255, 255, 255)
+     * 暗色主题：比卡片背景稍亮 (65, 68, 70)
      */
-    @Deprecated
-    public static final Color CONSOLE_TEXT = new Color(51, 65, 85);
+    public static Color getInputBackgroundColor() {
+        return isDarkTheme() ? new Color(65, 68, 70) : BG_WHITE;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleInfo() 以支持主题切换
+     * 获取边框颜色（浅色）- 根据主题自适应
+     * 亮色主题：BORDER_LIGHT (226, 232, 240)
+     * 暗色主题：比背景稍亮 (75, 77, 80)
      */
-    @Deprecated
-    public static final Color CONSOLE_INFO = new Color(37, 99, 235);
+    public static Color getBorderLightColor() {
+        return isDarkTheme() ? new Color(75, 77, 80) : BORDER_LIGHT;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleDebug() 以支持主题切换
+     * 获取边框颜色（中等）- 根据主题自适应
+     * 亮色主题：BORDER_MEDIUM (203, 213, 225)
+     * 暗色主题：更明显的边框 (85, 87, 90)
      */
-    @Deprecated
-    public static final Color CONSOLE_DEBUG = new Color(22, 163, 74);
+    public static Color getBorderMediumColor() {
+        return isDarkTheme() ? new Color(85, 87, 90) : BORDER_MEDIUM;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleWarn() 以支持主题切换
+     * 获取悬停背景色 - 根据主题自适应
+     * 亮色主题：HOVER_BG (241, 245, 249)
+     * 暗色主题：比背景稍亮 (70, 73, 75)
      */
-    @Deprecated
-    public static final Color CONSOLE_WARN = new Color(234, 88, 12);
+    public static Color getHoverBackgroundColor() {
+        return isDarkTheme() ? new Color(70, 73, 75) : HOVER_BG;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleError() 以支持主题切换
+     * 获取按钮暗色背景（按下状态）- 根据主题自适应
+     * 亮色主题：BG_DARK (226, 232, 240)
+     * 暗色主题：比背景更暗 (50, 52, 54)
      */
-    @Deprecated
-    public static final Color CONSOLE_ERROR = new Color(220, 38, 38);
+    public static Color getButtonDarkColor() {
+        return isDarkTheme() ? new Color(50, 52, 54) : BG_DARK;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleTimestamp() 以支持主题切换
+     * 获取滚动条轨道颜色 - 根据主题自适应
+     * 亮色主题：SCROLLBAR_TRACK (245, 247, 250)
+     * 暗色主题：与主背景相同 (60, 63, 65)
      */
-    @Deprecated
-    public static final Color CONSOLE_TIMESTAMP = new Color(100, 116, 139);
+    public static Color getScrollbarTrackColor() {
+        return isDarkTheme() ? new Color(60, 63, 65) : SCROLLBAR_TRACK;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleClassName() 以支持主题切换
+     * 获取滚动条滑块颜色 - 根据主题自适应
+     * 亮色主题：SCROLLBAR_THUMB (220, 225, 230)
+     * 暗色主题：比背景亮的灰色 (85, 87, 90)
      */
-    @Deprecated
-    public static final Color CONSOLE_CLASS_NAME = new Color(147, 51, 234);
+    public static Color getScrollbarThumbColor() {
+        return isDarkTheme() ? new Color(85, 87, 90) : SCROLLBAR_THUMB;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleMethodName() 以支持主题切换
+     * 获取滚动条滑块悬停颜色 - 根据主题自适应
+     * 亮色主题：SCROLLBAR_THUMB_HOVER (200, 210, 220)
+     * 暗色主题：更亮的灰色 (100, 102, 105)
      */
-    @Deprecated
-    public static final Color CONSOLE_METHOD_NAME = new Color(14, 165, 233);
+    public static Color getScrollbarThumbHoverColor() {
+        return isDarkTheme() ? new Color(100, 102, 105) : SCROLLBAR_THUMB_HOVER;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleToolbarBg() 以支持主题切换
+     * 获取阴影颜色 - 根据主题自适应
+     * 暗色主题使用更柔和的阴影（黑色，增强透明度）
+     * 亮色主题使用深蓝黑色调
+     *
+     * @param alpha 基础透明度 (0-255)
      */
-    @Deprecated
-    public static final Color CONSOLE_TOOLBAR_BG = new Color(248, 250, 252);
+    public static Color getShadowColor(int alpha) {
+        if (isDarkTheme()) {
+            return new Color(0, 0, 0, (int) (alpha * 1.5));
+        }
+        return new Color(15, 23, 42, alpha);
+    }
 
     /**
-     * @deprecated 请使用 getConsoleToolbarBorder() 以支持主题切换
+     * 获取警告背景色 - 根据主题自适应
+     * 亮色主题：SETTINGS_UNSAVED_WARNING_BG (255, 243, 205)
+     * 暗色主题：暗黄色调 (70, 65, 50)
      */
-    @Deprecated
-    public static final Color CONSOLE_TOOLBAR_BORDER = new Color(226, 232, 240);
+    public static Color getWarningBackgroundColor() {
+        return isDarkTheme() ? new Color(70, 65, 50) : SETTINGS_UNSAVED_WARNING_BG;
+    }
 
     /**
-     * @deprecated 请使用 getConsoleButtonHover() 以支持主题切换
+     * 获取警告边框颜色 - 根据主题自适应
+     * 亮色主题：SETTINGS_UNSAVED_WARNING_BORDER (255, 193, 7)
+     * 暗色主题：较亮的黄色 (120, 100, 60)
      */
-    @Deprecated
-    public static final Color CONSOLE_BUTTON_HOVER = new Color(224, 242, 254);
-
-    /**
-     * @deprecated 请使用 getConsoleScrollbar() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color CONSOLE_SCROLLBAR = new Color(203, 213, 225);
-
-    /**
-     * @deprecated 请使用 getConsoleScrollbarHover() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color CONSOLE_SCROLLBAR_HOVER = new Color(148, 163, 184);
-
-    /**
-     * @deprecated 请使用 getConsoleSelectionBg() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color CONSOLE_SELECTION_BG = new Color(191, 219, 254);
-
-    /**
-     * @deprecated 请使用 getConsoleCurrentLine() 以支持主题切换
-     */
-    @Deprecated
-    public static final Color CONSOLE_CURRENT_LINE = new Color(248, 250, 252);
+    public static Color getWarningBorderColor() {
+        return isDarkTheme() ? new Color(120, 100, 60) : SETTINGS_UNSAVED_WARNING_BORDER;
+    }
 
     // ==================== 透明度变体 ====================
 

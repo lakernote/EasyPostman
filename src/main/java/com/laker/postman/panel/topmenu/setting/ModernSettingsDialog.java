@@ -28,6 +28,35 @@ public class ModernSettingsDialog extends JDialog {
 
     private final JTabbedPane tabbedPane;
 
+    /**
+     * 获取主题适配的背景色
+     */
+    private Color getBackgroundColor() {
+        return ModernColors.getBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的标签页背景色
+     */
+    private Color getTabBackgroundColor() {
+        return ModernColors.getCardBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的文本颜色
+     */
+    private Color getTextColor() {
+        return ModernColors.getTextPrimary();
+    }
+
+    /**
+     * 获取主题适配的悬停背景色
+     */
+    private Color getHoverBackgroundColor() {
+        return ModernColors.getHoverBackgroundColor();
+    }
+
+
     public ModernSettingsDialog(Window parent) {
         super(parent, I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_TITLE), ModalityType.APPLICATION_MODAL);
         this.tabbedPane = createModernTabbedPane();
@@ -75,7 +104,7 @@ public class ModernSettingsDialog extends JDialog {
 
     private void setupMainPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(ModernColors.BG_LIGHT);
+        mainPanel.setBackground(getBackgroundColor());
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
         setContentPane(mainPanel);
     }
@@ -94,8 +123,8 @@ public class ModernSettingsDialog extends JDialog {
      */
     private JTabbedPane createModernTabbedPane() {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT);
-        pane.setBackground(ModernColors.BG_WHITE);
-        pane.setForeground(ModernColors.TEXT_PRIMARY);
+        pane.setBackground(getTabBackgroundColor());
+        pane.setForeground(getTextColor());
         pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, TAB_FONT_SIZE));
         pane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         pane.setUI(new SimpleTabbedPaneUI());
@@ -105,7 +134,7 @@ public class ModernSettingsDialog extends JDialog {
     /**
      * 简洁的标签页 UI
      */
-    private static class SimpleTabbedPaneUI extends BasicTabbedPaneUI {
+    private class SimpleTabbedPaneUI extends BasicTabbedPaneUI {
 
         @Override
         protected void installDefaults() {
@@ -128,7 +157,7 @@ public class ModernSettingsDialog extends JDialog {
                     g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
                             w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
                 } else if (getRolloverTab() == tabIndex) {
-                    g2.setColor(ModernColors.HOVER_BG);
+                    g2.setColor(getHoverBackgroundColor());
                     g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
                             w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
                 }
@@ -158,7 +187,7 @@ public class ModernSettingsDialog extends JDialog {
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                         RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
-                g2.setColor(isSelected ? Color.WHITE : ModernColors.TEXT_PRIMARY);
+                g2.setColor(isSelected ? Color.WHITE : getTextColor());
                 g2.setFont(isSelected ? font.deriveFont(Font.BOLD) : font);
                 g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
             } finally {

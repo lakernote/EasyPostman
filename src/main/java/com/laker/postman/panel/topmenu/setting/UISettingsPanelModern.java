@@ -213,11 +213,12 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         fontPreviewLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_PREVIEW));
         fontPreviewLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fontPreviewLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+                BorderFactory.createLineBorder(getBorderMediumColor(), 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         fontPreviewLabel.setOpaque(true);
-        fontPreviewLabel.setBackground(Color.WHITE);
+        fontPreviewLabel.setBackground(getInputBackgroundColor());
+        fontPreviewLabel.setForeground(getTextPrimaryColor());
         // 保存系统默认字体名称
         systemDefaultFontName = fontPreviewLabel.getFont().getName();
         updateFontPreview();

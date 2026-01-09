@@ -104,19 +104,19 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JPanel createDescriptionSection() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(ModernColors.BG_WHITE);
+        panel.setBackground(getCardBackgroundColor());
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
         titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
-        titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        titleLabel.setForeground(getTextPrimaryColor());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel descLabel = new JLabel("<html>" +
                 I18nUtil.getMessage(MessageKeys.CERT_DESCRIPTION) +
                 "</html>");
         descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 11));
-        descLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        descLabel.setForeground(getTextSecondaryColor());
         descLabel.setBorder(new EmptyBorder(6, 0, 0, 0));
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -132,7 +132,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JPanel createActionBar() {
         JPanel actionBar = new JPanel();
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
-        actionBar.setBackground(ModernColors.BG_WHITE);
+        actionBar.setBackground(getCardBackgroundColor());
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
@@ -168,13 +168,13 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         certificateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         certificateTable.setRowHeight(28);
         certificateTable.setShowGrid(true);
-        certificateTable.setGridColor(ModernColors.BORDER_LIGHT);
-        certificateTable.setBackground(ModernColors.BG_WHITE);
+        certificateTable.setGridColor(getBorderLightColor());
+        certificateTable.setBackground(getCardBackgroundColor());
         certificateTable.setSelectionBackground(ModernColors.SELECTED_BG);
-        certificateTable.setSelectionForeground(ModernColors.TEXT_PRIMARY);
+        certificateTable.setSelectionForeground(getTextPrimaryColor());
         certificateTable.getTableHeader().setReorderingAllowed(false);
-        certificateTable.getTableHeader().setBackground(ModernColors.BG_LIGHT);
-        certificateTable.getTableHeader().setForeground(ModernColors.TEXT_PRIMARY);
+        certificateTable.getTableHeader().setBackground(getBackgroundColor());
+        certificateTable.getTableHeader().setForeground(getTextPrimaryColor());
         certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 11));
         certificateTable.setFont(new Font(certificateTable.getFont().getName(), Font.PLAIN, 11));
 
@@ -313,7 +313,8 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-        textArea.setBackground(ModernColors.BG_LIGHT);
+        textArea.setBackground(getBackgroundColor());
+        textArea.setForeground(getTextPrimaryColor());
         textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(textArea);

@@ -22,6 +22,7 @@ import com.laker.postman.panel.workspace.components.GitOperationDialog;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -151,8 +152,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         logMenuItem.addActionListener(e -> openLogDirectory());
         JMenuItem exitMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXIT));
         // 使用 ShortcutManager 获取退出快捷键
-        KeyStroke exitKey = com.laker.postman.service.setting.ShortcutManager.getKeyStroke(
-                com.laker.postman.service.setting.ShortcutManager.EXIT_APP);
+        KeyStroke exitKey = ShortcutManager.getKeyStroke(ShortcutManager.EXIT_APP);
         if (exitKey != null) {
             exitMenuItem.setAccelerator(exitKey);
         }

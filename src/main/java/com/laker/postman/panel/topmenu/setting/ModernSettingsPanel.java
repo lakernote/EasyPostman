@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -41,6 +42,118 @@ public abstract class ModernSettingsPanel extends JPanel {
     private static final int LABEL_WIDTH = 220;     // 标签宽度
     private static final int FIELD_WIDTH = 300;     // 字段宽度
 
+    /**
+     * 检查当前是否为暗色主题
+     */
+    protected boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的主背景色
+     */
+    protected Color getBackgroundColor() {
+        return ModernColors.getBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的卡片/区域背景色
+     */
+    protected Color getCardBackgroundColor() {
+        return ModernColors.getCardBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的输入框背景色
+     */
+    protected Color getInputBackgroundColor() {
+        return ModernColors.getInputBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的主文本颜色
+     */
+    protected Color getTextPrimaryColor() {
+        return ModernColors.getTextPrimary();
+    }
+
+    /**
+     * 获取主题适配的次要文本颜色
+     */
+    protected Color getTextSecondaryColor() {
+        return ModernColors.getTextSecondary();
+    }
+
+    /**
+     * 获取主题适配的边框颜色（浅色）
+     */
+    protected Color getBorderLightColor() {
+        return ModernColors.getBorderLightColor();
+    }
+
+    /**
+     * 获取主题适配的边框颜色（中等）
+     */
+    protected Color getBorderMediumColor() {
+        return ModernColors.getBorderMediumColor();
+    }
+
+    /**
+     * 获取主题适配的悬停背景色
+     */
+    protected Color getHoverBackgroundColor() {
+        return ModernColors.getHoverBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的按钮背景色（暗色，pressed状态）
+     */
+    protected Color getButtonDarkColor() {
+        return ModernColors.getButtonDarkColor();
+    }
+
+    /**
+     * 获取主题适配的滚动条轨道颜色
+     */
+    protected Color getScrollbarTrackColor() {
+        return ModernColors.getScrollbarTrackColor();
+    }
+
+    /**
+     * 获取主题适配的滚动条滑块颜色
+     */
+    protected Color getScrollbarThumbColor() {
+        return ModernColors.getScrollbarThumbColor();
+    }
+
+    /**
+     * 获取主题适配的滚动条滑块悬停颜色
+     */
+    protected Color getScrollbarThumbHoverColor() {
+        return ModernColors.getScrollbarThumbHoverColor();
+    }
+
+    /**
+     * 获取主题适配的阴影颜色
+     */
+    protected Color getShadowColor(int alpha) {
+        return ModernColors.getShadowColor(alpha);
+    }
+
+    /**
+     * 获取主题适配的警告背景色
+     */
+    protected Color getWarningBackgroundColor() {
+        return ModernColors.getWarningBackgroundColor();
+    }
+
+    /**
+     * 获取主题适配的警告边框颜色
+     */
+    protected Color getWarningBorderColor() {
+        return ModernColors.getWarningBorderColor();
+    }
+
     public ModernSettingsPanel() {
         initUI();
         registerListeners();
@@ -48,11 +161,11 @@ public abstract class ModernSettingsPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        setBackground(ModernColors.BG_LIGHT);
+        setBackground(getBackgroundColor());
 
         // 创建主容器
         JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
-        mainContainer.setBackground(ModernColors.BG_LIGHT);
+        mainContainer.setBackground(getBackgroundColor());
 
         // 未保存更改警告面板
         warningPanel = createWarningPanel();
@@ -61,7 +174,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         // 主内容区域
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBackground(ModernColors.BG_LIGHT);
+        contentPanel.setBackground(getBackgroundColor());
         contentPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
         // 子类实现具体内容
@@ -102,7 +215,7 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel createModernSection(String title, String description) {
         JPanel section = new JPanel();
         section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(ModernColors.BG_WHITE);
+        section.setBackground(getCardBackgroundColor());
         section.setBorder(new CompoundBorder(
                 new ModernRoundedBorder(),
                 new EmptyBorder(12, 12, 12, 12)
@@ -114,14 +227,14 @@ public abstract class ModernSettingsPanel extends JPanel {
         // 标题
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
-        titleLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        titleLabel.setForeground(getTextPrimaryColor());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 描述（可选）
         if (description != null && !description.isEmpty()) {
             JLabel descLabel = new JLabel("<html>" + description + "</html>");
             descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 11));
-            descLabel.setForeground(ModernColors.TEXT_SECONDARY);
+            descLabel.setForeground(getTextSecondaryColor());
             descLabel.setBorder(new EmptyBorder(4, 0, 8, 0));
             descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -141,14 +254,14 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel createFieldRow(String labelText, String tooltip, JComponent inputComponent) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(ModernColors.BG_WHITE);
+        row.setBackground(getCardBackgroundColor());
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         // 标签
         JLabel label = new JLabel(labelText);
         label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 12));
-        label.setForeground(ModernColors.TEXT_PRIMARY);
+        label.setForeground(getTextPrimaryColor());
         label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
         label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
         label.setMaximumSize(new Dimension(LABEL_WIDTH, 32));
@@ -176,14 +289,14 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel createCheckBoxRow(JCheckBox checkBox, String tooltip) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(ModernColors.BG_WHITE);
+        row.setBackground(getCardBackgroundColor());
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         // 样式化复选框
         checkBox.setFont(new Font(checkBox.getFont().getName(), Font.PLAIN, 12));
-        checkBox.setForeground(ModernColors.TEXT_PRIMARY);
-        checkBox.setBackground(ModernColors.BG_WHITE);
+        checkBox.setForeground(getTextPrimaryColor());
+        checkBox.setBackground(getCardBackgroundColor());
         checkBox.setFocusPainted(false);
 
         if (tooltip != null && !tooltip.isEmpty()) {
@@ -217,13 +330,13 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private void styleInputComponent(JComponent component) {
         component.setFont(new Font(component.getFont().getName(), Font.PLAIN, 12));
-        component.setBackground(ModernColors.BG_WHITE);
-        component.setForeground(ModernColors.TEXT_PRIMARY);
+        component.setBackground(getInputBackgroundColor());
+        component.setForeground(getTextPrimaryColor());
 
         if (component instanceof JTextField) {
             JTextField field = (JTextField) component;
             field.setBorder(new CompoundBorder(
-                    new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 8),
+                    new RoundedLineBorder(getBorderMediumColor(), 1, 8),
                     new EmptyBorder(8, 14, 8, 14)
             ));
 
@@ -245,7 +358,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                     // 检查是否有验证错误
                     if (!hasValidationError(field)) {
                         field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 8),
+                                new RoundedLineBorder(getBorderMediumColor(), 1, 8),
                                 new EmptyBorder(8, 14, 8, 14)
                         ));
                     }
@@ -253,8 +366,8 @@ public abstract class ModernSettingsPanel extends JPanel {
             });
         } else if (component instanceof JComboBox) {
             JComboBox<?> comboBox = (JComboBox<?>) component;
-            comboBox.setBackground(ModernColors.BG_WHITE);
-            comboBox.setForeground(ModernColors.TEXT_PRIMARY);
+            comboBox.setBackground(getInputBackgroundColor());
+            comboBox.setForeground(getTextPrimaryColor());
             comboBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
         }
     }
@@ -264,9 +377,9 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private JPanel createModernButtonBar() {
         JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
-        buttonBar.setBackground(ModernColors.BG_LIGHT);
+        buttonBar.setBackground(getBackgroundColor());
         buttonBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.BORDER_LIGHT),
+                BorderFactory.createMatteBorder(1, 0, 0, 0, getBorderLightColor()),
                 BorderFactory.createEmptyBorder(0, 16, 0, 16)
         ));
 
@@ -316,13 +429,13 @@ public abstract class ModernSettingsPanel extends JPanel {
                     }
                 } else {
                     if (!isEnabled()) {
-                        g2.setColor(ModernColors.BG_LIGHT);
+                        g2.setColor(getBackgroundColor());
                     } else if (getModel().isPressed()) {
-                        g2.setColor(ModernColors.BG_DARK);
+                        g2.setColor(getButtonDarkColor());
                     } else if (getModel().isRollover()) {
-                        g2.setColor(ModernColors.HOVER_BG);
+                        g2.setColor(getHoverBackgroundColor());
                     } else {
-                        g2.setColor(ModernColors.BG_WHITE);
+                        g2.setColor(getCardBackgroundColor());
                     }
                 }
 
@@ -330,7 +443,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
                 // 边框（非主按钮）
                 if (!isPrimary) {
-                    g2.setColor(isEnabled() ? ModernColors.BORDER_MEDIUM : ModernColors.BORDER_LIGHT);
+                    g2.setColor(isEnabled() ? getBorderMediumColor() : getBorderLightColor());
                     g2.setStroke(new BasicStroke(1));
                     g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 }
@@ -343,7 +456,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         };
 
         button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 12));
-        button.setForeground(isPrimary ? ModernColors.TEXT_INVERSE : ModernColors.TEXT_PRIMARY);
+        button.setForeground(isPrimary ? ModernColors.getTextInverse() : getTextPrimaryColor());
         button.setPreferredSize(new Dimension(100, 34));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
@@ -411,7 +524,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                         ));
                     } else {
                         field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 8),
+                                new RoundedLineBorder(getBorderMediumColor(), 1, 8),
                                 new EmptyBorder(8, 14, 8, 14)
                         ));
                     }
@@ -449,11 +562,11 @@ public abstract class ModernSettingsPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
             @Override
             protected void configureScrollBarColors() {
-                this.thumbColor = ModernColors.SCROLLBAR_THUMB;
-                this.thumbDarkShadowColor = ModernColors.SCROLLBAR_THUMB;
-                this.thumbHighlightColor = ModernColors.SCROLLBAR_THUMB;
-                this.thumbLightShadowColor = ModernColors.SCROLLBAR_THUMB;
-                this.trackColor = ModernColors.SCROLLBAR_TRACK;
+                this.thumbColor = getScrollbarThumbColor();
+                this.thumbDarkShadowColor = getScrollbarThumbColor();
+                this.thumbHighlightColor = getScrollbarThumbColor();
+                this.thumbLightShadowColor = getScrollbarThumbColor();
+                this.trackColor = getScrollbarTrackColor();
             }
 
             @Override
@@ -478,7 +591,7 @@ public abstract class ModernSettingsPanel extends JPanel {
             protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(isThumbRollover() ? ModernColors.SCROLLBAR_THUMB_HOVER : ModernColors.SCROLLBAR_THUMB);
+                g2.setColor(isThumbRollover() ? getScrollbarThumbHoverColor() : getScrollbarThumbColor());
                 g2.fillRoundRect(thumbBounds.x + 2, thumbBounds.y + 2,
                         thumbBounds.width - 4, thumbBounds.height - 4, 6, 6);
                 g2.dispose();
@@ -487,7 +600,7 @@ public abstract class ModernSettingsPanel extends JPanel {
             @Override
             protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(ModernColors.SCROLLBAR_TRACK);
+                g2.setColor(getScrollbarTrackColor());
                 g2.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
                 g2.dispose();
             }
@@ -497,7 +610,7 @@ public abstract class ModernSettingsPanel extends JPanel {
     /**
      * 现代化圆角边框
      */
-    private static class ModernRoundedBorder extends AbstractBorder {
+    private class ModernRoundedBorder extends AbstractBorder {
         @Override
         public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -507,17 +620,17 @@ public abstract class ModernSettingsPanel extends JPanel {
             int shadowSize = 4;
             for (int i = shadowSize; i > 0; i--) {
                 int alpha = (int) (8 * (1 - (double) i / shadowSize));
-                g2.setColor(new Color(15, 23, 42, alpha));
+                g2.setColor(getShadowColor(alpha));
                 g2.fillRoundRect(x + i, y + i, width - i * 2, height - i * 2,
                         BORDER_RADIUS + 2, BORDER_RADIUS + 2);
             }
 
-            // 背景（确保内容区域是白色）
-            g2.setColor(ModernColors.BG_WHITE);
+            // 背景（主题适配）
+            g2.setColor(getCardBackgroundColor());
             g2.fillRoundRect(x + 1, y + 1, width - 2, height - 2, BORDER_RADIUS, BORDER_RADIUS);
 
             // 边框
-            g2.setColor(ModernColors.BORDER_LIGHT);
+            g2.setColor(getBorderLightColor());
             g2.setStroke(new BasicStroke(1));
             g2.drawRoundRect(x + 1, y + 1, width - 3, height - 3, BORDER_RADIUS, BORDER_RADIUS);
 
@@ -606,9 +719,9 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private JPanel createWarningPanel() {
         JPanel panel = new JPanel(new BorderLayout(12, 0));
-        panel.setBackground(ModernColors.SETTINGS_UNSAVED_WARNING_BG);
+        panel.setBackground(getWarningBackgroundColor());
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.SETTINGS_UNSAVED_WARNING_BORDER),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, getWarningBorderColor()),
                 new EmptyBorder(12, 20, 12, 20)
         ));
 
@@ -619,7 +732,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         warningLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UNSAVED_CHANGES_WARNING));
         warningLabel.setFont(new Font(warningLabel.getFont().getName(), Font.PLAIN, 11));
-        warningLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        warningLabel.setForeground(getTextPrimaryColor());
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -655,10 +768,10 @@ public abstract class ModernSettingsPanel extends JPanel {
     private JButton createSmallButton(String text) {
         JButton button = new JButton(text);
         button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 11));
-        button.setForeground(ModernColors.TEXT_PRIMARY);
-        button.setBackground(ModernColors.BG_WHITE);
+        button.setForeground(getTextPrimaryColor());
+        button.setBackground(getCardBackgroundColor());
         button.setBorder(new CompoundBorder(
-                new RoundedLineBorder(ModernColors.BORDER_MEDIUM, 1, 6),
+                new RoundedLineBorder(getBorderMediumColor(), 1, 6),
                 new EmptyBorder(4, 12, 4, 12)
         ));
         button.setContentAreaFilled(false);
@@ -668,7 +781,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setBackground(ModernColors.HOVER_BG);
+                button.setBackground(getHoverBackgroundColor());
                 button.setOpaque(true);
             }
 
@@ -830,14 +943,14 @@ public abstract class ModernSettingsPanel extends JPanel {
                                              JTextField inputField, String defaultValue) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(ModernColors.BG_WHITE);
+        row.setBackground(getCardBackgroundColor());
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
         // 标签
         JLabel label = new JLabel(labelText);
         label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 11));
-        label.setForeground(ModernColors.TEXT_PRIMARY);
+        label.setForeground(getTextPrimaryColor());
         label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
         label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
         label.setMaximumSize(new Dimension(LABEL_WIDTH, 32));
@@ -905,7 +1018,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                                              JTextField inputField, JLabel validationLabel) {
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setBackground(ModernColors.BG_WHITE);
+        container.setBackground(getCardBackgroundColor());
         container.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 字段行

@@ -223,7 +223,7 @@ public class SplashWindow extends JWindow {
 
                 boolean isDark = FlatLaf.isLafDark();
 
-                // 主题适配的渐变背景，与主题背景色 (61, 63, 65) 协调
+                // 主题适配的渐变背景，与主题背景色 (60, 63, 65) 协调
                 Color gradientStart = isDark ? new Color(65, 67, 69) : ModernColors.PRIMARY;
                 Color gradientEnd = isDark ? new Color(55, 57, 59) : ModernColors.PRIMARY_LIGHTER;
                 GradientPaint gp = new GradientPaint(
@@ -244,7 +244,7 @@ public class SplashWindow extends JWindow {
                 g2d.setPaint(glossPaint);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
 
-                // 添加边框高光，与主题背景 (61, 63, 65) 协调
+                // 添加边框高光，与主题背景 (60, 63, 65) 协调
                 Color borderColor = isDark ? new Color(75, 77, 80, 100) : ModernColors.whiteWithAlpha(80);
                 g2d.setColor(borderColor);
                 g2d.setStroke(new BasicStroke(2f));

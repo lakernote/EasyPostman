@@ -2,6 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class ToolboxPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
 
         // 创建标签页容器
         toolTabs = new JTabbedPane(SwingConstants.TOP);

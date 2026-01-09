@@ -324,6 +324,21 @@ public final class ModernColors {
      */
     public static final Color BORDER_MEDIUM = new Color(203, 213, 225);
 
+    /**
+     * 获取分隔线/边框颜色 - 主题适配
+     * 用于面板之间的分隔线、边框等
+     * 亮色主题：浅灰色（LIGHT_GRAY）
+     * 暗色主题：比背景亮的灰色，有明显区分度
+     */
+    public static Color getDividerBorderColor() {
+        if (isDarkTheme()) {
+            return new Color(80, 83, 85);
+        } else {
+            // 亮色主题：使用 LIGHT_GRAY
+            return Color.LIGHT_GRAY;
+        }
+    }
+
     // ==================== 特殊效果色 ====================
 
     /**
@@ -837,10 +852,4 @@ public final class ModernColors {
         int a = (int) (c1.getAlpha() * invRatio + c2.getAlpha() * ratio);
         return new Color(r, g, b, a);
     }
-
-    // 私有构造函数，防止实例化
-    private ModernColors() {
-        throw new AssertionError("Cannot instantiate ModernColors class");
-    }
 }
-

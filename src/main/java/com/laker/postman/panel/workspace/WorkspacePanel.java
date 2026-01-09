@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -43,7 +44,7 @@ public class WorkspacePanel extends SingletonBasePanel {
     protected void initUI() {
         workspaceService = WorkspaceService.getInstance();
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
 
         // 创建顶部工具栏
         add(createToolbar(), BorderLayout.NORTH);

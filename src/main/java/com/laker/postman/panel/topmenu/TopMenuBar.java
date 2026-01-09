@@ -7,6 +7,7 @@ import com.laker.postman.common.SingletonBaseMenuBar;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.combobox.WorkspaceComboBox;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.GitOperation;
@@ -55,7 +56,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
 
     private Border createPanelBorder() {
         return BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(2, 4, 1, 8)
         );
     }

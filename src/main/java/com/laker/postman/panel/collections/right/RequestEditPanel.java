@@ -8,6 +8,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -418,7 +419,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
-        buttonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
+        buttonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
 
         JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
         JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));

@@ -8,6 +8,7 @@ import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -132,7 +133,7 @@ public class PerformancePanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
 
         // 初始化持久化服务
         this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
@@ -213,7 +214,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 保存/加载用例按钮 ==========
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
+        topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
         runBtn = new StartButton();
         stopBtn = new StopButton();

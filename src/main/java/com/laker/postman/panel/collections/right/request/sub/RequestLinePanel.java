@@ -65,7 +65,7 @@ public class RequestLinePanel extends JPanel {
         setOpaque(true);
         // 添加精致的边框和内边距
         setBorder(new CompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.BORDER_LIGHT),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
                 new EmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING)
         ));
     }

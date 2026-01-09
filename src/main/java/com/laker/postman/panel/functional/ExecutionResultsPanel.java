@@ -58,7 +58,7 @@ public class ExecutionResultsPanel extends JPanel {
         // 添加复合边框：内部间距 + 外部边框
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createEmptyBorder(8, 8, 8, 8), // 内边距
-                BorderFactory.createMatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY) // 外边框
+                BorderFactory.createMatteBorder(1, 1, 1, 1, ModernColors.getDividerBorderColor()) // 外边框
         ));
 
         // 创建分割面板

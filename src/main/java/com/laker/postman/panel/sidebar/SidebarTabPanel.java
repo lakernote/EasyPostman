@@ -100,7 +100,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         // 2. 控制台日志区和底部栏
         consoleContainer = new JPanel(new BorderLayout());
-        consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+        consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
         consoleContainer.setOpaque(false);
         initBottomBar();
         consolePanel = SingletonFactory.getInstance(ConsolePanel.class);

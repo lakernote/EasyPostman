@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ public class RequestCollectionsPanel extends SingletonBasePanel {
     protected void initUI() {
         // 设置布局为 BorderLayout
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
         // 1.创建左侧的请求集合面板
         RequestCollectionsLeftPanel requestCollectionsLeftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         // 2. 创建右侧的请求编辑面板

@@ -52,16 +52,16 @@ public class PlusPanel extends JPanel {
      * 获取主题适配的卡片背景色
      */
     private Color getCardBackground() {
-        // 暗色主题使用温暖的深灰色，避免纯黑
-        return isDarkTheme() ? new Color(38, 38, 42) : ModernColors.BG_WHITE;
+        // 暗色主题使用与主题背景色协调的深灰色 (基于 61, 63, 65)
+        return isDarkTheme() ? new Color(55, 57, 59) : ModernColors.BG_WHITE;
     }
 
     /**
      * 获取主题适配的边框颜色
      */
     private Color getBorderColor() {
-        // 暗色主题使用微妙的亮色边框，增加层次感
-        return isDarkTheme() ? new Color(55, 55, 60, 100) : ModernColors.BORDER_LIGHT;
+        // 暗色主题使用微妙的亮色边框，基于主题背景 (61, 63, 65) 增加层次感
+        return isDarkTheme() ? new Color(75, 77, 80, 100) : ModernColors.BORDER_LIGHT;
     }
 
     /**
@@ -90,8 +90,8 @@ public class PlusPanel extends JPanel {
      * 获取主题适配的非悬停按钮背景色
      */
     private Color getButtonBackground() {
-        // 暗色主题使用稍亮的背景，增加可见性
-        return isDarkTheme() ? new Color(48, 48, 52) : ModernColors.HOVER_BG;
+        // 暗色主题使用稍亮的背景，与主题背景 (61, 63, 65) 协调
+        return isDarkTheme() ? new Color(70, 72, 74) : ModernColors.HOVER_BG;
     }
 
     /**
@@ -124,9 +124,9 @@ public class PlusPanel extends JPanel {
 
                 // 绘制卡片背景（主题适配，暗色主题添加渐变）
                 if (isDarkTheme()) {
-                    // 暗色主题：使用微妙的渐变背景，增加质感
-                    Color bgStart = new Color(38, 38, 42);
-                    Color bgEnd = new Color(32, 32, 36);
+                    // 暗色主题：使用微妙的渐变背景，与主题背景 (61, 63, 65) 协调
+                    Color bgStart = new Color(55, 57, 59);
+                    Color bgEnd = new Color(50, 52, 54);
                     GradientPaint bgGradient = new GradientPaint(
                             0, 0, bgStart,
                             0, height, bgEnd

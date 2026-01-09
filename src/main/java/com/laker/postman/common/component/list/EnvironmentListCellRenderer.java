@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.list;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
@@ -25,12 +26,18 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
             boolean isActive = active != null && active.getId().equals(item.getEnvironment().getId());
 
             // 设置图标和样式
+            Color checkedColor = new Color(0x60a5fa); // 浅蓝色，亮/暗主题都适用
+            Color uncheckedColor = FlatLaf.isLafDark() ? new Color(0x334155) : new Color(0xcbd5e1); // 深灰/浅灰
             if (isActive) {
-                label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
+                FlatSVGIcon icon = new FlatSVGIcon("icons/check.svg", 16, 16);
+                icon.setColorFilter(new FlatSVGIcon.ColorFilter(c -> checkedColor));
+                label.setIcon(icon);
                 // 激活环境使用加粗字体
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
             } else {
-                label.setIcon(new FlatSVGIcon("icons/nocheck.svg", 16, 16));
+                FlatSVGIcon icon = new FlatSVGIcon("icons/nocheck.svg", 16, 16);
+                icon.setColorFilter(new FlatSVGIcon.ColorFilter(c -> uncheckedColor));
+                label.setIcon(icon);
                 // 普通环境使用常规字体
                 label.setFont(label.getFont().deriveFont(Font.PLAIN));
             }

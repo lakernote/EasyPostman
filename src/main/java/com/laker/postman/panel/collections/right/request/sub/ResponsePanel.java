@@ -212,10 +212,8 @@ public class ResponsePanel extends JPanel {
                 String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
                         "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
                 headersBtn.setText("<html>" + countHtml + "</html>");
-                headersBtn.setForeground(Color.BLACK);
             } else {
                 headersBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
-                headersBtn.setForeground(Color.BLACK);
             }
         }
     }
@@ -413,10 +411,8 @@ public class ResponsePanel extends JPanel {
                 String color = allPassed ? "#009900" : "#d32f2f";
                 String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) + "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
                 testsBtn.setText("<html>" + countHtml + "</html>");
-                testsBtn.setForeground(Color.BLACK);
             } else {
                 testsBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_TESTS));
-                testsBtn.setForeground(Color.BLACK);
             }
         }
     }

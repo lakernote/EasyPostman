@@ -91,6 +91,7 @@ public enum SidebarTab {
     public Icon getIcon() {
         if (icon == null) {
             icon = new FlatSVGIcon(iconPath, 22, 22);
+            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
         }
         return icon;
     }

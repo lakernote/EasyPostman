@@ -561,15 +561,15 @@ jobs:
       # 第二步：检查 PR 标题是否符合规范
       - name: Check PR title
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
           if [[ -z "$PR_TITLE" ]]; then
             echo "❌ PR title cannot be empty"
             exit 1
           fi
           
           # 检查标题长度（建议不超过 72 个字符）
-          if [[ ${#PR_TITLE} -gt 72 ]]; then
-            echo "⚠️  Warning: PR title is too long (${#PR_TITLE} chars, recommended < 72)"
+          PR_TITLE_LENGTH=${#PR_TITLE}
+          if [[ $PR_TITLE_LENGTH -gt 72 ]]; then
+            echo "⚠️  Warning: PR title is too long ($PR_TITLE_LENGTH chars, recommended < 72)"
           fi
           
           echo "✅ PR title: $PR_TITLE"
@@ -577,17 +577,22 @@ jobs:
           # if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\(.+\))?: ]]; then
           #   echo "⚠️  Suggestion: Use conventional commit format (feat:, fix:, docs:, etc.)"
           # fi
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
 
       # 第三步：检查 PR 描述是否提供了足够的信息
       - name: Check PR description
         run: |
-          PR_BODY="${{ github.event.pull_request.body }}"
-          if [[ -z "$PR_BODY" || ${#PR_BODY} -lt 10 ]]; then
-            echo "⚠️  Warning: PR description is too short or empty (${#PR_BODY} chars)"
+          # 使用环境变量来安全地传递 PR body，避免特殊字符和命令注入
+          PR_BODY_LENGTH=$(echo -n "$PR_BODY" | wc -c | tr -d ' ')
+          if [[ -z "$PR_BODY" || "$PR_BODY_LENGTH" -lt 10 ]]; then
+            echo "⚠️  Warning: PR description is too short or empty ($PR_BODY_LENGTH chars)"
             echo "建议提供详细的变更说明：what、why、how"
           else
-            echo "✅ PR description provided (${#PR_BODY} chars)"
+            echo "✅ PR description provided ($PR_BODY_LENGTH chars)"
           fi
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
 
       # 第四步：检查变更的文件数量
       - name: Check changed files
@@ -635,11 +640,14 @@ jobs:
     steps:
       # 生成检查结果汇总报告
       - name: Generate check summary
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           # 将检查结果写入 GitHub Step Summary（在 Actions 页面显示）
           echo "## 🔍 PR Check Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**PR #${{ github.event.pull_request.number }}**: ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "**PR #${PR_NUMBER}**: ${PR_TITLE}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # 检查结果表格

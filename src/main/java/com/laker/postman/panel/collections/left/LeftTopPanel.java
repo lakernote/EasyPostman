@@ -9,6 +9,8 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.ExportButton;
+import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.CurlRequest;
@@ -46,17 +48,17 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 @Slf4j
 public class LeftTopPanel extends SingletonBasePanel {
     private SearchTextField searchField;
+    private ImportButton importBtn;
 
     @Override
     protected void initUI() {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置上下左右边距
 
-        JButton importBtn = getImportBtn();
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
-        exportBtn.setFocusPainted(false);
-        exportBtn.setBackground(Color.WHITE);
-        exportBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_TOOLTIP));
+        importBtn = new ImportButton();
+        importBtn.addActionListener(e -> handleImportClick());
+
+        ExportButton exportBtn = new ExportButton();
         exportBtn.addActionListener(e -> exportRequestCollection());
 
         searchField = new SearchTextField();
@@ -142,37 +144,30 @@ public class LeftTopPanel extends SingletonBasePanel {
     }
 
 
-    public JButton getImportBtn() {
-        // 使用SVG图标美化
-        JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
-        importBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_TOOLTIP));
-        importBtn.setFocusPainted(false);
-        importBtn.setBackground(Color.WHITE);
-        // 合并导入菜单
+    private void handleImportClick() {
+        // 智能检测剪贴板内容
+        String clipboardText = null;
+        try {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            Transferable t = clipboard.getContents(null);
+            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                clipboardText = (String) t.getTransferData(DataFlavor.stringFlavor);
+            }
+        } catch (Exception ignored) {
+        }
+        if (clipboardText != null && clipboardText.trim().toLowerCase().startsWith("curl")) {
+            int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED),
+                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_TITLE), JOptionPane.YES_NO_OPTION);
+            if (result == JOptionPane.YES_OPTION) {
+                importCurlToCollection(clipboardText); // 自动填充
+                return;
+            }
+        }
+
+        // 显示导入菜单
         JPopupMenu importMenu = getImportMenu();
-        importBtn.addActionListener(e -> {
-            // 智能检测剪贴板内容
-            String clipboardText = null;
-            try {
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                Transferable t = clipboard.getContents(null);
-                if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                    clipboardText = (String) t.getTransferData(DataFlavor.stringFlavor);
-                }
-            } catch (Exception ignored) {
-            }
-            if (clipboardText != null && clipboardText.trim().toLowerCase().startsWith("curl")) {
-                int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED),
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_TITLE), JOptionPane.YES_NO_OPTION);
-                if (result == JOptionPane.YES_OPTION) {
-                    importCurlToCollection(clipboardText); // 自动填充
-                    return;
-                }
-            }
-            importMenu.show(importBtn, 0, importBtn.getHeight());
-        });
-        return importBtn;
+        importMenu.show(importBtn, 0, importBtn.getHeight());
     }
 
     private JPopupMenu getImportMenu() {

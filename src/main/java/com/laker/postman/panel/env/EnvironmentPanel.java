@@ -8,6 +8,8 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.ExportButton;
+import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
@@ -55,6 +57,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private JList<EnvironmentItem> environmentList;
     private DefaultListModel<EnvironmentItem> environmentListModel;
     private JTextField searchField;
+    private ImportButton importBtn;
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
     private boolean isLoadingData = false; // 用于控制是否正在加载数据，防止自动保存
 
@@ -144,10 +147,22 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private JPanel getSearchAndImportPanel() {
         JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         importExportPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        JButton importBtn = new JButton(new FlatSVGIcon("icons/import.svg", 20, 20));
-        importBtn.setFocusPainted(false);
-        importBtn.setBackground(Color.WHITE);
-        importBtn.setIconTextGap(6);
+
+        importBtn = new ImportButton();
+        importBtn.addActionListener(e -> showImportMenu());
+        importExportPanel.add(importBtn);
+
+        ExportButton exportBtn = new ExportButton();
+        exportBtn.addActionListener(e -> exportEnvironments());
+        importExportPanel.add(exportBtn);
+
+        searchField = new SearchTextField();
+        searchField.setPreferredSize(new Dimension(180, 28));
+        importExportPanel.add(searchField);
+        return importExportPanel;
+    }
+
+    private void showImportMenu() {
         JPopupMenu importMenu = new JPopupMenu();
         JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_EASY),
                 new FlatSVGIcon("icons/easy.svg", 20, 20));
@@ -157,20 +172,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         importPostmanItem.addActionListener(e -> importPostmanEnvironments());
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
-        importBtn.addActionListener(e -> importMenu.show(importBtn, 0, importBtn.getHeight()));
-        importExportPanel.add(importBtn);
-
-        JButton exportBtn = new JButton(new FlatSVGIcon("icons/export.svg", 20, 20));
-        exportBtn.setFocusPainted(false);
-        exportBtn.setBackground(Color.WHITE);
-        exportBtn.setIconTextGap(6);
-        exportBtn.addActionListener(e -> exportEnvironments());
-        importExportPanel.add(exportBtn);
-
-        searchField = new SearchTextField();
-        searchField.setPreferredSize(new Dimension(180, 28));
-        importExportPanel.add(searchField);
-        return importExportPanel;
+        importMenu.show(importBtn, 0, importBtn.getHeight());
     }
 
     @Override

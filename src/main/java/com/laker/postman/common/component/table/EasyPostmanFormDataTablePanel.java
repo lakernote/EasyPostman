@@ -6,7 +6,6 @@ import com.laker.postman.util.FontsUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
@@ -172,8 +171,6 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
 
     private void setupCellRenderersAndEditors() {
-        setEmptyCellWhiteBackgroundRenderer();
-
         // Set editors and renderers for Key, Type, Value columns
         table.getColumnModel().getColumn(COL_KEY).setCellEditor(new EasyPostmanTextFieldCellEditor());
         table.getColumnModel().getColumn(COL_KEY).setCellRenderer(new EasyPostmanTextFieldCellRenderer());
@@ -328,27 +325,6 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
             return this;
         }
-    }
-
-    /**
-     * Set empty cell white background renderer
-     */
-    private void setEmptyCellWhiteBackgroundRenderer() {
-        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-                if (!isSelected) {
-                    c.setBackground(Color.WHITE);
-                }
-
-                return c;
-            }
-        };
-
-        table.setDefaultRenderer(Object.class, renderer);
     }
 
     /**

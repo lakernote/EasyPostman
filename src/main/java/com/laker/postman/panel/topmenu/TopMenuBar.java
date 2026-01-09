@@ -47,6 +47,50 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     @Getter
     private WorkspaceComboBox workspaceComboBox;
 
+    /**
+     * 获取主题适配的边框颜色（用于HTML）
+     */
+    @SuppressWarnings("unused")
+    private static String getThemeBorderColor() {
+        Color color = ModernColors.getDividerBorderColor();
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    /**
+     * 获取主题适配的主文本颜色（用于HTML）
+     */
+    @SuppressWarnings("unused")
+    private static String getThemeTextColor() {
+        Color color = ModernColors.getTextPrimary();
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    /**
+     * 获取主题适配的次文本颜色（用于HTML）
+     */
+    @SuppressWarnings("unused")
+    private static String getThemeSecondaryTextColor() {
+        Color color = ModernColors.getTextSecondary();
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    /**
+     * 获取主题适配的提示文本颜色（用于HTML）
+     */
+    @SuppressWarnings("unused")
+    private static String getThemeHintTextColor() {
+        Color color = ModernColors.getTextHint();
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    /**
+     * 获取主题适配的链接颜色（用于HTML）
+     */
+    @SuppressWarnings("unused")
+    private static String getThemeLinkColor() {
+        return SimpleThemeManager.isDarkTheme() ? "#60a5fa" : "#1a0dab";
+    }
+
     @Override
     protected void initUI() {
         setOpaque(true);
@@ -391,30 +435,30 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         String iconUrl = getClass().getResource("/icons/icon.png") + "";
         String html = "<html>"
                 + "<head>"
-                + "<div style='border-radius:16px; border:1px solid #e0e0e0; padding:20px 28px; min-width:340px; max-width:420px;'>"
+                + "<div style='border-radius:16px; border:1px solid " + getThemeBorderColor() + "; padding:20px 28px; min-width:340px; max-width:420px;'>"
                 + "<div style='text-align:center;'>"
                 + "<img src='" + iconUrl + "' width='56' height='56' style='margin-bottom:10px;'/>"
                 + "</div>"
-                + "<div style='font-size:16px; font-weight:bold; color:#212529; text-align:center; margin-bottom:6px;'>EasyPostman</div>"
-                + "<div style='font-size:12px; color:#666; text-align:center; margin-bottom:12px;'>"
+                + "<div style='font-size:16px; font-weight:bold; color:" + getThemeTextColor() + "; text-align:center; margin-bottom:6px;'>EasyPostman</div>"
+                + "<div style='font-size:12px; color:" + getThemeSecondaryTextColor() + "; text-align:center; margin-bottom:12px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_VERSION, getCurrentVersion()) + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>"
+                + "<div style='font-size:10px; color:" + getThemeHintTextColor() + "; margin-bottom:2px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_AUTHOR) + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:2px;'>"
+                + "<div style='font-size:10px; color:" + getThemeHintTextColor() + "; margin-bottom:2px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_LICENSE) + "</div>"
-                + "<div style='font-size:10px; color:#444; margin-bottom:8px;'>"
+                + "<div style='font-size:10px; color:" + getThemeHintTextColor() + "; margin-bottom:8px;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_WECHAT) + "</div>"
-                + "<hr style='border:none; border-top:1px solid #eee; margin:10px 0;'>"
+                + "<hr style='border:none; border-top:1px solid " + getThemeBorderColor() + "; margin:10px 0;'>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
-                + "<a href='https://laker.blog.csdn.net' style='color:#1a0dab; text-decoration:none;'>"
+                + "<a href='https://laker.blog.csdn.net' style='color:" + getThemeLinkColor() + "; text-decoration:none;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_BLOG) + "</a>"
                 + "</div>"
                 + "<div style='font-size:9px; margin-bottom:2px;'>"
-                + "<a href='https://github.com/lakernote' style='color:#1a0dab; text-decoration:none;'>"
+                + "<a href='https://github.com/lakernote' style='color:" + getThemeLinkColor() + "; text-decoration:none;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_GITHUB) + "</a>"
                 + "</div>"
                 + "<div style='font-size:9px;'>"
-                + "<a href='https://gitee.com/lakernote' style='color:#1a0dab; text-decoration:none;'>"
+                + "<a href='https://gitee.com/lakernote' style='color:" + getThemeLinkColor() + "; text-decoration:none;'>"
                 + I18nUtil.getMessage(MessageKeys.ABOUT_GITEE) + "</a>"
                 + "</div>"
                 + "</div>"
@@ -562,3 +606,4 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         BeanFactory.getBean(UpdateService.class).checkUpdateManually();
     }
 }
+

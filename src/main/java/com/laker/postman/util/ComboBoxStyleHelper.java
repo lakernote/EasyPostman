@@ -1,6 +1,5 @@
 package com.laker.postman.util;
 
-import com.laker.postman.common.constants.ModernColors;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
@@ -16,15 +15,22 @@ import java.util.function.Supplier;
 @UtilityClass
 public class ComboBoxStyleHelper {
 
+    // UIManager 属性键常量
+    private static final String COMBOBOX_BUTTON_BACKGROUND = "ComboBox.buttonBackground";
+    private static final String COMBOBOX_BUTTON_EDITABLE_BACKGROUND = "ComboBox.buttonEditableBackground";
+    private static final String COMBOBOX_BUTTON_FOCUSED_BACKGROUND = "ComboBox.buttonFocusedBackground";
+    private static final String COMBOBOX_BUTTON_SEPARATOR_COLOR = "ComboBox.buttonSeparatorColor";
+    private static final String COMBOBOX_BUTTON_DISABLED_SEPARATOR_COLOR = "ComboBox.buttonDisabledSeparatorColor";
+
     /**
-     * 使用 PANEL_BACKGROUND 样式创建 ComboBox
+     * 使用 MenuBar.background 样式创建 ComboBox（自动适配亮/暗模式）
      *
      * @param comboBoxSupplier ComboBox 的创建函数
      * @param <T>              ComboBox 的类型
      * @return 应用了样式的 ComboBox
      */
     public static <T extends JComboBox<?>> T createWithPanelStyle(Supplier<T> comboBoxSupplier) {
-        return createWithCustomStyle(comboBoxSupplier, ModernColors.MENU_BACKGROUND);
+        return createWithCustomStyle(comboBoxSupplier, UIManager.getColor("MenuBar.background"));
     }
 
     /**
@@ -57,14 +63,14 @@ public class ComboBoxStyleHelper {
     }
 
     /**
-     * 为已存在的 ComboBox 应用 PANEL_BACKGROUND 样式
+     * 为已存在的 ComboBox 应用 Panel.background 样式（自动适配亮/暗模式）
      *
      * @param comboBox 要应用样式的 ComboBox
      * @param <T>      ComboBox 的类型
      * @return 应用了样式的 ComboBox
      */
     public static <T extends JComboBox<?>> T applyPanelStyle(T comboBox) {
-        return applyCustomStyle(comboBox, ModernColors.PANEL_BACKGROUND);
+        return applyCustomStyle(comboBox, UIManager.getColor("Panel.background"));
     }
 
     /**
@@ -101,11 +107,11 @@ public class ComboBoxStyleHelper {
      */
     private static Map<String, Object> saveOriginalUIManagerValues() {
         Map<String, Object> values = new HashMap<>();
-        values.put("ComboBox.buttonBackground", UIManager.getColor("ComboBox.buttonBackground"));
-        values.put("ComboBox.buttonEditableBackground", UIManager.getColor("ComboBox.buttonEditableBackground"));
-        values.put("ComboBox.buttonFocusedBackground", UIManager.getColor("ComboBox.buttonFocusedBackground"));
-        values.put("ComboBox.buttonSeparatorColor", UIManager.getColor("ComboBox.buttonSeparatorColor"));
-        values.put("ComboBox.buttonDisabledSeparatorColor", UIManager.getColor("ComboBox.buttonDisabledSeparatorColor"));
+        values.put(COMBOBOX_BUTTON_BACKGROUND, UIManager.getColor(COMBOBOX_BUTTON_BACKGROUND));
+        values.put(COMBOBOX_BUTTON_EDITABLE_BACKGROUND, UIManager.getColor(COMBOBOX_BUTTON_EDITABLE_BACKGROUND));
+        values.put(COMBOBOX_BUTTON_FOCUSED_BACKGROUND, UIManager.getColor(COMBOBOX_BUTTON_FOCUSED_BACKGROUND));
+        values.put(COMBOBOX_BUTTON_SEPARATOR_COLOR, UIManager.getColor(COMBOBOX_BUTTON_SEPARATOR_COLOR));
+        values.put(COMBOBOX_BUTTON_DISABLED_SEPARATOR_COLOR, UIManager.getColor(COMBOBOX_BUTTON_DISABLED_SEPARATOR_COLOR));
         return values;
     }
 
@@ -113,11 +119,11 @@ public class ComboBoxStyleHelper {
      * 应用自定义样式到 UIManager
      */
     private static void applyCustomStyle(Color backgroundColor) {
-        UIManager.put("ComboBox.buttonBackground", backgroundColor);
-        UIManager.put("ComboBox.buttonEditableBackground", backgroundColor);
-        UIManager.put("ComboBox.buttonFocusedBackground", backgroundColor);
-        UIManager.put("ComboBox.buttonSeparatorColor", null);
-        UIManager.put("ComboBox.buttonDisabledSeparatorColor", null);
+        UIManager.put(COMBOBOX_BUTTON_BACKGROUND, backgroundColor);
+        UIManager.put(COMBOBOX_BUTTON_EDITABLE_BACKGROUND, backgroundColor);
+        UIManager.put(COMBOBOX_BUTTON_FOCUSED_BACKGROUND, backgroundColor);
+        UIManager.put(COMBOBOX_BUTTON_SEPARATOR_COLOR, null);
+        UIManager.put(COMBOBOX_BUTTON_DISABLED_SEPARATOR_COLOR, null);
     }
 
     /**

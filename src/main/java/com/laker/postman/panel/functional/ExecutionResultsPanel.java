@@ -15,6 +15,7 @@ import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -740,9 +741,6 @@ public class ExecutionResultsPanel extends JPanel {
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
         table.setRowHeight(28);
-        table.setGridColor(ModernColors.TABLE_GRID_COLOR);
-        table.setSelectionBackground(ModernColors.TABLE_SELECTION_BACKGROUND);
-        table.setSelectionForeground(ModernColors.getTextPrimary());
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -910,7 +908,7 @@ public class ExecutionResultsPanel extends JPanel {
             data[0][i] = csvData.get(headers[i]);
         }
 
-        csvTable.setModel(new javax.swing.table.DefaultTableModel(data, headers));
+        csvTable.setModel(new DefaultTableModel(data, headers));
         csvTable.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         csvTable.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1)); // 比标准字体小1号（粗体）
         csvTable.setRowHeight(20);

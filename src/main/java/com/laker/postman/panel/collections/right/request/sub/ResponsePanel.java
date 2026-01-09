@@ -250,7 +250,6 @@ public class ResponsePanel extends JPanel {
 
     public void setResponseSizeRequesting() {
         responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, "..."));
-        responseSizeLabel.setForeground(Color.BLACK);
     }
 
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
@@ -288,7 +287,6 @@ public class ResponsePanel extends JPanel {
         } else {
             sizeText = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(bytes));
             // Reset to default color for non-compressed responses
-            responseSizeLabel.setForeground(Color.BLACK);
         }
         responseSizeLabel.setText(sizeText);
 

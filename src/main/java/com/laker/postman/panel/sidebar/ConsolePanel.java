@@ -61,6 +61,40 @@ public class ConsolePanel extends SingletonBasePanel {
     }
 
     @Override
+    public void updateUI() {
+        super.updateUI();
+        updateConsoleColors();
+    }
+
+    /**
+     * 更新控制台颜色以适配当前主题
+     */
+    private void updateConsoleColors() {
+        if (consoleLogArea != null) {
+            consoleLogArea.setBackground(ModernColors.getConsoleTextAreaBg());
+            consoleLogArea.setForeground(ModernColors.getConsoleText());
+            consoleLogArea.setCaretColor(ModernColors.getConsoleText());
+            consoleLogArea.setSelectionColor(ModernColors.getConsoleSelectionBg());
+
+            // 更新滚动面板背景
+            Container parent = consoleLogArea.getParent();
+            if (parent instanceof JViewport) {
+                parent.setBackground(ModernColors.getConsoleTextAreaBg());
+            }
+        }
+
+        // 更新工具栏颜色
+        if (matchCountLabel != null) {
+            matchCountLabel.setForeground(ModernColors.getTextSecondary());
+        }
+
+        // 刷新显示的日志以应用新的颜色方案
+        if (consoleLogArea != null && !allLogs.isEmpty()) {
+            refreshDisplayedLogs();
+        }
+    }
+
+    @Override
     protected void registerListeners() {
         // 搜索框文本变化时重新查找
         searchField.addActionListener(e -> performSearch());
@@ -282,26 +316,26 @@ public class ConsolePanel extends SingletonBasePanel {
         consoleLogArea.setEditable(false);
         consoleLogArea.setFocusable(true);
         consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
-        // 使用 ModernColors 定义的专业控制台背景色
-        consoleLogArea.setBackground(ModernColors.CONSOLE_TEXT_AREA_BG);
-        consoleLogArea.setForeground(ModernColors.CONSOLE_TEXT);
-        consoleLogArea.setCaretColor(ModernColors.CONSOLE_TEXT);
-        consoleLogArea.setSelectionColor(ModernColors.CONSOLE_SELECTION_BG);
+        // 使用 ModernColors 定义的专业控制台背景色（主题适配）
+        consoleLogArea.setBackground(ModernColors.getConsoleTextAreaBg());
+        consoleLogArea.setForeground(ModernColors.getConsoleText());
+        consoleLogArea.setCaretColor(ModernColors.getConsoleText());
+        consoleLogArea.setSelectionColor(ModernColors.getConsoleSelectionBg());
         consoleDoc = consoleLogArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
         logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        // 使用 ModernColors 定义的背景色
-        logScroll.getViewport().setBackground(ModernColors.CONSOLE_TEXT_AREA_BG);
+        // 使用 ModernColors 定义的背景色（主题适配）
+        logScroll.getViewport().setBackground(ModernColors.getConsoleTextAreaBg());
 
         // 顶部工具栏
         JPanel topPanel = new JPanel(new BorderLayout(5, 0));
         topPanel.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
         topPanel.setOpaque(true);
-        // 使用 ModernColors 定义的工具栏背景色和边框
-        topPanel.setBackground(ModernColors.CONSOLE_TOOLBAR_BG);
+        // 使用 ModernColors 定义的工具栏背景色和边框（主题适配）
+        topPanel.setBackground(ModernColors.getConsoleToolbarBg());
         topPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.CONSOLE_TOOLBAR_BORDER),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getConsoleToolbarBorder()),
                 BorderFactory.createEmptyBorder(4, 6, 4, 6)
         ));
 
@@ -330,7 +364,7 @@ public class ConsolePanel extends SingletonBasePanel {
         nextBtn.setPreferredSize(new Dimension(28, 28));
 
         matchCountLabel = new JLabel("");
-        matchCountLabel.setForeground(ModernColors.TEXT_SECONDARY);
+        matchCountLabel.setForeground(ModernColors.getTextSecondary());
         matchCountLabel.setPreferredSize(new Dimension(50, 28));
         matchCountLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -525,39 +559,39 @@ public class ConsolePanel extends SingletonBasePanel {
 
         switch (type) {
             case ERROR:
-                // 使用 ModernColors 定义的错误色
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_ERROR);
+                // 使用 ModernColors 定义的错误色（主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleError());
                 StyleConstants.setBold(style, true);
                 break;
             case SUCCESS:
-                // 使用 ModernColors 定义的调试色（绿色）
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_DEBUG);
+                // 使用 ModernColors 定义的调试色（绿色，主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleDebug());
                 StyleConstants.setBold(style, true);
                 break;
             case WARN:
-                // 使用 ModernColors 定义的警告色
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_WARN);
+                // 使用 ModernColors 定义的警告色（主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleWarn());
                 StyleConstants.setBold(style, true);
                 break;
             case DEBUG:
-                // 使用 ModernColors 定义的 INFO 色（蓝色）
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_INFO);
+                // 使用 ModernColors 定义的 INFO 色（蓝色，主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleInfo());
                 StyleConstants.setBold(style, false);
                 break;
             case TRACE:
-                // 使用 ModernColors 定义的类名色（紫色）
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_CLASS_NAME);
+                // 使用 ModernColors 定义的类名色（紫色，主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleClassName());
                 StyleConstants.setBold(style, false);
                 break;
             case CUSTOM:
-                // 使用 ModernColors 定义的方法名色（青色）
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_METHOD_NAME);
+                // 使用 ModernColors 定义的方法名色（青色，主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleMethodName());
                 StyleConstants.setBold(style, false);
                 break;
-            case INFO:// 使用 ModernColors 定义的普通文本色
+            case INFO:
             default:
-                // 使用 ModernColors 定义的普通文本色
-                StyleConstants.setForeground(style, ModernColors.CONSOLE_TEXT);
+                // 使用 ModernColors 定义的普通文本色（主题适配）
+                StyleConstants.setForeground(style, ModernColors.getConsoleText());
                 StyleConstants.setBold(style, false);
         }
     }

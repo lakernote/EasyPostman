@@ -3,6 +3,8 @@ package com.laker.postman.panel.collections.right.request.sub;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.component.button.PrimaryButton;
+import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -123,7 +125,7 @@ public class RequestLinePanel extends JPanel {
         String iconPath = protocol.isWebSocketProtocol() ?
                 "icons/connect-white.svg" : "icons/send-white.svg";
 
-        JButton button = createPrimaryButton(text, iconPath);
+        PrimaryButton button = new PrimaryButton(text, iconPath);
         button.addActionListener(sendAction);
 
         return button;
@@ -133,7 +135,7 @@ public class RequestLinePanel extends JPanel {
      * 创建保存按钮
      */
     private JButton createSaveButton() {
-        JButton button = createSecondaryButton(
+        SecondaryButton button = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.BUTTON_SAVE),
                 "icons/save.svg"
         );
@@ -147,142 +149,6 @@ public class RequestLinePanel extends JPanel {
         return button;
     }
 
-    /**
-     * 创建主按钮（发送/连接）
-     */
-    private JButton createPrimaryButton(String text, String iconPath) {
-        JButton button = new JButton(text) {
-            // 缓存颜色，避免每次 paintComponent 都查询 ClientProperty
-            private Color cachedBaseColor = ModernColors.PRIMARY;
-            private Color cachedHoverColor = ModernColors.PRIMARY_DARK;
-            private Color cachedPressColor = ModernColors.PRIMARY_DARKER;
-            private boolean colorsInitialized = false;
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // 检查是否需要重新读取颜色（从外部 ClientProperty 获取标志）
-                Boolean shouldReload = (Boolean) getClientProperty("colorsInitialized");
-                if (shouldReload != null && !shouldReload) {
-                    colorsInitialized = false;
-                }
-
-                // 只在第一次或颜色变更时读取 ClientProperty
-                if (!colorsInitialized) {
-                    Color baseColor = (Color) getClientProperty("baseColor");
-                    Color hoverColor = (Color) getClientProperty("hoverColor");
-                    Color pressColor = (Color) getClientProperty("pressColor");
-
-                    if (baseColor != null) cachedBaseColor = baseColor;
-                    if (hoverColor != null) cachedHoverColor = hoverColor;
-                    if (pressColor != null) cachedPressColor = pressColor;
-                    colorsInitialized = true;
-                }
-
-                // 背景颜色
-                if (!isEnabled()) {
-                    g2.setColor(ModernColors.TEXT_DISABLED);
-                } else if (getModel().isPressed()) {
-                    g2.setColor(cachedPressColor);
-                } else if (getModel().isRollover()) {
-                    g2.setColor(cachedHoverColor);
-                } else {
-                    g2.setColor(cachedBaseColor);
-                }
-
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.dispose();
-
-                // 文字和图标
-                super.paintComponent(g);
-            }
-        };
-
-        // 设置图标
-        button.setIcon(new FlatSVGIcon(iconPath, ICON_SIZE, ICON_SIZE));
-        button.setIconTextGap(4);
-
-        // 设置字体和样式
-        button.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        button.setForeground(ModernColors.TEXT_INVERSE);
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setOpaque(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(6, 12, 6, 12));
-
-        // 悬停动画 - 优化：减少不必要的 repaint
-        button.getModel().addChangeListener(e -> {
-            // 只在状态真正改变时才 repaint
-            if (button.isEnabled()) {
-                button.repaint();
-            }
-        });
-
-        return button;
-    }
-
-    /**
-     * 创建次要按钮（保存）
-     */
-    private JButton createSecondaryButton(String text, String iconPath) {
-        JButton button = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // 背景颜色
-                if (!isEnabled()) {
-                    g2.setColor(ModernColors.BG_LIGHT);
-                } else if (getModel().isPressed()) {
-                    g2.setColor(ModernColors.BG_DARK);
-                } else if (getModel().isRollover()) {
-                    g2.setColor(ModernColors.HOVER_BG);
-                } else {
-                    g2.setColor(ModernColors.BG_WHITE);
-                }
-
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-
-                // 边框
-                g2.setColor(isEnabled() ? ModernColors.BORDER_MEDIUM : ModernColors.BORDER_LIGHT);
-                g2.setStroke(new BasicStroke(1));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-
-                g2.dispose();
-
-                // 文字和图标
-                super.paintComponent(g);
-            }
-        };
-
-        // 设置图标
-        button.setIcon(new FlatSVGIcon(iconPath, ICON_SIZE, ICON_SIZE));
-        button.setIconTextGap(4);
-
-        // 设置字体和样式
-        button.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        button.setForeground(ModernColors.TEXT_PRIMARY);
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setOpaque(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(6, 12, 6, 12));
-
-        // 悬停动画 - 优化：使用 ChangeListener 替代 MouseListener
-        button.getModel().addChangeListener(e -> {
-            if (button.isEnabled()) {
-                button.repaint();
-            }
-        });
-
-        return button;
-    }
 
     /**
      * 构建面板布局

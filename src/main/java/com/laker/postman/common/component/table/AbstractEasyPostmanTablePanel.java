@@ -125,14 +125,10 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
         table.setRowHeight(28);
         table.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         table.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1)); // 比标准字体小1号（粗体）
-        table.setGridColor(new Color(237, 237, 237));
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(true);
         table.setIntercellSpacing(new Dimension(2, 2));
         table.setRowMargin(2);
-        table.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(237, 237, 237)),
-                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
         table.setOpaque(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);

@@ -107,9 +107,8 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
-        setBackground(new Color(248, 250, 252));
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(237, 237, 237)),
+                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
                 BorderFactory.createEmptyBorder(4, 4, 4, 4)));
 
         // Initialize table model with custom cell editing logic

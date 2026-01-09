@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.tab;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
@@ -20,6 +21,7 @@ import java.awt.event.MouseEvent;
  * - 流畅的交互反馈
  * - 清晰的视觉层次
  * - 优化的性能表现
+ * - 支持亮色和暗色主题自适应
  */
 public class PlusPanel extends JPanel {
     // 圆角和间距
@@ -27,22 +29,78 @@ public class PlusPanel extends JPanel {
     private static final int CARD_PADDING = 48;
     private static final int ICON_SIZE = 96;
 
-    // 缓存颜色对象，避免重复创建（性能优化）
-    private static final Color SHADOW_COLOR_1 = new Color(15, 23, 42, 8);
-    private static final Color SHADOW_COLOR_2 = new Color(15, 23, 42, 12);
-    private static final Color SHADOW_COLOR_3 = new Color(15, 23, 42, 18);
-    private static final Color ICON_BG_GLOW = new Color(
-            ModernColors.PRIMARY.getRed(),
-            ModernColors.PRIMARY.getGreen(),
-            ModernColors.PRIMARY.getBlue(), 8);
-    private static final Color ICON_BG_MAIN = new Color(
-            ModernColors.PRIMARY.getRed(),
-            ModernColors.PRIMARY.getGreen(),
-            ModernColors.PRIMARY.getBlue(), 20);
-    private static final Color ICON_BG_BORDER = new Color(
-            ModernColors.PRIMARY.getRed(),
-            ModernColors.PRIMARY.getGreen(),
-            ModernColors.PRIMARY.getBlue(), 60);
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的阴影颜色
+     */
+    private Color getShadowColor(int alpha) {
+        // 暗色主题使用更柔和的阴影，避免过深
+        if (isDarkTheme()) {
+            // 使用深蓝黑色调的阴影，更柔和
+            return new Color(0, 0, 0, (int) (alpha * 1.5));
+        }
+        return new Color(15, 23, 42, alpha);
+    }
+
+    /**
+     * 获取主题适配的卡片背景色
+     */
+    private Color getCardBackground() {
+        // 暗色主题使用温暖的深灰色，避免纯黑
+        return isDarkTheme() ? new Color(38, 38, 42) : ModernColors.BG_WHITE;
+    }
+
+    /**
+     * 获取主题适配的边框颜色
+     */
+    private Color getBorderColor() {
+        // 暗色主题使用微妙的亮色边框，增加层次感
+        return isDarkTheme() ? new Color(55, 55, 60, 100) : ModernColors.BORDER_LIGHT;
+    }
+
+    /**
+     * 获取主题适配的图标背景颜色（带透明度）
+     */
+    private Color getIconBackgroundColor(int alpha) {
+        // 暗色主题下，图标背景使用更鲜艳的蓝色，增加对比度
+        if (isDarkTheme()) {
+            // 使用更亮的蓝色，提升视觉吸引力
+            return new Color(
+                    Math.min(255, ModernColors.PRIMARY.getRed() + 40),
+                    Math.min(255, ModernColors.PRIMARY.getGreen() + 40),
+                    Math.min(255, ModernColors.PRIMARY.getBlue() + 20),
+                    alpha
+            );
+        }
+        return new Color(
+                ModernColors.PRIMARY.getRed(),
+                ModernColors.PRIMARY.getGreen(),
+                ModernColors.PRIMARY.getBlue(),
+                alpha
+        );
+    }
+
+    /**
+     * 获取主题适配的非悬停按钮背景色
+     */
+    private Color getButtonBackground() {
+        // 暗色主题使用稍亮的背景，增加可见性
+        return isDarkTheme() ? new Color(48, 48, 52) : ModernColors.HOVER_BG;
+    }
+
+    /**
+     * 获取主题适配的悬停文字颜色
+     */
+    private Color getHoverTextColor() {
+        // 悬停时统一使用白色文字
+        return Color.WHITE;
+    }
 
 
     public PlusPanel() {
@@ -64,9 +122,30 @@ public class PlusPanel extends JPanel {
                 // 绘制优化的阴影效果（减少层数提升性能）
                 drawOptimizedShadow(g2, width, height);
 
-                // 绘制卡片背景
-                g2.setColor(ModernColors.BG_WHITE);
-                g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
+                // 绘制卡片背景（主题适配，暗色主题添加渐变）
+                if (isDarkTheme()) {
+                    // 暗色主题：使用微妙的渐变背景，增加质感
+                    Color bgStart = new Color(38, 38, 42);
+                    Color bgEnd = new Color(32, 32, 36);
+                    GradientPaint bgGradient = new GradientPaint(
+                            0, 0, bgStart,
+                            0, height, bgEnd
+                    );
+                    g2.setPaint(bgGradient);
+                    g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
+
+                    // 添加微妙的高光，增加立体感
+                    GradientPaint highlight = new GradientPaint(
+                            0, 0, new Color(255, 255, 255, 4),
+                            0, height / 3f, new Color(255, 255, 255, 0)
+                    );
+                    g2.setPaint(highlight);
+                    g2.fillRoundRect(0, 0, width, height / 3, CORNER_RADIUS, CORNER_RADIUS);
+                } else {
+                    // 亮色主题：纯色背景
+                    g2.setColor(getCardBackground());
+                    g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
+                }
 
                 // 绘制顶部装饰条 - 更细更优雅
                 Shape oldClip = g2.getClip();
@@ -82,8 +161,8 @@ public class PlusPanel extends JPanel {
 
                 g2.setClip(oldClip);
 
-                // 绘制精致的边框
-                g2.setColor(ModernColors.BORDER_LIGHT);
+                // 绘制精致的边框（主题适配）
+                g2.setColor(getBorderColor());
                 g2.setStroke(new BasicStroke(1f));
                 g2.drawRoundRect(0, 0, width - 1, height - 1, CORNER_RADIUS, CORNER_RADIUS);
 
@@ -92,13 +171,13 @@ public class PlusPanel extends JPanel {
             }
 
             private void drawOptimizedShadow(Graphics2D g2, int width, int height) {
-                // 优化的三层阴影（使用缓存的颜色对象）
+                // 优化的三层阴影（使用主题适配的颜色）
                 int[] offsets = {6, 4, 2};
-                Color[] colors = {SHADOW_COLOR_1, SHADOW_COLOR_2, SHADOW_COLOR_3};
+                int[] alphas = {8, 12, 18};
 
                 for (int i = 0; i < offsets.length; i++) {
                     int offset = offsets[i];
-                    g2.setColor(colors[i]);
+                    g2.setColor(getShadowColor(alphas[i]));
                     g2.fillRoundRect(offset, offset, width - offset, height - offset,
                             CORNER_RADIUS + offset / 2, CORNER_RADIUS + offset / 2);
                 }
@@ -123,18 +202,49 @@ public class PlusPanel extends JPanel {
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
-                // 绘制外层微妙光晕（使用缓存颜色）
-                g2.setColor(ICON_BG_GLOW);
-                g2.fillOval(x - 4, y - 4, size + 8, size + 8);
+                if (isDarkTheme()) {
+                    // 暗色主题：多层发光效果，更醒目
+                    // 外层大光晕
+                    g2.setColor(getIconBackgroundColor(12));
+                    g2.fillOval(x - 8, y - 8, size + 16, size + 16);
 
-                // 绘制主圆形背景（使用缓存颜色）
-                g2.setColor(ICON_BG_MAIN);
-                g2.fillOval(x, y, size, size);
+                    // 中层光晕
+                    g2.setColor(getIconBackgroundColor(20));
+                    g2.fillOval(x - 4, y - 4, size + 8, size + 8);
 
-                // 绘制精致边框（使用缓存颜色）
-                g2.setColor(ICON_BG_BORDER);
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawOval(x + 1, y + 1, size - 2, size - 2);
+                    // 主圆形背景（更鲜艳）
+                    g2.setColor(getIconBackgroundColor(35));
+                    g2.fillOval(x, y, size, size);
+
+                    // 内层高光，增加立体感
+                    GradientPaint innerGlow = new GradientPaint(
+                            x + size / 2, y,
+                            new Color(255, 255, 255, 15),
+                            x + size / 2, y + size / 2,
+                            new Color(255, 255, 255, 0)
+                    );
+                    g2.setPaint(innerGlow);
+                    g2.fillOval(x, y, size, size / 2);
+
+                    // 精致边框（更亮）
+                    g2.setColor(getIconBackgroundColor(80));
+                    g2.setStroke(new BasicStroke(2f));
+                    g2.drawOval(x + 1, y + 1, size - 2, size - 2);
+                } else {
+                    // 亮色主题：保持原有效果
+                    // 绘制外层微妙光晕
+                    g2.setColor(getIconBackgroundColor(8));
+                    g2.fillOval(x - 4, y - 4, size + 8, size + 8);
+
+                    // 绘制主圆形背景
+                    g2.setColor(getIconBackgroundColor(20));
+                    g2.fillOval(x, y, size, size);
+
+                    // 绘制精致边框
+                    g2.setColor(getIconBackgroundColor(60));
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawOval(x + 1, y + 1, size - 2, size - 2);
+                }
 
                 g2.dispose();
                 super.paintComponent(g);
@@ -157,11 +267,11 @@ public class PlusPanel extends JPanel {
         // 图标与主标题间距
         contentPanel.add(Box.createVerticalStrut(32));
 
-        // 主标题 - 更大更醒目
+        // 主标题 - 更大更醒目（主题适配文字颜色）
         JLabel createRequestLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST));
         createRequestLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         createRequestLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        createRequestLabel.setForeground(ModernColors.TEXT_PRIMARY);
+        createRequestLabel.setForeground(ModernColors.getTextPrimary());
         createRequestLabel.setFont(createRequestLabel.getFont().deriveFont(Font.BOLD, 26f));
         contentPanel.add(createRequestLabel);
 
@@ -211,12 +321,12 @@ public class PlusPanel extends JPanel {
                     g2.setPaint(cachedHighlight);
                     g2.fillRoundRect(0, 0, width, height / 2, 24, 24);
                 } else {
-                    // 非悬停状态：浅色背景
-                    g2.setColor(ModernColors.HOVER_BG);
+                    // 非悬停状态：浅色背景（主题适配）
+                    g2.setColor(getButtonBackground());
                     g2.fillRoundRect(0, 0, width, height, 24, 24);
 
-                    // 添加边框
-                    g2.setColor(ModernColors.BORDER_LIGHT);
+                    // 添加边框（主题适配）
+                    g2.setColor(getBorderColor());
                     g2.setStroke(new BasicStroke(1f));
                     g2.drawRoundRect(0, 0, width - 1, height - 1, 24, 24);
                 }
@@ -253,7 +363,7 @@ public class PlusPanel extends JPanel {
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                hintLabel.setForeground(Color.WHITE);
+                hintLabel.setForeground(getHoverTextColor());
                 hintLabel.setHovered(true);
                 contentPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             }
@@ -302,7 +412,7 @@ public class PlusPanel extends JPanel {
      * 添加快捷键标签的辅助方法
      */
     private void addShortcutLabel(JPanel panel, String actionName, String shortcutId) {
-        String shortcutText = com.laker.postman.service.setting.ShortcutManager.getShortcutText(shortcutId);
+        String shortcutText = ShortcutManager.getShortcutText(shortcutId);
 
         // 使用国际化格式化标签文本
         String labelText = I18nUtil.getMessage(MessageKeys.SHORTCUT_LABEL_FORMAT, actionName, shortcutText);
@@ -310,7 +420,7 @@ public class PlusPanel extends JPanel {
         JLabel label = new JLabel(labelText);
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         label.setFont(label.getFont().deriveFont(Font.PLAIN, 13f));
-        label.setForeground(ModernColors.TEXT_HINT);
+        label.setForeground(ModernColors.getTextHint());
         panel.add(label);
         panel.add(Box.createVerticalStrut(8));
     }

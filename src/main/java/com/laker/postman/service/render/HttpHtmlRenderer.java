@@ -1,5 +1,6 @@
 package com.laker.postman.service.render;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.model.HttpResponse;
@@ -31,6 +32,41 @@ public class HttpHtmlRenderer {
     private static final String COLOR_ERROR = "#d32f2f";
     private static final String COLOR_WARNING = "#ffa000";
     private static final String COLOR_GRAY = "#888";
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private static boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的背景色
+     */
+    private static String getThemeBackground() {
+        return isDarkTheme() ? "rgb(55, 57, 59)" : "rgb(245, 247, 250)";
+    }
+
+    /**
+     * 获取主题适配的文字颜色
+     */
+    private static String getThemeTextColor() {
+        return isDarkTheme() ? "#e0e0e0" : "#222";
+    }
+
+    /**
+     * 获取主题适配的边框颜色
+     */
+    private static String getThemeBorderColor() {
+        return isDarkTheme() ? "#4a4a4a" : "#e0e0e0";
+    }
+
+    /**
+     * 获取主题适配的表头背景色
+     */
+    private static String getThemeHeaderBackground() {
+        return isDarkTheme() ? "rgb(50, 52, 54)" : "#f5f7fa";
+    }
 
     // 状态码颜色映射
     private static String getStatusColor(int code) {
@@ -70,19 +106,23 @@ public class HttpHtmlRenderer {
         if (req == null) {
             return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:#888;padding:16px;'>无请求信息</div>");
         }
+
+        String bgColor = getThemeBackground();
+        String textColor = getThemeTextColor();
+
         StringBuilder sb = new StringBuilder();
         // 添加强制换行和宽度控制
-        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;width:100%;max-width:100%;overflow-wrap:break-word;word-break:break-all;box-sizing:border-box;'>");
-        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>URL</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.url))).append("</span></div>");
-        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Method</b>: <span style='color:#222;'>").append(escapeHtml(safeString(req.method))).append("</span></div>");
+        sb.append("<div style='background:").append(bgColor).append(";border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;width:100%;max-width:100%;overflow-wrap:break-word;word-break:break-all;box-sizing:border-box;'>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>URL</b>: <span style='color:").append(textColor).append(";'>").append(escapeHtml(safeString(req.url))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Method</b>: <span style='color:").append(textColor).append(";'>").append(escapeHtml(safeString(req.method))).append("</span></div>");
         if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Headers</b></div>");
             // 改用div块格式，不再使用表格
             sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             for (int i = 0; i < req.okHttpHeaders.size(); i++) {
-                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:").append(bgColor).append(";border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
                 sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(req.okHttpHeaders.name(i))).append(":</strong> ");
-                sb.append("<span style='color:#222;'>").append(escapeHtml(req.okHttpHeaders.value(i))).append("</span>");
+                sb.append("<span style='color:").append(textColor).append(";'>").append(escapeHtml(req.okHttpHeaders.value(i))).append("</span>");
                 sb.append("</div>");
             }
             sb.append("</div>");
@@ -97,9 +137,9 @@ public class HttpHtmlRenderer {
                 req.formDataList.stream()
                         .filter(d -> d.isEnabled() && d.isText())
                         .forEach(data -> {
-                            sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                            sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:").append(bgColor).append(";border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
                             sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(data.getKey())).append(":</strong> ");
-                            sb.append("<span style='color:#222;'>").append(escapeHtml(data.getValue())).append("</span>");
+                            sb.append("<span style='color:").append(textColor).append(";'>").append(escapeHtml(data.getValue())).append("</span>");
                             sb.append("</div>");
                         });
                 sb.append("</div>");
@@ -111,9 +151,9 @@ public class HttpHtmlRenderer {
                 req.formDataList.stream()
                         .filter(d -> d.isEnabled() && d.isFile())
                         .forEach(data -> {
-                            sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                            sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:").append(bgColor).append(";border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
                             sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(data.getKey())).append(":</strong> ");
-                            sb.append("<span style='color:#222;'>").append(escapeHtml(data.getValue())).append("</span>");
+                            sb.append("<span style='color:").append(textColor).append(";'>").append(escapeHtml(data.getValue())).append("</span>");
                             sb.append("</div>");
                         });
                 sb.append("</div>");
@@ -125,9 +165,9 @@ public class HttpHtmlRenderer {
             req.urlencodedList.stream()
                     .filter(HttpFormUrlencoded::isEnabled)
                     .forEach(encoded -> {
-                        sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                        sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:").append(bgColor).append(";border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
                         sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(encoded.getKey())).append(":</strong> ");
-                        sb.append("<span style='color:#222;'>").append(escapeHtml(encoded.getValue())).append("</span>");
+                        sb.append("<span style='color:").append(textColor).append(";'>").append(escapeHtml(encoded.getValue())).append("</span>");
                         sb.append("</div>");
                     });
             sb.append("</div>");
@@ -135,7 +175,7 @@ public class HttpHtmlRenderer {
         if (isNotEmpty(req.okHttpRequestBody)) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#1976d2;'>Body</b></div>");
             String requestBody = safeTruncateContent(req.okHttpRequestBody);
-            sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(requestBody)).append("</pre>");
+            sb.append("<pre style='background:").append(bgColor).append(";padding:8px;border-radius:4px;font-size:9px;color:").append(textColor).append(";white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(requestBody)).append("</pre>");
         }
         sb.append("</div>");
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
@@ -148,14 +188,18 @@ public class HttpHtmlRenderer {
         if (resp == null) {
             return createHtmlDocument(DETAIL_FONT_SIZE, "<div style='color:#888;padding:16px;'>无响应信息</div>");
         }
+
+        String bgColor = getThemeBackground();
+        String textColor = getThemeTextColor();
+
         StringBuilder sb = new StringBuilder();
         // 使用更强制的宽度控制和换行策略
-        sb.append("<div style='background:rgb(245,247,250);border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;width:100%;max-width:100%;overflow-wrap:break-word;word-break:break-all;box-sizing:border-box;'>");
+        sb.append("<div style='background:").append(bgColor).append(";border-radius:4px;padding:12px 16px;margin-bottom:12px;font-size:9px;width:100%;max-width:100%;overflow-wrap:break-word;word-break:break-all;box-sizing:border-box;'>");
         sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#388e3c;'>Status</b>: <span style='color:").append(getStatusColor(resp.code)).append(";font-weight:bold;'>").append(escapeHtml(String.valueOf(resp.code))).append("</span></div>");
-        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Protocol</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.protocol))).append("</span></div>");
-        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Thread</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.threadName))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Protocol</b>: <span style='color:").append(textColor).append(";'>").append(escapeHtml(safeString(resp.protocol))).append("</span></div>");
+        sb.append("<div style='margin-bottom:8px;word-break:break-all;'><b style='color:#1976d2;'>Thread</b>: <span style='color:").append(textColor).append(";'>").append(escapeHtml(safeString(resp.threadName))).append("</span></div>");
         if (resp.httpEventInfo != null) {
-            sb.append("<div style='margin-bottom:8px;word-break:break-all;overflow-wrap:break-word;'><b style='color:#1976d2;'>Connection</b>: <span style='color:#222;'>").append(escapeHtml(safeString(resp.httpEventInfo.getLocalAddress()))).append(" → ").append(escapeHtml(safeString(resp.httpEventInfo.getRemoteAddress()))).append("</span></div>");
+            sb.append("<div style='margin-bottom:8px;word-break:break-all;overflow-wrap:break-word;'><b style='color:#1976d2;'>Connection</b>: <span style='color:").append(textColor).append(";'>").append(escapeHtml(safeString(resp.httpEventInfo.getLocalAddress()))).append(" → ").append(escapeHtml(safeString(resp.httpEventInfo.getRemoteAddress()))).append("</span></div>");
         }
         if (resp.headers != null && !resp.headers.isEmpty()) {
             sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Headers</b></div>");
@@ -163,9 +207,9 @@ public class HttpHtmlRenderer {
             sb.append("<div style='width:100%;max-width:100%;overflow:hidden;'>");
             resp.headers.forEach((key, values) -> {
                 String valueStr = values != null ? String.join(", ", values) : "";
-                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:rgb(245,247,250);border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
+                sb.append("<div style='margin-bottom:4px;padding:4px 8px;background:").append(bgColor).append(";border-radius:3px;word-break:break-all;overflow-wrap:break-word;'>");
                 sb.append("<strong style='color:#1976d2;'>").append(escapeHtml(key)).append(":</strong> ");
-                sb.append("<span style='color:#222;'>").append(escapeHtml(valueStr)).append("</span>");
+                sb.append("<span style='color:").append(textColor).append(";'>").append(escapeHtml(valueStr)).append("</span>");
                 sb.append("</div>");
             });
             sb.append("</div>");
@@ -173,23 +217,29 @@ public class HttpHtmlRenderer {
         sb.append("<div style='margin-bottom:8px;'><b style='color:#388e3c;'>Body</b></div>");
         String responseBody = safeTruncateContent(resp.body);
         // 使用更简单但更有效的换行控制
-        sb.append("<pre style='background:rgb(245,247,250);padding:8px;border-radius:4px;font-size:9px;color:#222;white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(responseBody)).append("</pre>");
+        sb.append("<pre style='background:").append(bgColor).append(";padding:8px;border-radius:4px;font-size:9px;color:").append(textColor).append(";white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(responseBody)).append("</pre>");
         sb.append("</div>");
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
     }
 
     /**
-     * 渲染测试结果HTML
+     * 渲染测试结果HTML（支持主题适配）
      */
     public static String renderTestResults(List<TestResult> testResults) {
         if (testResults == null || testResults.isEmpty()) {
             return createHtmlDocument("font-size:9px;", "<div style='color:#888;padding:16px;'>No test results</div>");
         }
+
+        String bgColor = getThemeBackground();
+        String textColor = getThemeTextColor();
+        String borderColor = getThemeBorderColor();
+        String headerBg = getThemeHeaderBackground();
+
         StringBuilder table = new StringBuilder()
-                .append("<table style='border-collapse:collapse;width:100%;background:rgb(245,247,250);font-size:9px;border-radius:4px;'>")
-                .append("<tr style='background:#f5f7fa;color:#222;font-weight:500;font-size:9px;border-bottom:1px solid #e0e0e0;'>")
+                .append("<table style='border-collapse:collapse;width:100%;background:").append(bgColor).append(";font-size:9px;border-radius:4px;'>")
+                .append("<tr style='background:").append(headerBg).append(";color:").append(textColor).append(";font-weight:500;font-size:9px;border-bottom:1px solid ").append(borderColor).append(";'>")
                 .append("<th style='padding:8px 12px;text-align:left;'>Name</th>")
-                .append("<th style='padding:8px 12px;text-align:center;'>Result</th>") // 修改为居中对齐
+                .append("<th style='padding:8px 12px;text-align:center;'>Result</th>")
                 .append("<th style='padding:8px 12px;text-align:left;'>Error Message</th>")
                 .append("</tr>");
         for (TestResult testResult : testResults) {
@@ -217,15 +267,19 @@ public class HttpHtmlRenderer {
 
 
     private static String buildTestResultRow(TestResult testResult) {
-        String rowBg = "background:rgb(245,247,250);";
+        String bgColor = getThemeBackground();
+        String textColor = getThemeTextColor();
+        String borderColor = getThemeBorderColor();
+
+        String rowBg = "background:" + bgColor + ";";
         String icon = testResult.passed ? "<span style='color:#4CAF50;font-size:9px;'>&#10003;</span>" : "<span style='color:#F44336;font-size:9px;'>&#10007;</span>";
         String message = testResult.message != null && !testResult.message.isEmpty() ?
                 "<div style='color:#F44336;font-size:9px;white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(testResult.message) + "</div>"
                 : "";
 
-        return "<tr style='" + rowBg + "border-bottom:1px solid #e0e0e0;'>" +
-                "<td style='padding:8px 12px;color:#222;font-size:9px;'>" + escapeHtml(testResult.name) + "</td>" +
-                "<td style='padding:8px 12px;text-align:center;vertical-align:middle;'>" + icon + "</td>" + // 增加 vertical-align:middle
+        return "<tr style='" + rowBg + "border-bottom:1px solid " + borderColor + ";'>" +
+                "<td style='padding:8px 12px;color:" + textColor + ";font-size:9px;'>" + escapeHtml(testResult.name) + "</td>" +
+                "<td style='padding:8px 12px;text-align:center;vertical-align:middle;'>" + icon + "</td>" +
                 "<td style='padding:8px 12px;'>" + message + "</td>" +
                 "</tr>";
     }
@@ -277,11 +331,15 @@ public class HttpHtmlRenderer {
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {
+        String bgColor = getThemeBackground();
+        String textColor = getThemeTextColor();
+        String borderColor = getThemeBorderColor();
+
         // 改回表格格式，但添加强制换行控制
         return "<div style='width:100%;max-width:100%;overflow-wrap:break-word;box-sizing:border-box;'>" +
                 "<div style='font-size:9px;margin-bottom:8px;'><b style='color:" + COLOR_PRIMARY + ";'>[Event Info]</b></div>" +
                 // 设置背景色和列间距，添加强制换行
-                "<table style='border-collapse:collapse;background:rgb(245,247,250);border-radius:4px;padding:3px 4px;color:#444;margin:4px 0;width:100%;table-layout:fixed;'>" +
+                "<table style='border-collapse:collapse;background:" + bgColor + ";border-radius:4px;padding:3px 4px;color:" + textColor + ";margin:4px 0;width:100%;table-layout:fixed;'>" +
                 createEventRow("QueueStart", formatMillis(info.getQueueStart())) +
                 createEventRow("Local", escapeHtml(info.getLocalAddress())) +
                 createEventRow("Remote", escapeHtml(info.getRemoteAddress())) +
@@ -289,7 +347,7 @@ public class HttpHtmlRenderer {
                 createEventRow("TLS", safeString(info.getTlsVersion())) +
                 createEventRow("Thread", safeString(info.getThreadName())) +
                 createEventRow("Error", info.getErrorMessage() != null ? escapeHtml(info.getErrorMessage()) : "-") +
-                "<tr><td colspan='2'><hr style='border:0;border-top:1px dashed #bbb;margin:4px 0'></td></tr>" +
+                "<tr><td colspan='2'><hr style='border:0;border-top:1px dashed " + borderColor + ";margin:4px 0'></td></tr>" +
                 createEventTimingRows(info) +
                 "</table>" +
                 "</div>";

@@ -15,7 +15,9 @@ public class PlusTabComponent extends JPanel {
         setLayout(new BorderLayout()); // 使用 BorderLayout 布局
 
         JLabel plusLabel = new JLabel();
-        plusLabel.setIcon(new FlatSVGIcon("icons/plus.svg", 20, 20)); // 使用SVG图标
+        FlatSVGIcon icon = new FlatSVGIcon("icons/plus.svg", 20, 20);
+        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        plusLabel.setIcon(icon); // 使用SVG图标
         plusLabel.setHorizontalAlignment(SwingConstants.CENTER);
         plusLabel.setVerticalAlignment(SwingConstants.CENTER);
         add(plusLabel, BorderLayout.CENTER);

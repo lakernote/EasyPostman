@@ -36,7 +36,9 @@ public class SearchTextField extends FlatTextField {
 
     public SearchTextField() {
         super();
-        setLeadingIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
+        FlatSVGIcon icon = new FlatSVGIcon("icons/search.svg", 16, 16);
+        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        setLeadingIcon(icon);
         setPlaceholderText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
         setPreferredSize(new Dimension(220, 28));

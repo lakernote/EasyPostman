@@ -353,12 +353,13 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
      * 显示删除图标，对于非空行或非最后一行显示删除按钮
      */
     protected class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
-        private final Icon deleteIcon;
+        private final FlatSVGIcon deleteIcon;
 
         public DeleteButtonRenderer() {
             setHorizontalAlignment(SwingConstants.CENTER);
             setOpaque(true);
             deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
+            deleteIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
         }
 
         @Override

@@ -1,10 +1,13 @@
 package com.laker.postman.common.constants;
 
+import com.formdev.flatlaf.FlatLaf;
+
 import java.awt.*;
 
 /**
  * 现代化UI配色方案
  * 统一的配色常量，确保整个应用的视觉一致性
+ * 支持亮色和暗色主题自适应
  * <p>
  * 设计理念：
  * - 主色调：Blue（信任、专业、科技）
@@ -14,6 +17,15 @@ import java.awt.*;
  *
  */
 public final class ModernColors {
+
+    // ==================== 主题检测 ====================
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private static boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
 
     // ==================== 主色系 ====================
 
@@ -199,31 +211,83 @@ public final class ModernColors {
      */
     public static final Color GIT_PULL = new Color(168, 85, 247);  // Purple-500
 
-    // ==================== 中性色系 - 文字 ====================
+    // ==================== 中性色系 - 文字（主题适配）====================
 
     /**
-     * 文字主色 - Slate-900
+     * 文字主色 - 根据主题自适应
+     * 亮色主题：Slate-900 (深色文字)
+     * 暗色主题：Slate-100 (浅色文字)
      */
+    public static Color getTextPrimary() {
+        return isDarkTheme() ? new Color(241, 245, 249) : new Color(15, 23, 42);
+    }
+
+    /**
+     * 文字次要色 - 根据主题自适应
+     * 亮色主题：Slate-700
+     * 暗色主题：Slate-300
+     */
+    public static Color getTextSecondary() {
+        return isDarkTheme() ? new Color(203, 213, 225) : new Color(51, 65, 85);
+    }
+
+    /**
+     * 文字提示色 - 根据主题自适应
+     * 亮色主题：Slate-500
+     * 暗色主题：Slate-400
+     */
+    public static Color getTextHint() {
+        return isDarkTheme() ? new Color(148, 163, 184) : new Color(100, 116, 139);
+    }
+
+    /**
+     * 文字禁用色 - 根据主题自适应
+     * 亮色主题：Slate-400
+     * 暗色主题：Slate-600
+     */
+    public static Color getTextDisabled() {
+        return isDarkTheme() ? new Color(71, 85, 105) : new Color(148, 163, 184);
+    }
+
+    /**
+     * 文字反色（用于深色背景）- 根据主题自适应
+     * 亮色主题：接近白色
+     * 暗色主题：接近白色（保持一致）
+     */
+    public static Color getTextInverse() {
+        return new Color(248, 250, 252);
+    }
+
+    // ==================== 保留旧的常量以保持向后兼容 ====================
+
+    /**
+     * @deprecated 请使用 getTextPrimary() 以支持主题切换
+     */
+    @Deprecated
     public static final Color TEXT_PRIMARY = new Color(15, 23, 42);
 
     /**
-     * 文字次要色 - Slate-700
+     * @deprecated 请使用 getTextSecondary() 以支持主题切换
      */
+    @Deprecated
     public static final Color TEXT_SECONDARY = new Color(51, 65, 85);
 
     /**
-     * 文字提示色 - Slate-500
+     * @deprecated 请使用 getTextHint() 以支持主题切换
      */
+    @Deprecated
     public static final Color TEXT_HINT = new Color(100, 116, 139);
 
     /**
-     * 文字禁用色 - Slate-400
+     * @deprecated 请使用 getTextDisabled() 以支持主题切换
      */
+    @Deprecated
     public static final Color TEXT_DISABLED = new Color(148, 163, 184);
 
     /**
-     * 文字反色（用于深色背景）
+     * @deprecated 请使用 getTextInverse() 以支持主题切换
      */
+    @Deprecated
     public static final Color TEXT_INVERSE = new Color(248, 250, 252);
 
     // ==================== 中性色系 - 背景 ====================
@@ -496,91 +560,229 @@ public final class ModernColors {
      */
     public static final Color ICON_RESTART_REQUIRED = new Color(245, 158, 11); // 橙色
 
-    // ==================== Console 控制台专用色（柔和浅色主题）====================
+    // ==================== Console 控制台专用色（主题适配）====================
 
     /**
-     * Console 背景色 - 柔和的浅灰白色背景
+     * Console 背景色 - 根据主题自适应
      */
+    public static Color getConsoleBackground() {
+        return isDarkTheme() ? new Color(30, 30, 35) : new Color(250, 251, 252);
+    }
+
+    /**
+     * Console 文本区域背景色 - 根据主题自适应
+     */
+    public static Color getConsoleTextAreaBg() {
+        return isDarkTheme() ? new Color(40, 40, 45) : new Color(255, 255, 255);
+    }
+
+    /**
+     * Console 普通文本颜色 - 根据主题自适应
+     */
+    public static Color getConsoleText() {
+        return isDarkTheme() ? new Color(220, 220, 220) : new Color(51, 65, 85);
+    }
+
+    /**
+     * Console INFO 级别颜色 - 根据主题自适应
+     */
+    public static Color getConsoleInfo() {
+        return isDarkTheme() ? new Color(96, 165, 250) : new Color(37, 99, 235);
+    }
+
+    /**
+     * Console DEBUG 级别颜色 - 根据主题自适应
+     */
+    public static Color getConsoleDebug() {
+        return isDarkTheme() ? new Color(74, 222, 128) : new Color(22, 163, 74);
+    }
+
+    /**
+     * Console WARN 级别颜色 - 根据主题自适应
+     */
+    public static Color getConsoleWarn() {
+        return isDarkTheme() ? new Color(251, 146, 60) : new Color(234, 88, 12);
+    }
+
+    /**
+     * Console ERROR 级别颜色 - 根据主题自适应
+     */
+    public static Color getConsoleError() {
+        return isDarkTheme() ? new Color(248, 113, 113) : new Color(220, 38, 38);
+    }
+
+    /**
+     * Console 时间戳颜色 - 根据主题自适应
+     */
+    public static Color getConsoleTimestamp() {
+        return isDarkTheme() ? new Color(148, 163, 184) : new Color(100, 116, 139);
+    }
+
+    /**
+     * Console 类名颜色 - 根据主题自适应
+     */
+    public static Color getConsoleClassName() {
+        return isDarkTheme() ? new Color(192, 132, 252) : new Color(147, 51, 234);
+    }
+
+    /**
+     * Console 方法名颜色 - 根据主题自适应
+     */
+    public static Color getConsoleMethodName() {
+        return isDarkTheme() ? new Color(56, 189, 248) : new Color(14, 165, 233);
+    }
+
+    /**
+     * Console 工具栏背景色 - 根据主题自适应
+     */
+    public static Color getConsoleToolbarBg() {
+        return isDarkTheme() ? new Color(35, 35, 40) : new Color(248, 250, 252);
+    }
+
+    /**
+     * Console 工具栏边框色 - 根据主题自适应
+     */
+    public static Color getConsoleToolbarBorder() {
+        return isDarkTheme() ? new Color(60, 60, 70) : new Color(226, 232, 240);
+    }
+
+    /**
+     * Console 按钮悬停背景色 - 根据主题自适应
+     */
+    public static Color getConsoleButtonHover() {
+        return isDarkTheme() ? new Color(50, 50, 60) : new Color(224, 242, 254);
+    }
+
+    /**
+     * Console 滚动条颜色 - 根据主题自适应
+     */
+    public static Color getConsoleScrollbar() {
+        return isDarkTheme() ? new Color(80, 80, 90) : new Color(203, 213, 225);
+    }
+
+    /**
+     * Console 滚动条悬停颜色 - 根据主题自适应
+     */
+    public static Color getConsoleScrollbarHover() {
+        return isDarkTheme() ? new Color(100, 100, 110) : new Color(148, 163, 184);
+    }
+
+    /**
+     * Console 选中文本背景色 - 根据主题自适应
+     */
+    public static Color getConsoleSelectionBg() {
+        return isDarkTheme() ? new Color(60, 90, 120) : new Color(191, 219, 254);
+    }
+
+    /**
+     * Console 当前行高亮色 - 根据主题自适应
+     */
+    public static Color getConsoleCurrentLine() {
+        return isDarkTheme() ? new Color(45, 45, 50) : new Color(248, 250, 252);
+    }
+
+    // ==================== 保留旧的常量以保持向后兼容 ====================
+
+    /**
+     * @deprecated 请使用 getConsoleBackground() 以支持主题切换
+     */
+    @Deprecated
     public static final Color CONSOLE_BACKGROUND = new Color(250, 251, 252);
 
     /**
-     * Console 文本区域背景色 - 清爽的白色背景
+     * @deprecated 请使用 getConsoleTextAreaBg() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_TEXT_AREA_BG = new Color(255, 255, 255);
 
     /**
-     * Console 普通文本颜色 - 深灰色，易读
+     * @deprecated 请使用 getConsoleText() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_TEXT = new Color(51, 65, 85);
 
     /**
-     * Console INFO 级别颜色 - 专业蓝色
+     * @deprecated 请使用 getConsoleInfo() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_INFO = new Color(37, 99, 235);
 
     /**
-     * Console DEBUG 级别颜色 - 清新绿色
+     * @deprecated 请使用 getConsoleDebug() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_DEBUG = new Color(22, 163, 74);
 
     /**
-     * Console WARN 级别颜色 - 醒目橙色
+     * @deprecated 请使用 getConsoleWarn() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_WARN = new Color(234, 88, 12);
 
     /**
-     * Console ERROR 级别颜色 - 鲜明红色
+     * @deprecated 请使用 getConsoleError() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_ERROR = new Color(220, 38, 38);
 
     /**
-     * Console 时间戳颜色 - 中性灰
+     * @deprecated 请使用 getConsoleTimestamp() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_TIMESTAMP = new Color(100, 116, 139);
 
     /**
-     * Console 类名颜色 - 优雅紫色
+     * @deprecated 请使用 getConsoleClassName() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_CLASS_NAME = new Color(147, 51, 234);
 
     /**
-     * Console 方法名颜色 - 活力青色
+     * @deprecated 请使用 getConsoleMethodName() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_METHOD_NAME = new Color(14, 165, 233);
 
     /**
-     * Console 工具栏背景色 - 浅灰背景
+     * @deprecated 请使用 getConsoleToolbarBg() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_TOOLBAR_BG = new Color(248, 250, 252);
 
     /**
-     * Console 工具栏边框色 - 淡雅边框
+     * @deprecated 请使用 getConsoleToolbarBorder() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_TOOLBAR_BORDER = new Color(226, 232, 240);
 
     /**
-     * Console 按钮悬停背景色 - 柔和蓝色
+     * @deprecated 请使用 getConsoleButtonHover() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_BUTTON_HOVER = new Color(224, 242, 254);
 
     /**
-     * Console 滚动条颜色 - 淡灰色
+     * @deprecated 请使用 getConsoleScrollbar() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_SCROLLBAR = new Color(203, 213, 225);
 
     /**
-     * Console 滚动条悬停颜色 - 中灰色
+     * @deprecated 请使用 getConsoleScrollbarHover() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_SCROLLBAR_HOVER = new Color(148, 163, 184);
 
     /**
-     * Console 选中文本背景色 - 柔和蓝色
+     * @deprecated 请使用 getConsoleSelectionBg() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_SELECTION_BG = new Color(191, 219, 254);
 
     /**
-     * Console 当前行高亮色 - 极淡灰色
+     * @deprecated 请使用 getConsoleCurrentLine() 以支持主题切换
      */
+    @Deprecated
     public static final Color CONSOLE_CURRENT_LINE = new Color(248, 250, 252);
 
     // ==================== 透明度变体 ====================

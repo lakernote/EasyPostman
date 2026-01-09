@@ -1,5 +1,6 @@
 package com.laker.postman.common.window;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
@@ -108,23 +109,23 @@ public class SplashWindow extends JWindow {
                 int y = (getHeight() - size) / 2;
 
                 // 绘制外层光晕
-                g2.setColor(ModernColors.whiteWithAlpha(25));
+                g2.setColor(getDecorativeDotColor(25));
                 g2.fillOval(x - 6, y - 6, size + 12, size + 12);
 
                 // 绘制中层光晕
-                g2.setColor(ModernColors.whiteWithAlpha(40));
+                g2.setColor(getDecorativeDotColor(40));
                 g2.fillOval(x - 4, y - 4, size + 8, size + 8);
 
                 // 绘制圆形背景
-                g2.setColor(ModernColors.whiteWithAlpha(95));
+                g2.setColor(getDecorativeDotColor(95));
                 g2.fillOval(x, y, size, size);
 
                 // 绘制内部微妙阴影，增加立体感
-                g2.setColor(ModernColors.whiteWithAlpha(15));
+                g2.setColor(getDecorativeDotColor(15));
                 g2.fillOval(x + 2, y + 2, size - 4, size - 4);
 
                 // 绘制边框高光
-                g2.setColor(Color.WHITE);
+                g2.setColor(isDarkTheme() ? new Color(255, 255, 255, 120) : Color.WHITE);
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
@@ -155,13 +156,13 @@ public class SplashWindow extends JWindow {
         // 应用名称
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
         appNameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +8));
-        appNameLabel.setForeground(ModernColors.whiteWithAlpha(220));
+        appNameLabel.setForeground(getTextColor());
         infoPanel.add(appNameLabel);
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
         versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
-        versionLabel.setForeground(ModernColors.whiteWithAlpha(220));
+        versionLabel.setForeground(getTextColor());
         infoPanel.add(versionLabel);
 
         return infoPanel;
@@ -175,7 +176,7 @@ public class SplashWindow extends JWindow {
         bottomPanel.setOpaque(false);
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +3)); // 比标准字体大3号
-        statusLabel.setForeground(ModernColors.whiteWithAlpha(220));
+        statusLabel.setForeground(getTextColor());
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
         return bottomPanel;
     }
@@ -220,25 +221,32 @@ public class SplashWindow extends JWindow {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-                // 现代化蓝色渐变（从iOS蓝到浅蓝）
+                boolean isDark = FlatLaf.isLafDark();
+
+                // 主题适配的渐变背景
+                Color gradientStart = isDark ? new Color(42, 42, 46) : ModernColors.PRIMARY;
+                Color gradientEnd = isDark ? new Color(30, 30, 34) : ModernColors.PRIMARY_LIGHTER;
                 GradientPaint gp = new GradientPaint(
-                        0, 0, ModernColors.PRIMARY,
-                        getWidth(), getHeight(), ModernColors.PRIMARY_LIGHTER
+                        0, 0, gradientStart,
+                        getWidth(), getHeight(), gradientEnd
                 );
                 g2d.setPaint(gp);
                 // 圆角背景
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 32, 32);
 
                 // 添加微妙的光泽效果
+                Color highlightStart = isDark ? new Color(255, 255, 255, 8) : ModernColors.whiteWithAlpha(40);
+                Color highlightEnd = isDark ? new Color(255, 255, 255, 0) : ModernColors.whiteWithAlpha(0);
                 GradientPaint glossPaint = new GradientPaint(
-                        0, 0, ModernColors.whiteWithAlpha(40),
-                        0, getHeight() / 2.0f, ModernColors.whiteWithAlpha(0)
+                        0, 0, highlightStart,
+                        0, getHeight() / 2.0f, highlightEnd
                 );
                 g2d.setPaint(glossPaint);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
 
                 // 添加边框高光
-                g2d.setColor(ModernColors.whiteWithAlpha(80));
+                Color borderColor = isDark ? new Color(60, 60, 65, 100) : ModernColors.whiteWithAlpha(80);
+                g2d.setColor(borderColor);
                 g2d.setStroke(new BasicStroke(2f));
                 g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 32, 32);
 
@@ -459,5 +467,33 @@ public class SplashWindow extends JWindow {
         } else {
             super.dispose();
         }
+    }
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的文字颜色
+     */
+    private Color getTextColor() {
+        // 暗色主题使用更亮的文字颜色，提升可读性
+        return isDarkTheme() ? new Color(230, 230, 230) : ModernColors.whiteWithAlpha(220);
+    }
+
+    /**
+     * 获取主题适配的装饰点颜色
+     */
+    private Color getDecorativeDotColor(int alpha) {
+        // 暗色主题使用更柔和的透明度，并稍微提亮
+        if (isDarkTheme()) {
+            // 使用更高的基础亮度，但降低透明度，使其更柔和
+            int adjustedAlpha = (int) (alpha * 0.6); // 降低到 60% 透明度
+            return new Color(255, 255, 255, adjustedAlpha);
+        }
+        return ModernColors.whiteWithAlpha(alpha);
     }
 }

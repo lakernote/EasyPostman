@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.tab;
 
 
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
@@ -23,6 +24,7 @@ import java.awt.event.MouseMotionAdapter;
 
 /**
  * 通用可关闭Tab组件，支持右上角红点脏标记
+ * 支持亮色和暗色主题自适应
  */
 @Slf4j
 public class ClosableTabComponent extends JPanel {
@@ -43,6 +45,56 @@ public class ClosableTabComponent extends JPanel {
     private boolean hoverClose = false; // 鼠标是否悬浮在关闭按钮区域
     private static final int CLOSE_DIAMETER = 12; // 关闭按钮直径
     private static final int CLOSE_MARGIN = 0; // 关闭按钮距离顶部和右侧的距离
+
+    /**
+     * 检查当前是否为暗色主题
+     */
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取主题适配的关闭按钮背景色
+     */
+    private Color getCloseButtonBackground() {
+        if (isDarkTheme()) {
+            // 暗色主题：使用深色背景
+            Color base = ModernColors.TAB_SELECTED_BACKGROUND;
+            return new Color(base.getRed(), base.getGreen(), base.getBlue(), 200);
+        } else {
+            // 亮色主题：使用浅色背景
+            Color base = ModernColors.TAB_SELECTED_BACKGROUND;
+            return new Color(base.getRed(), base.getGreen(), base.getBlue(), 180);
+        }
+    }
+
+    /**
+     * 获取主题适配的关闭按钮线条颜色
+     */
+    private Color getCloseButtonLineColor() {
+        // 暗色主题使用白色，亮色主题使用黑色
+        return isDarkTheme() ? Color.WHITE : Color.BLACK;
+    }
+
+    /**
+     * 获取主题适配的新请求标记颜色
+     */
+    private Color getNewRequestColor() {
+        // 黄色在两种主题下都适用
+        return new Color(255, 204, 0, 180);
+    }
+
+    /**
+     * 获取主题适配的脏标记颜色
+     */
+    private Color getDirtyColor() {
+        // 红色在两种主题下都适用，但暗色主题可以稍微亮一点
+        if (isDarkTheme()) {
+            return new Color(239, 83, 80, 180); // 稍微亮一点的红色
+        } else {
+            return new Color(209, 47, 47, 131); // 原来的红色
+        }
+    }
 
     public ClosableTabComponent(String title, RequestItemProtocolEnum protocol) {
         setOpaque(false);
@@ -169,22 +221,23 @@ public class ClosableTabComponent extends JPanel {
         int r = CLOSE_DIAMETER;
         int x = getWidth() - r - CLOSE_MARGIN;
         int y = (getHeight() - r) / 2;
+
         if (hoverClose) {
-            // 绘制关闭按钮
-            Color base = ModernColors.TAB_SELECTED_BACKGROUND;
-            Color transparent = new Color(base.getRed(), base.getGreen(), base.getBlue(), 180); // 180透明度代表半透明
-            g2.setColor(transparent);
+            // 绘制关闭按钮（主题适配）
+            g2.setColor(getCloseButtonBackground());
             g2.fillOval(x, y, r, r);
-            g2.setColor(Color.BLACK);
+            g2.setColor(getCloseButtonLineColor());
             int pad = 2;
             g2.setStroke(new BasicStroke(1.5f));
             g2.drawLine(x + pad, y + pad, x + r - pad, y + r - pad);
             g2.drawLine(x + r - pad, y + pad, x + pad, y + r - pad);
         } else if (newRequest) {
-            g2.setColor(new Color(255, 204, 0, 180)); // yellow
+            // 新请求标记（主题适配）
+            g2.setColor(getNewRequestColor());
             g2.fillOval(x, y, r, r);
         } else if (dirty) {
-            g2.setColor(new Color(209, 47, 47, 131)); // red
+            // 脏标记（主题适配）
+            g2.setColor(getDirtyColor());
             g2.fillOval(x, y, r, r);
         }
         g2.dispose();

@@ -43,7 +43,7 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
         boolean isEmpty = cellValue == null || cellValue.trim().isEmpty();
         boolean isHovered = row == hoverRow;
 
-        c.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, isEmpty, row, table));
+        c.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, isEmpty, table));
 
         // 为文本单元格添加内边距
         if (!(TableUIConstants.FILE_TYPE.equals(type))) {

@@ -29,13 +29,13 @@ public class FileCellRenderer implements TableCellRenderer {
         if (isEmpty) {
             // 未选择文件时显示按钮样式
             JButton button = createFileButton(TableUIConstants.SELECT_FILE_TEXT, true);
-            button.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, true, row, table));
+            button.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, true, table));
             return button;
         } else {
             // 已选择文件时显示文件信息
             JPanel panel = new JPanel(new BorderLayout(5, 0));
             panel.setOpaque(true);
-            panel.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, false, row, table));
+            panel.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, false, table));
 
             // 创建并添加文件图标
             JLabel iconLabel = new JLabel();
@@ -44,7 +44,7 @@ public class FileCellRenderer implements TableCellRenderer {
 
             // 创建并添加文件路径文本
             JLabel pathLabel = new JLabel(formatFilePath(val));
-            pathLabel.setForeground(TableUIConstants.FILE_SELECTED_TEXT_COLOR);
+            pathLabel.setForeground(TableUIConstants.getFileSelectedTextColor());
             pathLabel.setToolTipText(val); // 完整路径作为工具提示
             panel.add(pathLabel, BorderLayout.CENTER);
 
@@ -66,9 +66,9 @@ public class FileCellRenderer implements TableCellRenderer {
         JButton button = new JButton();
         button.setText(text);
         FontAwesome icon = isEmpty ? FontAwesome.FILE : FontAwesome.FILE_O;
-        Color iconColor = isEmpty ? TableUIConstants.FILE_EMPTY_TEXT_COLOR : TableUIConstants.FILE_SELECTED_TEXT_COLOR;
+        Color iconColor = isEmpty ? TableUIConstants.getFileEmptyTextColor() : TableUIConstants.getFileSelectedTextColor();
         button.setIcon(IconFontSwing.buildIcon(icon, TableUIConstants.ICON_SIZE, iconColor));
-        button.setForeground(isEmpty ? TableUIConstants.FILE_EMPTY_TEXT_COLOR : TableUIConstants.FILE_SELECTED_TEXT_COLOR);
+        button.setForeground(isEmpty ? TableUIConstants.getFileEmptyTextColor() : TableUIConstants.getFileSelectedTextColor());
         button.setFocusPainted(false);
         button.setBorder(TableUIConstants.createButtonBorder());
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -106,7 +106,7 @@ public class FileCellRenderer implements TableCellRenderer {
      */
     private Icon getFileTypeIcon(String path) {
         if (path == null || path.isEmpty()) {
-            return IconFontSwing.buildIcon(FontAwesome.FILE, TableUIConstants.ICON_SIZE, TableUIConstants.FILE_EMPTY_TEXT_COLOR);
+            return IconFontSwing.buildIcon(FontAwesome.FILE, TableUIConstants.ICON_SIZE, TableUIConstants.getFileEmptyTextColor());
         }
 
         // 根据文件扩展名设置不同图标
@@ -131,7 +131,7 @@ public class FileCellRenderer implements TableCellRenderer {
             icon = FontAwesome.FILE_O;
         }
 
-        return IconFontSwing.buildIcon(icon, TableUIConstants.ICON_SIZE, TableUIConstants.FILE_SELECTED_TEXT_COLOR);
+        return IconFontSwing.buildIcon(icon, TableUIConstants.ICON_SIZE, TableUIConstants.getFileSelectedTextColor());
     }
 
     /**

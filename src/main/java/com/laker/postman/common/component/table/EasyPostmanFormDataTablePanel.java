@@ -197,8 +197,19 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
         // 自定义下拉列表的渲染器
         comboBox.setRenderer(new DefaultListCellRenderer() {
-            private final Icon textIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
-            private final Icon fileIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
+            private final Icon textIcon;
+            private final Icon fileIcon;
+
+            // 初始化图标并设置颜色过滤器以适配主题
+            {
+                FlatSVGIcon textSvgIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
+                textSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+                textIcon = textSvgIcon;
+
+                FlatSVGIcon fileSvgIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
+                fileSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+                fileIcon = fileSvgIcon;
+            }
 
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -299,9 +310,14 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
             textLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
             textLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-            // 加载图标
-            textIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
-            fileIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
+            // 加载图标并设置颜色过滤器以适配主题
+            FlatSVGIcon textSvgIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
+            textSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+            textIcon = textSvgIcon;
+
+            FlatSVGIcon fileSvgIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
+            fileSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+            fileIcon = fileSvgIcon;
 
             // 添加组件
             add(iconLabel, BorderLayout.WEST);

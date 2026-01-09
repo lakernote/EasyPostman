@@ -41,12 +41,15 @@ public class FileCellEditor extends DefaultCellEditor {
 
         // 创建浏览按钮
         browseButton = new JButton();
-        browseButton.setIcon(new FlatSVGIcon("icons/file.svg", TableUIConstants.ICON_SIZE, TableUIConstants.ICON_SIZE));
+        // 创建图标并设置颜色过滤器以适配主题
+        FlatSVGIcon fileIcon = new FlatSVGIcon("icons/file.svg", TableUIConstants.ICON_SIZE, TableUIConstants.ICON_SIZE);
+        fileIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        browseButton.setIcon(fileIcon);
         browseButton.setText("Browse");
         browseButton.setMargin(new Insets(2, 8, 2, 8));
         browseButton.setFocusPainted(false);
-        browseButton.setBackground(TableUIConstants.ZEBRA_LIGHT);
-        browseButton.setForeground(TableUIConstants.FILE_BUTTON_TEXT_COLOR);
+        browseButton.setBackground(UIManager.getColor("Table.background"));
+        browseButton.setForeground(TableUIConstants.getFileButtonTextColor());
         browseButton.setBorder(TableUIConstants.createButtonBorder());
         browseButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
@@ -54,12 +57,12 @@ public class FileCellEditor extends DefaultCellEditor {
         browseButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                browseButton.setBackground(TableUIConstants.HOVER_COLOR);
+                browseButton.setBackground(TableUIConstants.getHoverColor());
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                browseButton.setBackground(TableUIConstants.ZEBRA_LIGHT);
+                browseButton.setBackground(UIManager.getColor("Table.background"));
             }
         });
 
@@ -150,12 +153,12 @@ public class FileCellEditor extends DefaultCellEditor {
             } else if (!file.canRead()) {
                 pathField.setForeground(Color.ORANGE);
             } else {
-                pathField.setForeground(TableUIConstants.FILE_SELECTED_TEXT_COLOR);
+                pathField.setForeground(TableUIConstants.getFileSelectedTextColor());
             }
         }
 
-        // 设置面板背景色
-        Color bgColor = row % 2 == 0 ? TableUIConstants.ZEBRA_LIGHT : TableUIConstants.ZEBRA_DARK;
+        // 设置面板背景色（使用表格背景色，不再使用斑马纹）
+        Color bgColor = table.getBackground();
         if (isSelected) {
             bgColor = table.getSelectionBackground();
         }

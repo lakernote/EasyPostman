@@ -82,7 +82,9 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 新建工作区按钮
         JButton newButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_NEW));
-        newButton.setIcon(new FlatSVGIcon("icons/plus.svg", 20, 20));
+        FlatSVGIcon newIcon = new FlatSVGIcon("icons/plus.svg", 20, 20);
+        newIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+        newButton.setIcon(newIcon);
         newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         newButton.setFocusable(false); // 去掉按钮聚焦虚线
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
@@ -173,7 +175,6 @@ public class WorkspacePanel extends SingletonBasePanel {
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        logArea.setBackground(new Color(248, 248, 248));
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
         logScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
@@ -182,7 +183,9 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 添加清空日志按钮
         JPanel logToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
         JButton clearLogButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        clearLogButton.setIcon(new FlatSVGIcon("icons/clear.svg", 20, 20));
+        FlatSVGIcon clearLogIcon = new FlatSVGIcon("icons/clear.svg", 20, 20);
+        clearLogIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+        clearLogButton.setIcon(clearLogIcon);
         clearLogButton.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         clearLogButton.addActionListener(e -> logArea.setText(""));
         logToolbar.add(clearLogButton);
@@ -235,7 +238,9 @@ public class WorkspacePanel extends SingletonBasePanel {
         Workspace current = workspaceService.getCurrentWorkspace();
         if (current == null || !current.getId().equals(workspace.getId())) {
             JMenuItem switchItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_SWITCH));
-            switchItem.setIcon(new FlatSVGIcon("icons/switch.svg", 16, 16));
+            FlatSVGIcon switchIcon = new FlatSVGIcon("icons/switch.svg", 16, 16);
+            switchIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+            switchItem.setIcon(switchIcon);
             switchItem.addActionListener(e -> switchToWorkspace(workspace));
             menu.add(switchItem);
             if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {

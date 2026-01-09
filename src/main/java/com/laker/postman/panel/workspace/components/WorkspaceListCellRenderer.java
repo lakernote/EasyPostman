@@ -36,6 +36,7 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
         FlatSVGIcon icon;
         if (workspace.getType() == WorkspaceType.LOCAL) {
             icon = new FlatSVGIcon("icons/local.svg", 18, 18);
+            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
         } else {
             icon = new FlatSVGIcon("icons/git.svg", 20, 20);
         }

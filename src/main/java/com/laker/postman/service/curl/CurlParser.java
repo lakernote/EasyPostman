@@ -192,36 +192,62 @@ public class CurlParser {
                     }
                 }
 
-                // 如果没有设置 Content-Type，默认设置为 application/x-www-form-urlencoded
+                // 如果没有设置 Content-Type，检查 data 格式来决定
                 if (contentType.isEmpty()) {
-                    if (req.headersList == null) {
-                        req.headersList = new ArrayList<>();
-                    }
-                    contentType = "application/x-www-form-urlencoded";
-                    req.headersList.add(new HttpHeader(true, CONTENT_TYPE, contentType));
-                }
-
-                // 检查所有 dataParams 是否都是 key=value 格式
-                boolean allKeyValue = true;
-                for (String dataParam : dataParams) {
-                    if (!dataParam.contains("=")) {
-                        allKeyValue = false;
-                        break;
-                    }
-                }
-
-                // 如果是 application/x-www-form-urlencoded 格式且所有参数都是 key=value 格式，解析为 key-value 对
-                if (contentType.startsWith("application/x-www-form-urlencoded") && allKeyValue) {
-                    if (req.urlencodedList == null) {
-                        req.urlencodedList = new ArrayList<>();
-                    }
+                    // 检查是否所有 dataParams 都包含 =（key=value 格式）
+                    boolean allKeyValue = true;
                     for (String dataParam : dataParams) {
-                        String[] kv = dataParam.split("=", 2);
-                        if (kv.length == 2) {
-                            req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0], kv[1]));
-                        } else if (kv.length == 1) {
-                            req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0], ""));
+                        if (!dataParam.contains("=")) {
+                            allKeyValue = false;
+                            break;
                         }
+                    }
+                    // 如果都是 key=value 格式，默认设置为 application/x-www-form-urlencoded
+                    if (allKeyValue) {
+                        if (req.headersList == null) {
+                            req.headersList = new ArrayList<>();
+                        }
+                        contentType = "application/x-www-form-urlencoded";
+                        req.headersList.add(new HttpHeader(true, CONTENT_TYPE, contentType));
+                    }
+                }
+
+                // 如果是 application/x-www-form-urlencoded 格式，尝试解析为 key-value 对
+                if (contentType.startsWith("application/x-www-form-urlencoded")) {
+                    // 合并所有 dataParams（用 & 连接），然后按 & 分割成多个键值对
+                    String combinedData = String.join("&", dataParams);
+                    
+                    // 检查是否包含 =，如果不包含，则作为原始 body（兼容非 key=value 格式）
+                    if (combinedData.contains("=")) {
+                        if (req.urlencodedList == null) {
+                            req.urlencodedList = new ArrayList<>();
+                        }
+                        // 按 & 分割成多个键值对
+                        String[] pairs = combinedData.split("&");
+                        boolean hasValidPairs = false;
+                        for (String pair : pairs) {
+                            if (pair.trim().isEmpty()) {
+                                continue; // 跳过空字符串
+                            }
+                            // 按 = 分割，限制分割次数为 2（因为值中可能包含 =）
+                            String[] kv = pair.split("=", 2);
+                            if (kv.length == 2) {
+                                req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0].trim(), kv[1].trim()));
+                                hasValidPairs = true;
+                            } else if (kv.length == 1 && !kv[0].trim().isEmpty()) {
+                                // 只有 key 没有 value，也作为 urlencoded 字段
+                                req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0].trim(), ""));
+                                hasValidPairs = true;
+                            }
+                        }
+                        // 如果没有成功解析出任何键值对，则作为原始 body
+                        if (!hasValidPairs) {
+                            req.urlencodedList = null;
+                            req.body = combinedData;
+                        }
+                    } else {
+                        // 不包含 =，作为原始 body（兼容 testDataParamWithoutEquals 等测试）
+                        req.body = combinedData;
                     }
                 }
                 // 如果是 multipart/form-data 格式，解析表单数据

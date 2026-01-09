@@ -1058,4 +1058,91 @@ public class CurlParserTest {
         }
         return null;
     }
+
+    @Test(description = "测试 --data-raw 配合 application/x-www-form-urlencoded 解析完整的 urlencoded 字符串")
+    public void testDataRawWithUrlencodedContentType() {
+        String curl = """
+                curl 'https://xxxxx/xxxx.json' \\
+                  -H 'Content-Type: application/x-www-form-urlencoded' \\
+                  --data-raw 'page_no=1&page_size=10&province_code=13&start_date=&end_date=&status=4&start_card_date=&end_card_date=&card_no=&loss_type=&base_line=20251201'
+                """;
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertNotNull(result, "应该成功解析");
+        assertEquals(result.method, "POST", "应该自动设置为 POST 方法");
+        assertEquals(result.url, "https://xxxxx/xxxx.json");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/x-www-form-urlencoded");
+
+        // 验证 urlencoded 字段被正确解析
+        assertNotNull(result.urlencodedList, "应该有 urlencodedList");
+        assertEquals(result.urlencodedList.size(), 11, "应该有 11 个 urlencoded 字段");
+
+        // 验证各个字段
+        assertEquals(findUrlencodedValue(result.urlencodedList, "page_no"), "1");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "page_size"), "10");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "province_code"), "13");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "start_date"), "");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "end_date"), "");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "status"), "4");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "start_card_date"), "");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "end_card_date"), "");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "card_no"), "");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "loss_type"), "");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "base_line"), "20251201");
+
+        // 验证 body 应该为 null（因为数据在 urlencodedList 中）
+        assertNull(result.body, "当使用 urlencoded 时，body 应该为 null");
+    }
+
+    @Test(description = "测试 --data-raw 配合 application/x-www-form-urlencoded 解析多个 data 参数")
+    public void testMultipleDataRawWithUrlencodedContentType() {
+        String curl = """
+                curl 'https://api.example.com/submit' \\
+                  -H 'Content-Type: application/x-www-form-urlencoded' \\
+                  --data-raw 'name=John' \\
+                  --data-raw 'email=john@example.com' \\
+                  --data-raw 'age=30'
+                """;
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertNotNull(result);
+        assertEquals(result.method, "POST");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/x-www-form-urlencoded");
+
+        // 验证 urlencoded 字段被正确解析
+        assertNotNull(result.urlencodedList);
+        assertEquals(result.urlencodedList.size(), 3);
+
+        assertEquals(findUrlencodedValue(result.urlencodedList, "name"), "John");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "email"), "john@example.com");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "age"), "30");
+
+        assertNull(result.body);
+    }
+
+    @Test(description = "测试 --data-raw 配合 application/x-www-form-urlencoded 解析包含特殊字符的值")
+    public void testDataRawWithUrlencodedSpecialCharacters() {
+        String curl = """
+                curl 'https://api.example.com/submit' \\
+                  -H 'Content-Type: application/x-www-form-urlencoded' \\
+                  --data-raw 'key1=value%20with%20spaces&key2=value%3Dwith%3Dequals&key3=normal'
+                """;
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertNotNull(result);
+        assertEquals(result.method, "POST");
+        assertEquals(findHeaderValue(result.headersList, "Content-Type"), "application/x-www-form-urlencoded");
+
+        assertNotNull(result.urlencodedList);
+        assertEquals(result.urlencodedList.size(), 3);
+
+        assertEquals(findUrlencodedValue(result.urlencodedList, "key1"), "value%20with%20spaces");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "key2"), "value%3Dwith%3Dequals");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "key3"), "normal");
+
+        assertNull(result.body);
+    }
 }

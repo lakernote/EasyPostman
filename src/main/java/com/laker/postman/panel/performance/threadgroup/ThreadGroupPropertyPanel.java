@@ -569,15 +569,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     // 预览面板实现
     private static class ThreadLoadPreviewPanel extends JPanel {
         private ThreadLoadPreviewData previewData;
-        private static final Color GRID_COLOR = new Color(220, 220, 220);
-        private static final Color CURVE_COLOR = new Color(41, 121, 255);
-        private static final Color AXIS_COLOR = new Color(100, 100, 100);
-        private static final Color TEXT_COLOR = new Color(80, 80, 80);
         private static final int PADDING = 40;
-
-        public ThreadLoadPreviewPanel() {
-            setBackground(Color.WHITE);
-        }
 
         public void setPreviewData(ThreadLoadPreviewData data) {
             this.previewData = data;
@@ -646,7 +638,11 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private void drawGrid(Graphics2D g2d, int width, int height) {
-            g2d.setColor(GRID_COLOR);
+            Color gridColor = UIManager.getColor("Performance.chart.gridColor");
+            Color textColor = UIManager.getColor("Performance.chart.textColor");
+            Color axisColor = UIManager.getColor("Performance.chart.axisColor");
+
+            g2d.setColor(gridColor);
             g2d.setStroke(new BasicStroke(0.5f));
 
             // Y轴优美刻度
@@ -657,9 +653,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 int y = PADDING + height - (int) ((double) threadValue / maxThreads * height);
                 g2d.draw(new java.awt.geom.Line2D.Double(PADDING, y, PADDING + width, y));
                 if (threadValue > 0) {
-                    g2d.setColor(TEXT_COLOR);
+                    g2d.setColor(textColor);
                     g2d.drawString(String.valueOf(threadValue), PADDING - 30, y + 5);
-                    g2d.setColor(GRID_COLOR);
+                    g2d.setColor(gridColor);
                 }
             }
 
@@ -671,14 +667,14 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 int x = PADDING + (int) ((double) timeValue / duration * width);
                 g2d.draw(new java.awt.geom.Line2D.Double(x, PADDING, x, PADDING + height));
                 if (timeValue > 0) {
-                    g2d.setColor(TEXT_COLOR);
+                    g2d.setColor(textColor);
                     g2d.drawString(timeValue + "s", x - 10, PADDING + height + 15);
-                    g2d.setColor(GRID_COLOR);
+                    g2d.setColor(gridColor);
                 }
             }
 
             // 坐标轴
-            g2d.setColor(AXIS_COLOR);
+            g2d.setColor(axisColor);
             g2d.setStroke(new BasicStroke(1.5f));
 
             // X轴
@@ -687,7 +683,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
             g2d.draw(new Line2D.Double(PADDING, PADDING, PADDING, PADDING + height));
 
             // 坐标轴标签
-            g2d.setColor(TEXT_COLOR);
+            g2d.setColor(textColor);
             g2d.drawString(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TIME_SECONDS), PADDING + width / 2 - 20, PADDING + height + 30);
 
             // 在左上角添加模式信息
@@ -735,7 +731,8 @@ public class ThreadGroupPropertyPanel extends JPanel {
         }
 
         private void drawCurve(Graphics2D g2d, int width, int height) {
-            g2d.setColor(CURVE_COLOR);
+            Color curveColor = UIManager.getColor("Performance.chart.curveColor");
+            g2d.setColor(curveColor);
             g2d.setStroke(new BasicStroke(2.0f));
 
             List<Point> points = new ArrayList<>();
@@ -765,13 +762,14 @@ public class ThreadGroupPropertyPanel extends JPanel {
             }
 
             // 绘制点
-            g2d.setColor(Color.WHITE);
+            Color bgColor = UIManager.getColor("Panel.background");
+            g2d.setColor(bgColor);
             g2d.setStroke(new BasicStroke(1.0f));
             for (Point p : points) {
                 g2d.fill(new Rectangle2D.Double((double) p.x - 3, (double) p.y - 3, 6, 6));
-                g2d.setColor(CURVE_COLOR);
+                g2d.setColor(curveColor);
                 g2d.draw(new Rectangle2D.Double((double) p.x - 3, (double) p.y - 3, 6, 6));
-                g2d.setColor(Color.WHITE);
+                g2d.setColor(bgColor);
             }
         }
 

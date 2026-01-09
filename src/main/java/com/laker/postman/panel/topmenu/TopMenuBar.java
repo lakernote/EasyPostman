@@ -39,6 +39,8 @@ import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
 public class TopMenuBar extends SingletonBaseMenuBar {
+    private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
+
     @Getter
     private EnvironmentComboBox environmentComboBox;
     @Getter
@@ -292,7 +294,9 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         addGitToolbarIfNeeded();
 
         // 添加工作区图标和下拉框
-        JLabel workspaceIconLabel = new JLabel(new FlatSVGIcon("icons/workspace.svg", 20, 20));
+        FlatSVGIcon workspaceIcon = new FlatSVGIcon("icons/workspace.svg", 20, 20);
+        workspaceIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        JLabel workspaceIconLabel = new JLabel(workspaceIcon);
         add(workspaceIconLabel);
         add(workspaceComboBox);
 
@@ -300,7 +304,9 @@ public class TopMenuBar extends SingletonBaseMenuBar {
         add(Box.createHorizontalStrut(2));
 
         // 添加环境变量图标和下拉框
-        JLabel envIconLabel = new JLabel(new FlatSVGIcon("icons/environments.svg", 20, 20));
+        FlatSVGIcon envIcon = new FlatSVGIcon("icons/environments.svg", 20, 20);
+        envIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        JLabel envIconLabel = new JLabel(envIcon);
         add(envIconLabel);
         add(environmentComboBox);
     }
@@ -495,7 +501,9 @@ public class TopMenuBar extends SingletonBaseMenuBar {
      */
     private JButton createGitButton(String tooltip, String iconPath, ActionListener action) {
         JButton button = new JButton();
-        button.setIcon(new FlatSVGIcon(iconPath, 18, 18));
+        FlatSVGIcon icon = new FlatSVGIcon(iconPath, 18, 18);
+        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        button.setIcon(icon);
         button.setToolTipText(tooltip);
         button.setFocusable(false);
         button.setBorderPainted(false);

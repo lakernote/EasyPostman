@@ -15,10 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
-    private static final Color TOTAL_ROW_FOREGROUND = new Color(0, 102, 204);
-    private static final Color TOTAL_ROW_BACKGROUND = new Color(230, 240, 255);
-    private static final Color SUCCESS_GREEN = new Color(0, 153, 0);
-    private static final Color WARNING_BLUE = new Color(51, 153, 255);
 
     private static final int FAIL_COLUMN_INDEX = 3;
     private static final int SUCCESS_RATE_COLUMN_INDEX = 4;
@@ -178,15 +174,15 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyTotalRowStyle(Component c) {
         c.setFont(c.getFont().deriveFont(Font.BOLD));
-        c.setForeground(TOTAL_ROW_FOREGROUND);
-        c.setBackground(TOTAL_ROW_BACKGROUND);
+         c.setForeground(UIManager.getColor("Performance.report.totalForeground"));
+        c.setBackground(UIManager.getColor("Performance.report.totalBackground"));
     }
 
     private void applyFailCellStyle(Component c, Object value) {
         try {
             int failCount = Integer.parseInt(value == null ? "0" : value.toString());
-            c.setForeground(failCount > 0 ? Color.RED : Color.BLACK);
-            c.setBackground(Color.WHITE);
+            c.setForeground(failCount > 0 ? Color.RED : UIManager.getColor("Table.foreground"));
+            c.setBackground(UIManager.getColor("Table.background"));
         } catch (Exception e) {
             applyDefaultCellStyle(c);
         }
@@ -198,24 +194,24 @@ public class PerformanceReportPanel extends JPanel {
             try {
                 double rate = Double.parseDouble(rateStr.replace("%", ""));
                 if (rate >= SUCCESS_RATE_EXCELLENT) {
-                    c.setForeground(SUCCESS_GREEN);
+                    c.setForeground(UIManager.getColor("Performance.report.successColor"));
                 } else if (rate >= SUCCESS_RATE_GOOD) {
-                    c.setForeground(WARNING_BLUE);
+                    c.setForeground(UIManager.getColor("Performance.report.warningColor"));
                 } else {
                     c.setForeground(Color.RED);
                 }
             } catch (Exception e) {
-                c.setForeground(Color.BLACK);
+                c.setForeground(UIManager.getColor("Table.foreground"));
             }
         } else {
-            c.setForeground(Color.BLACK);
+            c.setForeground(UIManager.getColor("Table.foreground"));
         }
-        c.setBackground(Color.WHITE);
+        c.setBackground(UIManager.getColor("Table.background"));
     }
 
     private void applyDefaultCellStyle(Component c) {
-        c.setForeground(Color.BLACK);
-        c.setBackground(Color.WHITE);
+        c.setForeground(UIManager.getColor("Table.foreground"));
+        c.setBackground(UIManager.getColor("Table.background"));
     }
 
 

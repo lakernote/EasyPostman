@@ -3,6 +3,7 @@ package com.laker.postman.panel.workspace.components;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.StepIndicator;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitStatusCheck;
 import com.laker.postman.model.Workspace;
@@ -10,10 +11,7 @@ import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -86,6 +84,56 @@ public class GitOperationDialog extends JDialog {
         performPreOperationCheck();
     }
 
+
+    /**
+     * 获取边框颜色（主题适配）
+     */
+    private Color getBorderColor() {
+        return ModernColors.getBorderLightColor();
+    }
+
+    /**
+     * 将 Color 转换为 HTML 颜色字符串（格式: #RRGGBB）
+     */
+    private String toHtmlColor(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    /**
+     * 获取 HTML 中使用的成功色（绿色）
+     */
+    private String getHtmlSuccessColor() {
+        return toHtmlColor(ModernColors.SUCCESS);
+    }
+
+    /**
+     * 获取 HTML 中使用的警告色（橙色）
+     */
+    private String getHtmlWarningColor() {
+        return toHtmlColor(ModernColors.WARNING);
+    }
+
+    /**
+     * 获取 HTML 中使用的错误色（红色）
+     */
+    private String getHtmlErrorColor() {
+        return toHtmlColor(ModernColors.ERROR);
+    }
+
+    /**
+     * 获取 HTML 中使用的信息色（蓝色）
+     */
+    private String getHtmlInfoColor() {
+        return toHtmlColor(ModernColors.PRIMARY);
+    }
+
+    /**
+     * 获取 HTML 中使用的次要文本色（灰色）
+     */
+    private String getHtmlSecondaryColor() {
+        return toHtmlColor(ModernColors.getTextSecondary());
+    }
+
     /**
      * 设置对话框基本属性
      */
@@ -138,8 +186,8 @@ public class GitOperationDialog extends JDialog {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);
 
-        FlatSVGIcon icon = new FlatSVGIcon(operation.getIconName(), 32, 32);
-        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> Color.WHITE));
+        // Header uses operation color (colorful), so white icons are appropriate
+        FlatSVGIcon icon = IconUtil.createColored(operation.getIconName(), 32, 32, Color.WHITE);
         JLabel operationIcon = new JLabel(icon);
         operationIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
 
@@ -148,10 +196,12 @@ public class GitOperationDialog extends JDialog {
 
         JLabel titleLabel = new JLabel(operation.getDisplayName());
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        // White text on colored background (operation color)
         titleLabel.setForeground(Color.WHITE);
 
         JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WORKSPACE, workspace.getName()));
         subtitleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        // White text on colored background (operation color)
         subtitleLabel.setForeground(Color.WHITE);
 
         textPanel.add(titleLabel);
@@ -179,12 +229,14 @@ public class GitOperationDialog extends JDialog {
         JLabel currentBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CURRENT_BRANCH,
                 workspace.getCurrentBranch() != null ? workspace.getCurrentBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNKNOWN)));
         currentBranchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        // White text on colored background (operation color)
         currentBranchLabel.setForeground(Color.WHITE);
         currentBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         JLabel remoteBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_BRANCH,
                 workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NOT_SET)));
         remoteBranchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        // White text on colored background (operation color)
         remoteBranchLabel.setForeground(Color.WHITE);
         remoteBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
@@ -201,7 +253,7 @@ public class GitOperationDialog extends JDialog {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         panel.setBorder(new EmptyBorder(5, 10, 5, 10));
 
-        stepIndicator = new StepIndicator(operation);
+        stepIndicator = new StepIndicator();
         panel.add(stepIndicator);
 
         return panel;
@@ -237,7 +289,7 @@ public class GitOperationDialog extends JDialog {
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                BorderFactory.createLineBorder(getBorderColor()),
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
@@ -245,7 +297,8 @@ public class GitOperationDialog extends JDialog {
         ));
 
         JPanel statusInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusIcon = new JLabel(new FlatSVGIcon("icons/refresh.svg", 16, 16));
+        // Use theme-adapted icon that automatically adjusts to dark/light theme
+        statusIcon = new JLabel(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         statusMessage = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS));
         statusMessage.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
@@ -263,7 +316,7 @@ public class GitOperationDialog extends JDialog {
         JScrollPane detailsScrollPane = new JScrollPane(detailsArea);
         detailsScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         detailsScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        detailsScrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
+        detailsScrollPane.setBorder(new LineBorder(getBorderColor()));
 
         panel.add(detailsScrollPane, BorderLayout.CENTER);
 
@@ -276,7 +329,7 @@ public class GitOperationDialog extends JDialog {
     private JPanel createFilesPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                BorderFactory.createLineBorder(getBorderColor()),
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
@@ -294,7 +347,7 @@ public class GitOperationDialog extends JDialog {
         JScrollPane scrollPane = new JScrollPane(fileChangesArea);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
+        scrollPane.setBorder(new LineBorder(getBorderColor()));
 
         fileChangesPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -315,7 +368,7 @@ public class GitOperationDialog extends JDialog {
     private JPanel createCommitMessagePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                BorderFactory.createLineBorder(getBorderColor()),
                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_COMMIT_MESSAGE),
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
@@ -331,7 +384,7 @@ public class GitOperationDialog extends JDialog {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
 
         JScrollPane scrollPane = new JScrollPane(commitMessageArea);
-        scrollPane.setBorder(new LineBorder(Color.LIGHT_GRAY));
+        scrollPane.setBorder(new LineBorder(getBorderColor()));
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
@@ -382,6 +435,7 @@ public class GitOperationDialog extends JDialog {
         executeButton.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         executeButton.setPreferredSize(new Dimension(100, 32));
         executeButton.setBackground(operation.getColor());
+        // White text on colored button background (operation color)
         executeButton.setForeground(Color.WHITE);
         executeButton.setFocusPainted(false);
         executeButton.addActionListener(new ExecuteActionListener());
@@ -401,7 +455,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void performPreOperationCheck() {
         stepIndicator.setCurrentStep(0);
-        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", Color.BLUE);
+        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", ModernColors.PRIMARY);
 
         // 禁用执行按钮，防止在检查期间执行操作
         executeButton.setEnabled(false);
@@ -432,13 +486,13 @@ public class GitOperationDialog extends JDialog {
                         displayStatusCheck(statusCheck);
                         displayFileChangesStatus();
                         stepIndicator.setCurrentStep(1);
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", new Color(34, 139, 34));
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", ModernColors.SUCCESS);
                     } else {
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, "Unknown error"), "icons/warning.svg", Color.RED);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, "Unknown error"), "icons/warning.svg", ModernColors.ERROR);
                     }
                 } catch (Exception e) {
                     log.error("Failed to perform pre-operation check", e);
-                    updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", Color.RED);
+                    updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", ModernColors.ERROR);
                 }
             }
         };
@@ -449,7 +503,8 @@ public class GitOperationDialog extends JDialog {
      * 更新状态显示
      */
     private void updateStatus(String message, String iconPath, Color color) {
-        statusIcon.setIcon(new FlatSVGIcon(iconPath, 16, 16));
+        // Create colored icon with theme-adapted color for better visibility
+        statusIcon.setIcon(IconUtil.createColored(iconPath, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL, color));
         statusMessage.setText(message);
         statusMessage.setForeground(color);
     }
@@ -548,19 +603,19 @@ public class GitOperationDialog extends JDialog {
                         I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_DESC), true);
                 addOption(OPTION_FORCE,
                         I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL),
-                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, Color.RED);
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, ModernColors.ERROR);
             } else if (check.hasUncommittedChanges) {
                 showOptions = true;
                 // 如果可以自动合并，优先推荐提交后拉取
                 if (check.canAutoMerge) {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_UNCOMMITTED_AUTO_MERGE_TITLE));
                     addOption(OPTION_COMMIT_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_AUTO_MERGE_DESC), true);
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD_WARNING_DESC), false, Color.RED);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD_WARNING_DESC), false, ModernColors.ERROR);
                 } else {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_UNCOMMITTED_CHOOSE_TITLE));
                     addOption(OPTION_COMMIT_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_KEEP_DESC), true);
                     addOption(OPTION_STASH, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_STASH_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_STASH_PULL_DESC), false);
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_LOSE_DESC), false, Color.RED);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_LOSE_DESC), false, ModernColors.ERROR);
                 }
             }
         } else if (operation == GitOperation.PUSH) {
@@ -569,17 +624,17 @@ public class GitOperationDialog extends JDialog {
                 showOptions = true;
                 addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_CONFLICT_TITLE));
                 addOption(OPTION_CANCEL, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL_DESC), true);
-                addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_COMMITS_DESC, check.remoteCommitsBehind), false, Color.RED);
+                addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_COMMITS_DESC, check.remoteCommitsBehind), false, ModernColors.ERROR);
             } else if (check.hasRemoteCommits) {
                 // 远程有新提交
                 showOptions = true;
                 if (check.canAutoMerge && check.localCommitsAhead > 0) {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_REMOTE_AUTO_MERGE_TITLE));
                     addOption(OPTION_PULL_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_FIRST_PUSH), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_FIRST_PUSH_DESC), true);
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), false, Color.RED);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), false, ModernColors.ERROR);
                 } else {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_REMOTE_CHOOSE_TITLE));
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), true, Color.RED);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), true, ModernColors.ERROR);
                 }
             }
         }
@@ -624,7 +679,8 @@ public class GitOperationDialog extends JDialog {
 
         JLabel descLabel = new JLabel(description);
         descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2));
-        descLabel.setForeground(Color.GRAY);
+        // Use theme-adapted secondary text color
+        descLabel.setForeground(ModernColors.getTextSecondary());
         descLabel.setBorder(new EmptyBorder(0, 25, 0, 0));
 
         optionPanel.add(radio, BorderLayout.NORTH);
@@ -735,49 +791,49 @@ public class GitOperationDialog extends JDialog {
         if (statusCheck.added != null && !statusCheck.added.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_ADDED_FILES))).append(statusCheck.added.size()).append("<br/>");
             for (String file : statusCheck.added) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: green;'>+</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlSuccessColor()).append(";'>+</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.changed != null && !statusCheck.changed.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHANGED_FILES))).append(statusCheck.changed.size()).append("<br/>");
             for (String file : statusCheck.changed) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: orange;'>~</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlWarningColor()).append(";'>~</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.modified != null && !statusCheck.modified.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MODIFIED_FILES))).append(statusCheck.modified.size()).append("<br/>");
             for (String file : statusCheck.modified) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>*</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlInfoColor()).append(";'>*</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.removed != null && !statusCheck.removed.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOVED_FILES))).append(statusCheck.removed.size()).append("<br/>");
             for (String file : statusCheck.removed) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>-</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlErrorColor()).append(";'>-</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.missing != null && !statusCheck.missing.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_MISSING_FILES))).append(statusCheck.missing.size()).append("<br/>");
             for (String file : statusCheck.missing) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>!</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlErrorColor()).append(";'>!</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.untracked != null && !statusCheck.untracked.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNTRACKED_FILES))).append(statusCheck.untracked.size()).append("<br/>");
             for (String file : statusCheck.untracked) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: gray;'>?</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlSecondaryColor()).append(";'>?</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.conflicting != null && !statusCheck.conflicting.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CONFLICTING_FILES))).append(statusCheck.conflicting.size()).append("<br/>");
             for (String file : statusCheck.conflicting) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>#</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlErrorColor()).append(";'>#</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
@@ -800,35 +856,35 @@ public class GitOperationDialog extends JDialog {
         if (statusCheck.remoteAdded != null && !statusCheck.remoteAdded.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_ADDED_FILES))).append(statusCheck.remoteAdded.size()).append("<br/>");
             for (String file : statusCheck.remoteAdded) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: green;'>[+]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlSuccessColor()).append(";'>[+]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteModified != null && !statusCheck.remoteModified.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_MODIFIED_FILES))).append(statusCheck.remoteModified.size()).append("<br/>");
             for (String file : statusCheck.remoteModified) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: orange;'>[~]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlWarningColor()).append(";'>[~]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteRemoved != null && !statusCheck.remoteRemoved.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_REMOVED_FILES))).append(statusCheck.remoteRemoved.size()).append("<br/>");
             for (String file : statusCheck.remoteRemoved) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: red;'>[-]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlErrorColor()).append(";'>[-]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteRenamed != null && !statusCheck.remoteRenamed.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_RENAMED_FILES))).append(statusCheck.remoteRenamed.size()).append("<br/>");
             for (String file : statusCheck.remoteRenamed) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>[R]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlInfoColor()).append(";'>[R]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
         if (statusCheck.remoteCopied != null && !statusCheck.remoteCopied.isEmpty()) {
             html.append("&nbsp;&nbsp;").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_COPIED_FILES))).append(statusCheck.remoteCopied.size()).append("<br/>");
             for (String file : statusCheck.remoteCopied) {
-                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: blue;'>[C]</span> ").append(escapeHtml(file)).append("<br/>");
+                html.append("&nbsp;&nbsp;&nbsp;&nbsp;<span style='color: ").append(getHtmlInfoColor()).append(";'>[C]</span> ").append(escapeHtml(file)).append("<br/>");
             }
         }
 
@@ -926,7 +982,7 @@ public class GitOperationDialog extends JDialog {
                     hideProgress();
                     try {
                         get();
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", new Color(34, 139, 34));
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", ModernColors.SUCCESS);
 
                         NotificationUtil.showSuccess(
                                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_MESSAGE, operation.getDisplayName())
@@ -936,7 +992,7 @@ public class GitOperationDialog extends JDialog {
 
                     } catch (Exception ex) {
                         log.error("Git operation failed", ex);
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED, ex.getMessage()), "icons/warning.svg", Color.RED);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED, ex.getMessage()), "icons/warning.svg", ModernColors.ERROR);
 
                         String errorMessage = ex.getMessage();
                         if (ex.getCause() != null && ex.getCause().getMessage() != null) {

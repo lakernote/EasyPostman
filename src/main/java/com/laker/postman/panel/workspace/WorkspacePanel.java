@@ -82,9 +82,7 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 新建工作区按钮
         JButton newButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_NEW));
-        FlatSVGIcon newIcon = new FlatSVGIcon("icons/plus.svg", 20, 20);
-        newIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-        newButton.setIcon(newIcon);
+        newButton.setIcon(IconUtil.createThemed("icons/plus.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         newButton.setFocusable(false); // 去掉按钮聚焦虚线
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
@@ -183,9 +181,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 添加清空日志按钮
         JPanel logToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
         JButton clearLogButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        FlatSVGIcon clearLogIcon = new FlatSVGIcon("icons/clear.svg", 20, 20);
-        clearLogIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-        clearLogButton.setIcon(clearLogIcon);
+        clearLogButton.setIcon(IconUtil.createThemed("icons/clear.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         clearLogButton.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         clearLogButton.addActionListener(e -> logArea.setText(""));
         logToolbar.add(clearLogButton);
@@ -238,9 +234,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         Workspace current = workspaceService.getCurrentWorkspace();
         if (current == null || !current.getId().equals(workspace.getId())) {
             JMenuItem switchItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_SWITCH));
-            FlatSVGIcon switchIcon = new FlatSVGIcon("icons/switch.svg", 16, 16);
-            switchIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-            switchItem.setIcon(switchIcon);
+            switchItem.setIcon(IconUtil.createThemed("icons/switch.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
             switchItem.addActionListener(e -> switchToWorkspace(workspace));
             menu.add(switchItem);
             if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
@@ -269,7 +263,7 @@ public class WorkspacePanel extends SingletonBasePanel {
             if (!remoteStatus.hasRemote) {
                 // 还未配置远程仓库
                 JMenuItem configRemoteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE));
-                configRemoteItem.setIcon(new FlatSVGIcon("icons/git.svg", 16, 16));
+                configRemoteItem.setIcon(IconUtil.create("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                 configRemoteItem.addActionListener(e -> configureRemoteRepository(workspace));
                 menu.add(configRemoteItem);
             }
@@ -282,7 +276,7 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 1.提交操作 始终显示
         JMenuItem commitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT));
-        commitItem.setIcon(new FlatSVGIcon(GitOperation.COMMIT.getIconName(), 16, 16));
+        commitItem.setIcon(IconUtil.createThemed(GitOperation.COMMIT.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         commitItem.addActionListener(e -> performGitCommit(workspace));
         menu.add(commitItem);
 
@@ -290,20 +284,20 @@ public class WorkspacePanel extends SingletonBasePanel {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
             if (remoteStatus.hasRemote) { // 2.只有已配置远程仓库的工作区才显示拉取操作
                 JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
-                pullItem.setIcon(new FlatSVGIcon(GitOperation.PULL.getIconName(), 16, 16));
+                pullItem.setIcon(IconUtil.createThemed(GitOperation.PULL.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                 pullItem.addActionListener(e -> performGitPull(workspace));
                 menu.add(pullItem);
 
                 if (remoteStatus.hasUpstream) { // 3.只有有上游分支的工作区才显示推送操作
                     JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
-                    pushItem.setIcon(new FlatSVGIcon(GitOperation.PUSH.getIconName(), 16, 16));
+                    pushItem.setIcon(IconUtil.createThemed(GitOperation.PUSH.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                     pushItem.addActionListener(e -> performGitPush(workspace));
                     menu.add(pushItem);
                 }
 
                 // 添加更新认证菜单项
                 JMenuItem updateAuthItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_UPDATE));
-                updateAuthItem.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                updateAuthItem.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                 updateAuthItem.addActionListener(e -> updateGitAuthentication(workspace));
                 menu.add(updateAuthItem);
             }
@@ -317,13 +311,13 @@ public class WorkspacePanel extends SingletonBasePanel {
         if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
             // 重命名
             JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_RENAME));
-            renameItem.setIcon(new FlatSVGIcon("icons/refresh.svg", 16, 16));
+            renameItem.setIcon(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
             renameItem.addActionListener(e -> renameWorkspace(workspace));
             menu.add(renameItem);
 
             // 删除
             JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_DELETE));
-            deleteItem.setIcon(new FlatSVGIcon("icons/close.svg", 16, 16));
+            deleteItem.setIcon(IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
             deleteItem.addActionListener(e -> deleteWorkspace(workspace));
             menu.add(deleteItem);
         }

@@ -8,6 +8,7 @@ import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -67,7 +68,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
 
     // Render saved response node with status code and timestamp
     private void applySavedResponseRendering(SavedResponse savedResponse) {
-        setIcon(new FlatSVGIcon("icons/save-response.svg", 24, 24));
+        setIcon(IconUtil.createThemed("icons/save-response.svg", IconUtil.SIZE_LARGE, IconUtil.SIZE_LARGE));
 
         String name = savedResponse.getName();
         int code = savedResponse.getCode();

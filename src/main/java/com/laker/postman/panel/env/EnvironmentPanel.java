@@ -4,7 +4,6 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
@@ -22,10 +21,7 @@ import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -166,10 +162,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private void showImportMenu() {
         JPopupMenu importMenu = new JPopupMenu();
         JMenuItem importEasyToolsItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_EASY),
-                new FlatSVGIcon("icons/easy.svg", 20, 20));
+                IconUtil.create("icons/easy.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         importEasyToolsItem.addActionListener(e -> importEnvironments());
         JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_POSTMAN),
-                new FlatSVGIcon("icons/postman.svg", 20, 20));
+                IconUtil.create("icons/postman.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM)); // 彩色
         importPostmanItem.addActionListener(e -> importPostmanEnvironments());
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
@@ -251,18 +247,23 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
-        JMenuItem addItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD), new FlatSVGIcon("icons/environments.svg", 16, 16));
+        JMenuItem addItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD),
+                IconUtil.createThemed("icons/environments.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         addItem.addActionListener(e -> addEnvironment());
         envListMenu.add(addItem);
         envListMenu.addSeparator();
-        JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_RENAME), new FlatSVGIcon("icons/refresh.svg", 16, 16));
+        JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_RENAME),
+                IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         // 设置 F2 快捷键显示
         renameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
-        JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DUPLICATE), new FlatSVGIcon("icons/duplicate.svg", 16, 16)); // 复制菜单项
-        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE), new FlatSVGIcon("icons/close.svg", 16, 16));
+        JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DUPLICATE),
+                IconUtil.createThemed("icons/duplicate.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)); // 复制菜单项
+        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE),
+                IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         // 设置 Delete 快捷键显示
         deleteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
-        JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT_POSTMAN), new FlatSVGIcon("icons/postman.svg", 16, 16));
+        JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT_POSTMAN),
+                IconUtil.create("icons/postman.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)); // 彩色
         exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
         renameItem.addActionListener(e -> renameSelectedEnvironment());
         copyItem.addActionListener(e -> copySelectedEnvironment()); // 复制事件
@@ -274,7 +275,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
         envListMenu.add(exportPostmanItem);
 
         // 转移到其他工作区
-        JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_MENU_ITEM), new FlatSVGIcon("icons/workspace.svg", 16, 16));
+        JMenuItem moveToWorkspaceItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_MENU_ITEM),
+                IconUtil.createThemed("icons/workspace.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         moveToWorkspaceItem.addActionListener(e -> moveEnvironmentToWorkspace());
         envListMenu.add(moveToWorkspaceItem);
 

@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
@@ -338,7 +339,7 @@ public class NotificationUtil {
                     int height = getHeight();
 
                     // 绘制简单的圆角背景
-                    boolean isDark = UIManager.getBoolean("laf.dark");
+                    boolean isDark = FlatLaf.isLafDark();
                     Color bgColor = isDark ? new Color(50, 50, 52) : new Color(255, 255, 255);
                     g2.setColor(bgColor);
                     g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
@@ -447,7 +448,7 @@ public class NotificationUtil {
             label.setVerticalAlignment(SwingConstants.TOP);
 
             // 设置文本颜色
-            boolean isDark = UIManager.getBoolean("laf.dark");
+            boolean isDark = FlatLaf.isLafDark();
             label.setForeground(isDark ? new Color(230, 230, 230) : new Color(50, 50, 50));
 
             return label;

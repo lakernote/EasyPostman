@@ -16,6 +16,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -747,18 +748,23 @@ public class CsvDataPanel extends JPanel {
         saveBtn.setIcon(IconUtil.createThemed("icons/save.svg", 16, 16));
         saveBtn.addActionListener(e -> {
             try {
+                // 先停止单元格编辑，确保正在编辑的内容被保存
+                if (csvTable.isEditing()) {
+                    csvTable.getCellEditor().stopCellEditing();
+                }
+
                 // 将表格数据转换为 CSV 数据格式
-                List<Map<String, String>> newCsvData = new java.util.ArrayList<>();
+                List<Map<String, String>> newCsvData = new ArrayList<>();
 
                 // 获取当前的列名
-                List<String> currentHeaders = new java.util.ArrayList<>();
+                List<String> currentHeaders = new ArrayList<>();
                 for (int i = 0; i < editTableModel.getColumnCount(); i++) {
                     currentHeaders.add(editTableModel.getColumnName(i));
                 }
 
                 // 转换每一行数据
                 for (int i = 0; i < editTableModel.getRowCount(); i++) {
-                    Map<String, String> rowData = new java.util.LinkedHashMap<>();
+                    Map<String, String> rowData = new LinkedHashMap<>();
                     boolean hasData = false;
 
                     for (int j = 0; j < currentHeaders.size(); j++) {

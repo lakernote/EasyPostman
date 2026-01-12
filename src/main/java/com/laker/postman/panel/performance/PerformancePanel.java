@@ -573,35 +573,23 @@ public class PerformancePanel extends SingletonBasePanel {
                     stopBtn.setEnabled(false);
                     refreshBtn.setEnabled(true); // 测试完成时重新启用刷新按钮
                     timerManager.stopAll(); // 停止所有定时器
+
+                    // 执行最后一次趋势图采样，避免漏掉完成前最后时刻的数据
+                    try {
+                        sampleTrendData();
+                    } catch (Exception e) {
+                        log.warn("完成时最后一次趋势图采样失败", e);
+                    }
+
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
 
-                    // Create thread-safe copies before updating the report
-                    List<Long> startTimesCopy;
-                    List<RequestResult> resultsCopy;
-                    Map<String, List<Long>> apiCostMapCopy = new HashMap<>();
-
-                    synchronized (allRequestStartTimes) {
-                        startTimesCopy = new ArrayList<>(allRequestStartTimes);
-                    }
-
-                    synchronized (allRequestResults) {
-                        resultsCopy = new ArrayList<>(allRequestResults);
-                    }
-
-                    // Create thread-safe copies for each API cost list
-                    for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
-                        List<Long> costList = entry.getValue();
-                        synchronized (costList) {
-                            apiCostMapCopy.put(entry.getKey(), new ArrayList<>(costList));
-                        }
-                    }
-
-                    performanceReportPanel.updateReport(apiCostMapCopy, apiSuccessMap, apiFailMap, startTimesCopy, resultsCopy);
+                    // 强制刷新报表
+                    updateReportWithLatestData();
 
                     // 显示执行完成提示
                     long totalTime = System.currentTimeMillis() - startTime;
-                    int totalRequests = resultsCopy.size();
-                    long successCount = resultsCopy.stream().filter(r -> r.success).count();
+                    int totalRequests = allRequestResults.size();
+                    long successCount = allRequestResults.stream().filter(r -> r.success).count();
                     String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_COMPLETED,
                             totalRequests, successCount, totalTime / 1000.0);
                     NotificationUtil.showSuccess(message);
@@ -714,7 +702,6 @@ public class PerformancePanel extends SingletonBasePanel {
     /**
      * 定期刷新报表（由定时器定期调用）
      * 优化：仅在用户当前查看报表Tab时才执行刷新，避免无效计算
-     * 关键：必须先 copy，再 update，避免并发修改异常
      */
     private void refreshReport() {
         try {
@@ -724,41 +711,47 @@ public class PerformancePanel extends SingletonBasePanel {
                 return;
             }
 
-            // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
-            List<Long> startTimesCopy;
-            List<RequestResult> resultsCopy;
-            Map<String, List<Long>> apiCostMapCopy;
-            Map<String, Integer> apiSuccessMapCopy;
-            Map<String, Integer> apiFailMapCopy;
-
-            synchronized (statsLock) {
-                // 1) copy allRequestStartTimes / allRequestResults
-                startTimesCopy = new ArrayList<>(allRequestStartTimes);
-                resultsCopy = new ArrayList<>(allRequestResults);
-
-                // 2) copy apiCostMap（深拷贝每个value列表）
-                apiCostMapCopy = new HashMap<>();
-                for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
-                    apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
-                }
-
-                // 3) copy apiSuccessMap 和 apiFailMap
-                apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
-                apiFailMapCopy = new HashMap<>(apiFailMap);
-            }
-
-            // 4) 更新报表（在锁外执行，避免阻塞统计数据写入）
-            performanceReportPanel.updateReport(
-                    apiCostMapCopy,
-                    apiSuccessMapCopy,
-                    apiFailMapCopy,
-                    startTimesCopy,
-                    resultsCopy
-            );
+            updateReportWithLatestData();
         } catch (Exception ex) {
             // 不要让 Timer 因异常中断
             log.warn("实时刷新报表失败: {}", ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * 使用最新数据更新报表
+     * 统一的数据复制和报表更新方法，确保线程安全和数据一致性
+     * 关键：必须先 copy，再 update，避免并发修改异常
+     */
+    private void updateReportWithLatestData() {
+        List<Long> startTimesCopy;
+        List<RequestResult> resultsCopy;
+        Map<String, List<Long>> apiCostMapCopy;
+        Map<String, Integer> apiSuccessMapCopy;
+        Map<String, Integer> apiFailMapCopy;
+
+        // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
+        synchronized (statsLock) {
+            startTimesCopy = new ArrayList<>(allRequestStartTimes);
+            resultsCopy = new ArrayList<>(allRequestResults);
+
+            apiCostMapCopy = new HashMap<>();
+            for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+            }
+
+            apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
+            apiFailMapCopy = new HashMap<>(apiFailMap);
+        }
+
+        // 更新报表（在锁外执行，避免阻塞统计数据写入）
+        performanceReportPanel.updateReport(
+                apiCostMapCopy,
+                apiSuccessMapCopy,
+                apiFailMapCopy,
+                startTimesCopy,
+                resultsCopy
+        );
     }
 
     // 采样统计方法（根据配置的采样间隔）
@@ -2017,6 +2010,22 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 停止所有定时器
         timerManager.stopAll();
+
+        // 执行最后一次趋势图采样和报表刷新，避免漏掉停止前最后时刻的数据
+        SwingUtilities.invokeLater(() -> {
+            try {
+                sampleTrendData();
+            } catch (Exception e) {
+                log.warn("停止时最后一次趋势图采样失败", e);
+            }
+
+            try {
+                // 强制刷新报表（使用统一的数据更新方法）
+                updateReportWithLatestData();
+            } catch (Exception e) {
+                log.warn("停止时最后一次报表刷新失败", e);
+            }
+        });
 
         OkHttpClientManager.setDefaultConnectionPoolConfig();
     }

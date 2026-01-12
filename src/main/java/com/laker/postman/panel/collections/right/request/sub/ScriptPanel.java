@@ -1,13 +1,9 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
-import com.laker.postman.util.EditorThemeUtil;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -45,20 +41,20 @@ public class ScriptPanel extends JPanel {
 
         // Pre-script 标签带图标
         JLabel preLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_PRESCRIPT));
-        preLabel.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 14, 14));
+        preLabel.setIcon(IconUtil.createThemed("icons/arrow-up.svg", 14, 14));
         tabbedPane.addTab(null, new RTextScrollPane(prescriptArea));
         tabbedPane.setTabComponentAt(0, preLabel);
 
         // Post-script 标签带图标
         JLabel postLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_POSTSCRIPT));
-        postLabel.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 14, 14));
+        postLabel.setIcon(IconUtil.createThemed("icons/arrow-down.svg", 14, 14));
         tabbedPane.addTab(null, new RTextScrollPane(postscriptArea));
         tabbedPane.setTabComponentAt(1, postLabel);
 
         // 创建帮助面板
         JPanel helpPanel = createHelpPanel();
         JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_HELP));
-        helpLabel.setIcon(new FlatSVGIcon("icons/help.svg", 14, 14));
+        helpLabel.setIcon(IconUtil.createThemed("icons/help.svg", 14, 14));
         tabbedPane.addTab(null, helpPanel);
         tabbedPane.setTabComponentAt(2, helpLabel);
 
@@ -66,7 +62,7 @@ public class ScriptPanel extends JPanel {
 
         // 右下角添加 Snippets 按钮
         snippetBtn = new JButton(I18nUtil.getMessage(MessageKeys.SCRIPT_BUTTON_SNIPPETS));
-        snippetBtn.setIcon(new FlatSVGIcon("icons/code.svg", 14, 14));
+        snippetBtn.setIcon(IconUtil.createThemed("icons/code.svg", 14, 14));
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         btnPanel.add(snippetBtn);

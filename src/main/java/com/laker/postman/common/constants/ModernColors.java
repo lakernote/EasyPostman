@@ -341,7 +341,54 @@ public final class ModernColors {
         }
     }
 
-    // 滚动条相关颜色
+    // ==================== Table 表格专用色（主题适配）====================
+
+    /**
+     * 获取表格选中背景色 - 主题适配
+     * 亮色主题：浅蓝色 (220, 235, 252)
+     * 暗色主题：深蓝色 (75, 110, 175)
+     */
+    public static Color getTableSelectionBackground() {
+        return isDarkTheme() ? new Color(75, 110, 175) : new Color(220, 235, 252);
+    }
+
+    /**
+     * 获取表格选中前景色 - 主题适配
+     * 亮色主题：深色文字
+     * 暗色主题：浅色文字
+     */
+    public static Color getTableSelectionForeground() {
+        return isDarkTheme() ? new Color(255, 255, 255) : new Color(0, 0, 0);
+    }
+
+    /**
+     * 获取表格网格线颜色 - 主题适配
+     * 亮色主题：浅灰色 (237, 237, 237)
+     * 暗色主题：比背景稍亮 (75, 77, 80)
+     */
+    public static Color getTableGridColor() {
+        return isDarkTheme() ? new Color(75, 77, 80) : new Color(237, 237, 237);
+    }
+
+    /**
+     * 获取表格头部背景色 - 主题适配
+     * 亮色主题：BG_MEDIUM (241, 245, 249)
+     * 暗色主题：比背景稍亮 (70, 73, 75)
+     */
+    public static Color getTableHeaderBackground() {
+        return isDarkTheme() ? new Color(70, 73, 75) : BG_MEDIUM;
+    }
+
+    /**
+     * 获取表格头部前景色 - 主题适配
+     * 亮色主题：深色文字
+     * 暗色主题：浅色文字
+     */
+    public static Color getTableHeaderForeground() {
+        return getTextPrimary();
+    }
+
+    // ==================== 滚动条相关颜色 ====================
     /**
      * 滚动条滑块颜色
      */

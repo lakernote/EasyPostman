@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class CsvDataPanel extends JPanel {
     private List<String> csvHeaders; // 保存CSV列标题的顺序
     private JPanel csvStatusPanel;  // CSV 状态显示面板
     private JLabel csvStatusLabel;  // CSV 状态标签
+
 
     public CsvDataPanel() {
         initUI();
@@ -63,14 +65,14 @@ public class CsvDataPanel extends JPanel {
         statusPanel.setVisible(false); // 初始隐藏
 
         // CSV 状态图标和文本
-        JLabel csvIcon = new JLabel(new FlatSVGIcon("icons/csv.svg", 16, 16));
+        JLabel csvIcon = new JLabel(IconUtil.createThemed("icons/csv.svg", 16, 16));
         csvStatusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
         csvStatusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        csvStatusLabel.setForeground(new Color(100, 100, 100));
+        csvStatusLabel.setForeground(ModernColors.getTextHint());
 
         // CSV 清除按钮
         JButton csvClearBtn = new JButton();
-        csvClearBtn.setIcon(new FlatSVGIcon("icons/close.svg", 14, 14));
+        csvClearBtn.setIcon(IconUtil.createThemed("icons/close.svg", 14, 14));
         csvClearBtn.setPreferredSize(new Dimension(20, 20));
         csvClearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_TOOLTIP));
         csvClearBtn.setBorderPainted(false);
@@ -94,17 +96,17 @@ public class CsvDataPanel extends JPanel {
         JPopupMenu csvMenu = new JPopupMenu();
 
         JMenuItem loadCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_IMPORT_FILE),
-                new FlatSVGIcon("icons/import.svg", 16, 16));
+                IconUtil.createThemed("icons/import.svg", 16, 16));
         loadCsvItem.addActionListener(e -> showEnhancedCsvManagementDialog());
         csvMenu.add(loadCsvItem);
 
         JMenuItem createManualItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL),
-                new FlatSVGIcon("icons/plus.svg", 16, 16));
+                IconUtil.createThemed("icons/plus.svg", 16, 16));
         createManualItem.addActionListener(e -> showManualCreateDialog());
         csvMenu.add(createManualItem);
 
         JMenuItem manageCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA),
-                new FlatSVGIcon("icons/code.svg", 16, 16));
+                IconUtil.createThemed("icons/code.svg", 16, 16));
         manageCsvItem.addActionListener(e -> showCsvDataManageDialog());
         manageCsvItem.setEnabled(false); // 默认禁用，有数据时启用
         csvMenu.add(manageCsvItem);
@@ -112,7 +114,7 @@ public class CsvDataPanel extends JPanel {
         csvMenu.addSeparator();
 
         JMenuItem clearCsvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CSV_MENU_CLEAR_DATA),
-                new FlatSVGIcon("icons/clear.svg", 16, 16));
+                IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearCsvItem.addActionListener(e -> clearCsvData());
         clearCsvItem.setEnabled(false); // 默认禁用，有数据时启用
         csvMenu.add(clearCsvItem);
@@ -154,7 +156,7 @@ public class CsvDataPanel extends JPanel {
             csvStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
                     csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED),
                     csvData.size()));
-            csvStatusLabel.setForeground(new Color(0, 128, 0)); // 绿色表示已加载
+            csvStatusLabel.setForeground(ModernColors.SUCCESS); // 绿色表示已加载
             csvStatusPanel.setVisible(true);
         }
         revalidate();
@@ -241,7 +243,7 @@ public class CsvDataPanel extends JPanel {
         gbc.gridy = 3;
         JLabel placeholderLabel = new JLabel("eg: username,password,email");
         placeholderLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2)); // 比标准字体小2号
-        placeholderLabel.setForeground(Color.GRAY);
+        placeholderLabel.setForeground(ModernColors.getTextHint());
         contentPanel.add(placeholderLabel, gbc);
 
         dialog.add(contentPanel, BorderLayout.CENTER);
@@ -381,13 +383,13 @@ public class CsvDataPanel extends JPanel {
         JLabel currentStatusLabel = new JLabel();
         if (csvData == null || csvData.isEmpty()) {
             currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
-            currentStatusLabel.setIcon(new FlatSVGIcon("icons/warning.svg", 16, 16));
-            currentStatusLabel.setForeground(Color.GRAY);
+            currentStatusLabel.setIcon(IconUtil.createThemed("icons/warning.svg", 16, 16));
+            currentStatusLabel.setForeground(ModernColors.getTextHint());
         } else {
             currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
                     csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED), csvData.size()));
-            currentStatusLabel.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
-            currentStatusLabel.setForeground(new Color(0, 128, 0));
+            currentStatusLabel.setIcon(IconUtil.createThemed("icons/check.svg", 16, 16));
+            currentStatusLabel.setForeground(ModernColors.SUCCESS);
         }
         statusPanel.add(currentStatusLabel);
         contentPanel.add(statusPanel, BorderLayout.NORTH);
@@ -398,7 +400,7 @@ public class CsvDataPanel extends JPanel {
 
         // 选择文件按钮
         JButton selectFileBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE));
-        selectFileBtn.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
+        selectFileBtn.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
         selectFileBtn.setPreferredSize(new Dimension(200, 35));
 
         // 手动创建按钮
@@ -408,13 +410,13 @@ public class CsvDataPanel extends JPanel {
 
         // 管理数据按钮
         JButton manageDataBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA));
-        manageDataBtn.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
+        manageDataBtn.setIcon(IconUtil.createThemed("icons/code.svg", 16, 16));
         manageDataBtn.setPreferredSize(new Dimension(200, 35));
         manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
         // 清除数据按钮
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA));
-        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearBtn.setPreferredSize(new Dimension(200, 35));
         clearBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
@@ -423,8 +425,8 @@ public class CsvDataPanel extends JPanel {
             if (selectCsvFile()) {
                 currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
                         csvFile.getName(), csvData.size()));
-                currentStatusLabel.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
-                currentStatusLabel.setForeground(new Color(0, 128, 0));
+                currentStatusLabel.setIcon(IconUtil.createThemed("icons/check.svg", 16, 16));
+                currentStatusLabel.setForeground(ModernColors.SUCCESS);
                 updateCsvStatus();
 
                 // 立即更新按钮状态
@@ -443,8 +445,8 @@ public class CsvDataPanel extends JPanel {
         clearBtn.addActionListener(e -> {
             clearCsvData();
             currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
-            currentStatusLabel.setIcon(new FlatSVGIcon("icons/warning.svg", 16, 16));
-            currentStatusLabel.setForeground(Color.GRAY);
+            currentStatusLabel.setIcon(IconUtil.createThemed("icons/warning.svg", 16, 16));
+            currentStatusLabel.setForeground(ModernColors.getTextHint());
             manageDataBtn.setEnabled(false);
             clearBtn.setEnabled(false);
         });
@@ -542,36 +544,33 @@ public class CsvDataPanel extends JPanel {
         csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
         csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
         csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用标准字体大小（粗体）
-        csvTable.getTableHeader().setBackground(new Color(240, 242, 245));
-        csvTable.getTableHeader().setForeground(new Color(33, 33, 33));
-        csvTable.setGridColor(new Color(237, 237, 237)); // 使用更柔和的表格线颜色
+        csvTable.setGridColor(ModernColors.getTableGridColor()); // 使用主题适配的表格线颜色
         csvTable.setShowHorizontalLines(true);
         csvTable.setShowVerticalLines(true);
         csvTable.setIntercellSpacing(new Dimension(2, 2)); // 设置单元格间距
         csvTable.setRowMargin(2);
-        csvTable.setSelectionBackground(new Color(220, 235, 252));
-        csvTable.setSelectionForeground(Color.BLACK);
+        csvTable.setSelectionBackground(ModernColors.getTableSelectionBackground()); // 主题适配的选中背景色
+        csvTable.setSelectionForeground(ModernColors.getTableSelectionForeground()); // 主题适配的选中前景色
         csvTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         csvTable.setOpaque(false); // 设置表格透明
 
-        // 设置空值渲染器
+        // 设置空值渲染器 - 优化后的主题适配版本
         DefaultTableCellRenderer emptyCellRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (value == null || (value instanceof String && ((String) value).trim().isEmpty())) {
-                    if (isSelected) {
-                        c.setBackground(table.getSelectionBackground());
-                    } else {
-                        c.setBackground(Color.WHITE);
-                    }
+
+                // 检查单元格是否为空
+                boolean isEmpty = (value == null || value.toString().trim().isEmpty());
+
+                if (isEmpty) {
+                    // 空单元格：使用主题适配的空单元格背景色（有区分度）
+                    setBackground(isSelected ? table.getSelectionBackground() : ModernColors.getEmptyCellBackground());
                 } else {
-                    if (isSelected) {
-                        c.setBackground(table.getSelectionBackground());
-                    } else {
-                        c.setBackground(table.getBackground());
-                    }
+                    // 有值单元格：使用选中背景或表格背景
+                    setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
                 }
+
                 return c;
             }
         };
@@ -591,15 +590,15 @@ public class CsvDataPanel extends JPanel {
 
         // 创建带样式的滚动面板
         JScrollPane scrollPane = new JScrollPane(csvTable);
-        scrollPane.getViewport().setBackground(new Color(248, 250, 252)); // 与 EasyTablePanel 一致的背景色
+        scrollPane.getViewport().setBackground(ModernColors.getBackgroundColor()); // 主题适配的背景色
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(237, 237, 237)),
+                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()), // 主题适配的边框色
                 BorderFactory.createEmptyBorder(8, 8, 8, 8))); // 参考 EasyTablePanel 的边框样式
 
         // 创建表格容器面板，应用背景色
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBackground(new Color(248, 250, 252));
+        tablePanel.setBackground(ModernColors.getBackgroundColor()); // 主题适配的背景色
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -613,12 +612,12 @@ public class CsvDataPanel extends JPanel {
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         JButton addRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW));
-        addRowBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
+        addRowBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
         List<String> finalHeaders = headers;
         addRowBtn.addActionListener(e -> editTableModel.addRow(new Object[finalHeaders.size()]));
 
         JButton deleteRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW));
-        deleteRowBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        deleteRowBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         deleteRowBtn.addActionListener(e -> {
             // 先停止单元格编辑，避免编辑状态下删除行导致问题
             if (csvTable.isEditing()) {
@@ -644,7 +643,7 @@ public class CsvDataPanel extends JPanel {
         });
 
         JButton addColumnBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN));
-        addColumnBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
+        addColumnBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
         addColumnBtn.addActionListener(e -> {
             String columnName = JOptionPane.showInputDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_ENTER_COLUMN_NAME),
                     I18nUtil.getMessage(MessageKeys.CSV_ADD_COLUMN), JOptionPane.PLAIN_MESSAGE);
@@ -660,7 +659,7 @@ public class CsvDataPanel extends JPanel {
         });
 
         JButton deleteColumnBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_COLUMN));
-        deleteColumnBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        deleteColumnBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         deleteColumnBtn.addActionListener(e -> {
             // 先停止单元格编辑，避免编辑状态下删除列导致问题
             if (csvTable.isEditing()) {
@@ -750,7 +749,7 @@ public class CsvDataPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         JButton saveBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE));
-        saveBtn.setIcon(new FlatSVGIcon("icons/save.svg", 16, 16));
+        saveBtn.setIcon(IconUtil.createThemed("icons/save.svg", 16, 16));
         saveBtn.addActionListener(e -> {
             try {
                 // 将表格数据转换为 CSV 数据格式

@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -17,10 +18,10 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
         if (userObj instanceof JMeterTreeNode jtNode) {
             // 设置图标
             switch (jtNode.type) {
-                case THREAD_GROUP -> label.setIcon(new FlatSVGIcon("icons/user-group.svg", 16, 16));
+                case THREAD_GROUP -> label.setIcon(IconUtil.createThemed("icons/user-group.svg", 16, 16));
                 case REQUEST -> label.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
-                case ASSERTION -> label.setIcon(new FlatSVGIcon("icons/warning.svg", 16, 16));
-                case TIMER -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+                case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", 16, 16));
+                case TIMER -> label.setIcon(IconUtil.createThemed("icons/time.svg", 16, 16));
                 case ROOT -> label.setIcon(new FlatSVGIcon("icons/computer.svg", 16, 16));
             }
 

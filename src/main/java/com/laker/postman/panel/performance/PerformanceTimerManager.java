@@ -5,14 +5,15 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
 /**
  * 性能测试定时器管理器
- * 统一管理趋势图采样定时器和报表刷新定时器
- * 使用 javax.swing.Timer 确保 EDT 线程安全
  *
  * @author laker
  */
@@ -20,14 +21,19 @@ import java.util.function.BooleanSupplier;
 public class PerformanceTimerManager {
 
     /**
-     * 趋势图采样定时器
+     * 定时任务调度器（后台线程池）
      */
-    private Timer trendSamplingTimer;
+    private ScheduledExecutorService scheduler;
 
     /**
-     * 报表刷新定时器
+     * 趋势图采样定时任务
      */
-    private Timer reportRefreshTimer;
+    private ScheduledFuture<?> trendSamplingTask;
+
+    /**
+     * 报表刷新定时任务
+     */
+    private ScheduledFuture<?> reportRefreshTask;
 
     @Getter
     private long samplingIntervalMs = 1000;
@@ -79,6 +85,13 @@ public class PerformanceTimerManager {
         log.info("启动性能测试定时器 - 采样间隔: {}秒, 报表刷新间隔: {}ms",
                 samplingIntervalSeconds, REPORT_REFRESH_INTERVAL_MS);
 
+        // 创建定时任务调度器（2个核心线程，足够处理采样和报表刷新）
+        scheduler = Executors.newScheduledThreadPool(2, r -> {
+            Thread t = new Thread(r, "PerformanceTimer-" + System.currentTimeMillis());
+            t.setDaemon(true);  // 守护线程，不阻止 JVM 退出
+            return t;
+        });
+
         startTrendSamplingTimer();
         startReportRefreshTimer();
     }
@@ -87,14 +100,12 @@ public class PerformanceTimerManager {
      * 启动趋势图采样定时器
      */
     private void startTrendSamplingTimer() {
-        stopTrendSamplingTimer();
-
         if (trendSamplingCallback == null) {
             log.warn("趋势图采样回调未设置，跳过启动采样定时器");
             return;
         }
 
-        trendSamplingTimer = new Timer((int) samplingIntervalMs, e -> {
+        trendSamplingTask = scheduler.scheduleAtFixedRate(() -> {
             if (!runningChecker.getAsBoolean()) {
                 log.debug("运行状态检查失败，跳过趋势图采样");
                 return;
@@ -104,10 +115,7 @@ public class PerformanceTimerManager {
             } catch (Exception ex) {
                 log.error("趋势图采样执行失败", ex);
             }
-        });
-        trendSamplingTimer.setRepeats(true);
-        trendSamplingTimer.setInitialDelay(0); // 立即执行第一次采样
-        trendSamplingTimer.start();
+        }, 0, samplingIntervalMs, TimeUnit.MILLISECONDS);
 
         log.debug("趋势图采样定时器已启动 - 间隔: {}ms", samplingIntervalMs);
     }
@@ -116,14 +124,12 @@ public class PerformanceTimerManager {
      * 启动报表刷新定时器
      */
     private void startReportRefreshTimer() {
-        stopReportRefreshTimer();
-
         if (reportRefreshCallback == null) {
             log.warn("报表刷新回调未设置，跳过启动刷新定时器");
             return;
         }
 
-        reportRefreshTimer = new Timer(REPORT_REFRESH_INTERVAL_MS, e -> {
+        reportRefreshTask = scheduler.scheduleAtFixedRate(() -> {
             if (!runningChecker.getAsBoolean()) {
                 log.debug("运行状态检查失败，跳过报表刷新");
                 return;
@@ -133,9 +139,7 @@ public class PerformanceTimerManager {
             } catch (Exception ex) {
                 log.error("报表刷新执行失败", ex);
             }
-        });
-        reportRefreshTimer.setRepeats(true);
-        reportRefreshTimer.start();
+        }, 0, REPORT_REFRESH_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
         log.debug("报表刷新定时器已启动 - 间隔: {}ms", REPORT_REFRESH_INTERVAL_MS);
     }
@@ -150,51 +154,34 @@ public class PerformanceTimerManager {
         }
 
         log.info("停止所有性能测试定时器");
-        stopTrendSamplingTimer();
-        stopReportRefreshTimer();
-    }
 
-    /**
-     * 停止趋势图采样定时器
-     */
-    private void stopTrendSamplingTimer() {
-        if (trendSamplingTimer != null) {
-            trendSamplingTimer.stop();
-            trendSamplingTimer = null;
-            log.debug("趋势图采样定时器已停止");
+        // 取消定时任务
+        if (trendSamplingTask != null) {
+            trendSamplingTask.cancel(false);
+            trendSamplingTask = null;
         }
-    }
-
-    /**
-     * 停止报表刷新定时器
-     */
-    private void stopReportRefreshTimer() {
-        if (reportRefreshTimer != null) {
-            reportRefreshTimer.stop();
-            reportRefreshTimer = null;
-            log.debug("报表刷新定时器已停止");
+        if (reportRefreshTask != null) {
+            reportRefreshTask.cancel(false);
+            reportRefreshTask = null;
         }
-    }
 
-    /**
-     * 检查定时器是否正在运行
-     *
-     * @return true 表示至少有一个定时器在运行
-     */
-    public boolean isRunning() {
-        return started.get() &&
-                ((trendSamplingTimer != null && trendSamplingTimer.isRunning()) ||
-                        (reportRefreshTimer != null && reportRefreshTimer.isRunning()));
-    }
+        // 关闭调度器
+        if (scheduler != null) {
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(2, TimeUnit.SECONDS)) {
+                    log.warn("定时器未能在 2 秒内正常关闭，强制停止");
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.warn("等待定时器关闭时被中断，强制停止");
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            scheduler = null;
+        }
 
-    /**
-     * 重新启动所有定时器（会先停止再启动）
-     */
-    public void restart() {
-        log.info("重启性能测试定时器");
-        stopAll();
-        started.set(false); // 重置启动标志
-        startAll();
+        log.debug("性能测试定时器已停止");
     }
 
     /**

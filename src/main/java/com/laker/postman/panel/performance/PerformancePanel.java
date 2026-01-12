@@ -721,37 +721,43 @@ public class PerformancePanel extends SingletonBasePanel {
     /**
      * 使用最新数据更新报表
      * 统一的数据复制和报表更新方法，确保线程安全和数据一致性
-     * 关键：必须先 copy，再 update，避免并发修改异常
+     * 采用异步计算，避免阻塞 EDT 线程
      */
     private void updateReportWithLatestData() {
-        List<Long> startTimesCopy;
-        List<RequestResult> resultsCopy;
-        Map<String, List<Long>> apiCostMapCopy;
-        Map<String, Integer> apiSuccessMapCopy;
-        Map<String, Integer> apiFailMapCopy;
+        // 异步复制和计算数据，避免阻塞 EDT 线程
+        CompletableFuture.runAsync(() -> {
+            List<Long> startTimesCopy;
+            List<RequestResult> resultsCopy;
+            Map<String, List<Long>> apiCostMapCopy;
+            Map<String, Integer> apiSuccessMapCopy;
+            Map<String, Integer> apiFailMapCopy;
 
-        // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
-        synchronized (statsLock) {
-            startTimesCopy = new ArrayList<>(allRequestStartTimes);
-            resultsCopy = new ArrayList<>(allRequestResults);
+            // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
+            synchronized (statsLock) {
+                startTimesCopy = new ArrayList<>(allRequestStartTimes);
+                resultsCopy = new ArrayList<>(allRequestResults);
 
-            apiCostMapCopy = new HashMap<>();
-            for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
-                apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+                apiCostMapCopy = new HashMap<>();
+                for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                    apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+                }
+
+                apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
+                apiFailMapCopy = new HashMap<>(apiFailMap);
             }
 
-            apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
-            apiFailMapCopy = new HashMap<>(apiFailMap);
-        }
-
-        // 更新报表（在锁外执行，避免阻塞统计数据写入）
-        performanceReportPanel.updateReport(
-                apiCostMapCopy,
-                apiSuccessMapCopy,
-                apiFailMapCopy,
-                startTimesCopy,
-                resultsCopy
-        );
+            // UI 更新必须在 EDT 线程执行
+            SwingUtilities.invokeLater(() -> performanceReportPanel.updateReport(
+                    apiCostMapCopy,
+                    apiSuccessMapCopy,
+                    apiFailMapCopy,
+                    startTimesCopy,
+                    resultsCopy
+            ));
+        }).exceptionally(ex -> {
+            log.error("报表更新失败", ex);
+            return null;
+        });
     }
 
     // 采样统计方法（根据配置的采样间隔）
@@ -759,54 +765,66 @@ public class PerformancePanel extends SingletonBasePanel {
         int users = activeThreads.get();
         long now = System.currentTimeMillis();
         Second second = new Second(new Date(now));
-
-        // 从定时器管理器获取采样间隔
         long samplingIntervalMs = timerManager.getSamplingIntervalMs();
         long windowStart = now - samplingIntervalMs;
 
-        // 统计本采样间隔内的请求
-        int totalReq = 0;
-        int errorReq = 0;
-        long totalRespTime = 0;
-        long actualMinTime = Long.MAX_VALUE;
-        long actualMaxTime = 0;
+        // 异步计算统计数据，避免阻塞 EDT 线程
+        CompletableFuture.runAsync(() -> {
+            int totalReq = 0;
+            int errorReq = 0;
+            long totalRespTime = 0;
+            long actualMinTime = Long.MAX_VALUE;
+            long actualMaxTime = 0;
 
-        // 使用statsLock保护，确保数据一致性
-        synchronized (statsLock) {
-            // 遍历所有结果（不能假设顺序，因为多线程并发添加）
-            for (RequestResult result : allRequestResults) {
-                // 只统计在时间窗口内的请求
-                if (result.endTime >= windowStart && result.endTime <= now) {
-                    totalReq++;
-                    if (!result.success) errorReq++;
-                    totalRespTime += result.responseTime;
-                    actualMinTime = Math.min(actualMinTime, result.endTime);
-                    actualMaxTime = Math.max(actualMaxTime, result.endTime);
+            // 使用statsLock保护，确保数据一致性
+            synchronized (statsLock) {
+                // 遍历所有结果（不能假设顺序，因为多线程并发添加）
+                for (RequestResult result : allRequestResults) {
+                    // 只统计在时间窗口内的请求
+                    if (result.endTime >= windowStart && result.endTime <= now) {
+                        totalReq++;
+                        if (!result.success) errorReq++;
+                        totalRespTime += result.responseTime;
+                        actualMinTime = Math.min(actualMinTime, result.endTime);
+                        actualMaxTime = Math.max(actualMaxTime, result.endTime);
+                    }
                 }
             }
-        }
 
-        double avgRespTime = totalReq > 0 ?
-                BigDecimal.valueOf((double) totalRespTime / totalReq)
-                        .setScale(2, RoundingMode.HALF_UP)
-                        .doubleValue()
-                : 0;
+            double avgRespTime = totalReq > 0 ?
+                    BigDecimal.valueOf((double) totalRespTime / totalReq)
+                            .setScale(2, RoundingMode.HALF_UP)
+                            .doubleValue()
+                    : 0;
 
-        // 修复QPS计算：使用实际时间跨度，而不是采样间隔
-        double qps = 0;
-        if (totalReq > 0 && actualMaxTime > actualMinTime) {
-            long actualSpanMs = actualMaxTime - actualMinTime;
-            qps = totalReq * 1000.0 / actualSpanMs;
-        } else if (totalReq > 0) {
-            // 如果只有一个请求，使用采样间隔（秒）作为分母
-            qps = totalReq / (samplingIntervalMs / 1000.0);
-        }
+            // 修复QPS计算：使用实际时间跨度，而不是采样间隔
+            double qps = 0;
+            if (totalReq > 0 && actualMaxTime > actualMinTime) {
+                long actualSpanMs = actualMaxTime - actualMinTime;
+                qps = totalReq * 1000.0 / actualSpanMs;
+            } else if (totalReq > 0) {
+                // 如果只有一个请求，使用采样间隔（秒）作为分母
+                qps = totalReq / (samplingIntervalMs / 1000.0);
+            }
 
-        double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
-        // 更新趋势图数据
-        log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
-                second, users, avgRespTime, qps, errorPercent, totalReq);
-        performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
+            double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
+
+            // 最终变量，供 lambda 使用
+            final double finalAvgRespTime = avgRespTime;
+            final double finalQps = qps;
+            final double finalErrorPercent = errorPercent;
+            final int finalTotalReq = totalReq;
+
+            // UI 更新必须在 EDT 线程执行
+            SwingUtilities.invokeLater(() -> {
+                log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
+                        second, users, finalAvgRespTime, finalQps, finalErrorPercent, finalTotalReq);
+                performanceTrendPanel.addOrUpdate(second, users, finalAvgRespTime, finalQps, finalErrorPercent);
+            });
+        }).exceptionally(ex -> {
+            log.error("趋势图采样失败", ex);
+            return null;
+        });
     }
 
     // 带进度的执行

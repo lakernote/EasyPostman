@@ -30,8 +30,9 @@ public final class ModernColors {
 
     /**
      * 检查当前是否为暗色主题
+     * @return true 如果当前是暗色主题，false 如果是亮色主题
      */
-    private static boolean isDarkTheme() {
+    public static boolean isDarkTheme() {
         return FlatLaf.isLafDark();
     }
 

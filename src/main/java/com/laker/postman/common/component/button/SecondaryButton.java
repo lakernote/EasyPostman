@@ -1,8 +1,8 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -26,10 +26,7 @@ public class SecondaryButton extends JButton {
         super(text);
 
         if (iconPath != null && !iconPath.isEmpty()) {
-            FlatSVGIcon icon = new FlatSVGIcon(iconPath, ICON_SIZE, ICON_SIZE);
-            // 设置图标颜色过滤器以适配主题
-            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-            setIcon(icon);
+            setIcon(IconUtil.createThemed(iconPath, ICON_SIZE, ICON_SIZE));
             setIconTextGap(4);
         }
 
@@ -54,26 +51,44 @@ public class SecondaryButton extends JButton {
 
     /**
      * 获取按钮默认背景色 - 主题适配
-     * 使用 ModernColors 的卡片背景色
+     * 暗色主题：使用比面板背景稍亮的颜色 (68, 71, 73)，提供微妙的层次感
+     * 亮色主题：使用白色卡片背景
      */
     private Color getDefaultBackground() {
-        return ModernColors.getCardBackgroundColor();
+        if (ModernColors.isDarkTheme()) {
+            // 暗色：比面板背景 (60,63,65) 亮 8 个色阶
+            return new Color(68, 71, 73);
+        }
+        // 亮色：白色
+        return new Color(255, 255, 255);
     }
 
     /**
      * 获取按钮悬停背景色 - 主题适配
-     * 使用 ModernColors 的悬停背景色
+     * 暗色主题：使用更亮的灰色 (78, 81, 83)，提供明显的交互反馈
+     * 亮色主题：使用浅灰悬停色
      */
     private Color getHoverBackground() {
-        return ModernColors.getHoverBackgroundColor();
+        if (ModernColors.isDarkTheme()) {
+            // 暗色：比默认亮 10 个色阶
+            return new Color(78, 81, 83);
+        }
+        // 亮色：浅灰
+        return new Color(241, 245, 249);
     }
 
     /**
      * 获取按钮按下背景色 - 主题适配
-     * 使用 ModernColors 的按钮按下颜色
+     * 暗色主题：使用最亮的状态 (88, 91, 93)，提供清晰的按下反馈
+     * 亮色主题：使用深灰按下色
      */
     private Color getPressedBackground() {
-        return ModernColors.getButtonPressedColor();
+        if (ModernColors.isDarkTheme()) {
+            // 暗色：最亮的按下状态
+            return new Color(88, 91, 93);
+        }
+        // 亮色：深灰
+        return new Color(226, 232, 240);
     }
 
     /**

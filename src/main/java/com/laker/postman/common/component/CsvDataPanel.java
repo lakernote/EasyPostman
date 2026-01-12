@@ -544,13 +544,10 @@ public class CsvDataPanel extends JPanel {
         csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
         csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
         csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用标准字体大小（粗体）
-        csvTable.setGridColor(ModernColors.getTableGridColor()); // 使用主题适配的表格线颜色
         csvTable.setShowHorizontalLines(true);
         csvTable.setShowVerticalLines(true);
         csvTable.setIntercellSpacing(new Dimension(2, 2)); // 设置单元格间距
         csvTable.setRowMargin(2);
-        csvTable.setSelectionBackground(ModernColors.getTableSelectionBackground()); // 主题适配的选中背景色
-        csvTable.setSelectionForeground(ModernColors.getTableSelectionForeground()); // 主题适配的选中前景色
         csvTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         csvTable.setOpaque(false); // 设置表格透明
 

@@ -6,6 +6,7 @@ import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
+import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.util.I18nUtil;
@@ -218,8 +219,18 @@ public class MainFrame extends JFrame {
      * 清理资源（在窗口关闭时调用）
      */
     private void cleanup() {
+        // 停止窗口状态保存定时器
         if (saveStateTimer != null && saveStateTimer.isRunning()) {
             saveStateTimer.stop();
+        }
+
+        // 清理性能测试面板资源（停止定时器等）
+        try {
+            PerformancePanel performancePanel =
+                    SingletonFactory.getInstance(PerformancePanel.class);
+            performancePanel.cleanup();
+        } catch (Exception e) {
+            log.warn("清理 PerformancePanel 资源时出错: {}", e.getMessage());
         }
     }
 

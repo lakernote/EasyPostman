@@ -56,7 +56,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -104,8 +103,8 @@ public class PerformancePanel extends SingletonBasePanel {
     // 统计数据保护锁
     private final transient Object statsLock = new Object();
 
-    // 定时采样线程
-    private transient Timer trendTimer;
+    // 定时器管理器 - 统一管理趋势图采样和报表刷新定时器
+    private transient PerformanceTimerManager timerManager;
 
     // 高效模式
     private boolean efficientMode = true;
@@ -114,10 +113,6 @@ public class PerformancePanel extends SingletonBasePanel {
     private PerformanceResultTablePanel performanceResultTablePanel;
     private PerformanceTrendPanel performanceTrendPanel;
 
-
-    // ===== 实时报表刷新（不新增任何类，只用 Swing Timer） =====
-    private javax.swing.Timer reportRefreshTimer;
-    private static final int REPORT_REFRESH_INTERVAL_MS = 1000; // 1s 刷一次UI
 
     // CSV 数据管理面板
     private CsvDataPanel csvDataPanel;
@@ -137,6 +132,9 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 初始化持久化服务
         this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
+
+        // 初始化定时器管理器
+        initTimerManager();
 
         // 加载高效模式设置
         efficientMode = persistenceService.loadEfficientMode();
@@ -342,7 +340,7 @@ public class PerformancePanel extends SingletonBasePanel {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftPanel.setOpaque(false);
 
-        JLabel infoIcon = new JLabel(new FlatSVGIcon("icons/info.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        JLabel infoIcon = new JLabel(IconUtil.createThemed("icons/info.svg", 16, 16));
         leftPanel.add(infoIcon);
 
         JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));
@@ -357,7 +355,7 @@ public class PerformancePanel extends SingletonBasePanel {
         rightPanel.setOpaque(false);
 
         JButton refreshCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT));
-        refreshCurrentBtn.setIcon(new FlatSVGIcon("icons/refresh.svg", 14, 14).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        refreshCurrentBtn.setIcon(IconUtil.createThemed("icons/refresh.svg", 14, 14));
         refreshCurrentBtn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         refreshCurrentBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP));
         refreshCurrentBtn.addActionListener(e -> refreshCurrentRequest());
@@ -490,6 +488,24 @@ public class PerformancePanel extends SingletonBasePanel {
         }
     }
 
+    // ========== 定时器管理 ==========
+
+    /**
+     * 初始化定时器管理器
+     */
+    private void initTimerManager() {
+        // 创建定时器管理器，传入运行状态检查器
+        timerManager = new PerformanceTimerManager(() -> running);
+
+        // 设置趋势图采样回调
+        timerManager.setTrendSamplingCallback(this::sampleTrendData);
+
+        // 设置报表刷新回调
+        timerManager.setReportRefreshCallback(this::refreshReportOnce);
+
+        log.debug("定时器管理器初始化完成");
+    }
+
     // ========== 执行与停止核心逻辑 ==========
     private void startRun(JLabel progressLabel) {
         saveAllPropertyPanelData();
@@ -537,22 +553,8 @@ public class PerformancePanel extends SingletonBasePanel {
         // CSV行索引重置
         csvRowIndex.set(0);
 
-        // 启动趋势图定时采样
-        if (trendTimer != null) {
-            trendTimer.cancel();
-            trendTimer.purge(); // 清理已取消的任务，避免内存泄漏
-        }
-        trendTimer = new Timer();
-        // 从设置中读取采样间隔，默认1秒
-        int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
-        long samplingIntervalMs = samplingIntervalSeconds * 1000L;
-        startReportRefreshTimer();
-        trendTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                SwingUtilities.invokeLater(() -> sampleTrendData());
-            }
-        }, 0, samplingIntervalMs);
+        // 启动所有定时器（趋势图采样 + 报表刷新）
+        timerManager.startAll();
 
         // 重要：更新开始时间，确保递增线程等模式正常工作
         startTime = System.currentTimeMillis();
@@ -570,7 +572,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     runBtn.setEnabled(true);
                     stopBtn.setEnabled(false);
                     refreshBtn.setEnabled(true); // 测试完成时重新启用刷新按钮
-                    stopTrendTimer();
+                    timerManager.stopAll(); // 停止所有定时器
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
 
                     // Create thread-safe copies before updating the report
@@ -709,41 +711,8 @@ public class PerformancePanel extends SingletonBasePanel {
         return total;
     }
 
-    // 停止定时采样方法
-    private void stopTrendTimer() {
-        if (trendTimer != null) {
-            trendTimer.cancel();
-            trendTimer.purge(); // 清理已取消的任务
-            trendTimer = null;
-        }
-    }
-
     /**
-     * 启动：报表实时刷新（EDT 线程执行）
-     */
-    private void startReportRefreshTimer() {
-        stopReportRefreshTimer();
-
-        reportRefreshTimer = new javax.swing.Timer(REPORT_REFRESH_INTERVAL_MS, e -> {
-            if (!running) return; // running 面板里控制压测状态的布尔值
-            refreshReportOnce();
-        });
-        reportRefreshTimer.setRepeats(true);
-        reportRefreshTimer.start();
-    }
-
-    /**
-     * 停止：报表实时刷新
-     */
-    private void stopReportRefreshTimer() {
-        if (reportRefreshTimer != null) {
-            reportRefreshTimer.stop();
-            reportRefreshTimer = null;
-        }
-    }
-
-    /**
-     * 执行一次报表刷新（完全复用你“停止时 updateReport”的逻辑）
+     * 执行一次报表刷新（完全复用你"停止时 updateReport"的逻辑）
      * 关键：必须先 copy，再 update，避免并发修改异常
      */
     private void refreshReportOnce() {
@@ -791,9 +760,8 @@ public class PerformancePanel extends SingletonBasePanel {
         long now = System.currentTimeMillis();
         Second second = new Second(new Date(now));
 
-        // 从设置中读取采样间隔
-        int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
-        long samplingIntervalMs = samplingIntervalSeconds * 1000L;
+        // 从定时器管理器获取采样间隔
+        long samplingIntervalMs = timerManager.getSamplingIntervalMs();
         long windowStart = now - samplingIntervalMs;
 
         // 统计本采样间隔内的请求
@@ -830,8 +798,8 @@ public class PerformancePanel extends SingletonBasePanel {
             long actualSpanMs = actualMaxTime - actualMinTime;
             qps = totalReq * 1000.0 / actualSpanMs;
         } else if (totalReq > 0) {
-            // 如果只有一个请求，使用采样间隔作为分母
-            qps = totalReq / (double) samplingIntervalSeconds;
+            // 如果只有一个请求，使用采样间隔（秒）作为分母
+            qps = totalReq / (samplingIntervalMs / 1000.0);
         }
 
         double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
@@ -2039,10 +2007,11 @@ public class PerformancePanel extends SingletonBasePanel {
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
         refreshBtn.setEnabled(true); // 停止时重新启用刷新按钮
+
+        // 停止所有定时器
+        timerManager.stopAll();
+
         OkHttpClientManager.setDefaultConnectionPoolConfig();
-        // 停止趋势图定时采样
-        stopTrendTimer();
-        stopReportRefreshTimer();
     }
 
     /**
@@ -2082,6 +2051,27 @@ public class PerformancePanel extends SingletonBasePanel {
      */
     public void save() {
         saveConfig();
+    }
+
+    /**
+     * 清理资源（应用退出时调用）
+     * 确保定时器被正确停止，避免资源泄漏
+     */
+    public void cleanup() {
+        log.info("清理 PerformancePanel 资源");
+
+        // 1. 停止定时器
+        if (timerManager != null) {
+            timerManager.stopAll();
+            timerManager.dispose();
+        }
+
+        // 2. 停止运行中的测试
+        if (running) {
+            stopRun();
+        }
+
+        log.debug("PerformancePanel 资源清理完成");
     }
 
     /**

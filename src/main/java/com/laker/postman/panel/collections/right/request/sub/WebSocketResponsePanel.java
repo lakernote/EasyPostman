@@ -79,15 +79,25 @@ public class WebSocketResponsePanel extends JPanel {
         };
         table = new JTable(tableModel);
         table.setRowHeight(26);
-        table.getColumnModel().getColumn(0).setMaxWidth(50);
+        // 第一列（类型图标）：最小40，首选50，允许自适应标题宽度
+        table.getColumnModel().getColumn(0).setMinWidth(40);
+        table.getColumnModel().getColumn(0).setPreferredWidth(50);
+        table.getColumnModel().getColumn(0).setMaxWidth(80);
         table.getColumnModel().getColumn(0).setCellRenderer(new IconCellRenderer());
-        table.getColumnModel().getColumn(1).setMaxWidth(100);
+        // 第二列（时间）：最小80，首选100，最大150
+        table.getColumnModel().getColumn(1).setMinWidth(80);
+        table.getColumnModel().getColumn(1).setPreferredWidth(100);
+        table.getColumnModel().getColumn(1).setMaxWidth(150);
         // 设置第2列（时间列）居中
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        // 第三列（内容）：可自由调整
         table.getColumnModel().getColumn(2).setPreferredWidth(400);
-        table.getColumnModel().getColumn(3).setMaxWidth(60);
+        // 第四列（断言结果图标）：最小60，首选80，最大120以适应中英文标题
+        table.getColumnModel().getColumn(3).setMinWidth(60);
+        table.getColumnModel().getColumn(3).setPreferredWidth(80);
+        table.getColumnModel().getColumn(3).setMaxWidth(120);
         table.getColumnModel().getColumn(3).setCellRenderer(new IconCellRenderer());
         table.setCellSelectionEnabled(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

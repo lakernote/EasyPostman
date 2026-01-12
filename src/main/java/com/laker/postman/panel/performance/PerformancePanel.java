@@ -164,7 +164,7 @@ public class PerformancePanel extends SingletonBasePanel {
         jmeterTree.setDropMode(DropMode.ON_OR_INSERT);
         jmeterTree.setTransferHandler(new TreeNodeTransferHandler(jmeterTree, treeModel));
         JScrollPane treeScroll = new JScrollPane(jmeterTree);
-        treeScroll.setPreferredSize(new Dimension(260, 500));
+        treeScroll.setPreferredSize(new Dimension(260, 300));
 
         // 2. 右侧属性区（CardLayout）
         propertyCardLayout = new CardLayout();
@@ -205,9 +205,12 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 下部分（主分割+结果Tab）
         JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, resultTabbedPane);
-        verticalSplit.setDividerLocation(0.62);
-        verticalSplit.setDividerSize(6);
-        verticalSplit.setContinuousLayout(true);
+        verticalSplit.setDividerSize(6); // 分割条宽度
+        verticalSplit.setContinuousLayout(true); // 连续布局
+        verticalSplit.setDividerLocation(260); // 初始位置
+        // 设置最小尺寸，确保拖动范围足够大
+        mainSplit.setMinimumSize(new Dimension(400, 150));
+        resultTabbedPane.setMinimumSize(new Dimension(400, 150));
 
         add(verticalSplit, BorderLayout.CENTER);
 

@@ -418,7 +418,17 @@ public class RequestEditSubPanel extends JPanel {
 
         // 执行前置脚本
         ScriptExecutionResult preResult = pipeline.executePreScript();
-        if (!preResult.isSuccess()) return;
+        if (!preResult.isSuccess()) {
+            // 显示前置脚本执行错误对话框
+            String errorMessage = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_EXECUTION_FAILED,
+                    preResult.getErrorMessage());
+            String errorTitle = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_ERROR_TITLE);
+            JOptionPane.showMessageDialog(this,
+                    errorMessage,
+                    errorTitle,
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         // 前置脚本执行完成后，再进行变量替换
         PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
@@ -1127,6 +1137,16 @@ public class RequestEditSubPanel extends JPanel {
         try {
             // 执行后置脚本（自动清空旧结果、添加响应绑定、收集新结果）
             ScriptExecutionResult postResult = pipeline.executePostScript(resp);
+            if (!postResult.isSuccess()) {
+                // 显示后置脚本执行错误对话框
+                String errorMessage = I18nUtil.getMessage(MessageKeys.SCRIPT_POSTSCRIPT_EXECUTION_FAILED,
+                        postResult.getErrorMessage());
+                String errorTitle = I18nUtil.getMessage(MessageKeys.SCRIPT_POSTSCRIPT_ERROR_TITLE);
+                JOptionPane.showMessageDialog(this,
+                        errorMessage,
+                        errorTitle,
+                        JOptionPane.ERROR_MESSAGE);
+            }
             setTestResults(postResult.getTestResults());
         } catch (Exception ex) {
             log.error("Error executing post-script: {}", ex.getMessage(), ex);
@@ -1169,6 +1189,12 @@ public class RequestEditSubPanel extends JPanel {
 
         // 执行后置脚本（自动清空、添加响应绑定、收集结果）
         ScriptExecutionResult postResult = pipeline.executePostScript(resp);
+
+        // 对于流式消息，如果后置脚本失败，仅记录日志，不显示对话框（避免频繁弹窗）
+        if (!postResult.isSuccess()) {
+            log.warn("Post-script execution failed for stream message: {}", postResult.getErrorMessage());
+        }
+
         return postResult.getTestResults();
     }
 

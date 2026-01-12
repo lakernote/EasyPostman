@@ -1,17 +1,13 @@
 package com.laker.postman.panel.workspace.components;
 
 import cn.hutool.core.util.RandomUtil;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.exception.WorkspaceCreateException;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,7 +64,6 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         nameField = new JTextField(10);
         descriptionArea = new JTextArea(3, 10);
         descriptionArea.setLineWrap(true);
-        descriptionArea.setBackground(Color.white);
         descriptionArea.setWrapStyleWord(true);
 
         // 工作区类型
@@ -83,7 +78,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         setDefaultWorkspacePath(); // 设置默认路径
 
         browseButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_SELECT_PATH));
-        browseButton.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
+        browseButton.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
 
         // 自动生成路径选项
         autoGeneratePathCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.WORKSPACE_AUTO_GENERATE_PATH), true);

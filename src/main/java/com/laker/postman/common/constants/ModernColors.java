@@ -341,54 +341,6 @@ public final class ModernColors {
         }
     }
 
-    // 表格相关颜色
-    /**
-     * 表格选中背景色
-     */
-    public static final Color TABLE_SELECTION_BACKGROUND = new Color(200, 220, 245);
-
-    /**
-     * 表格网格线颜色
-     */
-    public static final Color TABLE_GRID_COLOR = new Color(227, 215, 215);
-
-    /**
-     * 表格头部背景色
-     */
-    public static final Color TABLE_HEADER_BACKGROUND = new Color(240, 242, 245);
-
-    // 边框和分割线颜色
-    /**
-     * 边框颜色
-     */
-    public static final Color BORDER_COLOR = new Color(230, 230, 230);
-
-    /**
-     * 分割线焦点颜色
-     */
-    public static final Color DIVIDER_FOCUS_COLOR = new Color(160, 164, 170);
-
-    /**
-     * 分割线背景色
-     */
-    public static final Color DIVIDER_BACKGROUND = new Color(245, 246, 248);
-
-    /**
-     * 分割线边框颜色
-     */
-    public static final Color DIVIDER_BORDER_COLOR = new Color(200, 200, 200);
-
-    // 按钮相关颜色
-    /**
-     * 按钮悬停背景色
-     */
-    public static final Color BUTTON_HOVER_BACKGROUND = new Color(230, 240, 250);
-
-    /**
-     * 按钮按下背景色
-     */
-    public static final Color BUTTON_PRESSED_BACKGROUND = new Color(210, 225, 245);
-
     // 滚动条相关颜色
     /**
      * 滚动条滑块颜色
@@ -405,66 +357,11 @@ public final class ModernColors {
      */
     public static final Color SCROLLBAR_TRACK = new Color(245, 247, 250);
 
-    // 分隔符相关颜色
-    /**
-     * 分隔符前景色
-     */
-    public static final Color SEPARATOR_FOREGROUND = new Color(210, 210, 210);
-
-    /**
-     * 分隔符背景色
-     */
-    public static final Color SEPARATOR_BACKGROUND = new Color(240, 240, 240);
-
-    // tab头选中背景色
-    /**
-     * tab头选中背景色
-     */
-    public static final Color TAB_SELECTED_BACKGROUND = new Color(220, 230, 238);
-
-    // ==================== 验证状态色 ====================
-
-    /**
-     * 验证成功色
-     */
-    public static final Color VALIDATION_SUCCESS = SUCCESS_LIGHT;
-
-    /**
-     * 验证错误色
-     */
-    public static final Color VALIDATION_ERROR = ERROR_LIGHT;
-
-    /**
-     * 验证警告色
-     */
-    public static final Color VALIDATION_WARNING = WARNING_LIGHT;
-
-    /**
-     * 验证成功图标色
-     */
-    public static final Color VALIDATION_SUCCESS_ICON = SUCCESS;
 
     /**
      * 验证错误图标色
      */
     public static final Color VALIDATION_ERROR_ICON = ERROR;
-
-    // ==================== 设置面板专用色 ====================
-
-    /**
-     * 设置区域背景色
-     */
-    public static final Color SETTINGS_SECTION_BG = new Color(250, 251, 252);
-
-    /**
-     * 已修改状态指示色
-     */
-    public static final Color SETTINGS_MODIFIED_INDICATOR = new Color(255, 165, 0); // 橙色
-
-    /**
-     * 依赖项禁用色
-     */
-    public static final Color SETTINGS_DEPENDENCY_DISABLED = new Color(200, 200, 200);
 
     /**
      * 未保存更改警告背景色
@@ -484,24 +381,10 @@ public final class ModernColors {
     public static final Color STATE_MODIFIED = new Color(255, 193, 7); // 黄色
 
     /**
-     * 已保存状态
-     */
-    public static final Color STATE_SAVED = SUCCESS; // 绿色
-
-    /**
-     * 错误状态
-     */
-    public static final Color STATE_ERROR = ERROR; // 红色
-
-    /**
      * 重置图标颜色
      */
     public static final Color ICON_RESET = new Color(156, 163, 175); // 灰色
 
-    /**
-     * 重启需要图标颜色
-     */
-    public static final Color ICON_RESTART_REQUIRED = new Color(245, 158, 11); // 橙色
 
     // ==================== Console 控制台专用色（主题适配）====================
 

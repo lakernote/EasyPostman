@@ -10,6 +10,7 @@ import com.laker.postman.model.MessageType;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -63,7 +64,7 @@ public class WebSocketResponsePanel extends JPanel {
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
         clearButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR_MESSAGES));
-        clearButton.setIcon(new FlatSVGIcon("icons/clear.svg", 16, 16));
+        clearButton.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         toolBar.add(typeFilterBox);
         toolBar.add(searchField);
         toolBar.add(clearButton);

@@ -1,7 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
@@ -116,14 +115,14 @@ public class RequestBodyPanel extends JPanel {
 
         // 搜索区控件
         searchField = new SearchTextField();
-        JButton prevButton = new JButton(new FlatSVGIcon("icons/arrow-up.svg", 18, 18));
+        JButton prevButton = new JButton(IconUtil.createThemed("icons/arrow-up.svg", 18, 18));
         prevButton.setToolTipText("Previous");
-        JButton nextButton = new JButton(new FlatSVGIcon("icons/arrow-down.svg", 18, 18));
+        JButton nextButton = new JButton(IconUtil.createThemed("icons/arrow-down.svg", 18, 18));
         nextButton.setToolTipText("Next");
         topPanel.add(searchField);
         topPanel.add(prevButton);
         topPanel.add(nextButton);
-        formatButton = new JButton(new FlatSVGIcon("icons/format.svg", 18, 18));
+        formatButton = new JButton(IconUtil.createThemed("icons/format.svg", 18, 18));
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
         topPanel.add(formatButton);
@@ -213,11 +212,11 @@ public class RequestBodyPanel extends JPanel {
         wsIntervalField = new JTextField("1000", 5); // 默认1000ms
         bottomPanel.add(wsIntervalField);
         wsTimedSendButton = new JButton(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_START));
-        wsTimedSendButton.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+        wsTimedSendButton.setIcon(IconUtil.createThemed("icons/time.svg", 16, 16));
         wsTimedSendButton.addActionListener(e -> toggleWsTimer());
         bottomPanel.add(wsTimedSendButton);
         wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_SEND));
-        wsSendButton.setIcon(new FlatSVGIcon("icons/send.svg", 16, 16));
+        wsSendButton.setIcon(IconUtil.createThemed("icons/send.svg", 16, 16));
         wsSendButton.setVisible(true);
         wsSendButton.addActionListener(e -> wsSendAndMaybeClear());
         bottomPanel.add(wsSendButton);

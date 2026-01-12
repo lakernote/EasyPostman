@@ -1,9 +1,9 @@
 package com.laker.postman.panel.collections.left.handler;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.left.action.RequestTreeActions;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -83,7 +83,7 @@ public class RequestTreePopupMenu {
     private void addRootGroupMenuItem(JPopupMenu menu) {
         JMenuItem item = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_ROOT_GROUP),
-                new FlatSVGIcon("icons/root_group.svg", 16, 16)
+                IconUtil.create("icons/root_group.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)
         );
         item.addActionListener(e -> actions.showAddGroupDialog(leftPanel.getRootTreeNode()));
         menu.add(item);
@@ -235,12 +235,26 @@ public class RequestTreePopupMenu {
     }
 
     /**
-     * 创建菜单项的辅助方法
+     * 创建菜单项的辅助方法（主题适配）
      */
     private JMenuItem createMenuItem(String messageKey, String iconPath, java.awt.event.ActionListener listener) {
+        // 彩色图标列表：这些图标本身有品牌色或渐变色，不应该跟随主题变化
+        // - postman.svg: Postman 品牌橙色渐变
+        // - group.svg: 蓝色文件夹 (#007AFF)
+        // - curl.svg: cURL 品牌渐变色（深蓝→浅蓝→绿色）
+        // - copy.svg: 紫蓝色渐变
+        // - paste.svg: 绿色渐变
+        boolean isColoredIcon = iconPath.contains("postman.svg")
+                             || iconPath.contains("group.svg")
+                             || iconPath.contains("curl.svg")
+                             || iconPath.contains("copy.svg")
+                             || iconPath.contains("paste.svg");
+
         JMenuItem item = new JMenuItem(
                 I18nUtil.getMessage(messageKey),
-                new FlatSVGIcon(iconPath, 16, 16)
+                isColoredIcon
+                    ? IconUtil.create(iconPath, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)
+                    : IconUtil.createThemed(iconPath, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)
         );
         item.addActionListener(listener);
         return item;

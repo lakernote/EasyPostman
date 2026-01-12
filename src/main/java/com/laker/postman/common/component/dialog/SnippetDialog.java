@@ -1,6 +1,5 @@
 package com.laker.postman.common.component.dialog;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
@@ -8,6 +7,7 @@ import com.laker.postman.model.Snippet;
 import com.laker.postman.model.SnippetType;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
@@ -91,47 +91,76 @@ public class SnippetDialog extends JDialog {
                     label.setText(snippet.title);
                     label.setBorder(new EmptyBorder(5, 10, 5, 10));
                     // 根据类型设置图标
+                    // 注意：http.svg 和 cookie.svg 保持彩色，使用 create()
+                    // 其他图标使用 createThemed() 以支持主题适配
                     switch (snippet.type.type) {
                         // 基础分类
-                        case PRE_SCRIPT -> label.setIcon(new FlatSVGIcon("icons/arrow-up.svg", 16, 16));
-                        case ASSERT -> label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
-                        case EXTRACT -> label.setIcon(new FlatSVGIcon("icons/arrow-down.svg", 16, 16));
-                        case LOCAL_VAR -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
-                        case ENV_VAR -> label.setIcon(new FlatSVGIcon("icons/environments.svg", 16, 16));
+                        case PRE_SCRIPT ->
+                                label.setIcon(IconUtil.createThemed("icons/arrow-up.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case ASSERT ->
+                                label.setIcon(IconUtil.createThemed("icons/check.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case EXTRACT ->
+                                label.setIcon(IconUtil.createThemed("icons/arrow-down.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case LOCAL_VAR ->
+                                label.setIcon(IconUtil.createThemed("icons/code.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case ENV_VAR ->
+                                label.setIcon(IconUtil.createThemed("icons/environments.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
 
                         // 编码和加密
-                        case ENCODE -> label.setIcon(new FlatSVGIcon("icons/format.svg", 16, 16));
-                        case ENCRYPT -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
+                        case ENCODE ->
+                                label.setIcon(IconUtil.createThemed("icons/format.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case ENCRYPT ->
+                                label.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
 
                         // 数据类型
-                        case ARRAY -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
-                        case JSON -> label.setIcon(new FlatSVGIcon("icons/http.svg", 16, 16));
-                        case STRING -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
-                        case DATE -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
-                        case REGEX -> label.setIcon(new FlatSVGIcon("icons/search.svg", 16, 16));
+                        case ARRAY ->
+                                label.setIcon(IconUtil.createThemed("icons/functional.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case JSON ->
+                                label.setIcon(IconUtil.create("icons/http.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)); // 彩色图标
+                        case STRING ->
+                                label.setIcon(IconUtil.createThemed("icons/code.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case DATE ->
+                                label.setIcon(IconUtil.createThemed("icons/time.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case REGEX ->
+                                label.setIcon(IconUtil.createThemed("icons/search.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
 
                         // 其他基础
-                        case LOG -> label.setIcon(new FlatSVGIcon("icons/console.svg", 16, 16));
-                        case CONTROL -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
-                        case TOKEN -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
-                        case COOKIES -> label.setIcon(new FlatSVGIcon("icons/cookie.svg", 16, 16));
+                        case LOG ->
+                                label.setIcon(IconUtil.createThemed("icons/console.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case CONTROL ->
+                                label.setIcon(IconUtil.createThemed("icons/functional.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case TOKEN ->
+                                label.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case COOKIES ->
+                                label.setIcon(IconUtil.create("icons/cookie.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)); // 彩色图标
 
                         // 内置库分类
-                        case CRYPTOJS -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
-                        case LODASH -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
-                        case MOMENT -> label.setIcon(new FlatSVGIcon("icons/time.svg", 16, 16));
+                        case CRYPTOJS ->
+                                label.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case LODASH ->
+                                label.setIcon(IconUtil.createThemed("icons/functional.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case MOMENT ->
+                                label.setIcon(IconUtil.createThemed("icons/time.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
 
                         // 高级场景分类
-                        case AUTHENTICATION -> label.setIcon(new FlatSVGIcon("icons/security.svg", 16, 16));
-                        case PERFORMANCE -> label.setIcon(new FlatSVGIcon("icons/performance.svg", 16, 16));
-                        case VALIDATION -> label.setIcon(new FlatSVGIcon("icons/check.svg", 16, 16));
-                        case DATA_PROCESSING -> label.setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16));
-                        case REQUEST_MODIFICATION -> label.setIcon(new FlatSVGIcon("icons/edit.svg", 16, 16));
-                        case EXAMPLES -> label.setIcon(new FlatSVGIcon("icons/collections.svg", 16, 16));
+                        case AUTHENTICATION ->
+                                label.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case PERFORMANCE ->
+                                label.setIcon(IconUtil.createThemed("icons/performance.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case VALIDATION ->
+                                label.setIcon(IconUtil.createThemed("icons/check.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case DATA_PROCESSING ->
+                                label.setIcon(IconUtil.createThemed("icons/functional.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case REQUEST_MODIFICATION ->
+                                label.setIcon(IconUtil.createThemed("icons/edit.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        case EXAMPLES ->
+                                label.setIcon(IconUtil.createThemed("icons/collections.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
 
                         // 其他
-                        case OTHER -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
-                        default -> label.setIcon(new FlatSVGIcon("icons/code.svg", 16, 16));
+                        case OTHER ->
+                                label.setIcon(IconUtil.createThemed("icons/code.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                        default ->
+                                label.setIcon(IconUtil.createThemed("icons/code.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                     }
                 }
                 return label;
@@ -152,7 +181,6 @@ public class SnippetDialog extends JDialog {
         previewArea = new JTextArea(8, 40);
         previewArea.setEditable(false);
         previewArea.setLineWrap(false);  // 代码不应该自动换行
-        previewArea.setBackground(new Color(245, 245, 245));
         previewArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
         previewArea.setTabSize(4);  // 设置 Tab 缩进为 4 个空格
         JScrollPane previewScrollPane = new JScrollPane(previewArea);

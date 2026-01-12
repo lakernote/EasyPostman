@@ -4,7 +4,6 @@ package com.laker.postman.common.component.tab;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -57,15 +56,10 @@ public class ClosableTabComponent extends JPanel {
      * 获取主题适配的关闭按钮背景色
      */
     private Color getCloseButtonBackground() {
-        if (isDarkTheme()) {
-            // 暗色主题：使用深色背景
-            Color base = ModernColors.TAB_SELECTED_BACKGROUND;
-            return new Color(base.getRed(), base.getGreen(), base.getBlue(), 200);
-        } else {
-            // 亮色主题：使用浅色背景
-            Color base = ModernColors.TAB_SELECTED_BACKGROUND;
-            return new Color(base.getRed(), base.getGreen(), base.getBlue(), 180);
-        }
+        Color tabBg = tabbedPane.getBackground();
+        // 使用 tab 背景色，添加透明度
+        return new Color(tabBg.getRed(), tabBg.getGreen(), tabBg.getBlue(),
+                isDarkTheme() ? 200 : 180);
     }
 
     /**

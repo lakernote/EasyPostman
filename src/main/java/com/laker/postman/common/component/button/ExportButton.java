@@ -1,7 +1,7 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -12,9 +12,7 @@ import javax.swing.*;
 public class ExportButton extends JButton {
     public ExportButton() {
         super();
-        FlatSVGIcon icon = new FlatSVGIcon("icons/export.svg", 20, 20);
-        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        setIcon(icon);
+        setIcon(IconUtil.createThemed("icons/export.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         setFocusable(false); // 去掉按钮的焦点边框
         setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_TOOLTIP));
     }

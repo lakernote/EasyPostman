@@ -11,6 +11,7 @@ import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.toolbox.ToolboxPanel;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
@@ -90,8 +91,7 @@ public enum SidebarTab {
      */
     public Icon getIcon() {
         if (icon == null) {
-            icon = new FlatSVGIcon(iconPath, 22, 22);
-            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+            icon = IconUtil.createThemed(iconPath, IconUtil.SIZE_TAB, IconUtil.SIZE_TAB);
         }
         return icon;
     }
@@ -102,10 +102,7 @@ public enum SidebarTab {
      */
     public Icon getSelectedIcon() {
         if (selectedIcon == null) {
-            selectedIcon = new FlatSVGIcon(iconPath, 22, 22);
-            // 使用 ModernColors.PRIMARY (#007AFF iOS蓝)
-            selectedIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.PRIMARY
-            ));
+            selectedIcon = IconUtil.createPrimary(iconPath, IconUtil.SIZE_TAB, IconUtil.SIZE_TAB);
         }
         return selectedIcon;
     }

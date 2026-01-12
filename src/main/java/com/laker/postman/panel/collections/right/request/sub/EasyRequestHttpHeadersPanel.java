@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.SystemUtil;
 
 import javax.swing.*;
@@ -21,7 +22,7 @@ import java.util.List;
  * 3. 左上角有Headers标签和eye图标按钮和(4)标签，点击可切换显示/隐藏 默认请求头
  * 4. 中间是表格
  */
-public class EasyHttpHeadersPanel extends JPanel {
+public class EasyRequestHttpHeadersPanel extends JPanel {
     private EasyHttpHeadersTablePanel tablePanel;
 
     // Default headers constants
@@ -50,8 +51,8 @@ public class EasyHttpHeadersPanel extends JPanel {
     }
 
     // UI components
-    private final ImageIcon eyeOpenIcon = new FlatSVGIcon("icons/eye-open.svg", 16, 16);
-    private final ImageIcon eyeCloseIcon = new FlatSVGIcon("icons/eye-close.svg", 16, 16);
+    private final FlatSVGIcon eyeOpenIcon;
+    private final FlatSVGIcon eyeCloseIcon;
     private JButton eyeButton;
     private JLabel countLabel;
 
@@ -60,11 +61,54 @@ public class EasyHttpHeadersPanel extends JPanel {
     private DefaultHeaderRowFilter defaultHeaderFilter;
     private boolean showDefaultHeaders = false;
 
-    public EasyHttpHeadersPanel() {
+    public EasyRequestHttpHeadersPanel() {
+        // 初始化图标（添加颜色过滤器以适配主题）
+        eyeOpenIcon = IconUtil.createThemed("icons/eye-open.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+        eyeCloseIcon = IconUtil.createThemed("icons/eye-close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+
         initializeComponents();
         setupLayout();
         initializeTableWithDefaults();
         setupFiltering();
+    }
+
+
+    /**
+     * 创建眼睛按钮（用于切换默认请求头的显示/隐藏）
+     *
+     * @return 配置好的眼睛按钮
+     */
+    private JButton createEyeButton() {
+        JButton button = new JButton(eyeOpenIcon);
+        button.setFocusable(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.addActionListener(e -> toggleDefaultHeadersVisibility());
+        return button;
+    }
+
+    /**
+     * 创建计数标签（显示隐藏的默认请求头数量）
+     *
+     * @return 配置好的计数标签
+     */
+    private JLabel createCountLabel() {
+        JLabel label = new JLabel();
+        // 设置初始文本（隐藏状态显示数量）
+        int count = DEFAULT_HEADERS.length;
+        String countText = "(" + count + ")";
+        String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+        label.setText("<html>" + countHtml + "</html>");
+
+        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        label.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                toggleDefaultHeadersVisibility();
+            }
+        });
+        return label;
     }
 
     private void initializeComponents() {
@@ -74,24 +118,9 @@ public class EasyHttpHeadersPanel extends JPanel {
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
         JLabel label = new JLabel("Headers");
 
-        // Eye button for toggling default headers visibility
-        eyeButton = new JButton(eyeOpenIcon);
-        eyeButton.setFocusable(false);
-        eyeButton.setBorderPainted(false);
-        eyeButton.setContentAreaFilled(false);
-        eyeButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        eyeButton.addActionListener(e -> toggleDefaultHeadersVisibility());
-
-        // Count label for hidden headers
-        countLabel = new JLabel();
-        updateCountLabel();
-        countLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        countLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                toggleDefaultHeadersVisibility();
-            }
-        });
+        // Create eye button and count label using helper methods
+        eyeButton = createEyeButton();
+        countLabel = createCountLabel();
 
         headerPanel.add(label);
         headerPanel.add(eyeButton);

@@ -1,8 +1,8 @@
 package com.laker.postman.common.component.table;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -197,19 +197,8 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
 
         // 自定义下拉列表的渲染器
         comboBox.setRenderer(new DefaultListCellRenderer() {
-            private final Icon textIcon;
-            private final Icon fileIcon;
-
-            // 初始化图标并设置颜色过滤器以适配主题
-            {
-                FlatSVGIcon textSvgIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
-                textSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-                textIcon = textSvgIcon;
-
-                FlatSVGIcon fileSvgIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
-                fileSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-                fileIcon = fileSvgIcon;
-            }
+            private final Icon textIcon = IconUtil.createThemed("icons/file.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+            private final Icon fileIcon = IconUtil.createThemed("icons/binary.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
 
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -310,14 +299,9 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
             textLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
             textLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-            // 加载图标并设置颜色过滤器以适配主题
-            FlatSVGIcon textSvgIcon = new FlatSVGIcon("icons/file.svg", 16, 16);
-            textSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-            textIcon = textSvgIcon;
-
-            FlatSVGIcon fileSvgIcon = new FlatSVGIcon("icons/binary.svg", 16, 16);
-            fileSvgIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
-            fileIcon = fileSvgIcon;
+            // 使用 IconUtil 创建主题适配的图标
+            textIcon = IconUtil.createThemed("icons/file.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+            fileIcon = IconUtil.createThemed("icons/binary.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
 
             // 添加组件
             add(iconLabel, BorderLayout.WEST);

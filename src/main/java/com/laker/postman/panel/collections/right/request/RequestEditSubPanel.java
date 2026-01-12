@@ -62,7 +62,7 @@ public class RequestEditSubPanel extends JPanel {
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyPostmanParamsTablePanel paramsPanel;
-    private final EasyHttpHeadersPanel headersPanel;
+    private final EasyRequestHttpHeadersPanel headersPanel;
     @Getter
     private String id;
     private String name;
@@ -187,7 +187,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION), authTabPanel);
 
         // 2.3 Headers
-        headersPanel = new EasyHttpHeadersPanel();
+        headersPanel = new EasyRequestHttpHeadersPanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS), headersPanel);
 
         // 2.4 Body 面板

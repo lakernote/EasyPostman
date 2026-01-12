@@ -501,7 +501,7 @@ public class PerformancePanel extends SingletonBasePanel {
         timerManager.setTrendSamplingCallback(this::sampleTrendData);
 
         // 设置报表刷新回调
-        timerManager.setReportRefreshCallback(this::refreshReportOnce);
+        timerManager.setReportRefreshCallback(this::refreshReport);
 
         log.debug("定时器管理器初始化完成");
     }
@@ -712,11 +712,18 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     /**
-     * 执行一次报表刷新（完全复用你"停止时 updateReport"的逻辑）
+     * 定期刷新报表（由定时器定期调用）
+     * 优化：仅在用户当前查看报表Tab时才执行刷新，避免无效计算
      * 关键：必须先 copy，再 update，避免并发修改异常
      */
-    private void refreshReportOnce() {
+    private void refreshReport() {
         try {
+            // 优化：仅在用户查看报表Tab时才刷新（tab索引: 0=趋势图, 1=报表, 2=结果树）
+            if (resultTabbedPane.getSelectedIndex() != 1) {
+                log.debug("当前未查看报表Tab，跳过刷新");
+                return;
+            }
+
             // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
             List<Long> startTimesCopy;
             List<RequestResult> resultsCopy;

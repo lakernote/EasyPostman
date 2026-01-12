@@ -34,6 +34,7 @@ public class SecondaryButton extends JButton {
 
         // 设置字体和样式
         setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        // 文本颜色会根据主题自动适配
         setForeground(ModernColors.getTextPrimary());
         setContentAreaFilled(false);
         setBorderPainted(false);
@@ -62,8 +63,9 @@ public class SecondaryButton extends JButton {
      */
     private Color getDefaultBackground() {
         if (isDarkTheme()) {
-            // 暗色主题：使用深色背景
-            return new Color(50, 52, 54);
+            // 暗色主题：使用稍亮的深色背景，与面板背景 #3c3f41 有明显区别
+            // 使用 #43464a (67, 70, 74) 提供足够的层次感
+            return new Color(67, 70, 74);
         } else {
             // 亮色主题：使用白色背景
             return ModernColors.BG_WHITE;
@@ -75,8 +77,9 @@ public class SecondaryButton extends JButton {
      */
     private Color getHoverBackground() {
         if (isDarkTheme()) {
-            // 暗色主题：稍微亮一点
-            return new Color(60, 63, 65);
+            // 暗色主题：悬停时更亮，提供清晰的交互反馈
+            // 使用 #4e5157 (78, 81, 87)
+            return new Color(78, 81, 87);
         } else {
             // 亮色主题：使用 HOVER_BG
             return ModernColors.HOVER_BG;
@@ -88,8 +91,9 @@ public class SecondaryButton extends JButton {
      */
     private Color getPressedBackground() {
         if (isDarkTheme()) {
-            // 暗色主题：更亮一点
-            return new Color(70, 73, 75);
+            // 暗色主题：按下时最亮，明确的按下反馈
+            // 使用 #595c63 (89, 92, 99)
+            return new Color(89, 92, 99);
         } else {
             // 亮色主题：使用 BG_DARK
             return ModernColors.BG_DARK;
@@ -101,8 +105,9 @@ public class SecondaryButton extends JButton {
      */
     private Color getDisabledBackground() {
         if (isDarkTheme()) {
-            // 暗色主题：稍暗
-            return new Color(45, 47, 49);
+            // 暗色主题：禁用时稍暗，但仍然可见
+            // 使用 #3a3d41 (58, 61, 65)，略高于面板背景
+            return new Color(58, 61, 65);
         } else {
             // 亮色主题：使用 BG_LIGHT
             return ModernColors.BG_LIGHT;
@@ -114,15 +119,28 @@ public class SecondaryButton extends JButton {
      */
     private Color getBorderColor(boolean enabled) {
         if (!enabled) {
-            return isDarkTheme() ? new Color(60, 60, 65) : ModernColors.BORDER_LIGHT;
+            // 禁用状态：使用更暗淡的边框
+            return isDarkTheme() ? new Color(70, 73, 77) : ModernColors.BORDER_LIGHT;
         }
-        return isDarkTheme() ? new Color(80, 83, 85) : ModernColors.BORDER_MEDIUM;
+        // 启用状态：使用清晰可见的边框
+        // 暗色主题使用 #6b7280 (107, 114, 128) - 与 EnvironmentListCellRenderer 一致
+        // 亮色主题使用 BORDER_MEDIUM
+        return isDarkTheme() ? new Color(107, 114, 128) : ModernColors.BORDER_MEDIUM;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // 根据状态设置文本颜色
+        if (!isEnabled()) {
+            // 禁用状态：使用提示色（更暗淡）
+            setForeground(ModernColors.getTextHint());
+        } else {
+            // 启用状态：使用主文本颜色
+            setForeground(ModernColors.getTextPrimary());
+        }
 
         // 背景颜色（主题适配）
         if (!isEnabled()) {

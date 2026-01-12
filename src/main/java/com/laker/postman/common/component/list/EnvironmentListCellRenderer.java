@@ -27,7 +27,9 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
 
             // 设置图标和样式
             Color checkedColor = new Color(0x60a5fa); // 浅蓝色，亮/暗主题都适用
-            Color uncheckedColor = FlatLaf.isLafDark() ? new Color(0x334155) : new Color(0xcbd5e1); // 深灰/浅灰
+            // 暗色主题：使用 #6b7280 (灰色，更明亮，与背景 #3c3f41 有足够对比度)
+            // 亮色主题：使用 #cbd5e1 (浅灰色)
+            Color uncheckedColor = FlatLaf.isLafDark() ? new Color(0x6b7280) : new Color(0xcbd5e1);
             if (isActive) {
                 FlatSVGIcon icon = new FlatSVGIcon("icons/check.svg", 16, 16);
                 icon.setColorFilter(new FlatSVGIcon.ColorFilter(c -> checkedColor));

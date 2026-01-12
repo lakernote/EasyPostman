@@ -2,11 +2,11 @@ package com.laker.postman.panel.update;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -36,7 +36,7 @@ public class ModernUpdateDialog extends JDialog {
 
         // 主面板
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
-        mainPanel.setBackground(ModernColors.BG_WHITE);
+        mainPanel.setBackground(ModernColors.getCardBackgroundColor());  // 主题适配的卡片背景色
 
         // 头部
         JPanel headerPanel = createHeaderPanel(updateInfo);
@@ -80,7 +80,7 @@ public class ModernUpdateDialog extends JDialog {
         panel.setBorder(new EmptyBorder(24, 24, 24, 24));
 
         // 图标 - 使用更大的尺寸
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/info.svg", 64, 64));
+        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/info.svg", 64, 64));
         panel.add(iconLabel, BorderLayout.WEST);
 
         // 版本信息
@@ -124,14 +124,15 @@ public class ModernUpdateDialog extends JDialog {
     }
 
     private JPanel createChangelogPanel(UpdateInfo updateInfo) {
-        JPanel panel = new JPanel(new BorderLayout(0, 12));
-        panel.setBackground(ModernColors.BG_WHITE);
-        panel.setBorder(new EmptyBorder(0, 24, 16, 24));
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
+        mainPanel.setBackground(ModernColors.getCardBackgroundColor());  // 主题适配的卡片背景色
+        mainPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
         // 标题
         JLabel titleLabel = new JLabel("📝 " + (I18nUtil.isChinese() ? "更新内容" : "What's New"));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
-        panel.add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setForeground(ModernColors.getTextPrimary());  // 主题适配的主文本色
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
 
         // 更新日志
         String changelog = extractChangelog(updateInfo.getReleaseInfo());
@@ -141,17 +142,18 @@ public class ModernUpdateDialog extends JDialog {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
-        textArea.setBackground(ModernColors.BG_LIGHT);
+        textArea.setForeground(ModernColors.getTextPrimary());  // 主题适配的文字颜色
+        textArea.setBackground(ModernColors.getBackgroundColor());  // 主题适配的背景色
         textArea.setBorder(new EmptyBorder(12, 12, 12, 12));
         textArea.setCaretPosition(0);
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1));  // 主题适配的边框色
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        panel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        return panel;
+        return mainPanel;
     }
 
     private String extractChangelog(JSONObject releaseInfo) {
@@ -180,7 +182,7 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(ModernColors.BG_WHITE);
+        panel.setBackground(ModernColors.getCardBackgroundColor());  // 主题适配的卡片背景色
         panel.setBorder(new EmptyBorder(16, 24, 20, 24));
 
         // 左侧提示

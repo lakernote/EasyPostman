@@ -1,11 +1,11 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.service.ClientCertificateService;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
@@ -139,7 +139,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         addBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_ADD), true);
         editBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_EDIT), false);
         deleteBtn = createModernButton(I18nUtil.getMessage(MessageKeys.CERT_DELETE), false);
-        helpBtn = new JButton(new FlatSVGIcon("icons/help.svg", 16, 16));
+        helpBtn = new JButton(IconUtil.createThemed("icons/help.svg", 16, 16));
         helpBtn.setBorder(new EmptyBorder(0, 0, 0, 0));
         // 减小按钮尺寸
         Dimension btnSize = new Dimension(80, 28);
@@ -168,13 +168,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         certificateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         certificateTable.setRowHeight(28);
         certificateTable.setShowGrid(true);
-        certificateTable.setGridColor(getBorderLightColor());
-        certificateTable.setBackground(getCardBackgroundColor());
-        certificateTable.setSelectionBackground(ModernColors.SELECTED_BG);
-        certificateTable.setSelectionForeground(getTextPrimaryColor());
         certificateTable.getTableHeader().setReorderingAllowed(false);
-        certificateTable.getTableHeader().setBackground(getBackgroundColor());
-        certificateTable.getTableHeader().setForeground(getTextPrimaryColor());
         certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 11));
         certificateTable.setFont(new Font(certificateTable.getFont().getName(), Font.PLAIN, 11));
 
@@ -229,7 +223,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.BORDER_LIGHT, 1));
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1));
         scrollPane.setPreferredSize(new Dimension(450, 280));
         scrollPane.setMaximumSize(new Dimension(600, 350));
         scrollPane.setMinimumSize(new Dimension(350, 200));

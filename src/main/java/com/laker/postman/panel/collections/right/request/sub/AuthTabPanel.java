@@ -175,7 +175,7 @@ public class AuthTabPanel extends JPanel {
 
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.BORDER_MEDIUM, 1),
+                BorderFactory.createLineBorder(ModernColors.getBorderMediumColor(), 1),
                 new EmptyBorder(8, 12, 8, 12)
         ));
 

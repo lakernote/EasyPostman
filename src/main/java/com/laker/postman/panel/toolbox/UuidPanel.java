@@ -206,7 +206,6 @@ public class UuidPanel extends JPanel {
         uuidArea.setLineWrap(true);
         uuidArea.setWrapStyleWord(false);
         uuidArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
-        uuidArea.setBackground(ModernColors.getBackgroundColor());
         uuidArea.setForeground(ModernColors.getTextPrimary());
         uuidArea.setMargin(new Insets(10, 10, 10, 10));
 
@@ -327,7 +326,6 @@ public class UuidPanel extends JPanel {
         parseArea = new JTextArea();
         parseArea.setEditable(false);
         parseArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        parseArea.setBackground(ModernColors.getBackgroundColor());
         parseArea.setForeground(ModernColors.getTextPrimary());
         parseArea.setMargin(new Insets(10, 10, 10, 10));
         parseArea.setLineWrap(true);

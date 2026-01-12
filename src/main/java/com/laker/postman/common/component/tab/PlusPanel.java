@@ -1,6 +1,5 @@
 package com.laker.postman.common.component.tab;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
@@ -21,7 +20,7 @@ import java.awt.event.MouseEvent;
  * - 流畅的交互反馈
  * - 清晰的视觉层次
  * - 优化的性能表现
- * - 支持亮色和暗色主题自适应
+ * - 完全支持亮色和暗色主题自适应
  */
 public class PlusPanel extends JPanel {
     // 圆角和间距
@@ -30,68 +29,38 @@ public class PlusPanel extends JPanel {
     private static final int ICON_SIZE = 96;
 
     /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
      * 获取主题适配的阴影颜色
      */
     private Color getShadowColor(int alpha) {
-        // 暗色主题使用更柔和的阴影，避免过深
-        if (isDarkTheme()) {
-            // 使用深蓝黑色调的阴影，更柔和
-            return new Color(0, 0, 0, (int) (alpha * 1.5));
-        }
-        return new Color(15, 23, 42, alpha);
+        return ModernColors.getShadowColor(alpha);
     }
 
     /**
      * 获取主题适配的卡片背景色
      */
     private Color getCardBackground() {
-        // 暗色主题使用与主题背景色协调的深灰色 (基于 60, 63, 65)
-        return isDarkTheme() ? new Color(55, 57, 59) : ModernColors.BG_WHITE;
+        return ModernColors.getCardBackgroundColor();
     }
 
     /**
      * 获取主题适配的边框颜色
      */
     private Color getBorderColor() {
-        // 暗色主题使用微妙的亮色边框，基于主题背景 (60, 63, 65) 增加层次感
-        return isDarkTheme() ? new Color(75, 77, 80, 100) : ModernColors.BORDER_LIGHT;
+        return ModernColors.getBorderLightColor();
     }
 
     /**
      * 获取主题适配的图标背景颜色（带透明度）
      */
     private Color getIconBackgroundColor(int alpha) {
-        // 暗色主题下，图标背景使用更鲜艳的蓝色，增加对比度
-        if (isDarkTheme()) {
-            // 使用更亮的蓝色，提升视觉吸引力
-            return new Color(
-                    Math.min(255, ModernColors.PRIMARY.getRed() + 40),
-                    Math.min(255, ModernColors.PRIMARY.getGreen() + 40),
-                    Math.min(255, ModernColors.PRIMARY.getBlue() + 20),
-                    alpha
-            );
-        }
-        return new Color(
-                ModernColors.PRIMARY.getRed(),
-                ModernColors.PRIMARY.getGreen(),
-                ModernColors.PRIMARY.getBlue(),
-                alpha
-        );
+        return ModernColors.primaryWithAlpha(alpha);
     }
 
     /**
      * 获取主题适配的非悬停按钮背景色
      */
     private Color getButtonBackground() {
-        // 暗色主题使用稍亮的背景，与主题背景 (60, 63, 65) 协调
-        return isDarkTheme() ? new Color(70, 72, 74) : ModernColors.HOVER_BG;
+        return ModernColors.getHoverBackgroundColor();
     }
 
     /**
@@ -122,30 +91,9 @@ public class PlusPanel extends JPanel {
                 // 绘制优化的阴影效果（减少层数提升性能）
                 drawOptimizedShadow(g2, width, height);
 
-                // 绘制卡片背景（主题适配，暗色主题添加渐变）
-                if (isDarkTheme()) {
-                    // 暗色主题：使用微妙的渐变背景，与主题背景 (60, 63, 65) 协调
-                    Color bgStart = new Color(55, 57, 59);
-                    Color bgEnd = new Color(50, 52, 54);
-                    GradientPaint bgGradient = new GradientPaint(
-                            0, 0, bgStart,
-                            0, height, bgEnd
-                    );
-                    g2.setPaint(bgGradient);
-                    g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
-
-                    // 添加微妙的高光，增加立体感
-                    GradientPaint highlight = new GradientPaint(
-                            0, 0, new Color(255, 255, 255, 4),
-                            0, height / 3f, new Color(255, 255, 255, 0)
-                    );
-                    g2.setPaint(highlight);
-                    g2.fillRoundRect(0, 0, width, height / 3, CORNER_RADIUS, CORNER_RADIUS);
-                } else {
-                    // 亮色主题：纯色背景
-                    g2.setColor(getCardBackground());
-                    g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
-                }
+                // 绘制卡片背景（主题适配）
+                g2.setColor(getCardBackground());
+                g2.fillRoundRect(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS);
 
                 // 绘制顶部装饰条 - 更细更优雅
                 Shape oldClip = g2.getClip();
@@ -202,49 +150,23 @@ public class PlusPanel extends JPanel {
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
-                if (isDarkTheme()) {
-                    // 暗色主题：多层发光效果，更醒目
-                    // 外层大光晕
-                    g2.setColor(getIconBackgroundColor(12));
-                    g2.fillOval(x - 8, y - 8, size + 16, size + 16);
+                // 多层发光效果
+                // 外层大光晕
+                g2.setColor(getIconBackgroundColor(12));
+                g2.fillOval(x - 8, y - 8, size + 16, size + 16);
 
-                    // 中层光晕
-                    g2.setColor(getIconBackgroundColor(20));
-                    g2.fillOval(x - 4, y - 4, size + 8, size + 8);
+                // 中层光晕
+                g2.setColor(getIconBackgroundColor(20));
+                g2.fillOval(x - 4, y - 4, size + 8, size + 8);
 
-                    // 主圆形背景（更鲜艳）
-                    g2.setColor(getIconBackgroundColor(35));
-                    g2.fillOval(x, y, size, size);
+                // 内层背景
+                g2.setColor(getIconBackgroundColor(30));
+                g2.fillOval(x, y, size, size);
 
-                    // 内层高光，增加立体感
-                    GradientPaint innerGlow = new GradientPaint(
-                            x + size / 2, y,
-                            new Color(255, 255, 255, 15),
-                            x + size / 2, y + size / 2,
-                            new Color(255, 255, 255, 0)
-                    );
-                    g2.setPaint(innerGlow);
-                    g2.fillOval(x, y, size, size / 2);
-
-                    // 精致边框（更亮）
-                    g2.setColor(getIconBackgroundColor(80));
-                    g2.setStroke(new BasicStroke(2f));
-                    g2.drawOval(x + 1, y + 1, size - 2, size - 2);
-                } else {
-                    // 亮色主题：保持原有效果
-                    // 绘制外层微妙光晕
-                    g2.setColor(getIconBackgroundColor(8));
-                    g2.fillOval(x - 4, y - 4, size + 8, size + 8);
-
-                    // 绘制主圆形背景
-                    g2.setColor(getIconBackgroundColor(20));
-                    g2.fillOval(x, y, size, size);
-
-                    // 绘制精致边框
-                    g2.setColor(getIconBackgroundColor(60));
-                    g2.setStroke(new BasicStroke(1.5f));
-                    g2.drawOval(x + 1, y + 1, size - 2, size - 2);
-                }
+                // 精致边框
+                g2.setColor(getIconBackgroundColor(60));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
                 g2.dispose();
                 super.paintComponent(g);

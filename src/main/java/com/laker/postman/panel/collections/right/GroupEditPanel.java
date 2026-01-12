@@ -134,7 +134,7 @@ public class GroupEditPanel extends JPanel {
 
         // 底部分隔线
         JSeparator separator = new JSeparator();
-        separator.setForeground(ModernColors.BORDER_LIGHT);
+        separator.setForeground(ModernColors.getBorderLightColor());
         JPanel separatorPanel = new JPanel(new BorderLayout());
         separatorPanel.add(separator, BorderLayout.SOUTH);
         headerPanel.add(separatorPanel, BorderLayout.SOUTH);

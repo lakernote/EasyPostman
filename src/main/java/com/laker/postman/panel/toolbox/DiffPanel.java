@@ -86,7 +86,6 @@ public class DiffPanel extends JPanel {
         resultPane = new JTextPane();
         resultPane.setEditable(false);
         resultPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        resultPane.setBackground(ModernColors.getBackgroundColor());
         resultPane.setForeground(ModernColors.getTextPrimary());
         resultPane.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         resultPanel.add(new JScrollPane(resultPane), BorderLayout.CENTER);

@@ -587,7 +587,6 @@ public class CsvDataPanel extends JPanel {
 
         // 创建带样式的滚动面板
         JScrollPane scrollPane = new JScrollPane(csvTable);
-        scrollPane.getViewport().setBackground(ModernColors.getBackgroundColor()); // 主题适配的背景色
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ModernColors.getBorderLightColor()), // 主题适配的边框色
@@ -595,7 +594,6 @@ public class CsvDataPanel extends JPanel {
 
         // 创建表格容器面板，应用背景色
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBackground(ModernColors.getBackgroundColor()); // 主题适配的背景色
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 

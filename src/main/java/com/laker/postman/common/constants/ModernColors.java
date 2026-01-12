@@ -1,21 +1,25 @@
 package com.laker.postman.common.constants;
 
 import com.formdev.flatlaf.FlatLaf;
+import lombok.experimental.UtilityClass;
 
 import java.awt.*;
 
 /**
  * 现代化UI配色方案
  * 统一的配色常量，确保整个应用的视觉一致性
- * 支持亮色和暗色主题自适应
+ * 完全支持亮色和暗色主题自适应
  * <p>
  * 设计理念：
  * - 主色调：Blue（信任、专业、科技）
  * - 辅助色：Sky Blue（清新、现代）
  * - 强调色：Cyan（活力、突出）
  * - 中性色：Slate（优雅、易读）
+ * <p>
+ * - 背景、文字、边框等UI元素颜色全部主题自适应
  *
  */
+@UtilityClass
 public final class ModernColors {
 
     // ==================== 主题检测 ====================
@@ -84,31 +88,9 @@ public final class ModernColors {
     public static final Color ACCENT = new Color(6, 182, 212);
 
     /**
-     * 强调色深色 - Cyan-600
-     */
-    public static final Color ACCENT_DARK = new Color(8, 145, 178);
-
-    /**
      * 强调色浅色 - Cyan-400
      */
     public static final Color ACCENT_LIGHT = new Color(34, 211, 238);
-
-    // ==================== 蓝色系 ====================
-
-    /**
-     * 蓝色 - Blue-500
-     */
-    public static final Color BLUE = new Color(59, 130, 246);
-
-    /**
-     * 蓝色深色 - Blue-700
-     */
-    public static final Color BLUE_DARK = new Color(29, 78, 216);
-
-    /**
-     * 蓝色浅色 - Blue-100
-     */
-    public static final Color BLUE_LIGHT = new Color(219, 234, 254);
 
     // ==================== 成功/错误/警告色 ====================
 
@@ -121,11 +103,6 @@ public final class ModernColors {
      * 成功深色 - Green-600
      */
     public static final Color SUCCESS_DARK = new Color(22, 163, 74);
-
-    /**
-     * 成功浅色 - Green-100
-     */
-    public static final Color SUCCESS_LIGHT = new Color(220, 252, 231);
 
     /**
      * 错误 - Red-500
@@ -158,19 +135,9 @@ public final class ModernColors {
     public static final Color WARNING_DARKER = new Color(180, 83, 9);
 
     /**
-     * 警告浅色 - Amber-100
-     */
-    public static final Color WARNING_LIGHT = new Color(254, 243, 199);
-
-    /**
      * 信息 - Cyan-500
      */
     public static final Color INFO = new Color(6, 182, 212);
-
-    /**
-     * 信息浅色 - Cyan-100
-     */
-    public static final Color INFO_LIGHT = new Color(207, 250, 254);
 
     // ==================== 中性色系（用于 Close 等操作）====================
 
@@ -206,7 +173,7 @@ public final class ModernColors {
      */
     public static final Color GIT_PULL = new Color(168, 85, 247);  // Purple-500
 
-    // ==================== 中性色系 - 文字（主题适配）====================
+    // ==================== 文字颜色（主题适配）====================
 
     /**
      * 文字主色 - 根据主题自适应
@@ -245,74 +212,90 @@ public final class ModernColors {
     }
 
     /**
-     * 文字反色（用于深色背景）- 根据主题自适应
-     * 亮色主题：接近白色
-     * 暗色主题：接近白色（保持一致）
+     * 文字反色（用于深色背景）- 主题自适应
+     * 两种主题都返回浅色文字
      */
     public static Color getTextInverse() {
         return new Color(248, 250, 252);
     }
 
-    // ==================== 中性色系 - 背景 ====================
+    // ==================== 背景颜色（主题适配）====================
 
     /**
-     * 背景白色
+     * 获取主背景色 - 根据主题自适应
+     * 亮色主题：Slate-50 (248, 250, 252)
+     * 暗色主题：深灰色 (60, 63, 65) - 基于 IntelliJ IDEA Darcula，对应 @panelBg
      */
-    public static final Color BG_WHITE = new Color(255, 255, 255);
+    public static Color getBackgroundColor() {
+        return isDarkTheme() ? new Color(60, 63, 65) : new Color(248, 250, 252);
+    }
 
     /**
-     * 背景浅灰 - Slate-50
+     * 获取卡片/区域背景色 - 根据主题自适应
+     * 亮色主题：白色 (255, 255, 255)
+     * 暗色主题：稍浅的深灰色 (55, 57, 59)
      */
-    public static final Color BG_LIGHT = new Color(248, 250, 252);
+    public static Color getCardBackgroundColor() {
+        return isDarkTheme() ? new Color(55, 57, 59) : new Color(255, 255, 255);
+    }
 
     /**
-     * 背景中灰 - Slate-100
+     * 获取输入框背景色 - 根据主题自适应
+     * 亮色主题：白色 (255, 255, 255)
+     * 暗色主题：比卡片背景稍亮 (65, 68, 70)
      */
-    public static final Color BG_MEDIUM = new Color(241, 245, 249);
+    public static Color getInputBackgroundColor() {
+        return isDarkTheme() ? new Color(65, 68, 70) : new Color(255, 255, 255);
+    }
 
     /**
-     * 背景深灰 - Slate-200
+     * 获取悬停背景色 - 根据主题自适应
+     * 亮色主题：Slate-100 (241, 245, 249)
+     * 暗色主题：比背景稍亮 (70, 73, 75)
      */
-    public static final Color BG_DARK = new Color(226, 232, 240);
+    public static Color getHoverBackgroundColor() {
+        return isDarkTheme() ? new Color(70, 73, 75) : new Color(241, 245, 249);
+    }
 
-    // ==================== 边框色 ====================
-
-    /**
-     * 边框浅色 - Slate-200
-     */
-    public static final Color BORDER_LIGHT = new Color(226, 232, 240);
 
     /**
-     * 边框中色 - Slate-300
+     * 获取按钮按下状态背景 - 根据主题自适应
+     * 亮色主题：Slate-200 (226, 232, 240)
+     * 暗色主题：比背景更暗 (50, 52, 54)
      */
-    public static final Color BORDER_MEDIUM = new Color(203, 213, 225);
+    public static Color getButtonPressedColor() {
+        return isDarkTheme() ? new Color(50, 52, 54) : new Color(226, 232, 240);
+    }
+
+    // ==================== 边框颜色（主题适配）====================
+
+    /**
+     * 获取边框颜色（浅色）- 根据主题自适应
+     * 亮色主题：Slate-200 (226, 232, 240)
+     * 暗色主题：比背景稍亮 (75, 77, 80) - 对应 @borderColor
+     */
+    public static Color getBorderLightColor() {
+        return isDarkTheme() ? new Color(75, 77, 80) : new Color(226, 232, 240);
+    }
+
+    /**
+     * 获取边框颜色（中等）- 根据主题自适应
+     * 亮色主题：Slate-300 (203, 213, 225)
+     * 暗色主题：更明显的边框 (85, 87, 90)
+     */
+    public static Color getBorderMediumColor() {
+        return isDarkTheme() ? new Color(85, 87, 90) : new Color(203, 213, 225);
+    }
 
     /**
      * 获取分隔线/边框颜色 - 主题适配
      * 用于面板之间的分隔线、边框等
-     * 亮色主题：浅灰色（LIGHT_GRAY）
-     * 暗色主题：比背景亮的灰色，有明显区分度
+     * 亮色主题：浅灰色 (211, 211, 211)
+     * 暗色主题：比背景亮的灰色 (80, 83, 85)
      */
     public static Color getDividerBorderColor() {
-        if (isDarkTheme()) {
-            return new Color(80, 83, 85);
-        } else {
-            // 亮色主题：使用 LIGHT_GRAY
-            return Color.LIGHT_GRAY;
-        }
+        return isDarkTheme() ? new Color(80, 83, 85) : new Color(211, 211, 211);
     }
-
-    // ==================== 特殊效果色 ====================
-
-    /**
-     * 悬停背景
-     */
-    public static final Color HOVER_BG = new Color(241, 245, 249);
-
-    /**
-     * 选中背景
-     */
-    public static final Color SELECTED_BG = new Color(224, 231, 255);
 
     /**
      * 获取空单元格背景色 - 主题适配
@@ -320,270 +303,56 @@ public final class ModernColors {
      * 暗色主题：比有值单元格稍亮的颜色（便于区分空单元格）
      */
     public static Color getEmptyCellBackground() {
-        if (isDarkTheme()) {
-            return new Color(85, 87, 89);
-        } else {
-            // 亮色主题：保持白色
-            return Color.WHITE;
-        }
+        return isDarkTheme() ? new Color(85, 87, 89) : Color.WHITE;
     }
 
-    // ==================== 滚动条相关颜色 ====================
-    /**
-     * 滚动条滑块颜色
-     */
-    public static final Color SCROLLBAR_THUMB = new Color(220, 225, 230);
-
-    /**
-     * 滚动条滑块悬停颜色
-     */
-    public static final Color SCROLLBAR_THUMB_HOVER = new Color(200, 210, 220);
-
-    /**
-     * 滚动条轨道颜色
-     */
-    public static final Color SCROLLBAR_TRACK = new Color(245, 247, 250);
-
-
-    /**
-     * 验证错误图标色
-     */
-    public static final Color VALIDATION_ERROR_ICON = ERROR;
-
-    /**
-     * 未保存更改警告背景色
-     */
-    public static final Color SETTINGS_UNSAVED_WARNING_BG = new Color(255, 243, 205);
-
-    /**
-     * 未保存更改警告边框色
-     */
-    public static final Color SETTINGS_UNSAVED_WARNING_BORDER = new Color(255, 193, 7);
-
-    // ==================== 交互状态色 ====================
-
-    /**
-     * 已修改状态
-     */
-    public static final Color STATE_MODIFIED = new Color(255, 193, 7); // 黄色
-
-    /**
-     * 重置图标颜色
-     */
-    public static final Color ICON_RESET = new Color(156, 163, 175); // 灰色
-
-
-    // ==================== Console 控制台专用色（主题适配）====================
-
-    /**
-     * Console 背景色 - 根据主题自适应
-     */
-    public static Color getConsoleBackground() {
-        return isDarkTheme() ? new Color(30, 30, 35) : new Color(250, 251, 252);
-    }
-
-    /**
-     * Console 文本区域背景色 - 根据主题自适应
-     */
-    public static Color getConsoleTextAreaBg() {
-        return isDarkTheme() ? new Color(40, 40, 45) : new Color(255, 255, 255);
-    }
-
-    /**
-     * Console 普通文本颜色 - 根据主题自适应
-     */
-    public static Color getConsoleText() {
-        return isDarkTheme() ? new Color(220, 220, 220) : new Color(51, 65, 85);
-    }
-
-    /**
-     * Console INFO 级别颜色 - 根据主题自适应
-     */
-    public static Color getConsoleInfo() {
-        return isDarkTheme() ? new Color(96, 165, 250) : new Color(37, 99, 235);
-    }
-
-    /**
-     * Console DEBUG 级别颜色 - 根据主题自适应
-     */
-    public static Color getConsoleDebug() {
-        return isDarkTheme() ? new Color(74, 222, 128) : new Color(22, 163, 74);
-    }
-
-    /**
-     * Console WARN 级别颜色 - 根据主题自适应
-     */
-    public static Color getConsoleWarn() {
-        return isDarkTheme() ? new Color(251, 146, 60) : new Color(234, 88, 12);
-    }
-
-    /**
-     * Console ERROR 级别颜色 - 根据主题自适应
-     */
-    public static Color getConsoleError() {
-        return isDarkTheme() ? new Color(248, 113, 113) : new Color(220, 38, 38);
-    }
-
-    /**
-     * Console 时间戳颜色 - 根据主题自适应
-     */
-    public static Color getConsoleTimestamp() {
-        return isDarkTheme() ? new Color(148, 163, 184) : new Color(100, 116, 139);
-    }
-
-    /**
-     * Console 类名颜色 - 根据主题自适应
-     */
-    public static Color getConsoleClassName() {
-        return isDarkTheme() ? new Color(192, 132, 252) : new Color(147, 51, 234);
-    }
-
-    /**
-     * Console 方法名颜色 - 根据主题自适应
-     */
-    public static Color getConsoleMethodName() {
-        return isDarkTheme() ? new Color(56, 189, 248) : new Color(14, 165, 233);
-    }
-
-    /**
-     * Console 工具栏背景色 - 根据主题自适应
-     */
-    public static Color getConsoleToolbarBg() {
-        return isDarkTheme() ? new Color(35, 35, 40) : new Color(248, 250, 252);
-    }
-
-    /**
-     * Console 工具栏边框色 - 根据主题自适应
-     */
-    public static Color getConsoleToolbarBorder() {
-        return isDarkTheme() ? new Color(60, 60, 70) : new Color(226, 232, 240);
-    }
-
-    /**
-     * Console 按钮悬停背景色 - 根据主题自适应
-     */
-    public static Color getConsoleButtonHover() {
-        return isDarkTheme() ? new Color(50, 50, 60) : new Color(224, 242, 254);
-    }
-
-    /**
-     * Console 滚动条颜色 - 根据主题自适应
-     */
-    public static Color getConsoleScrollbar() {
-        return isDarkTheme() ? new Color(80, 80, 90) : new Color(203, 213, 225);
-    }
-
-    /**
-     * Console 滚动条悬停颜色 - 根据主题自适应
-     */
-    public static Color getConsoleScrollbarHover() {
-        return isDarkTheme() ? new Color(100, 100, 110) : new Color(148, 163, 184);
-    }
-
-    /**
-     * Console 选中文本背景色 - 根据主题自适应
-     */
-    public static Color getConsoleSelectionBg() {
-        return isDarkTheme() ? new Color(60, 90, 120) : new Color(191, 219, 254);
-    }
-
-    /**
-     * Console 当前行高亮色 - 根据主题自适应
-     */
-    public static Color getConsoleCurrentLine() {
-        return isDarkTheme() ? new Color(45, 45, 50) : new Color(248, 250, 252);
-    }
-
-    // ==================== UI 组件主题适配色（用于 Settings 等面板）====================
-
-    /**
-     * 获取主背景色 - 根据主题自适应
-     * 亮色主题：BG_LIGHT (248, 250, 252)
-     * 暗色主题：深灰色 (60, 63, 65) - 基于 IntelliJ IDEA Darcula
-     */
-    public static Color getBackgroundColor() {
-        return isDarkTheme() ? new Color(60, 63, 65) : BG_LIGHT;
-    }
-
-    /**
-     * 获取卡片/区域背景色 - 根据主题自适应
-     * 亮色主题：BG_WHITE (255, 255, 255)
-     * 暗色主题：稍浅的深灰色 (55, 57, 59)
-     */
-    public static Color getCardBackgroundColor() {
-        return isDarkTheme() ? new Color(55, 57, 59) : BG_WHITE;
-    }
-
-    /**
-     * 获取输入框背景色 - 根据主题自适应
-     * 亮色主题：BG_WHITE (255, 255, 255)
-     * 暗色主题：比卡片背景稍亮 (65, 68, 70)
-     */
-    public static Color getInputBackgroundColor() {
-        return isDarkTheme() ? new Color(65, 68, 70) : BG_WHITE;
-    }
-
-    /**
-     * 获取边框颜色（浅色）- 根据主题自适应
-     * 亮色主题：BORDER_LIGHT (226, 232, 240)
-     * 暗色主题：比背景稍亮 (75, 77, 80)
-     */
-    public static Color getBorderLightColor() {
-        return isDarkTheme() ? new Color(75, 77, 80) : BORDER_LIGHT;
-    }
-
-    /**
-     * 获取边框颜色（中等）- 根据主题自适应
-     * 亮色主题：BORDER_MEDIUM (203, 213, 225)
-     * 暗色主题：更明显的边框 (85, 87, 90)
-     */
-    public static Color getBorderMediumColor() {
-        return isDarkTheme() ? new Color(85, 87, 90) : BORDER_MEDIUM;
-    }
-
-    /**
-     * 获取悬停背景色 - 根据主题自适应
-     * 亮色主题：HOVER_BG (241, 245, 249)
-     * 暗色主题：比背景稍亮 (70, 73, 75)
-     */
-    public static Color getHoverBackgroundColor() {
-        return isDarkTheme() ? new Color(70, 73, 75) : HOVER_BG;
-    }
-
-    /**
-     * 获取按钮暗色背景（按下状态）- 根据主题自适应
-     * 亮色主题：BG_DARK (226, 232, 240)
-     * 暗色主题：比背景更暗 (50, 52, 54)
-     */
-    public static Color getButtonDarkColor() {
-        return isDarkTheme() ? new Color(50, 52, 54) : BG_DARK;
-    }
+    // ==================== 滚动条颜色（主题适配）====================
 
     /**
      * 获取滚动条轨道颜色 - 根据主题自适应
-     * 亮色主题：SCROLLBAR_TRACK (245, 247, 250)
+     * 亮色主题：Slate-50 (245, 247, 250)
      * 暗色主题：与主背景相同 (60, 63, 65)
      */
     public static Color getScrollbarTrackColor() {
-        return isDarkTheme() ? new Color(60, 63, 65) : SCROLLBAR_TRACK;
+        return isDarkTheme() ? new Color(60, 63, 65) : new Color(245, 247, 250);
     }
 
     /**
      * 获取滚动条滑块颜色 - 根据主题自适应
-     * 亮色主题：SCROLLBAR_THUMB (220, 225, 230)
+     * 亮色主题：浅灰 (220, 225, 230)
      * 暗色主题：比背景亮的灰色 (85, 87, 90)
      */
     public static Color getScrollbarThumbColor() {
-        return isDarkTheme() ? new Color(85, 87, 90) : SCROLLBAR_THUMB;
+        return isDarkTheme() ? new Color(85, 87, 90) : new Color(220, 225, 230);
     }
 
     /**
      * 获取滚动条滑块悬停颜色 - 根据主题自适应
-     * 亮色主题：SCROLLBAR_THUMB_HOVER (200, 210, 220)
+     * 亮色主题：中灰 (200, 210, 220)
      * 暗色主题：更亮的灰色 (100, 102, 105)
      */
     public static Color getScrollbarThumbHoverColor() {
-        return isDarkTheme() ? new Color(100, 102, 105) : SCROLLBAR_THUMB_HOVER;
+        return isDarkTheme() ? new Color(100, 102, 105) : new Color(200, 210, 220);
+    }
+
+    // ==================== 警告/提示颜色（主题适配）====================
+
+    /**
+     * 获取警告背景色 - 根据主题自适应
+     * 亮色主题：浅黄色 (255, 243, 205)
+     * 暗色主题：暗黄色调 (70, 65, 50)
+     */
+    public static Color getWarningBackgroundColor() {
+        return isDarkTheme() ? new Color(70, 65, 50) : new Color(255, 243, 205);
+    }
+
+    /**
+     * 获取警告边框颜色 - 根据主题自适应
+     * 亮色主题：黄色 (255, 193, 7)
+     * 暗色主题：较亮的黄色 (120, 100, 60)
+     */
+    public static Color getWarningBorderColor() {
+        return isDarkTheme() ? new Color(120, 100, 60) : new Color(255, 193, 7);
     }
 
     /**
@@ -600,25 +369,108 @@ public final class ModernColors {
         return new Color(15, 23, 42, alpha);
     }
 
+    // ==================== Console 控制台专用色（主题适配）====================
+
     /**
-     * 获取警告背景色 - 根据主题自适应
-     * 亮色主题：SETTINGS_UNSAVED_WARNING_BG (255, 243, 205)
-     * 暗色主题：暗黄色调 (70, 65, 50)
+     * Console 文本区域背景色 - 根据主题自适应
+     * 亮色主题：白色 (255, 255, 255)
+     * 暗色主题：深灰 (40, 40, 45)
      */
-    public static Color getWarningBackgroundColor() {
-        return isDarkTheme() ? new Color(70, 65, 50) : SETTINGS_UNSAVED_WARNING_BG;
+    public static Color getConsoleTextAreaBg() {
+        return isDarkTheme() ? new Color(40, 40, 45) : new Color(255, 255, 255);
     }
 
     /**
-     * 获取警告边框颜色 - 根据主题自适应
-     * 亮色主题：SETTINGS_UNSAVED_WARNING_BORDER (255, 193, 7)
-     * 暗色主题：较亮的黄色 (120, 100, 60)
+     * Console 普通文本颜色 - 根据主题自适应
+     * 亮色主题：Slate-700 (51, 65, 85)
+     * 暗色主题：浅灰 (220, 220, 220)
      */
-    public static Color getWarningBorderColor() {
-        return isDarkTheme() ? new Color(120, 100, 60) : SETTINGS_UNSAVED_WARNING_BORDER;
+    public static Color getConsoleText() {
+        return isDarkTheme() ? new Color(220, 220, 220) : new Color(51, 65, 85);
     }
 
-    // ==================== 透明度变体 ====================
+    /**
+     * Console INFO 级别颜色 - 根据主题自适应
+     * 亮色主题：Blue-700 (37, 99, 235)
+     * 暗色主题：Blue-400 (96, 165, 250)
+     */
+    public static Color getConsoleInfo() {
+        return isDarkTheme() ? new Color(96, 165, 250) : new Color(37, 99, 235);
+    }
+
+    /**
+     * Console DEBUG 级别颜色 - 根据主题自适应
+     * 亮色主题：Green-600 (22, 163, 74)
+     * 暗色主题：Green-400 (74, 222, 128)
+     */
+    public static Color getConsoleDebug() {
+        return isDarkTheme() ? new Color(74, 222, 128) : new Color(22, 163, 74);
+    }
+
+    /**
+     * Console WARN 级别颜色 - 根据主题自适应
+     * 亮色主题：Orange-600 (234, 88, 12)
+     * 暗色主题：Orange-400 (251, 146, 60)
+     */
+    public static Color getConsoleWarn() {
+        return isDarkTheme() ? new Color(251, 146, 60) : new Color(234, 88, 12);
+    }
+
+    /**
+     * Console ERROR 级别颜色 - 根据主题自适应
+     * 亮色主题：Red-600 (220, 38, 38)
+     * 暗色主题：Red-400 (248, 113, 113)
+     */
+    public static Color getConsoleError() {
+        return isDarkTheme() ? new Color(248, 113, 113) : new Color(220, 38, 38);
+    }
+
+    /**
+     * Console 类名颜色 - 根据主题自适应
+     * 亮色主题：Purple-700 (147, 51, 234)
+     * 暗色主题：Purple-400 (192, 132, 252)
+     */
+    public static Color getConsoleClassName() {
+        return isDarkTheme() ? new Color(192, 132, 252) : new Color(147, 51, 234);
+    }
+
+    /**
+     * Console 方法名颜色 - 根据主题自适应
+     * 亮色主题：Sky-600 (14, 165, 233)
+     * 暗色主题：Sky-400 (56, 189, 248)
+     */
+    public static Color getConsoleMethodName() {
+        return isDarkTheme() ? new Color(56, 189, 248) : new Color(14, 165, 233);
+    }
+
+    /**
+     * Console 工具栏背景色 - 根据主题自适应
+     * 亮色主题：Slate-50 (248, 250, 252)
+     * 暗色主题：深灰 (35, 35, 40)
+     */
+    public static Color getConsoleToolbarBg() {
+        return isDarkTheme() ? new Color(35, 35, 40) : new Color(248, 250, 252);
+    }
+
+    /**
+     * Console 工具栏边框色 - 根据主题自适应
+     * 亮色主题：Slate-200 (226, 232, 240)
+     * 暗色主题：深灰 (60, 60, 70)
+     */
+    public static Color getConsoleToolbarBorder() {
+        return isDarkTheme() ? new Color(60, 60, 70) : new Color(226, 232, 240);
+    }
+
+    /**
+     * Console 选中文本背景色 - 根据主题自适应
+     * 亮色主题：Blue-200 (191, 219, 254)
+     * 暗色主题：深蓝 (60, 90, 120)
+     */
+    public static Color getConsoleSelectionBg() {
+        return isDarkTheme() ? new Color(60, 90, 120) : new Color(191, 219, 254);
+    }
+
+    // ==================== 工具方法 ====================
 
     /**
      * 获取带透明度的主色
@@ -665,8 +517,6 @@ public final class ModernColors {
         return new Color(0, 0, 0, alpha);
     }
 
-    // ==================== 渐变帮助方法 ====================
-
     /**
      * 创建主色渐变
      */
@@ -688,12 +538,6 @@ public final class ModernColors {
         return new GradientPaint(0, 0, PRIMARY, width, height, SECONDARY);
     }
 
-    /**
-     * 创建深色背景渐变
-     */
-    public static GradientPaint createDarkBackgroundGradient(int width, int height) {
-        return new GradientPaint(0, 0, PRIMARY_DARKER, width, height, BLUE_DARK);
-    }
 
     /**
      * 混合两种颜色

@@ -1,6 +1,5 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -11,8 +10,10 @@ import java.awt.*;
 
 /**
  * 次要按钮 - 现代化设计
- * 白色背景（亮色主题）或深色背景（暗色主题），带边框，用于次要操作（如取消、保存等）
- * 支持亮色和暗色主题自适应
+ * 完全支持亮色和暗色主题自适应
+ * 用于次要操作（如取消、保存等）
+ *
+ * @author laker
  */
 public class SecondaryButton extends JButton {
     private static final int ICON_SIZE = 14;
@@ -52,80 +53,48 @@ public class SecondaryButton extends JButton {
     }
 
     /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
      * 获取按钮默认背景色 - 主题适配
+     * 使用 ModernColors 的卡片背景色
      */
     private Color getDefaultBackground() {
-        if (isDarkTheme()) {
-            // 暗色主题：使用稍亮的深色背景，与面板背景 #3c3f41 有明显区别
-            // 使用 #43464a (67, 70, 74) 提供足够的层次感
-            return new Color(67, 70, 74);
-        } else {
-            // 亮色主题：使用白色背景
-            return ModernColors.BG_WHITE;
-        }
+        return ModernColors.getCardBackgroundColor();
     }
 
     /**
      * 获取按钮悬停背景色 - 主题适配
+     * 使用 ModernColors 的悬停背景色
      */
     private Color getHoverBackground() {
-        if (isDarkTheme()) {
-            // 暗色主题：悬停时更亮，提供清晰的交互反馈
-            // 使用 #4e5157 (78, 81, 87)
-            return new Color(78, 81, 87);
-        } else {
-            // 亮色主题：使用 HOVER_BG
-            return ModernColors.HOVER_BG;
-        }
+        return ModernColors.getHoverBackgroundColor();
     }
 
     /**
      * 获取按钮按下背景色 - 主题适配
+     * 使用 ModernColors 的按钮按下颜色
      */
     private Color getPressedBackground() {
-        if (isDarkTheme()) {
-            // 暗色主题：按下时最亮，明确的按下反馈
-            // 使用 #595c63 (89, 92, 99)
-            return new Color(89, 92, 99);
-        } else {
-            // 亮色主题：使用 BG_DARK
-            return ModernColors.BG_DARK;
-        }
+        return ModernColors.getButtonPressedColor();
     }
 
     /**
      * 获取按钮禁用背景色 - 主题适配
+     * 使用 ModernColors 的主背景色（禁用时与背景接近）
      */
     private Color getDisabledBackground() {
-        if (isDarkTheme()) {
-            // 暗色主题：禁用时稍暗，但仍然可见
-            // 使用 #3a3d41 (58, 61, 65)，略高于面板背景
-            return new Color(58, 61, 65);
-        } else {
-            // 亮色主题：使用 BG_LIGHT
-            return ModernColors.BG_LIGHT;
-        }
+        return ModernColors.getBackgroundColor();
     }
 
     /**
      * 获取边框颜色 - 主题适配
+     * 使用 ModernColors 的边框颜色方法
      */
     private Color getBorderColor(boolean enabled) {
         if (!enabled) {
-            // 禁用状态：使用更暗淡的边框
-            return isDarkTheme() ? new Color(70, 73, 77) : ModernColors.BORDER_LIGHT;
+            // 禁用状态：使用浅边框
+            return ModernColors.getBorderLightColor();
         }
-        // 启用状态：使用清晰可见的边框
-        // 暗色主题使用 #6b7280 (107, 114, 128) - 与 EnvironmentListCellRenderer 一致
-        // 亮色主题使用 BORDER_MEDIUM
-        return isDarkTheme() ? new Color(107, 114, 128) : ModernColors.BORDER_MEDIUM;
+        // 启用状态：使用中等边框
+        return ModernColors.getBorderMediumColor();
     }
 
     @Override

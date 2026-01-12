@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
@@ -26,10 +27,11 @@ import java.util.function.Predicate;
  */
 public abstract class ModernSettingsPanel extends JPanel {
     protected JButton saveBtn;
+    @Getter
     protected JButton cancelBtn;
     protected JButton applyBtn;
     protected final Map<JTextField, Predicate<String>> validators = new HashMap<>();
-    protected final Map<JTextField, String> errorMessages = new HashMap<>();
+    private final Map<JTextField, String> errorMessages = new HashMap<>();
     protected final Map<JComponent, Object> originalValues = new HashMap<>();
 
     // 状态管理
@@ -37,7 +39,6 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel warningPanel;
     protected JLabel warningLabel;
 
-    private static final int FIELD_SPACING = 8;     // 字段间距
     private static final int BORDER_RADIUS = 8;     // 圆角半径
     private static final int LABEL_WIDTH = 220;     // 标签宽度
     private static final int FIELD_WIDTH = 300;     // 字段宽度
@@ -109,7 +110,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 获取主题适配的按钮背景色（暗色，pressed状态）
      */
     protected Color getButtonDarkColor() {
-        return ModernColors.getButtonDarkColor();
+        return ModernColors.getButtonPressedColor();
     }
 
     /**
@@ -154,7 +155,15 @@ public abstract class ModernSettingsPanel extends JPanel {
         return ModernColors.getWarningBorderColor();
     }
 
-    public ModernSettingsPanel() {
+    /**
+     * 获取状态修改图标颜色 - 主题适配
+     * 使用警告色表示有未保存的修改
+     */
+    protected Color getStateModifiedColor() {
+        return ModernColors.WARNING;
+    }
+
+    protected ModernSettingsPanel() {
         initUI();
         registerListeners();
     }
@@ -183,8 +192,8 @@ public abstract class ModernSettingsPanel extends JPanel {
         // 滚动面板
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         customizeScrollBar(scrollPane);
 
@@ -333,8 +342,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         component.setBackground(getInputBackgroundColor());
         component.setForeground(getTextPrimaryColor());
 
-        if (component instanceof JTextField) {
-            JTextField field = (JTextField) component;
+        if (component instanceof JTextField field) {
             field.setBorder(new CompoundBorder(
                     new RoundedLineBorder(getBorderMediumColor(), 1, 8),
                     new EmptyBorder(8, 14, 8, 14)
@@ -364,8 +372,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                     }
                 }
             });
-        } else if (component instanceof JComboBox) {
-            JComboBox<?> comboBox = (JComboBox<?>) component;
+        } else if (component instanceof JComboBox comboBox) {
             comboBox.setBackground(getInputBackgroundColor());
             comboBox.setForeground(getTextPrimaryColor());
             comboBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -728,7 +735,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         // 警告图标和文本
         JLabel iconLabel = new JLabel("⚠");
         iconLabel.setFont(new Font(iconLabel.getFont().getName(), Font.BOLD, 14));
-        iconLabel.setForeground(ModernColors.STATE_MODIFIED);
+        iconLabel.setForeground(getStateModifiedColor());
 
         warningLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UNSAVED_CHANGES_WARNING));
         warningLabel.setFont(new Font(warningLabel.getFont().getName(), Font.PLAIN, 11));
@@ -908,14 +915,6 @@ public abstract class ModernSettingsPanel extends JPanel {
     }
 
     /**
-     * 更新原始值（保存后调用）
-     */
-    protected void updateOriginalValues() {
-        originalValues.clear();
-        // 子类需要重新调用 trackComponentValue
-    }
-
-    /**
      * 确认放弃更改
      */
     protected boolean confirmDiscardChanges() {
@@ -932,122 +931,6 @@ public abstract class ModernSettingsPanel extends JPanel {
         );
 
         return result == JOptionPane.YES_OPTION;
-    }
-
-    // ==================== 增强的字段创建方法 ====================
-
-    /**
-     * 创建带重置按钮的字段行
-     */
-    protected JPanel createFieldRowWithReset(String labelText, String tooltip,
-                                             JTextField inputField, String defaultValue) {
-        JPanel row = new JPanel();
-        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(getCardBackgroundColor());
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-
-        // 标签
-        JLabel label = new JLabel(labelText);
-        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 11));
-        label.setForeground(getTextPrimaryColor());
-        label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
-        label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
-        label.setMaximumSize(new Dimension(LABEL_WIDTH, 32));
-
-        if (tooltip != null && !tooltip.isEmpty()) {
-            label.setToolTipText(tooltip);
-        }
-
-        // 输入组件样式化
-        styleInputComponent(inputField);
-        inputField.setPreferredSize(new Dimension(FIELD_WIDTH, 36));
-        inputField.setMaximumSize(new Dimension(FIELD_WIDTH, 36));
-
-        // 重置按钮
-        JButton resetBtn = createIconButton("🔄", I18nUtil.getMessage(MessageKeys.SETTINGS_RESET_TO_DEFAULT));
-        resetBtn.addActionListener(e -> {
-            inputField.setText(defaultValue);
-        });
-
-        row.add(label);
-        row.add(Box.createHorizontalStrut(12));
-        row.add(inputField);
-        row.add(Box.createHorizontalStrut(4));
-        row.add(resetBtn);
-        row.add(Box.createHorizontalGlue());
-
-        return row;
-    }
-
-    /**
-     * 创建图标按钮
-     */
-    protected JButton createIconButton(String icon, String tooltip) {
-        JButton button = new JButton(icon);
-        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 12));
-        button.setForeground(ModernColors.ICON_RESET);
-        button.setPreferredSize(new Dimension(28, 28));
-        button.setMinimumSize(new Dimension(28, 28));
-        button.setMaximumSize(new Dimension(28, 28));
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setToolTipText(tooltip);
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setForeground(ModernColors.PRIMARY);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setForeground(ModernColors.ICON_RESET);
-            }
-        });
-
-        return button;
-    }
-
-    /**
-     * 创建带验证反馈的字段行（增强版）
-     */
-    protected JPanel createValidatedFieldRow(String labelText, String tooltip,
-                                             JTextField inputField, JLabel validationLabel) {
-        JPanel container = new JPanel();
-        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setBackground(getCardBackgroundColor());
-        container.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // 字段行
-        JPanel row = createFieldRow(labelText, tooltip, inputField);
-
-        // 验证反馈标签
-        validationLabel.setFont(new Font(validationLabel.getFont().getName(), Font.PLAIN, 10));
-        validationLabel.setForeground(ModernColors.VALIDATION_ERROR_ICON);
-        validationLabel.setBorder(new EmptyBorder(2, LABEL_WIDTH + 12, 0, 0));
-        validationLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        validationLabel.setVisible(false);
-
-        container.add(row);
-        container.add(validationLabel);
-        container.add(Box.createVerticalStrut(FIELD_SPACING));
-
-        return container;
-    }
-
-    public JButton getSaveBtn() {
-        return saveBtn;
-    }
-
-    public JButton getCancelBtn() {
-        return cancelBtn;
-    }
-
-    public JButton getApplyBtn() {
-        return applyBtn;
     }
 
     public boolean hasUnsavedChanges() {

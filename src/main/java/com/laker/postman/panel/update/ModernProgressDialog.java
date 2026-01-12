@@ -1,9 +1,9 @@
 package com.laker.postman.panel.update;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Setter;
 
@@ -50,7 +50,7 @@ public class ModernProgressDialog {
 
     private JPanel createContentPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(ModernColors.BG_WHITE);
+        mainPanel.setBackground(ModernColors.getCardBackgroundColor());  // 使用卡片背景色，主题适配
         mainPanel.setBorder(new EmptyBorder(32, 40, 28, 40));
 
         JPanel contentPanel = new JPanel();
@@ -58,20 +58,21 @@ public class ModernProgressDialog {
         contentPanel.setOpaque(false);
 
         // 图标
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/download.svg", 48, 48));
+        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/download.svg", 48, 48));
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(iconLabel);
         contentPanel.add(Box.createVerticalStrut(16));
 
         // 状态文本
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        statusLabel.setForeground(ModernColors.getTextPrimary());  // 主题适配的主文本色
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(statusLabel);
         contentPanel.add(Box.createVerticalStrut(20));
 
         // 百分比
         percentLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +20));
-        percentLabel.setForeground(ModernColors.PRIMARY);
+        percentLabel.setForeground(ModernColors.PRIMARY);  // 品牌色，强调进度
         percentLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(percentLabel);
         contentPanel.add(Box.createVerticalStrut(12));
@@ -80,8 +81,6 @@ public class ModernProgressDialog {
         progressBar.setPreferredSize(new Dimension(400, 8));
         progressBar.setMaximumSize(new Dimension(400, 8));
         progressBar.setStringPainted(false);
-        progressBar.setBackground(ModernColors.BG_MEDIUM);
-        progressBar.setForeground(ModernColors.PRIMARY);
         progressBar.setBorderPainted(false);
         progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(progressBar);
@@ -114,6 +113,7 @@ public class ModernProgressDialog {
         panel.add(sizeTitle);
 
         sizeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+        sizeLabel.setForeground(ModernColors.getTextPrimary());  // 主题适配的主文本色
         sizeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(sizeLabel);
 
@@ -124,6 +124,7 @@ public class ModernProgressDialog {
         panel.add(speedTitle);
 
         speedLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+        speedLabel.setForeground(ModernColors.getTextPrimary());  // 主题适配的主文本色
         speedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(speedLabel);
 
@@ -134,6 +135,7 @@ public class ModernProgressDialog {
         JButton button = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         button.setForeground(ModernColors.getTextSecondary());
+        button.setBackground(ModernColors.getCardBackgroundColor());  // 主题适配的卡片背景色
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -142,12 +144,12 @@ public class ModernProgressDialog {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setBackground(ModernColors.HOVER_BG);
+                button.setBackground(ModernColors.getHoverBackgroundColor());  // 主题适配的悬停背景色
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setBackground(ModernColors.BG_LIGHT);
+                button.setBackground(ModernColors.getCardBackgroundColor());  // 主题适配的卡片背景色
             }
         });
 

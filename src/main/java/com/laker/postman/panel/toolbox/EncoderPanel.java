@@ -72,7 +72,6 @@ public class EncoderPanel extends JPanel {
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
         outputArea.setEditable(false);
-        outputArea.setBackground(ModernColors.getBackgroundColor());
         outputArea.setForeground(ModernColors.getTextPrimary());
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 

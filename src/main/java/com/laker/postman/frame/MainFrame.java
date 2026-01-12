@@ -3,6 +3,7 @@ package com.laker.postman.frame;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
+import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
@@ -70,8 +71,20 @@ public class MainFrame extends JFrame {
 
         // 在 macOS 上启用 Full Window Content
         if (SystemInfo.isMacFullWindowContentSupported) {
+            // 启用全窗口内容模式，允许内容延伸到标题栏区域
             getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
+            // 启用透明标题栏，使标题栏背景透明并融入窗口内容
             getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+
+            // 根据当前主题设置窗口外观模式，确保标题栏文字颜色与主题匹配
+            // 这样可以避免在暗色主题下文字看不清的问题
+            if (SimpleThemeManager.isDarkTheme()) {
+                // 暗色主题：使用 VibrantDark 外观，标题栏文字显示为白色
+                getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
+            } else {
+                // 亮色主题：使用 VibrantLight 外观，标题栏文字显示为黑色
+                getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
+            }
         }
     }
 

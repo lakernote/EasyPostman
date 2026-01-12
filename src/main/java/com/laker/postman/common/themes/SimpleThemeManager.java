@@ -1,5 +1,6 @@
 package com.laker.postman.common.themes;
 
+import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -112,6 +113,22 @@ public class SimpleThemeManager {
      */
     private static void updateAllWindows() {
         for (Window window : Window.getWindows()) {
+            // 在 macOS 上更新窗口外观模式以匹配主题
+            // 这对于透明标题栏的窗口特别重要，可以确保标题栏文字颜色正确显示
+            if (SystemInfo.isMacOS && window instanceof JFrame frame) {
+                JRootPane rootPane = frame.getRootPane();
+
+                // 设置 macOS 窗口外观模式：dark 或 light
+                // NSAppearanceNameVibrantDark: 暗色外观，标题栏文字为白色
+                // NSAppearanceNameVibrantLight: 亮色外观，标题栏文字为黑色
+                if (THEME_DARK.equals(currentTheme)) {
+                    rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
+                } else {
+                    rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
+                }
+            }
+
+            // 更新窗口组件树的 UI，应用新主题样式
             SwingUtilities.updateComponentTreeUI(window);
         }
     }

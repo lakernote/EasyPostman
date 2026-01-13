@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
@@ -23,7 +24,7 @@ public class ScriptPanel extends JPanel {
     private final RSyntaxTextArea prescriptArea;
     private final RSyntaxTextArea postscriptArea;
     private final JTabbedPane tabbedPane;
-    private final JButton snippetBtn;
+    private final SnippetButton snippetBtn;
 
     public ScriptPanel() {
         setLayout(new BorderLayout());
@@ -61,8 +62,7 @@ public class ScriptPanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
 
         // 右下角添加 Snippets 按钮
-        snippetBtn = new JButton(I18nUtil.getMessage(MessageKeys.SCRIPT_BUTTON_SNIPPETS));
-        snippetBtn.setIcon(IconUtil.createThemed("icons/code.svg", 14, 14));
+        snippetBtn = new SnippetButton();
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         btnPanel.add(snippetBtn);

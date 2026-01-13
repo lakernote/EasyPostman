@@ -2,6 +2,8 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.FormatButton;
+import com.laker.postman.common.component.button.NavigationButton;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -62,7 +64,7 @@ public class RequestBodyPanel extends JPanel {
     private String currentBodyType = BODY_TYPE_NONE;
     @Getter
     private JButton wsSendButton;
-    private JButton formatButton;
+    private FormatButton formatButton;
     private final boolean isWebSocketMode;
 
     private Timer wsTimer; // 定时发送用
@@ -76,7 +78,6 @@ public class RequestBodyPanel extends JPanel {
     private JList<String> autocompleteList;
     private DefaultListModel<String> autocompleteModel;
     private Map<String, String> currentVariables;
-    private int autocompleteStartPos = -1;
 
     @Setter
     private transient ActionListener wsSendActionListener; // 外部注入的发送回调
@@ -115,14 +116,12 @@ public class RequestBodyPanel extends JPanel {
 
         // 搜索区控件
         searchField = new SearchTextField();
-        JButton prevButton = new JButton(IconUtil.createThemed("icons/arrow-up.svg", 18, 18));
-        prevButton.setToolTipText("Previous");
-        JButton nextButton = new JButton(IconUtil.createThemed("icons/arrow-down.svg", 18, 18));
-        nextButton.setToolTipText("Next");
+        NavigationButton prevButton = new NavigationButton(NavigationButton.Direction.PREVIOUS);
+        NavigationButton nextButton = new NavigationButton(NavigationButton.Direction.NEXT);
         topPanel.add(searchField);
         topPanel.add(prevButton);
         topPanel.add(nextButton);
-        formatButton = new JButton(IconUtil.createThemed("icons/format.svg", 18, 18));
+        formatButton = new FormatButton();
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
         topPanel.add(formatButton);
@@ -832,7 +831,7 @@ public class RequestBodyPanel extends JPanel {
                         // 为值添加工具提示（显示完整内容）
                         if (!displayValue.equals(fullValue) || fullValue.length() > 20) {
                             // 格式化工具提示，支持换行
-                            String tooltipText = formatTooltipText(fullValue, 60);
+                            String tooltipText = formatTooltipText(fullValue);
                             valueLabel.setToolTipText("<html>" + tooltipText + "</html>");
                         }
 
@@ -916,8 +915,6 @@ public class RequestBodyPanel extends JPanel {
             return;
         }
 
-        // 更新列表
-        autocompleteStartPos = openBracePos + 2;
         autocompleteModel.clear();
         for (String varName : currentVariables.keySet()) {
             autocompleteModel.addElement(varName);
@@ -973,21 +970,20 @@ public class RequestBodyPanel extends JPanel {
         if (autocompleteWindow != null) {
             autocompleteWindow.setVisible(false);
         }
-        autocompleteStartPos = -1;
     }
 
     /**
      * 格式化工具提示文本，支持换行 - 与 EasyPostmanTextField 保持一致
      */
-    private String formatTooltipText(String text, int maxLineLength) {
-        if (text == null || text.length() <= maxLineLength) {
+    private String formatTooltipText(String text) {
+        if (text == null || text.length() <= 60) {
             return text;
         }
 
         StringBuilder formatted = new StringBuilder();
         int start = 0;
         while (start < text.length()) {
-            int end = Math.min(start + maxLineLength, text.length());
+            int end = Math.min(start + 60, text.length());
             formatted.append(text, start, end);
             if (end < text.length()) {
                 formatted.append("<br/>");

@@ -6,11 +6,11 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.right.request.sub.NetworkLogStage;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -120,7 +120,7 @@ public class RedirectHandler {
      */
     private static void logRedirect(String requestId, RedirectInfo info) {
         try {
-            String logMessage = String.format("[Redirect] Status: %d, URL: %s, Location: %s",
+            String logMessage = String.format("Status: %d, URL: %s, Location: %s",
                     info.statusCode, info.url, info.location);
 
             var editSubPanel = SingletonFactory.getInstance(RequestEditPanel.class)
@@ -129,7 +129,7 @@ public class RedirectHandler {
             if (editSubPanel != null) {
                 editSubPanel.getResponsePanel()
                         .getNetworkLogPanel()
-                        .appendLog(logMessage, Color.ORANGE, true);
+                        .appendLog(NetworkLogStage.REDIRECT, logMessage);
             }
         } catch (Exception e) {
             // Prevent logging errors from affecting the main redirect flow

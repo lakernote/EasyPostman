@@ -7,7 +7,6 @@ import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -92,7 +91,24 @@ public class NetworkLogPanel extends JPanel {
         return pane;
     }
 
-    public void appendLog(String msg, Color color, boolean bold) {
+    /**
+     * 添加日志（新版API - 推荐使用）
+     *
+     * @param stage 日志阶段枚举
+     * @param msg   消息内容
+     */
+    public void appendLog(NetworkLogStage stage, String msg) {
+        appendLog(stage, msg, null);
+    }
+
+    /**
+     * 添加日志（支持时间偏移）
+     *
+     * @param stage     日志阶段枚举
+     * @param msg       消息内容
+     * @param elapsedMs 已用时间（毫秒），可为 null
+     */
+    public void appendLog(NetworkLogStage stage, String msg, Long elapsedMs) {
         SwingUtilities.invokeLater(() -> {
             try {
                 // 检查并限制总日志长度，防止内存溢出
@@ -102,46 +118,40 @@ public class NetworkLogPanel extends JPanel {
                     doc.remove(0, removeLength);
                 }
 
-                // 美化日志输出
-                // 1. 解析阶段名和正文
-                int stageEnd = msg.indexOf("]");
-                String stage = null;
+                // 内容截断优化：如果内容过长，进行截断
                 String content = msg;
-                if (msg.startsWith("[") && stageEnd > 0) {
-                    stage = msg.substring(0, stageEnd + 1);
-                    content = msg.substring(stageEnd + 1).trim();
-                }
-
-                // 2. 内容截断优化：如果内容过长，进行截断
                 if (content.length() > MAX_LINE_LENGTH * MAX_LINES_PER_MESSAGE) {
                     content = content.substring(0, MAX_LINE_LENGTH * MAX_LINES_PER_MESSAGE)
                             + "\n... [Content truncated, total " + content.length() + " characters]";
                 }
 
-                // 3. 选择 emoji 和优化颜色
-                String emoji = getEmoji(stage);
-                Color optimizedColor = optimizeColor(color, stage);
+                // 从枚举获取配置
+                String emoji = stage.getEmoji();
+                Color stageColor = stage.getColor();
+                boolean bold = stage.isBold();
 
-                // 4. 阶段名样式
+                // 阶段名样式（使用枚举名称作为标签）
                 Style stageStyle = logArea.addStyle("stageStyle_" + System.nanoTime(), null);
-                StyleConstants.setForeground(stageStyle, optimizedColor);
+                StyleConstants.setForeground(stageStyle, stageColor);
                 StyleConstants.setBold(stageStyle, true);
                 StyleConstants.setFontSize(stageStyle, 13);
 
-                // 5. 正文样式
+                // 正文样式
                 Style contentStyle = logArea.addStyle("contentStyle_" + System.nanoTime(), null);
-                StyleConstants.setForeground(contentStyle, color);
+                StyleConstants.setForeground(contentStyle, getDefaultTextColor());
                 StyleConstants.setBold(contentStyle, bold);
                 StyleConstants.setFontSize(contentStyle, 13);
 
-                // 6. 插入 emoji+阶段名
-                if (stage != null) {
-                    doc.insertString(doc.getLength(), emoji + " " + stage + " ", stageStyle);
-                } else {
-                    doc.insertString(doc.getLength(), emoji + " ", stageStyle);
+                // 插入 emoji + 阶段名 + 时间（如果有）
+                StringBuilder stageText = new StringBuilder();
+                stageText.append(emoji).append(" [").append(stage.getStageName()).append("]");
+                if (elapsedMs != null) {
+                    stageText.append(" +").append(elapsedMs).append("ms");
                 }
+                stageText.append(" ");
+                doc.insertString(doc.getLength(), stageText.toString(), stageStyle);
 
-                // 7. 多行内容缩进美化，限制行数和每行长度
+                // 多行内容缩进美化，限制行数和每行长度
                 String[] lines = content.split("\\n");
                 int lineCount = Math.min(lines.length, MAX_LINES_PER_MESSAGE);
                 for (int i = 0; i < lineCount; i++) {
@@ -171,140 +181,12 @@ public class NetworkLogPanel extends JPanel {
     }
 
     /**
-     * 优化日志颜色，使用柔和的颜色方案
+     * 获取主题适配的默认文本颜色
      */
-    private Color optimizeColor(Color original, String stage) {
-        if (stage == null) return original;
-
-        // 使用柔和的颜色方案，避免颜色过重
-        if (stage.contains("Failed") || stage.contains("failed") || stage.contains("canceled")) {
-            return new Color(220, 100, 100); // 柔和的红色 - 错误
-        } else if (stage.contains("callEnd") || stage.contains("cacheHit")) {
-            return new Color(100, 180, 100); // 柔和的绿色 - 成功
-        } else if (stage.contains("secureConnect")) {
-            return new Color(180, 120, 200); // 柔和的紫色 - SSL/TLS
-        } else if (stage.contains("connect")) {
-            return new Color(100, 150, 220); // 柔和的蓝色 - 连接
-        } else if (stage.contains("request")) {
-            return new Color(220, 160, 100); // 柔和的橙色 - 请求
-        } else if (stage.contains("response")) {
-            return new Color(100, 180, 200); // 柔和的青色 - 响应
-        }
-
-        return original;
+    private Color getDefaultTextColor() {
+        return NetworkLogStage.DEFAULT.getColor();
     }
 
-    @NotNull
-    private static String getEmoji(String stage) {
-        if (stage == null) return "📋";
-
-        // 错误和失败
-        if (stage.contains("Failed") || stage.contains("failed")) {
-            return "❌";
-        }
-        if (stage.contains("canceled")) {
-            return "🚫";
-        }
-
-        // 成功和完成
-        if (stage.contains("callEnd")) {
-            return "✅";
-        }
-        if (stage.contains("cacheHit")) {
-            return "💾";
-        }
-
-        // 安全连接
-        if (stage.contains("secureConnectStart")) {
-            return "🔐";
-        }
-        if (stage.contains("secureConnectEnd")) {
-            return "🔒";
-        }
-
-        // 连接相关
-        if (stage.contains("connectStart")) {
-            return "🔌";
-        }
-        if (stage.contains("connectEnd")) {
-            return "✔️";
-        }
-        if (stage.contains("connectFailed")) {
-            return "⚠️";
-        }
-        if (stage.contains("connectionAcquired")) {
-            return "🔗";
-        }
-        if (stage.contains("connectionReleased")) {
-            return "🔓";
-        }
-
-        // DNS
-        if (stage.contains("dnsStart")) {
-            return "🔍";
-        }
-        if (stage.contains("dnsEnd")) {
-            return "📍";
-        }
-
-        // 请求
-        if (stage.contains("requestHeadersStart")) {
-            return "📤";
-        }
-        if (stage.contains("requestHeadersEnd")) {
-            return "📨";
-        }
-        if (stage.contains("requestBodyStart")) {
-            return "📦";
-        }
-        if (stage.contains("requestBodyEnd")) {
-            return "✔️";
-        }
-        if (stage.contains("requestFailed")) {
-            return "❌";
-        }
-
-        // 响应
-        if (stage.contains("responseHeadersStart")) {
-            return "📥";
-        }
-        if (stage.contains("responseHeadersEnd:redirect")) {
-            return "🔀";
-        }
-        if (stage.contains("responseHeadersEnd")) {
-            return "📬";
-        }
-        if (stage.contains("responseBodyStart")) {
-            return "📄";
-        }
-        if (stage.contains("responseBodyEnd")) {
-            return "✔️";
-        }
-        if (stage.contains("responseFailed")) {
-            return "❌";
-        }
-
-        // 代理
-        if (stage.contains("proxySelect")) {
-            return "🌐";
-        }
-
-        // 重定向
-        if (stage.contains("Redirect")) {
-            return "↪️";
-        }
-
-        // 调用
-        if (stage.contains("callStart")) {
-            return "🚀";
-        }
-        if (stage.contains("callFailed")) {
-            return "💥";
-        }
-
-        // 默认
-        return "📋";
-    }
 
     public void clearLog() {
         SwingUtilities.invokeLater(() -> {

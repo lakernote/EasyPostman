@@ -6,6 +6,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.right.request.sub.NetworkLogPanel;
+import com.laker.postman.panel.collections.right.request.sub.NetworkLogStage;
 import com.laker.postman.service.http.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.service.http.ssl.SSLCertificateValidator;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
@@ -13,7 +14,6 @@ import com.laker.postman.service.http.ssl.SSLValidationResult;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
-import java.awt.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -46,54 +46,19 @@ public class EasyConsoleEventListener extends EventListener {
         this.reqItemId = preparedRequest.id;
     }
 
-    private void log(String stage, String msg) {
+    private void log(NetworkLogStage stage, String msg) {
         long now = System.nanoTime();
         long elapsedMs = (now - callStartNanos) / 1_000_000;
         try {
-            Color logColor;
-            boolean bold;
-            switch (stage) {
-                case "callFailed":
-                case "requestFailed":
-                case "responseFailed":
-                case "connectFailed":
-                    logColor = new Color(220, 53, 69);
-                    bold = true;
-                    break;
-                case "connectStart":
-                case "connectEnd":
-                case "connectionAcquired":
-                case "connectionReleased":
-                    logColor = new Color(0, 123, 255);
-                    bold = false;
-                    break;
-                case "secureConnectStart":
-                case "secureConnectEnd":
-                    logColor = new Color(111, 66, 193);
-                    bold = false;
-                    break;
-                case "callStart":
-                case "callEnd":
-                    logColor = new Color(40, 167, 69);
-                    bold = true;
-                    break;
-                case "responseHeadersEnd:redirect":
-                    logColor = new Color(255, 165, 0); // 橙色
-                    bold = true;
-                    break;
-                default:
-                    logColor = new Color(33, 37, 41);
-                    bold = false;
-            }
-            String logMsg = "[" + stage + "] +" + elapsedMs + "ms: " + msg;
             // 输出到 NetworkLogPanel
             try {
                 if (editSubPanel == null) {
                     editSubPanel = SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(reqItemId);
                 }
                 NetworkLogPanel netPanel = editSubPanel.getResponsePanel().getNetworkLogPanel();
-                netPanel.appendLog(logMsg, logColor, bold);
+                netPanel.appendLog(stage, msg, elapsedMs);
             } catch (Exception ignore) {
+                // ignore
             }
         } catch (Exception e) {
             // 防止日志异常影响主流程
@@ -104,13 +69,13 @@ public class EasyConsoleEventListener extends EventListener {
     public void callStart(Call call) {
         info.setCallStart(System.currentTimeMillis());
         Request request = call.request();
-        log("callStart", request.method() + " " + request.url());
+        log(NetworkLogStage.CALL_START, request.method() + " " + request.url());
     }
 
     @Override
     public void proxySelectStart(Call call, HttpUrl url) {
         info.setProxySelectStart(System.currentTimeMillis());
-        log("proxySelectStart", "Selecting proxy for " + url);
+        log(NetworkLogStage.PROXY_SELECT_START, "Selecting proxy for " + url);
     }
 
     @Override
@@ -124,32 +89,32 @@ public class EasyConsoleEventListener extends EventListener {
                 sb.append(address.getHostName()).append(":").append(address.getPort()).append(" ");
             }
         }
-        log("proxySelectEnd", sb.toString());
+        log(NetworkLogStage.PROXY_SELECT_END, sb.toString());
     }
 
     @Override
     public void dnsStart(Call call, String domainName) {
         info.setDnsStart(System.currentTimeMillis());
-        log("dnsStart", domainName);
+        log(NetworkLogStage.DNS_START, domainName);
     }
 
     @Override
     public void dnsEnd(Call call, String domainName, List<InetAddress> inetAddressList) {
         info.setDnsEnd(System.currentTimeMillis());
-        log("dnsEnd", domainName + " -> " + inetAddressList);
+        log(NetworkLogStage.DNS_END, domainName + " -> " + inetAddressList);
     }
 
     @Override
     public void connectStart(Call call, InetSocketAddress inetSocketAddress, Proxy proxy) {
         info.setConnectStart(System.currentTimeMillis());
         info.setRemoteAddress(inetSocketAddress.toString());
-        log("connectStart", inetSocketAddress + " via " + proxy.type());
+        log(NetworkLogStage.CONNECT_START, inetSocketAddress + " via " + proxy.type());
     }
 
     @Override
     public void secureConnectStart(Call call) {
         info.setSecureConnectStart(System.currentTimeMillis());
-        log("secureConnectStart", "TLS handshake start");
+        log(NetworkLogStage.SECURE_CONNECT_START, "TLS handshake start");
     }
 
     @Override
@@ -280,9 +245,9 @@ public class EasyConsoleEventListener extends EventListener {
                 handshakeInfo.append("SSL certificate verify ok.\n");
             }
 
-            log("secureConnectEnd", handshakeInfo.toString());
+            log(NetworkLogStage.SECURE_CONNECT_END, handshakeInfo.toString());
         } else {
-            log("secureConnectEnd", "no handshake");
+            log(NetworkLogStage.SECURE_CONNECT_END, "no handshake");
         }
     }
 
@@ -290,14 +255,14 @@ public class EasyConsoleEventListener extends EventListener {
     public void connectEnd(Call call, InetSocketAddress inetSocketAddress, Proxy proxy, Protocol protocol) {
         info.setConnectEnd(System.currentTimeMillis());
         info.setProtocol(protocol);
-        log("connectEnd", inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol);
+        log(NetworkLogStage.CONNECT_END, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol);
     }
 
     @Override
     public void connectFailed(Call call, InetSocketAddress inetSocketAddress, Proxy proxy, Protocol protocol, IOException ioe) {
-        info.setErrorMessage(ioe.getMessage());
+        info.setConnectEnd(System.currentTimeMillis());
         info.setError(ioe);
-        log("connectFailed", inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol + ", error: " + ioe.getMessage());
+        log(NetworkLogStage.CONNECT_FAILED, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol + ", error: " + ioe.getMessage());
     }
 
     @Override
@@ -313,19 +278,19 @@ public class EasyConsoleEventListener extends EventListener {
             info.setLocalAddress("无法获取");
             info.setRemoteAddress("无法获取");
         }
-        log("connectionAcquired", "Connection acquired: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
+        log(NetworkLogStage.CONNECTION_ACQUIRED, "Connection acquired: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
     public void connectionReleased(Call call, Connection connection) {
         info.setConnectionReleased(System.currentTimeMillis());
-        log("connectionReleased", "Connection released: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
+        log(NetworkLogStage.CONNECTION_RELEASED, "Connection released: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
     public void requestHeadersStart(Call call) {
         info.setRequestHeadersStart(System.currentTimeMillis());
-        log("requestHeadersStart", "");
+        log(NetworkLogStage.REQUEST_HEADERS_START, "");
     }
 
     @Override
@@ -345,7 +310,7 @@ public class EasyConsoleEventListener extends EventListener {
             }
             sb.append(name).append(": ").append(value).append("\n");
         }
-        log("requestHeadersEnd", sb.toString());
+        log(NetworkLogStage.REQUEST_HEADERS_END, sb.toString());
     }
 
     @Override
@@ -380,7 +345,7 @@ public class EasyConsoleEventListener extends EventListener {
                     }
                 }
                 preparedRequest.okHttpRequestBody = desc;
-                log("requestBodyStart", desc);
+                log(NetworkLogStage.REQUEST_BODY_START, desc);
             } else {
                 try {
                     okio.Buffer buffer = new okio.Buffer();
@@ -388,18 +353,18 @@ public class EasyConsoleEventListener extends EventListener {
                     String bodyString = buffer.readUtf8();
                     preparedRequest.okHttpRequestBody = bodyString;
                     if (!bodyString.isEmpty()) {
-                        log("requestBodyStart", "\n" + bodyString);
+                        log(NetworkLogStage.REQUEST_BODY_START, "\n" + bodyString);
                     } else {
-                        log("requestBodyStart", "Request body is empty");
+                        log(NetworkLogStage.REQUEST_BODY_START, "Request body is empty");
                     }
                 } catch (Exception e) {
                     preparedRequest.okHttpRequestBody = "[读取请求体失败: " + e.getMessage() + "]";
-                    log("requestBodyStart", "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
+                    log(NetworkLogStage.REQUEST_BODY_START, "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
                 }
             }
         } else {
             preparedRequest.okHttpRequestBody = null;
-            log("requestBodyStart", "No request body");
+            log(NetworkLogStage.REQUEST_BODY_START, "No request body");
         }
 
     }
@@ -408,7 +373,7 @@ public class EasyConsoleEventListener extends EventListener {
     public void requestBodyEnd(Call call, long byteCount) {
         info.setBodyBytesSent(byteCount);
         info.setRequestBodyEnd(System.currentTimeMillis());
-        log("requestBodyEnd", "bytes=" + byteCount);
+        log(NetworkLogStage.REQUEST_BODY_END, "bytes=" + byteCount);
     }
 
 
@@ -416,13 +381,13 @@ public class EasyConsoleEventListener extends EventListener {
     public void requestFailed(Call call, IOException ioe) {
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
-        log("requestFailed", ioe.getMessage() + "\n" + getStackTrace(ioe));
+        log(NetworkLogStage.REQUEST_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
     }
 
     @Override
     public void responseHeadersStart(Call call) {
         info.setResponseHeadersStart(System.currentTimeMillis());
-        log("responseHeadersStart", "");
+        log(NetworkLogStage.RESPONSE_HEADERS_START, "");
     }
 
     @Override
@@ -467,23 +432,23 @@ public class EasyConsoleEventListener extends EventListener {
         }
         // 如果是重定向，使用橙色高亮
         if (isRedirect) {
-            log("responseHeadersEnd:redirect", sb.toString());
+            log(NetworkLogStage.RESPONSE_HEADERS_END_REDIRECT, sb.toString());
         } else {
-            log("responseHeadersEnd", sb.toString());
+            log(NetworkLogStage.RESPONSE_HEADERS_END, sb.toString());
         }
     }
 
     @Override
     public void responseBodyStart(Call call) {
         info.setResponseBodyStart(System.currentTimeMillis());
-        log("responseBodyStart", "");
+        log(NetworkLogStage.RESPONSE_BODY_START, "");
     }
 
     @Override
     public void responseBodyEnd(Call call, long byteCount) {
         info.setBodyBytesReceived(byteCount);
         info.setResponseBodyEnd(System.currentTimeMillis());
-        log("responseBodyEnd", "bytes=" + byteCount);
+        log(NetworkLogStage.RESPONSE_BODY_END, "bytes=" + byteCount);
 
     }
 
@@ -491,13 +456,13 @@ public class EasyConsoleEventListener extends EventListener {
     public void responseFailed(Call call, IOException ioe) {
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
-        log("responseFailed", ioe.getMessage() + "\n" + getStackTrace(ioe));
+        log(NetworkLogStage.RESPONSE_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
     }
 
     @Override
     public void callEnd(Call call) {
         info.setCallEnd(System.currentTimeMillis());
-        log("callEnd", "done");
+        log(NetworkLogStage.CALL_END, "done");
     }
 
     @Override
@@ -505,36 +470,36 @@ public class EasyConsoleEventListener extends EventListener {
         info.setCallFailed(System.currentTimeMillis());
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
-        log("callFailed", ioe.getMessage());
+        log(NetworkLogStage.CALL_FAILED, ioe.getMessage());
     }
 
     @Override
     public void canceled(Call call) {
         info.setCanceled(System.currentTimeMillis());
-        log("canceled", "Call was canceled");
+        log(NetworkLogStage.CANCELED, "Call was canceled");
     }
 
 
     @Override
     public void satisfactionFailure(Call call, Response response) {
         info.setErrorMessage("Response does not satisfy request: " + response.code() + " " + response.message());
-        log("satisfactionFailure", "Response does not satisfy request: " + response.code() + " " + response.message());
+        log(NetworkLogStage.SATISFACTION_FAILURE, "Response does not satisfy request: " + response.code() + " " + response.message());
     }
 
 
     @Override
     public void cacheHit(Call call, Response response) {
-        log("cacheHit", "Response served from cache: " + response.code() + " " + response.message());
+        log(NetworkLogStage.CACHE_HIT, "Response served from cache: " + response.code() + " " + response.message());
     }
 
     @Override
     public void cacheMiss(Call call) {
-        log("cacheMiss", "No cache hit for this call");
+        log(NetworkLogStage.CACHE_MISS, "No cache hit for this call");
     }
 
     @Override
     public void cacheConditionalHit(Call call, Response cachedResponse) {
-        log("cacheConditionalHit", "Response served from conditional cache: " + cachedResponse.code() + " " + cachedResponse.message());
+        log(NetworkLogStage.CACHE_CONDITIONAL_HIT, "Response served from conditional cache: " + cachedResponse.code() + " " + cachedResponse.message());
     }
 
 

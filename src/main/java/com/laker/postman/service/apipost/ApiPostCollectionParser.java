@@ -1,27 +1,18 @@
 package com.laker.postman.service.apipost;
 
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import com.laker.postman.model.*;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.swing.tree.DefaultMutableTreeNode;
-
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.SavedResponse;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_INHERIT;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_NONE;
-
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
-import lombok.extern.slf4j.Slf4j;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
 
 /**
  * ApiPost Collection解析器
@@ -30,17 +21,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author L.cm
  */
 @Slf4j
+@UtilityClass
 public class ApiPostCollectionParser {
     // 常量定义
     private static final String GROUP = "group";
     private static final String REQUEST = "request";
-
-    /**
-     * 私有构造函数，防止实例化
-     */
-    private ApiPostCollectionParser() {
-        throw new UnsupportedOperationException("Utility class cannot be instantiated");
-    }
 
     /**
      * 解析完整的 Apipost Collection JSON，返回根节点
@@ -51,7 +36,7 @@ public class ApiPostCollectionParser {
     public static DefaultMutableTreeNode parseApiPostCollection(String json) {
         try {
             JSONObject apipostRoot = JSONUtil.parseObj(json);
-            
+
             // 验证是否为有效的Apipost格式
             if (!apipostRoot.containsKey("apis") || !apipostRoot.containsKey("name")) {
                 return null;
@@ -65,7 +50,7 @@ public class ApiPostCollectionParser {
 
             // 构建ID到树节点的映射
             java.util.Map<String, DefaultMutableTreeNode> idToNodeMap = new java.util.HashMap<>();
-            
+
             // 第一遍：创建所有文件夹节点
             for (Object apiObj : apis) {
                 JSONObject api = (JSONObject) apiObj;
@@ -74,7 +59,7 @@ public class ApiPostCollectionParser {
                     String targetId = api.getStr("target_id");
                     String folderName = api.getStr("name", "未命名文件夹");
                     RequestGroup group = new RequestGroup(folderName);
-                    
+
                     // 解析文件夹级别的认证
                     JSONObject request = api.getJSONObject("request");
                     if (request != null) {
@@ -83,30 +68,30 @@ public class ApiPostCollectionParser {
                             parseAuthToGroup(auth, group);
                         }
                     }
-                    
+
                     DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(new Object[]{GROUP, group});
                     idToNodeMap.put(targetId, folderNode);
                 }
             }
-            
+
             // 第二遍：构建树形结构，收集顶级节点
             List<DefaultMutableTreeNode> topLevelNodes = new ArrayList<>();
-            
+
             for (Object apiObj : apis) {
                 JSONObject api = (JSONObject) apiObj;
                 String targetId = api.getStr("target_id");
                 String parentId = api.getStr("parent_id", "0");
                 String targetType = api.getStr("target_type", "");
-                
+
                 DefaultMutableTreeNode currentNode = null;
-                
+
                 if ("folder".equals(targetType)) {
                     currentNode = idToNodeMap.get(targetId);
                 } else if ("api".equals(targetType)) {
                     HttpRequestItem req = parseApiPostApi(api);
                     if (req != null) {
                         currentNode = new DefaultMutableTreeNode(new Object[]{REQUEST, req});
-                        
+
                         // 为响应创建子节点
                         if (req.getResponse() != null && !req.getResponse().isEmpty()) {
                             for (SavedResponse savedResp : req.getResponse()) {
@@ -118,7 +103,7 @@ public class ApiPostCollectionParser {
                         }
                     }
                 }
-                
+
                 if (currentNode != null) {
                     if ("0".equals(parentId)) {
                         // 顶级节点
@@ -135,7 +120,7 @@ public class ApiPostCollectionParser {
                     }
                 }
             }
-            
+
             // 检查顶级节点中是否有文件夹
             boolean hasTopLevelFolder = false;
             for (DefaultMutableTreeNode node : topLevelNodes) {
@@ -145,11 +130,11 @@ public class ApiPostCollectionParser {
                     break;
                 }
             }
-            
+
             // 如果没有顶级文件夹，只有API，则创建一个以项目名为名称的文件夹
             if (!hasTopLevelFolder && !topLevelNodes.isEmpty()) {
                 RequestGroup projectGroup = new RequestGroup(projectName);
-                
+
                 // 解析全局认证（如果存在）
                 JSONObject global = apipostRoot.getJSONObject("global");
                 if (global != null) {
@@ -161,14 +146,14 @@ public class ApiPostCollectionParser {
                         }
                     }
                 }
-                
+
                 DefaultMutableTreeNode projectFolderNode = new DefaultMutableTreeNode(new Object[]{GROUP, projectGroup});
                 for (DefaultMutableTreeNode node : topLevelNodes) {
                     projectFolderNode.add(node);
                 }
                 return projectFolderNode;
             }
-            
+
             // 如果有顶级文件夹
             if (topLevelNodes.size() == 1) {
                 // 只有一个顶级节点，直接返回
@@ -342,7 +327,7 @@ public class ApiPostCollectionParser {
                                 boolean enabled = param.getInt("is_checked", 1) == 1;
                                 String fieldType = param.getStr("field_type", "string");
                                 String key = param.getStr("key", "");
-                                
+
                                 // 判断是文件还是文本
                                 if ("file".equals(fieldType) || param.containsKey("file_name")) {
                                     String fileName = param.getStr("file_name", "");

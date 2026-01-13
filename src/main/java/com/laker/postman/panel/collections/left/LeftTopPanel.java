@@ -18,6 +18,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.service.apipost.ApiPostCollectionParser;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
@@ -42,6 +43,8 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
@@ -184,6 +187,9 @@ public class LeftTopPanel extends SingletonBasePanel {
         JMenuItem importHttpItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP),
                 new FlatSVGIcon("icons/idea-http.svg", 20, 20));
         importHttpItem.addActionListener(e -> importHttpFile());
+        JMenuItem importApiPostItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST),
+                new FlatSVGIcon("icons/apipost.svg", 20, 20));
+        importApiPostItem.addActionListener(e -> importApiPostCollection());
         JMenuItem importCurlItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL),
                 new FlatSVGIcon("icons/curl.svg", 20, 20));
         importCurlItem.addActionListener(e -> importCurlToCollection(null));
@@ -191,6 +197,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         importMenu.add(importPostmanItem);
         importMenu.add(importHarItem);
         importMenu.add(importHttpItem);
+        importMenu.add(importApiPostItem);
         importMenu.add(importCurlItem);
         return importMenu;
     }
@@ -326,6 +333,55 @@ public class LeftTopPanel extends SingletonBasePanel {
                 }
             } catch (Exception ex) {
                 log.error("Import HTTP file error", ex);
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
+            }
+        }
+    }
+
+    /**
+     * 导入 ApiPost 文档
+     */
+    private void importApiPostCollection() {
+        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE));
+        int userSelection = fileChooser.showOpenDialog(mainFrame);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToOpen = fileChooser.getSelectedFile();
+            try {
+                String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
+                DefaultMutableTreeNode collectionNode = ApiPostCollectionParser.parseApiPostCollection(json);
+                if (collectionNode != null) {
+                    // 如果返回的节点 userObject 为 null，说明是容器节点，需要展开其子节点
+                    if (collectionNode.getUserObject() == null && collectionNode.getChildCount() > 0) {
+                        // 先收集所有子节点（避免在添加过程中索引变化）
+                        List<DefaultMutableTreeNode> childNodes = new ArrayList<>();
+                        for (int i = 0; i < collectionNode.getChildCount(); i++) {
+                            childNodes.add((DefaultMutableTreeNode) collectionNode.getChildAt(i));
+                        }
+                        // 将每个顶级子节点分别添加到左侧面板
+                        for (DefaultMutableTreeNode childNode : childNodes) {
+                            leftPanel.getRootTreeNode().add(childNode);
+                        }
+                        // 展开第一个节点
+                        if (!childNodes.isEmpty()) {
+                            DefaultMutableTreeNode firstNode = childNodes.get(0);
+                            leftPanel.getRequestTree().expandPath(new TreePath(firstNode.getPath()));
+                        }
+                    } else {
+                        // 单个节点，直接添加
+                        leftPanel.getRootTreeNode().add(collectionNode);
+                        leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
+                    }
+                    leftPanel.getTreeModel().reload();
+                    leftPanel.getPersistence().saveRequestGroups();
+                    NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
+                } else {
+                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_INVALID));
+                }
+            } catch (Exception ex) {
+                log.error("Import Apipost error", ex);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
             }
         }

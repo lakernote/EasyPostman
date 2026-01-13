@@ -1,0 +1,400 @@
+{
+	"project_id": "test123",
+	"name": "ApiPost测试集合",
+	"intro": "用于单元测试的简化版ApiPost集合",
+	"global": {
+		"envs": [
+			{
+				"env_id": "1",
+				"name": "默认环境",
+				"is_private": -1,
+				"sort": 0,
+				"server_list": [
+					{
+						"server_id": "1",
+						"name": "默认服务",
+						"sort": 0,
+						"uri": ""
+					}
+				],
+				"env_var_list": {}
+			}
+		],
+		"servers": [
+			{
+				"server_id": "1",
+				"name": "默认服务",
+				"sort": 1000
+			}
+		],
+		"global_vars": {},
+		"global_param": {
+			"header": {
+				"parameter": []
+			},
+			"query": {
+				"parameter": []
+			},
+			"body": {
+				"parameter": []
+			},
+			"cookie": {
+				"parameter": []
+			},
+			"auth": {
+				"type": "noauth",
+				"kv": {
+					"key": "",
+					"value": ""
+				},
+				"bearer": {
+					"key": ""
+				},
+				"basic": {
+					"username": "",
+					"password": ""
+				}
+			}
+		}
+	},
+	"models": [],
+	"apis": [
+		{
+			"target_id": "api001",
+			"project_id": "test123",
+			"parent_id": "0",
+			"target_type": "api",
+			"name": "获取用户列表",
+			"version": 1,
+			"sort": 100,
+			"method": "GET",
+			"url": "https://api.example.com/users",
+			"protocol": "http/1.1",
+			"mark_id": "1",
+			"description": "获取所有用户",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"kv": {
+						"key": "",
+						"value": "",
+						"in": "header"
+					},
+					"bearer": {
+						"key": ""
+					},
+					"basic": {
+						"username": "admin",
+						"password": "secret"
+					}
+				},
+				"pre_tasks": [],
+				"post_tasks": [],
+				"body": {
+					"mode": "",
+					"parameter": [],
+					"raw": ""
+				},
+				"header": {
+					"parameter": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"is_checked": 1
+						}
+					]
+				},
+				"query": {
+					"parameter": [
+						{
+							"key": "page",
+							"value": "1",
+							"is_checked": 1
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"is_checked": 1
+						}
+					]
+				},
+				"cookie": {
+					"parameter": []
+				}
+			},
+			"response": {
+				"example": []
+			}
+		},
+		{
+			"target_id": "folder001",
+			"project_id": "test123",
+			"parent_id": "0",
+			"target_type": "folder",
+			"name": "用户管理",
+			"version": 1,
+			"sort": 200,
+			"server_id": "0",
+			"description": "用户管理相关接口",
+			"request": {
+				"auth": {
+					"type": "inherit",
+					"kv": {
+						"key": "",
+						"value": ""
+					},
+					"bearer": {
+						"key": ""
+					},
+					"basic": {
+						"username": "",
+						"password": ""
+					}
+				},
+				"pre_tasks": [],
+				"post_tasks": [],
+				"body": {
+					"parameter": []
+				},
+				"header": {
+					"parameter": []
+				},
+				"query": {
+					"parameter": []
+				},
+				"cookie": {
+					"parameter": []
+				}
+			}
+		},
+		{
+			"target_id": "api002",
+			"project_id": "test123",
+			"parent_id": "folder001",
+			"target_type": "api",
+			"name": "创建用户",
+			"version": 1,
+			"sort": 300,
+			"method": "POST",
+			"url": "https://api.example.com/users",
+			"protocol": "http/1.1",
+			"mark_id": "1",
+			"description": "创建新用户",
+			"request": {
+				"auth": {
+					"type": "inherit",
+					"kv": {
+						"key": "",
+						"value": ""
+					},
+					"bearer": {
+						"key": ""
+					},
+					"basic": {
+						"username": "",
+						"password": ""
+					}
+				},
+				"pre_tasks": [],
+				"post_tasks": [],
+				"body": {
+					"mode": "raw",
+					"parameter": [],
+					"raw": "{\"name\":\"John\",\"email\":\"john@example.com\"}"
+				},
+				"header": {
+					"parameter": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"is_checked": 1
+						}
+					]
+				},
+				"query": {
+					"parameter": []
+				},
+				"cookie": {
+					"parameter": []
+				}
+			},
+			"response": {
+				"example": [
+					{
+						"expect": {
+							"name": "成功响应",
+							"code": "200",
+							"content_type": "json"
+						},
+						"headers": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"raw": "{\"id\":123,\"name\":\"John\",\"email\":\"john@example.com\"}"
+					}
+				]
+			}
+		},
+		{
+			"target_id": "api003",
+			"project_id": "test123",
+			"parent_id": "folder001",
+			"target_type": "api",
+			"name": "更新用户",
+			"version": 1,
+			"sort": 400,
+			"method": "PUT",
+			"url": "https://api.example.com/users/{{userId}}",
+			"protocol": "http/1.1",
+			"mark_id": "1",
+			"description": "更新用户信息",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"kv": {
+						"key": "",
+						"value": ""
+					},
+					"bearer": {
+						"key": "{{token}}"
+					},
+					"basic": {
+						"username": "",
+						"password": ""
+					}
+				},
+				"pre_tasks": [],
+				"post_tasks": [],
+				"body": {
+					"mode": "urlencoded",
+					"parameter": [
+						{
+							"key": "name",
+							"value": "Jane",
+							"is_checked": 1,
+							"field_type": "string"
+						},
+						{
+							"key": "email",
+							"value": "jane@example.com",
+							"is_checked": 1,
+							"field_type": "string"
+						}
+					],
+					"raw": ""
+				},
+				"header": {
+					"parameter": []
+				},
+				"query": {
+					"parameter": []
+				},
+				"cookie": {
+					"parameter": []
+				}
+			},
+			"response": {
+				"example": []
+			}
+		},
+		{
+			"target_id": "folder002",
+			"project_id": "test123",
+			"parent_id": "0",
+			"target_type": "folder",
+			"name": "订单管理",
+			"version": 1,
+			"sort": 500,
+			"server_id": "0",
+			"description": "订单相关接口",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"kv": {
+						"key": "",
+						"value": ""
+					},
+					"bearer": {
+						"key": "test-token-123"
+					},
+					"basic": {
+						"username": "",
+						"password": ""
+					}
+				},
+				"pre_tasks": [],
+				"post_tasks": [],
+				"body": {
+					"parameter": []
+				},
+				"header": {
+					"parameter": []
+				},
+				"query": {
+					"parameter": []
+				},
+				"cookie": {
+					"parameter": []
+				}
+			}
+		},
+		{
+			"target_id": "api004",
+			"project_id": "test123",
+			"parent_id": "folder002",
+			"target_type": "api",
+			"name": "查询订单",
+			"version": 1,
+			"sort": 600,
+			"method": "GET",
+			"url": "https://api.example.com/orders/{{orderId}}",
+			"protocol": "http/1.1",
+			"mark_id": "1",
+			"description": "根据ID查询订单",
+			"request": {
+				"auth": {
+					"type": "inherit",
+					"kv": {
+						"key": "",
+						"value": ""
+					},
+					"bearer": {
+						"key": ""
+					},
+					"basic": {
+						"username": "",
+						"password": ""
+					}
+				},
+				"pre_tasks": [],
+				"post_tasks": [],
+				"body": {
+					"mode": "",
+					"parameter": [],
+					"raw": ""
+				},
+				"header": {
+					"parameter": []
+				},
+				"query": {
+					"parameter": []
+				},
+				"cookie": {
+					"parameter": [
+						{
+							"key": "sessionId",
+							"value": "abc123",
+							"is_checked": 1
+						}
+					]
+				}
+			},
+			"response": {
+				"example": []
+			}
+		}
+	]
+}
+

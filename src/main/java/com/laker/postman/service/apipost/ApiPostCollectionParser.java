@@ -121,53 +121,29 @@ public class ApiPostCollectionParser {
                 }
             }
 
-            // 检查顶级节点中是否有文件夹
-            boolean hasTopLevelFolder = false;
-            for (DefaultMutableTreeNode node : topLevelNodes) {
-                Object[] userObj = (Object[]) node.getUserObject();
-                if (userObj != null && GROUP.equals(userObj[0])) {
-                    hasTopLevelFolder = true;
-                    break;
-                }
-            }
+            // 创建一个以项目名为名称的根文件夹（类似PostmanCollectionParser的做法）
+            RequestGroup collectionGroup = new RequestGroup(projectName);
 
-            // 如果没有顶级文件夹，只有API，则创建一个以项目名为名称的文件夹
-            if (!hasTopLevelFolder && !topLevelNodes.isEmpty()) {
-                RequestGroup projectGroup = new RequestGroup(projectName);
-
-                // 解析全局认证（如果存在）
-                JSONObject global = apipostRoot.getJSONObject("global");
-                if (global != null) {
-                    JSONObject globalAuth = global.getJSONObject("global_param");
-                    if (globalAuth != null) {
-                        JSONObject auth = globalAuth.getJSONObject("auth");
-                        if (auth != null) {
-                            parseAuthToGroup(auth, projectGroup);
-                        }
+            // 解析全局认证（如果存在）
+            JSONObject global = apipostRoot.getJSONObject("global");
+            if (global != null) {
+                JSONObject globalAuth = global.getJSONObject("global_param");
+                if (globalAuth != null) {
+                    JSONObject auth = globalAuth.getJSONObject("auth");
+                    if (auth != null) {
+                        parseAuthToGroup(auth, collectionGroup);
                     }
                 }
-
-                DefaultMutableTreeNode projectFolderNode = new DefaultMutableTreeNode(new Object[]{GROUP, projectGroup});
-                for (DefaultMutableTreeNode node : topLevelNodes) {
-                    projectFolderNode.add(node);
-                }
-                return projectFolderNode;
             }
 
-            // 如果有顶级文件夹
-            if (topLevelNodes.size() == 1) {
-                // 只有一个顶级节点，直接返回
-                return topLevelNodes.get(0);
-            } else if (topLevelNodes.size() > 1) {
-                // 多个顶级节点，创建容器节点（userObject 为 null，用于标识需要展开）
-                DefaultMutableTreeNode containerNode = new DefaultMutableTreeNode();
-                for (DefaultMutableTreeNode node : topLevelNodes) {
-                    containerNode.add(node);
-                }
-                return containerNode;
-            } else {
-                return null;
+            DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionGroup});
+
+            // 将所有顶级节点添加到根节点下
+            for (DefaultMutableTreeNode node : topLevelNodes) {
+                collectionNode.add(node);
             }
+
+            return collectionNode;
         } catch (Exception e) {
             log.error("解析Apipost Collection失败", e);
             return null;

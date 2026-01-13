@@ -43,8 +43,6 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
 
@@ -353,35 +351,16 @@ public class LeftTopPanel extends SingletonBasePanel {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 DefaultMutableTreeNode collectionNode = ApiPostCollectionParser.parseApiPostCollection(json);
                 if (collectionNode != null) {
-                    // 如果返回的节点 userObject 为 null，说明是容器节点，需要展开其子节点
-                    if (collectionNode.getUserObject() == null && collectionNode.getChildCount() > 0) {
-                        // 先收集所有子节点（避免在添加过程中索引变化）
-                        List<DefaultMutableTreeNode> childNodes = new ArrayList<>();
-                        for (int i = 0; i < collectionNode.getChildCount(); i++) {
-                            childNodes.add((DefaultMutableTreeNode) collectionNode.getChildAt(i));
-                        }
-                        // 将每个顶级子节点分别添加到左侧面板
-                        for (DefaultMutableTreeNode childNode : childNodes) {
-                            leftPanel.getRootTreeNode().add(childNode);
-                        }
-                        // 展开第一个节点
-                        if (!childNodes.isEmpty()) {
-                            DefaultMutableTreeNode firstNode = childNodes.get(0);
-                            leftPanel.getRequestTree().expandPath(new TreePath(firstNode.getPath()));
-                        }
-                    } else {
-                        // 单个节点，直接添加
-                        leftPanel.getRootTreeNode().add(collectionNode);
-                        leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
-                    }
+                    leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
                     NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_INVALID));
                 }
             } catch (Exception ex) {
-                log.error("Import Apipost error", ex);
+                log.error("Import ApiPost error", ex);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
             }
         }

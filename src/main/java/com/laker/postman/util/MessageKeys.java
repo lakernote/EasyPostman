@@ -510,6 +510,7 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL = "collections.import.curl";
     public static final String COLLECTIONS_IMPORT_HAR = "collections.import.har";
     public static final String COLLECTIONS_IMPORT_HTTP = "collections.import.http";
+    public static final String COLLECTIONS_IMPORT_APIPOST = "collections.import.apipost";
 
     // ============ 集合菜单相关 ============
     public static final String COLLECTIONS_MENU_ADD_GROUP = "collections.menu.add_group";
@@ -562,6 +563,8 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL_PARSE_ERROR = "collections.import.curl.parse_error";
     public static final String COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE = "collections.import.http.dialog_title";
     public static final String COLLECTIONS_IMPORT_HTTP_INVALID = "collections.import.http.invalid";
+    public static final String COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE = "collections.import.apipost.dialog_title";
+    public static final String COLLECTIONS_IMPORT_APIPOST_INVALID = "collections.import.apipost.invalid";
 
     // ============ 集合对话框相关 ============
     public static final String COLLECTIONS_DIALOG_ADD_GROUP_PROMPT = "collections.dialog.add_group.prompt";

@@ -756,26 +756,34 @@ public class ExecutionResultsPanel extends JPanel {
 
     private void setTableColumnWidths(JTable table) {
         if (table.getColumnModel().getColumnCount() > 0) {
-            // 迭代列
-            table.getColumnModel().getColumn(0).setMinWidth(50);
-            table.getColumnModel().getColumn(0).setMaxWidth(70);
-            table.getColumnModel().getColumn(0).setPreferredWidth(60);
-            // 方法列
-            table.getColumnModel().getColumn(2).setMinWidth(60);
-            table.getColumnModel().getColumn(2).setMaxWidth(80);
-            table.getColumnModel().getColumn(2).setPreferredWidth(70);
-            // 状态列
-            table.getColumnModel().getColumn(3).setMinWidth(60);
-            table.getColumnModel().getColumn(3).setMaxWidth(80);
-            table.getColumnModel().getColumn(3).setPreferredWidth(70);
-            // 耗时列
-            table.getColumnModel().getColumn(4).setMinWidth(70);
+            // Iteration 列 - 需要显示 "Iteration"（9个字符）+ "#1"
+            table.getColumnModel().getColumn(0).setMinWidth(75);
+            table.getColumnModel().getColumn(0).setMaxWidth(90);
+            table.getColumnModel().getColumn(0).setPreferredWidth(80);
+
+            // Request Name 列 - 可以较宽，显示完整请求名称
+            table.getColumnModel().getColumn(1).setMinWidth(150);
+            table.getColumnModel().getColumn(1).setPreferredWidth(200);
+
+            // Method 列 - 需要显示 "Method"（6个字符）+ "DELETE"（7个字符）
+            table.getColumnModel().getColumn(2).setMinWidth(75);
+            table.getColumnModel().getColumn(2).setMaxWidth(90);
+            table.getColumnModel().getColumn(2).setPreferredWidth(80);
+
+            // Status 列 - 需要显示 "Status"（6个字符）+ 状态码（3位数）
+            table.getColumnModel().getColumn(3).setMinWidth(70);
+            table.getColumnModel().getColumn(3).setMaxWidth(85);
+            table.getColumnModel().getColumn(3).setPreferredWidth(75);
+
+            // Time 列 - 需要显示 "Time"（4个字符）+ 时间（如 "123 ms"）
+            table.getColumnModel().getColumn(4).setMinWidth(75);
             table.getColumnModel().getColumn(4).setMaxWidth(100);
             table.getColumnModel().getColumn(4).setPreferredWidth(85);
-            // 结果列
-            table.getColumnModel().getColumn(5).setMinWidth(50);
-            table.getColumnModel().getColumn(5).setMaxWidth(70);
-            table.getColumnModel().getColumn(5).setPreferredWidth(60);
+
+            // Result 列 - 需要显示 "Result"（6个字符）+ emoji/状态
+            table.getColumnModel().getColumn(5).setMinWidth(65);
+            table.getColumnModel().getColumn(5).setMaxWidth(80);
+            table.getColumnModel().getColumn(5).setPreferredWidth(70);
         }
     }
 

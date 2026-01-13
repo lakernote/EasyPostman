@@ -152,19 +152,24 @@ public class PerformanceResultTablePanel extends JPanel {
 
     // 配置列宽度
     private void configureColumnWidths() {
-        table.getColumnModel().getColumn(0).setPreferredWidth(300); // 接口名称
+        // Name 列 - 接口名称，允许较宽显示
+        table.getColumnModel().getColumn(0).setMinWidth(150);
+        table.getColumnModel().getColumn(0).setPreferredWidth(300);
 
-        table.getColumnModel().getColumn(1).setPreferredWidth(80);  // 状态码
+        // Status 列 - 显示 "Status"（6个字符）+ 状态码（3位数）
+        table.getColumnModel().getColumn(1).setMinWidth(70);
+        table.getColumnModel().getColumn(1).setPreferredWidth(80);
         table.getColumnModel().getColumn(1).setMaxWidth(100);
-        table.getColumnModel().getColumn(1).setMinWidth(60);
 
-        table.getColumnModel().getColumn(2).setPreferredWidth(100); // 耗时
-        table.getColumnModel().getColumn(2).setMaxWidth(120);
-        table.getColumnModel().getColumn(2).setMinWidth(80);
+        // Cost (ms) 列 - 显示 "Cost (ms)"（9个字符）+ 时间值
+        table.getColumnModel().getColumn(2).setMinWidth(95);
+        table.getColumnModel().getColumn(2).setPreferredWidth(105);
+        table.getColumnModel().getColumn(2).setMaxWidth(130);
 
-        table.getColumnModel().getColumn(3).setPreferredWidth(60);  // 断言（只有 Emoji）
-        table.getColumnModel().getColumn(3).setMaxWidth(60);
-        table.getColumnModel().getColumn(3).setMinWidth(60);
+        // Assertion 列 - 显示 "Assertion"（9个字符）+ emoji
+        table.getColumnModel().getColumn(3).setMinWidth(90);
+        table.getColumnModel().getColumn(3).setPreferredWidth(100);
+        table.getColumnModel().getColumn(3).setMaxWidth(120);
     }
 
     private void registerListeners() {

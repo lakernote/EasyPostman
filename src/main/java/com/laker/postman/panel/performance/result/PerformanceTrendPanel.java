@@ -117,6 +117,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
         // Create toggle button
         toggleButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART));
+        toggleButton.setFocusable(false);
         toggleButton.addActionListener(e -> toggleChartView());
 
         // 创建顶部面板（包含切换按钮和复选框）

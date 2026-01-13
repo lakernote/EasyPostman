@@ -82,12 +82,77 @@ public class PerformanceReportPanel extends JPanel {
 
     private JTable createReportTable() {
         JTable table = new JTable(reportTableModel);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        // 使用 SUBSEQUENT_COLUMNS 模式：调整一列时，只影响后续列，不影响前面的列
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 
         configureColumnRenderers(table);
+        configureColumnWidths(table);
         table.getTableHeader().setFont(table.getTableHeader().getFont().deriveFont(Font.BOLD));
 
         return table;
+    }
+
+    private void configureColumnWidths(JTable table) {
+        if (table.getColumnModel().getColumnCount() > 0) {
+            // API Name 列 - 需要较宽空间显示完整API名称
+            table.getColumnModel().getColumn(0).setMinWidth(50);
+            table.getColumnModel().getColumn(0).setPreferredWidth(200);
+
+            // Total 列 - 显示 "Total"（5个字符）+ 数字
+            table.getColumnModel().getColumn(1).setMinWidth(65);
+            table.getColumnModel().getColumn(1).setMaxWidth(85);
+            table.getColumnModel().getColumn(1).setPreferredWidth(75);
+
+            // Success 列 - 显示 "Success"（7个字符）+ 数字
+            table.getColumnModel().getColumn(2).setMinWidth(75);
+            table.getColumnModel().getColumn(2).setMaxWidth(95);
+            table.getColumnModel().getColumn(2).setPreferredWidth(85);
+
+            // Fail 列 - 显示 "Fail"（4个字符）+ 数字
+            table.getColumnModel().getColumn(3).setMinWidth(60);
+            table.getColumnModel().getColumn(3).setMaxWidth(75);
+            table.getColumnModel().getColumn(3).setPreferredWidth(65);
+
+            // Success Rate 列 - 显示 "Success Rate"（12个字符）+ 百分比
+            table.getColumnModel().getColumn(4).setMinWidth(110);
+            table.getColumnModel().getColumn(4).setMaxWidth(130);
+            table.getColumnModel().getColumn(4).setPreferredWidth(120);
+
+            // QPS 列 - 显示 "QPS"（3个字符）+ 数字
+            table.getColumnModel().getColumn(5).setMinWidth(60);
+            table.getColumnModel().getColumn(5).setMaxWidth(80);
+            table.getColumnModel().getColumn(5).setPreferredWidth(70);
+
+            // Avg 列 - 显示 "Avg"（3个字符）+ 时间
+            table.getColumnModel().getColumn(6).setMinWidth(65);
+            table.getColumnModel().getColumn(6).setMaxWidth(85);
+            table.getColumnModel().getColumn(6).setPreferredWidth(75);
+
+            // Min 列 - 显示 "Min"（3个字符）+ 时间
+            table.getColumnModel().getColumn(7).setMinWidth(65);
+            table.getColumnModel().getColumn(7).setMaxWidth(85);
+            table.getColumnModel().getColumn(7).setPreferredWidth(75);
+
+            // Max 列 - 显示 "Max"（3个字符）+ 时间
+            table.getColumnModel().getColumn(8).setMinWidth(65);
+            table.getColumnModel().getColumn(8).setMaxWidth(85);
+            table.getColumnModel().getColumn(8).setPreferredWidth(75);
+
+            // P90 列 - 显示 "P90"（3个字符）+ 时间
+            table.getColumnModel().getColumn(9).setMinWidth(65);
+            table.getColumnModel().getColumn(9).setMaxWidth(85);
+            table.getColumnModel().getColumn(9).setPreferredWidth(75);
+
+            // P95 列 - 显示 "P95"（3个字符）+ 时间
+            table.getColumnModel().getColumn(10).setMinWidth(65);
+            table.getColumnModel().getColumn(10).setMaxWidth(85);
+            table.getColumnModel().getColumn(10).setPreferredWidth(75);
+
+            // P99 列 - 显示 "P99"（3个字符）+ 时间
+            table.getColumnModel().getColumn(11).setMinWidth(65);
+            table.getColumnModel().getColumn(11).setMaxWidth(85);
+            table.getColumnModel().getColumn(11).setPreferredWidth(75);
+        }
     }
 
     private void configureColumnRenderers(JTable table) {

@@ -531,26 +531,38 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     private void setTableColumnWidths() {
         if (table.getColumnModel().getColumnCount() > 0) {
-            // Select column
-            table.getColumnModel().getColumn(0).setMinWidth(50);
-            table.getColumnModel().getColumn(0).setMaxWidth(60);
-            table.getColumnModel().getColumn(0).setPreferredWidth(55);
-            // Method column
-            table.getColumnModel().getColumn(3).setMinWidth(60);
-            table.getColumnModel().getColumn(3).setMaxWidth(80);
-            table.getColumnModel().getColumn(3).setPreferredWidth(70);
-            // Status column
-            table.getColumnModel().getColumn(4).setMinWidth(60);
-            table.getColumnModel().getColumn(4).setMaxWidth(80);
-            table.getColumnModel().getColumn(4).setPreferredWidth(70);
-            // Time column
-            table.getColumnModel().getColumn(5).setMinWidth(70);
+            // Select column (✓) - 固定宽度，不需要太宽
+            table.getColumnModel().getColumn(0).setMinWidth(45);
+            table.getColumnModel().getColumn(0).setMaxWidth(55);
+            table.getColumnModel().getColumn(0).setPreferredWidth(50);
+
+            // Name column - 相对灵活，可以较宽
+            table.getColumnModel().getColumn(1).setMinWidth(120);
+            table.getColumnModel().getColumn(1).setPreferredWidth(180);
+
+            // URL column - 最宽的列，可以占据更多空间
+            table.getColumnModel().getColumn(2).setMinWidth(150);
+            table.getColumnModel().getColumn(2).setPreferredWidth(250);
+
+            // Method column - 需要足够宽度显示 "Method"（6个字符）+ 内容（DELETE最长7个字符）
+            table.getColumnModel().getColumn(3).setMinWidth(75);
+            table.getColumnModel().getColumn(3).setMaxWidth(90);
+            table.getColumnModel().getColumn(3).setPreferredWidth(80);
+
+            // Status column - 需要足够宽度显示 "Status"（6个字符）+ 状态码（3位数）
+            table.getColumnModel().getColumn(4).setMinWidth(70);
+            table.getColumnModel().getColumn(4).setMaxWidth(85);
+            table.getColumnModel().getColumn(4).setPreferredWidth(75);
+
+            // Time column - 需要足够宽度显示 "Time"（4个字符）+ 时间（如 "123 ms"）
+            table.getColumnModel().getColumn(5).setMinWidth(75);
             table.getColumnModel().getColumn(5).setMaxWidth(100);
-            table.getColumnModel().getColumn(5).setPreferredWidth(80);
-            // Result column - 只显示 emoji，可以更窄
-            table.getColumnModel().getColumn(6).setMinWidth(50);
-            table.getColumnModel().getColumn(6).setMaxWidth(70);
-            table.getColumnModel().getColumn(6).setPreferredWidth(60);
+            table.getColumnModel().getColumn(5).setPreferredWidth(85);
+
+            // Result column - 需要足够宽度显示 "Result"（6个字符）+ emoji
+            table.getColumnModel().getColumn(6).setMinWidth(65);
+            table.getColumnModel().getColumn(6).setMaxWidth(80);
+            table.getColumnModel().getColumn(6).setPreferredWidth(70);
         }
     }
 

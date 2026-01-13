@@ -1,0 +1,144 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Pet Store API",
+    "description": "A sample Pet Store API for testing",
+    "version": "1.0.0"
+  },
+  "host": "petstore.swagger.io",
+  "basePath": "/v2",
+  "schemes": ["https"],
+  "paths": {
+    "/pets": {
+      "get": {
+        "tags": ["Pets"],
+        "summary": "List all pets",
+        "description": "Returns all pets from the system",
+        "operationId": "listPets",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return",
+            "type": "integer",
+            "default": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Pets"],
+        "summary": "Create a pet",
+        "description": "Creates a new pet in the store",
+        "operationId": "createPet",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Fluffy"
+                },
+                "age": {
+                  "type": "integer",
+                  "example": 3
+                },
+                "species": {
+                  "type": "string",
+                  "example": "Cat"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "tags": ["Pets"],
+        "summary": "Get a pet by ID",
+        "operationId": "getPetById",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Pets"],
+        "summary": "Update a pet",
+        "operationId": "updatePet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Pets"],
+        "summary": "Delete a pet",
+        "operationId": "deletePet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    }
+  }
+}
+

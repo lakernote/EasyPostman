@@ -37,7 +37,7 @@ public enum NetworkLogStage {
     // ==================== 连接相关（蓝色系）====================
     // 亮色主题使用深蓝色(0,122,255)，暗色主题使用亮蓝色(140,180,255)
     CONNECT_START("ConnectStart", "🔌", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    CONNECT_END("ConnectEnd", "✔️", new Color(0, 122, 255), new Color(140, 180, 255), false),
+    CONNECT_END("ConnectEnd", "✅", new Color(0, 122, 255), new Color(140, 180, 255), false),
     CONNECTION_ACQUIRED("ConnectionAcquired", "🔗", new Color(0, 122, 255), new Color(140, 180, 255), false),
     CONNECTION_RELEASED("ConnectionReleased", "🔓", new Color(0, 122, 255), new Color(140, 180, 255), false),
 
@@ -55,7 +55,7 @@ public enum NetworkLogStage {
     REQUEST_HEADERS_START("RequestHeadersStart", "📤", new Color(220, 160, 100), new Color(255, 190, 130), false),
     REQUEST_HEADERS_END("RequestHeadersEnd", "📨", new Color(220, 160, 100), new Color(255, 190, 130), false),
     REQUEST_BODY_START("RequestBodyStart", "📦", new Color(220, 160, 100), new Color(255, 190, 130), false),
-    REQUEST_BODY_END("RequestBodyEnd", "✔️", new Color(220, 160, 100), new Color(255, 190, 130), false),
+    REQUEST_BODY_END("RequestBodyEnd", "✅", new Color(220, 160, 100), new Color(255, 190, 130), false),
 
     // ==================== 响应（青色系）====================
     // 亮色主题使用深青色(6,182,212)，暗色主题使用亮青色(140,210,230)
@@ -63,7 +63,7 @@ public enum NetworkLogStage {
     RESPONSE_HEADERS_END("ResponseHeadersEnd", "📬", new Color(6, 182, 212), new Color(140, 210, 230), false),
     RESPONSE_HEADERS_END_REDIRECT("ResponseHeadersEnd:Redirect", "🔀", new Color(245, 158, 11), new Color(255, 200, 100), true),
     RESPONSE_BODY_START("ResponseBodyStart", "📄", new Color(6, 182, 212), new Color(140, 210, 230), false),
-    RESPONSE_BODY_END("ResponseBodyEnd", "✔️", new Color(6, 182, 212), new Color(140, 210, 230), false),
+    RESPONSE_BODY_END("ResponseBodyEnd", "✅", new Color(6, 182, 212), new Color(140, 210, 230), false),
 
     // ==================== 重定向（橙色，粗体）====================
     // 亮色主题使用深橙色(245,158,11)，暗色主题使用亮橙色(255,200,100)

@@ -42,9 +42,11 @@ public class HttpHtmlRenderer {
 
     /**
      * 获取主题适配的背景色
+     * 面板背景色（暗色主题）RGB(60, 63, 65) = #3c3f41
+     * 面板背景色（亮色主题）RGB(242, 242, 242) = #f2f2f2
      */
     private static String getThemeBackground() {
-        return isDarkTheme() ? "rgb(55, 57, 59)" : "rgb(245, 247, 250)";
+        return isDarkTheme() ? "rgb(60, 63, 65)" : "rgb(242, 242, 242)";
     }
 
     /**

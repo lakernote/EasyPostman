@@ -1463,6 +1463,12 @@ public final class MessageKeys {
     public static final String TOOLBOX_JSON_OUTPUT = "toolbox.json.output";
     public static final String TOOLBOX_JSON_ERROR = "toolbox.json.error";
 
+    // 工具箱分类
+    public static final String TOOLBOX_CATEGORY_DATA_PROCESSING = "toolbox.category.data_processing";
+    public static final String TOOLBOX_CATEGORY_SECURITY = "toolbox.category.security";
+    public static final String TOOLBOX_CATEGORY_GENERATOR = "toolbox.category.generator";
+    public static final String TOOLBOX_CATEGORY_ADVANCED = "toolbox.category.advanced";
+
     // JSON 工具状态消息
     public static final String TOOLBOX_JSON_STATUS_EMPTY = "toolbox.json.status.empty";
     public static final String TOOLBOX_JSON_STATUS_FORMATTED = "toolbox.json.status.formatted";
@@ -1570,6 +1576,31 @@ public final class MessageKeys {
     public static final String TOOLBOX_DIFF_MODIFIED = "toolbox.diff.modified";
     public static final String TOOLBOX_DIFF_COMPARE = "toolbox.diff.compare";
     public static final String TOOLBOX_DIFF_RESULT = "toolbox.diff.result";
+
+    // ============ 反编译器相关 ============
+    public static final String TOOLBOX_DECOMPILER = "toolbox.decompiler";
+    public static final String TOOLBOX_DECOMPILER_SELECT_JAR = "toolbox.decompiler.select_jar";
+    public static final String TOOLBOX_DECOMPILER_BROWSE = "toolbox.decompiler.browse";
+    public static final String TOOLBOX_DECOMPILER_TREE_TITLE = "toolbox.decompiler.tree_title";
+    public static final String TOOLBOX_DECOMPILER_OUTPUT = "toolbox.decompiler.output";
+    public static final String TOOLBOX_DECOMPILER_NO_FILE = "toolbox.decompiler.no_file";
+    public static final String TOOLBOX_DECOMPILER_LOADING = "toolbox.decompiler.loading";
+    public static final String TOOLBOX_DECOMPILER_DECOMPILING = "toolbox.decompiler.decompiling";
+    public static final String TOOLBOX_DECOMPILER_ERROR = "toolbox.decompiler.error";
+    public static final String TOOLBOX_DECOMPILER_FILE_INFO = "toolbox.decompiler.file_info";
+    public static final String TOOLBOX_DECOMPILER_CLASS_VERSION = "toolbox.decompiler.class_version";
+    public static final String TOOLBOX_DECOMPILER_JAVA_VERSION = "toolbox.decompiler.java_version";
+    public static final String TOOLBOX_DECOMPILER_FILE_SIZE = "toolbox.decompiler.file_size";
+    public static final String TOOLBOX_DECOMPILER_PACKAGE = "toolbox.decompiler.package";
+    public static final String TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT = "toolbox.decompiler.select_file_prompt";
+    public static final String TOOLBOX_DECOMPILER_UNSUPPORTED_FILE = "toolbox.decompiler.unsupported_file";
+    public static final String TOOLBOX_DECOMPILER_LOAD_ERROR = "toolbox.decompiler.load_error";
+    public static final String TOOLBOX_DECOMPILER_EXPAND_ALL = "toolbox.decompiler.expand_all";
+    public static final String TOOLBOX_DECOMPILER_COLLAPSE_ALL = "toolbox.decompiler.collapse_all";
+    public static final String TOOLBOX_DECOMPILER_COPY_CODE = "toolbox.decompiler.copy_code";
+    public static final String TOOLBOX_DECOMPILER_EXPORT = "toolbox.decompiler.export";
+    public static final String TOOLBOX_DECOMPILER_SEARCH = "toolbox.decompiler.search";
+    public static final String TOOLBOX_DECOMPILER_BYTES = "toolbox.decompiler.bytes";
 
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";

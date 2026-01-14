@@ -185,6 +185,13 @@
             <artifactId>ayza-for-pem</artifactId>
             <version>10.0.1</version>
         </dependency>
+
+        <!-- CFR Java Decompiler -->
+        <dependency>
+            <groupId>org.benf</groupId>
+            <artifactId>cfr</artifactId>
+            <version>0.152</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -6,6 +6,7 @@ import com.laker.postman.model.CookieInfo;
 import com.laker.postman.service.http.CookieService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -79,8 +80,6 @@ public class CookieTablePanel extends JPanel {
         table.setRowSorter(sorter);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-
         // 空状态提示
         emptyLabel = createEmptyStateLabel();
 
@@ -192,12 +191,13 @@ public class CookieTablePanel extends JPanel {
     private JButton createIconButton(String text, String iconPath, String tooltip) {
         JButton button = new JButton(text);
         try {
-            button.setIcon(new FlatSVGIcon(iconPath, 16, 16));
+            button.setIcon(IconUtil.createThemed(iconPath, 16, 16));
         } catch (Exception e) {
             // 如果图标加载失败，只显示文本
         }
         button.setToolTipText(tooltip);
         button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return button;
     }
 
@@ -208,7 +208,6 @@ public class CookieTablePanel extends JPanel {
         // 设置表格样式
         table.setRowHeight(28);
         table.setShowGrid(true);
-        table.setGridColor(new Color(240, 240, 240));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -270,7 +269,7 @@ public class CookieTablePanel extends JPanel {
 
         // HttpOnly - 80px
         column = table.getColumnModel().getColumn(6);
-        column.setPreferredWidth(80);
+        column.setPreferredWidth(90);
         column.setMinWidth(60);
     }
 

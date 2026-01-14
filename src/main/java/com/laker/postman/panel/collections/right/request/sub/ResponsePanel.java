@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -44,10 +45,6 @@ public class ResponsePanel extends JPanel {
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
     private final SSEResponsePanel sseResponsePanel;
-
-    public ResponsePanel(RequestItemProtocolEnum protocol) {
-        this(protocol, true); // 默认启用保存按钮
-    }
 
     public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
@@ -274,21 +271,31 @@ public class ResponsePanel extends JPanel {
             savedBytes = bytes - httpEventInfo.getBodyBytesReceived();
         }
 
+        // 使用 ModernColors 统一颜色方案
+        final Color colorCompressed = ModernColors.SUCCESS;           // 绿色 - 压缩成功
+        final Color colorNormal = ModernColors.getTextPrimary();      // 主题适配的文本颜色
+        final Color colorHoverCompressed = ModernColors.SUCCESS_DARK; // 深绿色 - 悬停时
+        final Color colorHoverNormal = ModernColors.PRIMARY;          // 蓝色 - 悬停时
+
         // Build label text with compression info
         String sizeText;
+        final Color normalColor;
+        final Color hoverColor;
+
         if (isCompressed) {
             // Show compressed size with compression indicator (simple text to avoid wrapping)
             String sizeLabel = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(httpEventInfo.getBodyBytesReceived()));
-            sizeText = String.format("%s 📦 %.0f%%",
-                    sizeLabel,
-                    compressionRatio);
-            // Set teal/green color to indicate optimization/compression (#009688)
-            responseSizeLabel.setForeground(new Color(0, 150, 136));
+            sizeText = String.format("%s 📦%.0f%%", sizeLabel, compressionRatio);
+            normalColor = colorCompressed;
+            hoverColor = colorHoverCompressed;
         } else {
             sizeText = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(bytes));
-            // Reset to default color for non-compressed responses
+            normalColor = colorNormal;
+            hoverColor = colorHoverNormal;
         }
+
         responseSizeLabel.setText(sizeText);
+        responseSizeLabel.setForeground(normalColor);
 
         // Set cursor to hand when hovering to indicate it's interactive
         responseSizeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -302,62 +309,83 @@ public class ResponsePanel extends JPanel {
             responseSizeLabel.removeMouseListener(listener);
         }
 
-        // Add custom tooltip behavior
+        // Add custom tooltip behavior with hover color effects
         if (httpEventInfo != null) {
+            // 定义主题自适应的 tooltip 颜色
+            String colorTitlePrimary = toHtmlColor(ModernColors.PRIMARY);           // 标题蓝色
+            String colorTextSecondary = toHtmlColor(ModernColors.getTextSecondary()); // 次要文本
+            String colorTextPrimary = toHtmlColor(ModernColors.getTextPrimary());     // 主要文本
+            String colorTextHint = toHtmlColor(ModernColors.getTextHint());           // 提示文本
+            String colorSuccess = toHtmlColor(ModernColors.SUCCESS);                  // 成功绿色
+            String colorSuccessDark = toHtmlColor(ModernColors.SUCCESS_DARK);         // 深绿色
+            String colorBorder = toHtmlColor(ModernColors.getBorderLightColor());     // 边框颜色
+
+            // 压缩信息背景色 - 根据主题调整
+            String colorCompressBg = ModernColors.isDarkTheme()
+                ? "rgba(34, 197, 94, 0.15)"   // 暗色主题：半透明绿色
+                : "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"; // 亮色主题：渐变绿色
+
             String tooltip;
             if (isCompressed) {
-                // Enhanced tooltip for compressed responses
+                // Enhanced tooltip for compressed responses - 主题自适应配色
                 tooltip = String.format("<html>" +
-                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 9px; width: 200px; padding: 1px;'>" +
-                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>🔽 Response Size</div>" +
-                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
-                                "<div style='color: #555555; margin-bottom: 1px;'>🏷️ Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                                "<div style='color: #555555; margin-bottom: 1px;'>📦 Body (Compressed): <span style='font-weight: 600; color: #009688;'>%s</span></div>" +
-                                "<div style='margin-left: 6px; color: #777777; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: #555555;'>%s</span></div>" +
-                                "<div style='margin: 2px 0; padding: 2px; background: #E8F5E9; border-radius: 2px;'>" +
-                                "<div style='color: #009688; font-weight: 600; font-size: 9px;'>✨ Compression Ratio: <span style='color: #00796B;'>%.1f%%</span></div>" +
-                                "<div style='color: #009688; font-weight: 600; font-size: 9px;'>💾 Saved: <span style='color: #00796B;'>%s</span></div>" +
+                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 10px; width: 220px; padding: 4px;'>" +
+                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔽 Response Size</div>" +
+                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
+                                "<div style='color: %s; margin-bottom: 3px;'>🏷️ Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
+                                "<div style='color: %s; margin-bottom: 3px;'>📦 Body (Compressed): <span style='font-weight: 600; color: %s;'>%s</span></div>" +
+                                "<div style='margin-left: 8px; color: %s; font-size: 9px; margin-bottom: 4px;'>🔓 Uncompressed: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
+                                "<div style='margin: 4px 0; padding: 6px 8px; background: %s; border-radius: 4px; border-left: 3px solid %s;'>" +
+                                "<div style='color: %s; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>✨ Compression Ratio: <span style='color: %s;'>%.1f%%</span></div>" +
+                                "<div style='color: %s; font-weight: 600; font-size: 10px;'>💾 Saved: <span style='color: %s;'>%s</span></div>" +
                                 "</div>" +
                                 "</div>" +
-                                "<div style='border-top: 1px solid #E3E8F0; margin: 1px 0;'></div>" +
-                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin: 0px; padding: 0px;'>🔼 Request Size</div>" +
-                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
-                                "<div style='color: #555555; margin-bottom: 1px;'>📋 Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                                "<div style='color: #555555;'>📝 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='border-top: 1px solid %s; margin: 6px 0;'></div>" +
+                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔼 Request Size</div>" +
+                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
+                                "<div style='color: %s; margin-bottom: 3px;'>📋 Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
+                                "<div style='color: %s;'>📝 Body: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
                                 "</div>" +
                                 "</div>" +
                                 "</html>",
-                        getSizeText(httpEventInfo.getHeaderBytesReceived()),
-                        getSizeText(httpEventInfo.getBodyBytesReceived()),
-                        getSizeText(bytes),
-                        compressionRatio,
-                        getSizeText(savedBytes),
-                        getSizeText(httpEventInfo.getHeaderBytesSent()),
-                        getSizeText(httpEventInfo.getBodyBytesSent())
+                        colorTitlePrimary,  // 标题颜色
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesReceived()),
+                        colorTextSecondary, colorSuccess, getSizeText(httpEventInfo.getBodyBytesReceived()),
+                        colorTextHint, colorTextSecondary, getSizeText(bytes),
+                        colorCompressBg, colorSuccess,  // 压缩背景和边框
+                        colorSuccessDark, colorSuccessDark, compressionRatio,
+                        colorSuccessDark, colorSuccessDark, getSizeText(savedBytes),
+                        colorBorder,  // 分隔线
+                        colorTitlePrimary,  // 请求大小标题
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesSent()),
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getBodyBytesSent())
                 );
             } else {
-                // Standard tooltip for non-compressed responses
+                // Standard tooltip for non-compressed responses - 主题自适应配色
                 tooltip = String.format("<html>" +
-                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 9px; width: 160px; padding: 1px;'>" +
-                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>🔽 Response Size</div>" +
-                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
-                                "<div style='color: #555555; margin-bottom: 1px;'>🏷️ Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                                "<div style='color: #555555; margin-bottom: 1px;'>📦 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                                "<div style='margin-left: 6px; color: #777777; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: #555555;'>%s</span></div>" +
+                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 10px; width: 180px; padding: 4px;'>" +
+                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔽 Response Size</div>" +
+                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
+                                "<div style='color: %s; margin-bottom: 3px;'>🏷️ Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
+                                "<div style='color: %s; margin-bottom: 3px;'>📦 Body: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
+                                "<div style='margin-left: 8px; color: %s; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
                                 "</div>" +
-                                "<div style='border-top: 1px solid #E3E8F0; margin: 1px 0;'></div>" +
-                                "<div style='color: #2196F3; font-weight: 600; font-size: 10px; margin: 0px; padding: 0px;'>🔼 Request Size</div>" +
-                                "<div style='margin-left: 6px; line-height: 1.1;'>" +
-                                "<div style='color: #555555; margin-bottom: 1px;'>📋 Headers: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
-                                "<div style='color: #555555;'>📝 Body: <span style='font-weight: 500; color: #333333;'>%s</span></div>" +
+                                "<div style='border-top: 1px solid %s; margin: 6px 0;'></div>" +
+                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔼 Request Size</div>" +
+                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
+                                "<div style='color: %s; margin-bottom: 3px;'>📋 Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
+                                "<div style='color: %s;'>📝 Body: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
                                 "</div>" +
                                 "</div>" +
                                 "</html>",
-                        getSizeText(httpEventInfo.getHeaderBytesReceived()),
-                        getSizeText(httpEventInfo.getBodyBytesReceived()),
-                        getSizeText(bytes),
-                        getSizeText(httpEventInfo.getHeaderBytesSent()),
-                        getSizeText(httpEventInfo.getBodyBytesSent())
+                        colorTitlePrimary,  // 标题颜色
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesReceived()),
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getBodyBytesReceived()),
+                        colorTextHint, colorTextSecondary, getSizeText(bytes),
+                        colorBorder,  // 分隔线
+                        colorTitlePrimary,  // 请求大小标题
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesSent()),
+                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getBodyBytesSent())
                 );
             }
 
@@ -367,6 +395,9 @@ public class ResponsePanel extends JPanel {
 
                 @Override
                 public void mouseEntered(MouseEvent e) {
+                    // 悬停时改变颜色，提供视觉反馈
+                    responseSizeLabel.setForeground(hoverColor);
+
                     // Cancel any pending hide timer
                     if (hideTimer != null) {
                         hideTimer.stop();
@@ -380,6 +411,9 @@ public class ResponsePanel extends JPanel {
 
                 @Override
                 public void mouseExited(MouseEvent e) {
+                    // 鼠标离开时恢复原色
+                    responseSizeLabel.setForeground(normalColor);
+
                     // Cancel show timer if mouse exits before tooltip shows
                     if (showTimer != null) {
                         showTimer.stop();
@@ -460,6 +494,13 @@ public class ResponsePanel extends JPanel {
         return String.format("%.2f MB", bytes / 1024.0 / 1024.0);
     }
 
+    /**
+     * 将 Color 转换为 HTML 颜色代码
+     */
+    private String toHtmlColor(Color color) {
+        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
     // 自定义TabButton，支持底部高亮
     private class TabButton extends JButton {
         private final int tabIndex;
@@ -503,11 +544,11 @@ public class ResponsePanel extends JPanel {
             JLabel content = new JLabel(html);
             content.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
             content.setOpaque(true);
-            // Use colors matching ModernColors theme
-            content.setBackground(new Color(250, 251, 253)); // Very light background
-            content.setForeground(new Color(51, 51, 51)); // Dark text for readability
+            // 使用 ModernColors 主题自适应背景色和边框色
+            content.setBackground(ModernColors.getCardBackgroundColor()); // 卡片背景色
+            content.setForeground(ModernColors.getTextPrimary()); // 主要文本颜色
             content.setBorder(new CompoundBorder(
-                    new LineBorder(new Color(200, 210, 220), 1), // Soft border color
+                    new LineBorder(ModernColors.getBorderMediumColor(), 1), // 主题适配边框
                     new EmptyBorder(6, 8, 6, 8) // 减少内边距
             ));
 

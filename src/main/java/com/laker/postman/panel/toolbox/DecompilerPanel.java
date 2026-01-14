@@ -2,13 +2,11 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 import org.benf.cfr.reader.api.CfrDriver;
-import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -20,7 +18,9 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.dnd.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -47,6 +47,7 @@ public class DecompilerPanel extends JPanel {
     private static final String CLASS_EXTENSION = ".class";
     private static final String JAR_EXTENSION = ".jar";
     private static final String ZIP_EXTENSION = ".zip";
+    private static final String JAVA_EXTENSION = ".java";
 
     private JTextField filePathField;
     private JTree fileTree;
@@ -158,6 +159,9 @@ public class DecompilerPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(fileTree);
         panel.add(scrollPane, BorderLayout.CENTER);
 
+        // 为树面板添加拖拽支持
+        setupDragAndDrop(scrollPane);
+
         // 树操作按钮
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         JButton expandAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL));
@@ -196,8 +200,14 @@ public class DecompilerPanel extends JPanel {
         exportBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_TOOLTIP));
         exportBtn.addActionListener(e -> exportCode());
 
+        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
+        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 14, 14));
+        clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR_TOOLTIP));
+        clearBtn.addActionListener(e -> clearAll());
+
         toolPanel.add(copyBtn);
         toolPanel.add(exportBtn);
+        toolPanel.add(clearBtn);
         headerPanel.add(toolPanel, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);
@@ -211,11 +221,16 @@ public class DecompilerPanel extends JPanel {
         codeArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         codeArea.setMargin(new Insets(10, 10, 10, 10));
 
+        // 应用编辑器主题 - 支持亮色/暗色模式自适应
+        EditorThemeUtil.loadTheme(codeArea);
+
         RTextScrollPane scrollPane = new RTextScrollPane(codeArea);
         scrollPane.setFoldIndicatorEnabled(true);
         scrollPane.setLineNumbersEnabled(true);
         panel.add(scrollPane, BorderLayout.CENTER);
 
+        // 为代码面板添加拖拽支持
+        setupDragAndDrop(scrollPane);
 
         return panel;
     }
@@ -236,6 +251,69 @@ public class DecompilerPanel extends JPanel {
         panel.add(statusLabel, BorderLayout.WEST);
 
         return panel;
+    }
+
+    /**
+     * 设置拖拽支持
+     */
+    private void setupDragAndDrop(JComponent component) {
+        new DropTarget(component, new DropTargetAdapter() {
+            @Override
+            public void dragEnter(DropTargetDragEvent dtde) {
+                if (isDragAcceptable(dtde)) {
+                    dtde.acceptDrag(DnDConstants.ACTION_COPY);
+                    // 添加视觉反馈
+                    component.setBorder(BorderFactory.createLineBorder(ModernColors.PRIMARY, 2));
+                } else {
+                    dtde.rejectDrag();
+                }
+            }
+
+            @Override
+            public void dragExit(DropTargetEvent dte) {
+                // 移除视觉反馈
+                component.setBorder(null);
+            }
+
+            @Override
+            public void drop(DropTargetDropEvent dtde) {
+                // 移除视觉反馈
+                component.setBorder(null);
+
+                try {
+                    if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                        dtde.acceptDrop(DnDConstants.ACTION_COPY);
+
+                        @SuppressWarnings("unchecked")
+                        List<File> droppedFiles = (List<File>) dtde.getTransferable()
+                                .getTransferData(DataFlavor.javaFileListFlavor);
+
+                        if (!droppedFiles.isEmpty()) {
+                            File file = droppedFiles.get(0);
+                            loadFile(file);
+                            dtde.dropComplete(true);
+                        } else {
+                            dtde.dropComplete(false);
+                        }
+                    } else {
+                        dtde.rejectDrop();
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to handle dropped file", e);
+                    dtde.dropComplete(false);
+                    NotificationUtil.showError(
+                            I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
+                    );
+                }
+            }
+        });
+    }
+
+    /**
+     * 检查拖拽的数据是否可接受
+     */
+    private boolean isDragAcceptable(DropTargetDragEvent dtde) {
+        return dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
     }
 
     /**
@@ -341,6 +419,13 @@ public class DecompilerPanel extends JPanel {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
             }
+            // 缓存嵌套的JAR/ZIP文件内容，以便后续展开
+            else if (entryName.toLowerCase().endsWith(JAR_EXTENSION) ||
+                    entryName.toLowerCase().endsWith(ZIP_EXTENSION)) {
+                try (InputStream is = currentJarFile.getInputStream(entry)) {
+                    classFileCache.put(entryName, is.readAllBytes());
+                }
+            }
 
             addEntryToTree(root, packageNodes, entryName, entry.isDirectory());
         }
@@ -371,6 +456,13 @@ public class DecompilerPanel extends JPanel {
 
             // 缓存class文件
             if (entryName.endsWith(CLASS_EXTENSION)) {
+                try (InputStream is = currentZipFile.getInputStream(entry)) {
+                    classFileCache.put(entryName, is.readAllBytes());
+                }
+            }
+            // 缓存嵌套的JAR/ZIP文件内容，以便后续展开
+            else if (entryName.toLowerCase().endsWith(JAR_EXTENSION) ||
+                    entryName.toLowerCase().endsWith(ZIP_EXTENSION)) {
                 try (InputStream is = currentZipFile.getInputStream(entry)) {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
@@ -425,6 +517,8 @@ public class DecompilerPanel extends JPanel {
             boolean isLastPart = (i == parts.length - 1);
             boolean isFile = isLastPart && !isDirectory;
             boolean isClassFile = isFile && part.endsWith(CLASS_EXTENSION);
+            boolean isJarFile = isFile && (part.toLowerCase().endsWith(JAR_EXTENSION) ||
+                    part.toLowerCase().endsWith(ZIP_EXTENSION));
 
             // 检查节点是否已存在
             DefaultMutableTreeNode node = packageNodes.get(nodePath);
@@ -432,6 +526,7 @@ public class DecompilerPanel extends JPanel {
                 // 创建新节点
                 FileNodeData nodeData = new FileNodeData(part, !isFile, isClassFile);
                 nodeData.fullPath = nodePath;
+                nodeData.isJarFile = isJarFile;
                 node = new DefaultMutableTreeNode(nodeData);
                 packageNodes.put(nodePath, node);
                 parentNode.add(node);
@@ -451,6 +546,9 @@ public class DecompilerPanel extends JPanel {
         if (userObject instanceof FileNodeData fileData) {
             if (fileData.isClassFile) {
                 decompileAndShow(fileData.fullPath != null ? fileData.fullPath : fileData.name);
+            } else if (fileData.isJarFile) {
+                // 处理嵌套的JAR/ZIP文件
+                loadNestedJar(fileData.fullPath, node);
             } else if (!fileData.isDirectory) {
                 // 尝试显示文本文件
                 showTextFile(fileData.fullPath != null ? fileData.fullPath : fileData.name);
@@ -458,6 +556,131 @@ public class DecompilerPanel extends JPanel {
         } else if (userObject instanceof String fileName && fileName.endsWith(CLASS_EXTENSION)) {
             // 单个class文件的情况
             decompileAndShow(fileName);
+        }
+    }
+
+    /**
+     * 加载嵌套的JAR/ZIP文件
+     */
+    private void loadNestedJar(String jarPath, DefaultMutableTreeNode parentNode) {
+        // 如果节点已经有子节点，说明已经展开过，直接返回
+        if (parentNode.getChildCount() > 0) {
+            return;
+        }
+
+        byte[] jarBytes = classFileCache.get(jarPath);
+        if (jarBytes == null) {
+            NotificationUtil.showWarning("JAR file not found in cache: " + jarPath);
+            return;
+        }
+
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                try {
+                    statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOADING) + ": " + jarPath);
+
+                    // 创建临时文件保存嵌套的JAR
+                    File tempJar = Files.createTempFile("nested-jar-", ".jar").toFile();
+                    tempJar.deleteOnExit();
+                    Files.write(tempJar.toPath(), jarBytes);
+
+                    // 使用JarFile读取嵌套的JAR
+                    Map<String, DefaultMutableTreeNode> packageNodes = new HashMap<>();
+                    try (JarFile nestedJar = new JarFile(tempJar)) {
+                        Enumeration<JarEntry> entries = nestedJar.entries();
+                        while (entries.hasMoreElements()) {
+                            JarEntry entry = entries.nextElement();
+                            String entryName = entry.getName();
+                            String fullEntryPath = jarPath + "!/" + entryName;
+
+                            // 缓存嵌套JAR中的class文件
+                            if (entryName.endsWith(CLASS_EXTENSION)) {
+                                try (InputStream is = nestedJar.getInputStream(entry)) {
+                                    classFileCache.put(fullEntryPath, is.readAllBytes());
+                                }
+                            }
+                            // 缓存更深层嵌套的JAR/ZIP
+                            else if (entryName.toLowerCase().endsWith(JAR_EXTENSION) ||
+                                    entryName.toLowerCase().endsWith(ZIP_EXTENSION)) {
+                                try (InputStream is = nestedJar.getInputStream(entry)) {
+                                    classFileCache.put(fullEntryPath, is.readAllBytes());
+                                }
+                            }
+
+                            // 添加到树中（相对于当前JAR节点）
+                            addNestedEntryToTree(parentNode, packageNodes, entryName,
+                                    fullEntryPath, entry.isDirectory());
+                        }
+                    }
+
+                    // 删除临时文件
+                    Files.deleteIfExists(tempJar.toPath());
+
+                } catch (Exception e) {
+                    log.error("Failed to load nested JAR: {}", jarPath, e);
+                    SwingUtilities.invokeLater(() ->
+                            NotificationUtil.showError("Failed to load nested JAR: " + e.getMessage())
+                    );
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                // 刷新树显示
+                treeModel.nodeStructureChanged(parentNode);
+                // 展开节点
+                TreePath path = new TreePath(parentNode.getPath());
+                fileTree.expandPath(path);
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_READY));
+            }
+        };
+        worker.execute();
+    }
+
+    /**
+     * 添加嵌套JAR的条目到树中
+     */
+    private void addNestedEntryToTree(DefaultMutableTreeNode parentNode,
+                                      Map<String, DefaultMutableTreeNode> packageNodes,
+                                      String entryName, String fullPath, boolean isDirectory) {
+        String[] parts = entryName.split("/");
+        DefaultMutableTreeNode currentParent = parentNode;
+        StringBuilder currentPath = new StringBuilder();
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            if (part.isEmpty()) continue;
+
+            // 构建当前节点的相对路径
+            if (!currentPath.isEmpty()) {
+                currentPath.append("/");
+            }
+            currentPath.append(part);
+            String nodePath = currentPath.toString();
+
+            boolean isLastPart = (i == parts.length - 1);
+            boolean isFile = isLastPart && !isDirectory;
+            boolean isClassFile = isFile && part.endsWith(CLASS_EXTENSION);
+            boolean isJarFile = isFile && (part.toLowerCase().endsWith(JAR_EXTENSION) ||
+                    part.toLowerCase().endsWith(ZIP_EXTENSION));
+
+            // 检查节点是否已存在
+            DefaultMutableTreeNode node = packageNodes.get(nodePath);
+            if (node == null) {
+                // 创建新节点
+                FileNodeData nodeData = new FileNodeData(part, !isFile, isClassFile);
+                // 使用完整路径（包含父JAR路径）
+                nodeData.fullPath = fullPath.substring(0, fullPath.lastIndexOf("!/") + 2) + nodePath;
+                nodeData.isJarFile = isJarFile;
+                node = new DefaultMutableTreeNode(nodeData);
+                packageNodes.put(nodePath, node);
+                currentParent.add(node);
+            }
+
+            // 移动到下一层
+            currentParent = node;
         }
     }
 
@@ -508,11 +731,11 @@ public class DecompilerPanel extends JPanel {
      * 使用CFR反编译Class字节码
      */
     private String decompileClass(byte[] classBytes, String className) {
-        StringBuilder result = new StringBuilder();
-
         try {
             // 创建临时目录保存class文件
             File tempDir = Files.createTempDirectory("cfr-decompile").toFile();
+
+            // 保存 class 文件
             File classFile = new File(tempDir, className);
             File parentDir = classFile.getParentFile();
             if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
@@ -520,44 +743,172 @@ public class DecompilerPanel extends JPanel {
             }
             Files.write(classFile.toPath(), classBytes);
 
-            // CFR配置
+            // 创建输出目录
+            File outputDir = new File(tempDir, "output");
+            if (!outputDir.mkdirs() && !outputDir.exists()) {
+                log.warn("Failed to create output directory: {}", outputDir);
+            }
+
+            // CFR配置 - 输出到文件
             Map<String, String> options = new HashMap<>();
-            options.put("outputdir", tempDir.getAbsolutePath());
+            options.put("outputpath", outputDir.getAbsolutePath());  // 使用 outputpath 而不是 outputdir
+            options.put("showversion", "false");  // 不显示版本信息
+            options.put("hideutf", "false");      // 显示 UTF-8 字符
+            options.put("innerclasses", "true");  // 反编译内部类
+            options.put("skipbatchinnerclasses", "false");  // 不跳过批处理内部类
 
-            // 自定义输出收集器
-            OutputSinkFactory mySink = new OutputSinkFactory() {
-                @Override
-                public List<OutputSinkFactory.SinkClass> getSupportedSinks(OutputSinkFactory.SinkType sinkType,
-                                                                           Collection<OutputSinkFactory.SinkClass> collection) {
-                    return Arrays.asList(OutputSinkFactory.SinkClass.STRING,
-                            OutputSinkFactory.SinkClass.DECOMPILED,
-                            OutputSinkFactory.SinkClass.DECOMPILED_MULTIVER);
-                }
-
-                @Override
-                public <T> OutputSinkFactory.Sink<T> getSink(OutputSinkFactory.SinkType sinkType,
-                                                             OutputSinkFactory.SinkClass sinkClass) {
-                    return sinkable -> result.append(sinkable.toString());
-                }
-            };
+            log.debug("CFR decompiling: {} to {}", classFile.getAbsolutePath(), outputDir.getAbsolutePath());
 
             // 执行反编译
             CfrDriver driver = new CfrDriver.Builder()
                     .withOptions(options)
-                    .withOutputSink(mySink)
                     .build();
             driver.analyse(Collections.singletonList(classFile.getAbsolutePath()));
+
+            // 读取反编译后的 Java 文件
+            String result = readDecompiledFile(outputDir, className);
+
+            log.debug("Decompilation result length: {}", result.length());
 
             // 清理临时文件
             deleteDirectory(tempDir);
 
-            return !result.isEmpty() ? result.toString() :
-                    "// Failed to decompile: No output from CFR";
+            return !result.isEmpty() ? result : "// Failed to decompile: No output from CFR";
 
         } catch (Exception e) {
             log.error("CFR decompilation failed", e);
             return "// Decompilation failed: " + e.getMessage();
         }
+    }
+
+    /**
+     * 从输出目录读取反编译后的 Java 文件
+     */
+    private String readDecompiledFile(File outputDir, String className) {
+        try {
+            log.debug("Reading decompiled file for class: {} from dir: {}", className, outputDir.getAbsolutePath());
+
+            // 将 className 转换为文件路径
+            // 例如: com/example/Test.class -> com/example/Test.java
+            String javaFileName = className.replace(CLASS_EXTENSION, JAVA_EXTENSION);
+            File javaFile = new File(outputDir, javaFileName);
+
+            log.debug("Looking for Java file at: {}", javaFile.getAbsolutePath());
+
+            if (javaFile.exists()) {
+                log.debug("Found Java file directly at expected path");
+                String content = Files.readString(javaFile.toPath(), StandardCharsets.UTF_8);
+                // 清理可能的调试信息
+                return cleanupDecompiledCode(content);
+            }
+
+            // 如果直接路径不存在，尝试在输出目录中查找 .java 文件
+            log.debug("Java file not found at expected path, searching in output directory...");
+            File[] javaFiles = findJavaFiles(outputDir);
+            log.debug("Found {} Java files in output directory", javaFiles.length);
+
+            if (javaFiles.length > 0) {
+                log.debug("Using first found Java file: {}", javaFiles[0].getAbsolutePath());
+                // 返回第一个找到的 Java 文件
+                String content = Files.readString(javaFiles[0].toPath(), StandardCharsets.UTF_8);
+                return cleanupDecompiledCode(content);
+            }
+
+            // 列出输出目录内容以便调试
+            log.debug("Output directory contents:");
+            listDirectoryContents(outputDir, "  ");
+
+            return "// No Java file found in output directory\n// Expected: " + javaFileName +
+                   "\n// Output dir: " + outputDir.getAbsolutePath();
+        } catch (IOException e) {
+            log.error("Failed to read decompiled file", e);
+            return "// Failed to read decompiled file: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 列出目录内容（用于调试）
+     */
+    private void listDirectoryContents(File dir, String indent) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                log.debug("{}{}  ({})", indent, file.getName(), file.isDirectory() ? "DIR" : "FILE");
+                if (file.isDirectory()) {
+                    listDirectoryContents(file, indent + "  ");
+                }
+            }
+        }
+    }
+
+    /**
+     * 递归查找目录中的所有 .java 文件
+     */
+    private File[] findJavaFiles(File dir) {
+        if (!dir.isDirectory()) {
+            return new File[0];
+        }
+
+        List<File> javaFiles = new ArrayList<>();
+        findJavaFilesRecursive(dir, javaFiles);
+        return javaFiles.toArray(new File[0]);
+    }
+
+    /**
+     * 递归查找 Java 文件
+     */
+    private void findJavaFilesRecursive(File dir, List<File> javaFiles) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    findJavaFilesRecursive(file, javaFiles);
+                } else if (file.getName().endsWith(JAVA_EXTENSION)) {
+                    javaFiles.add(file);
+                }
+            }
+        }
+    }
+
+    /**
+     * 清理反编译后的代码，移除调试信息
+     */
+    private String cleanupDecompiledCode(String code) {
+        // 按行分割
+        String[] lines = code.split("\n");
+        StringBuilder cleaned = new StringBuilder();
+        boolean startedOutput = false;
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+
+            // 跳过开头的调试信息行
+            if (!startedOutput && isDebugLine(trimmed)) {
+                continue;
+            }
+
+            // 一旦遇到非调试信息的内容，就开始输出
+            if (!startedOutput && !trimmed.isEmpty() && !isDebugLine(trimmed)) {
+                startedOutput = true;
+            }
+
+            // 开始输出后，保留所有内容（包括空行）
+            if (startedOutput) {
+                cleaned.append(line).append("\n");
+            }
+        }
+
+        return cleaned.toString();
+    }
+
+    /**
+     * 判断是否为调试信息行
+     */
+    private boolean isDebugLine(String trimmed) {
+        return trimmed.startsWith("Analysing ") ||
+                trimmed.startsWith("Processing ") ||
+                trimmed.startsWith("Decompiling ") ||
+                (trimmed.startsWith("/*") && trimmed.contains("Decompiled with CFR"));
     }
 
     /**
@@ -626,7 +977,7 @@ public class DecompilerPanel extends JPanel {
         if (name.endsWith(".yaml") || name.endsWith(".yml")) return SyntaxConstants.SYNTAX_STYLE_YAML;
         if (name.endsWith(".html")) return SyntaxConstants.SYNTAX_STYLE_HTML;
         if (name.endsWith(".js")) return SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT;
-        if (name.endsWith(".java")) return SyntaxConstants.SYNTAX_STYLE_JAVA;
+        if (name.endsWith(JAVA_EXTENSION)) return SyntaxConstants.SYNTAX_STYLE_JAVA;
         return SyntaxConstants.SYNTAX_STYLE_NONE;
     }
 
@@ -674,6 +1025,30 @@ public class DecompilerPanel extends JPanel {
                 );
             }
         }
+    }
+
+    /**
+     * 清空所有内容
+     */
+    private void clearAll() {
+        // 关闭当前打开的文件
+        closeCurrentJar();
+
+        // 清空文件路径
+        currentFile = null;
+        filePathField.setText("");
+
+        // 清空代码区域
+        codeArea.setText("");
+
+        // 重置树
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
+        treeModel.setRoot(root);
+
+        // 更新状态
+        statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_READY));
+
+        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEARED));
     }
 
     /**
@@ -787,12 +1162,14 @@ public class DecompilerPanel extends JPanel {
         String name;
         boolean isDirectory;
         boolean isClassFile;
+        boolean isJarFile;
         String fullPath;
 
         FileNodeData(String name, boolean isDirectory, boolean isClassFile) {
             this.name = name;
             this.isDirectory = isDirectory;
             this.isClassFile = isClassFile;
+            this.isJarFile = false;
         }
 
         @Override
@@ -802,9 +1179,11 @@ public class DecompilerPanel extends JPanel {
     }
 
     /**
-     * 文件树渲染器
+     * 文件树渲染器 - 使用 FontAwesome 图标和主题适配
      */
     private static class FileTreeCellRenderer extends DefaultTreeCellRenderer {
+        private static final int ICON_SIZE = 16;
+
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
                                                       boolean expanded, boolean leaf, int row, boolean hasFocus) {
@@ -813,10 +1192,23 @@ public class DecompilerPanel extends JPanel {
             if (value instanceof DefaultMutableTreeNode node) {
                 Object userObject = node.getUserObject();
                 if (userObject instanceof FileNodeData fileData) {
+                    Color iconColor = sel ?
+                            UIManager.getColor("Tree.selectionForeground") :
+                            ModernColors.getTextPrimary();
+
                     if (fileData.isClassFile) {
-                        setIcon(UIManager.getIcon("FileView.fileIcon"));
+                        // Java class 文件图标
+                        setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_CODE_O, ICON_SIZE, iconColor));
+                    } else if (fileData.isJarFile) {
+                        // JAR/ZIP 文件图标
+                        setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_ARCHIVE_O, ICON_SIZE, iconColor));
                     } else if (fileData.isDirectory) {
-                        setIcon(UIManager.getIcon("FileView.directoryIcon"));
+                        // 目录图标 - 根据展开状态显示不同图标
+                        FontAwesome folderIcon = expanded ? FontAwesome.FOLDER_OPEN : FontAwesome.FOLDER;
+                        setIcon(IconFontSwing.buildIcon(folderIcon, ICON_SIZE, iconColor));
+                    } else {
+                        // 其他文件图标
+                        setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_O, ICON_SIZE, iconColor));
                     }
                 }
             }

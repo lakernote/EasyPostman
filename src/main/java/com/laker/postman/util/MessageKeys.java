@@ -1613,6 +1613,9 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_EXPORT_SUCCESS = "toolbox.decompiler.export_success";
     public static final String TOOLBOX_DECOMPILER_EXPORT_FAILED = "toolbox.decompiler.export_failed";
     public static final String TOOLBOX_DECOMPILER_READY = "toolbox.decompiler.ready";
+    public static final String TOOLBOX_DECOMPILER_CLEAR = "toolbox.decompiler.clear";
+    public static final String TOOLBOX_DECOMPILER_CLEAR_TOOLTIP = "toolbox.decompiler.clear_tooltip";
+    public static final String TOOLBOX_DECOMPILER_CLEARED = "toolbox.decompiler.cleared";
 
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";

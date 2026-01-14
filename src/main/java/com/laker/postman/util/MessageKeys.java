@@ -1590,8 +1590,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_FILE_INFO = "toolbox.decompiler.file_info";
     public static final String TOOLBOX_DECOMPILER_CLASS_VERSION = "toolbox.decompiler.class_version";
     public static final String TOOLBOX_DECOMPILER_JAVA_VERSION = "toolbox.decompiler.java_version";
-    public static final String TOOLBOX_DECOMPILER_FILE_SIZE = "toolbox.decompiler.file_size";
-    public static final String TOOLBOX_DECOMPILER_PACKAGE = "toolbox.decompiler.package";
     public static final String TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT = "toolbox.decompiler.select_file_prompt";
     public static final String TOOLBOX_DECOMPILER_UNSUPPORTED_FILE = "toolbox.decompiler.unsupported_file";
     public static final String TOOLBOX_DECOMPILER_LOAD_ERROR = "toolbox.decompiler.load_error";
@@ -1599,14 +1597,8 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_COLLAPSE_ALL = "toolbox.decompiler.collapse_all";
     public static final String TOOLBOX_DECOMPILER_COPY_CODE = "toolbox.decompiler.copy_code";
     public static final String TOOLBOX_DECOMPILER_EXPORT = "toolbox.decompiler.export";
-    public static final String TOOLBOX_DECOMPILER_SEARCH = "toolbox.decompiler.search";
     public static final String TOOLBOX_DECOMPILER_BYTES = "toolbox.decompiler.bytes";
-    public static final String TOOLBOX_DECOMPILER_FILE_PATH_TOOLTIP = "toolbox.decompiler.file_path_tooltip";
-    public static final String TOOLBOX_DECOMPILER_DRAG_DROP_HINT = "toolbox.decompiler.drag_drop_hint";
-    public static final String TOOLBOX_DECOMPILER_EXPAND_ALL_TOOLTIP = "toolbox.decompiler.expand_all_tooltip";
-    public static final String TOOLBOX_DECOMPILER_COLLAPSE_ALL_TOOLTIP = "toolbox.decompiler.collapse_all_tooltip";
-    public static final String TOOLBOX_DECOMPILER_COPY_CODE_TOOLTIP = "toolbox.decompiler.copy_code_tooltip";
-    public static final String TOOLBOX_DECOMPILER_EXPORT_TOOLTIP = "toolbox.decompiler.export_tooltip";
+    public static final String TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW = "toolbox.decompiler.drag_drop_hint_to_below";
     public static final String TOOLBOX_DECOMPILER_EXPORT_CODE = "toolbox.decompiler.export_code";
     public static final String TOOLBOX_DECOMPILER_CODE_COPIED = "toolbox.decompiler.code_copied";
     public static final String TOOLBOX_DECOMPILER_NO_CODE_TO_EXPORT = "toolbox.decompiler.no_code_to_export";

@@ -101,17 +101,25 @@ public class DecompilerPanel extends JPanel {
         filePathField.setFocusable(false);
         fileInfoPanel.add(filePathField, BorderLayout.CENTER);
 
-        // 浏览按钮
+        // 按钮面板（浏览按钮和清空按钮）
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         JButton browseButton = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
         browseButton.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
         browseButton.addActionListener(e -> browseFile());
-        fileInfoPanel.add(browseButton, BorderLayout.EAST);
+
+        JButton clearButton = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
+        clearButton.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        clearButton.addActionListener(e -> clearAll());
+
+        buttonPanel.add(browseButton);
+        buttonPanel.add(clearButton);
+        fileInfoPanel.add(buttonPanel, BorderLayout.EAST);
 
         panel.add(fileInfoPanel, BorderLayout.CENTER);
 
-        // 拖放提示标签 - 更醒目的提示
+        // 拖放提示标签 - 提示拖到下方面板
         JLabel dragDropLabel = new JLabel(
-                "💡 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT),
+                "💡 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW),
                 SwingConstants.CENTER
         );
         dragDropLabel.setFont(dragDropLabel.getFont().deriveFont(Font.ITALIC));
@@ -195,13 +203,8 @@ public class DecompilerPanel extends JPanel {
         exportBtn.setIcon(IconUtil.createThemed("icons/export.svg", 14, 14));
         exportBtn.addActionListener(e -> exportCode());
 
-        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
-        clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 14, 14));
-        clearBtn.addActionListener(e -> clearAll());
-
         toolPanel.add(copyBtn);
         toolPanel.add(exportBtn);
-        toolPanel.add(clearBtn);
         headerPanel.add(toolPanel, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);

@@ -418,8 +418,11 @@ public class DecompilerPanel extends JPanel {
                 }
             }
 
-            addEntryToTree(root, packageNodes, entryName, entry.isDirectory());
+            addEntryToTree(root, packageNodes, entryName, entry.isDirectory(), entry.getSize());
         }
+
+        // 计算所有目录的大小
+        calculateDirectorySizes(root);
 
         SwingUtilities.invokeLater(() -> {
             treeModel.setRoot(root);
@@ -452,8 +455,11 @@ public class DecompilerPanel extends JPanel {
                 }
             }
 
-            addEntryToTree(root, packageNodes, entryName, entry.isDirectory());
+            addEntryToTree(root, packageNodes, entryName, entry.isDirectory(), entry.getSize());
         }
+
+        // 计算所有目录的大小
+        calculateDirectorySizes(root);
 
         SwingUtilities.invokeLater(() -> {
             treeModel.setRoot(root);
@@ -483,7 +489,7 @@ public class DecompilerPanel extends JPanel {
      * 添加条目到树中
      */
     private void addEntryToTree(DefaultMutableTreeNode root, Map<String, DefaultMutableTreeNode> packageNodes,
-                                String entryName, boolean isDirectory) {
+                                String entryName, boolean isDirectory, long size) {
         String[] parts = entryName.split("/");
         DefaultMutableTreeNode parentNode = root;
         StringBuilder currentPath = new StringBuilder();
@@ -512,6 +518,10 @@ public class DecompilerPanel extends JPanel {
                 FileNodeData nodeData = new FileNodeData(part, !isFile, isClassFile);
                 nodeData.fullPath = nodePath;
                 nodeData.isJarFile = isJarFile;
+                // 只为文件设置大小，目录大小稍后计算
+                if (isFile && size >= 0) {
+                    nodeData.size = size;
+                }
                 node = new DefaultMutableTreeNode(nodeData);
                 packageNodes.put(nodePath, node);
                 parentNode.add(node);
@@ -520,6 +530,32 @@ public class DecompilerPanel extends JPanel {
             // 移动到下一层
             parentNode = node;
         }
+    }
+
+    /**
+     * 递归计算目录大小（所有子文件的总和）
+     */
+    private long calculateDirectorySizes(DefaultMutableTreeNode node) {
+        Object userObject = node.getUserObject();
+        if (!(userObject instanceof FileNodeData fileData)) {
+            return 0;
+        }
+
+        // 如果是文件，直接返回其大小
+        if (!fileData.isDirectory) {
+            return fileData.size;
+        }
+
+        // 如果是目录，递归计算所有子节点的大小
+        long totalSize = 0;
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
+            totalSize += calculateDirectorySizes(childNode);
+        }
+
+        // 设置目录的总大小
+        fileData.size = totalSize;
+        return totalSize;
     }
 
     /**
@@ -588,9 +624,12 @@ public class DecompilerPanel extends JPanel {
 
                             // 添加到树中（相对于当前JAR节点）
                             addNestedEntryToTree(parentNode, packageNodes, entryName,
-                                    fullEntryPath, entry.isDirectory());
+                                    fullEntryPath, entry.isDirectory(), entry.getSize());
                         }
                     }
+
+                    // 计算嵌套JAR中所有目录的大小
+                    calculateDirectorySizes(parentNode);
 
                     // 删除临时文件
                     Files.deleteIfExists(tempJar.toPath());
@@ -622,7 +661,7 @@ public class DecompilerPanel extends JPanel {
      */
     private void addNestedEntryToTree(DefaultMutableTreeNode parentNode,
                                       Map<String, DefaultMutableTreeNode> packageNodes,
-                                      String entryName, String fullPath, boolean isDirectory) {
+                                      String entryName, String fullPath, boolean isDirectory, long size) {
         String[] parts = entryName.split("/");
         DefaultMutableTreeNode currentParent = parentNode;
         StringBuilder currentPath = new StringBuilder();
@@ -652,6 +691,10 @@ public class DecompilerPanel extends JPanel {
                 // 使用完整路径（包含父JAR路径）
                 nodeData.fullPath = fullPath.substring(0, fullPath.lastIndexOf("!/") + 2) + nodePath;
                 nodeData.isJarFile = isJarFile;
+                // 只为文件设置大小，目录大小稍后计算
+                if (isFile && size >= 0) {
+                    nodeData.size = size;
+                }
                 node = new DefaultMutableTreeNode(nodeData);
                 packageNodes.put(nodePath, node);
                 currentParent.add(node);
@@ -1186,12 +1229,14 @@ public class DecompilerPanel extends JPanel {
         boolean isClassFile;
         boolean isJarFile;
         String fullPath;
+        long size; // 文件大小（字节），目录为其所有子文件的总大小
 
         FileNodeData(String name, boolean isDirectory, boolean isClassFile) {
             this.name = name;
             this.isDirectory = isDirectory;
             this.isClassFile = isClassFile;
             this.isJarFile = false;
+            this.size = 0;
         }
 
         @Override
@@ -1221,10 +1266,28 @@ public class DecompilerPanel extends JPanel {
                     if (icon != null) {
                         setIcon(icon);
                     }
+
+                    // 显示文件/目录名称和大小
+                    if (fileData.size > 0) {
+                        String sizeStr = formatFileSize(fileData.size);
+                        setText(fileData.name + " (" + sizeStr + ")");
+                    } else {
+                        setText(fileData.name);
+                    }
                 }
             }
 
             return this;
+        }
+
+        /**
+         * 格式化文件大小为人类可读格式
+         */
+        private String formatFileSize(long size) {
+            if (size < 1024) return size + " B";
+            if (size < 1024 * 1024) return String.format("%.2f KB", size / 1024.0);
+            if (size < 1024 * 1024 * 1024) return String.format("%.2f MB", size / (1024.0 * 1024.0));
+            return String.format("%.2f GB", size / (1024.0 * 1024.0 * 1024.0));
         }
 
         /**

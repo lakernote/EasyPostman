@@ -167,24 +167,40 @@ public class DecompilerPanel extends JPanel {
         // 为树面板添加拖拽支持
         setupDragAndDrop(scrollPane);
 
-        // 树操作按钮
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        JButton expandAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL));
+        // 树操作工具栏 - 使用紧凑的图标按钮
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 2));
+
+        // 展开按钮
+        JButton expandAllBtn = new JButton(IconUtil.createThemed("icons/expand.svg", 16, 16));
+        expandAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL));
         expandAllBtn.addActionListener(e -> expandTree(fileTree, 3));
-        JButton collapseAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL));
+        expandAllBtn.setFocusPainted(false);
+
+        // 收起按钮
+        JButton collapseAllBtn = new JButton(IconUtil.createThemed("icons/collapse.svg", 16, 16));
+        collapseAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL));
         collapseAllBtn.addActionListener(e -> collapseTree(fileTree));
+        collapseAllBtn.setFocusPainted(false);
 
-        JButton sortByNameBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
-        sortByNameBtn.setIcon(IconUtil.createThemed("icons/text-file.svg", 14, 14));
+        // 分隔符
+        JSeparator separator1 = new JSeparator(SwingConstants.VERTICAL);
+        separator1.setPreferredSize(new Dimension(2, 20));
+
+        // 按名称排序按钮
+        JButton sortByNameBtn = new JButton(IconUtil.createThemed("icons/text-file.svg", 16, 16));
+        sortByNameBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
         sortByNameBtn.addActionListener(e -> sortTreeByName());
+        sortByNameBtn.setFocusPainted(false);
 
-        JButton sortBySizeBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
-        sortBySizeBtn.setIcon(IconUtil.createThemed("icons/detail.svg", 14, 14));
+        // 按大小排序按钮
+        JButton sortBySizeBtn = new JButton(IconUtil.createThemed("icons/detail.svg", 16, 16));
+        sortBySizeBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
         sortBySizeBtn.addActionListener(e -> sortTreeBySize());
+        sortBySizeBtn.setFocusPainted(false);
 
         buttonPanel.add(expandAllBtn);
         buttonPanel.add(collapseAllBtn);
-        buttonPanel.add(new JLabel(" | "));
+        buttonPanel.add(separator1);
         buttonPanel.add(sortByNameBtn);
         buttonPanel.add(sortBySizeBtn);
         panel.add(buttonPanel, BorderLayout.SOUTH);

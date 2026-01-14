@@ -1280,7 +1280,7 @@ public class DecompilerPanel extends JPanel {
             if (value instanceof DefaultMutableTreeNode node) {
                 Object userObject = node.getUserObject();
                 if (userObject instanceof FileNodeData fileData) {
-                    Icon icon = getIconForFileData(fileData, expanded);
+                    Icon icon = getIconForFileData(fileData);
                     if (icon != null) {
                         setIcon(icon);
                     }
@@ -1293,12 +1293,12 @@ public class DecompilerPanel extends JPanel {
         /**
          * 根据文件数据获取对应的彩色 SVG 图标
          */
-        private Icon getIconForFileData(FileNodeData fileData, boolean expanded) {
-            String iconKey;
+        private Icon getIconForFileData(FileNodeData fileData) {
+            String iconKey = "java-file";
 
             if (fileData.isDirectory) {
                 // 目录图标 - 根据展开状态
-                iconKey = expanded ? "folder-open" : "folder";
+                iconKey = "group";
             } else if (fileData.isClassFile) {
                 // Class 文件也使用 java-file 图标
                 iconKey = "java-file";
@@ -1307,8 +1307,6 @@ public class DecompilerPanel extends JPanel {
                 String fileName = fileData.name.toLowerCase();
                 if (fileName.endsWith(".jar")) {
                     iconKey = "jar-file";
-                } else {
-                    iconKey = "zip-file";
                 }
             } else {
                 // 其他文件 - 根据扩展名区分

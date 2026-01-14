@@ -123,7 +123,7 @@ public class RequestLinePanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT) :
                 I18nUtil.getMessage(MessageKeys.BUTTON_SEND);
         String iconPath = protocol.isWebSocketProtocol() ?
-                "icons/connect-white.svg" : "icons/send-white.svg";
+                "icons/connect-white.svg" : "icons/send.svg";
 
         PrimaryButton button = new PrimaryButton(text, iconPath);
         button.addActionListener(sendAction);
@@ -212,7 +212,7 @@ public class RequestLinePanel extends JPanel {
             sendButton.setIcon(new FlatSVGIcon("icons/connect-white.svg", ICON_SIZE, ICON_SIZE));
         } else {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
-            sendButton.setIcon(new FlatSVGIcon("icons/send-white.svg", ICON_SIZE, ICON_SIZE));
+            sendButton.setIcon(new FlatSVGIcon("icons/send.svg", ICON_SIZE, ICON_SIZE));
         }
 
         sendButton.setEnabled(true);

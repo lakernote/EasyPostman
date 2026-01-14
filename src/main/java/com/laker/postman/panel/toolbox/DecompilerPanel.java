@@ -411,21 +411,8 @@ public class DecompilerPanel extends JPanel {
             JarEntry entry = entries.nextElement();
             String entryName = entry.getName();
 
-            // 缓存class文件
-            if (entryName.endsWith(CLASS_EXTENSION)) {
-                try (InputStream is = currentJarFile.getInputStream(entry)) {
-                    classFileCache.put(entryName, is.readAllBytes());
-                }
-            }
-            // 缓存嵌套的JAR/ZIP文件内容，以便后续展开
-            else if (entryName.toLowerCase().endsWith(JAR_EXTENSION) ||
-                    entryName.toLowerCase().endsWith(ZIP_EXTENSION)) {
-                try (InputStream is = currentJarFile.getInputStream(entry)) {
-                    classFileCache.put(entryName, is.readAllBytes());
-                }
-            }
-            // 缓存常见的文本文件（用于查看）
-            else if (isTextFile(entryName)) {
+            // 缓存所有非目录文件（包括class、jar/zip、文本文件以及其他未知类型文件）
+            if (!entry.isDirectory()) {
                 try (InputStream is = currentJarFile.getInputStream(entry)) {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
@@ -458,21 +445,8 @@ public class DecompilerPanel extends JPanel {
             ZipEntry entry = entries.nextElement();
             String entryName = entry.getName();
 
-            // 缓存class文件
-            if (entryName.endsWith(CLASS_EXTENSION)) {
-                try (InputStream is = currentZipFile.getInputStream(entry)) {
-                    classFileCache.put(entryName, is.readAllBytes());
-                }
-            }
-            // 缓存嵌套的JAR/ZIP文件内容，以便后续展开
-            else if (entryName.toLowerCase().endsWith(JAR_EXTENSION) ||
-                    entryName.toLowerCase().endsWith(ZIP_EXTENSION)) {
-                try (InputStream is = currentZipFile.getInputStream(entry)) {
-                    classFileCache.put(entryName, is.readAllBytes());
-                }
-            }
-            // 缓存常见的文本文件（用于查看）
-            else if (isTextFile(entryName)) {
+            // 缓存所有非目录文件（包括class、jar/zip、文本文件以及其他未知类型文件）
+            if (!entry.isDirectory()) {
                 try (InputStream is = currentZipFile.getInputStream(entry)) {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
@@ -487,30 +461,6 @@ public class DecompilerPanel extends JPanel {
         });
     }
 
-    /**
-     * 判断是否为常见的文本文件类型
-     */
-    private boolean isTextFile(String fileName) {
-        String lower = fileName.toLowerCase();
-        return lower.endsWith(".xml") ||
-                lower.endsWith(".json") ||
-                lower.endsWith(".properties") ||
-                lower.endsWith(".yaml") ||
-                lower.endsWith(".yml") ||
-                lower.endsWith(".txt") ||
-                lower.endsWith(".md") ||
-                lower.endsWith(".html") ||
-                lower.endsWith(".css") ||
-                lower.endsWith(".js") ||
-                lower.endsWith(".sql") ||
-                lower.endsWith(JAVA_EXTENSION) ||
-                lower.endsWith(CLASS_EXTENSION) ||
-                lower.endsWith(".sh") ||
-                lower.endsWith(".bat") ||
-                lower.endsWith(".ini") ||
-                lower.endsWith(".conf") ||
-                lower.endsWith(".config");
-    }
 
     /**
      * 加载单个Class文件
@@ -629,21 +579,8 @@ public class DecompilerPanel extends JPanel {
                             String entryName = entry.getName();
                             String fullEntryPath = jarPath + "!/" + entryName;
 
-                            // 缓存嵌套JAR中的class文件
-                            if (entryName.endsWith(CLASS_EXTENSION)) {
-                                try (InputStream is = nestedJar.getInputStream(entry)) {
-                                    classFileCache.put(fullEntryPath, is.readAllBytes());
-                                }
-                            }
-                            // 缓存更深层嵌套的JAR/ZIP
-                            else if (entryName.toLowerCase().endsWith(JAR_EXTENSION) ||
-                                    entryName.toLowerCase().endsWith(ZIP_EXTENSION)) {
-                                try (InputStream is = nestedJar.getInputStream(entry)) {
-                                    classFileCache.put(fullEntryPath, is.readAllBytes());
-                                }
-                            }
-                            // 缓存文本文件
-                            else if (isTextFile(entryName)) {
+                            // 缓存所有非目录文件（包括class、jar/zip、文本文件以及其他未知类型文件）
+                            if (!entry.isDirectory()) {
                                 try (InputStream is = nestedJar.getInputStream(entry)) {
                                     classFileCache.put(fullEntryPath, is.readAllBytes());
                                 }

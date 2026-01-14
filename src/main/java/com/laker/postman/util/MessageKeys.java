@@ -1601,6 +1601,18 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_EXPORT = "toolbox.decompiler.export";
     public static final String TOOLBOX_DECOMPILER_SEARCH = "toolbox.decompiler.search";
     public static final String TOOLBOX_DECOMPILER_BYTES = "toolbox.decompiler.bytes";
+    public static final String TOOLBOX_DECOMPILER_FILE_PATH_TOOLTIP = "toolbox.decompiler.file_path_tooltip";
+    public static final String TOOLBOX_DECOMPILER_DRAG_DROP_HINT = "toolbox.decompiler.drag_drop_hint";
+    public static final String TOOLBOX_DECOMPILER_EXPAND_ALL_TOOLTIP = "toolbox.decompiler.expand_all_tooltip";
+    public static final String TOOLBOX_DECOMPILER_COLLAPSE_ALL_TOOLTIP = "toolbox.decompiler.collapse_all_tooltip";
+    public static final String TOOLBOX_DECOMPILER_COPY_CODE_TOOLTIP = "toolbox.decompiler.copy_code_tooltip";
+    public static final String TOOLBOX_DECOMPILER_EXPORT_TOOLTIP = "toolbox.decompiler.export_tooltip";
+    public static final String TOOLBOX_DECOMPILER_EXPORT_CODE = "toolbox.decompiler.export_code";
+    public static final String TOOLBOX_DECOMPILER_CODE_COPIED = "toolbox.decompiler.code_copied";
+    public static final String TOOLBOX_DECOMPILER_NO_CODE_TO_EXPORT = "toolbox.decompiler.no_code_to_export";
+    public static final String TOOLBOX_DECOMPILER_EXPORT_SUCCESS = "toolbox.decompiler.export_success";
+    public static final String TOOLBOX_DECOMPILER_EXPORT_FAILED = "toolbox.decompiler.export_failed";
+    public static final String TOOLBOX_DECOMPILER_READY = "toolbox.decompiler.ready";
 
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";

@@ -1,8 +1,11 @@
 package com.laker.postman.panel.toolbox;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.benf.cfr.reader.api.CfrDriver;
 import org.benf.cfr.reader.api.OutputSinkFactory;
@@ -20,7 +23,9 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
@@ -78,21 +83,42 @@ public class DecompilerPanel extends JPanel {
     }
 
     /**
-     * 创建文件选择面板
+     * 创建文件选择面板 - 优化布局和视觉效果
      */
     private JPanel createFileSelectionPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR));
-        panel.add(label, BorderLayout.WEST);
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1, true),
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR)
+                ),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
 
+        // 文件路径显示区域
+        JPanel fileInfoPanel = new JPanel(new BorderLayout(5, 0));
         filePathField = new JTextField();
         filePathField.setEditable(false);
         filePathField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        panel.add(filePathField, BorderLayout.CENTER);
+        filePathField.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_FILE_PATH_TOOLTIP));
+        fileInfoPanel.add(filePathField, BorderLayout.CENTER);
 
+        // 浏览按钮
         JButton browseButton = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
+        browseButton.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
         browseButton.addActionListener(e -> browseFile());
-        panel.add(browseButton, BorderLayout.EAST);
+        fileInfoPanel.add(browseButton, BorderLayout.EAST);
+
+        panel.add(fileInfoPanel, BorderLayout.CENTER);
+
+        // 拖放提示标签 - 更醒目的提示
+        JLabel dragDropLabel = new JLabel(
+                "💡 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT),
+                SwingConstants.CENTER
+        );
+        dragDropLabel.setFont(dragDropLabel.getFont().deriveFont(Font.ITALIC));
+        dragDropLabel.setForeground(ModernColors.getTextSecondary());
+        panel.add(dragDropLabel, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -104,6 +130,7 @@ public class DecompilerPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
 
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
         panel.add(label, BorderLayout.NORTH);
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
@@ -145,13 +172,35 @@ public class DecompilerPanel extends JPanel {
     }
 
     /**
-     * 创建代码显示面板
+     * 创建代码显示面板 - 优化工具栏和布局
      */
     private JPanel createCodePanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
 
+        // 顶部工具栏 - 标题和操作按钮整合
+        JPanel headerPanel = new JPanel(new BorderLayout());
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
-        panel.add(label, BorderLayout.NORTH);
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        headerPanel.add(label, BorderLayout.WEST);
+
+        // 工具按钮
+        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+
+        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
+        copyBtn.setIcon(new FlatSVGIcon("icons/copy.svg", 14, 14));
+        copyBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE_TOOLTIP));
+        copyBtn.addActionListener(e -> copyCode());
+
+        JButton exportBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT));
+        exportBtn.setIcon(new FlatSVGIcon("icons/export.svg", 14, 14));
+        exportBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_TOOLTIP));
+        exportBtn.addActionListener(e -> exportCode());
+
+        toolPanel.add(copyBtn);
+        toolPanel.add(exportBtn);
+        headerPanel.add(toolPanel, BorderLayout.EAST);
+
+        panel.add(headerPanel, BorderLayout.NORTH);
 
         // 创建代码编辑器
         codeArea = new RSyntaxTextArea();
@@ -160,29 +209,32 @@ public class DecompilerPanel extends JPanel {
         codeArea.setAntiAliasingEnabled(true);
         codeArea.setEditable(false);
         codeArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        codeArea.setMargin(new Insets(10, 10, 10, 10));
 
         RTextScrollPane scrollPane = new RTextScrollPane(codeArea);
         scrollPane.setFoldIndicatorEnabled(true);
+        scrollPane.setLineNumbersEnabled(true);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // 代码操作按钮
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
-        copyBtn.addActionListener(e -> copyCode());
-        buttonPanel.add(copyBtn);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
     }
 
     /**
-     * 创建状态栏
+     * 创建状态栏 - 优化样式和分隔
      */
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        statusLabel = new JLabel(" ");
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getBorderLightColor()),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+
+        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_READY));
         statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        statusLabel.setForeground(ModernColors.getTextSecondary());
         panel.add(statusLabel, BorderLayout.WEST);
+
         return panel;
     }
 
@@ -194,7 +246,7 @@ public class DecompilerPanel extends JPanel {
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-            "JAR/Class/Zip Files (*.jar, *.class, *.zip)", "jar", "class", "zip");
+                "JAR/Class/Zip Files (*.jar, *.class, *.zip)", "jar", "class", "zip");
         fileChooser.setFileFilter(filter);
 
         if (currentFile != null && currentFile.getParentFile() != null) {
@@ -219,9 +271,9 @@ public class DecompilerPanel extends JPanel {
         String fileName = file.getName().toLowerCase();
         if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) && !fileName.endsWith(ZIP_EXTENSION)) {
             JOptionPane.showMessageDialog(this,
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
-                JOptionPane.ERROR_MESSAGE);
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE),
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -248,9 +300,9 @@ public class DecompilerPanel extends JPanel {
                     log.error("Failed to load file: {}", file.getAbsolutePath(), e);
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(DecompilerPanel.this,
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage(),
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
-                            JOptionPane.ERROR_MESSAGE);
+                                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage(),
+                                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
+                                JOptionPane.ERROR_MESSAGE);
                     });
                 }
                 return null;
@@ -259,7 +311,7 @@ public class DecompilerPanel extends JPanel {
             @Override
             protected void done() {
                 statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_FILE_INFO) + ": " +
-                    file.getName() + " (" + formatFileSize(file.length()) + ")");
+                        file.getName() + " (" + formatFileSize(file.length()) + ")");
             }
         };
         worker.execute();
@@ -348,7 +400,7 @@ public class DecompilerPanel extends JPanel {
      * 添加条目到树中
      */
     private void addEntryToTree(DefaultMutableTreeNode root, Map<String, DefaultMutableTreeNode> packageNodes,
-                                 String entryName, boolean isDirectory) {
+                                String entryName, boolean isDirectory) {
         String[] parts = entryName.split("/");
         DefaultMutableTreeNode parentNode = root;
 
@@ -401,7 +453,7 @@ public class DecompilerPanel extends JPanel {
         byte[] classBytes = classFileCache.get(className);
         if (classBytes == null) {
             codeArea.setText("// " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
-                ": Class file not found");
+                    ": Class file not found");
             return;
         }
 
@@ -414,7 +466,7 @@ public class DecompilerPanel extends JPanel {
                 } catch (Exception e) {
                     log.error("Failed to decompile class: {}", className, e);
                     return "// " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
-                        ": " + e.getMessage();
+                            ": " + e.getMessage();
                 }
             }
 
@@ -461,31 +513,31 @@ public class DecompilerPanel extends JPanel {
             OutputSinkFactory mySink = new OutputSinkFactory() {
                 @Override
                 public List<OutputSinkFactory.SinkClass> getSupportedSinks(OutputSinkFactory.SinkType sinkType,
-                                                                            Collection<OutputSinkFactory.SinkClass> collection) {
+                                                                           Collection<OutputSinkFactory.SinkClass> collection) {
                     return Arrays.asList(OutputSinkFactory.SinkClass.STRING,
-                                       OutputSinkFactory.SinkClass.DECOMPILED,
-                                       OutputSinkFactory.SinkClass.DECOMPILED_MULTIVER);
+                            OutputSinkFactory.SinkClass.DECOMPILED,
+                            OutputSinkFactory.SinkClass.DECOMPILED_MULTIVER);
                 }
 
                 @Override
                 public <T> OutputSinkFactory.Sink<T> getSink(OutputSinkFactory.SinkType sinkType,
-                                                              OutputSinkFactory.SinkClass sinkClass) {
+                                                             OutputSinkFactory.SinkClass sinkClass) {
                     return sinkable -> result.append(sinkable.toString());
                 }
             };
 
             // 执行反编译
             CfrDriver driver = new CfrDriver.Builder()
-                .withOptions(options)
-                .withOutputSink(mySink)
-                .build();
+                    .withOptions(options)
+                    .withOutputSink(mySink)
+                    .build();
             driver.analyse(Collections.singletonList(classFile.getAbsolutePath()));
 
             // 清理临时文件
             deleteDirectory(tempDir);
 
             return !result.isEmpty() ? result.toString() :
-                "// Failed to decompile: No output from CFR";
+                    "// Failed to decompile: No output from CFR";
 
         } catch (Exception e) {
             log.error("CFR decompilation failed", e);
@@ -507,7 +559,7 @@ public class DecompilerPanel extends JPanel {
             String javaVersion = getJavaVersion(major);
 
             return I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLASS_VERSION) + ": " + major +
-                " (" + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_JAVA_VERSION) + ": " + javaVersion + ")";
+                    " (" + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_JAVA_VERSION) + ": " + javaVersion + ")";
         } catch (Exception e) {
             return "";
         }
@@ -571,7 +623,41 @@ public class DecompilerPanel extends JPanel {
         if (code != null && !code.isEmpty()) {
             StringSelection selection = new StringSelection(code);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-            statusLabel.setText("Code copied to clipboard");
+            statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
+        }
+    }
+
+    /**
+     * 导出代码到文件
+     */
+    private void exportCode() {
+        String code = codeArea.getText();
+        if (code == null || code.isEmpty()) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_CODE_TO_EXPORT));
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_CODE));
+        fileChooser.setSelectedFile(new File("DecompiledCode.java"));
+
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try {
+                Files.writeString(file.toPath(), code, StandardCharsets.UTF_8);
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_SUCCESS) + ": " + file.getAbsolutePath());
+                NotificationUtil.showSuccess(
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_SUCCESS) + ": " + file.getName()
+                );
+            } catch (IOException e) {
+                log.error("Failed to export code", e);
+                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_FAILED));
+                NotificationUtil.showError(
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_FAILED) + ": " + e.getMessage()
+                );
+            }
         }
     }
 

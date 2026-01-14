@@ -1,9 +1,9 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.util.XmlUtil;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
@@ -35,29 +35,27 @@ import java.util.Map;
 public class ResponseBodyPanel extends JPanel {
     @Getter
     private final RSyntaxTextArea responseBodyPane;
-    private final JButton downloadButton;
+    private final DownloadButton downloadButton;
     @Getter
-    private JButton saveResponseButton; // 保存响应按钮（仅HTTP请求）
+    private SaveResponseButton saveResponseButton; // 保存响应按钮（仅HTTP请求）
     private String currentFilePath;
     private String fileName = DEFAULT_FILE_NAME; // 默认下载文件名
     private final SearchTextField searchField;
     private Map<String, List<String>> lastHeaders;
     private final JComboBox<String> syntaxComboBox;
-    private final JButton formatButton;
-    private final JButton prevButton;
-    private final JButton nextButton;
-    private final JToggleButton wrapButton;
+    private final FormatButton formatButton;
+    private final PreviousButton prevButton;
+    private final NextButton nextButton;
+    private final WrapToggleButton wrapButton;
     RTextScrollPane scrollPane;
 
     // 常量定义
     private static final int LARGE_RESPONSE_THRESHOLD = 500 * 1024; // 500KB threshold
     private static final int MAX_AUTO_FORMAT_SIZE = 1024 * 1024; // 1MB max for auto-format
-    private static final int ICON_SIZE = 16;
     private static final int BUFFER_SIZE = 8192;
     private static final String DEFAULT_FILE_NAME = "downloaded_file";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String SKIP_AUTO_FORMAT_MESSAGE = " Skip auto-format for large response.";
-    private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
 
 
     private final JLabel sizeWarningLabel;
@@ -103,51 +101,25 @@ public class ResponseBodyPanel extends JPanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         searchField = new SearchTextField();
 
-        FlatSVGIcon prevIcon = new FlatSVGIcon("icons/arrow-up.svg", ICON_SIZE, ICON_SIZE);
-        prevIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        prevButton = new JButton(prevIcon);
-        prevButton.setFocusable(false);
-        prevButton.setToolTipText("Previous");
-
-        FlatSVGIcon nextIcon = new FlatSVGIcon("icons/arrow-down.svg", ICON_SIZE, ICON_SIZE);
-        nextIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        nextButton = new JButton(nextIcon);
-        nextButton.setFocusable(false);
-        nextButton.setToolTipText("Next");
+        prevButton = new PreviousButton();
+        nextButton = new NextButton();
 
         rightPanel.add(searchField);
         rightPanel.add(prevButton);
         rightPanel.add(nextButton);
 
-        FlatSVGIcon wrapIcon = new FlatSVGIcon("icons/wrap.svg", ICON_SIZE, ICON_SIZE);
-        wrapIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        wrapButton = new JToggleButton(wrapIcon);
-        wrapButton.setToolTipText("Toggle Line Wrap");
-        wrapButton.setSelected(false); // 默认不启用换行
-        wrapButton.setFocusable(false); // 不可聚焦
+        wrapButton = new WrapToggleButton();
         rightPanel.add(wrapButton);
 
-        FlatSVGIcon formatIcon = new FlatSVGIcon("icons/format.svg", ICON_SIZE, ICON_SIZE);
-        formatIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        formatButton = new JButton(formatIcon);
-        formatButton.setFocusable(false);
-        formatButton.setToolTipText("Format");
+        formatButton = new FormatButton();
         rightPanel.add(formatButton);
 
-        FlatSVGIcon downloadIcon = new FlatSVGIcon("icons/download.svg", ICON_SIZE, ICON_SIZE);
-        downloadIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        downloadButton = new JButton(downloadIcon);
-        downloadButton.setFocusable(false);
-        downloadButton.setToolTipText("Download");
+        downloadButton = new DownloadButton();
         rightPanel.add(downloadButton);
 
         // 只有 HTTP 请求才显示保存响应按钮，且放在最后面
         if (enableSaveButton) {
-            FlatSVGIcon saveIcon = new FlatSVGIcon("icons/save.svg", ICON_SIZE, ICON_SIZE);
-            saveIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-            saveResponseButton = new JButton(saveIcon);
-            saveResponseButton.setFocusable(false);
-            saveResponseButton.setToolTipText("Save Response");
+            saveResponseButton = new SaveResponseButton();
             rightPanel.add(saveResponseButton);
         }
 

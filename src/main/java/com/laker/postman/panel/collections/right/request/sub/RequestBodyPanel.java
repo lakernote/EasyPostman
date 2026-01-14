@@ -2,8 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.button.FormatButton;
-import com.laker.postman.common.component.button.NavigationButton;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -63,12 +62,12 @@ public class RequestBodyPanel extends JPanel {
     private JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_NONE;
     @Getter
-    private JButton wsSendButton;
+    private WebSocketSendButton wsSendButton;
     private FormatButton formatButton;
     private final boolean isWebSocketMode;
 
     private Timer wsTimer; // 定时发送用
-    private JButton wsTimedSendButton; // 定时发送按钮
+    private WebSocketTimedSendButton wsTimedSendButton; // 定时发送按钮
     private JTextField wsIntervalField; // 定时间隔输入框
     private JCheckBox wsClearInputCheckBox; // 清空输入复选框
     private SearchTextField searchField; // HTTP模式下的搜索框
@@ -116,8 +115,8 @@ public class RequestBodyPanel extends JPanel {
 
         // 搜索区控件
         searchField = new SearchTextField();
-        NavigationButton prevButton = new NavigationButton(NavigationButton.Direction.PREVIOUS);
-        NavigationButton nextButton = new NavigationButton(NavigationButton.Direction.NEXT);
+        PreviousButton prevButton = new PreviousButton();
+        NextButton nextButton = new NextButton();
         topPanel.add(searchField);
         topPanel.add(prevButton);
         topPanel.add(nextButton);
@@ -210,13 +209,12 @@ public class RequestBodyPanel extends JPanel {
         bottomPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_LABEL_TIMEOUT)));
         wsIntervalField = new JTextField("1000", 5); // 默认1000ms
         bottomPanel.add(wsIntervalField);
-        wsTimedSendButton = new JButton(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_START));
-        wsTimedSendButton.setIcon(IconUtil.createThemed("icons/time.svg", 16, 16));
+
+        wsTimedSendButton = new WebSocketTimedSendButton();
         wsTimedSendButton.addActionListener(e -> toggleWsTimer());
         bottomPanel.add(wsTimedSendButton);
-        wsSendButton = new JButton(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_SEND));
-        wsSendButton.setIcon(IconUtil.createThemed("icons/send.svg", 16, 16));
-        wsSendButton.setVisible(true);
+
+        wsSendButton = new WebSocketSendButton();
         wsSendButton.addActionListener(e -> wsSendAndMaybeClear());
         bottomPanel.add(wsSendButton);
         add(bottomPanel, BorderLayout.SOUTH);

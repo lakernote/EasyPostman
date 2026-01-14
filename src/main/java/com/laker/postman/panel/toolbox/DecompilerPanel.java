@@ -424,6 +424,12 @@ public class DecompilerPanel extends JPanel {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
             }
+            // 缓存常见的文本文件（用于查看）
+            else if (isTextFile(entryName)) {
+                try (InputStream is = currentJarFile.getInputStream(entry)) {
+                    classFileCache.put(entryName, is.readAllBytes());
+                }
+            }
 
             addEntryToTree(root, packageNodes, entryName, entry.isDirectory());
         }
@@ -465,6 +471,12 @@ public class DecompilerPanel extends JPanel {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
             }
+            // 缓存常见的文本文件（用于查看）
+            else if (isTextFile(entryName)) {
+                try (InputStream is = currentZipFile.getInputStream(entry)) {
+                    classFileCache.put(entryName, is.readAllBytes());
+                }
+            }
 
             addEntryToTree(root, packageNodes, entryName, entry.isDirectory());
         }
@@ -473,6 +485,31 @@ public class DecompilerPanel extends JPanel {
             treeModel.setRoot(root);
             expandTree(fileTree, 2);
         });
+    }
+
+    /**
+     * 判断是否为常见的文本文件类型
+     */
+    private boolean isTextFile(String fileName) {
+        String lower = fileName.toLowerCase();
+        return lower.endsWith(".xml") ||
+                lower.endsWith(".json") ||
+                lower.endsWith(".properties") ||
+                lower.endsWith(".yaml") ||
+                lower.endsWith(".yml") ||
+                lower.endsWith(".txt") ||
+                lower.endsWith(".md") ||
+                lower.endsWith(".html") ||
+                lower.endsWith(".css") ||
+                lower.endsWith(".js") ||
+                lower.endsWith(".sql") ||
+                lower.endsWith(JAVA_EXTENSION) ||
+                lower.endsWith(CLASS_EXTENSION) ||
+                lower.endsWith(".sh") ||
+                lower.endsWith(".bat") ||
+                lower.endsWith(".ini") ||
+                lower.endsWith(".conf") ||
+                lower.endsWith(".config");
     }
 
     /**
@@ -605,6 +642,12 @@ public class DecompilerPanel extends JPanel {
                                     classFileCache.put(fullEntryPath, is.readAllBytes());
                                 }
                             }
+                            // 缓存文本文件
+                            else if (isTextFile(entryName)) {
+                                try (InputStream is = nestedJar.getInputStream(entry)) {
+                                    classFileCache.put(fullEntryPath, is.readAllBytes());
+                                }
+                            }
 
                             // 添加到树中（相对于当前JAR节点）
                             addNestedEntryToTree(parentNode, packageNodes, entryName,
@@ -690,6 +733,26 @@ public class DecompilerPanel extends JPanel {
         if (classBytes == null) {
             codeArea.setText("// " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
                     ": Class file not found");
+            return;
+        }
+
+        // 特殊处理：module-info.class 是 Java 9+ 的模块描述符，CFR 无法反编译
+        if (className.toLowerCase().endsWith("module-info.class") ||
+                className.toLowerCase().contains("/module-info.class")) {
+            codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+            codeArea.setText("""
+                    // module-info.class - Java Module Descriptor
+                    // This file cannot be decompiled as it's a special module descriptor file.
+                    //
+                    // Module info files define:
+                    // - Module name
+                    // - Required modules
+                    // - Exported packages
+                    // - Provided services
+                    //
+                    // To view module information, use: jar --describe-module --file=<jar-file>
+                    """);
+            statusLabel.setText("Module descriptor file (not decompilable)");
             return;
         }
 
@@ -788,9 +851,17 @@ public class DecompilerPanel extends JPanel {
         try {
             log.debug("Reading decompiled file for class: {} from dir: {}", className, outputDir.getAbsolutePath());
 
+            // 处理嵌套 JAR 路径：BOOT-INF/lib/xxx.jar!/com/example/Test.class
+            // 提取实际的类路径（!/ 之后的部分）
+            String actualClassName = className;
+            if (className.contains("!/")) {
+                actualClassName = className.substring(className.lastIndexOf("!/") + 2);
+                log.debug("Detected nested JAR path, extracted actual class: {}", actualClassName);
+            }
+
             // 将 className 转换为文件路径
             // 例如: com/example/Test.class -> com/example/Test.java
-            String javaFileName = className.replace(CLASS_EXTENSION, JAVA_EXTENSION);
+            String javaFileName = actualClassName.replace(CLASS_EXTENSION, JAVA_EXTENSION);
             File javaFile = new File(outputDir, javaFileName);
 
             log.debug("Looking for Java file at: {}", javaFile.getAbsolutePath());
@@ -938,14 +1009,22 @@ public class DecompilerPanel extends JPanel {
         try {
             String content = null;
 
-            if (currentJarFile != null) {
+            // 优先从缓存中读取（支持嵌套 JAR 中的文件）
+            byte[] cachedBytes = classFileCache.get(fileName);
+            if (cachedBytes != null) {
+                content = new String(cachedBytes, StandardCharsets.UTF_8);
+            }
+            // 从当前打开的 JAR 文件中读取
+            else if (currentJarFile != null) {
                 JarEntry entry = currentJarFile.getJarEntry(fileName);
                 if (entry != null) {
                     try (InputStream is = currentJarFile.getInputStream(entry)) {
                         content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
                     }
                 }
-            } else if (currentZipFile != null) {
+            }
+            // 从当前打开的 ZIP 文件中读取
+            else if (currentZipFile != null) {
                 ZipEntry entry = currentZipFile.getEntry(fileName);
                 if (entry != null) {
                     try (InputStream is = currentZipFile.getInputStream(entry)) {
@@ -959,6 +1038,9 @@ public class DecompilerPanel extends JPanel {
                 codeArea.setText(content);
                 codeArea.setCaretPosition(0);
                 statusLabel.setText(fileName);
+            } else {
+                codeArea.setText("// File not found: " + fileName);
+                statusLabel.setText("File not found");
             }
         } catch (Exception e) {
             log.error("Failed to read file: {}", fileName, e);

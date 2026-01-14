@@ -91,20 +91,19 @@ public class DecompilerPanel extends JPanel {
                         BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1, true),
                         I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR)
                 ),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
         // 文件路径显示区域
         JPanel fileInfoPanel = new JPanel(new BorderLayout(5, 0));
         filePathField = new JTextField();
         filePathField.setEditable(false);
-        filePathField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        filePathField.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_FILE_PATH_TOOLTIP));
+        filePathField.setFocusable(false);
         fileInfoPanel.add(filePathField, BorderLayout.CENTER);
 
         // 浏览按钮
         JButton browseButton = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
-        browseButton.setIcon(new FlatSVGIcon("icons/file.svg", 16, 16));
+        browseButton.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
         browseButton.addActionListener(e -> browseFile());
         fileInfoPanel.add(browseButton, BorderLayout.EAST);
 
@@ -190,17 +189,14 @@ public class DecompilerPanel extends JPanel {
 
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
         copyBtn.setIcon(new FlatSVGIcon("icons/copy.svg", 14, 14));
-        copyBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE_TOOLTIP));
         copyBtn.addActionListener(e -> copyCode());
 
         JButton exportBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT));
-        exportBtn.setIcon(new FlatSVGIcon("icons/export.svg", 14, 14));
-        exportBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_TOOLTIP));
+        exportBtn.setIcon(IconUtil.createThemed("icons/export.svg", 14, 14));
         exportBtn.addActionListener(e -> exportCode());
 
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
-        clearBtn.setIcon(new FlatSVGIcon("icons/clear.svg", 14, 14));
-        clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR_TOOLTIP));
+        clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 14, 14));
         clearBtn.addActionListener(e -> clearAll());
 
         toolPanel.add(copyBtn);
@@ -228,7 +224,8 @@ public class DecompilerPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 为代码面板添加拖拽支持
-        setupDragAndDrop(scrollPane);
+        setupDragAndDrop(codeArea);
+
 
         return panel;
     }

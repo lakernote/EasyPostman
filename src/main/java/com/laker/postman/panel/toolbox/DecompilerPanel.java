@@ -324,7 +324,10 @@ public class DecompilerPanel extends JPanel {
         currentJarFile = new JarFile(file);
         classFileCache.clear();
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(file.getName());
+        // 为根节点创建FileNodeData
+        FileNodeData rootData = new FileNodeData(file.getName(), true, false);
+        rootData.fullPath = file.getName();
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootData);
         Map<String, DefaultMutableTreeNode> packageNodes = new HashMap<>();
 
         Enumeration<JarEntry> entries = currentJarFile.entries();
@@ -355,7 +358,10 @@ public class DecompilerPanel extends JPanel {
         currentZipFile = new ZipFile(file);
         classFileCache.clear();
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(file.getName());
+        // 为根节点创建FileNodeData
+        FileNodeData rootData = new FileNodeData(file.getName(), true, false);
+        rootData.fullPath = file.getName();
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootData);
         Map<String, DefaultMutableTreeNode> packageNodes = new HashMap<>();
 
         Enumeration<? extends ZipEntry> entries = currentZipFile.entries();
@@ -403,26 +409,35 @@ public class DecompilerPanel extends JPanel {
                                 String entryName, boolean isDirectory) {
         String[] parts = entryName.split("/");
         DefaultMutableTreeNode parentNode = root;
+        StringBuilder currentPath = new StringBuilder();
 
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
             if (part.isEmpty()) continue;
 
+            // 构建当前节点的完整路径
+            if (!currentPath.isEmpty()) {
+                currentPath.append("/");
+            }
+            currentPath.append(part);
+            String nodePath = currentPath.toString();
+
             boolean isLastPart = (i == parts.length - 1);
             boolean isFile = isLastPart && !isDirectory;
             boolean isClassFile = isFile && part.endsWith(CLASS_EXTENSION);
 
-            String nodePath = entryName.substring(0, entryName.lastIndexOf(part) + part.length());
-
+            // 检查节点是否已存在
             DefaultMutableTreeNode node = packageNodes.get(nodePath);
             if (node == null) {
+                // 创建新节点
                 FileNodeData nodeData = new FileNodeData(part, !isFile, isClassFile);
-                nodeData.fullPath = entryName;
+                nodeData.fullPath = nodePath;
                 node = new DefaultMutableTreeNode(nodeData);
                 packageNodes.put(nodePath, node);
                 parentNode.add(node);
             }
 
+            // 移动到下一层
             parentNode = node;
         }
     }

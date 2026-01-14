@@ -1608,6 +1608,10 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_CLEAR = "toolbox.decompiler.clear";
     public static final String TOOLBOX_DECOMPILER_CLEAR_TOOLTIP = "toolbox.decompiler.clear_tooltip";
     public static final String TOOLBOX_DECOMPILER_CLEARED = "toolbox.decompiler.cleared";
+    public static final String TOOLBOX_DECOMPILER_SORT_BY_NAME = "toolbox.decompiler.sort_by_name";
+    public static final String TOOLBOX_DECOMPILER_SORT_BY_SIZE = "toolbox.decompiler.sort_by_size";
+    public static final String TOOLBOX_DECOMPILER_SORTED_BY_NAME = "toolbox.decompiler.sorted_by_name";
+    public static final String TOOLBOX_DECOMPILER_SORTED_BY_SIZE = "toolbox.decompiler.sorted_by_size";
 
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";

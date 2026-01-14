@@ -73,7 +73,7 @@ public class DecompilerPanel extends JPanel {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setLeftComponent(createTreePanel());
         splitPane.setRightComponent(createCodePanel());
-        splitPane.setDividerLocation(250);
+        splitPane.setDividerLocation(350);
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
 
@@ -173,8 +173,20 @@ public class DecompilerPanel extends JPanel {
         expandAllBtn.addActionListener(e -> expandTree(fileTree, 3));
         JButton collapseAllBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL));
         collapseAllBtn.addActionListener(e -> collapseTree(fileTree));
+
+        JButton sortByNameBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
+        sortByNameBtn.setIcon(IconUtil.createThemed("icons/text-file.svg", 14, 14));
+        sortByNameBtn.addActionListener(e -> sortTreeByName());
+
+        JButton sortBySizeBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
+        sortBySizeBtn.setIcon(IconUtil.createThemed("icons/detail.svg", 14, 14));
+        sortBySizeBtn.addActionListener(e -> sortTreeBySize());
+
         buttonPanel.add(expandAllBtn);
         buttonPanel.add(collapseAllBtn);
+        buttonPanel.add(new JLabel(" | "));
+        buttonPanel.add(sortByNameBtn);
+        buttonPanel.add(sortBySizeBtn);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
@@ -1198,6 +1210,106 @@ public class DecompilerPanel extends JPanel {
     private void collapseTree(JTree tree) {
         for (int i = tree.getRowCount() - 1; i >= 1; i--) {
             tree.collapseRow(i);
+        }
+    }
+
+    /**
+     * 按名称排序树节点
+     */
+    private void sortTreeByName() {
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        sortNodeByName(root);
+        treeModel.reload();
+        expandTree(fileTree, 2);
+        statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORTED_BY_NAME));
+    }
+
+    /**
+     * 递归按名称排序节点的子节点
+     */
+    private void sortNodeByName(DefaultMutableTreeNode node) {
+        if (node.getChildCount() == 0) {
+            return;
+        }
+
+        // 获取所有子节点
+        List<DefaultMutableTreeNode> children = new ArrayList<>();
+        for (int i = 0; i < node.getChildCount(); i++) {
+            children.add((DefaultMutableTreeNode) node.getChildAt(i));
+        }
+
+        // 按名称排序（目录优先，然后按名称字母顺序）
+        children.sort((n1, n2) -> {
+            Object o1 = n1.getUserObject();
+            Object o2 = n2.getUserObject();
+
+            if (o1 instanceof FileNodeData f1 && o2 instanceof FileNodeData f2) {
+                // 目录排在文件前面
+                if (f1.isDirectory != f2.isDirectory) {
+                    return f1.isDirectory ? -1 : 1;
+                }
+                // 同类型按名称排序
+                return f1.name.compareToIgnoreCase(f2.name);
+            }
+            return 0;
+        });
+
+        // 移除所有子节点并按排序后的顺序重新添加
+        node.removeAllChildren();
+        for (DefaultMutableTreeNode child : children) {
+            node.add(child);
+            // 递归排序子节点
+            sortNodeByName(child);
+        }
+    }
+
+    /**
+     * 按大小排序树节点
+     */
+    private void sortTreeBySize() {
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+        sortNodeBySize(root);
+        treeModel.reload();
+        expandTree(fileTree, 2);
+        statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORTED_BY_SIZE));
+    }
+
+    /**
+     * 递归按大小排序节点的子节点
+     */
+    private void sortNodeBySize(DefaultMutableTreeNode node) {
+        if (node.getChildCount() == 0) {
+            return;
+        }
+
+        // 获取所有子节点
+        List<DefaultMutableTreeNode> children = new ArrayList<>();
+        for (int i = 0; i < node.getChildCount(); i++) {
+            children.add((DefaultMutableTreeNode) node.getChildAt(i));
+        }
+
+        // 按大小排序（降序，大文件在前）
+        children.sort((n1, n2) -> {
+            Object o1 = n1.getUserObject();
+            Object o2 = n2.getUserObject();
+
+            if (o1 instanceof FileNodeData f1 && o2 instanceof FileNodeData f2) {
+                // 目录排在文件前面
+                if (f1.isDirectory != f2.isDirectory) {
+                    return f1.isDirectory ? -1 : 1;
+                }
+                // 同类型按大小降序排序
+                return Long.compare(f2.size, f1.size);
+            }
+            return 0;
+        });
+
+        // 移除所有子节点并按排序后的顺序重新添加
+        node.removeAllChildren();
+        for (DefaultMutableTreeNode child : children) {
+            node.add(child);
+            // 递归排序子节点
+            sortNodeBySize(child);
         }
     }
 

@@ -3,8 +3,6 @@ package com.laker.postman.panel.toolbox;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 import org.benf.cfr.reader.api.CfrDriver;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -712,6 +710,8 @@ public class DecompilerPanel extends JPanel {
             protected void done() {
                 try {
                     String code = get();
+                    // 设置 Java 语法高亮（反编译后的代码是 Java）
+                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
                     codeArea.setText(code);
                     codeArea.setCaretPosition(0);
 
@@ -819,7 +819,7 @@ public class DecompilerPanel extends JPanel {
             listDirectoryContents(outputDir, "  ");
 
             return "// No Java file found in output directory\n// Expected: " + javaFileName +
-                   "\n// Output dir: " + outputDir.getAbsolutePath();
+                    "\n// Output dir: " + outputDir.getAbsolutePath();
         } catch (IOException e) {
             log.error("Failed to read decompiled file", e);
             return "// Failed to read decompiled file: " + e.getMessage();
@@ -971,13 +971,16 @@ public class DecompilerPanel extends JPanel {
      */
     private String getSyntaxStyle(String fileName) {
         String name = fileName.toLowerCase();
+        // .java 和 .class 都使用 Java 语法高亮（.class 反编译后是 Java 代码）
+        if (name.endsWith(JAVA_EXTENSION) || name.endsWith(CLASS_EXTENSION)) {
+            return SyntaxConstants.SYNTAX_STYLE_JAVA;
+        }
         if (name.endsWith(".xml")) return SyntaxConstants.SYNTAX_STYLE_XML;
         if (name.endsWith(".json")) return SyntaxConstants.SYNTAX_STYLE_JSON;
         if (name.endsWith(".properties")) return SyntaxConstants.SYNTAX_STYLE_PROPERTIES_FILE;
         if (name.endsWith(".yaml") || name.endsWith(".yml")) return SyntaxConstants.SYNTAX_STYLE_YAML;
         if (name.endsWith(".html")) return SyntaxConstants.SYNTAX_STYLE_HTML;
         if (name.endsWith(".js")) return SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT;
-        if (name.endsWith(JAVA_EXTENSION)) return SyntaxConstants.SYNTAX_STYLE_JAVA;
         return SyntaxConstants.SYNTAX_STYLE_NONE;
     }
 
@@ -1179,10 +1182,13 @@ public class DecompilerPanel extends JPanel {
     }
 
     /**
-     * 文件树渲染器 - 使用 FontAwesome 图标和主题适配
+     * 文件树渲染器 - 使用彩色 SVG 图标，根据文件类型显示
      */
     private static class FileTreeCellRenderer extends DefaultTreeCellRenderer {
         private static final int ICON_SIZE = 16;
+
+        // 缓存图标以提高性能
+        private static final Map<String, Icon> iconCache = new HashMap<>();
 
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
@@ -1192,28 +1198,73 @@ public class DecompilerPanel extends JPanel {
             if (value instanceof DefaultMutableTreeNode node) {
                 Object userObject = node.getUserObject();
                 if (userObject instanceof FileNodeData fileData) {
-                    Color iconColor = sel ?
-                            UIManager.getColor("Tree.selectionForeground") :
-                            ModernColors.getTextPrimary();
-
-                    if (fileData.isClassFile) {
-                        // Java class 文件图标
-                        setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_CODE_O, ICON_SIZE, iconColor));
-                    } else if (fileData.isJarFile) {
-                        // JAR/ZIP 文件图标
-                        setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_ARCHIVE_O, ICON_SIZE, iconColor));
-                    } else if (fileData.isDirectory) {
-                        // 目录图标 - 根据展开状态显示不同图标
-                        FontAwesome folderIcon = expanded ? FontAwesome.FOLDER_OPEN : FontAwesome.FOLDER;
-                        setIcon(IconFontSwing.buildIcon(folderIcon, ICON_SIZE, iconColor));
-                    } else {
-                        // 其他文件图标
-                        setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_O, ICON_SIZE, iconColor));
+                    Icon icon = getIconForFileData(fileData, expanded);
+                    if (icon != null) {
+                        setIcon(icon);
                     }
                 }
             }
 
             return this;
+        }
+
+        /**
+         * 根据文件数据获取对应的彩色 SVG 图标
+         */
+        private Icon getIconForFileData(FileNodeData fileData, boolean expanded) {
+            String iconKey;
+
+            if (fileData.isDirectory) {
+                // 目录图标 - 根据展开状态
+                iconKey = expanded ? "folder-open" : "folder";
+            } else if (fileData.isClassFile) {
+                // Class 文件也使用 java-file 图标
+                iconKey = "java-file";
+            } else if (fileData.isJarFile) {
+                // JAR/ZIP 文件 - 根据扩展名区分
+                String fileName = fileData.name.toLowerCase();
+                if (fileName.endsWith(".jar")) {
+                    iconKey = "jar-file";
+                } else {
+                    iconKey = "zip-file";
+                }
+            } else {
+                // 其他文件 - 根据扩展名区分
+                iconKey = getIconKeyByExtension(fileData.name);
+            }
+
+            return getOrCreateIcon(iconKey);
+        }
+
+        /**
+         * 根据文件扩展名获取图标键
+         */
+        private String getIconKeyByExtension(String fileName) {
+            String lowerName = fileName.toLowerCase();
+
+            // .java 和 .class 都使用 java-file 图标
+            if (lowerName.endsWith(JAVA_EXTENSION) || lowerName.endsWith(CLASS_EXTENSION)) {
+                return "java-file";
+            } else if (lowerName.endsWith(".xml")) {
+                return "xml-file";
+            } else if (lowerName.endsWith(".json")) {
+                return "json-file";
+            } else if (lowerName.endsWith(".properties")) {
+                return "properties-file";
+            } else if (lowerName.endsWith(".png") || lowerName.endsWith(".jpg") ||
+                    lowerName.endsWith(".jpeg") || lowerName.endsWith(".gif") ||
+                    lowerName.endsWith(".svg")) {
+                return "image-file";
+            } else {
+                return "text-file";
+            }
+        }
+
+        /**
+         * 获取或创建图标（带缓存）
+         */
+        private Icon getOrCreateIcon(String iconKey) {
+            return iconCache.computeIfAbsent(iconKey, key -> new FlatSVGIcon("icons/" + key + ".svg", ICON_SIZE, ICON_SIZE));
         }
     }
 }

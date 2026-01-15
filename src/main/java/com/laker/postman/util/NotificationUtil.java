@@ -145,10 +145,10 @@ public class NotificationUtil {
     @Getter
     @RequiredArgsConstructor
     public enum NotificationType {
-        SUCCESS(ModernColors.SUCCESS, "✓"),      // 绿色 - 成功
-        INFO(ModernColors.INFO, "ℹ"),            // 蓝色 - 信息
-        WARNING(ModernColors.WARNING, "⚠"),      // 橙色 - 警告
-        ERROR(ModernColors.ERROR, "✕");          // 红色 - 错误
+        SUCCESS(ModernColors.SUCCESS, "🎉"),     // 庆祝彩带 - 成功（更有活力）
+        INFO(ModernColors.INFO, "💡"),          // 灯泡 - 信息（科技感、启发性）
+        WARNING(ModernColors.WARNING, "⚡"),    // 闪电 - 警告（动感、紧迫感）
+        ERROR(ModernColors.ERROR, "🔴");        // 红色圆点 - 错误（简洁、醒目）
 
         private final Color color;
         private final String icon;

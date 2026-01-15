@@ -1,6 +1,7 @@
 package com.laker.postman.service.http;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
@@ -85,21 +86,21 @@ public class HttpUtil {
         return false;
     }
 
-    // 状态颜色
+    // 状态颜色 - 主题自适应
     public static Color getStatusColor(int statusCode) {
         if (statusCode == 101) {
-            return new Color(0, 150, 0);
+            return ModernColors.SUCCESS;  // WebSocket 升级成功
         }
         if (statusCode >= 200 && statusCode < 300) {
-            return new Color(0, 150, 0);
+            return ModernColors.SUCCESS;  // 2xx 成功
         } else if (statusCode >= 400 && statusCode < 500) {
-            return new Color(230, 130, 0);
+            return ModernColors.WARNING;  // 4xx 客户端错误
         } else if (statusCode >= 500) {
-            return new Color(200, 0, 0);
+            return ModernColors.ERROR;    // 5xx 服务器错误
         } else if (statusCode >= 300) {
-            return new Color(0, 120, 200);
+            return ModernColors.PRIMARY;  // 3xx 重定向
         } else {
-            return Color.RED;
+            return ModernColors.ERROR;    // 其他错误
         }
     }
 

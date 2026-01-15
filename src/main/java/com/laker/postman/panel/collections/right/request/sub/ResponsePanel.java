@@ -34,6 +34,8 @@ public class ResponsePanel extends JPanel {
     private final JLabel statusCodeLabel;
     private final JLabel responseTimeLabel;
     private final JLabel responseSizeLabel;
+    private final JLabel separator1; // 分隔符1：状态码和响应时间之间
+    private final JLabel separator2; // 分隔符2：响应时间和响应大小之间
     private final ResponseHeadersPanel responseHeadersPanel;
     private final ResponseBodyPanel responseBodyPanel;
     private final NetworkLogPanel networkLogPanel;
@@ -58,6 +60,12 @@ public class ResponsePanel extends JPanel {
         responseTimeLabel = createModernTimeLabel();
         responseSizeLabel = createModernSizeLabel();
 
+        // 初始化分隔符（默认不显示）
+        separator1 = createSeparator();
+        separator2 = createSeparator();
+        separator1.setVisible(false);
+        separator2.setVisible(false);
+
         // 声明topResponseBar，在各个分支中初始化
         JPanel topResponseBar;
 
@@ -73,9 +81,9 @@ public class ResponsePanel extends JPanel {
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
             // 现代扁平风格：紧凑布局，状态码带彩色背景框
             statusBar.add(statusCodeLabel);
-            statusBar.add(createSeparator());
+            statusBar.add(separator1);
             statusBar.add(responseTimeLabel);
-            statusBar.add(createSeparator());
+            statusBar.add(separator2);
             statusBar.add(responseSizeLabel);
 
             topResponseBar = new JPanel(new BorderLayout());
@@ -105,9 +113,9 @@ public class ResponsePanel extends JPanel {
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
             // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
-            statusBar.add(createSeparator());
+            statusBar.add(separator1);
             statusBar.add(responseTimeLabel);
-            statusBar.add(createSeparator());
+            statusBar.add(separator2);
             statusBar.add(responseSizeLabel);
             topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
@@ -144,9 +152,9 @@ public class ResponsePanel extends JPanel {
             JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
             // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
-            statusBar.add(createSeparator());
+            statusBar.add(separator1);
             statusBar.add(responseTimeLabel);
-            statusBar.add(createSeparator());
+            statusBar.add(separator2);
             statusBar.add(responseSizeLabel);
 
             topResponseBar = new JPanel(new BorderLayout());
@@ -414,12 +422,24 @@ public class ResponsePanel extends JPanel {
 
     public void setStatus(String statusText, Color color) {
         statusCodeLabel.setText(statusText);
+        // 状态码颜色由调用方提供，但为了主题适配，可以使用 ModernColors
+        // 如果调用方传入的颜色已经是主题适配的，直接使用；否则建议使用 ModernColors
         statusCodeLabel.setForeground(color);
+
+        // 如果状态码有值且不是占位符，显示后续的分隔符
+        boolean hasStatus = statusText != null && !statusText.isEmpty() && !statusText.equals("...");
+        separator1.setVisible(hasStatus);
     }
 
     public void setResponseTime(long ms) {
         // 现代扁平风格：直接显示时间值，无需 "耗时:" 前缀
         responseTimeLabel.setText(TimeDisplayUtil.formatElapsedTime(ms));
+        // 使用主题适配的次要文本颜色
+        responseTimeLabel.setForeground(ModernColors.getTextSecondary());
+
+        // 如果响应时间有效，显示后续的分隔符
+        boolean hasTime = ms >= 0;
+        separator2.setVisible(hasTime);
     }
 
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
@@ -623,6 +643,13 @@ public class ResponsePanel extends JPanel {
     }
 
     public void clearAll() {
+        // 清空状态栏
+        statusCodeLabel.setText("");
+        responseTimeLabel.setText("");
+        responseSizeLabel.setText("");
+        separator1.setVisible(false);
+        separator2.setVisible(false);
+
         responseHeadersPanel.setHeaders(new LinkedHashMap<>());
         if (protocol.isWebSocketProtocol()) {
             webSocketResponsePanel.clearMessages();

@@ -1069,8 +1069,6 @@ public class RequestEditSubPanel extends JPanel {
 
         currentWorker.cancel(true);
         requestLinePanel.setSendButtonToSend(this::sendRequest);
-        responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.STATUS_CANCELED));
-        responsePanel.getStatusCodeLabel().setForeground(new Color(255, 140, 0));
         currentWorker = null;
 
         // 隐藏加载遮罩
@@ -1084,9 +1082,6 @@ public class RequestEditSubPanel extends JPanel {
 
     // UI状态：请求中
     private void updateUIForRequesting() {
-        responsePanel.setStatusRequesting();
-        responsePanel.setResponseTimeRequesting();
-        responsePanel.setResponseSizeRequesting();
         requestLinePanel.setSendButtonToCancel(this::sendRequest);
 
         if (protocol.isHttpProtocol()) {

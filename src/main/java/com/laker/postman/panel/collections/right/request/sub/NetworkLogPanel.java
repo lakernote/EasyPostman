@@ -119,7 +119,7 @@ public class NetworkLogPanel extends JPanel {
                 }
 
                 // 内容截断优化：如果内容过长，进行截断
-                String content = msg;
+                String content = msg != null ? msg : "";
                 if (content.length() > MAX_LINE_LENGTH * MAX_LINES_PER_MESSAGE) {
                     content = content.substring(0, MAX_LINE_LENGTH * MAX_LINES_PER_MESSAGE)
                             + "\n... [Content truncated, total " + content.length() + " characters]";

@@ -456,7 +456,8 @@ public class EasyConsoleEventListener extends EventListener {
     public void responseFailed(Call call, IOException ioe) {
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
-        log(NetworkLogStage.RESPONSE_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
+        String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
+        log(NetworkLogStage.RESPONSE_FAILED, errorMsg + "\n" + getStackTrace(ioe));
     }
 
     @Override
@@ -470,7 +471,8 @@ public class EasyConsoleEventListener extends EventListener {
         info.setCallFailed(System.currentTimeMillis());
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
-        log(NetworkLogStage.CALL_FAILED, ioe.getMessage());
+        String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
+        log(NetworkLogStage.CALL_FAILED, errorMsg);
     }
 
     @Override

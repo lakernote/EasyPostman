@@ -53,10 +53,13 @@ public class ResponsePanel extends JPanel {
         setLayout(new BorderLayout());
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 
-        // 初始化状态栏组件
-        statusCodeLabel = new JLabel();
-        responseTimeLabel = new JLabel();
-        responseSizeLabel = new JLabel();
+        // 初始化状态栏组件 - 现代扁平风格
+        statusCodeLabel = createModernStatusLabel();
+        responseTimeLabel = createModernTimeLabel();
+        responseSizeLabel = createModernSizeLabel();
+
+        // 声明topResponseBar，在各个分支中初始化
+        JPanel topResponseBar;
 
         // 根据协议类型初始化相应的面板
         if (protocol.isWebSocketProtocol()) {
@@ -67,14 +70,17 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+            // 现代扁平风格：紧凑布局，状态码带彩色背景框
             statusBar.add(statusCodeLabel);
+            statusBar.add(createSeparator());
             statusBar.add(responseTimeLabel);
+            statusBar.add(createSeparator());
             statusBar.add(responseSizeLabel);
-            JPanel topResponseBar = new JPanel(new BorderLayout());
+
+            topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
-            add(topResponseBar, BorderLayout.NORTH);
             cardPanel = new JPanel(new CardLayout());
             webSocketResponsePanel = new WebSocketResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
@@ -96,14 +102,16 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
+            // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
+            statusBar.add(createSeparator());
             statusBar.add(responseTimeLabel);
+            statusBar.add(createSeparator());
             statusBar.add(responseSizeLabel);
-            JPanel topResponseBar = new JPanel(new BorderLayout());
+            topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
-            add(topResponseBar, BorderLayout.NORTH);
             cardPanel = new JPanel(new CardLayout());
             sseResponsePanel = new SSEResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
@@ -125,7 +133,7 @@ public class ResponsePanel extends JPanel {
                     I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG)
             };
             tabButtons = new JButton[tabNames.length];
-            for (int i = 0; i < tabNames.length; i++) {
+            for (int i = 0; i < tabButtons.length; i++) {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 // 默认情况下HTTP模式不显示日志tab
                 if (i == 5) {
@@ -133,16 +141,17 @@ public class ResponsePanel extends JPanel {
                 }
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
-
+            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
+            // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
+            statusBar.add(createSeparator());
             statusBar.add(responseTimeLabel);
+            statusBar.add(createSeparator());
             statusBar.add(responseSizeLabel);
 
-            JPanel topResponseBar = new JPanel(new BorderLayout());
+            topResponseBar = new JPanel(new BorderLayout());
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
-            add(topResponseBar, BorderLayout.NORTH);
             cardPanel = new JPanel(new CardLayout());
             responseBodyPanel = new ResponseBodyPanel(enableSaveButton); // 根据参数决定是否启用保存按钮
             responseBodyPanel.setEnabled(false);
@@ -168,7 +177,11 @@ public class ResponsePanel extends JPanel {
             cardPanel.add(sseResponsePanel, tabNames[5]);
             webSocketResponsePanel = null;
         }
-        add(cardPanel, BorderLayout.CENTER);
+
+        // 创建包含topResponseBar和cardPanel的容器面板
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(topResponseBar, BorderLayout.NORTH);
+        contentPanel.add(cardPanel, BorderLayout.CENTER);
 
         for (int i = 0; i < tabButtons.length; i++) {
             final int idx = i;
@@ -187,18 +200,17 @@ public class ResponsePanel extends JPanel {
         // 初始化加载遮罩层
         loadingOverlay = new LoadingOverlay();
 
-        // 使用LayeredPane来叠加遮罩层
+        // 使用LayeredPane来叠加遮罩层，覆盖整个内容区域（包括tabs和status bar）
         JLayeredPane layeredPane = new JLayeredPane();
-        layeredPane.setLayout(new OverlayLayout(layeredPane));
+        layeredPane.setLayout(new OverlayLayout());
 
-        // 将cardPanel作为基础层
-        layeredPane.add(cardPanel, JLayeredPane.DEFAULT_LAYER);
+        // 将contentPanel（包含topResponseBar和cardPanel）作为基础层
+        layeredPane.add(contentPanel, JLayeredPane.DEFAULT_LAYER);
 
         // 将loadingOverlay作为顶层
         layeredPane.add(loadingOverlay, JLayeredPane.PALETTE_LAYER);
 
-        // 移除之前添加的cardPanel，改为添加layeredPane
-        remove(cardPanel);
+        // 添加layeredPane到主面板
         add(layeredPane, BorderLayout.CENTER);
     }
 
@@ -206,17 +218,17 @@ public class ResponsePanel extends JPanel {
      * 自定义LayoutManager，用于确保遮罩层覆盖整个cardPanel
      */
     private static class OverlayLayout implements LayoutManager2 {
-        private final Container target;
 
-        public OverlayLayout(Container target) {
-            this.target = target;
+        public OverlayLayout() {
         }
 
         @Override
-        public void addLayoutComponent(String name, Component comp) {}
+        public void addLayoutComponent(String name, Component comp) {
+        }
 
         @Override
-        public void removeLayoutComponent(Component comp) {}
+        public void removeLayoutComponent(Component comp) {
+        }
 
         @Override
         public Dimension preferredLayoutSize(Container parent) {
@@ -240,7 +252,8 @@ public class ResponsePanel extends JPanel {
         }
 
         @Override
-        public void addLayoutComponent(Component comp, Object constraints) {}
+        public void addLayoutComponent(Component comp, Object constraints) {
+        }
 
         @Override
         public Dimension maximumLayoutSize(Container target) {
@@ -258,7 +271,101 @@ public class ResponsePanel extends JPanel {
         }
 
         @Override
-        public void invalidateLayout(Container target) {}
+        public void invalidateLayout(Container target) {
+        }
+    }
+
+    /**
+     * 创建现代化的状态码Label - 带彩色圆角边框背景
+     */
+    private JLabel createModernStatusLabel() {
+        JLabel label = new JLabel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (getText() != null && !getText().isEmpty() && !getText().equals("...")) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    // 根据状态码确定背景色
+                    Color bgColor = getStatusBackgroundColor(getText());
+                    g2d.setColor(bgColor);
+
+                    // 绘制圆角矩形背景
+                    g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 4, 4);
+                    g2d.dispose();
+                }
+                super.paintComponent(g);
+            }
+
+            private Color getStatusBackgroundColor(String statusText) {
+                if (statusText.startsWith("2")) {
+                    // 2xx 成功 - 绿色背景
+                    return ModernColors.isDarkTheme()
+                            ? new Color(34, 197, 94, 30)  // 半透明绿色
+                            : new Color(34, 197, 94, 20);
+                } else if (statusText.startsWith("3")) {
+                    // 3xx 重定向 - 蓝色背景
+                    return ModernColors.isDarkTheme()
+                            ? new Color(59, 130, 246, 30)
+                            : new Color(59, 130, 246, 20);
+                } else if (statusText.startsWith("4")) {
+                    // 4xx 客户端错误 - 橙色背景
+                    return ModernColors.isDarkTheme()
+                            ? new Color(245, 158, 11, 30)
+                            : new Color(245, 158, 11, 20);
+                } else if (statusText.startsWith("5")) {
+                    // 5xx 服务器错误 - 红色背景
+                    return ModernColors.isDarkTheme()
+                            ? new Color(239, 68, 68, 30)
+                            : new Color(239, 68, 68, 20);
+                } else {
+                    // 其他状态 - 灰色背景
+                    return ModernColors.isDarkTheme()
+                            ? new Color(100, 116, 139, 30)
+                            : new Color(100, 116, 139, 20);
+                }
+            }
+        };
+
+        label.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        label.setOpaque(false);
+        // 添加内边距
+        label.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        label.setToolTipText("Response Status Code");
+        return label;
+    }
+
+    /**
+     * 创建现代化的响应时间Label - 带时钟图标，紧凑样式
+     */
+    private JLabel createModernTimeLabel() {
+        JLabel label = new JLabel();
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        label.setForeground(ModernColors.getTextSecondary());
+        label.setToolTipText("Response Time");
+        return label;
+    }
+
+    /**
+     * 创建现代化的响应大小Label - 紧凑样式
+     */
+    private JLabel createModernSizeLabel() {
+        JLabel label = new JLabel();
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        label.setForeground(ModernColors.getTextSecondary());
+        label.setToolTipText("Response Size");
+        label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return label;
+    }
+
+    /**
+     * 创建状态栏项之间的分隔符 - 竖线样式，更紧凑
+     */
+    private JLabel createSeparator() {
+        JLabel separator = new JLabel("•");
+        separator.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        separator.setForeground(ModernColors.getTextPrimary());
+        return separator;
     }
 
     public void setResponseTabButtonsEnable(boolean enable) {
@@ -305,26 +412,14 @@ public class ResponsePanel extends JPanel {
         timelinePanel.setHttpEventInfo(info);
     }
 
-    public void setStatusRequesting() {
-        statusCodeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_STATUS, "...")));
-        statusCodeLabel.setForeground(new Color(255, 140, 0));
-    }
-
     public void setStatus(String statusText, Color color) {
-        statusCodeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_STATUS, statusText)));
+        statusCodeLabel.setText(statusText);
         statusCodeLabel.setForeground(color);
     }
 
-    public void setResponseTimeRequesting() {
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION, "...")));
-    }
-
     public void setResponseTime(long ms) {
-        responseTimeLabel.setText(String.format(I18nUtil.getMessage(MessageKeys.STATUS_DURATION, TimeDisplayUtil.formatElapsedTime(ms))));
-    }
-
-    public void setResponseSizeRequesting() {
-        responseSizeLabel.setText(I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, "..."));
+        // 现代扁平风格：直接显示时间值，无需 "耗时:" 前缀
+        responseTimeLabel.setText(TimeDisplayUtil.formatElapsedTime(ms));
     }
 
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
@@ -361,13 +456,13 @@ public class ResponsePanel extends JPanel {
         final Color hoverColor;
 
         if (isCompressed) {
-            // Show compressed size with compression indicator (simple text to avoid wrapping)
-            String sizeLabel = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(httpEventInfo.getBodyBytesReceived()));
-            sizeText = String.format("%s 📦%.0f%%", sizeLabel, compressionRatio);
+            // 现代扁平风格：直接显示压缩后的大小和压缩比，无需"大小:"前缀
+            sizeText = String.format("%s 📦%.0f%%", getSizeText(httpEventInfo.getBodyBytesReceived()), compressionRatio);
             normalColor = colorCompressed;
             hoverColor = colorHoverCompressed;
         } else {
-            sizeText = I18nUtil.getMessage(MessageKeys.STATUS_RESPONSE_SIZE, getSizeText(bytes));
+            // 现代扁平风格：直接显示大小值，无需"大小:"前缀
+            sizeText = getSizeText(bytes);
             normalColor = colorNormal;
             hoverColor = colorHoverNormal;
         }
@@ -400,8 +495,8 @@ public class ResponsePanel extends JPanel {
 
             // 压缩信息背景色 - 根据主题调整
             String colorCompressBg = ModernColors.isDarkTheme()
-                ? "rgba(34, 197, 94, 0.15)"   // 暗色主题：半透明绿色
-                : "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"; // 亮色主题：渐变绿色
+                    ? "rgba(34, 197, 94, 0.15)"   // 暗色主题：半透明绿色
+                    : "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"; // 亮色主题：渐变绿色
 
             String tooltip;
             if (isCompressed) {

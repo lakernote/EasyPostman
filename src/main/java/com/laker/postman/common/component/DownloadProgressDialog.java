@@ -1,8 +1,8 @@
 package com.laker.postman.common.component;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileSizeDisplayUtil;
+import com.laker.postman.util.IconUtil;
 import lombok.Getter;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -51,7 +51,7 @@ public class DownloadProgressDialog extends JDialog {
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/download.svg", 24, 24));
+        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/download.svg", 24, 24));
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titlePanel.add(iconLabel);
         JLabel titleLabel = new JLabel(title);
@@ -103,14 +103,14 @@ public class DownloadProgressDialog extends JDialog {
         chartPanel.setMouseWheelEnabled(true);
 
         // 取消按钮
-        cancelButton = new JButton("Cancel", new FlatSVGIcon("icons/cancel.svg", 16, 16));
+        cancelButton = new JButton("Cancel", IconUtil.createThemed("icons/cancel.svg", 16, 16));
         cancelButton.addActionListener(e -> {
             cancelled = true;
             dispose();
         });
 
         // 关闭按钮（下载完成后可见）
-        closeButton = new JButton("Close", new FlatSVGIcon("icons/check.svg", 16, 16));
+        closeButton = new JButton("Close", IconUtil.createThemed("icons/check.svg", 16, 16));
         closeButton.setVisible(false); // 初始不可见
         closeButton.addActionListener(e -> dispose());
 

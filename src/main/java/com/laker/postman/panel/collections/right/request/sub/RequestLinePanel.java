@@ -123,7 +123,7 @@ public class RequestLinePanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT) :
                 I18nUtil.getMessage(MessageKeys.BUTTON_SEND);
         String iconPath = protocol.isWebSocketProtocol() ?
-                "icons/connect-white.svg" : "icons/send.svg";
+                "icons/connect.svg" : "icons/send.svg";
 
         PrimaryButton button = new PrimaryButton(text, iconPath);
         button.addActionListener(sendAction);
@@ -209,7 +209,7 @@ public class RequestLinePanel extends JPanel {
         // 设置文本和图标
         if (protocol.isWebSocketProtocol()) {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT));
-            sendButton.setIcon(new FlatSVGIcon("icons/connect-white.svg", ICON_SIZE, ICON_SIZE));
+            sendButton.setIcon(new FlatSVGIcon("icons/connect.svg", ICON_SIZE, ICON_SIZE));
         } else {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
             sendButton.setIcon(new FlatSVGIcon("icons/send.svg", ICON_SIZE, ICON_SIZE));
@@ -236,7 +236,7 @@ public class RequestLinePanel extends JPanel {
 
         // 设置为取消按钮样式
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        sendButton.setIcon(new FlatSVGIcon("icons/cancel-white.svg", ICON_SIZE, ICON_SIZE));
+        sendButton.setIcon(new FlatSVGIcon("icons/cancel.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
 
         // 改变按钮为警告色（橙色）
@@ -258,7 +258,7 @@ public class RequestLinePanel extends JPanel {
 
         // 设置为关闭按钮样式
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
-        sendButton.setIcon(new FlatSVGIcon("icons/close-white.svg", ICON_SIZE, ICON_SIZE));
+        sendButton.setIcon(new FlatSVGIcon("icons/close.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
 
         // 改变按钮为中性灰色

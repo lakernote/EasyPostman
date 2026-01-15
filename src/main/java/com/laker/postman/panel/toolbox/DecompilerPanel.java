@@ -160,7 +160,7 @@ public class DecompilerPanel extends JPanel {
         fileTree.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         fileTree.setCellRenderer(new FileTreeCellRenderer());
 
-        // 单击打开文件（更灵敏）
+        // 单击打开文件或展开/收起目录（更灵敏）
         fileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -169,15 +169,22 @@ public class DecompilerPanel extends JPanel {
                     TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
                     if (path != null) {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                        // 只处理文件节点，不处理目录节点
                         Object userObject = node.getUserObject();
+
                         if (userObject instanceof FileNodeData fileData) {
-                            // 文件或可展开的JAR：单击打开
-                            if (fileData.isClassFile || fileData.isJarFile || (!fileData.isDirectory)) {
+                            if (fileData.isDirectory) {
+                                // 目录：单击展开/收起
+                                if (fileTree.isExpanded(path)) {
+                                    fileTree.collapsePath(path);
+                                } else {
+                                    fileTree.expandPath(path);
+                                }
+                                e.consume();
+                            } else {
+                                // 文件：单击打开
                                 handleTreeNodeClick(node);
                                 e.consume();
                             }
-                            // 目录：不处理，让系统默认的展开/收起生效
                         }
                     }
                 }
@@ -503,20 +510,20 @@ public class DecompilerPanel extends JPanel {
                 String compressionRatioStr = String.format("%.1f%%", compressionRatio);
 
                 compressionInfoLabel.setText(I18nUtil.getMessage(
-                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
-                    formatFileSize(compressedSize),
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
-                    formatFileSize(finalUncompressedTotal),
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
-                    compressionRatioStr
+                        MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
+                        formatFileSize(compressedSize),
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
+                        formatFileSize(finalUncompressedTotal),
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
+                        compressionRatioStr
                 ));
 
                 compressionInfoLabel.setToolTipText(I18nUtil.getMessage(
-                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR,
-                    formatFileSize(compressedSize),
-                    formatFileSize(finalUncompressedTotal),
-                    compressionRatioStr
+                        MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR,
+                        formatFileSize(compressedSize),
+                        formatFileSize(finalUncompressedTotal),
+                        compressionRatioStr
                 ));
             }
         });
@@ -571,20 +578,20 @@ public class DecompilerPanel extends JPanel {
                 String compressionRatioStr = String.format("%.1f%%", compressionRatio);
 
                 compressionInfoLabel.setText(I18nUtil.getMessage(
-                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
-                    formatFileSize(compressedSize),
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
-                    formatFileSize(finalUncompressedTotal),
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
-                    compressionRatioStr
+                        MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
+                        formatFileSize(compressedSize),
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
+                        formatFileSize(finalUncompressedTotal),
+                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
+                        compressionRatioStr
                 ));
 
                 compressionInfoLabel.setToolTipText(I18nUtil.getMessage(
-                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP,
-                    formatFileSize(compressedSize),
-                    formatFileSize(finalUncompressedTotal),
-                    compressionRatioStr
+                        MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP,
+                        formatFileSize(compressedSize),
+                        formatFileSize(finalUncompressedTotal),
+                        compressionRatioStr
                 ));
             }
         });
@@ -1483,7 +1490,7 @@ public class DecompilerPanel extends JPanel {
                         // 判断是否是根节点（JAR/ZIP文件）
                         boolean isRootNode = node.getParent() == null;
                         boolean isArchiveFile = fileData.name.toLowerCase().endsWith(".jar") ||
-                                               fileData.name.toLowerCase().endsWith(".zip");
+                                fileData.name.toLowerCase().endsWith(".zip");
 
                         if (isRootNode && isArchiveFile) {
                             // 根节点特殊标记，显示为压缩后的实际大小

@@ -20,6 +20,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
+import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -89,10 +90,46 @@ public class EnvironmentPanel extends SingletonBasePanel {
         variablesTablePanel = new EasyPostmanEnvironmentTablePanel();
         rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
 
+        // 底部快捷键提示面板
+        rightPanel.add(createShortcutHintPanel(), BorderLayout.SOUTH);
+
         add(rightPanel, BorderLayout.CENTER);
 
         // 初始化表格验证和自动保存功能
         initTableValidationAndAutoSave();
+    }
+
+    /**
+     * 创建快捷键提示面板 - 现代科技风格
+     */
+    private JPanel createShortcutHintPanel() {
+        JPanel hintPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        hintPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
+        hintPanel.setOpaque(true);
+
+        // 添加提示标签
+        JLabel tipsLabel = new JLabel("💡");
+        tipsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
+        hintPanel.add(tipsLabel);
+
+        // 添加保存快捷键提示
+        String saveShortcut = ShortcutManager.getShortcutText(ShortcutManager.SAVE_REQUEST);
+        String saveActionName = I18nUtil.getMessage(MessageKeys.SAVE_REQUEST);
+        addShortcutHint(hintPanel, saveActionName, saveShortcut);
+
+        return hintPanel;
+    }
+
+    /**
+     * 添加单个快捷键提示 - 带 emoji
+     */
+    private void addShortcutHint(JPanel panel, String actionName, String shortcutText) {
+        String labelText = "💾" + " " + actionName + ": " + shortcutText;
+
+        JLabel label = new JLabel(labelText);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        label.setForeground(ModernColors.getTextSecondary());
+        panel.add(label);
     }
 
     /**

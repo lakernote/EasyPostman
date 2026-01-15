@@ -1612,6 +1612,16 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_SORT_BY_SIZE = "toolbox.decompiler.sort_by_size";
     public static final String TOOLBOX_DECOMPILER_SORTED_BY_NAME = "toolbox.decompiler.sorted_by_name";
     public static final String TOOLBOX_DECOMPILER_SORTED_BY_SIZE = "toolbox.decompiler.sorted_by_size";
+    public static final String TOOLBOX_DECOMPILER_COMPRESSED = "toolbox.decompiler.compressed";
+    public static final String TOOLBOX_DECOMPILER_ACTUAL_SIZE = "toolbox.decompiler.actual_size";
+    public static final String TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE = "toolbox.decompiler.uncompressed_size";
+    public static final String TOOLBOX_DECOMPILER_COMPRESSION_RATIO = "toolbox.decompiler.compression_ratio";
+    public static final String TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT = "toolbox.decompiler.compression_info_format";
+    public static final String TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR = "toolbox.decompiler.compression_tooltip_jar";
+    public static final String TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP = "toolbox.decompiler.compression_tooltip_zip";
+    public static final String TOOLBOX_DECOMPILER_SPACE_SAVED = "toolbox.decompiler.space_saved";
+    public static final String TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE1 = "toolbox.decompiler.root_tooltip_line1";
+    public static final String TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE2 = "toolbox.decompiler.root_tooltip_line2";
 
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";

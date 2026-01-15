@@ -52,6 +52,7 @@ public class DecompilerPanel extends JPanel {
     private DefaultTreeModel treeModel;
     private RSyntaxTextArea codeArea;
     private JLabel statusLabel;
+    private JLabel compressionInfoLabel; // 显示压缩信息的标签
 
     private File currentFile;
     private transient JarFile currentJarFile;
@@ -135,9 +136,21 @@ public class DecompilerPanel extends JPanel {
     private JPanel createTreePanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
 
+        // 顶部面板：标题 + 压缩信息
+        JPanel topPanel = new JPanel(new BorderLayout(5, 5));
+
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
-        panel.add(label, BorderLayout.NORTH);
+        topPanel.add(label, BorderLayout.WEST);
+
+        // 压缩信息标签（初始为空，加载文件后显示）
+        compressionInfoLabel = new JLabel("");
+        compressionInfoLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        compressionInfoLabel.setForeground(ModernColors.getTextSecondary());
+        compressionInfoLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        topPanel.add(compressionInfoLabel, BorderLayout.CENTER);
+
+        panel.add(topPanel, BorderLayout.NORTH);
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
         treeModel = new DefaultTreeModel(root);
@@ -147,15 +160,40 @@ public class DecompilerPanel extends JPanel {
         fileTree.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         fileTree.setCellRenderer(new FileTreeCellRenderer());
 
-        // 双击树节点时反编译并显示
+        // 单击打开文件（更灵敏）
         fileTree.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+            public void mousePressed(MouseEvent e) {
+                // 只处理左键单击
+                if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 1) {
                     TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
                     if (path != null) {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        // 只处理文件节点，不处理目录节点
+                        Object userObject = node.getUserObject();
+                        if (userObject instanceof FileNodeData fileData) {
+                            // 文件或可展开的JAR：单击打开
+                            if (fileData.isClassFile || fileData.isJarFile || (!fileData.isDirectory)) {
+                                handleTreeNodeClick(node);
+                                e.consume();
+                            }
+                            // 目录：不处理，让系统默认的展开/收起生效
+                        }
+                    }
+                }
+            }
+        });
+
+        // 添加回车键支持
+        fileTree.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+                    TreePath path = fileTree.getSelectionPath();
+                    if (path != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                         handleTreeNodeClick(node);
+                        e.consume();
                     }
                 }
             }
@@ -187,7 +225,7 @@ public class DecompilerPanel extends JPanel {
         separator1.setPreferredSize(new Dimension(2, 20));
 
         // 按名称排序按钮
-        JButton sortByNameBtn = new JButton(IconUtil.createThemed("icons/text-file.svg", 16, 16));
+        JButton sortByNameBtn = new JButton(IconUtil.create("icons/text-file.svg", 16, 16));
         sortByNameBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
         sortByNameBtn.addActionListener(e -> sortTreeByName());
         sortByNameBtn.setFocusPainted(false);
@@ -227,12 +265,7 @@ public class DecompilerPanel extends JPanel {
         copyBtn.setIcon(new FlatSVGIcon("icons/copy.svg", 14, 14));
         copyBtn.addActionListener(e -> copyCode());
 
-        JButton exportBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT));
-        exportBtn.setIcon(IconUtil.createThemed("icons/export.svg", 14, 14));
-        exportBtn.addActionListener(e -> exportCode());
-
         toolPanel.add(copyBtn);
-        toolPanel.add(exportBtn);
         headerPanel.add(toolPanel, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);
@@ -431,9 +464,11 @@ public class DecompilerPanel extends JPanel {
         // 为根节点创建FileNodeData
         FileNodeData rootData = new FileNodeData(file.getName(), true, false);
         rootData.fullPath = file.getName();
+        rootData.size = file.length(); // 设置为 JAR 文件实际大小（压缩后）
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootData);
         Map<String, DefaultMutableTreeNode> packageNodes = new HashMap<>();
 
+        long uncompressedTotal = 0; // 统计未压缩总大小
         Enumeration<JarEntry> entries = currentJarFile.entries();
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
@@ -444,17 +479,46 @@ public class DecompilerPanel extends JPanel {
                 try (InputStream is = currentJarFile.getInputStream(entry)) {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
+                uncompressedTotal += entry.getSize(); // 累加未压缩大小
             }
 
+            // 注意：entry.getSize() 是未压缩大小，所以子文件大小之和会大于JAR文件本身
             addEntryToTree(root, packageNodes, entryName, entry.isDirectory(), entry.getSize());
         }
 
-        // 计算所有目录的大小
-        calculateDirectorySizes(root);
+        // 计算所有子目录的大小（不修改根节点，因为根节点已设置为实际JAR大小）
+        calculateDirectorySizesExceptRoot(root);
+
+        // 计算压缩率
+        long compressedSize = file.length();
+        final long finalUncompressedTotal = uncompressedTotal;
 
         SwingUtilities.invokeLater(() -> {
             treeModel.setRoot(root);
             expandTree(fileTree, 2);
+
+            // 在树顶部显示压缩信息（始终可见）
+            if (finalUncompressedTotal > 0) {
+                double compressionRatio = (1 - (double) compressedSize / finalUncompressedTotal) * 100;
+                String compressionRatioStr = String.format("%.1f%%", compressionRatio);
+
+                compressionInfoLabel.setText(I18nUtil.getMessage(
+                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
+                    formatFileSize(compressedSize),
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
+                    formatFileSize(finalUncompressedTotal),
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
+                    compressionRatioStr
+                ));
+
+                compressionInfoLabel.setToolTipText(I18nUtil.getMessage(
+                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR,
+                    formatFileSize(compressedSize),
+                    formatFileSize(finalUncompressedTotal),
+                    compressionRatioStr
+                ));
+            }
         });
     }
 
@@ -468,9 +532,11 @@ public class DecompilerPanel extends JPanel {
         // 为根节点创建FileNodeData
         FileNodeData rootData = new FileNodeData(file.getName(), true, false);
         rootData.fullPath = file.getName();
+        rootData.size = file.length(); // 设置为 ZIP 文件实际大小（压缩后）
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootData);
         Map<String, DefaultMutableTreeNode> packageNodes = new HashMap<>();
 
+        long uncompressedTotal = 0; // 统计未压缩总大小
         Enumeration<? extends ZipEntry> entries = currentZipFile.entries();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
@@ -481,17 +547,46 @@ public class DecompilerPanel extends JPanel {
                 try (InputStream is = currentZipFile.getInputStream(entry)) {
                     classFileCache.put(entryName, is.readAllBytes());
                 }
+                uncompressedTotal += entry.getSize(); // 累加未压缩大小
             }
 
+            // 注意：entry.getSize() 是未压缩大小，所以子文件大小之和会大于ZIP文件本身
             addEntryToTree(root, packageNodes, entryName, entry.isDirectory(), entry.getSize());
         }
 
-        // 计算所有目录的大小
-        calculateDirectorySizes(root);
+        // 计算所有子目录的大小（不修改根节点，因为根节点已设置为实际ZIP大小）
+        calculateDirectorySizesExceptRoot(root);
+
+        // 计算压缩率
+        long compressedSize = file.length();
+        final long finalUncompressedTotal = uncompressedTotal;
 
         SwingUtilities.invokeLater(() -> {
             treeModel.setRoot(root);
             expandTree(fileTree, 2);
+
+            // 在树顶部显示压缩信息（始终可见）
+            if (finalUncompressedTotal > 0) {
+                double compressionRatio = (1 - (double) compressedSize / finalUncompressedTotal) * 100;
+                String compressionRatioStr = String.format("%.1f%%", compressionRatio);
+
+                compressionInfoLabel.setText(I18nUtil.getMessage(
+                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
+                    formatFileSize(compressedSize),
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
+                    formatFileSize(finalUncompressedTotal),
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
+                    compressionRatioStr
+                ));
+
+                compressionInfoLabel.setToolTipText(I18nUtil.getMessage(
+                    MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP,
+                    formatFileSize(compressedSize),
+                    formatFileSize(finalUncompressedTotal),
+                    compressionRatioStr
+                ));
+            }
         });
     }
 
@@ -584,6 +679,18 @@ public class DecompilerPanel extends JPanel {
         // 设置目录的总大小
         fileData.size = totalSize;
         return totalSize;
+    }
+
+    /**
+     * 递归计算所有子目录大小，但不修改根节点
+     * （用于JAR/ZIP文件，根节点显示实际文件大小，子节点显示未压缩大小）
+     */
+    private void calculateDirectorySizesExceptRoot(DefaultMutableTreeNode root) {
+        // 只计算根节点的直接子节点及其后代
+        for (int i = 0; i < root.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) root.getChildAt(i);
+            calculateDirectorySizes(childNode);
+        }
     }
 
     /**
@@ -1087,38 +1194,6 @@ public class DecompilerPanel extends JPanel {
         }
     }
 
-    /**
-     * 导出代码到文件
-     */
-    private void exportCode() {
-        String code = codeArea.getText();
-        if (code == null || code.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_CODE_TO_EXPORT));
-            return;
-        }
-
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_CODE));
-        fileChooser.setSelectedFile(new File("DecompiledCode.java"));
-
-        int result = fileChooser.showSaveDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            try {
-                Files.writeString(file.toPath(), code, StandardCharsets.UTF_8);
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_SUCCESS) + ": " + file.getAbsolutePath());
-                NotificationUtil.showSuccess(
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_SUCCESS) + ": " + file.getName()
-                );
-            } catch (IOException e) {
-                log.error("Failed to export code", e);
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_FAILED));
-                NotificationUtil.showError(
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPORT_FAILED) + ": " + e.getMessage()
-                );
-            }
-        }
-    }
 
     /**
      * 清空所有内容
@@ -1133,6 +1208,12 @@ public class DecompilerPanel extends JPanel {
 
         // 清空代码区域
         codeArea.setText("");
+
+        // 清空压缩信息
+        if (compressionInfoLabel != null) {
+            compressionInfoLabel.setText("");
+            compressionInfoLabel.setToolTipText(null);
+        }
 
         // 重置树
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
@@ -1398,9 +1479,27 @@ public class DecompilerPanel extends JPanel {
                     // 显示文件/目录名称和大小
                     if (fileData.size > 0) {
                         String sizeStr = formatFileSize(fileData.size);
-                        setText(fileData.name + " (" + sizeStr + ")");
+
+                        // 判断是否是根节点（JAR/ZIP文件）
+                        boolean isRootNode = node.getParent() == null;
+                        boolean isArchiveFile = fileData.name.toLowerCase().endsWith(".jar") ||
+                                               fileData.name.toLowerCase().endsWith(".zip");
+
+                        if (isRootNode && isArchiveFile) {
+                            // 根节点特殊标记，显示为压缩后的实际大小
+                            String compressedLabel = I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSED);
+                            setText(fileData.name + " (" + sizeStr + " " + compressedLabel + ")");
+
+                            String tooltipLine1 = I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE1);
+                            String tooltipLine2 = I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE2);
+                            setToolTipText("<html>" + tooltipLine1 + "<br>" + tooltipLine2 + "</html>");
+                        } else {
+                            setText(fileData.name + " (" + sizeStr + ")");
+                            setToolTipText(null);
+                        }
                     } else {
                         setText(fileData.name);
+                        setToolTipText(null);
                     }
                 }
             }

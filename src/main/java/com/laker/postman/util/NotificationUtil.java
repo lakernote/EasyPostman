@@ -126,7 +126,6 @@ import java.util.List;
  * @author laker
  * @see NotificationType
  * @see NotificationPosition
- * @since 1.0
  */
 @UtilityClass
 public class NotificationUtil {
@@ -381,12 +380,19 @@ public class NotificationUtil {
             JPanel topPanel = new JPanel(new BorderLayout(8, 0));
             topPanel.setOpaque(false);
 
+            // 判断是否为单行文本（与 createMessageLabel 中的逻辑一致）
+            boolean isSingleLine = message != null &&
+                                   !message.contains("\n") &&
+                                   message.length() <= 60;
+
             // 图标
             JLabel iconLabel = new JLabel(type.getIcon());
             iconLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +6));
             iconLabel.setForeground(type.getColor());
-            iconLabel.setVerticalAlignment(SwingConstants.TOP);
-            iconLabel.setBorder(BorderFactory.createEmptyBorder(1, 0, 0, 0));
+            // 智能设置垂直对齐：单行文本垂直居中，多行文本顶部对齐
+            iconLabel.setVerticalAlignment(isSingleLine ? SwingConstants.CENTER : SwingConstants.TOP);
+            // 单行时无需额外边距，多行时顶部留1px边距与文本对齐
+            iconLabel.setBorder(BorderFactory.createEmptyBorder(isSingleLine ? 0 : 1, 0, 0, 0));
 
             // 消息内容
             messageLabel = createMessageLabel(message);
@@ -445,7 +451,14 @@ public class NotificationUtil {
             if (baseFont != null) {
                 label.setFont(baseFont.deriveFont(12.5f));
             }
-            label.setVerticalAlignment(SwingConstants.TOP);
+
+            // 智能设置垂直对齐：单行文本垂直居中，多行文本顶部对齐
+            // 判断是否为单行（没有换行符且长度不超过限制）
+            boolean isSingleLine = message != null &&
+                                   !message.contains("\n") &&
+                                   message.length() <= 60; // 大约60个字符以内认为是单行
+
+            label.setVerticalAlignment(isSingleLine ? SwingConstants.CENTER : SwingConstants.TOP);
 
             // 设置文本颜色
             boolean isDark = FlatLaf.isLafDark();

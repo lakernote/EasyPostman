@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.component.LoadingOverlay;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -45,6 +46,7 @@ public class ResponsePanel extends JPanel {
     private final RequestItemProtocolEnum protocol;
     private final WebSocketResponsePanel webSocketResponsePanel;
     private final SSEResponsePanel sseResponsePanel;
+    private final LoadingOverlay loadingOverlay;
 
     public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
@@ -181,6 +183,82 @@ public class ResponsePanel extends JPanel {
         }
         // 默认所有按钮不可用
         setResponseTabButtonsEnable(false);
+
+        // 初始化加载遮罩层
+        loadingOverlay = new LoadingOverlay();
+
+        // 使用LayeredPane来叠加遮罩层
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setLayout(new OverlayLayout(layeredPane));
+
+        // 将cardPanel作为基础层
+        layeredPane.add(cardPanel, JLayeredPane.DEFAULT_LAYER);
+
+        // 将loadingOverlay作为顶层
+        layeredPane.add(loadingOverlay, JLayeredPane.PALETTE_LAYER);
+
+        // 移除之前添加的cardPanel，改为添加layeredPane
+        remove(cardPanel);
+        add(layeredPane, BorderLayout.CENTER);
+    }
+
+    /**
+     * 自定义LayoutManager，用于确保遮罩层覆盖整个cardPanel
+     */
+    private static class OverlayLayout implements LayoutManager2 {
+        private final Container target;
+
+        public OverlayLayout(Container target) {
+            this.target = target;
+        }
+
+        @Override
+        public void addLayoutComponent(String name, Component comp) {}
+
+        @Override
+        public void removeLayoutComponent(Component comp) {}
+
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+            return parent.getSize();
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container parent) {
+            return new Dimension(0, 0);
+        }
+
+        @Override
+        public void layoutContainer(Container parent) {
+            synchronized (parent.getTreeLock()) {
+                int w = parent.getWidth();
+                int h = parent.getHeight();
+                for (Component comp : parent.getComponents()) {
+                    comp.setBounds(0, 0, w, h);
+                }
+            }
+        }
+
+        @Override
+        public void addLayoutComponent(Component comp, Object constraints) {}
+
+        @Override
+        public Dimension maximumLayoutSize(Container target) {
+            return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        }
+
+        @Override
+        public float getLayoutAlignmentX(Container target) {
+            return 0.5f;
+        }
+
+        @Override
+        public float getLayoutAlignmentY(Container target) {
+            return 0.5f;
+        }
+
+        @Override
+        public void invalidateLayout(Container target) {}
     }
 
     public void setResponseTabButtonsEnable(boolean enable) {
@@ -485,6 +563,42 @@ public class ResponsePanel extends JPanel {
             tabButtons[0].setVisible(false);
             tabButtons[5].setVisible(true);
             tabButtons[5].doClick();
+        }
+    }
+
+    /**
+     * 显示加载遮罩
+     */
+    public void showLoadingOverlay() {
+        if (loadingOverlay != null) {
+            SwingUtilities.invokeLater(loadingOverlay::showLoading);
+        }
+    }
+
+    /**
+     * 显示加载遮罩并自定义消息
+     */
+    public void showLoadingOverlay(String message) {
+        if (loadingOverlay != null) {
+            SwingUtilities.invokeLater(() -> loadingOverlay.showLoading(message));
+        }
+    }
+
+    /**
+     * 隐藏加载遮罩
+     */
+    public void hideLoadingOverlay() {
+        if (loadingOverlay != null) {
+            SwingUtilities.invokeLater(() -> loadingOverlay.hideLoading());
+        }
+    }
+
+    /**
+     * 更新加载消息
+     */
+    public void updateLoadingMessage(String message) {
+        if (loadingOverlay != null && loadingOverlay.isLoading()) {
+            SwingUtilities.invokeLater(() -> loadingOverlay.setMessage(message));
         }
     }
 

@@ -1073,6 +1073,9 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.getStatusCodeLabel().setForeground(new Color(255, 140, 0));
         currentWorker = null;
 
+        // 隐藏加载遮罩
+        responsePanel.hideLoadingOverlay();
+
         // 为WebSocket连接添加取消消息
         if (protocol.isWebSocketProtocol()) {
             appendWebSocketMessage(MessageType.WARNING, "User canceled");
@@ -1092,10 +1095,16 @@ public class RequestEditSubPanel extends JPanel {
             responsePanel.getResponseBodyPanel().setEnabled(false);
         }
         responsePanel.clearAll();
+
+        // 显示加载遮罩
+        responsePanel.showLoadingOverlay();
     }
 
     // UI状态：响应完成
     private void updateUIForResponse(String statusText, HttpResponse resp) {
+        // 隐藏加载遮罩
+        responsePanel.hideLoadingOverlay();
+
         if (resp == null) {
             responsePanel.setStatus(statusText, Color.RED);
             if (protocol.isHttpProtocol()) {

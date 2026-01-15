@@ -1596,17 +1596,11 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_EXPAND_ALL = "toolbox.decompiler.expand_all";
     public static final String TOOLBOX_DECOMPILER_COLLAPSE_ALL = "toolbox.decompiler.collapse_all";
     public static final String TOOLBOX_DECOMPILER_COPY_CODE = "toolbox.decompiler.copy_code";
-    public static final String TOOLBOX_DECOMPILER_EXPORT = "toolbox.decompiler.export";
     public static final String TOOLBOX_DECOMPILER_BYTES = "toolbox.decompiler.bytes";
     public static final String TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW = "toolbox.decompiler.drag_drop_hint_to_below";
-    public static final String TOOLBOX_DECOMPILER_EXPORT_CODE = "toolbox.decompiler.export_code";
     public static final String TOOLBOX_DECOMPILER_CODE_COPIED = "toolbox.decompiler.code_copied";
-    public static final String TOOLBOX_DECOMPILER_NO_CODE_TO_EXPORT = "toolbox.decompiler.no_code_to_export";
-    public static final String TOOLBOX_DECOMPILER_EXPORT_SUCCESS = "toolbox.decompiler.export_success";
-    public static final String TOOLBOX_DECOMPILER_EXPORT_FAILED = "toolbox.decompiler.export_failed";
     public static final String TOOLBOX_DECOMPILER_READY = "toolbox.decompiler.ready";
     public static final String TOOLBOX_DECOMPILER_CLEAR = "toolbox.decompiler.clear";
-    public static final String TOOLBOX_DECOMPILER_CLEAR_TOOLTIP = "toolbox.decompiler.clear_tooltip";
     public static final String TOOLBOX_DECOMPILER_CLEARED = "toolbox.decompiler.cleared";
     public static final String TOOLBOX_DECOMPILER_SORT_BY_NAME = "toolbox.decompiler.sort_by_name";
     public static final String TOOLBOX_DECOMPILER_SORT_BY_SIZE = "toolbox.decompiler.sort_by_size";
@@ -1619,7 +1613,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT = "toolbox.decompiler.compression_info_format";
     public static final String TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR = "toolbox.decompiler.compression_tooltip_jar";
     public static final String TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP = "toolbox.decompiler.compression_tooltip_zip";
-    public static final String TOOLBOX_DECOMPILER_SPACE_SAVED = "toolbox.decompiler.space_saved";
     public static final String TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE1 = "toolbox.decompiler.root_tooltip_line1";
     public static final String TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE2 = "toolbox.decompiler.root_tooltip_line2";
 

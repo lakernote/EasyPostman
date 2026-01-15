@@ -45,6 +45,7 @@ public class DecompilerPanel extends JPanel {
     private static final String CLASS_EXTENSION = ".class";
     private static final String JAR_EXTENSION = ".jar";
     private static final String ZIP_EXTENSION = ".zip";
+    private static final String WAR_EXTENSION = ".war";
     private static final String JAVA_EXTENSION = ".java";
 
     private JTextField filePathField;
@@ -390,7 +391,7 @@ public class DecompilerPanel extends JPanel {
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                "JAR/Class/Zip Files (*.jar, *.class, *.zip)", "jar", "class", "zip");
+                "JAR/WAR/Class/Zip Files (*.jar, *.war, *.class, *.zip)", "jar", "war", "class", "zip");
         fileChooser.setFileFilter(filter);
 
         if (currentFile != null && currentFile.getParentFile() != null) {
@@ -413,7 +414,8 @@ public class DecompilerPanel extends JPanel {
         }
 
         String fileName = file.getName().toLowerCase();
-        if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) && !fileName.endsWith(ZIP_EXTENSION)) {
+        if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) &&
+            !fileName.endsWith(ZIP_EXTENSION) && !fileName.endsWith(WAR_EXTENSION)) {
             JOptionPane.showMessageDialog(this,
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE),
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
@@ -433,7 +435,8 @@ public class DecompilerPanel extends JPanel {
             protected Void doInBackground() {
                 statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOADING));
                 try {
-                    if (fileName.endsWith(JAR_EXTENSION)) {
+                    if (fileName.endsWith(JAR_EXTENSION) || fileName.endsWith(WAR_EXTENSION)) {
+                        // JAR 和 WAR 都使用 JarFile 加载（WAR 本质是特殊的 JAR）
                         loadJarFile(file);
                     } else if (fileName.endsWith(ZIP_EXTENSION)) {
                         loadZipFile(file);
@@ -639,7 +642,8 @@ public class DecompilerPanel extends JPanel {
             boolean isFile = isLastPart && !isDirectory;
             boolean isClassFile = isFile && part.endsWith(CLASS_EXTENSION);
             boolean isJarFile = isFile && (part.toLowerCase().endsWith(JAR_EXTENSION) ||
-                    part.toLowerCase().endsWith(ZIP_EXTENSION));
+                    part.toLowerCase().endsWith(ZIP_EXTENSION) ||
+                    part.toLowerCase().endsWith(WAR_EXTENSION));
 
             // 检查节点是否已存在
             DefaultMutableTreeNode node = packageNodes.get(nodePath);
@@ -823,7 +827,8 @@ public class DecompilerPanel extends JPanel {
             boolean isFile = isLastPart && !isDirectory;
             boolean isClassFile = isFile && part.endsWith(CLASS_EXTENSION);
             boolean isJarFile = isFile && (part.toLowerCase().endsWith(JAR_EXTENSION) ||
-                    part.toLowerCase().endsWith(ZIP_EXTENSION));
+                    part.toLowerCase().endsWith(ZIP_EXTENSION) ||
+                    part.toLowerCase().endsWith(WAR_EXTENSION));
 
             // 检查节点是否已存在
             DefaultMutableTreeNode node = packageNodes.get(nodePath);
@@ -1487,10 +1492,11 @@ public class DecompilerPanel extends JPanel {
                     if (fileData.size > 0) {
                         String sizeStr = formatFileSize(fileData.size);
 
-                        // 判断是否是根节点（JAR/ZIP文件）
+                        // 判断是否是根节点（JAR/ZIP/WAR文件）
                         boolean isRootNode = node.getParent() == null;
                         boolean isArchiveFile = fileData.name.toLowerCase().endsWith(".jar") ||
-                                fileData.name.toLowerCase().endsWith(".zip");
+                                fileData.name.toLowerCase().endsWith(".zip") ||
+                                fileData.name.toLowerCase().endsWith(".war");
 
                         if (isRootNode && isArchiveFile) {
                             // 根节点特殊标记，显示为压缩后的实际大小

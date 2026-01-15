@@ -700,7 +700,6 @@ public final class MessageKeys {
     public static final String SETTINGS_SAVE_NOW = "settings.save_now";
     public static final String SETTINGS_CONFIRM_DISCARD_TITLE = "settings.confirm_discard.title";
     public static final String SETTINGS_CONFIRM_DISCARD_MESSAGE = "settings.confirm_discard.message";
-    public static final String SETTINGS_RESET_TO_DEFAULT = "settings.reset_to_default";
 
     // Request settings section
     public static final String SETTINGS_REQUEST_TITLE = "settings.request.title";

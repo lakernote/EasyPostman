@@ -8,19 +8,37 @@ import com.laker.postman.util.MessageKeys;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Arc2D;
-import java.awt.geom.Area;
-import java.awt.geom.Ellipse2D;
 
 /**
- * 现代化的加载遮罩组件，显示扁平风格的转圈动画
- * 类似Postman的加载效果，完全支持亮色/暗色主题自适应
+ * 现代化的加载遮罩组件，显示科技感的多层动画效果
+ * 包含：多层旋转圆环、脉冲效果、粒子动画
+ * 完全支持亮色/暗色主题自适应
  */
 public class LoadingOverlay extends JComponent {
-    private static final int SPINNER_SIZE = 40;
-    private static final int SPINNER_THICKNESS = 4;
+    // 外层圆环
+    private static final int OUTER_RING_SIZE = 60;
+    private static final int OUTER_RING_THICKNESS = 3;
+
+    // 中层圆环
+    private static final int MIDDLE_RING_SIZE = 44;
+    private static final int MIDDLE_RING_THICKNESS = 2;
+
+    // 内层圆环
+    private static final int INNER_RING_SIZE = 32;
+    private static final int INNER_RING_THICKNESS = 2;
+
+    // 中心脉冲
+    private static final int PULSE_SIZE = 12;
+
+    // 粒子数量
+    private static final int PARTICLE_COUNT = 8;
+    private static final int PARTICLE_SIZE = 4;
 
     private final Timer animationTimer;
-    private int currentAngle = 0;
+    private int outerAngle = 0;      // 外层角度
+    private int middleAngle = 0;     // 中层角度
+    private int innerAngle = 0;      // 内层角度
+    private float pulsePhase = 0;    // 脉冲相位
     private String message;
     private boolean isVisible = false;
 
@@ -29,9 +47,20 @@ public class LoadingOverlay extends JComponent {
         setVisible(false);
         this.message = I18nUtil.getMessage(MessageKeys.STATUS_SENDING_REQUEST);
 
-        // 创建动画定时器，每30ms旋转6度，实现平滑动画
-        animationTimer = new Timer(30, e -> {
-            currentAngle = (currentAngle + 6) % 360;
+        // 创建动画定时器，每25ms更新一次，实现流畅的多层动画
+        animationTimer = new Timer(25, e -> {
+            // 外层：顺时针慢速旋转
+            outerAngle = (outerAngle + 3) % 360;
+
+            // 中层：逆时针中速旋转
+            middleAngle = (middleAngle - 5) % 360;
+
+            // 内层：顺时针快速旋转
+            innerAngle = (innerAngle + 8) % 360;
+
+            // 脉冲：连续循环
+            pulsePhase = (pulsePhase + 0.08f) % (2 * (float) Math.PI);
+
             repaint();
         });
     }
@@ -50,7 +79,13 @@ public class LoadingOverlay extends JComponent {
         this.message = message;
         this.isVisible = true;
         setVisible(true);
-        currentAngle = 0;
+
+        // 重置所有动画状态
+        outerAngle = 0;
+        middleAngle = 0;
+        innerAngle = 0;
+        pulsePhase = 0;
+
         animationTimer.start();
         repaint();
     }
@@ -97,16 +132,16 @@ public class LoadingOverlay extends JComponent {
             g2d.setColor(overlayColor);
             g2d.fillRect(0, 0, getWidth(), getHeight());
 
-            // 计算转圈位置（居中）
+            // 计算中心位置
             int centerX = getWidth() / 2;
             int centerY = getHeight() / 2;
 
-            // 绘制转圈动画（使用圆环）
-            drawSpinner(g2d, centerX, centerY - 20);
+            // 绘制多层科技感动画
+            drawTechSpinner(g2d, centerX, centerY - 20);
 
             // 绘制加载文字
             if (message != null && !message.isEmpty()) {
-                drawMessage(g2d, centerX, centerY + 35);
+                drawMessage(g2d, centerX, centerY + 50);
             }
         } finally {
             g2d.dispose();
@@ -115,7 +150,7 @@ public class LoadingOverlay extends JComponent {
 
     /**
      * 获取遮罩层颜色 - 主题适配
-     * 亮色主题：半透明白色
+     * 亮色主题：#f5f7fa
      * 暗色主题：半透明深灰色
      */
     private Color getOverlayColor() {
@@ -124,8 +159,8 @@ public class LoadingOverlay extends JComponent {
             Color bg = ModernColors.getBackgroundColor();
             return new Color(bg.getRed(), bg.getGreen(), bg.getBlue(), 230);
         } else {
-            // 亮色主题：半透明白色
-            return new Color(255, 255, 255, 230);
+            // 亮色主题：#f5f7fa (245, 247, 250) 带透明度
+            return new Color(245, 247, 250, 230);
         }
     }
 
@@ -150,55 +185,156 @@ public class LoadingOverlay extends JComponent {
     }
 
     /**
-     * 绘制转圈动画
+     * 绘制科技感的多层转圈动画
      */
-    private void drawSpinner(Graphics2D g2d, int centerX, int centerY) {
-        // 创建圆环形状
-        int outerRadius = SPINNER_SIZE / 2;
-        int innerRadius = outerRadius - SPINNER_THICKNESS;
+    private void drawTechSpinner(Graphics2D g2d, int centerX, int centerY) {
+        // 1. 绘制外层圆环（慢速顺时针）
+        drawRing(g2d, centerX, centerY, OUTER_RING_SIZE, OUTER_RING_THICKNESS,
+                outerAngle, 240, 0.4f);
 
-        // 外圆
-        Ellipse2D outer = new Ellipse2D.Double(
-            (double) centerX - outerRadius,
-            (double) centerY - outerRadius,
-            SPINNER_SIZE,
-            SPINNER_SIZE
+        // 2. 绘制粒子效果（围绕外层圆环）
+        drawParticles(g2d, centerX, centerY, OUTER_RING_SIZE / 2 + 6);
+
+        // 3. 绘制中层圆环（中速逆时针）
+        drawRing(g2d, centerX, centerY, MIDDLE_RING_SIZE, MIDDLE_RING_THICKNESS,
+                middleAngle, 200, 0.6f);
+
+        // 4. 绘制内层圆环（快速顺时针）
+        drawRing(g2d, centerX, centerY, INNER_RING_SIZE, INNER_RING_THICKNESS,
+                innerAngle, 180, 0.8f);
+
+        // 5. 绘制中心脉冲效果
+        drawPulse(g2d, centerX, centerY);
+    }
+
+    /**
+     * 绘制单个圆环
+     */
+    private void drawRing(Graphics2D g2d, int centerX, int centerY,
+                          int size, int thickness, int angle, int arcLength, float alpha) {
+        int radius = size / 2;
+
+        // 绘制背景圆环（淡色）
+        Color bgColor = getSpinnerBackgroundColor();
+        g2d.setColor(new Color(bgColor.getRed(), bgColor.getGreen(),
+                bgColor.getBlue(), (int) (50 * alpha)));
+        g2d.setStroke(new BasicStroke(thickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2d.drawOval(centerX - radius, centerY - radius, size, size);
+
+        // 绘制主色弧形（带渐变效果）
+        Color primaryColor = getSpinnerColor();
+
+        // 起始颜色（主色）
+        Color startColor = new Color(
+                primaryColor.getRed(),
+                primaryColor.getGreen(),
+                primaryColor.getBlue(),
+                (int) (255 * alpha)
         );
 
-        // 内圆
-        Ellipse2D inner = new Ellipse2D.Double(
-            (double) centerX - innerRadius,
-            (double) centerY - innerRadius,
-            (double) innerRadius * 2,
-            (double) innerRadius * 2
+        // 结束颜色（透明）
+        Color endColor = new Color(
+                primaryColor.getRed(),
+                primaryColor.getGreen(),
+                primaryColor.getBlue(),
+                0
         );
 
-        // 创建圆环区域
-        Area ring = new Area(outer);
-        ring.subtract(new Area(inner));
+        // 计算渐变的起点和终点
+        double startRad = Math.toRadians(angle);
+        double endRad = Math.toRadians(angle + arcLength);
 
-        // 绘制底层圆环 - 主题适配
-        g2d.setColor(getSpinnerBackgroundColor());
-        g2d.fill(ring);
+        int x1 = (int) (centerX + radius * Math.cos(startRad));
+        int y1 = (int) (centerY + radius * Math.sin(startRad));
+        int x2 = (int) (centerX + radius * Math.cos(endRad));
+        int y2 = (int) (centerY + radius * Math.sin(endRad));
 
-        // 绘制旋转的弧形（270度，留90度间隙）
-        Arc2D.Double arc = new Arc2D.Double(
-            (double) centerX - outerRadius,
-            (double) centerY - outerRadius,
-            SPINNER_SIZE,
-            SPINNER_SIZE,
-            currentAngle,
-            270,
-            Arc2D.PIE
+        GradientPaint gradient = new GradientPaint(x1, y1, startColor, x2, y2, endColor);
+        g2d.setPaint(gradient);
+
+        Arc2D arc = new Arc2D.Double(
+                centerX - radius, centerY - radius,
+                size, size,
+                angle, arcLength,
+                Arc2D.OPEN
         );
 
-        // 创建弧形区域
-        Area arcArea = new Area(arc);
-        arcArea.intersect(ring);
+        g2d.draw(arc);
+    }
 
-        // 绘制主色部分
-        g2d.setColor(getSpinnerColor());
-        g2d.fill(arcArea);
+    /**
+     * 绘制粒子效果
+     */
+    private void drawParticles(Graphics2D g2d, int centerX, int centerY, int orbitRadius) {
+        Color primaryColor = getSpinnerColor();
+
+        for (int i = 0; i < PARTICLE_COUNT; i++) {
+            // 计算粒子位置（均匀分布在圆周上）
+            double angle = Math.toRadians((360.0 / PARTICLE_COUNT) * i + outerAngle);
+            int x = (int) (centerX + orbitRadius * Math.cos(angle));
+            int y = (int) (centerY + orbitRadius * Math.sin(angle));
+
+            // 粒子的透明度随位置变化（产生拖尾效果）
+            float alpha = 0.3f + 0.7f * (float) Math.sin(angle + pulsePhase);
+            alpha = Math.max(0.2f, Math.min(1.0f, alpha));
+
+            Color particleColor = new Color(
+                    primaryColor.getRed(),
+                    primaryColor.getGreen(),
+                    primaryColor.getBlue(),
+                    (int) (255 * alpha)
+            );
+
+            g2d.setColor(particleColor);
+            g2d.fillOval(x - PARTICLE_SIZE / 2, y - PARTICLE_SIZE / 2,
+                    PARTICLE_SIZE, PARTICLE_SIZE);
+        }
+    }
+
+    /**
+     * 绘制中心脉冲效果
+     */
+    private void drawPulse(Graphics2D g2d, int centerX, int centerY) {
+        Color primaryColor = getSpinnerColor();
+
+        // 脉冲大小随相位变化
+        float scale = 0.7f + 0.3f * (float) Math.sin(pulsePhase);
+        int currentSize = (int) (PULSE_SIZE * scale);
+
+        // 透明度也随相位变化
+        float alpha = 0.4f + 0.4f * (float) Math.sin(pulsePhase);
+
+        // 绘制外圈光晕
+        int glowSize = (int) (currentSize * 1.8f);
+        Color glowColor = new Color(
+                primaryColor.getRed(),
+                primaryColor.getGreen(),
+                primaryColor.getBlue(),
+                (int) (100 * alpha)
+        );
+
+        RadialGradientPaint glowPaint = new RadialGradientPaint(
+                centerX, centerY,
+                glowSize / 2.0f,
+                new float[]{0.0f, 1.0f},
+                new Color[]{glowColor, new Color(primaryColor.getRed(), primaryColor.getGreen(),
+                        primaryColor.getBlue(), 0)}
+        );
+
+        g2d.setPaint(glowPaint);
+        g2d.fillOval(centerX - glowSize / 2, centerY - glowSize / 2, glowSize, glowSize);
+
+        // 绘制实心圆
+        Color solidColor = new Color(
+                primaryColor.getRed(),
+                primaryColor.getGreen(),
+                primaryColor.getBlue(),
+                (int) (255 * (0.8f + 0.2f * alpha))
+        );
+
+        g2d.setColor(solidColor);
+        g2d.fillOval(centerX - currentSize / 2, centerY - currentSize / 2,
+                currentSize, currentSize);
     }
 
     /**

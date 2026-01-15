@@ -89,6 +89,8 @@ public class DownloadProgressDialog extends JDialog {
         dateAxis.setTickLabelPaint(ModernColors.getTextSecondary()); // 使用主题适配的次要文本颜色
         dateAxis.setLabelFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 设置X轴标签字体，比默认小1号
         dateAxis.setLabelPaint(ModernColors.getTextPrimary()); // 使用主题适配的主要文本颜色
+        dateAxis.setAxisLinePaint(ModernColors.getBorderMediumColor()); // 设置X轴线颜色（更明显）
+        dateAxis.setTickMarkPaint(ModernColors.getBorderMediumColor()); // 设置X轴刻度线颜色
 
         NumberAxis valueAxis = (NumberAxis) plot.getRangeAxis();
         valueAxis.setAutoRangeIncludesZero(true);
@@ -96,21 +98,44 @@ public class DownloadProgressDialog extends JDialog {
         valueAxis.setTickLabelPaint(ModernColors.getTextSecondary()); // 使用主题适配的次要文本颜色
         valueAxis.setLabelFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 设置Y轴标签字体，比默认小1号
         valueAxis.setLabelPaint(ModernColors.getTextPrimary()); // 使用主题适配的主要文本颜色
+        valueAxis.setAxisLinePaint(ModernColors.getBorderMediumColor()); // 设置Y轴线颜色（更明显）
+        valueAxis.setTickMarkPaint(ModernColors.getBorderMediumColor()); // 设置Y轴刻度线颜色
 
         // 设置图表背景透明，线条颜色更明显
         chart.setBackgroundPaint(null); // 设置图表背景透明
         plot.setBackgroundPaint(ModernColors.getCardBackgroundColor()); // 使用主题适配的卡片背景色
 
-        // 设置网格线颜色（使用主题适配的边框颜色）
-        plot.setDomainGridlinePaint(ModernColors.getBorderLightColor());
-        plot.setRangeGridlinePaint(ModernColors.getBorderLightColor());
+        // 设置网格线颜色（使用更明显的中等边框颜色，而非浅色）
+        // 亮色主题: Slate-300 (203, 213, 225) - 清晰可见
+        // 暗色主题: (85, 87, 90) - 比背景亮，清晰可见
+        plot.setDomainGridlinePaint(ModernColors.getBorderMediumColor());
+        plot.setRangeGridlinePaint(ModernColors.getBorderMediumColor());
 
-        // 设置轮廓线颜色
-        plot.setOutlinePaint(ModernColors.getBorderMediumColor());
+        // 设置网格线样式为虚线，更美观
+        plot.setDomainGridlineStroke(new BasicStroke(
+                1.0f,                      // 线宽
+                BasicStroke.CAP_BUTT,      // 端点样式
+                BasicStroke.JOIN_MITER,    // 连接样式
+                10.0f,                     // 斜接限制
+                new float[]{3.0f, 3.0f},   // 虚线模式：3像素实线，3像素空白
+                0.0f                       // 虚线偏移
+        ));
+        plot.setRangeGridlineStroke(new BasicStroke(
+                1.0f,
+                BasicStroke.CAP_BUTT,
+                BasicStroke.JOIN_MITER,
+                10.0f,
+                new float[]{3.0f, 3.0f},
+                0.0f
+        ));
+
+        // 设置轮廓线颜色（使用更深的分隔线颜色）
+        plot.setOutlinePaint(ModernColors.getDividerBorderColor());
+        plot.setOutlineStroke(new BasicStroke(1.0f)); // 设置轮廓线宽度
 
         // 设置线条颜色和粗细
         plot.getRenderer().setSeriesPaint(0, ModernColors.PRIMARY); // 使用主题主色
-        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f)); // 加粗线条
+        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.5f)); // 加粗数据线条，使其更醒目
 
         ChartPanel chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new Dimension(400, 150));

@@ -50,7 +50,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
-import static com.laker.postman.service.http.HttpUtil.getStatusColor;
 import static com.laker.postman.service.http.HttpUtil.validateRequest;
 
 
@@ -524,11 +523,11 @@ public class RequestEditSubPanel extends JPanel {
                     }
                 } catch (InterruptedIOException ex) {
                     log.warn(ex.getMessage());
-                    statusText = ex.getMessage();
+                    statusText = ""; // 清空状态码，错误已在通知中显示
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                    statusText = "Error";
+                    statusText = ""; // 清空状态码
                     NotificationUtil.showError(ex.getMessage());
                 }
                 return null;
@@ -603,9 +602,17 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
-                                responsePanel.getStatusCodeLabel().setForeground(Color.RED);
-                                updateUIForResponse(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg), r);
+                                // 如果有响应码，显示响应码；否则清空状态码
+                                if (r != null && r.code > 0) {
+                                    responsePanel.setStatus(r.code);
+                                } else {
+                                    responsePanel.setStatus(0); // 清空状态码
+                                }
+
+                                // 通过通知显示错误信息
+                                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
+
+                                updateUIForResponse("", r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 添加错误消息
                                 if (responsePanel.getSseResponsePanel() != null) {
@@ -622,8 +629,9 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
-                        responsePanel.getStatusCodeLabel().setForeground(Color.RED);
+                        // 清空状态码，通过通知显示错误
+                        responsePanel.setStatus(0);
+                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
                     });
                 }
                 return null;
@@ -750,11 +758,20 @@ public class RequestEditSubPanel extends JPanel {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
-                                String statusMsg = response != null ? I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")")
-                                        : I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
-                                responsePanel.getStatusCodeLabel().setText(statusMsg);
-                                responsePanel.getStatusCodeLabel().setForeground(Color.RED);
-                                updateUIForResponse(I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage()), resp);
+                                // 如果有 HTTP 响应码，显示响应码
+                                if (response != null && response.code() > 0) {
+                                    responsePanel.setStatus(response.code());
+                                } else {
+                                    responsePanel.setStatus(0); // 清空状态码
+                                }
+
+                                // 通过通知显示错误信息
+                                String errorMsg = response != null ?
+                                        I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")") :
+                                        I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
+                                NotificationUtil.showError(errorMsg);
+
+                                updateUIForResponse("", resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 失败后禁用发送和定时按钮
                                 requestBodyPanel.setWebSocketConnected(false);
@@ -765,8 +782,9 @@ public class RequestEditSubPanel extends JPanel {
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
-                        responsePanel.getStatusCodeLabel().setText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
-                        responsePanel.getStatusCodeLabel().setForeground(Color.RED);
+                        // 清空状态码，通过通知显示错误
+                        responsePanel.setStatus(0);
+                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         // 失败后禁用发送和定时按钮
                         requestBodyPanel.setWebSocketConnected(false);
                     });
@@ -1101,7 +1119,19 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel.hideLoadingOverlay();
 
         if (resp == null) {
-            responsePanel.setStatus(statusText, Color.RED);
+            // 响应为空时，只显示 HTTP 状态码（如果有），其他错误信息已通过通知显示
+            if (statusText != null && !statusText.isEmpty()) {
+                // 尝试解析为状态码
+                try {
+                    int code = Integer.parseInt(statusText);
+                    responsePanel.setStatus(code);
+                } catch (NumberFormatException e) {
+                    // 不是数字，清空状态码（错误信息已通过通知显示）
+                    responsePanel.setStatus(0);
+                }
+            } else {
+                responsePanel.setStatus(0);
+            }
             if (protocol.isHttpProtocol()) {
                 responsePanel.getResponseBodyPanel().setEnabled(true);
             }
@@ -1113,8 +1143,7 @@ public class RequestEditSubPanel extends JPanel {
             responsePanel.setResponseBody(resp);
             responsePanel.getResponseBodyPanel().setEnabled(true);
         }
-        Color statusColor = getStatusColor(resp.code);
-        responsePanel.setStatus(statusText, statusColor);
+        responsePanel.setStatus(resp.code);
         responsePanel.setResponseTime(resp.costMs);
         responsePanel.setResponseSize(resp.bodySize, resp.httpEventInfo);
     }
@@ -1524,9 +1553,7 @@ public class RequestEditSubPanel extends JPanel {
                 responsePanel.setResponseBody(response);
                 responsePanel.setResponseHeaders(response);
 
-                String statusText = response.code + "";
-                Color statusColor = getStatusColor(response.code);
-                responsePanel.setStatus(statusText, statusColor);
+                responsePanel.setStatus(response.code);
                 responsePanel.setResponseTime(response.costMs);
                 responsePanel.setResponseSize(response.bodySize, null);
                 // 切换到 Response Body tab

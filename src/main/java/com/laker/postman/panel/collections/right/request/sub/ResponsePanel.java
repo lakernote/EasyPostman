@@ -7,6 +7,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -29,7 +30,6 @@ import java.util.List;
 /**
  * 响应部分面板，包含响应体、响应头、测试结果、网络日志、耗时等
  */
-@Getter
 public class ResponsePanel extends JPanel {
     private final JLabel statusCodeLabel;
     private final JLabel responseTimeLabel;
@@ -37,16 +37,22 @@ public class ResponsePanel extends JPanel {
     private final JLabel separator1; // 分隔符1：状态码和响应时间之间
     private final JLabel separator2; // 分隔符2：响应时间和响应大小之间
     private final ResponseHeadersPanel responseHeadersPanel;
+    @Getter
     private final ResponseBodyPanel responseBodyPanel;
+    @Getter
     private final NetworkLogPanel networkLogPanel;
     private final TimelinePanel timelinePanel;
     private final JEditorPane testsPane;
+    @Getter
     private final JButton[] tabButtons;
     private int selectedTabIndex = 0;
     private final JPanel cardPanel;
     private final String[] tabNames;
+    @Getter
     private final RequestItemProtocolEnum protocol;
+    @Getter
     private final WebSocketResponsePanel webSocketResponsePanel;
+    @Getter
     private final SSEResponsePanel sseResponsePanel;
     private final LoadingOverlay loadingOverlay;
 
@@ -420,14 +426,25 @@ public class ResponsePanel extends JPanel {
         timelinePanel.setHttpEventInfo(info);
     }
 
-    public void setStatus(String statusText, Color color) {
-        statusCodeLabel.setText(statusText);
-        // 状态码颜色由调用方提供，但为了主题适配，可以使用 ModernColors
-        // 如果调用方传入的颜色已经是主题适配的，直接使用；否则建议使用 ModernColors
-        statusCodeLabel.setForeground(color);
+    /**
+     * 设置响应状态码
+     *
+     * @param code HTTP 状态码（如 200, 404, 500）；传 0 或负数表示清空状态码
+     */
+    public void setStatus(int code) {
+        if (code > 0) {
+            // 显示状态码
+            statusCodeLabel.setText(String.valueOf(code));
+            // 根据状态码获取对应的颜色（使用 HttpUtil 工具方法）
+            statusCodeLabel.setForeground(HttpUtil.getStatusColor(code));
+        } else {
+            // 清空状态码
+            statusCodeLabel.setText("");
+            statusCodeLabel.setForeground(ModernColors.getTextPrimary());
+        }
 
-        // 如果状态码有值且不是占位符，显示后续的分隔符
-        boolean hasStatus = statusText != null && !statusText.isEmpty() && !statusText.equals("...");
+        // 如果状态码有值，显示后续的分隔符
+        boolean hasStatus = code > 0;
         separator1.setVisible(hasStatus);
     }
 
@@ -644,10 +661,9 @@ public class ResponsePanel extends JPanel {
 
     public void clearAll() {
         // 清空状态栏
-        statusCodeLabel.setText("");
+        setStatus(0); // 清空状态码
         responseTimeLabel.setText("");
         responseSizeLabel.setText("");
-        separator1.setVisible(false);
         separator2.setVisible(false);
 
         responseHeadersPanel.setHeaders(new LinkedHashMap<>());

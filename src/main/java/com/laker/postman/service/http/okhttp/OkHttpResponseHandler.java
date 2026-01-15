@@ -1,6 +1,7 @@
 package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.common.component.DownloadProgressDialog;
+import com.laker.postman.common.exception.DownloadCancelledException;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.setting.SettingManager;
@@ -178,13 +179,18 @@ public class OkHttpResponseHandler {
             while ((len = is.read(buf)) != -1) {
                 if (progressDialog.isCancelled()) {
                     deleteTempFile(tempFile);
-                    throw new IOException(I18nUtil.getMessage(MessageKeys.DOWNLOAD_CANCELLED));
+                    throw new DownloadCancelledException(I18nUtil.getMessage(MessageKeys.DOWNLOAD_CANCELLED));
                 }
                 bos.write(buf, 0, len);
                 totalBytes += len;
                 progressDialog.updateProgress(len);
             }
+        } catch (DownloadCancelledException e) {
+            // 用户取消下载，这是正常行为，直接向上抛出
+            deleteTempFile(tempFile);
+            throw e;
         } catch (IOException e) {
+            // 其他IO异常，删除临时文件后抛出
             deleteTempFile(tempFile);
             throw e;
         } finally {

@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
+import com.laker.postman.common.exception.DownloadCancelledException;
 import com.laker.postman.model.*;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -479,7 +480,6 @@ public class RequestEditSubPanel extends JPanel {
     // 普通HTTP请求处理
     private void handleHttpRequest(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         currentWorker = new SwingWorker<>() {
-            String statusText;
             HttpResponse resp;
 
             @Override
@@ -492,7 +492,7 @@ public class RequestEditSubPanel extends JPanel {
                         public void onOpen(HttpResponse response) {
                             SwingUtilities.invokeLater(() -> {
                                 responsePanel.switchTabButtonHttpOrSse("sse");
-                                updateUIForResponse(String.valueOf(response.code), response);
+                                updateUIForResponse(response);
                                 // 添加连接成功消息
                                 if (responsePanel.getSseResponsePanel() != null) {
                                     String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
@@ -518,16 +518,15 @@ public class RequestEditSubPanel extends JPanel {
                             // ignored
                         }
                     });
-                    if (resp != null) {
-                        statusText = (resp.code > 0 ? String.valueOf(resp.code) : "Unknown Status");
-                    }
+                } catch (DownloadCancelledException ex) {
+                    // 用户主动取消下载，这是正常行为，不作为错误处理
+                    log.info("用户取消下载: {}", ex.getMessage());
+                    // 不显示错误通知，因为这是用户的主动行为
                 } catch (InterruptedIOException ex) {
                     log.warn(ex.getMessage());
-                    statusText = ""; // 清空状态码，错误已在通知中显示
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                     ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                    statusText = ""; // 清空状态码
                     NotificationUtil.showError(ex.getMessage());
                 }
                 return null;
@@ -535,7 +534,7 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
-                updateUIForResponse(statusText, resp);
+                updateUIForResponse(resp);
                 if (resp != null && !resp.isSse) {
                     handleResponse(pipeline, req, resp);
                 }
@@ -563,7 +562,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r);
+                                updateUIForResponse(r);
                                 // 添加连接成功消息
                                 if (responsePanel.getSseResponsePanel() != null) {
                                     String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
@@ -587,7 +586,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosed(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(r.code), r);
+                                updateUIForResponse(r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 添加连接关闭消息
                                 if (responsePanel.getSseResponsePanel() != null) {
@@ -602,17 +601,10 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                // 如果有响应码，显示响应码；否则清空状态码
-                                if (r != null && r.code > 0) {
-                                    responsePanel.setStatus(r.code);
-                                } else {
-                                    responsePanel.setStatus(0); // 清空状态码
-                                }
-
                                 // 通过通知显示错误信息
                                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
 
-                                updateUIForResponse("", r);
+                                updateUIForResponse(r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 添加错误消息
                                 if (responsePanel.getSseResponsePanel() != null) {
@@ -685,7 +677,7 @@ public class RequestEditSubPanel extends JPanel {
                             resp.protocol = response.protocol().toString();
                             currentWebSocket = webSocket;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse(String.valueOf(resp.code), resp);
+                                updateUIForResponse(resp);
                                 reqTabs.setSelectedComponent(requestBodyPanel);
                                 requestBodyPanel.getWsSendButton().requestFocusInWindow();
                                 requestLinePanel.setSendButtonToClose(RequestEditSubPanel.this::sendRequest);
@@ -739,7 +731,7 @@ public class RequestEditSubPanel extends JPanel {
                             resp.costMs = System.currentTimeMillis() - startTime;
                             currentWebSocket = null;
                             SwingUtilities.invokeLater(() -> {
-                                updateUIForResponse("closed", resp);
+                                updateUIForResponse(resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 断开后禁用发送和定时按钮
                                 requestBodyPanel.setWebSocketConnected(false);
@@ -758,20 +750,13 @@ public class RequestEditSubPanel extends JPanel {
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             SwingUtilities.invokeLater(() -> {
-                                // 如果有 HTTP 响应码，显示响应码
-                                if (response != null && response.code() > 0) {
-                                    responsePanel.setStatus(response.code());
-                                } else {
-                                    responsePanel.setStatus(0); // 清空状态码
-                                }
-
                                 // 通过通知显示错误信息
                                 String errorMsg = response != null ?
                                         I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")") :
                                         I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
                                 NotificationUtil.showError(errorMsg);
 
-                                updateUIForResponse("", resp);
+                                updateUIForResponse(resp);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 失败后禁用发送和定时按钮
                                 requestBodyPanel.setWebSocketConnected(false);
@@ -1114,29 +1099,20 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     // UI状态：响应完成
-    private void updateUIForResponse(String statusText, HttpResponse resp) {
+    private void updateUIForResponse(HttpResponse resp) {
         // 隐藏加载遮罩
         responsePanel.hideLoadingOverlay();
 
         if (resp == null) {
-            // 响应为空时，只显示 HTTP 状态码（如果有），其他错误信息已通过通知显示
-            if (statusText != null && !statusText.isEmpty()) {
-                // 尝试解析为状态码
-                try {
-                    int code = Integer.parseInt(statusText);
-                    responsePanel.setStatus(code);
-                } catch (NumberFormatException e) {
-                    // 不是数字，清空状态码（错误信息已通过通知显示）
-                    responsePanel.setStatus(0);
-                }
-            } else {
-                responsePanel.setStatus(0);
-            }
+            // 响应为空，清空状态码（错误信息已通过异常处理和通知显示）
+            responsePanel.setStatus(0);
             if (protocol.isHttpProtocol()) {
                 responsePanel.getResponseBodyPanel().setEnabled(true);
             }
             return;
         }
+
+        // 有响应时，设置响应数据
         responsePanel.setResponseHeaders(resp);
         if (!protocol.isWebSocketProtocol() && !protocol.isSseProtocol()) {
             responsePanel.setTiming(resp);

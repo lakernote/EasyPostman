@@ -75,7 +75,7 @@ public class DecompilerPanel extends JPanel {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setLeftComponent(createTreePanel());
         splitPane.setRightComponent(createCodePanel());
-        splitPane.setDividerLocation(350);
+        splitPane.setDividerLocation(400);
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
 
@@ -415,7 +415,7 @@ public class DecompilerPanel extends JPanel {
 
         String fileName = file.getName().toLowerCase();
         if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) &&
-            !fileName.endsWith(ZIP_EXTENSION) && !fileName.endsWith(WAR_EXTENSION)) {
+                !fileName.endsWith(ZIP_EXTENSION) && !fileName.endsWith(WAR_EXTENSION)) {
             JOptionPane.showMessageDialog(this,
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE),
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),

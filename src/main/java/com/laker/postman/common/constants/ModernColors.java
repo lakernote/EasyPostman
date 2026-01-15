@@ -378,11 +378,11 @@ public final class ModernColors {
 
     /**
      * Console 文本区域背景色 - 根据主题自适应
-     * 亮色主题：白色 (255, 255, 255)
-     * 暗色主题：深灰 (40, 40, 45)
+     * 亮色主题：浅灰色 (245, 247, 250) - #f5f7fa
+     * 暗色主题：略深的灰色 (55, 57, 59) - #37393b
      */
     public static Color getConsoleTextAreaBg() {
-        return isDarkTheme() ? new Color(40, 40, 45) : new Color(255, 255, 255);
+        return isDarkTheme() ? new Color(55, 57, 59) : new Color(245, 247, 250);
     }
 
     /**
@@ -451,10 +451,10 @@ public final class ModernColors {
     /**
      * Console 工具栏背景色 - 根据主题自适应
      * 亮色主题：Slate-50 (248, 250, 252)
-     * 暗色主题：深灰 (35, 35, 40)
+     * 暗色主题：略浅的灰色 (58, 60, 62) - #3a3c3e
      */
     public static Color getConsoleToolbarBg() {
-        return isDarkTheme() ? new Color(35, 35, 40) : new Color(248, 250, 252);
+        return isDarkTheme() ? new Color(58, 60, 62) : new Color(248, 250, 252);
     }
 
     /**

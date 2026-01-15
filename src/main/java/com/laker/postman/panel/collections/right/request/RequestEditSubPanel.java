@@ -1524,7 +1524,7 @@ public class RequestEditSubPanel extends JPanel {
                 responsePanel.setResponseBody(response);
                 responsePanel.setResponseHeaders(response);
 
-                String statusText = response.code + " " + (response.message != null ? response.message : "");
+                String statusText = response.code + "";
                 Color statusColor = getStatusColor(response.code);
                 responsePanel.setStatus(statusText, statusColor);
                 responsePanel.setResponseTime(response.costMs);

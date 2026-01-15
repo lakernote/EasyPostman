@@ -1,7 +1,9 @@
 package com.laker.postman.common.component;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileSizeDisplayUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import lombok.Getter;
 import org.jfree.chart.ChartFactory;
@@ -55,7 +57,7 @@ public class DownloadProgressDialog extends JDialog {
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titlePanel.add(iconLabel);
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 13));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         titlePanel.add(titleLabel);
 
         detailsLabel = new JLabel("Downloaded: 0 KB");
@@ -81,21 +83,33 @@ public class DownloadProgressDialog extends JDialog {
 
         // 设置图表样式
         XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setDomainGridlinePaint(new Color(194, 211, 236));
-        plot.setRangeGridlinePaint(new Color(194, 211, 236));
         DateAxis dateAxis = (DateAxis) plot.getDomainAxis();
         dateAxis.setAutoRange(true);
+        dateAxis.setTickLabelFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2)); // 设置X轴刻度字体，比默认小2号
+        dateAxis.setTickLabelPaint(ModernColors.getTextSecondary()); // 使用主题适配的次要文本颜色
+        dateAxis.setLabelFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 设置X轴标签字体，比默认小1号
+        dateAxis.setLabelPaint(ModernColors.getTextPrimary()); // 使用主题适配的主要文本颜色
 
         NumberAxis valueAxis = (NumberAxis) plot.getRangeAxis();
         valueAxis.setAutoRangeIncludesZero(true);
+        valueAxis.setTickLabelFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2)); // 设置Y轴刻度字体，比默认小2号
+        valueAxis.setTickLabelPaint(ModernColors.getTextSecondary()); // 使用主题适配的次要文本颜色
+        valueAxis.setLabelFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 设置Y轴标签字体，比默认小1号
+        valueAxis.setLabelPaint(ModernColors.getTextPrimary()); // 使用主题适配的主要文本颜色
 
         // 设置图表背景透明，线条颜色更明显
         chart.setBackgroundPaint(null); // 设置图表背景透明
-        plot.setBackgroundPaint(null); // 设置绘图区背景透明
-        plot.setOutlinePaint(Color.DARK_GRAY);
+        plot.setBackgroundPaint(ModernColors.getCardBackgroundColor()); // 使用主题适配的卡片背景色
+
+        // 设置网格线颜色（使用主题适配的边框颜色）
+        plot.setDomainGridlinePaint(ModernColors.getBorderLightColor());
+        plot.setRangeGridlinePaint(ModernColors.getBorderLightColor());
+
+        // 设置轮廓线颜色
+        plot.setOutlinePaint(ModernColors.getBorderMediumColor());
 
         // 设置线条颜色和粗细
-        plot.getRenderer().setSeriesPaint(0, new Color(0, 120, 220)); // 蓝色线条
+        plot.getRenderer().setSeriesPaint(0, ModernColors.PRIMARY); // 使用主题主色
         plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f)); // 加粗线条
 
         ChartPanel chartPanel = new ChartPanel(chart);

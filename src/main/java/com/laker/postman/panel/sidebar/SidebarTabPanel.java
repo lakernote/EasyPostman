@@ -261,6 +261,102 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     @Override
+    public void updateUI() {
+        super.updateUI();
+
+        // 1. 更新字体缓存（字体切换时）
+        normalFont = FontsUtil.getDefaultFont(Font.PLAIN);
+        boldFont = FontsUtil.getDefaultFont(Font.BOLD);
+        bottomBarFont = boldFont;
+
+        // 2. 清除颜色和渐变缓存（主题切换时）
+        cachedBgColor = null;
+        cachedGradient = null;
+        lastIndicatorHeight = -1;
+
+        // 3. 清除宽度缓存（字体改变会影响文本宽度）
+        calculatedExpandedTabWidth = -1;
+
+        // 4. 重新应用自定义的 TabbedPane UI（super.updateUI() 会重置它）
+        if (tabbedPane != null) {
+            // 重新创建并设置自定义 UI
+            recreateTabbedPaneUI();
+        }
+
+        // 5. 更新底部栏组件
+        if (consoleLabel != null) {
+            consoleLabel.setText(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
+            consoleLabel.setFont(bottomBarFont);
+            // 更新图标颜色
+            FlatSVGIcon consoleIcon = new FlatSVGIcon("icons/console.svg", 20, 20);
+            consoleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+            consoleLabel.setIcon(consoleIcon);
+        }
+
+        if (cookieLabel != null) {
+            cookieLabel.setText(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
+            cookieLabel.setFont(bottomBarFont);
+            // 更新图标
+            FlatSVGIcon cookieIcon = new FlatSVGIcon("icons/cookie.svg", 20, 20);
+            cookieLabel.setIcon(cookieIcon);
+        }
+
+        if (versionLabel != null) {
+            versionLabel.setFont(normalFont);
+        }
+
+        if (sidebarToggleLabel != null) {
+            // 更新图标颜色
+            FlatSVGIcon toggleIcon = new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20);
+            toggleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+            sidebarToggleLabel.setIcon(toggleIcon);
+            // 更新提示文本
+            sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
+        }
+
+        // 6. 重新创建所有 tab 组件以更新字体和文本
+        if (tabbedPane != null && tabInfos != null) {
+            int currentSelectedIndex = tabbedPane.getSelectedIndex();
+            for (int i = 0; i < tabInfos.size(); i++) {
+                // 从 SidebarTab 枚举重新获取标题（支持语言切换）
+                if (i < SidebarTab.values().length) {
+                    SidebarTab sidebarTab = SidebarTab.values()[i];
+                    TabInfo info = tabInfos.get(i);
+                    // 更新标题（语言切换）
+                    info.title = I18nUtil.getMessage(sidebarTab.getTitleKey());
+                    // 根据是否选中使用对应的图标
+                    boolean isSelected = (i == currentSelectedIndex);
+                    Icon iconToUse = isSelected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon();
+                    // 重新创建 tab 组件
+                    tabbedPane.setTabComponentAt(i, createTabComponent(info.title, iconToUse));
+                }
+            }
+            // 延迟执行颜色初始化，确保所有 UI 组件都创建完成
+            SwingUtilities.invokeLater(() -> {
+                initializeAllTabColors();
+                // 再次强制刷新，确保选中状态正确显示
+                tabbedPane.repaint();
+            });
+        }
+    }
+
+    /**
+     * 重新创建 TabbedPane 的自定义 UI
+     * 用于在 updateUI() 后恢复自定义的选中状态视觉效果
+     */
+    private void recreateTabbedPaneUI() {
+        tabbedPane.setForeground(ModernColors.getTextPrimary());
+        tabbedPane.setFont(new Font(tabbedPane.getFont().getName(), Font.PLAIN, 14));
+
+        // 应用自定义 UI
+        applyCustomTabbedPaneUI(tabbedPane);
+
+        // 强制刷新 UI,确保自定义渲染立即生效
+        tabbedPane.revalidate();
+        tabbedPane.repaint();
+    }
+
+    @Override
     protected void registerListeners() {
         tabbedPane.addChangeListener(e -> {
             handleTabChange();
@@ -411,11 +507,29 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建现代化标签页
      */
     private JTabbedPane createModernTabbedPane() {
-        JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
+        JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT) {
+            @Override
+            public void updateUI() {
+                // 先调用父类的 updateUI，这会重置 UI
+                super.updateUI();
+                // 立即重新应用我们的自定义 UI
+                applyCustomTabbedPaneUI(this);
+            }
+        };
         pane.setForeground(ModernColors.getTextPrimary());
         pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, 14));
 
         // 自定义标签页UI
+        applyCustomTabbedPaneUI(pane);
+
+        return pane;
+    }
+
+    /**
+     * 应用自定义的 TabbedPane UI
+     * 提取为独立方法，便于在 updateUI() 时重用
+     */
+    private void applyCustomTabbedPaneUI(JTabbedPane pane) {
         pane.setUI(new BasicTabbedPaneUI() {
             @Override
             protected void installDefaults() {
@@ -499,9 +613,27 @@ public class SidebarTabPanel extends SingletonBasePanel {
             protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
                 // 不绘制内容区边框和分隔线
             }
-        });
 
-        return pane;
+            @Override
+            protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
+                // 根据展开状态调整宽度
+                if (sidebarExpanded) {
+                    return calculateExpandedTabWidth();
+                } else {
+                    return 48;
+                }
+            }
+
+            @Override
+            protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
+                // 根据展开状态调整高度
+                if (sidebarExpanded) {
+                    return 72;
+                } else {
+                    return 64;
+                }
+            }
+        });
     }
 
     /**

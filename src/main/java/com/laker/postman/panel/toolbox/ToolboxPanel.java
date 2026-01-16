@@ -51,7 +51,14 @@ public class ToolboxPanel extends SingletonBasePanel {
                 new JsonToolPanel()
         );
 
-        // 2. 编码解码 - URL/Base64等，日常开发高频工具
+        // 2. SQL格式化 - 数据库开发常用工具
+        addToolTab(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL),
+                createThemedIcon("icons/database.svg"),
+                new SqlToolPanel()
+        );
+
+        // 3. 编码解码 - URL/Base64等，日常开发高频工具
         addToolTab(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER),
                 createThemedIcon("icons/code.svg"),

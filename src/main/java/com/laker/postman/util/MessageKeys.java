@@ -1503,6 +1503,62 @@ public final class MessageKeys {
     public static final String TOOLBOX_JSON_TOOLTIP_CLEAR = "toolbox.json.tooltip.clear";
     public static final String TOOLBOX_JSON_TOOLTIP_SWAP = "toolbox.json.tooltip.swap";
 
+    // ============ SQL 工具相关 ============
+    public static final String TOOLBOX_SQL = "toolbox.sql";
+    public static final String TOOLBOX_SQL_FORMAT = "toolbox.sql.format";
+    public static final String TOOLBOX_SQL_COMPRESS = "toolbox.sql.compress";
+    public static final String TOOLBOX_SQL_VALIDATE = "toolbox.sql.validate";
+    public static final String TOOLBOX_SQL_SWAP = "toolbox.sql.swap";
+    public static final String TOOLBOX_SQL_PASTE = "toolbox.sql.paste";
+    public static final String TOOLBOX_SQL_INPUT = "toolbox.sql.input";
+    public static final String TOOLBOX_SQL_OUTPUT = "toolbox.sql.output";
+    public static final String TOOLBOX_SQL_ERROR = "toolbox.sql.error";
+    public static final String TOOLBOX_SQL_OPTIONS = "toolbox.sql.options";
+    public static final String TOOLBOX_SQL_INDENT = "toolbox.sql.indent";
+    public static final String TOOLBOX_SQL_UPPERCASE_KEYWORDS = "toolbox.sql.uppercase_keywords";
+    public static final String TOOLBOX_SQL_ADD_SEMICOLON = "toolbox.sql.add_semicolon";
+    public static final String TOOLBOX_SQL_LINE_BREAK_AND_OR = "toolbox.sql.line_break_and_or";
+    public static final String TOOLBOX_SQL_LINE_BREAK_COMMA = "toolbox.sql.line_break_comma";
+
+    // SQL 工具状态消息
+    public static final String TOOLBOX_SQL_STATUS_EMPTY = "toolbox.sql.status.empty";
+    public static final String TOOLBOX_SQL_STATUS_FORMATTED = "toolbox.sql.status.formatted";
+    public static final String TOOLBOX_SQL_STATUS_COMPRESSED = "toolbox.sql.status.compressed";
+    public static final String TOOLBOX_SQL_STATUS_VALIDATED = "toolbox.sql.status.validated";
+    public static final String TOOLBOX_SQL_STATUS_INVALID = "toolbox.sql.status.invalid";
+    public static final String TOOLBOX_SQL_STATUS_SWAPPED = "toolbox.sql.status.swapped";
+    public static final String TOOLBOX_SQL_STATUS_COPIED = "toolbox.sql.status.copied";
+    public static final String TOOLBOX_SQL_STATUS_PASTED = "toolbox.sql.status.pasted";
+    public static final String TOOLBOX_SQL_STATUS_CLEARED = "toolbox.sql.status.cleared";
+    public static final String TOOLBOX_SQL_STATUS_OUTPUT_EMPTY = "toolbox.sql.status.output_empty";
+
+    // SQL 验证相关
+    public static final String TOOLBOX_SQL_VALIDATION_EMPTY = "toolbox.sql.validation.empty";
+    public static final String TOOLBOX_SQL_VALIDATION_VALID = "toolbox.sql.validation.valid";
+    public static final String TOOLBOX_SQL_VALIDATION_ISSUES = "toolbox.sql.validation.issues";
+    public static final String TOOLBOX_SQL_VALIDATION_NO_KEYWORDS = "toolbox.sql.validation.no_keywords";
+    public static final String TOOLBOX_SQL_VALIDATION_CHARACTERS = "toolbox.sql.validation.characters";
+    public static final String TOOLBOX_SQL_VALIDATION_LINES = "toolbox.sql.validation.lines";
+    public static final String TOOLBOX_SQL_VALIDATION_STATEMENTS = "toolbox.sql.validation.statements";
+    public static final String TOOLBOX_SQL_VALIDATION_PAREN_MISMATCH = "toolbox.sql.validation.paren_mismatch";
+    public static final String TOOLBOX_SQL_VALIDATION_QUOTE_MISMATCH = "toolbox.sql.validation.quote_mismatch";
+    public static final String TOOLBOX_SQL_VALIDATION_FOUND_ISSUES = "toolbox.sql.validation.found_issues";
+
+    // SQL 工具提示
+    public static final String TOOLBOX_SQL_TOOLTIP_FORMAT = "toolbox.sql.tooltip.format";
+    public static final String TOOLBOX_SQL_TOOLTIP_COMPRESS = "toolbox.sql.tooltip.compress";
+    public static final String TOOLBOX_SQL_TOOLTIP_VALIDATE = "toolbox.sql.tooltip.validate";
+    public static final String TOOLBOX_SQL_TOOLTIP_COPY = "toolbox.sql.tooltip.copy";
+    public static final String TOOLBOX_SQL_TOOLTIP_PASTE = "toolbox.sql.tooltip.paste";
+    public static final String TOOLBOX_SQL_TOOLTIP_CLEAR = "toolbox.sql.tooltip.clear";
+    public static final String TOOLBOX_SQL_TOOLTIP_SWAP = "toolbox.sql.tooltip.swap";
+    public static final String TOOLBOX_SQL_TOOLTIP_SAMPLE = "toolbox.sql.tooltip.sample";
+
+    // SQL 工具按钮文本
+    public static final String TOOLBOX_SQL_SAMPLE = "toolbox.sql.sample";
+    public static final String TOOLBOX_SQL_STATUS_SAMPLE_LOADED = "toolbox.sql.status.sample_loaded";
+    public static final String TOOLBOX_SQL_OUTPUT_INFO_FORMAT = "toolbox.sql.output.info.format";
+
     // ============ 时间戳工具相关 ============
     public static final String TOOLBOX_TIMESTAMP = "toolbox.timestamp";
     public static final String TOOLBOX_TIMESTAMP_CURRENT = "toolbox.timestamp.current";

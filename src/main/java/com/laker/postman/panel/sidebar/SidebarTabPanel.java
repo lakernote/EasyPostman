@@ -69,10 +69,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     @Override
     protected void initUI() {
-        // 初始化字体缓存
-        normalFont = FontsUtil.getDefaultFont(Font.PLAIN);  // Tab文本和版本号共用
-        boldFont = FontsUtil.getDefaultFont(Font.BOLD);     // Tab选中态共用
-        bottomBarFont = boldFont; // 底部栏使用相同的 BOLD 12 字体
+        // 初始化字体缓存（英文使用小一号字体，避免文本过长）
+        normalFont = getLanguageAwareFont(Font.PLAIN);  // Tab文本和版本号共用
+        boldFont = getLanguageAwareFont(Font.BOLD);     // Tab选中态共用
+        bottomBarFont = boldFont; // 底部栏使用相同的字体
 
         // 先读取侧边栏展开状态
         sidebarExpanded = SettingManager.isSidebarExpanded();
@@ -264,9 +264,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
     public void updateUI() {
         super.updateUI();
 
-        // 1. 更新字体缓存（字体切换时）
-        normalFont = FontsUtil.getDefaultFont(Font.PLAIN);
-        boldFont = FontsUtil.getDefaultFont(Font.BOLD);
+        // 1. 更新字体缓存（字体切换时，英文使用小一号字体）
+        normalFont = getLanguageAwareFont(Font.PLAIN);
+        boldFont = getLanguageAwareFont(Font.BOLD);
         bottomBarFont = boldFont;
 
         // 2. 清除颜色和渐变缓存（主题切换时）
@@ -855,6 +855,23 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 刷新UI
         revalidate();
         repaint();
+    }
+
+    /**
+     * 根据当前语言获取合适的字体
+     * 英文使用小一号字体，避免文本过长
+     *
+     * @param style 字体样式 (Font.PLAIN, Font.BOLD, Font.ITALIC)
+     * @return Font 对象
+     */
+    private Font getLanguageAwareFont(int style) {
+        if (I18nUtil.isChinese()) {
+            // 中文使用标准字体大小
+            return FontsUtil.getDefaultFont(style);
+        } else {
+            // 英文使用小字体
+            return FontsUtil.getDefaultFontWithOffset(style, -3);
+        }
     }
 }
 

@@ -20,7 +20,6 @@ public class WorkspaceComboBox extends JComboBox<Workspace> {
     private Consumer<Workspace> onWorkspaceChange;
 
     public WorkspaceComboBox() {
-
         setRenderer(new WorkspaceItemRenderer());
         setPreferredSize(new Dimension(120, 28));
         setMaximumSize(new Dimension(120, 28));
@@ -29,6 +28,8 @@ public class WorkspaceComboBox extends JComboBox<Workspace> {
         // 设置无边框样式
         setBorder(new EmptyBorder(0, 0, 0, 0));
 
+        // 应用自定义样式
+        applyCustomStyle();
 
         addActionListener(e -> {
             if (isUpdating) return;
@@ -38,6 +39,43 @@ public class WorkspaceComboBox extends JComboBox<Workspace> {
             }
         });
         reload();
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换后重新应用自定义样式
+        applyCustomStyle();
+    }
+
+    /**
+     * 应用自定义样式，使用 FlatLaf 的 client property 方式
+     * 这样只会影响这个特定的 ComboBox 实例
+     */
+    private void applyCustomStyle() {
+        Color backgroundColor = UIManager.getColor("MenuBar.background");
+        if (backgroundColor != null) {
+            String styleValue = String.format(
+                "buttonBackground: %s; " +
+                "buttonEditableBackground: %s; " +
+                "buttonFocusedBackground: %s; " +
+                "buttonSeparatorColor: null; " +
+                "buttonDisabledSeparatorColor: null",
+                colorToHex(backgroundColor),
+                colorToHex(backgroundColor),
+                colorToHex(backgroundColor)
+            );
+
+            putClientProperty("FlatLaf.style", styleValue);
+            setBackground(backgroundColor);
+        }
+    }
+
+    /**
+     * 将 Color 转换为十六进制字符串
+     */
+    private static String colorToHex(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 
     /**

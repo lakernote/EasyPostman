@@ -331,7 +331,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     private void addRightLableAndComboBox() {
         // 初始化或重新加载工作区下拉框
         if (workspaceComboBox == null) {
-            workspaceComboBox = ComboBoxStyleHelper.createWithPanelStyle(WorkspaceComboBox::new);
+            workspaceComboBox = new WorkspaceComboBox();
             workspaceComboBox.setOnWorkspaceChange(this::switchToWorkspace);
         } else {
             workspaceComboBox.reload();
@@ -339,7 +339,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
 
         // 初始化或重新加载环境下拉框
         if (environmentComboBox == null) {
-            environmentComboBox = ComboBoxStyleHelper.createWithPanelStyle(EnvironmentComboBox::new);
+            environmentComboBox = new EnvironmentComboBox();
         } else {
             environmentComboBox.reload();
         }

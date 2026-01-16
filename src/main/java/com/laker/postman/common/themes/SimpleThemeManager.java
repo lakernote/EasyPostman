@@ -4,6 +4,7 @@ import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.UIRefreshManager;
 import com.laker.postman.util.UserSettingsUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -112,24 +113,25 @@ public class SimpleThemeManager {
      * 更新所有已打开的窗口
      */
     private static void updateAllWindows() {
-        for (Window window : Window.getWindows()) {
-            // 在 macOS 上更新窗口外观模式以匹配主题
-            // 这对于透明标题栏的窗口特别重要，可以确保标题栏文字颜色正确显示
-            if (SystemInfo.isMacOS && window instanceof JFrame frame) {
-                JRootPane rootPane = frame.getRootPane();
+        // macOS 特殊处理：更新窗口外观模式
+        if (SystemInfo.isMacOS) {
+            for (Window window : Window.getWindows()) {
+                if (window instanceof JFrame frame) {
+                    JRootPane rootPane = frame.getRootPane();
 
-                // 设置 macOS 窗口外观模式：dark 或 light
-                // NSAppearanceNameVibrantDark: 暗色外观，标题栏文字为白色
-                // NSAppearanceNameVibrantLight: 亮色外观，标题栏文字为黑色
-                if (THEME_DARK.equals(currentTheme)) {
-                    rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
-                } else {
-                    rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
+                    // 设置 macOS 窗口外观模式：dark 或 light
+                    // NSAppearanceNameVibrantDark: 暗色外观，标题栏文字为白色
+                    // NSAppearanceNameVibrantLight: 亮色外观，标题栏文字为黑色
+                    if (THEME_DARK.equals(currentTheme)) {
+                        rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
+                    } else {
+                        rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
+                    }
                 }
             }
-
-            // 更新窗口组件树的 UI，应用新主题样式
-            SwingUtilities.updateComponentTreeUI(window);
         }
+
+        // 使用统一的刷新管理器更新所有窗口
+        UIRefreshManager.refreshAllWindows();
     }
 }

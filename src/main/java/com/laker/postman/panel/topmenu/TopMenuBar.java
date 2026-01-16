@@ -3,6 +3,7 @@ package com.laker.postman.panel.topmenu;
 import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.util.SystemInfo;
+import com.laker.postman.common.IRefreshable;
 import com.laker.postman.common.SingletonBaseMenuBar;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
@@ -40,7 +41,7 @@ import java.io.IOException;
 import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
-public class TopMenuBar extends SingletonBaseMenuBar {
+public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
 
     @Getter
@@ -113,13 +114,16 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     }
 
     /**
+     * 刷新菜单栏（实现 IRefreshable 接口）
+     * <p>
      * 重新加载菜单栏（包括菜单项、快捷键、Git 工具栏等所有组件）
      * 在以下场景调用：
      * 1. 语言切换后（需要更新所有菜单文本）
      * 2. 快捷键设置修改后
      * 3. 工作区切换后（需要更新 Git 工具栏显示状态）
      */
-    public void reloadMenuBar() {
+    @Override
+    public void refresh() {
         removeAll();
         // 重新创建菜单栏所有组件
         initComponents();
@@ -202,8 +206,8 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     private void switchLanguage(String languageCode) {
         I18nUtil.setLocale(languageCode);
 
-        // 重新加载菜单栏以应用新语言
-        reloadMenuBar();
+        // 使用统一的刷新管理器刷新所有组件（包括窗口标题、菜单栏、面板等）
+        UIRefreshManager.refreshLanguage();
 
         NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
     }
@@ -417,7 +421,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
 
             // 重新加载菜单栏（根据新工作区类型更新 Git 工具栏显示状态）
-            reloadMenuBar();
+            refresh();
 
             log.info("Switched to workspace: {}", workspace.getName());
         } catch (Exception e) {
@@ -433,7 +437,7 @@ public class TopMenuBar extends SingletonBaseMenuBar {
      */
     public void updateWorkspaceDisplay() {
         // 重新加载整个菜单栏以更新 Git 工具栏显示状态
-        reloadMenuBar();
+        refresh();
     }
 
     private void aboutActionPerformed() {

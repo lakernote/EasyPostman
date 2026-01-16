@@ -118,27 +118,12 @@ public class FontManager {
      * 更新所有已存在的窗口
      */
     private static void updateExistingWindows() {
-        try {
-            Window[] windows = Window.getWindows();
-            log.info("Updating {} window(s)", windows.length);
+        log.info("Updating all windows for font change...");
 
-            for (Window window : windows) {
-                if (window.isDisplayable()) {
-                    // 先更新组件树 UI
-                    SwingUtilities.updateComponentTreeUI(window);
+        // 使用统一的刷新管理器更新所有窗口
+        UIRefreshManager.refreshAllWindows();
 
-                    // 强制重新验证和重绘
-                    window.validate();
-                    window.repaint();
-
-                    log.debug("Updated window: {}", window.getClass().getSimpleName());
-                }
-            }
-
-            log.info("All windows updated successfully");
-        } catch (Exception e) {
-            log.error("Failed to update windows", e);
-        }
+        log.info("All windows updated successfully for font change");
     }
 
     /**

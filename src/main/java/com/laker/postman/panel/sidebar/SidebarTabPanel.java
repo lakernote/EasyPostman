@@ -530,110 +530,127 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 提取为独立方法，便于在 updateUI() 时重用
      */
     private void applyCustomTabbedPaneUI(JTabbedPane pane) {
-        pane.setUI(new BasicTabbedPaneUI() {
-            @Override
-            protected void installDefaults() {
-                super.installDefaults();
-                // 增加 tab 区域的上下边距，让 tab 之间有更多空间
-                tabAreaInsets = new Insets(8, 6, 8, 0);
-                contentBorderInsets = new Insets(0, 0, 0, 0);
-                // tab 之间的间距
-                tabInsets = new Insets(2, 2, 2, 2);
-                selectedTabPadInsets = new Insets(0, 0, 0, 0);
+        pane.setUI(new CustomTabbedPaneUI());
+    }
+
+    /**
+     * 自定义的 TabbedPane UI
+     * 负责绘制左侧渐变指示条、选中背景和自定义 tab 尺寸
+     */
+    private class CustomTabbedPaneUI extends BasicTabbedPaneUI {
+        @Override
+        protected void installDefaults() {
+            super.installDefaults();
+            // 增加 tab 区域的上下边距，让 tab 之间有更多空间
+            tabAreaInsets = new Insets(8, 6, 8, 0);
+            contentBorderInsets = new Insets(0, 0, 0, 0);
+            // tab 之间的间距
+            tabInsets = new Insets(2, 2, 2, 2);
+            selectedTabPadInsets = new Insets(0, 0, 0, 0);
+        }
+
+        @Override
+        protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
+                                          int x, int y, int w, int h, boolean isSelected) {
+            if (!isSelected) {
+                return; // 未选中状态不绘制任何背景
             }
 
-            @Override
-            protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
-                                              int x, int y, int w, int h, boolean isSelected) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                // 高质量渲染提示，确保清晰锐利
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-                if (isSelected) {
-                    // 选中状态：绘制清晰的渐变指示条 + 淡雅背景
-                    int leftMargin = 2;        // 左边距，距离边缘更近
-                    int verticalMargin = 6;    // 上下边距，让指示条稍短一些
-                    int indicatorWidth = 4;    // 指示条宽度
-                    int indicatorRadius = 2;   // 圆角半径，减小到2px避免模糊
-
-                    // 1. 绘制淡雅背景（使用缓存的颜色对象）
-                    if (cachedBgColor == null) {
-                        cachedBgColor = new Color(
-                                ModernColors.PRIMARY.getRed(),
-                                ModernColors.PRIMARY.getGreen(),
-                                ModernColors.PRIMARY.getBlue(),
-                                25  // 稍微增加透明度，让背景更明显
-                        );
-                    }
-                    g2.setColor(cachedBgColor);
-                    g2.fillRect(x, y, w, h);
-
-                    // 2. 绘制实心渐变指示条（使用缓存的渐变对象）
-                    int indicatorX = x + leftMargin;
-                    int indicatorY = y + verticalMargin;
-                    int indicatorHeight = h - verticalMargin * 2;
-
-                    // 只有在高度变化时才重新创建渐变对象，使用更饱和的颜色
-                    if (cachedGradient == null || lastIndicatorHeight != indicatorHeight) {
-                        cachedGradient = new GradientPaint(
-                                0, 0, ModernColors.PRIMARY,  // 顶部：标准蓝（更清晰）
-                                0, indicatorHeight, ModernColors.PRIMARY_LIGHT  // 底部：亮蓝
-                        );
-                        lastIndicatorHeight = indicatorHeight;
-                    }
-
-                    g2.setPaint(cachedGradient);
-                    g2.translate(indicatorX, indicatorY);
-                    // 使用fillRoundRect绘制实心指示条，清晰锐利
-                    g2.fillRoundRect(0, 0, indicatorWidth, indicatorHeight, indicatorRadius, indicatorRadius);
-                    g2.translate(-indicatorX, -indicatorY);
-                }
-                // 不绘制悬停效果，避免卡顿
-
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                enableHighQualityRendering(g2);
+                paintSelectedTabBackground(g2, x, y, w, h);
+                paintSelectedTabIndicator(g2, x, y, h);
+            } finally {
                 g2.dispose();
             }
+        }
 
-            @Override
-            protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
-                                          int x, int y, int w, int h, boolean isSelected) {
-                // 不绘制任何边框
+        /**
+         * 启用高质量渲染
+         */
+        private void enableHighQualityRendering(Graphics2D g2) {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        }
+
+        /**
+         * 绘制选中 tab 的淡雅背景
+         */
+        private void paintSelectedTabBackground(Graphics2D g2, int x, int y, int w, int h) {
+            // 使用缓存的颜色对象，避免重复创建
+            if (cachedBgColor == null) {
+                cachedBgColor = new Color(
+                        ModernColors.PRIMARY.getRed(),
+                        ModernColors.PRIMARY.getGreen(),
+                        ModernColors.PRIMARY.getBlue(),
+                        25  // 稍微增加透明度，让背景更明显
+                );
+            }
+            g2.setColor(cachedBgColor);
+            g2.fillRect(x, y, w, h);
+        }
+
+        /**
+         * 绘制选中 tab 的左侧渐变指示条
+         */
+        private void paintSelectedTabIndicator(Graphics2D g2, int x, int y, int h) {
+            int leftMargin = 2;        // 左边距，距离边缘更近
+            int verticalMargin = 6;    // 上下边距，让指示条稍短一些
+            int indicatorWidth = 4;    // 指示条宽度
+            int indicatorRadius = 2;   // 圆角半径，减小到2px避免模糊
+
+            int indicatorX = x + leftMargin;
+            int indicatorY = y + verticalMargin;
+            int indicatorHeight = h - verticalMargin * 2;
+
+            // 只有在高度变化时才重新创建渐变对象，使用更饱和的颜色
+            if (cachedGradient == null || lastIndicatorHeight != indicatorHeight) {
+                cachedGradient = new GradientPaint(
+                        0, 0, ModernColors.PRIMARY,  // 顶部：标准蓝（更清晰）
+                        0, indicatorHeight, ModernColors.PRIMARY_LIGHT  // 底部：亮蓝
+                );
+                lastIndicatorHeight = indicatorHeight;
             }
 
-            @Override
-            protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
-                                               int tabIndex, Rectangle iconRect, Rectangle textRect,
-                                               boolean isSelected) {
-                // 不绘制焦点指示器（虚线框）
-            }
+            g2.setPaint(cachedGradient);
+            g2.translate(indicatorX, indicatorY);
+            // 使用fillRoundRect绘制实心指示条，清晰锐利
+            g2.fillRoundRect(0, 0, indicatorWidth, indicatorHeight, indicatorRadius, indicatorRadius);
+            g2.translate(-indicatorX, -indicatorY);
+        }
 
-            @Override
-            protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-                // 不绘制内容区边框和分隔线
-            }
+        @Override
+        protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
+                                      int x, int y, int w, int h, boolean isSelected) {
+            // 不绘制任何边框
+        }
 
-            @Override
-            protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
-                // 根据展开状态调整宽度
-                if (sidebarExpanded) {
-                    return calculateExpandedTabWidth();
-                } else {
-                    return 48;
-                }
-            }
+        @Override
+        protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
+                                           int tabIndex, Rectangle iconRect, Rectangle textRect,
+                                           boolean isSelected) {
+            // 不绘制焦点指示器（虚线框）
+        }
 
-            @Override
-            protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
-                // 根据展开状态调整高度
-                if (sidebarExpanded) {
-                    return 72;
-                } else {
-                    return 64;
-                }
-            }
-        });
+        @Override
+        protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
+            // 不绘制内容区边框和分隔线
+        }
+
+        @Override
+        protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
+            // 根据展开状态调整宽度
+            return sidebarExpanded ? calculateExpandedTabWidth() : 48;
+        }
+
+        @Override
+        protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
+            // 根据展开状态调整高度
+            return sidebarExpanded ? 72 : 64;
+        }
     }
 
     /**

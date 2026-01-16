@@ -69,10 +69,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     @Override
     protected void initUI() {
-        // 初始化字体缓存（英文使用小一号字体，避免文本过长）
-        normalFont = getLanguageAwareFont(Font.PLAIN);  // Tab文本和版本号共用
-        boldFont = getLanguageAwareFont(Font.BOLD);     // Tab选中态共用
-        bottomBarFont = boldFont; // 底部栏使用相同的字体
+        // 初始化字体缓存
+        // Tab 标题使用语言感知字体（英文小一号，避免文本过长）
+        normalFont = getLanguageAwareFont(Font.PLAIN);
+        boldFont = getLanguageAwareFont(Font.BOLD);
+        // 底部栏使用标准字体（不受语言影响）
+        bottomBarFont = FontsUtil.getDefaultFont(Font.BOLD);
 
         // 先读取侧边栏展开状态
         sidebarExpanded = SettingManager.isSidebarExpanded();
@@ -255,7 +257,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
-        versionLabel.setFont(normalFont); // 使用缓存的字体（与normalFont共用）
+        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体
         versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
         versionLabel.setToolTipText("EasyPostman version");
     }
@@ -264,10 +266,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
     public void updateUI() {
         super.updateUI();
 
-        // 1. 更新字体缓存（字体切换时，英文使用小一号字体）
+        // 1. 更新字体缓存
+        // Tab 标题使用语言感知字体（英文小一号）
         normalFont = getLanguageAwareFont(Font.PLAIN);
         boldFont = getLanguageAwareFont(Font.BOLD);
-        bottomBarFont = boldFont;
+        // 底部栏使用标准字体（不受语言影响）
+        bottomBarFont = FontsUtil.getDefaultFont(Font.BOLD);
 
         // 2. 清除颜色和渐变缓存（主题切换时）
         cachedBgColor = null;
@@ -302,7 +306,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
 
         if (versionLabel != null) {
-            versionLabel.setFont(normalFont);
+            versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体
         }
 
         if (sidebarToggleLabel != null) {
@@ -858,8 +862,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
-     * 根据当前语言获取合适的字体
-     * 英文使用小一号字体，避免文本过长
+     * 根据当前语言获取合适的 Tab 标题字体
+     * 英文使用小一号字体，避免 Tab 标题文本过长
+     * 注意：此方法仅用于 Tab 标题，底部栏组件（Console、Cookie、版本号）使用标准字体
      *
      * @param style 字体样式 (Font.PLAIN, Font.BOLD, Font.ITALIC)
      * @return Font 对象

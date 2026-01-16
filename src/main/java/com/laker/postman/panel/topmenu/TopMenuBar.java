@@ -115,8 +115,9 @@ public class TopMenuBar extends SingletonBaseMenuBar {
     /**
      * 重新加载菜单栏（包括菜单项、快捷键、Git 工具栏等所有组件）
      * 在以下场景调用：
-     * 1. 快捷键设置修改后
-     * 2. 工作区切换后（需要更新 Git 工具栏显示状态）
+     * 1. 语言切换后（需要更新所有菜单文本）
+     * 2. 快捷键设置修改后
+     * 3. 工作区切换后（需要更新 Git 工具栏显示状态）
      */
     public void reloadMenuBar() {
         removeAll();
@@ -200,6 +201,10 @@ public class TopMenuBar extends SingletonBaseMenuBar {
 
     private void switchLanguage(String languageCode) {
         I18nUtil.setLocale(languageCode);
+
+        // 重新加载菜单栏以应用新语言
+        reloadMenuBar();
+
         NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
     }
 

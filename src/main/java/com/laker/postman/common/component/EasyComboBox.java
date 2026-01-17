@@ -114,21 +114,11 @@ public class EasyComboBox<E> extends JComboBox<E> {
      * 更新下拉框宽度
      */
     private void updateWidth() {
-        int optimalWidth;
-
-        switch (widthMode) {
-            case DYNAMIC:
-                optimalWidth = calculateCurrentItemWidth();
-                break;
-            case FIXED_MAX:
-                optimalWidth = calculateMaxItemWidth();
-                break;
-            case FIXED_CUSTOM:
-                optimalWidth = customWidth > 0 ? customWidth : calculateCurrentItemWidth();
-                break;
-            default:
-                optimalWidth = calculateCurrentItemWidth();
-        }
+        int optimalWidth = switch (widthMode) {
+            case FIXED_MAX -> calculateMaxItemWidth();
+            case FIXED_CUSTOM -> customWidth > 0 ? customWidth : calculateCurrentItemWidth();
+            default -> calculateCurrentItemWidth();
+        };
 
         // 获取合适的高度
         // 先调用父类的 getPreferredSize() 获取默认尺寸

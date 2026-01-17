@@ -50,7 +50,6 @@ public class RequestBodyPanel extends JPanel {
 
     @Getter
     private EasyComboBox<String> bodyTypeComboBox;
-    private JLabel formatLabel;
     @Getter
     private EasyComboBox<String> rawTypeComboBox;
     @Getter
@@ -112,7 +111,6 @@ public class RequestBodyPanel extends JPanel {
         topPanel.add(bodyTypeComboBox);
         topPanel.add(Box.createHorizontalStrut(4));
 
-        formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
         String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_XML, RAW_TYPE_TEXT};
         rawTypeComboBox = new EasyComboBox<>(rawTypes, EasyComboBox.WidthMode.DYNAMIC);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
@@ -175,7 +173,6 @@ public class RequestBodyPanel extends JPanel {
         bodyTypeComboBox.addActionListener(e -> {
             boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
             rawTypeComboBox.setVisible(isRaw);
-            formatLabel.setVisible(isRaw);
             formatButton.setVisible(isRaw);
             searchField.setVisible(isRaw);
             prevButton.setVisible(isRaw);
@@ -184,7 +181,6 @@ public class RequestBodyPanel extends JPanel {
         // 初始化显示状态
         boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
         rawTypeComboBox.setVisible(isRaw);
-        formatLabel.setVisible(isRaw);
         formatButton.setVisible(isRaw);
         searchField.setVisible(isRaw);
         prevButton.setVisible(isRaw);
@@ -204,7 +200,6 @@ public class RequestBodyPanel extends JPanel {
         bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
         bodyTypeComboBox.setVisible(false);
         leftPanel.add(bodyTypeComboBox);
-        formatLabel = null;
         rawTypeComboBox = null;
         formatButton = null;
         bodyTypePanel.add(leftPanel, BorderLayout.WEST);
@@ -462,10 +457,9 @@ public class RequestBodyPanel extends JPanel {
         currentBodyType = bodyType;
         bodyCardLayout.show(bodyCardPanel, bodyType);
         // 只有HTTP模式才需要动态调整format控件的显示
-        if (!isWebSocketMode && formatLabel != null && rawTypeComboBox != null && formatButton != null) {
+        if (!isWebSocketMode && rawTypeComboBox != null && formatButton != null) {
             boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
             rawTypeComboBox.setVisible(isRaw);
-            formatLabel.setVisible(isRaw);
             formatButton.setVisible(isRaw);
         }
     }

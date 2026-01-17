@@ -70,6 +70,16 @@ public class RequestLinePanel extends JPanel {
         ));
     }
 
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保分隔线颜色更新
+        setBorder(new CompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                new EmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING)
+        ));
+    }
+
     /**
      * 创建方法选择下拉框
      */

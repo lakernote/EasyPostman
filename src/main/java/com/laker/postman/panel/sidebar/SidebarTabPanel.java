@@ -47,6 +47,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JPanel bottomRightPanel; // 底部栏右侧面板缓存
     private JLabel consoleLabel;
     private JLabel sidebarToggleLabel; // 侧边栏展开/收起按钮
+    private JLabel layoutToggleLabel; // 布局切换按钮
     private JLabel cookieLabel;
     private JLabel versionLabel;
     private ConsolePanel consolePanel;
@@ -145,8 +146,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 初始化底部栏，包括控制台标签和版本标签
      */
     private void initBottomBar() {
+        // 2. 创建底部栏组件
         createSidebarToggleLabel();
         createConsoleLabel();
+        createLayoutToggleLabel();
         createCookieLabel();
         createVersionLabel();
 
@@ -158,8 +161,9 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         bottomRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         bottomRightPanel.setOpaque(false);
-        bottomRightPanel.add(cookieLabel);
         bottomRightPanel.add(versionLabel);
+        bottomRightPanel.add(cookieLabel);
+        bottomRightPanel.add(layoutToggleLabel);
     }
 
     /**
@@ -222,9 +226,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
         cookieLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
         FlatSVGIcon cookieIcon = new FlatSVGIcon("icons/cookie.svg", 20, 20);
         cookieLabel.setIcon(cookieIcon);
-        cookieLabel.setFont(bottomBarFont); // 使用缓存的字体
         cookieLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        cookieLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         cookieLabel.setFocusable(true);
         cookieLabel.setEnabled(true);
         cookieLabel.addMouseListener(new MouseAdapter() {
@@ -233,6 +236,53 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 showCookieManagerDialog();
             }
         });
+    }
+
+    /**
+     * 创建布局切换按钮
+     */
+    private void createLayoutToggleLabel() {
+        boolean isVertical = SettingManager.isLayoutVertical();
+        String iconPath = isVertical ? "icons/layout-horizontal.svg" : "icons/layout-vertical.svg";
+        String tooltip = isVertical ?
+                I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
+                I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
+
+        FlatSVGIcon layoutIcon = new FlatSVGIcon(iconPath, 20, 20);
+        layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+
+        layoutToggleLabel = new JLabel(layoutIcon);
+        layoutToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        layoutToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
+        layoutToggleLabel.setToolTipText(tooltip);
+        layoutToggleLabel.setFocusable(true);
+        layoutToggleLabel.setEnabled(true);
+        layoutToggleLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                toggleLayoutOrientation();
+            }
+        });
+    }
+
+    /**
+     * 切换布局方向
+     */
+    private void toggleLayoutOrientation() {
+        boolean currentVertical = SettingManager.isLayoutVertical();
+        boolean newVertical = !currentVertical;
+        SettingManager.setLayoutVertical(newVertical);
+
+        // 更新图标和提示
+        String iconPath = newVertical ? "icons/layout-horizontal.svg" : "icons/layout-vertical.svg";
+        String tooltip = newVertical ?
+                I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
+                I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
+
+        FlatSVGIcon layoutIcon = new FlatSVGIcon(iconPath, 20, 20);
+        layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+        layoutToggleLabel.setIcon(layoutIcon);
+        layoutToggleLabel.setToolTipText(tooltip);
     }
 
     /**
@@ -258,7 +308,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void createVersionLabel() {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体
-        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
+        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         versionLabel.setToolTipText("EasyPostman version");
     }
 
@@ -303,6 +353,19 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 更新图标
             FlatSVGIcon cookieIcon = new FlatSVGIcon("icons/cookie.svg", 20, 20);
             cookieLabel.setIcon(cookieIcon);
+        }
+
+        if (layoutToggleLabel != null) {
+            boolean isVertical = SettingManager.isLayoutVertical();
+            String iconPath = isVertical ? "icons/layout-horizontal.svg" : "icons/layout-vertical.svg";
+            String tooltip = isVertical ?
+                    I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
+                    I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
+
+            FlatSVGIcon layoutIcon = new FlatSVGIcon(iconPath, 20, 20);
+            layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
+            layoutToggleLabel.setIcon(layoutIcon);
+            layoutToggleLabel.setToolTipText(tooltip);
         }
 
         if (versionLabel != null) {

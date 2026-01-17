@@ -25,6 +25,7 @@ import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -94,6 +95,8 @@ public class RequestEditSubPanel extends JPanel {
     // WebSocket连接ID，用于防止过期连接的回调
     private volatile String currentWebSocketConnectionId;
     JSplitPane splitPane;
+    // 标记是否已经设置过初始分割位置（用于水平布局的 5:5 分割）
+    private boolean initialDividerLocationSet = false;
     // 双向联动控制标志，防止循环更新
     private boolean isUpdatingFromUrl = false;
     private boolean isUpdatingFromParams = false;
@@ -203,15 +206,39 @@ public class RequestEditSubPanel extends JPanel {
         // 只有 HTTP 协议且非 SAVED_RESPONSE 类型才启用保存响应按钮
         boolean enableSaveButton = protocol.isHttpProtocol() && panelType != RequestEditSubPanelType.SAVED_RESPONSE;
         responsePanel = new ResponsePanel(protocol, enableSaveButton);
-        splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, reqTabs, responsePanel);
-        splitPane.setDividerSize(5); // 设置分割条的宽度（增大以提高拖拽灵敏度）
-        splitPane.setResizeWeight(0.4); // 设置分割线位置，请求和响应各占40%（降低响应面板默认高度）
+
+        // 根据保存的设置初始化布局方向
+        boolean isVertical = SettingManager.isLayoutVertical();
+        int orientation = isVertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;
+
+        // 水平布局时，设置 responsePanel 的 minimumSize 与 reqTabs 对称（reqTabs 在第 172 行已设置）
+        if (!isVertical) {
+            responsePanel.setMinimumSize(new Dimension(400, 120));
+        }
+
+        splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
+        splitPane.setDividerSize(5);
+        splitPane.setOneTouchExpandable(false);
+        splitPane.setContinuousLayout(true); // 连续布局，拖动时更流畅
+
+        // 根据布局方向设置比例
+        double initialRatio;
+        if (isVertical) {
+            // 垂直布局：使用协议默认比例
+            initialRatio = getDefaultResizeWeight();
+        } else {
+            // 水平布局：固定对半分
+            initialRatio = 0.5;
+        }
+        splitPane.setResizeWeight(initialRatio);
+
+
         add(splitPane, BorderLayout.CENTER);
+
 
         if (protocol.isWebSocketProtocol()) {
             // WebSocket消息发送按钮事件绑定（只绑定一次）
             requestBodyPanel.setWsSendActionListener(e -> sendWebSocketMessage());
-            splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占20%
             // 切换到WebSocket协议时，默认选中Body Tab
             reqTabs.setSelectedComponent(requestBodyPanel);
             // 隐藏认证tab
@@ -220,7 +247,6 @@ public class RequestEditSubPanel extends JPanel {
             requestBodyPanel.setWebSocketConnected(false);
         }
         if (protocol.isSseProtocol()) {
-            splitPane.setResizeWeight(0.2); // 设置分割线位置，表示请求部分占20%
             // 隐藏认证tab
             reqTabs.remove(authTabPanel);
         }
@@ -1558,5 +1584,39 @@ public class RequestEditSubPanel extends JPanel {
                 CollUtil.isNotEmpty(originalRequest.getParams())
         );
     }
+
+    /**
+     * 更新布局方向
+     * @param isVertical true=垂直布局，false=水平布局
+     */
+    /**
+     * 获取默认的分割比例
+     *
+     * @return 根据协议类型返回合适的 resizeWeight
+     */
+    private double getDefaultResizeWeight() {
+        // WebSocket 和 SSE：请求占 20%，响应占 80%（主要看响应流）
+        if (protocol.isWebSocketProtocol() || protocol.isSseProtocol()) {
+            return 0.2;
+        }
+        // HTTP：默认对半分
+        return 0.4;
+    }
+
+
+    @Override
+    public void doLayout() {
+        super.doLayout();
+        // 第一次布局时，为水平布局设置精确的 5:5 分割位置
+        // 垂直布局依赖 resizeWeight 即可，不需要额外设置
+        if (!initialDividerLocationSet && splitPane != null &&
+            splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT &&
+            splitPane.getWidth() > 0) {
+            initialDividerLocationSet = true;
+            splitPane.setDividerLocation(0.5);
+        }
+    }
 }
+
+
 

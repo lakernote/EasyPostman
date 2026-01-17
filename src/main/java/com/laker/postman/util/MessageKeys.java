@@ -131,6 +131,8 @@ public final class MessageKeys {
     public static final String BUTTON_REFRESH = "button.refresh";
     public static final String BUTTON_CONNECT = "button.connect";
     public static final String BUTTON_CALCULATE = "button.calculate";
+    public static final String LAYOUT_VERTICAL_TOOLTIP = "layout.vertical.tooltip";
+    public static final String LAYOUT_HORIZONTAL_TOOLTIP = "layout.horizontal.tooltip";
 
     // ============ 请求相关 ============
     public static final String NEW_REQUEST = "new.request";

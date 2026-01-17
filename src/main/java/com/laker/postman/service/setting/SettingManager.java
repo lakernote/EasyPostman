@@ -294,6 +294,22 @@ public class SettingManager {
     }
 
     /**
+     * 获取布局方向（true=垂直，false=水平）
+     */
+    public static boolean isLayoutVertical() {
+        String val = props.getProperty("layout_vertical");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return true; // 默认垂直布局
+    }
+
+    public static void setLayoutVertical(boolean vertical) {
+        props.setProperty("layout_vertical", String.valueOf(vertical));
+        save();
+    }
+
+    /**
      * 获取通知位置
      */
     public static NotificationPosition getNotificationPosition() {

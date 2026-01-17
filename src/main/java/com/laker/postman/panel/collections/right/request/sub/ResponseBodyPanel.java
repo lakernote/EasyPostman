@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.util.XmlUtil;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.frame.MainFrame;
@@ -42,7 +43,7 @@ public class ResponseBodyPanel extends JPanel {
     private String fileName = DEFAULT_FILE_NAME; // 默认下载文件名
     private final SearchTextField searchField;
     private Map<String, List<String>> lastHeaders;
-    private final JComboBox<String> syntaxComboBox;
+    private final EasyComboBox<String> syntaxComboBox;
     private final FormatButton formatButton;
     private final PreviousButton prevButton;
     private final NextButton nextButton;
@@ -83,9 +84,8 @@ public class ResponseBodyPanel extends JPanel {
         toolBarPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
 
         // 语法选择下拉框
-        syntaxComboBox = new JComboBox<>(SyntaxType.getDisplayNames());
+        syntaxComboBox = new EasyComboBox<>(SyntaxType.getDisplayNames(), EasyComboBox.WidthMode.DYNAMIC);
         syntaxComboBox.setFocusable(false);
-        syntaxComboBox.setMaximumSize(syntaxComboBox.getPreferredSize());
         toolBarPanel.add(syntaxComboBox);
         toolBarPanel.add(Box.createHorizontalStrut(8));
 

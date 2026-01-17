@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
@@ -48,10 +49,10 @@ public class RequestBodyPanel extends JPanel {
     private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
 
     @Getter
-    private JComboBox<String> bodyTypeComboBox;
+    private EasyComboBox<String> bodyTypeComboBox;
     private JLabel formatLabel;
     @Getter
-    private JComboBox<String> rawTypeComboBox;
+    private EasyComboBox<String> rawTypeComboBox;
     @Getter
     private EasyPostmanFormDataTablePanel formDataTablePanel;
     @Getter
@@ -105,8 +106,7 @@ public class RequestBodyPanel extends JPanel {
         topPanel.add(Box.createHorizontalStrut(4));
 
         String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
-        bodyTypeComboBox = new JComboBox<>(bodyTypes);
-        bodyTypeComboBox.setMaximumSize(bodyTypeComboBox.getPreferredSize());
+        bodyTypeComboBox = new EasyComboBox<>(bodyTypes, EasyComboBox.WidthMode.DYNAMIC);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
         topPanel.add(bodyTypeComboBox);
@@ -114,8 +114,7 @@ public class RequestBodyPanel extends JPanel {
 
         formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
         String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_XML, RAW_TYPE_TEXT};
-        rawTypeComboBox = new JComboBox<>(rawTypes);
-        rawTypeComboBox.setMaximumSize(rawTypeComboBox.getPreferredSize());
+        rawTypeComboBox = new EasyComboBox<>(rawTypes, EasyComboBox.WidthMode.DYNAMIC);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         boolean showFormatControls = isBodyTypeRAW();
         rawTypeComboBox.setVisible(showFormatControls);
@@ -201,7 +200,7 @@ public class RequestBodyPanel extends JPanel {
         JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_LABEL_SEND_MESSAGE));
         leftPanel.add(bodyTypeLabel);
         String[] bodyTypes = new String[]{BODY_TYPE_RAW};
-        bodyTypeComboBox = new JComboBox<>(bodyTypes);
+        bodyTypeComboBox = new EasyComboBox<>(bodyTypes, EasyComboBox.WidthMode.DYNAMIC);
         bodyTypeComboBox.setSelectedItem(BODY_TYPE_RAW);
         bodyTypeComboBox.setVisible(false);
         leftPanel.add(bodyTypeComboBox);

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections;
 
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -28,7 +28,7 @@ public class RequestCollectionsPanel extends SingletonBasePanel {
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditPanel);
         mainSplit.setContinuousLayout(true); // 分割条拖动时实时更新布局
         mainSplit.setDividerLocation(250); // 设置初始分割位置
-        mainSplit.setDividerSize(2); // 设置分割条的宽度
+        mainSplit.setDividerSize(3); // 设置分割条的宽度
 
         // 将分割面板添加到主面板
         add(mainSplit, BorderLayout.CENTER); // 将分割面板添加到主面板的中心位置

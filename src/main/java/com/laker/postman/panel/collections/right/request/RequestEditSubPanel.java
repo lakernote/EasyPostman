@@ -217,7 +217,7 @@ public class RequestEditSubPanel extends JPanel {
         }
 
         splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
-        splitPane.setDividerSize(5);
+        splitPane.setDividerSize(3); // 设置分割条宽度
         splitPane.setOneTouchExpandable(false);
         splitPane.setContinuousLayout(true); // 连续布局，拖动时更流畅
 
@@ -1641,8 +1641,8 @@ public class RequestEditSubPanel extends JPanel {
         // 第一次布局时，为水平布局设置精确的 5:5 分割位置
         // 垂直布局依赖 resizeWeight 即可，不需要额外设置
         if (!initialDividerLocationSet && splitPane != null &&
-            splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT &&
-            splitPane.getWidth() > 0) {
+                splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT &&
+                splitPane.getWidth() > 0) {
             initialDividerLocationSet = true;
             splitPane.setDividerLocation(0.5);
         }

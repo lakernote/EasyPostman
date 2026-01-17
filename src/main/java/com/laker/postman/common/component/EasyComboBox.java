@@ -148,7 +148,7 @@ public class EasyComboBox<E> extends JComboBox<E> {
         Dimension size = new Dimension(optimalWidth, height);
         setPreferredSize(size);
         // 设置最小尺寸
-        setMinimumSize(new Dimension(Math.min(60, optimalWidth), height));
+        setMinimumSize(new Dimension(Math.min(80, optimalWidth), height));
         setMaximumSize(size);
         // 通知布局管理器重新布局
         revalidate();

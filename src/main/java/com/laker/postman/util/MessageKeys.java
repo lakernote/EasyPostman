@@ -772,7 +772,6 @@ public final class MessageKeys {
     public static final String SETTINGS_SAVE_ERROR_MESSAGE = "settings.save.error.message";
 
     // ============ 请求Body相关 ============
-    public static final String REQUEST_BODY_TYPE = "request.body.type";
     public static final String REQUEST_BODY_FORMAT = "request.body.format";
     public static final String REQUEST_BODY_NONE = "request.body.none";
     public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";

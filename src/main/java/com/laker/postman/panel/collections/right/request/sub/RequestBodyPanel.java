@@ -98,11 +98,7 @@ public class RequestBodyPanel extends JPanel {
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
-        topPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
-
-        JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
-        topPanel.add(bodyTypeLabel);
-        topPanel.add(Box.createHorizontalStrut(4));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 0));
 
         String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new EasyComboBox<>(bodyTypes, EasyComboBox.WidthMode.DYNAMIC);

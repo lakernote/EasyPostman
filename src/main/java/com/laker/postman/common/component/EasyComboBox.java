@@ -147,11 +147,9 @@ public class EasyComboBox<E> extends JComboBox<E> {
         // 设置尺寸
         Dimension size = new Dimension(optimalWidth, height);
         setPreferredSize(size);
+        // 设置最小尺寸
+        setMinimumSize(new Dimension(Math.min(60, optimalWidth), height));
         setMaximumSize(size);
-
-        // 使用 FlatLaf 的客户端属性（如果可用）
-        putClientProperty("FlatLaf.minimumWidth", optimalWidth);
-
         // 通知布局管理器重新布局
         revalidate();
     }

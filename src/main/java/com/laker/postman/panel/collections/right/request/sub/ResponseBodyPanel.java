@@ -81,13 +81,13 @@ public class ResponseBodyPanel extends JPanel {
 
         JPanel toolBarPanel = new JPanel();
         toolBarPanel.setLayout(new BoxLayout(toolBarPanel, BoxLayout.X_AXIS));
-        toolBarPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        toolBarPanel.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
         // 语法选择下拉框
         syntaxComboBox = new EasyComboBox<>(SyntaxType.getDisplayNames(), EasyComboBox.WidthMode.DYNAMIC);
         syntaxComboBox.setFocusable(false);
         toolBarPanel.add(syntaxComboBox);
-        toolBarPanel.add(Box.createHorizontalStrut(8));
+        toolBarPanel.add(Box.createHorizontalStrut(4)); // 间隔
 
         // 添加大小提示标签
         sizeWarningLabel = new JLabel();

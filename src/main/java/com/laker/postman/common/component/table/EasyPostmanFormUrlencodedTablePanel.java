@@ -139,6 +139,15 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
     }
 
     @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保表格网格颜色更新
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+    }
+
+    @Override
     protected void initializeTableUI() {
         // 调用父类的通用UI配置
         super.initializeTableUI();

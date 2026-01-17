@@ -57,6 +57,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private JTextField searchField;
     private ImportButton importBtn;
     private JPanel hintPanel; // 快捷键提示面板，用于主题切换时更新边框
+    private JLabel hintLabel; // 快捷键提示文本标签，用于主题切换时更新文本
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
     private boolean isLoadingData = false; // 用于控制是否正在加载数据，防止自动保存
 
@@ -113,10 +114,16 @@ public class EnvironmentPanel extends SingletonBasePanel {
         tipsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
         panel.add(tipsLabel);
 
-        // 添加保存快捷键提示
+        // 添加保存快捷键提示（使用 BUTTON_SAVE 而不是 SAVE_REQUEST）
         String saveShortcut = ShortcutManager.getShortcutText(ShortcutManager.SAVE_REQUEST);
-        String saveActionName = I18nUtil.getMessage(MessageKeys.SAVE_REQUEST);
-        addShortcutHint(panel, saveActionName, saveShortcut);
+        String saveActionName = I18nUtil.getMessage(MessageKeys.BUTTON_SAVE);
+
+        // 创建提示标签并保存引用
+        String labelText = "💾" + " " + saveActionName + ": " + saveShortcut;
+        hintLabel = new JLabel(labelText);
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        hintLabel.setForeground(ModernColors.getTextSecondary());
+        panel.add(hintLabel);
 
         return panel;
     }
@@ -128,19 +135,16 @@ public class EnvironmentPanel extends SingletonBasePanel {
         if (hintPanel != null) {
             hintPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
         }
+        // 更新快捷键提示文本（支持语言切换）
+        if (hintLabel != null) {
+            String saveShortcut = ShortcutManager.getShortcutText(ShortcutManager.SAVE_REQUEST);
+            String saveActionName = I18nUtil.getMessage(MessageKeys.BUTTON_SAVE);
+            String labelText = "💾" + " " + saveActionName + ": " + saveShortcut;
+            hintLabel.setText(labelText);
+            hintLabel.setForeground(ModernColors.getTextSecondary());
+        }
     }
 
-    /**
-     * 添加单个快捷键提示 - 带 emoji
-     */
-    private void addShortcutHint(JPanel panel, String actionName, String shortcutText) {
-        String labelText = "💾" + " " + actionName + ": " + shortcutText;
-
-        JLabel label = new JLabel(labelText);
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        label.setForeground(ModernColors.getTextSecondary());
-        panel.add(label);
-    }
 
     /**
      * 初始化表格自动保存功能

@@ -590,7 +590,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 applyCustomTabbedPaneUI(this);
             }
         };
-        // 自定义标签页UI
+        // 自定义标签页UI（包含统一的分隔线绘制）
         applyCustomTabbedPaneUI(pane);
         return pane;
     }
@@ -613,7 +613,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
             super.installDefaults();
             // 增加 tab 区域的上下边距，让 tab 之间有更多空间
             tabAreaInsets = new Insets(8, 6, 8, 0);
-            contentBorderInsets = new Insets(0, 0, 0, 0);
+            // 内容区域左侧留1像素空间用于绘制分隔线
+            contentBorderInsets = new Insets(0, 1, 0, 0);
             // tab 之间的间距
             tabInsets = new Insets(2, 2, 2, 2);
             selectedTabPadInsets = new Insets(0, 0, 0, 0);
@@ -707,7 +708,15 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         @Override
         protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-            // 不绘制内容区边框和分隔线
+            // 只绘制内容区域左侧的分隔线
+            if (tabPlacement == SwingConstants.LEFT) {
+                int height = tabbedPane.getHeight();
+                int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
+
+                g.setColor(ModernColors.getDividerBorderColor());
+                // 在tab区域右侧绘制一条垂直分隔线
+                g.drawLine(tabAreaWidth, 0, tabAreaWidth, height);
+            }
         }
 
         @Override

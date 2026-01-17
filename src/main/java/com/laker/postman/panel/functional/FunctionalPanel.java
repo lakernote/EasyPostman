@@ -61,7 +61,6 @@ public class FunctionalPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
         setPreferredSize(new Dimension(700, 400));
 
         // 创建主选项卡面板

@@ -48,7 +48,6 @@ public class HistoryPanel extends SingletonBasePanel {
     protected void initUI() {
         JTabbedPane historyDetailTabPane;
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
         JPanel titlePanel = new JPanel(new BorderLayout());
         // 复合边框
         titlePanel.setBorder(BorderFactory.createCompoundBorder(

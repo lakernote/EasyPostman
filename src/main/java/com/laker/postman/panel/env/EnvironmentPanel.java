@@ -62,7 +62,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor()));
         setPreferredSize(new Dimension(700, 400));
 
         // 左侧环境列表面板

@@ -37,10 +37,11 @@ public class SqlFormatter {
                 "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "ON", "USING"
         ));
 
-        // 子句关键字
+        // 子句关键字（添加 DESC 和 ASC）
         KEYWORDS.addAll(Arrays.asList(
                 "GROUP", "BY", "HAVING", "ORDER", "LIMIT", "OFFSET", "UNION", "ALL",
-                "INTERSECT", "EXCEPT", "MINUS", "DISTINCT", "AS", "WITH", "RECURSIVE"
+                "INTERSECT", "EXCEPT", "MINUS", "DISTINCT", "AS", "WITH", "RECURSIVE",
+                "DESC", "ASC"
         ));
 
         // 逻辑运算符
@@ -53,7 +54,7 @@ public class SqlFormatter {
                 "CASE", "WHEN", "THEN", "ELSE", "END"
         ));
 
-        // 聚合函数
+        // 聚合函数和其他函数（这些应该保持小写）
         FUNCTIONS.addAll(Arrays.asList(
                 "COUNT", "SUM", "AVG", "MAX", "MIN", "FIRST", "LAST",
                 "UPPER", "LOWER", "SUBSTR", "CONCAT", "LENGTH", "TRIM",
@@ -293,6 +294,8 @@ public class SqlFormatter {
         int indentLevel = 0;
         boolean needIndent = false;
         int parenLevel = 0; // 括号嵌套级别
+        boolean inCaseExpression = false;
+        int caseLevel = 0;
 
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
@@ -301,34 +304,34 @@ public class SqlFormatter {
 
             String upper = token.value.toUpperCase();
 
+            // 处理 CASE 表达式
+            if ("CASE".equals(upper)) {
+                inCaseExpression = true;
+                caseLevel++;
+            }
+            if ("END".equals(upper)) {
+                caseLevel--;
+                if (caseLevel == 0) {
+                    inCaseExpression = false;
+                }
+            }
+
             // 处理左括号
             if ("(".equals(token.value)) {
                 parenLevel++;
                 result.append(token.value);
-                // 括号后可能需要换行（子查询）
-                if (nextToken != null && nextToken.type == TokenType.KEYWORD
-                        && "SELECT".equals(nextToken.value.toUpperCase())) {
-                    result.append("\n");
-                    indentLevel++;
-                    needIndent = true;
-                }
                 continue;
             }
 
             // 处理右括号
             if (")".equals(token.value)) {
                 parenLevel--;
-                // 如果是子查询的结束，减少缩进
-                if (prevToken != null && prevToken.type == TokenType.KEYWORD) {
-                    indentLevel = Math.max(0, indentLevel - 1);
-                    result.append("\n").append(option.indent.repeat(indentLevel));
-                }
                 result.append(token.value);
                 continue;
             }
 
             // 决定是否需要换行
-            boolean needLineBreak = needsLineBreakBefore(token, prevToken, option);
+            boolean needLineBreak = needsLineBreakBefore(token, prevToken, option, inCaseExpression, parenLevel);
 
             if (needLineBreak) {
                 result.append("\n");
@@ -345,16 +348,17 @@ public class SqlFormatter {
             String value = token.value;
             if (token.type == TokenType.KEYWORD && option.uppercaseKeywords) {
                 value = value.toUpperCase();
+            } else if (token.type == TokenType.FUNCTION) {
+                // 函数名保持小写
+                value = value.toLowerCase();
             }
             result.append(value);
 
-            // 主要子句后增加缩进（Druid 风格）
-            if (token.type == TokenType.KEYWORD) {
+            // 主要子句后增加缩进（Druid 风格）- 只在顶层
+            if (token.type == TokenType.KEYWORD && parenLevel == 0) {
                 if ("SELECT".equals(upper) || "FROM".equals(upper) ||
-                        "WHERE".equals(upper) || "SET".equals(upper)) {
-                    if (parenLevel == 0) { // 不在括号内
-                        indentLevel++;
-                    }
+                        "WHERE".equals(upper) || "SET".equals(upper) || "DELETE".equals(upper)) {
+                    indentLevel++;
                 }
             }
 
@@ -364,14 +368,14 @@ public class SqlFormatter {
             }
 
             // 逗号后换行并保持缩进
-            if (needsLineBreakAfter(token, nextToken, option)) {
+            if (needsLineBreakAfter(token, nextToken, option, parenLevel)) {
                 result.append("\n");
                 needIndent = true;
             }
 
-            // 某些关键字后恢复缩进（Druid 风格）
-            if (token.type == TokenType.KEYWORD) {
-                if (nextToken != null && needsLineBreakBefore(nextToken, token, option)) {
+            // 某些关键字后恢复缩进（Druid 风格）- 只在顶层
+            if (token.type == TokenType.KEYWORD && parenLevel == 0) {
+                if (nextToken != null && needsLineBreakBefore(nextToken, token, option, inCaseExpression, parenLevel)) {
                     indentLevel = Math.max(0, indentLevel - 1);
                 }
             }
@@ -383,11 +387,24 @@ public class SqlFormatter {
     /**
      * 判断 token 前是否需要换行
      */
-    private static boolean needsLineBreakBefore(Token token, Token prevToken, FormatOption option) {
+    private static boolean needsLineBreakBefore(Token token, Token prevToken, FormatOption option, boolean inCaseExpression, int parenLevel) {
         if (prevToken == null) return false;
 
         String upper = token.value.toUpperCase();
         String prevUpper = prevToken.value.toUpperCase();
+
+        // CASE 表达式内部换行规则
+        if (inCaseExpression) {
+            if ("CASE".equals(upper)) return true;
+            if ("WHEN".equals(upper)) return true;
+            if ("ELSE".equals(upper)) return true;
+            if ("END".equals(upper)) return true;
+        }
+
+        // BETWEEN ... AND 不应该在 AND 前换行
+        if ("AND".equals(upper) && "BETWEEN".equals(prevUpper)) {
+            return false;
+        }
 
         // 如果前一个词是 LEFT/RIGHT/FULL/INNER/OUTER/CROSS，当前词是 JOIN，不换行
         if ("JOIN".equals(upper)) {
@@ -398,33 +415,37 @@ public class SqlFormatter {
             }
         }
 
-        // 主要子句前换行
-        if (option.lineBreakBeforeFrom && "FROM".equals(upper)) return true;
+        // 主要子句前换行 (只在顶层，不在子查询中)
+        if (parenLevel == 0) {
+            if (option.lineBreakBeforeFrom && "FROM".equals(upper)) return true;
 
-        // JOIN 前换行（但要排除上面的组合情况）
-        if (option.lineBreakBeforeJoin && "JOIN".equals(upper)) return true;
+            // JOIN 前换行（但要排除上面的组合情况）
+            if (option.lineBreakBeforeJoin && "JOIN".equals(upper)) return true;
 
-        // LEFT/RIGHT/FULL/INNER 等修饰词前换行（它们通常在 JOIN 前）
-        if (option.lineBreakBeforeJoin &&
-                ("LEFT".equals(upper) || "RIGHT".equals(upper) ||
-                        "FULL".equals(upper) || "INNER".equals(upper))) {
-            return true;
+            // LEFT/RIGHT/FULL/INNER 等修饰词前换行（它们通常在 JOIN 前）
+            if (option.lineBreakBeforeJoin &&
+                    ("LEFT".equals(upper) || "RIGHT".equals(upper) ||
+                            "FULL".equals(upper) || "INNER".equals(upper))) {
+                return true;
+            }
+
+            if (option.lineBreakBeforeWhere && "WHERE".equals(upper)) return true;
+            if ("GROUP".equals(upper) || "ORDER".equals(upper) || "HAVING".equals(upper)) return true;
+            if ("LIMIT".equals(upper) || "OFFSET".equals(upper)) return true;
+
+            // UNION/UNION ALL 前换行
+            if ("UNION".equals(upper) || "INTERSECT".equals(upper) || "EXCEPT".equals(upper)) return true;
+
+            // SET 子句换行 (UPDATE ... SET)
+            if ("SET".equals(upper)) return true;
+
+            // VALUES 子句换行 (INSERT INTO ... VALUES)
+            if ("VALUES".equals(upper)) return true;
+
+            // AND/OR 前换行
+            if (option.lineBreakBeforeAnd && "AND".equals(upper)) return true;
+            if (option.lineBreakBeforeOr && "OR".equals(upper)) return true;
         }
-
-        if (option.lineBreakBeforeWhere && "WHERE".equals(upper)) return true;
-        if ("GROUP".equals(upper) || "ORDER".equals(upper) || "HAVING".equals(upper)) return true;
-        if ("LIMIT".equals(upper) || "OFFSET".equals(upper)) return true;
-        if ("UNION".equals(upper) || "INTERSECT".equals(upper) || "EXCEPT".equals(upper)) return true;
-
-        // SET 子句换行 (UPDATE ... SET)
-        if ("SET".equals(upper)) return true;
-
-        // VALUES 子句换行 (INSERT INTO ... VALUES)
-        if ("VALUES".equals(upper)) return true;
-
-        // AND/OR 前换行
-        if (option.lineBreakBeforeAnd && "AND".equals(upper)) return true;
-        if (option.lineBreakBeforeOr && "OR".equals(upper)) return true;
 
         return false;
     }
@@ -432,14 +453,14 @@ public class SqlFormatter {
     /**
      * 判断 token 后是否需要换行
      */
-    private static boolean needsLineBreakAfter(Token token, Token nextToken, FormatOption option) {
+    private static boolean needsLineBreakAfter(Token token, Token nextToken, FormatOption option, int parenLevel) {
         if (nextToken == null) return false;
 
-        // 逗号后换行（在 SELECT 列表等）
+        // 逗号后换行（在 SELECT 列表等，但不在子查询或函数参数中）
         if (option.lineBreakAfterComma && ",".equals(token.value)) {
             String nextUpper = nextToken.value.toUpperCase();
-            // 不在 VALUES() 或函数参数中换行
-            return !("FROM".equals(nextUpper) || "WHERE".equals(nextUpper) || ")".equals(nextToken.value));
+            // 不在特定关键字前换行，也不在括号内换行
+            return parenLevel == 0 && !("FROM".equals(nextUpper) || "WHERE".equals(nextUpper) || ")".equals(nextToken.value));
         }
 
         return false;
@@ -451,12 +472,22 @@ public class SqlFormatter {
     private static boolean needsSpaceAfter(Token token, Token nextToken, FormatOption option) {
         if (nextToken == null) return false;
 
+        // 下一个token是逗号或右括号，不需要空格
+        if (",".equals(nextToken.value) || ")".equals(nextToken.value)) {
+            return false;
+        }
+
+        // 函数后面如果是左括号，不加空格
+        if (token.type == TokenType.FUNCTION) {
+            return !"(".equals(nextToken.value);
+        }
+
         // 关键字后需要空格（除非下一个是操作符）
         if (token.type == TokenType.KEYWORD) {
             // 特殊关键字后不需要空格的情况
             if (nextToken.type == TokenType.OPERATOR) {
-                // 只有左括号例外
-                return "(".equals(nextToken.value);
+                // 左括号前不需要空格（例如 IN(subquery)）
+                return !"(".equals(nextToken.value);
             }
             return true;
         }
@@ -467,6 +498,7 @@ public class SqlFormatter {
                 // 操作符前需要空格，除了左括号和点号
                 return !"(".equals(nextToken.value) && !".".equals(nextToken.value);
             }
+            // 其他情况需要空格（除非是逗号或括号，已在前面处理）
             return true;
         }
 
@@ -488,12 +520,13 @@ public class SqlFormatter {
             return true;
         }
 
-        // 数字和字符串后，如果下一个是操作符，需要空格
+        // 数字和字符串后，如果下一个是操作符或关键字，需要空格
         if (token.type == TokenType.NUMBER || token.type == TokenType.STRING) {
             if (nextToken.type == TokenType.OPERATOR) {
-                return !")".equals(nextToken.value) && !",".equals(nextToken.value);
+                // 右括号和逗号前不需要空格（已在开头处理）
+                return true;
             }
-            return true;
+            return nextToken.type == TokenType.KEYWORD;
         }
 
         return false;
@@ -567,10 +600,11 @@ public class SqlFormatter {
         String value = sql.substring(start, pos);
         String upper = value.toUpperCase();
 
-        // 判断是否为关键字
+        // 判断类型：函数、关键字还是标识符
         TokenType type = TokenType.IDENTIFIER;
-        if (KEYWORDS.contains(upper) || LOGIC_OPERATORS.contains(upper) ||
-                FUNCTIONS.contains(upper) || CASE_KEYWORDS.contains(upper)) {
+        if (FUNCTIONS.contains(upper)) {
+            type = TokenType.FUNCTION;  // 函数单独标记
+        } else if (KEYWORDS.contains(upper) || LOGIC_OPERATORS.contains(upper) || CASE_KEYWORDS.contains(upper)) {
             type = TokenType.KEYWORD;
         }
 
@@ -645,6 +679,10 @@ public class SqlFormatter {
                     lastWasSpace = true;
                 }
             } else {
+                // 移除逗号和分号前的空格
+                if ((ch == ',' || ch == ';') && lastWasSpace && result.length() > 0) {
+                    result.setLength(result.length() - 1); // 删除最后的空格
+                }
                 result.append(ch);
                 lastWasSpace = false;
             }
@@ -656,7 +694,7 @@ public class SqlFormatter {
     // ==================== Token 类 ====================
 
     private enum TokenType {
-        KEYWORD, IDENTIFIER, STRING, NUMBER, OPERATOR, COMMENT
+        KEYWORD, IDENTIFIER, STRING, NUMBER, OPERATOR, COMMENT, FUNCTION
     }
 
     private static class Token {

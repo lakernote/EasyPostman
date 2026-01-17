@@ -16,12 +16,12 @@ public class SqlFormatterTest {
         String input = "select u.id,u.name,u.email,u.created_at,o.order_id,o.total,o.status from users u left join orders o on u.id=o.user_id where u.status=1 and u.created_at>='2024-01-01' and (o.total>100 or o.status='paid') group by u.id having count(o.order_id)>0 order by u.created_at desc,o.total desc limit 100";
 
         String expected = """
-                SELECT u.id ,
-                  u.name ,
-                  u.email ,
-                  u.created_at ,
-                  o.order_id ,
-                  o.total ,
+                SELECT u.id,
+                  u.name,
+                  u.email,
+                  u.created_at,
+                  o.order_id,
+                  o.total,
                   o.status
                   FROM users u
                     LEFT JOIN orders o ON u.id = o.user_id
@@ -30,9 +30,9 @@ public class SqlFormatterTest {
                       AND (o.total > 100
                       OR o.status = 'paid')
                       GROUP BY u.id
-                      HAVING COUNT (o.order_id )> 0
-                      ORDER BY u.created_at desc ,
-                      o.total desc
+                      HAVING count(o.order_id) > 0
+                      ORDER BY u.created_at DESC,
+                      o.total DESC
                       LIMIT 100;""";
 
         String result = SqlFormatter.format(input);
@@ -53,13 +53,13 @@ public class SqlFormatterTest {
         String input = "select id,name,email from users where status=1 and age>18 order by created_at desc";
 
         String expected = """
-                SELECT id ,
-                  name ,
+                SELECT id,
+                  name,
                   email
                   FROM users
                     WHERE status = 1
                       AND age > 18
-                      ORDER BY created_at desc;""";
+                      ORDER BY created_at DESC;""";
 
         String result = SqlFormatter.format(input);
 
@@ -79,8 +79,8 @@ public class SqlFormatterTest {
         String input = "select u.name,o.order_id,p.product_name from users u inner join orders o on u.id=o.user_id left join products p on o.product_id=p.id where u.status='active'";
 
         String expected = """
-                SELECT u.name ,
-                  o.order_id ,
+                SELECT u.name,
+                  o.order_id,
                   p.product_name
                   FROM users u
                     INNER JOIN orders o ON u.id = o.user_id
@@ -106,8 +106,8 @@ public class SqlFormatterTest {
 
         String expected = """
                 SELECT *
-                  FROM (SELECT user_id ,
-                  count (*) AS order_count
+                  FROM (SELECT user_id,
+                  count(*) AS order_count
                   FROM orders
                     GROUP BY user_id) t
                     WHERE order_count > 5;""";
@@ -130,17 +130,17 @@ public class SqlFormatterTest {
         String input = "insert into users(name,email,status,created_at) values('张三','zhang@example.com','active','2024-01-01'),('李四','li@example.com','active','2024-01-02')";
 
         String expected = """
-                INSERT INTO users (name ,
-                  email ,
-                  status ,
+                INSERT INTO users(name,
+                  email,
+                  status,
                   created_at)
-                  VALUES ('张三' ,
-                  'zhang@example.com' ,
-                  'active' ,
-                  '2024-01-01') ,
-                  ('李四' ,
-                  'li@example.com' ,
-                  'active' ,
+                  VALUES('张三',
+                  'zhang@example.com',
+                  'active',
+                  '2024-01-01'),
+                  ('李四',
+                  'li@example.com',
+                  'active',
                   '2024-01-02');""";
 
         String result = SqlFormatter.format(input);
@@ -162,8 +162,8 @@ public class SqlFormatterTest {
 
         String expected = """
                 UPDATE users
-                  SET status = 'inactive' ,
-                  updated_at = now ()
+                  SET status = 'inactive',
+                  updated_at = now()
                   WHERE last_login < '2023-01-01'
                     AND status = 'active';""";
 
@@ -194,6 +194,209 @@ public class SqlFormatterTest {
 
         assertNotNull(result);
         System.out.println("\n=== 格式化 DELETE 语句 ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 CASE WHEN 表达式")
+    public void testFormatCaseWhen() {
+        String input = "select id,name,case when score>=90 then 'A' when score>=80 then 'B' when score>=60 then 'C' else 'D' end as grade from exam where type='final'";
+
+        String expected = """
+                SELECT id,
+                  name,
+                  CASE
+                  WHEN score >= 90 THEN 'A'
+                  WHEN score >= 80 THEN 'B'
+                  WHEN score >= 60 THEN 'C'
+                  ELSE 'D'
+                  END AS grade
+                  FROM exam
+                    WHERE type = 'final';""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 CASE WHEN 表达式 ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 UNION ALL 查询")
+    public void testFormatUnionAll() {
+        String input = "select id,name from users where status=1 union all select id,name from admins where active=1";
+
+        String expected = """
+                SELECT id,
+                  name
+                  FROM users
+                    WHERE status = 1
+                    UNION ALL
+                SELECT id,
+                  name
+                  FROM admins
+                    WHERE active = 1;""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 UNION ALL 查询 ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 IN 子查询")
+    public void testFormatInSubquery() {
+        String input = "select * from users where id in (select user_id from orders where total>1000)";
+
+        String expected = """
+                SELECT *
+                  FROM users
+                    WHERE id IN (SELECT user_id
+                  FROM orders
+                    WHERE total > 1000);""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 IN 子查询 ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 RIGHT JOIN 和 FULL OUTER JOIN")
+    public void testFormatRightAndFullJoin() {
+        String input = "select * from users u right join orders o on u.id=o.user_id full outer join products p on o.product_id=p.id";
+
+        String expected = """
+                SELECT *
+                  FROM users u
+                    RIGHT JOIN orders o ON u.id = o.user_id
+                    FULL OUTER JOIN products p ON o.product_id = p.id;""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 RIGHT JOIN 和 FULL OUTER JOIN ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 BETWEEN 和 LIKE")
+    public void testFormatBetweenAndLike() {
+        String input = "select * from products where price between 100 and 500 and name like '%phone%' and stock>0";
+
+        String expected = """
+                SELECT *
+                  FROM products
+                    WHERE price BETWEEN 100 AND 500
+                      AND name LIKE '%phone%'
+                      AND stock > 0;""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 BETWEEN 和 LIKE ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 IS NULL 和 IS NOT NULL")
+    public void testFormatIsNull() {
+        String input = "select * from users where email is null or phone is not null and deleted_at is null";
+
+        String expected = """
+                SELECT *
+                  FROM users
+                    WHERE email IS NULL
+                      OR phone IS NOT NULL
+                      AND deleted_at IS NULL;""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 IS NULL 和 IS NOT NULL ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化 EXISTS 子查询")
+    public void testFormatExistsSubquery() {
+        String input = "select * from users u where exists (select 1 from orders o where o.user_id=u.id and o.total>1000)";
+
+        String expected = """
+                SELECT *
+                  FROM users u
+                    WHERE EXISTS (SELECT 1
+                  FROM orders o
+                    WHERE o.user_id = u.id
+                      AND o.total > 1000);""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化 EXISTS 子查询 ===");
+        System.out.println("输入:");
+        System.out.println(input);
+        System.out.println("\n格式化结果:");
+        System.out.println(result);
+        System.out.println("\n预期结果:");
+        System.out.println(expected);
+        assertEquals(result, expected);
+    }
+
+    @Test(description = "格式化聚合函数和 DISTINCT")
+    public void testFormatAggregateWithDistinct() {
+        String input = "select count(distinct user_id),sum(total),avg(score),max(created_at) from orders where status='paid' group by date(created_at)";
+
+        String expected = """
+                SELECT count(DISTINCT user_id),
+                  sum(total),
+                  avg(score),
+                  max(created_at)
+                  FROM orders
+                    WHERE status = 'paid'
+                      GROUP BY date(created_at);""";
+
+        String result = SqlFormatter.format(input);
+
+        assertNotNull(result);
+        System.out.println("\n=== 格式化聚合函数和 DISTINCT ===");
         System.out.println("输入:");
         System.out.println(input);
         System.out.println("\n格式化结果:");

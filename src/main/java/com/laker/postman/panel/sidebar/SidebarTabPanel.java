@@ -120,9 +120,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             consoleContainer.removeAll();
             consoleContainer.add(consolePanel, BorderLayout.CENTER);
             splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, consoleContainer);
-            splitPane.setDividerSize(2);
-            splitPane.setBorder(null);
-            splitPane.setOneTouchExpandable(true);
+            splitPane.setDividerSize(3);
             splitPane.setResizeWeight(1.0);
             splitPane.setMinimumSize(new Dimension(0, 10));
             tabbedPane.setMinimumSize(new Dimension(0, 30));

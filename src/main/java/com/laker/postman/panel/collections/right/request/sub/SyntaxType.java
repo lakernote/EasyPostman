@@ -7,13 +7,13 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
  * 添加新的语法类型只需在此枚举中添加一项即可
  */
 public enum SyntaxType {
-    AUTO_DETECT("Auto Detect", null),
+    AUTO_DETECT("Auto", null),
     JSON("JSON", SyntaxConstants.SYNTAX_STYLE_JSON),
     XML("XML", SyntaxConstants.SYNTAX_STYLE_XML),
     HTML("HTML", SyntaxConstants.SYNTAX_STYLE_HTML),
     JAVASCRIPT("JavaScript", SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT),
     CSS("CSS", SyntaxConstants.SYNTAX_STYLE_CSS),
-    PLAIN_TEXT("Plain Text", SyntaxConstants.SYNTAX_STYLE_NONE);
+    PLAIN_TEXT("Text", SyntaxConstants.SYNTAX_STYLE_NONE);
 
     private final String displayName;
     private final String syntaxStyle;

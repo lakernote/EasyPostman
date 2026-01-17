@@ -99,6 +99,7 @@ public class EasyComboBox<E> extends JComboBox<E> {
     private void initComponent() {
         // 设置字体
         setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        setFocusable(false); // 取消焦点框
 
         // 添加选项变化监听器
         if (widthMode == WidthMode.DYNAMIC) {

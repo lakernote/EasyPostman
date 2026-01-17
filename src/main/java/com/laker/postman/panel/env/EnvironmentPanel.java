@@ -56,6 +56,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private DefaultListModel<EnvironmentItem> environmentListModel;
     private JTextField searchField;
     private ImportButton importBtn;
+    private JPanel hintPanel; // 快捷键提示面板，用于主题切换时更新边框
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
     private boolean isLoadingData = false; // 用于控制是否正在加载数据，防止自动保存
 
@@ -90,7 +91,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
         rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
 
         // 底部快捷键提示面板
-        rightPanel.add(createShortcutHintPanel(), BorderLayout.SOUTH);
+        hintPanel = createShortcutHintPanel();
+        rightPanel.add(hintPanel, BorderLayout.SOUTH);
 
         add(rightPanel, BorderLayout.CENTER);
 
@@ -102,21 +104,30 @@ public class EnvironmentPanel extends SingletonBasePanel {
      * 创建快捷键提示面板 - 现代科技风格
      */
     private JPanel createShortcutHintPanel() {
-        JPanel hintPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
-        hintPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
-        hintPanel.setOpaque(true);
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        panel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
+        panel.setOpaque(true);
 
         // 添加提示标签
         JLabel tipsLabel = new JLabel("💡");
         tipsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
-        hintPanel.add(tipsLabel);
+        panel.add(tipsLabel);
 
         // 添加保存快捷键提示
         String saveShortcut = ShortcutManager.getShortcutText(ShortcutManager.SAVE_REQUEST);
         String saveActionName = I18nUtil.getMessage(MessageKeys.SAVE_REQUEST);
-        addShortcutHint(hintPanel, saveActionName, saveShortcut);
+        addShortcutHint(panel, saveActionName, saveShortcut);
 
-        return hintPanel;
+        return panel;
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保分隔线颜色更新
+        if (hintPanel != null) {
+            hintPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
+        }
     }
 
     /**

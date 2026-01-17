@@ -108,6 +108,13 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     }
 
     @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新创建边框，确保分隔线颜色更新
+        setBorder(createPanelBorder());
+    }
+
+    @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
         FlatDesktop.setQuitHandler(e -> BeanFactory.getBean(ExitService.class).exit());

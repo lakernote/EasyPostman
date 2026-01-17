@@ -86,6 +86,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private JButton refreshBtn;
     private JCheckBox efficientCheckBox; // 高效模式复选框
     private JLabel progressLabel; // 进度标签
+    private JPanel topPanel; // 顶部工具栏面板，用于主题切换时更新边框
     private long startTime;
     // 记录所有请求的开始和结束时间
     private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
@@ -213,7 +214,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
 
         // 保存/加载用例按钮 ==========
-        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
         runBtn = new StartButton();
@@ -298,6 +299,15 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 设置 Ctrl/Cmd+S 快捷键保存
         setupSaveShortcut();
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保分隔线颜色更新
+        if (topPanel != null) {
+            topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+        }
     }
 
     /**

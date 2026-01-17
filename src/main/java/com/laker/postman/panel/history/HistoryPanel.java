@@ -28,6 +28,7 @@ import java.util.List;
 public class HistoryPanel extends SingletonBasePanel {
     private JList<Object> historyList;
     private JPanel historyDetailPanel;
+    private JPanel titlePanel; // 标题面板，用于主题切换时更新边框
     private JTextPane requestPane;
     private JTextPane responsePane;
     private JTextPane timingPane;
@@ -48,7 +49,7 @@ public class HistoryPanel extends SingletonBasePanel {
     protected void initUI() {
         JTabbedPane historyDetailTabPane;
         setLayout(new BorderLayout());
-        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel = new JPanel(new BorderLayout());
         // 复合边框
         titlePanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()), // 外边框
@@ -242,6 +243,18 @@ public class HistoryPanel extends SingletonBasePanel {
             }
         };
         worker.execute();
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保分隔线颜色更新
+        if (titlePanel != null) {
+            titlePanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                    BorderFactory.createEmptyBorder(4, 8, 4, 8)
+            ));
+        }
     }
 
     @Override

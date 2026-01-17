@@ -928,4 +928,14 @@ public class ExecutionResultsPanel extends JPanel {
         return csvPanel;
     }
 
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保分隔线颜色更新
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 8, 8, 8),
+                BorderFactory.createMatteBorder(1, 1, 1, 1, ModernColors.getDividerBorderColor())
+        ));
+    }
+
 }

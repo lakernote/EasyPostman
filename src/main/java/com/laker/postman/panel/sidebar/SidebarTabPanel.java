@@ -388,6 +388,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
             sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
         }
 
+        // 主题切换时更新 consoleContainer 的边框颜色
+        if (consoleContainer != null) {
+            consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
+        }
+
         // 6. 重新创建所有 tab 组件以更新字体和文本
         if (tabbedPane != null && tabInfos != null) {
             int currentSelectedIndex = tabbedPane.getSelectedIndex();

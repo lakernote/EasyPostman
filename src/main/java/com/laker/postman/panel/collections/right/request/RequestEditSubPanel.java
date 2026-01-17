@@ -1313,13 +1313,6 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 程序化点击发送按钮
-     */
-    public void clickSendButton() {
-        SwingUtilities.invokeLater(() -> requestLinePanel.getSendButton().doClick());
-    }
-
-    /**
      * 显示保存响应对话框
      */
     private void saveResponseDialog() {
@@ -1632,6 +1625,11 @@ public class RequestEditSubPanel extends JPanel {
         int totalSize = isVertical ? splitPane.getHeight() : splitPane.getWidth();
         if (totalSize > 0) {
             splitPane.setDividerLocation(ratio);
+        }
+
+        // 更新ResponsePanel的Tab显示方式
+        if (responsePanel != null) {
+            responsePanel.updateLayoutOrientation(isVertical);
         }
     }
 

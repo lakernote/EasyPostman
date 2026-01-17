@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.component.LoadingOverlay;
 import com.laker.postman.model.HttpEventInfo;
@@ -9,6 +10,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -45,6 +47,10 @@ public class ResponsePanel extends JPanel {
     private final JEditorPane testsPane;
     @Getter
     private final JButton[] tabButtons;
+    private EasyComboBox<String> tabComboBox; // 下拉框用于水平布局
+    private final JPanel tabBar; // 保存tabBar引用，用于切换
+    private final JPanel statusBar; // 保存statusBar引用
+    private final JPanel topResponseBar; // 保存topResponseBar引用
     private int selectedTabIndex = 0;
     private final JPanel cardPanel;
     private final String[] tabNames;
@@ -55,11 +61,12 @@ public class ResponsePanel extends JPanel {
     @Getter
     private final SSEResponsePanel sseResponsePanel;
     private final LoadingOverlay loadingOverlay;
+    private boolean isHorizontalLayout = false; // 标记当前是否为水平布局
 
     public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
         setLayout(new BorderLayout());
-        JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 
         // 初始化状态栏组件 - 现代扁平风格
         statusCodeLabel = createModernStatusLabel();
@@ -72,8 +79,6 @@ public class ResponsePanel extends JPanel {
         separator1.setVisible(false);
         separator2.setVisible(false);
 
-        // 声明topResponseBar，在各个分支中初始化
-        JPanel topResponseBar;
 
         // 根据协议类型初始化相应的面板
         if (protocol.isWebSocketProtocol()) {
@@ -84,7 +89,7 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+            statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
             // 现代扁平风格：紧凑布局，状态码带彩色背景框
             statusBar.add(statusCodeLabel);
             statusBar.add(separator1);
@@ -116,7 +121,7 @@ public class ResponsePanel extends JPanel {
                 tabButtons[i] = new TabButton(tabNames[i], i);
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
+            statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
             // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
             statusBar.add(separator1);
@@ -155,7 +160,7 @@ public class ResponsePanel extends JPanel {
                 }
                 tabBar.add(tabButtons[i]);
             }
-            JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
+            statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
             // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
             statusBar.add(separator1);
@@ -192,6 +197,34 @@ public class ResponsePanel extends JPanel {
             webSocketResponsePanel = null;
         }
 
+        // 检查初始布局状态，决定使用 tabBar 还是下拉框
+        boolean isVertical = SettingManager.isLayoutVertical();
+        isHorizontalLayout = !isVertical;
+
+        if (isHorizontalLayout) {
+            // 水平布局：使用下拉框替换 tabBar
+            topResponseBar.remove(tabBar); // 移除默认的 tabBar
+
+            // 创建下拉框
+            tabComboBox = new EasyComboBox<>(getVisibleTabNames(), EasyComboBox.WidthMode.DYNAMIC);
+            tabComboBox.setSelectedIndex(0);
+            tabComboBox.addActionListener(e -> {
+                int selectedVisibleIndex = tabComboBox.getSelectedIndex();
+                int actualIndex = getActualTabIndex(selectedVisibleIndex);
+                if (actualIndex != selectedTabIndex) {
+                    selectedTabIndex = actualIndex;
+                    CardLayout cl = (CardLayout) cardPanel.getLayout();
+                    cl.show(cardPanel, tabNames[actualIndex]);
+                }
+            });
+
+            // 创建包含下拉框的面板
+            JPanel comboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            comboPanel.add(tabComboBox);
+
+            topResponseBar.add(comboPanel, BorderLayout.WEST);
+        }
+
         // 创建包含topResponseBar和cardPanel的容器面板
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.add(topResponseBar, BorderLayout.NORTH);
@@ -210,6 +243,7 @@ public class ResponsePanel extends JPanel {
         }
         // 默认所有按钮不可用
         setResponseTabButtonsEnable(false);
+
 
         // 初始化加载遮罩层
         loadingOverlay = new LoadingOverlay();
@@ -385,6 +419,10 @@ public class ResponsePanel extends JPanel {
     public void setResponseTabButtonsEnable(boolean enable) {
         for (JButton btn : tabButtons) {
             btn.setEnabled(enable);
+        }
+        // 同步设置下拉框的启用状态
+        if (tabComboBox != null) {
+            tabComboBox.setEnabled(enable);
         }
     }
 
@@ -927,4 +965,113 @@ public class ResponsePanel extends JPanel {
         }
     }
 
+    /**
+     * 根据布局方向切换Tab显示方式
+     *
+     * @param isVertical true=垂直布局（上下），false=水平布局（左右）
+     */
+    public void updateLayoutOrientation(boolean isVertical) {
+        // 如果布局没有变化，直接返回
+        boolean newHorizontalLayout = !isVertical;
+        if (this.isHorizontalLayout == newHorizontalLayout) {
+            return;
+        }
+        this.isHorizontalLayout = newHorizontalLayout;
+
+        if (topResponseBar == null || tabBar == null || statusBar == null) {
+            return;
+        }
+
+        // 移除旧的组件
+        topResponseBar.removeAll();
+
+        if (isHorizontalLayout) {
+            // 水平布局：使用下拉框
+            if (tabComboBox == null) {
+                // 创建下拉框（只创建一次）
+                tabComboBox = new EasyComboBox<>(getVisibleTabNames(), EasyComboBox.WidthMode.DYNAMIC);
+                tabComboBox.setSelectedIndex(getVisibleTabIndex(selectedTabIndex));
+                // 同步当前 tab buttons 的启用状态
+                tabComboBox.setEnabled(tabButtons.length > 0 && tabButtons[0].isEnabled());
+                tabComboBox.addActionListener(e -> {
+                    int selectedVisibleIndex = tabComboBox.getSelectedIndex();
+                    int actualIndex = getActualTabIndex(selectedVisibleIndex);
+                    if (actualIndex != selectedTabIndex) {
+                        selectedTabIndex = actualIndex;
+                        CardLayout cl = (CardLayout) cardPanel.getLayout();
+                        cl.show(cardPanel, tabNames[actualIndex]);
+                    }
+                });
+            } else {
+                // 更新下拉框选项和选中项
+                tabComboBox.removeAllItems();
+                String[] visibleNames = getVisibleTabNames();
+                for (String name : visibleNames) {
+                    tabComboBox.addItem(name);
+                }
+                tabComboBox.setSelectedIndex(getVisibleTabIndex(selectedTabIndex));
+                // 同步当前 tab buttons 的启用状态
+                tabComboBox.setEnabled(tabButtons.length > 0 && tabButtons[0].isEnabled());
+            }
+
+            // 创建包含下拉框的面板
+            JPanel comboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            comboPanel.add(tabComboBox);
+
+            topResponseBar.add(comboPanel, BorderLayout.WEST);
+            topResponseBar.add(statusBar, BorderLayout.EAST);
+        } else {
+            // 垂直布局：使用Tab按钮
+            topResponseBar.add(tabBar, BorderLayout.WEST);
+            topResponseBar.add(statusBar, BorderLayout.EAST);
+        }
+
+        topResponseBar.revalidate();
+        topResponseBar.repaint();
+    }
+
+    /**
+     * 获取可见的Tab名称数组
+     */
+    private String[] getVisibleTabNames() {
+        List<String> visibleNames = new ArrayList<>();
+        for (int i = 0; i < tabButtons.length; i++) {
+            if (tabButtons[i].isVisible()) {
+                visibleNames.add(tabNames[i]);
+            }
+        }
+        return visibleNames.toArray(new String[0]);
+    }
+
+    /**
+     * 将实际Tab索引转换为可见Tab索引
+     */
+    private int getVisibleTabIndex(int actualIndex) {
+        int visibleIndex = 0;
+        for (int i = 0; i < actualIndex && i < tabButtons.length; i++) {
+            if (tabButtons[i].isVisible()) {
+                visibleIndex++;
+            }
+        }
+        return visibleIndex;
+    }
+
+    /**
+     * 将可见Tab索引转换为实际Tab索引
+     */
+    private int getActualTabIndex(int visibleIndex) {
+        int count = 0;
+        for (int i = 0; i < tabButtons.length; i++) {
+            if (tabButtons[i].isVisible()) {
+                if (count == visibleIndex) {
+                    return i;
+                }
+                count++;
+            }
+        }
+        return 0;
+    }
+
 }
+
+

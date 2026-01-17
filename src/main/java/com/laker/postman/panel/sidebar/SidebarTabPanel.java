@@ -592,12 +592,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 applyCustomTabbedPaneUI(this);
             }
         };
-        pane.setForeground(ModernColors.getTextPrimary());
-        pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, 14));
-
         // 自定义标签页UI
         applyCustomTabbedPaneUI(pane);
-
         return pane;
     }
 
@@ -725,7 +721,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         @Override
         protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
             // 根据展开状态调整高度
-            return sidebarExpanded ? 72 : 64;
+            return sidebarExpanded ? 72 : 56;
         }
     }
 

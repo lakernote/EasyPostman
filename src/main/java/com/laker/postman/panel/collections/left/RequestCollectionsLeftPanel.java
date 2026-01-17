@@ -5,7 +5,6 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.async.AsyncTaskExecutor;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.Workspace;
@@ -102,7 +101,6 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.setRowHeight(28);
         JScrollPane treeScrollPane = new JScrollPane(requestTree);
         treeScrollPane.getVerticalScrollBar().setUnitIncrement(16); // 设置滚动条增量
-        treeScrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
         // 启用拖拽排序
         requestTree.setDragEnabled(true); // 启用拖拽
         requestTree.setDropMode(DropMode.ON_OR_INSERT); // 设置拖拽模式为插入

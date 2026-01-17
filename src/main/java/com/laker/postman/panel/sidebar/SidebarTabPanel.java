@@ -6,6 +6,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.TabInfo;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.service.setting.SettingManager;
@@ -283,6 +284,14 @@ public class SidebarTabPanel extends SingletonBasePanel {
         layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
         layoutToggleLabel.setIcon(layoutIcon);
         layoutToggleLabel.setToolTipText(tooltip);
+
+        // 更新所有已打开的标签页的布局
+        try {
+            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            editPanel.updateAllTabsLayout(newVertical);
+        } catch (Exception e) {
+            log.error("Failed to update layout for all tabs", e);
+        }
     }
 
     /**

@@ -1078,5 +1078,20 @@ public class RequestEditPanel extends SingletonBasePanel {
         return false;
     }
 
+    /**
+     * 更新所有打开标签页的布局方向
+     *
+     * @param isVertical true=垂直布局，false=水平布局
+     */
+    public void updateAllTabsLayout(boolean isVertical) {
+        // 遍历所有标签页（排除 "+" 标签）
+        int tabCount = tabbedPane.getTabCount();
+        for (int i = 0; i < tabCount; i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel subPanel) {
+                subPanel.updateLayoutOrientation(isVertical);
+            }
+        }
+    }
 
 }

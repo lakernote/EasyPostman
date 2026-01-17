@@ -1586,10 +1586,6 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 更新布局方向
-     * @param isVertical true=垂直布局，false=水平布局
-     */
-    /**
      * 获取默认的分割比例
      *
      * @return 根据协议类型返回合适的 resizeWeight
@@ -1603,6 +1599,41 @@ public class RequestEditSubPanel extends JPanel {
         return 0.4;
     }
 
+    /**
+     * 动态更新布局方向（用于全局布局切换）
+     *
+     * @param isVertical true=垂直布局，false=水平布局
+     */
+    public void updateLayoutOrientation(boolean isVertical) {
+        int targetOrientation = isVertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;
+
+        // 如果方向未改变，直接返回
+        if (splitPane.getOrientation() == targetOrientation) {
+            return;
+        }
+
+        // 计算分割比例
+        double ratio;
+        if (isVertical) {
+            ratio = getDefaultResizeWeight();
+        } else {
+            ratio = 0.5; // 水平布局固定 5:5
+        }
+
+        // 更新布局
+        splitPane.setOrientation(targetOrientation);
+        splitPane.setResizeWeight(ratio);
+
+        // 重置初始化标志，以便 doLayout 重新设置分割位置
+        initialDividerLocationSet = false;
+
+        // 立即设置分割位置
+        splitPane.revalidate();
+        int totalSize = isVertical ? splitPane.getHeight() : splitPane.getWidth();
+        if (totalSize > 0) {
+            splitPane.setDividerLocation(ratio);
+        }
+    }
 
     @Override
     public void doLayout() {
@@ -1617,6 +1648,4 @@ public class RequestEditSubPanel extends JPanel {
         }
     }
 }
-
-
 

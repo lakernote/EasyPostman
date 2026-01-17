@@ -78,53 +78,62 @@ public class ResponseBodyPanel extends JPanel {
         scrollPane.setLineNumbersEnabled(true); // 显示行号
         add(scrollPane, BorderLayout.CENTER);
 
-        // 顶部工具栏优化：左侧为搜索，右侧为格式化、语法下拉、下载
-        JToolBar toolBar = new JToolBar();
-        toolBar.setFloatable(false);
-        toolBar.setLayout(new BorderLayout());
+        JPanel toolBarPanel = new JPanel();
+        toolBarPanel.setLayout(new BoxLayout(toolBarPanel, BoxLayout.X_AXIS));
+        toolBarPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
 
-        // 左侧操作区
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        // 语法选择下拉框
         syntaxComboBox = new JComboBox<>(SyntaxType.getDisplayNames());
         syntaxComboBox.setFocusable(false);
-        leftPanel.add(syntaxComboBox);
+        syntaxComboBox.setMaximumSize(syntaxComboBox.getPreferredSize());
+        toolBarPanel.add(syntaxComboBox);
+        toolBarPanel.add(Box.createHorizontalStrut(8));
 
         // 添加大小提示标签
         sizeWarningLabel = new JLabel();
         sizeWarningLabel.setForeground(new Color(200, 100, 0));
         sizeWarningLabel.setVisible(false);
-        leftPanel.add(sizeWarningLabel);
+        toolBarPanel.add(sizeWarningLabel);
 
-        toolBar.add(leftPanel, BorderLayout.WEST);
+        // 弹性空间，将右侧控件推到右边
+        toolBarPanel.add(Box.createHorizontalGlue());
 
-        // 右侧搜索区
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        // 搜索框
         searchField = new SearchTextField();
+        toolBarPanel.add(searchField);
+        toolBarPanel.add(Box.createHorizontalStrut(4));
 
+        // 搜索导航按钮
         prevButton = new PreviousButton();
+        toolBarPanel.add(prevButton);
+        toolBarPanel.add(Box.createHorizontalStrut(4));
+
         nextButton = new NextButton();
+        toolBarPanel.add(nextButton);
+        toolBarPanel.add(Box.createHorizontalStrut(4));
 
-        rightPanel.add(searchField);
-        rightPanel.add(prevButton);
-        rightPanel.add(nextButton);
-
+        // 换行按钮
         wrapButton = new WrapToggleButton();
-        rightPanel.add(wrapButton);
+        toolBarPanel.add(wrapButton);
+        toolBarPanel.add(Box.createHorizontalStrut(4));
 
+        // 格式化按钮
         formatButton = new FormatButton();
-        rightPanel.add(formatButton);
+        toolBarPanel.add(formatButton);
+        toolBarPanel.add(Box.createHorizontalStrut(4));
 
+        // 下载按钮
         downloadButton = new DownloadButton();
-        rightPanel.add(downloadButton);
+        toolBarPanel.add(downloadButton);
 
-        // 只有 HTTP 请求才显示保存响应按钮，且放在最后面
+        // 只有 HTTP 请求才显示保存响应按钮
         if (enableSaveButton) {
+            toolBarPanel.add(Box.createHorizontalStrut(4));
             saveResponseButton = new SaveResponseButton();
-            rightPanel.add(saveResponseButton);
+            toolBarPanel.add(saveResponseButton);
         }
 
-        toolBar.add(rightPanel, BorderLayout.EAST);
-        add(toolBar, BorderLayout.NORTH);
+        add(toolBarPanel, BorderLayout.NORTH);
 
         downloadButton.addActionListener(e -> saveFile());
         formatButton.addActionListener(e -> formatContent());

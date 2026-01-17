@@ -42,7 +42,8 @@ public class SearchTextField extends FlatTextField {
         setPlaceholderText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
         setPreferredSize(new Dimension(220, 28));
-        setMaximumSize(new Dimension(100, 28));
+        // 最大宽度应该大于等于首选宽度，避免在 BoxLayout 中被无限拉伸
+        setMaximumSize(new Dimension(300, 28));
 
         // 创建选项按钮工具栏
         initOptionsToolbar();

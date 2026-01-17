@@ -96,34 +96,48 @@ public class RequestBodyPanel extends JPanel {
      */
     private void initHttpBodyPanel() {
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
-        // 优化：所有控件同排显示
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+
         JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_TYPE));
         topPanel.add(bodyTypeLabel);
+        topPanel.add(Box.createHorizontalStrut(4));
+
         String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
         bodyTypeComboBox = new JComboBox<>(bodyTypes);
+        bodyTypeComboBox.setMaximumSize(bodyTypeComboBox.getPreferredSize());
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
         topPanel.add(bodyTypeComboBox);
+        topPanel.add(Box.createHorizontalStrut(4));
+
         formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT));
         String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_XML, RAW_TYPE_TEXT};
         rawTypeComboBox = new JComboBox<>(rawTypes);
+        rawTypeComboBox.setMaximumSize(rawTypeComboBox.getPreferredSize());
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
         boolean showFormatControls = isBodyTypeRAW();
         rawTypeComboBox.setVisible(showFormatControls);
         topPanel.add(rawTypeComboBox);
+        topPanel.add(Box.createHorizontalStrut(4));
 
         // 搜索区控件
         searchField = new SearchTextField();
         PreviousButton prevButton = new PreviousButton();
         NextButton nextButton = new NextButton();
         topPanel.add(searchField);
+        topPanel.add(Box.createHorizontalStrut(4));
         topPanel.add(prevButton);
+        topPanel.add(Box.createHorizontalStrut(4));
         topPanel.add(nextButton);
+        topPanel.add(Box.createHorizontalStrut(4));
         formatButton = new FormatButton();
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
         topPanel.add(formatButton);
+        topPanel.add(Box.createHorizontalGlue());
+
         bodyTypePanel.add(topPanel, BorderLayout.NORTH);
 
         add(bodyTypePanel, BorderLayout.NORTH);

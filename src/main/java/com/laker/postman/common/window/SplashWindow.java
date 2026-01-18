@@ -150,7 +150,7 @@ public class SplashWindow extends JWindow {
      * 创建应用信息面板
      */
     private JPanel createInfoPanel() {
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 1));
         infoPanel.setOpaque(false);
 
         // 应用名称
@@ -161,7 +161,7 @@ public class SplashWindow extends JWindow {
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
-        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
         versionLabel.setForeground(getTextColor());
         infoPanel.add(versionLabel);
 
@@ -172,7 +172,7 @@ public class SplashWindow extends JWindow {
      * 创建状态面板
      */
     private JPanel createStatusPanel() {
-        JPanel bottomPanel = new JPanel(new BorderLayout(0, 5));
+        JPanel bottomPanel = new JPanel(new BorderLayout(0, 3));
         bottomPanel.setOpaque(false);
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +3)); // 比标准字体大3号
@@ -186,7 +186,7 @@ public class SplashWindow extends JWindow {
      */
     private void initializeWindow(JPanel content) {
         setContentPane(content);
-        setSize(350, 240); // 设置窗口大小
+        setSize(360, 260); // 设置窗口大小
         setLocationRelativeTo(null);  // 居中显示
 
         // 安全设置透明度和置顶

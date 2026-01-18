@@ -296,7 +296,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
         versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体
         versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-        versionLabel.setToolTipText("EasyPostman version");
     }
 
     @Override

@@ -1,13 +1,15 @@
 package com.laker.postman.panel.sidebar;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -70,24 +72,6 @@ public class ConsolePanel extends SingletonBasePanel {
      * 更新控制台颜色以适配当前主题
      */
     private void updateConsoleColors() {
-        if (consoleLogArea != null) {
-            consoleLogArea.setBackground(ModernColors.getConsoleTextAreaBg());
-            consoleLogArea.setForeground(ModernColors.getConsoleText());
-            consoleLogArea.setCaretColor(ModernColors.getConsoleText());
-            consoleLogArea.setSelectionColor(ModernColors.getConsoleSelectionBg());
-
-            // 更新滚动面板背景
-            Container parent = consoleLogArea.getParent();
-            if (parent instanceof JViewport) {
-                parent.setBackground(ModernColors.getConsoleTextAreaBg());
-            }
-        }
-
-        // 更新工具栏颜色
-        if (matchCountLabel != null) {
-            matchCountLabel.setForeground(ModernColors.getTextSecondary());
-        }
-
         // 刷新显示的日志以应用新的颜色方案
         if (consoleLogArea != null && !allLogs.isEmpty()) {
             refreshDisplayedLogs();
@@ -100,19 +84,19 @@ public class ConsolePanel extends SingletonBasePanel {
         searchField.addActionListener(e -> performSearch());
 
         // 实时搜索
-        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+            public void insertUpdate(DocumentEvent e) {
                 performSearch();
             }
 
             @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 performSearch();
             }
 
             @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 performSearch();
             }
         });
@@ -316,28 +300,15 @@ public class ConsolePanel extends SingletonBasePanel {
         consoleLogArea.setEditable(false);
         consoleLogArea.setFocusable(true);
         consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
-        // 使用 ModernColors 定义的专业控制台背景色（主题适配）
-        consoleLogArea.setBackground(ModernColors.getConsoleTextAreaBg());
-        consoleLogArea.setForeground(ModernColors.getConsoleText());
-        consoleLogArea.setCaretColor(ModernColors.getConsoleText());
-        consoleLogArea.setSelectionColor(ModernColors.getConsoleSelectionBg());
         consoleDoc = consoleLogArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
         logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        // 使用 ModernColors 定义的背景色（主题适配）
-        logScroll.getViewport().setBackground(ModernColors.getConsoleTextAreaBg());
 
         // 顶部工具栏
         JPanel topPanel = new JPanel(new BorderLayout(5, 0));
         topPanel.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
         topPanel.setOpaque(true);
-        // 使用 ModernColors 定义的工具栏背景色和边框（主题适配）
-        topPanel.setBackground(ModernColors.getConsoleToolbarBg());
-        topPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getConsoleToolbarBorder()),
-                BorderFactory.createEmptyBorder(4, 6, 4, 6)
-        ));
 
         // 中间：搜索栏
         JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
@@ -352,17 +323,13 @@ public class ConsolePanel extends SingletonBasePanel {
         searchField.setPreferredSize(new Dimension(200, 28));
 
         prevBtn = new JButton();
-        FlatSVGIcon prevIcon = new FlatSVGIcon("icons/arrow-up.svg", 16, 16);
-        prevIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        prevBtn.setIcon(prevIcon);
+        prevBtn.setIcon(IconUtil.createThemed("icons/arrow-up.svg", 16, 16));
         prevBtn.setToolTipText("Previous match (Shift+Enter)");
         prevBtn.setFocusable(false);
         prevBtn.setPreferredSize(new Dimension(28, 28));
 
         nextBtn = new JButton();
-        FlatSVGIcon nextIcon = new FlatSVGIcon("icons/arrow-down.svg", 16, 16);
-        nextIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        nextBtn.setIcon(nextIcon);
+        nextBtn.setIcon(IconUtil.createThemed("icons/arrow-down.svg", 16, 16));
         nextBtn.setToolTipText("Next match (Enter)");
         nextBtn.setFocusable(false);
         nextBtn.setPreferredSize(new Dimension(28, 28));
@@ -383,9 +350,7 @@ public class ConsolePanel extends SingletonBasePanel {
         rightPanel.setOpaque(false);
 
         autoScrollBtn = new JToggleButton();
-        FlatSVGIcon autoScrollIcon = new FlatSVGIcon("icons/auto-scroll.svg", 16, 16);
-        autoScrollIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        autoScrollBtn.setIcon(autoScrollIcon);
+        autoScrollBtn.setIcon(IconUtil.createThemed("icons/auto-scroll.svg", 16, 16));
         autoScrollBtn.setSelected(true);
         autoScrollBtn.setToolTipText("Auto-scroll to bottom");
         autoScrollBtn.setFocusable(false);
@@ -395,9 +360,7 @@ public class ConsolePanel extends SingletonBasePanel {
         clearBtn.setPreferredSize(new Dimension(28, 28));
 
         closeBtn = new JButton();
-        FlatSVGIcon closeIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
-        closeIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        closeBtn.setIcon(closeIcon);
+        closeBtn.setIcon(IconUtil.createThemed("icons/close.svg", 16, 16));
         closeBtn.setToolTipText("Hide console");
         closeBtn.setFocusable(false);
         closeBtn.setPreferredSize(new Dimension(28, 28));
@@ -415,9 +378,7 @@ public class ConsolePanel extends SingletonBasePanel {
 
     private JButton getClearBtn() {
         JButton clearBtn = new JButton();
-        FlatSVGIcon clearIcon = new FlatSVGIcon("icons/clear.svg", 16, 16);
-        clearIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        clearBtn.setIcon(clearIcon);
+        clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearBtn.setToolTipText("Clear console");
         clearBtn.setFocusable(false);
         clearBtn.addActionListener(e -> clearConsole());

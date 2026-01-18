@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -117,59 +115,12 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     }
 
     @Override
-    protected void initializeComponents() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
-
-        // Initialize table model with custom cell editing logic
-        tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == COL_DRAG_ENABLE) {
-                    return Boolean.class;
-                }
-                return Object.class;
-            }
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                if (!editable || isDragging) {
-                    return false;
-                }
-
-                // Drag/Enable column - checkbox part is editable
-                if (column == COL_DRAG_ENABLE) {
-                    return true;
-                }
-
-                // Delete column is not editable (uses custom renderer)
-                if (column == COL_DELETE) {
-                    return false;
-                }
-
-                // Key and Value columns are editable
-                return column == COL_KEY || column == COL_VALUE;
-            }
-        };
-
-        // Create table
-        table = new JTable(tableModel);
-
-        // Wrap table in JScrollPane to show headers
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        add(scrollPane, BorderLayout.CENTER);
-    }
-
-    @Override
-    public void updateUI() {
-        super.updateUI();
-        // 主题切换时重新设置边框，确保表格网格颜色更新
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+    protected boolean isCellEditable(int row, int column) {
+        // 拖拽时禁止编辑
+        if (isDragging) {
+            return false;
+        }
+        return super.isCellEditable(row, column);
     }
 
     @Override
@@ -434,79 +385,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     }
 
     /**
-     * Set column editor
-     */
-    public void setColumnEditor(int column, TableCellEditor editor) {
-        if (column >= 0 && column < table.getColumnCount()) {
-            table.getColumnModel().getColumn(column).setCellEditor(editor);
-        }
-    }
-
-    /**
-     * Set column renderer
-     */
-    public void setColumnRenderer(int column, TableCellRenderer renderer) {
-        if (column >= 0 && column < table.getColumnCount()) {
-            table.getColumnModel().getColumn(column).setCellRenderer(renderer);
-        }
-    }
-
-    /**
-     * Add right-click menu listener
-     */
-    @Override
-    protected void addTableRightMouseListener() {
-        MouseAdapter tableMouseListener = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    showPopupMenu(e);
-                }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    showPopupMenu(e);
-                }
-            }
-
-            private void showPopupMenu(MouseEvent e) {
-                if (!editable) {
-                    return;
-                }
-
-                int viewRow = table.rowAtPoint(e.getPoint());
-                if (viewRow >= 0) {
-                    table.setRowSelectionInterval(viewRow, viewRow);
-                }
-
-                JPopupMenu contextMenu = createContextPopupMenu();
-                contextMenu.show(e.getComponent(), e.getX(), e.getY());
-            }
-        };
-
-        table.addMouseListener(tableMouseListener);
-    }
-
-    /**
-     * Create context menu
-     */
-    private JPopupMenu createContextPopupMenu() {
-        JPopupMenu menu = new JPopupMenu();
-
-        JMenuItem addItem = new JMenuItem("Add");
-        addItem.addActionListener(e -> addRowAndScroll());
-        menu.add(addItem);
-
-        JMenuItem removeItem = new JMenuItem("Remove");
-        removeItem.addActionListener(e -> deleteSelectedRow());
-        menu.add(removeItem);
-
-        return menu;
-    }
-
-    /**
      * Add auto-append row feature when editing the last row
      */
     @Override
@@ -532,41 +410,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
             tableModel.addRow(row);
         }
     }
-
-    /**
-     * Add a new row and scroll to it
-     */
-    public void addRowAndScroll() {
-        addRow();
-        scrollToLastRow();
-    }
-
-    /**
-     * Delete the currently selected row
-     */
-    public void deleteSelectedRow() {
-        stopCellEditing();
-
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow >= 0) {
-            int modelRow = selectedRow;
-            if (table.getRowSorter() != null) {
-                modelRow = table.getRowSorter().convertRowIndexToModel(selectedRow);
-            }
-
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-
-                if (rowCount <= 1) {
-                    return;
-                }
-
-                tableModel.removeRow(modelRow);
-                ensureEmptyLastRow();
-            }
-        }
-    }
-
 
     /**
      * 获取环境变量列表（新格式）
@@ -611,6 +454,4 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
             suppressAutoAppendRow = false;
         }
     }
-
-
 }

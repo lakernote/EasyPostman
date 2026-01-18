@@ -433,8 +433,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_THREAD_GROUP = "performance.thread_group";
     public static final String PERFORMANCE_DEFAULT_REQUEST = "performance.default_request";
     public static final String PERFORMANCE_REQUEST_COPY_INFO = "performance.request.copy_info";
-    public static final String PERFORMANCE_BUTTON_REFRESH_CURRENT = "performance.button.refresh_current";
-    public static final String PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP = "performance.button.refresh_current.tooltip";
     public static final String PERFORMANCE_MSG_NO_REQUEST_SELECTED = "performance.msg.no_request_selected";
     public static final String PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS = "performance.msg.request_not_found_in_collections";
     public static final String PERFORMANCE_MSG_REQUEST_REFRESHED = "performance.msg.request_refreshed";

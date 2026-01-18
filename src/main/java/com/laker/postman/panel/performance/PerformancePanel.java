@@ -342,35 +342,29 @@ public class PerformancePanel extends SingletonBasePanel {
         infoBar.setBackground(new Color(255, 250, 205)); // 淡黄色背景
         infoBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 220, 170)),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)
         ));
 
         // 左侧：信息图标和文本
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftPanel.setOpaque(false);
 
-        JLabel infoIcon = new JLabel(IconUtil.createThemed("icons/info.svg", 16, 16));
+        JLabel infoIcon = new JLabel(IconUtil.createThemed("icons/info.svg", 14, 14));
         leftPanel.add(infoIcon);
 
         JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));
-        infoText.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        infoText.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         infoText.setForeground(new Color(102, 85, 0)); // 深黄色文字
         leftPanel.add(infoText);
 
-        infoBar.add(leftPanel, BorderLayout.CENTER);
 
-        // 右侧：刷新按钮
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        rightPanel.setOpaque(false);
-
-        JButton refreshCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT));
+        JButton refreshCurrentBtn = new JButton();
         refreshCurrentBtn.setIcon(IconUtil.createThemed("icons/refresh.svg", 14, 14));
-        refreshCurrentBtn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
-        refreshCurrentBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_BUTTON_REFRESH_CURRENT_TOOLTIP));
+        refreshCurrentBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 手型光标
+        refreshCurrentBtn.setFocusable(false); // 去掉聚焦边框
         refreshCurrentBtn.addActionListener(e -> refreshCurrentRequest());
-        rightPanel.add(refreshCurrentBtn);
-
-        infoBar.add(rightPanel, BorderLayout.EAST);
+        leftPanel.add(refreshCurrentBtn);
+        infoBar.add(leftPanel, BorderLayout.CENTER);
 
         // 组装
         wrapper.add(infoBar, BorderLayout.NORTH);

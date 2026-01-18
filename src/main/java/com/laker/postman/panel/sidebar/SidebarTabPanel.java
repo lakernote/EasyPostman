@@ -10,10 +10,7 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +34,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
     // Constants
     private static final String ICON_LABEL_NAME = "iconLabel";
     private static final String TITLE_LABEL_NAME = "titleLabel";
-    private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
 
     @Getter
     private JTabbedPane tabbedPane;
@@ -59,8 +55,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
     // 字体缓存，避免重复创建
     private Font normalFont;      // PLAIN 12 - Tab文本和版本号共用
     private Font boldFont;        // BOLD 12 - Tab文本选中态和底部栏共用
-    private Font bottomBarFont;   // BOLD 12 - 底部栏字体（与boldFont相同，为了语义清晰保留）
-
     // 自适应宽度缓存
     private int calculatedExpandedTabWidth = -1; // 计算后的展开状态tab宽度
 
@@ -75,9 +69,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // Tab 标题使用语言感知字体（英文小一号，避免文本过长）
         normalFont = getLanguageAwareFont(Font.PLAIN);
         boldFont = getLanguageAwareFont(Font.BOLD);
-        // 底部栏使用标准字体（不受语言影响）
-        bottomBarFont = FontsUtil.getDefaultFont(Font.BOLD);
-
         // 先读取侧边栏展开状态
         sidebarExpanded = SettingManager.isSidebarExpanded();
         setLayout(new BorderLayout());
@@ -169,9 +160,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 创建侧边栏展开/收起按钮
      */
     private void createSidebarToggleLabel() {
-        FlatSVGIcon toggleIcon = new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20);
-        toggleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        sidebarToggleLabel = new JLabel(toggleIcon);
+        sidebarToggleLabel = new JLabel(IconUtil.createThemed("icons/sidebar-toggle.svg", 20, 20));
         sidebarToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);
@@ -202,10 +191,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
      */
     private void createConsoleLabel() {
         consoleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-        FlatSVGIcon consoleIcon = new FlatSVGIcon("icons/console.svg", 20, 20);
-        consoleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        consoleLabel.setIcon(consoleIcon);
-        consoleLabel.setFont(bottomBarFont); // 使用缓存的字体
+        consoleLabel.setIcon(IconUtil.createThemed("icons/console.svg", 20, 20));
         consoleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         consoleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         consoleLabel.setFocusable(true);
@@ -246,11 +232,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         String tooltip = isVertical ?
                 I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
                 I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
-
-        FlatSVGIcon layoutIcon = new FlatSVGIcon(iconPath, 20, 20);
-        layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-
-        layoutToggleLabel = new JLabel(layoutIcon);
+        layoutToggleLabel = new JLabel(IconUtil.createThemed(iconPath, 20, 20));
         layoutToggleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         layoutToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 12));
         layoutToggleLabel.setToolTipText(tooltip);
@@ -278,9 +260,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
                 I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
                 I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
 
-        FlatSVGIcon layoutIcon = new FlatSVGIcon(iconPath, 20, 20);
-        layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-        layoutToggleLabel.setIcon(layoutIcon);
+        layoutToggleLabel.setIcon(IconUtil.createThemed(iconPath, 20, 20));
         layoutToggleLabel.setToolTipText(tooltip);
 
         // 更新所有已打开的标签页的布局
@@ -327,8 +307,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // Tab 标题使用语言感知字体（英文小一号）
         normalFont = getLanguageAwareFont(Font.PLAIN);
         boldFont = getLanguageAwareFont(Font.BOLD);
-        // 底部栏使用标准字体（不受语言影响）
-        bottomBarFont = FontsUtil.getDefaultFont(Font.BOLD);
 
         // 2. 清除颜色和渐变缓存（主题切换时）
         cachedBgColor = null;
@@ -347,45 +325,10 @@ public class SidebarTabPanel extends SingletonBasePanel {
         // 5. 更新底部栏组件
         if (consoleLabel != null) {
             consoleLabel.setText(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-            consoleLabel.setFont(bottomBarFont);
-            // 更新图标颜色
-            FlatSVGIcon consoleIcon = new FlatSVGIcon("icons/console.svg", 20, 20);
-            consoleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-            consoleLabel.setIcon(consoleIcon);
         }
 
         if (cookieLabel != null) {
             cookieLabel.setText(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
-            cookieLabel.setFont(bottomBarFont);
-            // 更新图标
-            FlatSVGIcon cookieIcon = new FlatSVGIcon("icons/cookie.svg", 20, 20);
-            cookieLabel.setIcon(cookieIcon);
-        }
-
-        if (layoutToggleLabel != null) {
-            boolean isVertical = SettingManager.isLayoutVertical();
-            String iconPath = isVertical ? "icons/layout-horizontal.svg" : "icons/layout-vertical.svg";
-            String tooltip = isVertical ?
-                    I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
-                    I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
-
-            FlatSVGIcon layoutIcon = new FlatSVGIcon(iconPath, 20, 20);
-            layoutIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-            layoutToggleLabel.setIcon(layoutIcon);
-            layoutToggleLabel.setToolTipText(tooltip);
-        }
-
-        if (versionLabel != null) {
-            versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体
-        }
-
-        if (sidebarToggleLabel != null) {
-            // 更新图标颜色
-            FlatSVGIcon toggleIcon = new FlatSVGIcon("icons/sidebar-toggle.svg", 20, 20);
-            toggleIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor(BUTTON_FOREGROUND_KEY)));
-            sidebarToggleLabel.setIcon(toggleIcon);
-            // 更新提示文本
-            sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
         }
 
         // 主题切换时更新 consoleContainer 的边框颜色
@@ -424,9 +367,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
      * 用于在 updateUI() 后恢复自定义的选中状态视觉效果
      */
     private void recreateTabbedPaneUI() {
-        tabbedPane.setForeground(ModernColors.getTextPrimary());
-        tabbedPane.setFont(new Font(tabbedPane.getFont().getName(), Font.PLAIN, 14));
-
         // 应用自定义 UI
         applyCustomTabbedPaneUI(tabbedPane);
 

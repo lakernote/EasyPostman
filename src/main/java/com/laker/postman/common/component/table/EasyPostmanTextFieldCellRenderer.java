@@ -15,6 +15,13 @@ public class EasyPostmanTextFieldCellRenderer extends EasyPostmanTextField imple
     }
 
     @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换后重新设置边框为null，避免显示边框
+        setBorder(null);
+    }
+
+    @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         setText(value == null ? "" : value.toString());
 

@@ -6,11 +6,8 @@ import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,62 +100,6 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
     }
 
     // ========== 初始化方法 ==========
-
-    private void initializeComponents() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
-
-        // Initialize table model with custom cell editing logic
-        tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == COL_ENABLED) {
-                    return Boolean.class;
-                }
-                return Object.class;
-            }
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                if (!editable) {
-                    return false;
-                }
-
-                // Checkbox column is always editable
-                if (column == COL_ENABLED) {
-                    return true;
-                }
-
-                // Delete column is not editable (uses custom renderer)
-                if (column == COL_DELETE) {
-                    return false;
-                }
-
-                // Key, Type and Value columns are editable
-                return column == COL_KEY || column == COL_TYPE || column == COL_VALUE;
-            }
-        };
-
-        // Create table
-        table = new JTable(tableModel);
-
-        // Wrap table in JScrollPane to show headers
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        add(scrollPane, BorderLayout.CENTER);
-    }
-
-    @Override
-    public void updateUI() {
-        super.updateUI();
-        // 主题切换时重新设置边框，确保表格网格颜色更新
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
-    }
-
     @Override
     protected void initializeTableUI() {
         // 调用父类的通用UI配置
@@ -230,61 +171,6 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
         return comboBox;
     }
 
-    private void setupTableListeners() {
-        addTableRightMouseListener();
-        addDeleteButtonListener();
-    }
-
-    /**
-     * Add mouse listener for delete button clicks
-     */
-    private void addDeleteButtonListener() {
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (!editable) {
-                    return;
-                }
-
-                // Only react to left mouse button clicks for delete action
-                if (!SwingUtilities.isLeftMouseButton(e)) {
-                    return;
-                }
-
-                int column = table.columnAtPoint(e.getPoint());
-                int row = table.rowAtPoint(e.getPoint());
-
-                if (column == COL_DELETE && row >= 0) {
-                    // Convert view row to model row
-                    int modelRow = row;
-                    if (table.getRowSorter() != null) {
-                        modelRow = table.getRowSorter().convertRowIndexToModel(row);
-                    }
-
-                    // Check if row is valid
-                    if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
-                        return;
-                    }
-
-                    // Prevent deleting the last row
-                    int rowCount = tableModel.getRowCount();
-                    if (modelRow == rowCount - 1 && rowCount == 1) {
-                        return;
-                    }
-
-                    // Stop cell editing before deleting
-                    stopCellEditing();
-
-                    // Delete the row
-                    tableModel.removeRow(modelRow);
-
-                    // Ensure there's always an empty row at the end
-                    ensureEmptyLastRow();
-                }
-            }
-        });
-    }
-
     /**
      * Type列的自定义渲染器，显示 Text/File 图标和文本
      */
@@ -336,130 +222,6 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
         }
     }
 
-    /**
-     * Add right-click menu listener
-     */
-    private void addTableRightMouseListener() {
-        MouseAdapter tableMouseListener = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    showPopupMenu(e);
-                }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    showPopupMenu(e);
-                }
-            }
-
-            private void showPopupMenu(MouseEvent e) {
-                if (!editable) {
-                    return;
-                }
-
-                int viewRow = table.rowAtPoint(e.getPoint());
-                if (viewRow >= 0) {
-                    table.setRowSelectionInterval(viewRow, viewRow);
-                }
-
-                JPopupMenu contextMenu = createContextPopupMenu();
-                contextMenu.show(e.getComponent(), e.getX(), e.getY());
-            }
-        };
-
-        table.addMouseListener(tableMouseListener);
-    }
-
-    /**
-     * Create context menu
-     */
-    private JPopupMenu createContextPopupMenu() {
-        JPopupMenu menu = new JPopupMenu();
-
-        JMenuItem addItem = new JMenuItem("Add");
-        addItem.addActionListener(e -> addRowAndScroll());
-        menu.add(addItem);
-
-        JMenuItem removeItem = new JMenuItem("Remove");
-        removeItem.addActionListener(e -> deleteSelectedRow());
-        menu.add(removeItem);
-
-        return menu;
-    }
-
-    /**
-     * Add auto-append row feature when editing the last row
-     * <p>
-     * /**
-     * 添加一行数据 (内部使用)
-     *
-     * @param values 行数据
-     */
-    private void addRow(Object... values) {
-        if (values == null || values.length == 0) {
-            tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
-        } else if (values.length == 3) {
-            // Legacy support: key, type, value
-            tableModel.addRow(new Object[]{true, values[0], values[1], values[2], ""});
-        } else if (values.length == 4) {
-            // New format: enabled, key, type, value
-            tableModel.addRow(new Object[]{values[0], values[1], values[2], values[3], ""});
-        } else {
-            // Ensure we have exactly 5 columns
-            Object[] row = new Object[5];
-            row[0] = true; // Default enabled
-            for (int i = 0; i < Math.min(values.length, 3); i++) {
-                row[i + 1] = values[i];
-            }
-            // Fill remaining columns with empty strings
-            for (int i = values.length; i < 4; i++) {
-                row[i + 1] = "";
-            }
-            row[4] = ""; // Delete column
-            tableModel.addRow(row);
-        }
-    }
-
-    /**
-     * Add a new row and scroll to it
-     */
-    public void addRowAndScroll() {
-        addRow();
-        scrollToLastRow();
-    }
-
-    /**
-     * Delete the currently selected row
-     */
-    public void deleteSelectedRow() {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow >= 0) {
-            // Convert view index to model index if using row sorter
-            int modelRow = selectedRow;
-            if (table.getRowSorter() != null) {
-                modelRow = table.getRowSorter().convertRowIndexToModel(selectedRow);
-            }
-
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-
-                // Don't delete if it's the only row
-                if (rowCount <= 1) {
-                    return;
-                }
-
-                // Delete the row
-                tableModel.removeRow(modelRow);
-                ensureEmptyLastRow();
-            }
-        }
-    }
 
     /**
      * Get form-data list with enabled state (new format)

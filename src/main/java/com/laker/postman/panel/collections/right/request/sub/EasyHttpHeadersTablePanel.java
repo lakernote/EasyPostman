@@ -6,14 +6,7 @@ import com.laker.postman.common.component.table.EasyPostmanTextFieldCellRenderer
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.*;
-import java.util.List;
 
 @Slf4j
 public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map<String, Object>> {
@@ -83,65 +76,81 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
 
     // ========== 初始化方法 ==========
 
-    private void initializeComponents() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+    @Override
+    protected boolean isCellEditable(int row, int column) {
+        if (!editable) {
+            return false;
+        }
 
-        // Initialize table model with custom cell editing logic
-        tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == COL_ENABLED) {
-                    return Boolean.class;
-                }
-                return Object.class;
+        // Checkbox column is always editable
+        if (column == COL_ENABLED) {
+            return true;
+        }
+
+        // Delete column is not editable (uses custom renderer)
+        if (column == COL_DELETE) {
+            return false;
+        }
+
+        // Check if this is a default header
+        Object keyObj = tableModel.getValueAt(row, COL_KEY);
+        if (keyObj != null) {
+            String key = keyObj.toString().trim();
+            if (DEFAULT_HEADER_KEYS.contains(key)) {
+                // For default headers: Key column not editable, Value column editable
+                return column == COL_VALUE;
             }
+        }
 
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                if (!editable) {
-                    return false;
-                }
-
-                // Checkbox column is always editable
-                if (column == COL_ENABLED) {
-                    return true;
-                }
-
-                // Delete column is not editable (uses custom renderer)
-                if (column == COL_DELETE) {
-                    return false;
-                }
-
-                // Check if this is a default header
-                Object keyObj = getValueAt(row, COL_KEY);
-                if (keyObj != null) {
-                    String key = keyObj.toString().trim();
-                    if (DEFAULT_HEADER_KEYS.contains(key)) {
-                        // For default headers: Key column not editable, Value column editable
-                        return column == COL_VALUE;
-                    }
-                }
-
-                // For non-default headers: Key and Value columns editable
-                return column == COL_KEY || column == COL_VALUE;
-            }
-        };
-
-        // Create table
-        table = new JTable(tableModel);
-        add(table, BorderLayout.CENTER);
+        // For non-default headers: Key and Value columns editable
+        return column == COL_KEY || column == COL_VALUE;
     }
 
     @Override
-    public void updateUI() {
-        super.updateUI();
-        // 主题切换时重新设置边框，确保表格网格颜色更新
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+    protected boolean canDeleteRow(int modelRow) {
+        // Check if it's a default header
+        Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
+        String keyStr = keyObj == null ? "" : keyObj.toString().trim();
+        return !DEFAULT_HEADER_KEYS.contains(keyStr);
+    }
+
+    @Override
+    protected JPopupMenu createContextPopupMenu(int viewRow) {
+        JPopupMenu menu = new JPopupMenu();
+
+        // Convert view row to model row if needed
+        int modelRow = viewRow;
+        if (viewRow >= 0 && table.getRowSorter() != null) {
+            modelRow = table.getRowSorter().convertRowIndexToModel(viewRow);
+        }
+
+        // Check if the selected row contains a default header
+        boolean isDefaultHeaderRow = false;
+        if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+            Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
+            if (keyObj != null) {
+                String key = keyObj.toString().trim();
+                isDefaultHeaderRow = DEFAULT_HEADER_KEYS.contains(key);
+            }
+        }
+
+        if (isDefaultHeaderRow) {
+            // For default header rows, show a disabled menu item
+            JMenuItem defaultHeaderItem = new JMenuItem("Default Header (Cannot Delete)");
+            defaultHeaderItem.setEnabled(false);
+            menu.add(defaultHeaderItem);
+        } else {
+            // For normal rows, show add/remove options
+            JMenuItem addItem = new JMenuItem("Add");
+            addItem.addActionListener(e -> addRowAndScroll());
+            menu.add(addItem);
+
+            JMenuItem removeItem = new JMenuItem("Remove");
+            removeItem.addActionListener(e -> deleteSelectedRow());
+            menu.add(removeItem);
+        }
+
+        return menu;
     }
 
     @Override
@@ -166,255 +175,6 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
 
         // Set custom renderer for delete column
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
-    }
-
-
-    private void setupTableListeners() {
-        addTableRightMouseListener();
-        addDeleteButtonListener();
-    }
-
-    /**
-     * Add mouse listener for delete button clicks
-     */
-    private void addDeleteButtonListener() {
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (!editable) {
-                    return;
-                }
-
-                // Only react to left mouse button clicks for delete action
-                if (!SwingUtilities.isLeftMouseButton(e)) {
-                    return;
-                }
-
-                int column = table.columnAtPoint(e.getPoint());
-                int row = table.rowAtPoint(e.getPoint());
-
-                if (column == COL_DELETE && row >= 0) {
-                    // Convert view row to model row
-                    int modelRow = row;
-                    if (table.getRowSorter() != null) {
-                        modelRow = table.getRowSorter().convertRowIndexToModel(row);
-                    }
-
-                    // Check if row is valid
-                    if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
-                        return;
-                    }
-
-                    // Get row data
-                    Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                    String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-
-                    // Check if it's a default header
-                    boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
-
-                    // Don't delete default headers
-                    if (isDefaultHeader) {
-                        return;
-                    }
-
-                    // Prevent deleting the last row (keep at least one empty row like Postman)
-                    int rowCount = tableModel.getRowCount();
-                    if (modelRow == rowCount - 1 && rowCount == 1) {
-                        // Don't delete if it's the only row
-                        return;
-                    }
-
-                    // Stop cell editing before deleting
-                    stopCellEditing();
-
-                    // Delete the row
-                    tableModel.removeRow(modelRow);
-
-                    // Ensure there's always an empty row at the end
-                    ensureEmptyLastRow();
-                }
-            }
-        });
-    }
-
-    /**
-     * Set column editor
-     */
-    public void setColumnEditor(int column, TableCellEditor editor) {
-        if (column >= 0 && column < table.getColumnCount()) {
-            table.getColumnModel().getColumn(column).setCellEditor(editor);
-        }
-    }
-
-    /**
-     * Set column renderer
-     */
-    public void setColumnRenderer(int column, TableCellRenderer renderer) {
-        if (column >= 0 && column < table.getColumnCount()) {
-            table.getColumnModel().getColumn(column).setCellRenderer(renderer);
-        }
-    }
-
-    /**
-     * Add right-click menu listener
-     */
-    private void addTableRightMouseListener() {
-        MouseAdapter tableMouseListener = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    showPopupMenu(e);
-                }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    showPopupMenu(e);
-                }
-            }
-
-            private void showPopupMenu(MouseEvent e) {
-                if (!editable) {
-                    return;
-                }
-
-                int viewRow = table.rowAtPoint(e.getPoint());
-                if (viewRow >= 0) {
-                    table.setRowSelectionInterval(viewRow, viewRow);
-
-                    // Convert view row index to model row index if row sorter is used
-                    int modelRow = viewRow;
-                    if (table.getRowSorter() != null) {
-                        modelRow = table.getRowSorter().convertRowIndexToModel(viewRow);
-                    }
-
-                    // Check if the selected row contains a default header
-                    Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                    boolean isDefaultHeaderRow = false;
-                    if (keyObj != null) {
-                        String key = keyObj.toString().trim();
-                        isDefaultHeaderRow = DEFAULT_HEADER_KEYS.contains(key);
-                    }
-
-                    // Create appropriate popup menu based on whether it's a default header
-                    JPopupMenu contextMenu = createContextPopupMenu(isDefaultHeaderRow);
-                    contextMenu.show(e.getComponent(), e.getX(), e.getY());
-                } else {
-                    // No row selected, show normal menu for adding new row
-                    JPopupMenu contextMenu = createContextPopupMenu(false);
-                    contextMenu.show(e.getComponent(), e.getX(), e.getY());
-                }
-            }
-        };
-
-        table.addMouseListener(tableMouseListener);
-    }
-
-    /**
-     * Create context menu based on whether it's a default header row
-     */
-    private JPopupMenu createContextPopupMenu(boolean isDefaultHeaderRow) {
-        JPopupMenu menu = new JPopupMenu();
-
-        if (isDefaultHeaderRow) {
-            // For default header rows, show a disabled menu item indicating it's a default header
-            JMenuItem defaultHeaderItem = new JMenuItem("Default Header (Cannot Delete)");
-            defaultHeaderItem.setEnabled(false);
-            menu.add(defaultHeaderItem);
-        } else {
-            // For normal rows, show add/remove options
-            JMenuItem addItem = new JMenuItem("Add");
-            addItem.addActionListener(e -> addRowAndScroll());
-            menu.add(addItem);
-
-            JMenuItem removeItem = new JMenuItem("Remove");
-            removeItem.addActionListener(e -> deleteSelectedRow());
-            menu.add(removeItem);
-        }
-
-        return menu;
-    }
-
-    /**
-     * Add a new row with the given values
-     */
-    public void addRow(Object... values) {
-        if (values == null || values.length == 0) {
-            tableModel.addRow(new Object[]{true, "", "", ""});
-        } else if (values.length == 2) {
-            // Legacy support: if 2 values provided, treat as Key, Value
-            tableModel.addRow(new Object[]{true, values[0], values[1], ""});
-        } else {
-            // Ensure we have exactly 4 columns
-            Object[] row = new Object[4];
-            row[0] = true; // Default enabled
-            for (int i = 0; i < Math.min(values.length, 2); i++) {
-                row[i + 1] = values[i];
-            }
-            // Fill remaining columns with empty strings
-            for (int i = values.length; i < 3; i++) {
-                row[i + 1] = "";
-            }
-            row[3] = ""; // Delete column
-            tableModel.addRow(row);
-        }
-    }
-
-    /**
-     * Add a new row and scroll to it
-     */
-    public void addRowAndScroll() {
-        addRow();
-        scrollToLastRow();
-    }
-
-    /**
-     * Delete the currently selected row
-     */
-    public void deleteSelectedRow() {
-        // Stop cell editing before modifying table structure
-        stopCellEditing();
-
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow >= 0) {
-            // Convert view index to model index if using row sorter
-            int modelRow = selectedRow;
-            if (table.getRowSorter() != null) {
-                modelRow = table.getRowSorter().convertRowIndexToModel(selectedRow);
-            }
-
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-
-                // Don't delete if it's the only row (keep at least one empty row like Postman)
-                if (rowCount <= 1) {
-                    return;
-                }
-
-                // Check if it's a default header
-                Object keyObj = tableModel.getValueAt(modelRow, COL_KEY);
-                String keyStr = keyObj == null ? "" : keyObj.toString().trim();
-                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(keyStr);
-
-                // Don't delete default headers
-                if (isDefaultHeader) {
-                    return;
-                }
-
-                // Delete the row
-                tableModel.removeRow(modelRow);
-                ensureEmptyLastRow();
-            }
-        }
-    }
-
-    /**
-     * Scroll to make the rectangle visible
-     * Wrapper for backward compatibility
-     */
-    public void scrollRectToVisible() {
-        scrollToLastRow();
     }
 
     /**

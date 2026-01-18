@@ -11,6 +11,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * 所有 EasyPostman 表格面板的抽象基类
@@ -114,7 +116,91 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
      */
     protected abstract boolean hasContentInRow(int row);
 
+    /**
+     * 获取表格模型的列类型
+     * 子类可以重写此方法来定义特殊列的类型（如Boolean类型的复选框列）
+     *
+     * @param columnIndex 列索引
+     * @return 列的Class类型
+     */
+    protected Class<?> getColumnClass(int columnIndex) {
+        if (columnIndex == getEnabledColumnIndex()) {
+            return Boolean.class;
+        }
+        return Object.class;
+    }
+
+    /**
+     * 检查单元格是否可编辑（用于表格模型）
+     * 子类可以重写此方法来实现特殊的编辑逻辑
+     *
+     * @param row    行索引
+     * @param column 列索引
+     * @return true 如果可编辑
+     */
+    protected boolean isCellEditable(int row, int column) {
+        if (!editable) {
+            return false;
+        }
+
+        // Checkbox column is always editable
+        if (column == getEnabledColumnIndex()) {
+            return true;
+        }
+
+        // Delete column is not editable (uses custom renderer)
+        if (column == getDeleteColumnIndex()) {
+            return false;
+        }
+
+        // Other columns use navigation logic
+        return isCellEditableForNavigation(row, column);
+    }
+
     // ========== 通用 UI 配置方法 ==========
+
+    /**
+     * 通用的组件初始化方法
+     * 创建表格模型、表格和滚动面板
+     */
+    protected void initializeComponents() {
+        setLayout(new BorderLayout());
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+
+        // Initialize table model with custom cell editing logic
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return AbstractEasyPostmanTablePanel.this.getColumnClass(columnIndex);
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return AbstractEasyPostmanTablePanel.this.isCellEditable(row, column);
+            }
+        };
+
+        // Create table
+        table = new JTable(tableModel);
+
+        // Wrap table in JScrollPane to show headers
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        add(scrollPane, BorderLayout.CENTER);
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 主题切换时重新设置边框，确保表格网格颜色更新
+        if (getBorder() != null) {
+            setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
+                    BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+        }
+    }
 
     /**
      * 初始化表格 UI
@@ -162,6 +248,30 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
         table.getColumnModel().getColumn(colIndex).setPreferredWidth(width);
         table.getColumnModel().getColumn(colIndex).setMaxWidth(width);
         table.getColumnModel().getColumn(colIndex).setMinWidth(width);
+    }
+
+    /**
+     * 设置列编辑器
+     *
+     * @param column 列索引
+     * @param editor 单元格编辑器
+     */
+    protected void setColumnEditor(int column, TableCellEditor editor) {
+        if (column >= 0 && column < table.getColumnCount()) {
+            table.getColumnModel().getColumn(column).setCellEditor(editor);
+        }
+    }
+
+    /**
+     * 设置列渲染器
+     *
+     * @param column   列索引
+     * @param renderer 单元格渲染器
+     */
+    protected void setColumnRenderer(int column, TableCellRenderer renderer) {
+        if (column >= 0 && column < table.getColumnCount()) {
+            table.getColumnModel().getColumn(column).setCellRenderer(renderer);
+        }
     }
 
     // ========== 通用工具方法 ==========
@@ -262,6 +372,189 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
         if (tableModel != null) {
             tableModel.addTableModelListener(listener);
         }
+    }
+
+    /**
+     * 添加一行数据（通用方法）
+     *
+     * @param values 行数据
+     */
+    public void addRow(Object... values) {
+        tableModel.addRow(createEmptyRow());
+    }
+
+    /**
+     * 添加一行并滚动到最后
+     */
+    public void addRowAndScroll() {
+        addRow();
+        scrollToLastRow();
+    }
+
+    /**
+     * 删除当前选中的行
+     */
+    public void deleteSelectedRow() {
+        stopCellEditing();
+
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow >= 0) {
+            // Convert view index to model index if using row sorter
+            int modelRow = selectedRow;
+            if (table.getRowSorter() != null) {
+                modelRow = table.getRowSorter().convertRowIndexToModel(selectedRow);
+            }
+
+            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
+                int rowCount = tableModel.getRowCount();
+
+                // Don't delete if it's the only row (keep at least one empty row like Postman)
+                if (rowCount <= 1) {
+                    return;
+                }
+
+                // Check if this row can be deleted (子类可以重写 canDeleteRow 来添加额外的检查)
+                if (!canDeleteRow(modelRow)) {
+                    return;
+                }
+
+                // Delete the row
+                tableModel.removeRow(modelRow);
+                ensureEmptyLastRow();
+            }
+        }
+    }
+
+    /**
+     * 检查指定行是否可以删除
+     * 子类可以重写此方法来添加额外的删除检查逻辑
+     *
+     * @param modelRow 模型行索引
+     * @return true 如果可以删除
+     */
+    protected boolean canDeleteRow(int modelRow) {
+        return true;
+    }
+
+    /**
+     * 添加右键菜单监听器
+     */
+    protected void addTableRightMouseListener() {
+        MouseAdapter tableMouseListener = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    showPopupMenu(e);
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    showPopupMenu(e);
+                }
+            }
+
+            private void showPopupMenu(MouseEvent e) {
+                if (!editable) {
+                    return;
+                }
+
+                int viewRow = table.rowAtPoint(e.getPoint());
+                if (viewRow >= 0) {
+                    table.setRowSelectionInterval(viewRow, viewRow);
+                }
+
+                JPopupMenu contextMenu = createContextPopupMenu(viewRow);
+                contextMenu.show(e.getComponent(), e.getX(), e.getY());
+            }
+        };
+
+        table.addMouseListener(tableMouseListener);
+    }
+
+    /**
+     * 创建右键菜单
+     * 子类可以重写此方法来自定义菜单项
+     *
+     * @param viewRow 当前选中的视图行索引，-1 表示未选中任何行
+     * @return 右键菜单
+     */
+    protected JPopupMenu createContextPopupMenu(int viewRow) {
+        JPopupMenu menu = new JPopupMenu();
+
+        JMenuItem addItem = new JMenuItem("Add");
+        addItem.addActionListener(e -> addRowAndScroll());
+        menu.add(addItem);
+
+        JMenuItem removeItem = new JMenuItem("Remove");
+        removeItem.addActionListener(e -> deleteSelectedRow());
+        menu.add(removeItem);
+
+        return menu;
+    }
+
+    /**
+     * 添加删除按钮监听器
+     */
+    protected void addDeleteButtonListener() {
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (!editable) {
+                    return;
+                }
+
+                // Only react to left mouse button clicks for delete action
+                if (!SwingUtilities.isLeftMouseButton(e)) {
+                    return;
+                }
+
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+
+                if (column == getDeleteColumnIndex() && row >= 0) {
+                    // Convert view row to model row
+                    int modelRow = row;
+                    if (table.getRowSorter() != null) {
+                        modelRow = table.getRowSorter().convertRowIndexToModel(row);
+                    }
+
+                    // Check if row is valid
+                    if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
+                        return;
+                    }
+
+                    // Prevent deleting the last row (keep at least one empty row like Postman)
+                    int rowCount = tableModel.getRowCount();
+                    if (modelRow == rowCount - 1 && rowCount == 1) {
+                        return;
+                    }
+
+                    // Check if this row can be deleted
+                    if (!canDeleteRow(modelRow)) {
+                        return;
+                    }
+
+                    // Stop cell editing before deleting
+                    stopCellEditing();
+
+                    // Delete the row
+                    tableModel.removeRow(modelRow);
+
+                    // Ensure there's always an empty row at the end
+                    ensureEmptyLastRow();
+                }
+            }
+        });
+    }
+
+    /**
+     * 添加表格监听器（右键菜单和删除按钮）
+     */
+    protected void setupTableListeners() {
+        addTableRightMouseListener();
+        addDeleteButtonListener();
     }
 
     /**

@@ -116,7 +116,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
         }));
     }
 
-    private void initializeComponents() {
+    @Override
+    protected void initializeComponents() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
@@ -313,7 +314,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
         }
     }
 
-    private void setupTableListeners() {
+    @Override
+    protected void setupTableListeners() {
         addTableRightMouseListener();
         addDeleteButtonListener();
         addDragHandleMouseListener();
@@ -322,7 +324,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * Add mouse listener for delete button clicks
      */
-    private void addDeleteButtonListener() {
+    @Override
+    protected void addDeleteButtonListener() {
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -451,7 +454,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * Add right-click menu listener
      */
-    private void addTableRightMouseListener() {
+    @Override
+    protected void addTableRightMouseListener() {
         MouseAdapter tableMouseListener = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -505,7 +509,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * Add auto-append row feature when editing the last row
      */
-    private void addRow(Object... values) {
+    @Override
+    public void addRow(Object... values) {
         if (values == null || values.length == 0) {
             tableModel.addRow(new Object[]{true, "", "", ""});
         } else if (values.length == 2) {

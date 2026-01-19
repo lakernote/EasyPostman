@@ -362,13 +362,13 @@ public final class MessageKeys {
     public static final String WORKSPACE_VALIDATION_PATH_REQUIRED = "workspace.validation.path.required";
     public static final String WORKSPACE_VALIDATION_GIT_URL_REQUIRED = "workspace.validation.git.url.required";
     public static final String WORKSPACE_VALIDATION_GIT_BRANCH_INVALID = "workspace.validation.git.branch.invalid";
+    public static final String WORKSPACE_VALIDATION_GIT_BRANCH_FORMAT = "workspace.validation.git.branch.format";
     public static final String WORKSPACE_VALIDATION_AUTH_REQUIRED = "workspace.validation.auth.required";
     public static final String WORKSPACE_AUTO_GENERATE_PATH = "workspace.auto_generate_path";
 
     // Convert to Git workspace
     public static final String WORKSPACE_CONVERT_TO_GIT = "workspace.convert.to.git";
     public static final String WORKSPACE_CONVERT_BRANCH_PROMPT = "workspace.convert.branch.prompt";
-    public static final String WORKSPACE_CONVERT_CONFIRM = "workspace.convert.confirm";
     public static final String WORKSPACE_CONVERT_SUCCESS_TIP = "workspace.convert.success.tip";
     public static final String WORKSPACE_CONVERT_FAILED = "workspace.convert.failed";
 

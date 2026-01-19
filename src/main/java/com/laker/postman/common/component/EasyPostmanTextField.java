@@ -530,6 +530,11 @@ public class EasyPostmanTextField extends FlatTextField {
             return;
         }
 
+        // 检查组件是否在屏幕上显示
+        if (!isShowing()) {
+            return;
+        }
+
         try {
             // 获取光标位置
             Rectangle rect = modelToView2D(getCaretPosition()).getBounds();

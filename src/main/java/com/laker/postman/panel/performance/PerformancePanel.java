@@ -19,10 +19,7 @@ import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.RequestResult;
-import com.laker.postman.panel.performance.model.ResultNodeInfo;
+import com.laker.postman.panel.performance.model.*;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -88,10 +85,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private JLabel progressLabel; // 进度标签
     private JPanel topPanel; // 顶部工具栏面板，用于主题切换时更新边框
     private long startTime;
-    // 记录所有请求的开始和结束时间
-    private final List<Long> allRequestStartTimes = Collections.synchronizedList(new ArrayList<>());
-
-
+    // 记录所有请求的结果（包含开始时间、结束时间、APIID等）
     private final transient List<RequestResult> allRequestResults = Collections.synchronizedList(new ArrayList<>());
     // 按接口统计
     private final Map<String, List<Long>> apiCostMap = new ConcurrentHashMap<>();
@@ -551,8 +545,8 @@ public class PerformancePanel extends SingletonBasePanel {
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
-        allRequestStartTimes.clear();
         allRequestResults.clear();
+        ApiMetadata.clear(); // 清理API元数据
         // CSV行索引重置
         csvRowIndex.set(0);
 
@@ -570,6 +564,13 @@ public class PerformancePanel extends SingletonBasePanel {
             try {
                 runJMeterTreeWithProgress(rootNode, progressLabel, totalThreads);
             } finally {
+                // 等待所有请求完成统计（避免数据竞争）
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
                 SwingUtilities.invokeLater(() -> {
                     running = false;
                     runBtn.setEnabled(true);
@@ -729,7 +730,6 @@ public class PerformancePanel extends SingletonBasePanel {
     private void updateReportWithLatestData() {
         // 异步复制和计算数据，避免阻塞 EDT 线程
         CompletableFuture.runAsync(() -> {
-            List<Long> startTimesCopy;
             List<RequestResult> resultsCopy;
             Map<String, List<Long>> apiCostMapCopy;
             Map<String, Integer> apiSuccessMapCopy;
@@ -737,7 +737,6 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
             synchronized (statsLock) {
-                startTimesCopy = new ArrayList<>(allRequestStartTimes);
                 resultsCopy = new ArrayList<>(allRequestResults);
 
                 apiCostMapCopy = new HashMap<>();
@@ -754,7 +753,6 @@ public class PerformancePanel extends SingletonBasePanel {
                     apiCostMapCopy,
                     apiSuccessMapCopy,
                     apiFailMapCopy,
-                    startTimesCopy,
                     resultsCopy
             ));
         }).exceptionally(ex -> {
@@ -787,7 +785,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (result.endTime >= windowStart && result.endTime <= now) {
                         totalReq++;
                         if (!result.success) errorReq++;
-                        totalRespTime += result.responseTime;
+                        totalRespTime += result.getResponseTime();
                         actualMinTime = Math.min(actualMinTime, result.endTime);
                         actualMaxTime = Math.max(actualMaxTime, result.endTime);
                     }
@@ -1479,7 +1477,13 @@ public class PerformancePanel extends SingletonBasePanel {
         }
 
         if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
+            // 使用 ID 而不是 Name，避免重名问题
+            String apiId = jtNode.httpRequestItem.getId();
             String apiName = jtNode.httpRequestItem.getName();
+
+            // 注册API元数据（集中管理，避免重复存储）
+            ApiMetadata.register(apiId, apiName);
+
             boolean success = true;
             PreparedRequest req;
             HttpResponse resp = null;
@@ -1533,7 +1537,6 @@ public class PerformancePanel extends SingletonBasePanel {
             }
 
             long startTime = System.currentTimeMillis();
-            allRequestStartTimes.add(startTime); // 记录开始时间
             long costMs = 0;
             boolean interrupted = false; // 标记是否被中断
 
@@ -1626,19 +1629,17 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!interrupted) {
                 // 使用statsLock保护统计数据写入，确保与读取的一致性
                 synchronized (statsLock) {
-                    allRequestResults.add(new RequestResult(endTime, success, cost));
+                    allRequestResults.add(new RequestResult(startTime, endTime, success, apiId));
 
-
-                    // 更新API统计数据
-                    apiCostMap.computeIfAbsent(apiName, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                    apiCostMap.computeIfAbsent(apiId, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
                     if (success) {
-                        apiSuccessMap.merge(apiName, 1, Integer::sum);
+                        apiSuccessMap.merge(apiId, 1, Integer::sum);
                     } else {
-                        apiFailMap.merge(apiName, 1, Integer::sum);
+                        apiFailMap.merge(apiId, 1, Integer::sum);
                     }
                 }
 
-                performanceResultTablePanel.addResult(new ResultNodeInfo(jtNode.httpRequestItem.getName(), success, errorMsg, req, resp, testResults), efficientMode);
+                performanceResultTablePanel.addResult(new ResultNodeInfo(apiName, success, errorMsg, req, resp, testResults), efficientMode);
             } else {
                 // 被中断的请求，记录日志但不计入统计
                 log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());
@@ -2032,8 +2033,16 @@ public class PerformancePanel extends SingletonBasePanel {
         // 停止所有定时器
         timerManager.stopAll();
 
-        // 执行最后一次趋势图采样和报表刷新，避免漏掉停止前最后时刻的数据
-        SwingUtilities.invokeLater(() -> {
+        // 给正在执行的请求一点时间完成统计（避免数据丢失）
+        // 然后执行最后一次趋势图采样和报表刷新
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 等待100ms，让被中断的请求有机会更新统计数据
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).thenRun(() -> SwingUtilities.invokeLater(() -> {
             try {
                 sampleTrendData();
             } catch (Exception e) {
@@ -2046,7 +2055,7 @@ public class PerformancePanel extends SingletonBasePanel {
             } catch (Exception e) {
                 log.warn("停止时最后一次报表刷新失败", e);
             }
-        });
+        }));
 
         OkHttpClientManager.setDefaultConnectionPoolConfig();
     }
@@ -2125,8 +2134,8 @@ public class PerformancePanel extends SingletonBasePanel {
         apiCostMap.clear();
         apiSuccessMap.clear();
         apiFailMap.clear();
-        allRequestStartTimes.clear();
         allRequestResults.clear();
+        ApiMetadata.clear(); // 清理API元数据
         csvRowIndex.set(0);
 
         // 主动触发GC，及时释放清除的缓存数据占用的内存

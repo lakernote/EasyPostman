@@ -1,14 +1,37 @@
 package com.laker.postman.panel.performance.model;
 
-// 用于统计每个请求的结束时间和成功状态
+/**
+ * 请求结果记录
+ */
 public class RequestResult {
-    public long endTime;
-    public boolean success;
-    public long responseTime; // 添加实际响应时间字段
+    public long startTime;    // 开始时间（毫秒）
+    public long endTime;      // 结束时间（毫秒）
+    public boolean success;   // 是否成功
+    public String apiId;      // API唯一ID（用于统计和查询）
 
-    public RequestResult(long endTime, boolean success, long responseTime) {
+    /**
+     * 主构造函数
+     */
+    public RequestResult(long startTime, long endTime, boolean success, String apiId) {
+        this.startTime = startTime;
         this.endTime = endTime;
         this.success = success;
-        this.responseTime = responseTime;
+        this.apiId = apiId;
+    }
+
+    /**
+     * 获取响应时间（动态计算，不存储）
+     *
+     * @return 响应时间（毫秒）
+     */
+    public long getResponseTime() {
+        return endTime - startTime;
+    }
+
+    /**
+     * 获取API名称（通过ApiMetadata查询）
+     */
+    public String getApiName() {
+        return ApiMetadata.getName(apiId);
     }
 }

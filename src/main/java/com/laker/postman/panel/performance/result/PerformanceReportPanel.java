@@ -299,7 +299,6 @@ public class PerformanceReportPanel extends JPanel {
     public void updateReport(Map<String, List<Long>> apiCostMap,
                              Map<String, Integer> apiSuccessMap,
                              Map<String, Integer> apiFailMap,
-                             List<Long> allRequestStartTimes,
                              List<RequestResult> allRequestResults) {
         clearReport();
 
@@ -310,41 +309,47 @@ public class PerformanceReportPanel extends JPanel {
             List<Long> costs = entry.getValue();
 
             ApiMetrics metrics = calculateApiMetrics(api, costs, apiSuccessMap, apiFailMap,
-                    allRequestStartTimes, allRequestResults);
+                    allRequestResults);
             addReportRow(metrics.toRowData());
             stats.accumulate(metrics);
         }
 
         if (stats.apiCount > 0) {
             ApiMetrics totalMetrics = calculateTotalMetrics(stats, apiCostMap,
-                    allRequestStartTimes, allRequestResults);
+                    allRequestResults);
             addReportRow(totalMetrics.toRowData());
         }
     }
 
-    private ApiMetrics calculateApiMetrics(String api, List<Long> costs,
+    private ApiMetrics calculateApiMetrics(String apiId, List<Long> costs,
                                            Map<String, Integer> apiSuccessMap,
                                            Map<String, Integer> apiFailMap,
-                                           List<Long> allRequestStartTimes,
                                            List<RequestResult> allRequestResults) {
         int total = costs.size();
-        int success = apiSuccessMap.getOrDefault(api, 0);
-        int fail = apiFailMap.getOrDefault(api, 0);
+        int success = apiSuccessMap.getOrDefault(apiId, 0);
+        int fail = apiFailMap.getOrDefault(apiId, 0);
 
         // 优化：一次排序获取所有统计值，避免多次流操作
         PerformanceStats perfStats = calculatePerformanceStats(costs);
 
-        double qps = calculateQps(total, allRequestStartTimes, allRequestResults);
+        // 修复：按API ID过滤请求结果，计算该API的实际QPS
+        double qps = calculateQpsForApi(apiId, total, allRequestResults);
         double rate = total > 0 ? (success * 100.0 / total) : 0;
 
-        return new ApiMetrics(api, total, success, fail, rate, qps,
+        // 从 ApiMetadata 中获取 apiName 用于显示（通过 getApiName() 方法）
+        String displayName = allRequestResults.stream()
+                .filter(result -> apiId.equals(result.apiId))
+                .findFirst()
+                .map(RequestResult::getApiName)  // 使用方法而不是字段
+                .orElse(apiId);  // 如果找不到，使用 ID 作为备用
+
+        return new ApiMetrics(displayName, total, success, fail, rate, qps,
                 perfStats.avg, perfStats.min, perfStats.max,
                 perfStats.p90, perfStats.p95, perfStats.p99);
     }
 
     private ApiMetrics calculateTotalMetrics(ReportStatistics stats,
                                              Map<String, List<Long>> apiCostMap,
-                                             List<Long> allRequestStartTimes,
                                              List<RequestResult> allRequestResults) {
         // 避免除零错误
         if (stats.apiCount == 0) {
@@ -357,7 +362,8 @@ public class PerformanceReportPanel extends JPanel {
         double avgRate = stats.totalRate / stats.apiCount;
 
         long totalAvg = calculateTotalAverage(apiCostMap, stats.totalApi);
-        double totalQps = calculateQps(stats.totalApi, allRequestStartTimes, allRequestResults);
+        // 计算所有API的总QPS
+        double totalQps = calculateQpsForAllApis(stats.totalApi, allRequestResults);
         long totalMin = stats.totalMin == Long.MAX_VALUE ? 0 : stats.totalMin;
 
         return new ApiMetrics(totalRowName, stats.totalApi, stats.totalSuccess, stats.totalFail,
@@ -377,17 +383,55 @@ public class PerformanceReportPanel extends JPanel {
         return sum / totalApi;
     }
 
-    private double calculateQps(int totalRequests, List<Long> allRequestStartTimes,
-                                List<RequestResult> allRequestResults) {
-        if (allRequestStartTimes.isEmpty() || allRequestResults.isEmpty()) {
+    /**
+     * 计算指定API的QPS（使用ID进行过滤，避免重名问题）
+     */
+    private double calculateQpsForApi(String apiId, int totalRequests, List<RequestResult> allRequestResults) {
+        if (totalRequests == 0 || allRequestResults.isEmpty()) {
             return 0;
         }
 
-        long minStart = Collections.min(allRequestStartTimes);
+        // 【关键修复】使用 apiId 而不是 apiName 过滤请求，避免重名问题
+        List<RequestResult> apiResults = allRequestResults.stream()
+                .filter(result -> apiId.equals(result.apiId))
+                .toList();
+
+        if (apiResults.isEmpty()) {
+            return 0;
+        }
+
+        // 获取该API的最早开始时间和最晚结束时间
+        long minStart = apiResults.stream()
+                .mapToLong(result -> result.startTime)
+                .min()
+                .orElse(0);
+        long maxEnd = apiResults.stream()
+                .mapToLong(result -> result.endTime)
+                .max()
+                .orElse(minStart);
+
+        long spanMs = Math.max(1, maxEnd - minStart);
+        return totalRequests * 1000.0 / spanMs;
+    }
+
+    /**
+     * 计算所有API的总QPS
+     */
+    private double calculateQpsForAllApis(int totalRequests, List<RequestResult> allRequestResults) {
+        if (totalRequests == 0 || allRequestResults.isEmpty()) {
+            return 0;
+        }
+
+        // 获取所有请求的最早开始时间和最晚结束时间
+        long minStart = allRequestResults.stream()
+                .mapToLong(result -> result.startTime)
+                .min()
+                .orElse(0);
         long maxEnd = allRequestResults.stream()
                 .mapToLong(result -> result.endTime)
                 .max()
                 .orElse(minStart);
+
         long spanMs = Math.max(1, maxEnd - minStart);
 
         return totalRequests * 1000.0 / spanMs;

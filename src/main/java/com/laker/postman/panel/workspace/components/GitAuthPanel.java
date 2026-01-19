@@ -1,6 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.EasyPasswordField;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -13,24 +14,24 @@ import java.io.File;
 
 /**
  * Git认证配置面板公共组件
- * 用于WorkspaceCreateDialog和RemoteConfigDialog复用
  */
 public class GitAuthPanel extends JPanel {
+
 
     @Getter
     private JComboBox<GitAuthType> authTypeCombo;
     @Getter
     private JTextField passwordUsernameField;
     @Getter
-    private JPasswordField passwordField;
+    private EasyPasswordField passwordField;
     @Getter
     private JTextField tokenUsernameField;
     @Getter
-    private JTextField tokenField;
+    private EasyPasswordField tokenField;
     @Getter
     private JTextField sshKeyPathField;
     @Getter
-    private JPasswordField sshPassphraseField;
+    private EasyPasswordField sshPassphraseField;
 
     private JPanel authDetailsPanel;
 
@@ -49,24 +50,21 @@ public class GitAuthPanel extends JPanel {
 
         // 调整字段宽度以更好匹配父对话框
         passwordUsernameField = new JTextField(20);
-        passwordField = new JPasswordField(20);
+        passwordField = new EasyPasswordField(20);
         tokenUsernameField = new JTextField(20);
-        tokenField = new JTextField(20);
+        tokenField = new EasyPasswordField(20);
         sshKeyPathField = new JTextField(20);
-        sshPassphraseField = new JPasswordField(20);
+        sshPassphraseField = new EasyPasswordField(20);
 
         sshKeyBrowseButton = new JButton("", new FlatSVGIcon("icons/file.svg", 20, 20));
         sshKeyBrowseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
         sshKeyBrowseButton.setFocusPainted(false);
 
-        // 设置默认字体
+        // 设置默认字体（EasyPostmanPasswordField 已自动设置默认字体）
         Font defaultFont = FontsUtil.getDefaultFont(Font.PLAIN);
         passwordUsernameField.setFont(defaultFont);
-        passwordField.setFont(defaultFont);
         tokenUsernameField.setFont(defaultFont);
-        tokenField.setFont(defaultFont);
         sshKeyPathField.setFont(defaultFont);
-        sshPassphraseField.setFont(defaultFont);
     }
 
     private void setupLayout() {
@@ -263,7 +261,7 @@ public class GitAuthPanel extends JPanel {
             }
         } else if (selectedAuthType == GitAuthType.TOKEN) {
             String usernameText = tokenUsernameField.getText().trim();
-            String tokenText = tokenField.getText().trim();
+            String tokenText = tokenField.getPasswordText().trim();
             if (usernameText.isEmpty() || tokenText.isEmpty()) {
                 throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_AUTH_REQUIRED));
             }
@@ -292,14 +290,14 @@ public class GitAuthPanel extends JPanel {
      * 获取密码
      */
     public String getPassword() {
-        return new String(passwordField.getPassword());
+        return passwordField.getPasswordText();
     }
 
     /**
      * 获取Token
      */
     public String getToken() {
-        return tokenField.getText().trim();
+        return tokenField.getPasswordText();
     }
 
     /**
@@ -313,7 +311,7 @@ public class GitAuthPanel extends JPanel {
      * 获取SSH私钥密码
      */
     public String getSshPassphrase() {
-        return new String(sshPassphraseField.getPassword());
+        return sshPassphraseField.getPasswordText();
     }
 
     /**

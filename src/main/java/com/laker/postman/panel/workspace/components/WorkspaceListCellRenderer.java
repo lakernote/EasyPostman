@@ -38,7 +38,7 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
         if (workspace.getType() == WorkspaceType.LOCAL) {
             icon = IconUtil.createThemed("icons/local.svg", 18, 18);
         } else {
-            icon = new FlatSVGIcon("icons/git.svg", 20, 20);
+            icon = IconUtil.create("icons/git.svg", 18, 18);
         }
         setIcon(icon);
     }
@@ -68,9 +68,14 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
 
         text.append(workspace.getType() == WorkspaceType.LOCAL ?
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL) : I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_GIT));
-        if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
+
+        if (workspace.getType() == WorkspaceType.GIT &&
+            (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty())) {
+            text.append(" ⚠️").append(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_NO_REMOTE));
+        } else if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
             text.append(" - ").append(workspace.getDescription());
         }
+
         text.append("</small>");
         text.append(HTML_END);
 

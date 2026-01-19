@@ -244,6 +244,14 @@ public class WorkspacePanel extends SingletonBasePanel {
 
     private void addGitMenuItems(JPopupMenu menu, Workspace workspace) {
         if (workspace.getType() != WorkspaceType.GIT) {
+            // 对于本地工作区，添加"转换为Git工作区"菜单
+            if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+                JMenuItem convertToGitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT));
+                convertToGitItem.setIcon(IconUtil.create("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                convertToGitItem.addActionListener(e -> convertToGitWorkspace(workspace));
+                menu.add(convertToGitItem);
+                menu.addSeparator();
+            }
             return;
         }
 
@@ -481,6 +489,79 @@ public class WorkspacePanel extends SingletonBasePanel {
             } catch (Exception e) {
                 log.error("Failed to delete workspace", e);
             }
+        }
+    }
+
+    /**
+     * 转换本地工作区为Git工作区
+     */
+    private void convertToGitWorkspace(Workspace workspace) {
+        // 询问分支名称
+        String branchName = JOptionPane.showInputDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_BRANCH_PROMPT),
+                "master"
+        );
+
+        // 用户取消
+        if (branchName == null) {
+            return;
+        }
+
+        // 验证分支名称
+        branchName = branchName.trim();
+        if (branchName.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_GIT_BRANCH_INVALID),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // 确认转换
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_CONFIRM, workspace.getName(), branchName),
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // 执行转换
+        try {
+            workspaceService.convertLocalToGit(workspace, branchName);
+            refreshWorkspaceList();
+
+            // 如果转换的是当前工作区，需要更新顶部菜单栏
+            Workspace current = workspaceService.getCurrentWorkspace();
+            if (current != null && current.getId().equals(workspace.getId())) {
+                SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
+            }
+
+            logSuccess("Successfully converted workspace '" + workspace.getName() + "' to Git workspace (branch: " + branchName + ")");
+
+            // 提示用户可以配置远程仓库
+            JOptionPane.showMessageDialog(
+                    this,
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_SUCCESS_TIP),
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT),
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (Exception e) {
+            log.error("Failed to convert workspace to Git", e);
+            logError("Failed to convert workspace: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_FAILED) + ": " + e.getMessage(),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 

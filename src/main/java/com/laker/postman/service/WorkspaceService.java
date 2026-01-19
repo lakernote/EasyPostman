@@ -1344,4 +1344,29 @@ public class WorkspaceService {
 
         log.info("Updated Git authentication for workspace: {}, authType: {}", workspace.getName(), authType);
     }
+
+    /**
+     * 将本地工作区转换为Git工作区
+     * 复用现有的Git初始化逻辑
+     */
+    public void convertLocalToGit(Workspace workspace, String localBranch) throws Exception {
+        // 验证是本地工作区
+        if (workspace.getType() != WorkspaceType.LOCAL) {
+            throw new IllegalStateException("Only LOCAL workspaces can be converted to GIT");
+        }
+
+        // 更新工作区配置为Git类型
+        workspace.setType(WorkspaceType.GIT);
+        workspace.setGitRepoSource(GitRepoSource.INITIALIZED);
+        workspace.setCurrentBranch(localBranch != null && !localBranch.isEmpty() ? localBranch : "master");
+
+        // 调用现有的初始化Git仓库逻辑
+        initializeGitRepository(workspace);
+
+        // 保存更新
+        workspace.setUpdatedAt(System.currentTimeMillis());
+        saveWorkspaces();
+
+        log.info("Successfully converted workspace '{}' from LOCAL to GIT", workspace.getName());
+    }
 }

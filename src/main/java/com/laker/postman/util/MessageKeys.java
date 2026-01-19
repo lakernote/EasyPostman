@@ -365,6 +365,13 @@ public final class MessageKeys {
     public static final String WORKSPACE_VALIDATION_AUTH_REQUIRED = "workspace.validation.auth.required";
     public static final String WORKSPACE_AUTO_GENERATE_PATH = "workspace.auto_generate_path";
 
+    // Convert to Git workspace
+    public static final String WORKSPACE_CONVERT_TO_GIT = "workspace.convert.to.git";
+    public static final String WORKSPACE_CONVERT_BRANCH_PROMPT = "workspace.convert.branch.prompt";
+    public static final String WORKSPACE_CONVERT_CONFIRM = "workspace.convert.confirm";
+    public static final String WORKSPACE_CONVERT_SUCCESS_TIP = "workspace.convert.success.tip";
+    public static final String WORKSPACE_CONVERT_FAILED = "workspace.convert.failed";
+
     // WorkspaceCreateDialog specific keys
     public static final String WORKSPACE_CREATE_DIALOG_BRANCH_LABEL = "workspace.create.dialog.branch.label";
     public static final String WORKSPACE_CREATE_DIALOG_CREATING = "workspace.create.dialog.creating";

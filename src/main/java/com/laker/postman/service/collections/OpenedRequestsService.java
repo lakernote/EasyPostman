@@ -14,6 +14,7 @@ import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -24,13 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
+@UtilityClass
 public class OpenedRequestsService {
 
     public static final String PATHNAME = SystemUtil.getUserHomeEasyPostmanPath() + "opened_requests.json";
-
-    private OpenedRequestsService() {
-        throw new IllegalStateException("Utility class");
-    }
 
     public static List<HttpRequestItem> getAll() {
         File file = new File(PATHNAME);

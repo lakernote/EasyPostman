@@ -38,7 +38,22 @@ public class RequestCollectionsService {
 
     public static void restoreOpenedRequests() {
         List<HttpRequestItem> requestItems = OpenedRequestsService.getAll();
+        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
+
         for (HttpRequestItem item : requestItems) {
+            // 如果不是新请求，检查其在左侧树中是否还存在
+            if (!item.isNewRequest()) {
+                DefaultMutableTreeNode node = findRequestNodeById(rootNode, item.getId());
+                if (node == null) {
+                    // 请求在左侧树中已不存在，跳过恢复
+                    log.warn("Skip restoring request {} (id={}) as it no longer exists in the tree",
+                            item.getName(), item.getId());
+                    continue;
+                }
+            }
+
+            // 恢复请求
             RequestEditSubPanel panel = RequestsTabsService.addTab(item);
             RequestsTabsService.updateTabNew(panel, item.isNewRequest());
         }

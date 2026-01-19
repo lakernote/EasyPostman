@@ -105,8 +105,8 @@ public class WorkspacePanel extends SingletonBasePanel {
         // 设置列表样式
         workspaceList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         workspaceList.setCellRenderer(new WorkspaceListCellRenderer());
-        workspaceList.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        workspaceList.setFixedCellHeight(50);
+        // 动态计算单元格高度，基于字体大小
+        workspaceList.setFixedCellHeight(WorkspaceListCellRenderer.calculateCellHeight());
 
         // 添加右键菜单和双击事件
         workspaceList.addMouseListener(new MouseAdapter() {

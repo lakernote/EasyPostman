@@ -6,6 +6,7 @@ import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -35,8 +36,7 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
     private void configureWorkspaceIcon(Workspace workspace) {
         FlatSVGIcon icon;
         if (workspace.getType() == WorkspaceType.LOCAL) {
-            icon = new FlatSVGIcon("icons/local.svg", 18, 18);
-            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Label.foreground")));
+            icon = IconUtil.createThemed("icons/local.svg", 18, 18);
         } else {
             icon = new FlatSVGIcon("icons/git.svg", 20, 20);
         }
@@ -78,6 +78,24 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
     }
 
     private void configureWorkspaceStyle() {
-        setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        setIconTextGap(5); // 图标和文字间距
+    }
+
+    /**
+     * 动态计算单元格高度
+     * 基于字体大小和内容（两行文字：名称+描述）
+     */
+    public static int calculateCellHeight() {
+        Font font = FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1);
+        FontMetrics metrics = new JLabel().getFontMetrics(font);
+
+        // 两行文字的高度 + 上下内边距 + 行间距
+        int lineHeight = metrics.getHeight();
+        int twoLinesHeight = lineHeight * 2;
+        int verticalPadding = 10; // 上下各5像素
+        int lineSpacing = 4; // 行间距
+
+        return twoLinesHeight + verticalPadding + lineSpacing;
     }
 }

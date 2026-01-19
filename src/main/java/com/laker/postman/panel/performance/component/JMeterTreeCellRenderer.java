@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.component;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
@@ -25,20 +26,17 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
                 case ROOT -> label.setIcon(new FlatSVGIcon("icons/computer.svg", 16, 16));
             }
 
-            // 根据启用状态设置样式
             String text = jtNode.name;
-            Font font = label.getFont();
-
             if (!jtNode.enabled) {
                 Color disabledColor = new Color(150, 150, 150);
                 if (!sel) {
                     label.setForeground(disabledColor);
                 }
-                label.setFont(font.deriveFont(Font.ITALIC));
+                label.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
                 label.setText("<html><strike>" + text + "</strike></html>");
             } else {
                 // 启用状态：恢复正常样式
-                label.setFont(font.deriveFont(Font.PLAIN));
+                label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
                 label.setText(text);
             }
         }

@@ -50,7 +50,8 @@ public class HttpService {
         if (timeoutMs > 0) {
             builder.connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-                    .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS);
+                    .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                    .callTimeout(timeoutMs * 3L, TimeUnit.MILLISECONDS); // 整个请求的总超时，包括重定向和重试
         }
         return builder.build();
     }

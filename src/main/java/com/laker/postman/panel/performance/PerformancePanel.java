@@ -532,7 +532,10 @@ public class PerformancePanel extends SingletonBasePanel {
             // 如果用户选择NO，继续执行但可能面临内存问题
         }
 
+        // 配置 OkHttp 连接池和 Dispatcher 并发参数
         OkHttpClientManager.setConnectionPoolConfig(getJmeterMaxIdleConnections(), getJmeterKeepAliveSeconds());
+        OkHttpClientManager.setDispatcherConfig(getJmeterMaxRequests(), getJmeterMaxRequestsPerHost());
+
         if (running) return;
         running = true;
         runBtn.setEnabled(false);
@@ -2076,6 +2079,13 @@ public class PerformancePanel extends SingletonBasePanel {
         return SettingManager.getJmeterKeepAliveSeconds();
     }
 
+    private static int getJmeterMaxRequests() {
+        return SettingManager.getJmeterMaxRequests();
+    }
+
+    private static int getJmeterMaxRequestsPerHost() {
+        return SettingManager.getJmeterMaxRequestsPerHost();
+    }
     /**
      * 保存当前配置
      */

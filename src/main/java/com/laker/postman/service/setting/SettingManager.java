@@ -144,6 +144,40 @@ public class SettingManager {
         save();
     }
 
+    public static int getJmeterMaxRequests() {
+        String val = props.getProperty("jmeter_max_requests");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 1000;
+            }
+        }
+        return 1000; //（压测场景需要更大值）
+    }
+
+    public static void setJmeterMaxRequests(int maxRequests) {
+        props.setProperty("jmeter_max_requests", String.valueOf(maxRequests));
+        save();
+    }
+
+    public static int getJmeterMaxRequestsPerHost() {
+        String val = props.getProperty("jmeter_max_requests_per_host");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 1000;
+            }
+        }
+        return 1000; // 默认1000（压测场景需要更大值）
+    }
+
+    public static void setJmeterMaxRequestsPerHost(int maxRequestsPerHost) {
+        props.setProperty("jmeter_max_requests_per_host", String.valueOf(maxRequestsPerHost));
+        save();
+    }
+
     public static int getTrendSamplingIntervalSeconds() {
         String val = props.getProperty("trend_sampling_interval_seconds");
         if (val != null) {

@@ -17,6 +17,8 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
 
     private JTextField jmeterMaxIdleField;
     private JTextField jmeterKeepAliveField;
+    private JTextField jmeterMaxRequestsField;
+    private JTextField jmeterMaxRequestsPerHostField;
     private JTextField trendSamplingField;
 
     @Override
@@ -49,6 +51,28 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         jmeterSection.add(keepAliveRow);
         jmeterSection.add(createVerticalSpace(FIELD_SPACING));
 
+        // 最大并发请求数
+        jmeterMaxRequestsField = new JTextField(10);
+        jmeterMaxRequestsField.setText(String.valueOf(SettingManager.getJmeterMaxRequests()));
+        JPanel maxRequestsRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS_TOOLTIP),
+                jmeterMaxRequestsField
+        );
+        jmeterSection.add(maxRequestsRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 单主机最大并发数
+        jmeterMaxRequestsPerHostField = new JTextField(10);
+        jmeterMaxRequestsPerHostField.setText(String.valueOf(SettingManager.getJmeterMaxRequestsPerHost()));
+        JPanel maxRequestsPerHostRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS_PER_HOST),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS_PER_HOST_TOOLTIP),
+                jmeterMaxRequestsPerHostField
+        );
+        jmeterSection.add(maxRequestsPerHostRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
         // 趋势图采样间隔
         trendSamplingField = new JTextField(10);
         trendSamplingField.setText(String.valueOf(SettingManager.getTrendSamplingIntervalSeconds()));
@@ -67,6 +91,8 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         // 跟踪所有组件的初始值
         trackComponentValue(jmeterMaxIdleField);
         trackComponentValue(jmeterKeepAliveField);
+        trackComponentValue(jmeterMaxRequestsField);
+        trackComponentValue(jmeterMaxRequestsPerHostField);
         trackComponentValue(trendSamplingField);
     }
 
@@ -80,6 +106,16 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 jmeterKeepAliveField,
                 this::isPositiveInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_KEEP_ALIVE_ERROR)
+        );
+        setupValidator(
+                jmeterMaxRequestsField,
+                this::isPositiveInteger,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
+        );
+        setupValidator(
+                jmeterMaxRequestsPerHostField,
+                this::isPositiveInteger,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
                 trendSamplingField,
@@ -143,12 +179,16 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             // 保存JMeter设置
             SettingManager.setJmeterMaxIdleConnections(Integer.parseInt(jmeterMaxIdleField.getText().trim()));
             SettingManager.setJmeterKeepAliveSeconds(Integer.parseInt(jmeterKeepAliveField.getText().trim()));
+            SettingManager.setJmeterMaxRequests(Integer.parseInt(jmeterMaxRequestsField.getText().trim()));
+            SettingManager.setJmeterMaxRequestsPerHost(Integer.parseInt(jmeterMaxRequestsPerHostField.getText().trim()));
             SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
 
             // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(jmeterMaxIdleField);
             trackComponentValue(jmeterKeepAliveField);
+            trackComponentValue(jmeterMaxRequestsField);
+            trackComponentValue(jmeterMaxRequestsPerHostField);
             trackComponentValue(trendSamplingField);
             setHasUnsavedChanges(false);
 

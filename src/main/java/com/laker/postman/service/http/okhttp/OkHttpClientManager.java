@@ -23,9 +23,17 @@ public class OkHttpClientManager {
     private static final int MAX_IDLE_CONNECTIONS = 6;
     private static final long KEEP_ALIVE_DURATION = 90L;
 
+    // Dispatcher 并发参数（OkHttp默认：maxRequests=64, maxRequestsPerHost=5）
+    private static final int DEFAULT_MAX_REQUESTS = 64;
+    private static final int DEFAULT_MAX_REQUESTS_PER_HOST = 5;
+
     // 连接池参数（可动态调整）
     private static volatile int maxIdleConnections = MAX_IDLE_CONNECTIONS;
     private static volatile long keepAliveDuration = KEEP_ALIVE_DURATION;
+
+    // Dispatcher 并发参数（可动态调整，压测时需调大）
+    private static volatile int maxRequests = DEFAULT_MAX_REQUESTS;
+    private static volatile int maxRequestsPerHost = DEFAULT_MAX_REQUESTS_PER_HOST;
 
     // 全局 CookieManager，支持标准 CookiePolicy
     private static final CookieManager GLOBAL_COOKIE_MANAGER = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
@@ -41,11 +49,24 @@ public class OkHttpClientManager {
     }
 
     /**
+     * 动态设置 Dispatcher 并发参数（压测时可调大）
+     * @param maxReq 最大并发请求数（所有主机总和）
+     * @param maxReqPerHost 单个主机最大并发请求数
+     */
+    public static void setDispatcherConfig(int maxReq, int maxReqPerHost) {
+        maxRequests = maxReq;
+        maxRequestsPerHost = maxReqPerHost;
+        clearClientCache();
+    }
+
+    /**
      * 动态设置连接池参数（压测时可调大）
      */
     public static void setDefaultConnectionPoolConfig() {
         maxIdleConnections = MAX_IDLE_CONNECTIONS;
         keepAliveDuration = KEEP_ALIVE_DURATION;
+        maxRequests = DEFAULT_MAX_REQUESTS;
+        maxRequestsPerHost = DEFAULT_MAX_REQUESTS_PER_HOST;
         clearClientCache();
     }
 
@@ -110,6 +131,11 @@ public class OkHttpClientManager {
         String key = baseUri + "|" + followRedirects + "|" + proxyKey;
 
         return clientMap.computeIfAbsent(key, k -> {
+            // 配置 Dispatcher 并发参数
+            Dispatcher dispatcher = new Dispatcher();
+            dispatcher.setMaxRequests(maxRequests);
+            dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     // 连接超时
                     .connectTimeout(0, TimeUnit.MILLISECONDS)
@@ -117,6 +143,8 @@ public class OkHttpClientManager {
                     .readTimeout(0, TimeUnit.MILLISECONDS)
                     // 写超时
                     .writeTimeout(0, TimeUnit.MILLISECONDS)
+                    // 配置 Dispatcher
+                    .dispatcher(dispatcher)
                     // 连接池配置
                     .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
                     // 失败自动重试

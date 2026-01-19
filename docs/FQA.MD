@@ -1,15 +1,51 @@
-## OkHttpClient 连接池参数说明
+## OkHttpClient 连接池和并发参数说明
 
-在 Easy Postman 的 OkHttpClientManager 中，使用如下方式为每个 baseUri 配置连接池：
+在 Easy Postman 的 OkHttpClientManager 中，使用如下方式为每个 baseUri 配置连接池和 Dispatcher：
 
 ```java
+// 连接池配置
 .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
+
+// Dispatcher 并发配置
+Dispatcher dispatcher = new Dispatcher();
+dispatcher.setMaxRequests(maxRequests);
+dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+.dispatcher(dispatcher)
 ```
 
 ### 参数解释
+
+#### 连接池参数
 - **maxIdleConnections**：最大空闲连接数。表示连接池中允许保持空闲状态的最大连接数量。
 - **keepAliveDuration**：空闲连接的最大存活时间（单位由第三个参数指定）。超过该时间未被使用的空闲连接将被关闭。
 - **TimeUnit.SECONDS**：指定 keepAliveDuration 的时间单位为秒。
+
+#### Dispatcher 并发参数（⚠️ 压测关键参数）
+- **maxRequests**：最大并发请求数（所有主机总和）。默认64，压测时建议设置为并发用户数的2-4倍。
+- **maxRequestsPerHost**：单个主机最大并发请求数。默认5，**这是导致压测排队的主要原因**！压测时建议设置为并发用户数。
+
+### ⚠️ 压测性能问题排查
+
+如果你在压测时发现 **Stalled** 时间异常长（例如几十秒），说明请求在队列中等待，原因是 **maxRequestsPerHost** 限制了并发数。
+
+#### 问题示例
+```
+DnsStart 14:21:35.808 
+DnsEnd 14:21:36.424 (DNS查询正常，616ms)
+ConnectStart 14:22:51.429 ⚠️ 75秒延迟！
+
+Stalled: 75621 ms ← 这就是请求排队时间
+```
+
+**原因**：OkHttp 默认 `maxRequestsPerHost=5`，如果并发数超过5，多余的请求会在队列中等待。
+
+**解决方案**：在压测设置中增大以下参数：
+- **最大并发请求数**：建议设置为并发用户数的2-4倍（如100并发用户 → 设置为 200-400）
+- **单主机最大并发数**：建议设置为并发用户数（如100并发用户 → 设置为 100-200）
+
+在 Easy Postman 中，进入 **设置 → 压力测试**，调整：
+- 最大并发请求数 (Max Concurrent Requests)
+- 单主机最大并发数 (Max Concurrent Requests Per Host)
 
 ### maxIdleConnections 详解
 maxIdleConnections 控制同一主机（baseUri）下，连接池中最多可以有多少个空闲连接被复用。

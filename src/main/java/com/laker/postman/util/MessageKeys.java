@@ -721,6 +721,10 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_MAX_IDLE_TOOLTIP = "settings.jmeter.max_idle.tooltip";
     public static final String SETTINGS_JMETER_KEEP_ALIVE = "settings.jmeter.keep_alive";
     public static final String SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP = "settings.jmeter.keep_alive.tooltip";
+    public static final String SETTINGS_JMETER_MAX_REQUESTS = "settings.jmeter.max_requests";
+    public static final String SETTINGS_JMETER_MAX_REQUESTS_TOOLTIP = "settings.jmeter.max_requests.tooltip";
+    public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST = "settings.jmeter.max_requests_per_host";
+    public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST_TOOLTIP = "settings.jmeter.max_requests_per_host.tooltip";
     public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
     public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
 

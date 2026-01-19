@@ -178,6 +178,23 @@ public class SettingManager {
         save();
     }
 
+    public static int getJmeterSlowRequestThreshold() {
+        String val = props.getProperty("jmeter_slow_request_threshold");
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return 3000;
+            }
+        }
+        return 3000;
+    }
+
+    public static void setJmeterSlowRequestThreshold(int thresholdMs) {
+        props.setProperty("jmeter_slow_request_threshold", String.valueOf(thresholdMs));
+        save();
+    }
+
     public static int getTrendSamplingIntervalSeconds() {
         String val = props.getProperty("trend_sampling_interval_seconds");
         if (val != null) {

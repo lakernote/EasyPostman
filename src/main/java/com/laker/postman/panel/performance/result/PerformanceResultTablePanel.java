@@ -24,7 +24,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 性能测试结果表（DevTools Network 风格）
+ * 性能测试结果表
  * - 200ms 增量刷新机制
  * - 支持排序和深度搜索过滤
  */
@@ -237,10 +237,28 @@ public class PerformanceResultTablePanel extends JPanel {
         renderDetail(info);
     }
 
-    public void addResult(ResultNodeInfo info, boolean efficientMode) {
+    public void addResult(ResultNodeInfo info, boolean efficientMode, int slowRequestThresholdMs) {
         if (info == null) return;
-        if (efficientMode && info.isActuallySuccessful()) return;
 
+        // 高效模式：只记录失败的请求或慢请求
+        if (efficientMode) {
+            // 如果请求失败，记录
+            if (!info.isActuallySuccessful()) {
+                pendingQueue.offer(info);
+                return;
+            }
+
+            // 如果设置了慢请求阈值（>0），且耗时超过阈值，记录
+            if (slowRequestThresholdMs > 0 && info.costMs >= slowRequestThresholdMs) {
+                pendingQueue.offer(info);
+                return;
+            }
+
+            // 其他成功且不慢的请求，不记录
+            return;
+        }
+
+        // 非高效模式：记录所有请求
         pendingQueue.offer(info);
     }
 

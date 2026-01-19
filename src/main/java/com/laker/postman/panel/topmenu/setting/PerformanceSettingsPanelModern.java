@@ -19,6 +19,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
     private JTextField jmeterKeepAliveField;
     private JTextField jmeterMaxRequestsField;
     private JTextField jmeterMaxRequestsPerHostField;
+    private JTextField jmeterSlowRequestThresholdField;
     private JTextField trendSamplingField;
 
     @Override
@@ -73,6 +74,17 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         jmeterSection.add(maxRequestsPerHostRow);
         jmeterSection.add(createVerticalSpace(FIELD_SPACING));
 
+        // 慢请求阈值
+        jmeterSlowRequestThresholdField = new JTextField(10);
+        jmeterSlowRequestThresholdField.setText(String.valueOf(SettingManager.getJmeterSlowRequestThreshold()));
+        JPanel slowRequestThresholdRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP),
+                jmeterSlowRequestThresholdField
+        );
+        jmeterSection.add(slowRequestThresholdRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
         // 趋势图采样间隔
         trendSamplingField = new JTextField(10);
         trendSamplingField.setText(String.valueOf(SettingManager.getTrendSamplingIntervalSeconds()));
@@ -93,6 +105,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(jmeterKeepAliveField);
         trackComponentValue(jmeterMaxRequestsField);
         trackComponentValue(jmeterMaxRequestsPerHostField);
+        trackComponentValue(jmeterSlowRequestThresholdField);
         trackComponentValue(trendSamplingField);
     }
 
@@ -171,7 +184,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         // 验证所有字段
         if (!validateAllFields()) {
             NotificationUtil.showError(
-            I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
 
@@ -181,6 +194,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setJmeterKeepAliveSeconds(Integer.parseInt(jmeterKeepAliveField.getText().trim()));
             SettingManager.setJmeterMaxRequests(Integer.parseInt(jmeterMaxRequestsField.getText().trim()));
             SettingManager.setJmeterMaxRequestsPerHost(Integer.parseInt(jmeterMaxRequestsPerHostField.getText().trim()));
+            SettingManager.setJmeterSlowRequestThreshold(Integer.parseInt(jmeterSlowRequestThresholdField.getText().trim()));
             SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
 
             // 重新跟踪当前值
@@ -189,6 +203,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(jmeterKeepAliveField);
             trackComponentValue(jmeterMaxRequestsField);
             trackComponentValue(jmeterMaxRequestsPerHostField);
+            trackComponentValue(jmeterSlowRequestThresholdField);
             trackComponentValue(trendSamplingField);
             setHasUnsavedChanges(false);
 

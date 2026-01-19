@@ -1642,7 +1642,11 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
                 }
 
-                performanceResultTablePanel.addResult(new ResultNodeInfo(apiName, success, errorMsg, req, resp, testResults), efficientMode);
+                performanceResultTablePanel.addResult(
+                    new ResultNodeInfo(apiName, success, errorMsg, req, resp, testResults),
+                    efficientMode,
+                    getJmeterSlowRequestThreshold()
+                );
             } else {
                 // 被中断的请求，记录日志但不计入统计
                 log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());
@@ -2086,6 +2090,11 @@ public class PerformancePanel extends SingletonBasePanel {
     private static int getJmeterMaxRequestsPerHost() {
         return SettingManager.getJmeterMaxRequestsPerHost();
     }
+
+    private static int getJmeterSlowRequestThreshold() {
+        return SettingManager.getJmeterSlowRequestThreshold();
+    }
+
     /**
      * 保存当前配置
      */

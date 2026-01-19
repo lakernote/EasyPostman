@@ -725,6 +725,8 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_MAX_REQUESTS_TOOLTIP = "settings.jmeter.max_requests.tooltip";
     public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST = "settings.jmeter.max_requests_per_host";
     public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST_TOOLTIP = "settings.jmeter.max_requests_per_host.tooltip";
+    public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD = "settings.jmeter.slow_request_threshold";
+    public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.jmeter.slow_request_threshold.tooltip";
     public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
     public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
 

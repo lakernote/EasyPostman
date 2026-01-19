@@ -239,7 +239,7 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyTotalRowStyle(Component c) {
         c.setFont(c.getFont().deriveFont(Font.BOLD));
-         c.setForeground(UIManager.getColor("Performance.report.totalForeground"));
+        c.setForeground(UIManager.getColor("Performance.report.totalForeground"));
         c.setBackground(UIManager.getColor("Performance.report.totalBackground"));
     }
 
@@ -356,19 +356,34 @@ public class PerformanceReportPanel extends JPanel {
             return new ApiMetrics(totalRowName, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
 
-        long avgP90 = stats.totalP90 / stats.apiCount;
-        long avgP95 = stats.totalP95 / stats.apiCount;
-        long avgP99 = stats.totalP99 / stats.apiCount;
-        double avgRate = stats.totalRate / stats.apiCount;
+        double totalRate = stats.totalApi > 0 ? (stats.totalSuccess * 100.0 / stats.totalApi) : 0;
 
         long totalAvg = calculateTotalAverage(apiCostMap, stats.totalApi);
         // 计算所有API的总QPS
         double totalQps = calculateQpsForAllApis(stats.totalApi, allRequestResults);
         long totalMin = stats.totalMin == Long.MAX_VALUE ? 0 : stats.totalMin;
 
+        PerformanceStats totalPerfStats = calculateTotalPerformanceStats(apiCostMap);
+
         return new ApiMetrics(totalRowName, stats.totalApi, stats.totalSuccess, stats.totalFail,
-                avgRate, totalQps, totalAvg, totalMin, stats.totalMax,
-                avgP90, avgP95, avgP99);
+                totalRate, totalQps, totalAvg, totalMin, stats.totalMax,
+                totalPerfStats.p90, totalPerfStats.p95, totalPerfStats.p99);
+    }
+
+    /**
+     * 计算所有请求的总体性能统计（合并所有 API）
+     */
+    private PerformanceStats calculateTotalPerformanceStats(Map<String, List<Long>> apiCostMap) {
+        // 合并所有 API 的请求耗时
+        List<Long> allCosts = apiCostMap.values().stream()
+                .flatMap(List::stream)
+                .toList();
+
+        if (allCosts.isEmpty()) {
+            return new PerformanceStats(0, 0, 0, 0, 0, 0);
+        }
+
+        return calculatePerformanceStats(allCosts);
     }
 
 
@@ -438,27 +453,19 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private static class ReportStatistics {
-        int totalApi = 0;
-        int totalSuccess = 0;
-        int totalFail = 0;
-        long totalP90 = 0;
-        long totalP95 = 0;
-        long totalP99 = 0;
-        long totalMin = Long.MAX_VALUE;
-        long totalMax = 0;
-        double totalRate = 0;
-        int apiCount = 0;
+        int totalApi = 0;        // 总请求数
+        int totalSuccess = 0;    // 总成功数
+        int totalFail = 0;       // 总失败数
+        long totalMin = Long.MAX_VALUE;  // 最小耗时
+        long totalMax = 0;       // 最大耗时
+        int apiCount = 0;        // API 数量
 
         void accumulate(ApiMetrics metrics) {
             totalApi += metrics.total;
             totalSuccess += metrics.success;
             totalFail += metrics.fail;
-            totalP90 += metrics.p90;
-            totalP95 += metrics.p95;
-            totalP99 += metrics.p99;
             totalMin = Math.min(totalMin, metrics.min);
             totalMax = Math.max(totalMax, metrics.max);
-            totalRate += metrics.rate;
             apiCount++;
         }
     }

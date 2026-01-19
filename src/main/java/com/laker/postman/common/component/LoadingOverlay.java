@@ -1,4 +1,4 @@
-package com.laker.postman.component;
+package com.laker.postman.common.component;
 
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;

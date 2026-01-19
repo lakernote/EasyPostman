@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.component.LoadingOverlay;
+import com.laker.postman.common.component.LoadingOverlay;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;

@@ -101,8 +101,8 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         setColumnEditor(COL_VALUE, new EasyPostmanTextFieldCellEditor());
-        setColumnRenderer(COL_KEY, new EasyPostmanTextFieldCellRenderer());
-        setColumnRenderer(COL_VALUE, new EasyPostmanTextFieldCellRenderer());
+        setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
+        setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
 
         // Set custom renderer for delete column
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());

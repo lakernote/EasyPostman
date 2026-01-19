@@ -11,7 +11,7 @@ import java.awt.*;
 public class TextOrFileTableCellRenderer implements TableCellRenderer {
 
     private final FileCellRenderer fileRenderer = new FileCellRenderer();
-    private final EasyPostmanTextFieldCellRenderer textRenderer;
+    private final EasyTextFieldCellRenderer textRenderer;
 
     // 可配置的类型列索引，默认为2（Form-Data表格中Type列的索引）
     private final int typeColumnIndex = 2;
@@ -20,7 +20,7 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
      * 创建默认的文本或文件组合渲染器
      */
     public TextOrFileTableCellRenderer() {
-        textRenderer = new EasyPostmanTextFieldCellRenderer();
+        textRenderer = new EasyTextFieldCellRenderer();
     }
 
     @Override

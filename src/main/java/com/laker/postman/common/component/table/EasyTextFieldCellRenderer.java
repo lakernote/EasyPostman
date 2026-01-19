@@ -1,14 +1,14 @@
 package com.laker.postman.common.component.table;
 
-import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
-public class EasyPostmanTextFieldCellRenderer extends EasyPostmanTextField implements TableCellRenderer {
-    public EasyPostmanTextFieldCellRenderer() {
+public class EasyTextFieldCellRenderer extends EasyTextField implements TableCellRenderer {
+    public EasyTextFieldCellRenderer() {
         super(1);
         setBorder(null);
         setOpaque(true);

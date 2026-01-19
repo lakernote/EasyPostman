@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -109,7 +109,7 @@ public class RequestLinePanel extends JPanel {
      * 创建 URL 输入框
      */
     private JTextField createUrlField() {
-        JTextField field = new EasyPostmanTextField(
+        JTextField field = new EasyTextField(
                 null,
                 30,
                 I18nUtil.getMessage(MessageKeys.REQUEST_URL_PLACEHOLDER)

@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.component.table.AbstractEasyPostmanTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
-import com.laker.postman.common.component.table.EasyPostmanTextFieldCellRenderer;
+import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
 import com.laker.postman.model.HttpParam;
 import lombok.extern.slf4j.Slf4j;
 
@@ -87,8 +87,8 @@ public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<H
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         setColumnEditor(COL_VALUE, new EasyPostmanTextFieldCellEditor());
-        setColumnRenderer(COL_KEY, new EasyPostmanTextFieldCellRenderer());
-        setColumnRenderer(COL_VALUE, new EasyPostmanTextFieldCellRenderer());
+        setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
+        setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
 
         // Set custom renderer for delete column
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());

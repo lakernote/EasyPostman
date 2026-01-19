@@ -1,5 +1,6 @@
 package com.laker.postman.common.async;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -50,17 +51,11 @@ import java.util.function.Consumer;
  * @author Laker
  */
 @Slf4j
-public class AsyncTaskExecutor {
+@UtilityClass
+public class EasyTaskExecutor {
 
     private static final String DEFAULT_THREAD_NAME = "EasyTask";
     private static final String ERROR_MESSAGE = "Error executing async task";
-
-    /**
-     * 私有构造函数，防止实例化
-     */
-    private AsyncTaskExecutor() {
-        throw new UnsupportedOperationException("Utility class");
-    }
 
     /**
      * 默认线程池：用于执行异步任务

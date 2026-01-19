@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.right;
 
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
@@ -163,7 +163,7 @@ public class GroupEditPanel extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        nameField = new EasyPostmanTextField(30);
+        nameField = new EasyTextField(30);
         nameField.setPreferredSize(new Dimension(300, 32));
         nameField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1)); // 比标准字体大1号
         formPanel.add(nameField, gbc);

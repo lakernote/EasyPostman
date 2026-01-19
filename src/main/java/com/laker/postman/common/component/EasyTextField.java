@@ -33,7 +33,7 @@ import java.util.Map;
  * 输入 {{ 时自动弹出变量列表，包括环境变量和内置函数
  */
 @Slf4j
-public class EasyPostmanTextField extends FlatTextField {
+public class EasyTextField extends FlatTextField {
     // Postman 风格颜色
     private static final Color DEFINED_VAR_BG = new Color(180, 210, 255, 120);
     private static final Color DEFINED_VAR_BORDER = new Color(80, 150, 255);
@@ -55,7 +55,7 @@ public class EasyPostmanTextField extends FlatTextField {
     private Map<String, String> currentVariables;
     private int autocompleteStartPos = -1;
 
-    public EasyPostmanTextField(int columns) {
+    public EasyTextField(int columns) {
         super();
         setColumns(columns);
         // 启用 ToolTip 支持，必须设置（即使内容为空）
@@ -64,7 +64,7 @@ public class EasyPostmanTextField extends FlatTextField {
         initAutocomplete();
     }
 
-    public EasyPostmanTextField(String text, int columns) {
+    public EasyTextField(String text, int columns) {
         super();
         setText(text);
         setColumns(columns);
@@ -74,7 +74,7 @@ public class EasyPostmanTextField extends FlatTextField {
         initAutocomplete();
     }
 
-    public EasyPostmanTextField(String text, int columns, String placeholderText) {
+    public EasyTextField(String text, int columns, String placeholderText) {
         super();
         setText(text);
         setColumns(columns);

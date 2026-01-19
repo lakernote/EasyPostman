@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.left;
 
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.async.AsyncTaskExecutor;
+import com.laker.postman.common.async.EasyTaskExecutor;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
 import com.laker.postman.model.HttpRequestItem;
@@ -119,7 +119,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.addMouseListener(new RequestTreeMouseHandler(requestTree, this));
 
         // 使用 AsyncTaskExecutor 异步加载请求集合
-        AsyncTaskExecutor.execute(
+        EasyTaskExecutor.execute(
                 // 后台线程：执行耗时的IO操作
                 () -> {
                     persistence.initRequestGroupsFromFile();
@@ -340,7 +340,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
      */
     public void switchWorkspaceAndRefreshUI(String collectionFilePath) {
         // 使用 AsyncTaskExecutor 异步切换工作区
-        AsyncTaskExecutor.builder()
+        EasyTaskExecutor.builder()
                 .threadName("SwitchWorkspace-Loader")
                 .backgroundTask(() -> {
                     // 后台线程：执行文件加载操作

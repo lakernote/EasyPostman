@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.FlatLaf;
-import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.AuthType;
 import com.laker.postman.util.FontsUtil;
@@ -72,13 +72,13 @@ public class AuthTabPanel extends JPanel {
         typeCombo.setPreferredSize(new Dimension(220, 32));
         typeCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
 
-        usernameField = new EasyPostmanTextField(20);
+        usernameField = new EasyTextField(20);
         usernameField.setPreferredSize(new Dimension(200, 32));
 
-        passwordField = new EasyPostmanTextField(20);
+        passwordField = new EasyTextField(20);
         passwordField.setPreferredSize(new Dimension(200, 32));
 
-        tokenField = new EasyPostmanTextField("", 30, I18nUtil.getMessage(MessageKeys.AUTH_TOKEN_PLACEHOLDER));
+        tokenField = new EasyTextField("", 30, I18nUtil.getMessage(MessageKeys.AUTH_TOKEN_PLACEHOLDER));
         tokenField.setPreferredSize(new Dimension(250, 32));
 
         // 顶部：认证类型选择

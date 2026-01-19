@@ -1,13 +1,13 @@
 package com.laker.postman.common.component.table;
 
-import com.laker.postman.common.component.EasyPostmanTextField;
+import com.laker.postman.common.component.EasyTextField;
 
 import javax.swing.*;
 import javax.swing.table.TableCellEditor;
 import java.awt.*;
 
 public class EasyPostmanTextFieldCellEditor extends AbstractCellEditor implements TableCellEditor {
-    private final EasyPostmanTextField textField = new EasyPostmanTextField(1);
+    private final EasyTextField textField = new EasyTextField(1);
 
     public EasyPostmanTextFieldCellEditor() {
         textField.setBorder(null);

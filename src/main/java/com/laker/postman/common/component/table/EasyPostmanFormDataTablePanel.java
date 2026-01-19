@@ -123,7 +123,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
     private void setupCellRenderersAndEditors() {
         // Set editors and renderers for Key, Type, Value columns
         table.getColumnModel().getColumn(COL_KEY).setCellEditor(new EasyPostmanTextFieldCellEditor());
-        table.getColumnModel().getColumn(COL_KEY).setCellRenderer(new EasyPostmanTextFieldCellRenderer());
+        table.getColumnModel().getColumn(COL_KEY).setCellRenderer(new EasyTextFieldCellRenderer());
 
         // Set Type column to dropdown editor with custom renderer
         JComboBox<String> typeCombo = createModernTypeComboBox();

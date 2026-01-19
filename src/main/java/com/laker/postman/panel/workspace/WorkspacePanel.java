@@ -54,6 +54,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         topSplitPane.setLeftComponent(createWorkspaceListPanel());
         topSplitPane.setRightComponent(createInfoPanel());
         topSplitPane.setDividerLocation(300);
+        topSplitPane.setDividerSize(3);
         topSplitPane.setResizeWeight(0.4);
 
         // 下半部分 - 日志区域
@@ -62,6 +63,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         mainSplitPane.setTopComponent(topSplitPane);
         mainSplitPane.setBottomComponent(logPanel);
         mainSplitPane.setDividerLocation(400);
+        topSplitPane.setDividerSize(3);
         mainSplitPane.setResizeWeight(0.7);
 
         add(mainSplitPane, BorderLayout.CENTER);

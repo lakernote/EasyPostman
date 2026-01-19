@@ -191,13 +191,13 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
-        mainSplit.setDividerLocation(260);
-        mainSplit.setDividerSize(6);
+        mainSplit.setDividerLocation(360);
+        mainSplit.setDividerSize(3);
         mainSplit.setContinuousLayout(true);
 
         // 下部分（主分割+结果Tab）
         JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, resultTabbedPane);
-        verticalSplit.setDividerSize(6); // 分割条宽度
+        verticalSplit.setDividerSize(3); // 分割条宽度
         verticalSplit.setContinuousLayout(true); // 连续布局
         verticalSplit.setDividerLocation(260); // 初始位置
         // 设置最小尺寸，确保拖动范围足够大

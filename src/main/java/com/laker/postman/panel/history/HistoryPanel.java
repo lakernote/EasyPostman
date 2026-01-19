@@ -114,7 +114,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScroll, historyDetailPanel);
         split.setDividerLocation(220);
-        split.setDividerSize(1);
+        split.setDividerSize(3);
         add(split, BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
 

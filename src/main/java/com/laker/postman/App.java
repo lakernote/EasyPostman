@@ -4,7 +4,6 @@ import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.ExceptionUtil;
 import com.laker.postman.util.FontManager;
 import com.laker.postman.util.I18nUtil;
@@ -40,9 +39,6 @@ public class App {
 
         // 4. 注册应用程序关闭钩子
         registerShutdownHook();
-
-        // 5. 启动后台版本检查
-        BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
     }
 
     /**

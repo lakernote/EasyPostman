@@ -58,16 +58,7 @@ public class AutoUpdateManager {
         // 判断是否需要检查更新
         if (shouldCheckForUpdate(lastCheckTime, currentTime, frequency)) {
             log.info("Performing startup update check...");
-            // 延迟2秒后执行检查，避免影响启动速度
-            new Thread(() -> {
-                try {
-                    TimeUnit.SECONDS.sleep(2);
-                    performUpdateCheck(false); // false表示自动检查（后台静默检查）
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.warn("Update check interrupted: {}", e.getMessage());
-                }
-            }, "UpdateChecker").start();
+            new Thread(this::performUpdateCheck, "UpdateChecker").start();
         } else {
             log.info("Skipping update check - not yet time according to frequency settings");
         }
@@ -111,19 +102,15 @@ public class AutoUpdateManager {
 
     /**
      * 执行更新检查的核心逻辑
-     *
-     * @param isManual 是否是手动检查（用于决定UI展示方式）
      */
-    private void performUpdateCheck(boolean isManual) {
+    private void performUpdateCheck() {
         try {
-            log.debug("Performing {} update check", isManual ? "manual" : "background");
             UpdateInfo updateInfo = versionChecker.checkForUpdate();
-
             // 记录检查时间
             SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
             log.info("Update check completed, timestamp recorded");
 
-            handleUpdateCheckResult(updateInfo, isManual);
+            handleUpdateCheckResult(updateInfo, false);
 
         } catch (Exception e) {
             log.warn("Update check failed: {}", e.getMessage());

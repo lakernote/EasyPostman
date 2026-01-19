@@ -39,7 +39,7 @@ public class EasyComboBox<E> extends JComboBox<E> {
 
     private WidthMode widthMode = WidthMode.DYNAMIC;
     private int customWidth = -1;
-    private int padding = 38; // 左右边距 + 下拉箭头按钮
+    private int padding = 40; // 左右边距 + 下拉箭头按钮
 
     /**
      * 创建默认的动态宽度下拉框

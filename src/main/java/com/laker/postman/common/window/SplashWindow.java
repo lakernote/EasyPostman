@@ -5,8 +5,10 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
+import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -416,6 +418,21 @@ public class SplashWindow extends JWindow {
     private void completeFadeOut() {
         stopFadeOutAnimation();
         disposeSafely();
+        // 主窗口已完全显示，现在可以安全地启动后台更新检查
+        startBackgroundUpdateCheck();
+    }
+
+    /**
+     * 启动后台更新检查
+     * 在主窗口完全初始化并显示后调用，确保更新通知能正常显示
+     */
+    private void startBackgroundUpdateCheck() {
+        try {
+            BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
+            log.debug("Background update check started after main window initialized");
+        } catch (Exception e) {
+            log.warn("Failed to start background update check", e);
+        }
     }
 
     /**

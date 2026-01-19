@@ -186,7 +186,6 @@ public class EasyConsoleEventListener extends EventListener {
                             allWarnings.append("; ");
                         }
                         allWarnings.append(certWarning);
-                        log.warn("SSL Certificate Warning: {}", certWarning);
                     }
                 }
 

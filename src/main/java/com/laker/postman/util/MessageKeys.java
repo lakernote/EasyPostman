@@ -237,6 +237,7 @@ public final class MessageKeys {
     public static final String AUTH_USERNAME = "auth.username";
     public static final String AUTH_PASSWORD = "auth.password";
     public static final String AUTH_TOKEN = "auth.token";
+    public static final String AUTH_TOKEN_PLACEHOLDER = "auth.token.placeholder";
 
     // ============ Cookie相关 ============
     public static final String COOKIES_TITLE = "cookies.title";

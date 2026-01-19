@@ -78,7 +78,7 @@ public class AuthTabPanel extends JPanel {
         passwordField = new EasyPostmanTextField(20);
         passwordField.setPreferredSize(new Dimension(200, 32));
 
-        tokenField = new EasyPostmanTextField(30);
+        tokenField = new EasyPostmanTextField("", 30, I18nUtil.getMessage(MessageKeys.AUTH_TOKEN_PLACEHOLDER));
         tokenField.setPreferredSize(new Dimension(250, 32));
 
         // 顶部：认证类型选择

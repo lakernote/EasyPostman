@@ -358,7 +358,6 @@ public final class MessageKeys {
     public static final String WORKSPACE_GIT_AUTH_UPDATE = "workspace.git.auth.update";
     public static final String WORKSPACE_GIT_AUTH_UPDATE_SUCCESS = "workspace.git.auth.update.success";
     public static final String WORKSPACE_GIT_AUTH_UPDATE_FAILED = "workspace.git.auth.update.failed";
-    public static final String WORKSPACE_GIT_NO_REMOTE = "workspace.git.no_remote";
     public static final String WORKSPACE_VALIDATION_NAME_REQUIRED = "workspace.validation.name.required";
     public static final String WORKSPACE_VALIDATION_PATH_REQUIRED = "workspace.validation.path.required";
     public static final String WORKSPACE_VALIDATION_GIT_URL_REQUIRED = "workspace.validation.git.url.required";

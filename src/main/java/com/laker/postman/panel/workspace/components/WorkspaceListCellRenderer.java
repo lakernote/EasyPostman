@@ -38,7 +38,12 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
         if (workspace.getType() == WorkspaceType.LOCAL) {
             icon = IconUtil.createThemed("icons/local.svg", 18, 18);
         } else {
-            icon = IconUtil.create("icons/git.svg", 18, 18);
+            // 如果 Git 工作区没有配置远程 URL，使用橙色警告图标
+            if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty()) {
+                icon = IconUtil.create("icons/git-warning.svg", 20, 20);
+            } else {
+                icon = IconUtil.create("icons/git.svg", 20, 20);
+            }
         }
         setIcon(icon);
     }
@@ -69,10 +74,8 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
         text.append(workspace.getType() == WorkspaceType.LOCAL ?
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL) : I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_GIT));
 
-        if (workspace.getType() == WorkspaceType.GIT &&
-            (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty())) {
-            text.append(" ⚠️").append(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_NO_REMOTE));
-        } else if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
+        // 显示描述信息（警告状态已通过橙色图标表示）
+        if (workspace.getDescription() != null && !workspace.getDescription().trim().isEmpty()) {
             text.append(" - ").append(workspace.getDescription());
         }
 

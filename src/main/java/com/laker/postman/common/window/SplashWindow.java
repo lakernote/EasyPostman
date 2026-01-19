@@ -418,21 +418,26 @@ public class SplashWindow extends JWindow {
     private void completeFadeOut() {
         stopFadeOutAnimation();
         disposeSafely();
-        // 主窗口已完全显示，现在可以安全地启动后台更新检查
-        startBackgroundUpdateCheck();
+        // 延迟启动后台更新检查，避免与主窗口初始化竞争资源
+        scheduleBackgroundUpdateCheck();
     }
 
     /**
-     * 启动后台更新检查
-     * 在主窗口完全初始化并显示后调用，确保更新通知能正常显示
+     * 延迟调度后台更新检查
+     * 在主窗口完全稳定后延迟启动，提升用户体验
      */
-    private void startBackgroundUpdateCheck() {
-        try {
-            BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
-            log.debug("Background update check started after main window initialized");
-        } catch (Exception e) {
-            log.warn("Failed to start background update check", e);
-        }
+    private void scheduleBackgroundUpdateCheck() {
+        Timer delayTimer = new Timer(2000, e -> {
+            try {
+                BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
+                log.debug("Background update check scheduled and started after main window stabilized");
+            } catch (Exception ex) {
+                log.warn("Failed to start background update check", ex);
+                // 异常不影响主程序使用
+            }
+        });
+        delayTimer.setRepeats(false);
+        delayTimer.start();
     }
 
     /**

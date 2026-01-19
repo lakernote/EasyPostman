@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,6 +27,15 @@ public class AutoUpdateManager {
 
     private final VersionChecker versionChecker;
     private final UpdateUIManager uiManager;
+
+    /**
+     * 专用于更新检查的线程池（单线程，确保更新检查串行执行）
+     */
+    private static final ScheduledExecutorService UPDATE_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread thread = new Thread(r, "UpdateChecker");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public AutoUpdateManager() {
         this.versionChecker = new VersionChecker();
@@ -57,8 +68,15 @@ public class AutoUpdateManager {
 
         // 判断是否需要检查更新
         if (shouldCheckForUpdate(lastCheckTime, currentTime, frequency)) {
-            log.info("Performing startup update check...");
-            new Thread(this::performUpdateCheck, "UpdateChecker").start();
+            log.info("Scheduling startup update check...");
+            // 使用线程池异步执行，避免阻塞调用线程
+            UPDATE_EXECUTOR.submit(() -> {
+                try {
+                    performUpdateCheck();
+                } catch (Exception e) {
+                    log.error("Unexpected error in update check task", e);
+                }
+            });
         } else {
             log.info("Skipping update check - not yet time according to frequency settings");
         }
@@ -97,23 +115,24 @@ public class AutoUpdateManager {
             SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
             log.info("Manual update check completed, timestamp recorded");
             return updateInfo;
-        });
+        }, UPDATE_EXECUTOR); // 使用统一的更新检查线程池
     }
 
     /**
      * 执行更新检查的核心逻辑
      */
     private void performUpdateCheck() {
+        log.debug("Starting update check task...");
         try {
             UpdateInfo updateInfo = versionChecker.checkForUpdate();
             // 记录检查时间
             SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
-            log.info("Update check completed, timestamp recorded");
+            log.info("Update check completed successfully, timestamp recorded");
 
             handleUpdateCheckResult(updateInfo, false);
 
         } catch (Exception e) {
-            log.warn("Update check failed: {}", e.getMessage());
+            log.warn("Update check failed: {}", e.getMessage(), e);
             // 即使失败也记录检查时间，避免频繁重试
             SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
         }

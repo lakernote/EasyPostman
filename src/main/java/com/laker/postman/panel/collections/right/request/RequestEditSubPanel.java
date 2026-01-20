@@ -408,68 +408,114 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
 
-        // 发送请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-        editPanel.promotePreviewTabToPermanent();
-
-        // 清理上次请求的临时变量
-        EnvironmentService.clearTemporaryVariables();
-
-        HttpRequestItem item = getCurrentRequest();
-
-        // 根据协议类型进行URL验证
-        String url = item.getUrl();
-        RequestItemProtocolEnum protocol = item.getProtocol();
-        if (protocol.isWebSocketProtocol()) {
-            // WebSocket只允许ws://或wss://协议
-            if (!url.toLowerCase().startsWith("ws://") && !url.toLowerCase().startsWith("wss://")) {
-                JOptionPane.showMessageDialog(this,
-                        "WebSocket requests must use ws:// or wss:// protocol",
-                        "Invalid URL Protocol", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-        }
-
-        // 应用分组级别的认证和脚本继承
-        HttpRequestItem effectiveItem = applyGroupInheritance(item);
-
-        PreparedRequest req = PreparedRequestBuilder.build(effectiveItem);
-
-        // 创建脚本执行流水线
-        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
-                .request(req)
-                .preScript(effectiveItem.getPrescript())
-                .postScript(effectiveItem.getPostscript())
-                .build();
-
-        // 执行前置脚本
-        ScriptExecutionResult preResult = pipeline.executePreScript();
-        if (!preResult.isSuccess()) {
-            // 显示前置脚本执行错误对话框
-            String errorMessage = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_EXECUTION_FAILED,
-                    preResult.getErrorMessage());
-            String errorTitle = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_ERROR_TITLE);
-            JOptionPane.showMessageDialog(this,
-                    errorMessage,
-                    errorTitle,
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // 前置脚本执行完成后，再进行变量替换
-        PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
-
-        if (!validateRequest(req, item)) return;
+        // ===== 立即更新UI，提供即时反馈 =====
         updateUIForRequesting();
 
-        // 协议分发 - 根据HttpRequestItem的protocol字段分发
-        if (protocol.isWebSocketProtocol()) {
-            handleWebSocketRequest(req, pipeline);
-        } else if (protocol.isSseProtocol()) {
-            handleSseRequest(req, pipeline);
-        } else {
-            handleHttpRequest(req, pipeline);
-        }
+        // ===== 在后台线程执行所有耗时操作 =====
+        SwingWorker<Void, Void> preparationWorker = new SwingWorker<>() {
+            HttpRequestItem item;
+            HttpRequestItem effectiveItem;
+            PreparedRequest req;
+            ScriptExecutionPipeline pipeline;
+            String validationError = null;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    // 发送请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
+                    SwingUtilities.invokeLater(() -> {
+                        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+                        editPanel.promotePreviewTabToPermanent();
+                    });
+
+                    // 清理上次请求的临时变量
+                    EnvironmentService.clearTemporaryVariables();
+
+                    item = getCurrentRequest();
+
+                    // 根据协议类型进行URL验证
+                    String url = item.getUrl();
+                    RequestItemProtocolEnum protocol = item.getProtocol();
+                    if (protocol.isWebSocketProtocol()) {
+                        // WebSocket只允许ws://或wss://协议
+                        if (!url.toLowerCase().startsWith("ws://") && !url.toLowerCase().startsWith("wss://")) {
+                            validationError = "WebSocket requests must use ws:// or wss:// protocol";
+                            return null;
+                        }
+                    }
+
+                    // 应用分组级别的认证和脚本继承
+                    effectiveItem = applyGroupInheritance(item);
+
+                    req = PreparedRequestBuilder.build(effectiveItem);
+
+                    // 创建脚本执行流水线
+                    pipeline = ScriptExecutionPipeline.builder()
+                            .request(req)
+                            .preScript(effectiveItem.getPrescript())
+                            .postScript(effectiveItem.getPostscript())
+                            .build();
+
+                    // 执行前置脚本
+                    ScriptExecutionResult preResult = pipeline.executePreScript();
+                    if (!preResult.isSuccess()) {
+                        // 显示前置脚本执行错误对话框
+                        String errorMessage = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_EXECUTION_FAILED,
+                                preResult.getErrorMessage());
+                        validationError = errorMessage;
+                        return null;
+                    }
+
+                    // 前置脚本执行完成后，再进行变量替换
+                    PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
+
+                    // 验证请求
+                    if (!validateRequest(req, item)) {
+                        validationError = "Request validation failed";
+                        return null;
+                    }
+
+                } catch (Exception ex) {
+                    log.error("Error preparing request: {}", ex.getMessage(), ex);
+                    validationError = ex.getMessage();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                // 如果有验证错误，恢复UI状态并显示错误
+                if (validationError != null) {
+                    requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
+                    responsePanel.hideLoadingOverlay();
+
+                    if (validationError.contains("WebSocket")) {
+                        JOptionPane.showMessageDialog(RequestEditSubPanel.this,
+                                validationError,
+                                "Invalid URL Protocol", JOptionPane.WARNING_MESSAGE);
+                    } else if (validationError.contains("prescript")) {
+                        String errorTitle = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_ERROR_TITLE);
+                        JOptionPane.showMessageDialog(RequestEditSubPanel.this,
+                                validationError,
+                                errorTitle,
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    return;
+                }
+
+                // 验证成功，根据协议分发请求
+                RequestItemProtocolEnum protocol = item.getProtocol();
+                if (protocol.isWebSocketProtocol()) {
+                    handleWebSocketRequest(req, pipeline);
+                } else if (protocol.isSseProtocol()) {
+                    handleSseRequest(req, pipeline);
+                } else {
+                    handleHttpRequest(req, pipeline);
+                }
+            }
+        };
+
+        preparationWorker.execute();
     }
 
     /**

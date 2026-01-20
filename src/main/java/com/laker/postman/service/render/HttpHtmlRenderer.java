@@ -235,11 +235,10 @@ public class HttpHtmlRenderer {
         String bgColor = getThemeBackground();
         String textColor = getThemeTextColor();
         String borderColor = getThemeBorderColor();
-        String headerBg = getThemeHeaderBackground();
 
         StringBuilder table = new StringBuilder()
                 .append("<table style='border-collapse:collapse;width:100%;background:").append(bgColor).append(";font-size:9px;border-radius:4px;'>")
-                .append("<tr style='background:").append(headerBg).append(";color:").append(textColor).append(";font-weight:500;font-size:9px;border-bottom:1px solid ").append(borderColor).append(";'>")
+                .append("<tr style='").append("color:").append(textColor).append(";font-weight:500;font-size:9px;border-bottom:1px solid ").append(borderColor).append(";'>")
                 .append("<th style='padding:8px 12px;text-align:left;'>Name</th>")
                 .append("<th style='padding:8px 12px;text-align:center;'>Result</th>")
                 .append("<th style='padding:8px 12px;text-align:left;'>Error Message</th>")

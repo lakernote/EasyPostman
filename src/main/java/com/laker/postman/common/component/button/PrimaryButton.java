@@ -1,4 +1,3 @@
-
 package com.laker.postman.common.component.button;
 
 import com.formdev.flatlaf.FlatLaf;
@@ -9,11 +8,14 @@ import com.laker.postman.util.FontsUtil;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * 主按钮 - 现代化设计
  * 蓝色背景，白色文字，用于主要操作（如发送、连接等）
  * 支持亮色和暗色主题自适应
+ * 添加按下动画效果，提供丝滑的交互体验
  */
 public class PrimaryButton extends JButton {
     private static final int ICON_SIZE = 14;
@@ -23,6 +25,10 @@ public class PrimaryButton extends JButton {
     private Color cachedHoverColor = ModernColors.PRIMARY_DARK;
     private Color cachedPressColor = ModernColors.PRIMARY_DARKER;
     private boolean colorsInitialized = false;
+
+    // 按下动画状态
+    private float pressScale = 1.0f;
+    private Timer pressAnimationTimer;
 
     public PrimaryButton(String text) {
         this(text, null);
@@ -50,12 +56,59 @@ public class PrimaryButton extends JButton {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setBorder(new EmptyBorder(6, 12, 6, 12));
 
+        // 添加鼠标监听器实现按下动画
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (isEnabled()) {
+                    animatePress(true);
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (isEnabled()) {
+                    animatePress(false);
+                }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (isEnabled()) {
+                    animatePress(false);
+                }
+            }
+        });
+
         // 悬停动画
         getModel().addChangeListener(e -> {
             if (isEnabled()) {
                 repaint();
             }
         });
+    }
+
+    /**
+     * 按下动画 - 轻微缩放效果
+     */
+    private void animatePress(boolean pressed) {
+        if (pressAnimationTimer != null && pressAnimationTimer.isRunning()) {
+            pressAnimationTimer.stop();
+        }
+
+        float targetScale = pressed ? 0.96f : 1.0f;
+        float step = pressed ? -0.02f : 0.02f;
+
+        pressAnimationTimer = new Timer(10, e -> {
+            if ((step > 0 && pressScale >= targetScale) || (step < 0 && pressScale <= targetScale)) {
+                pressScale = targetScale;
+                ((Timer) e.getSource()).stop();
+            } else {
+                pressScale += step;
+            }
+            repaint();
+        });
+        pressAnimationTimer.start();
     }
 
     /**
@@ -101,6 +154,16 @@ public class PrimaryButton extends JButton {
             colorsInitialized = true;
         }
 
+        // 应用按下缩放效果
+        if (pressScale != 1.0f) {
+            int w = getWidth();
+            int h = getHeight();
+            int offsetX = (int) ((w - w * pressScale) / 2);
+            int offsetY = (int) ((h - h * pressScale) / 2);
+            g2.translate(offsetX, offsetY);
+            g2.scale(pressScale, pressScale);
+        }
+
         // 背景颜色（主题适配禁用状态）
         if (!isEnabled()) {
             g2.setColor(getDisabledBackground());
@@ -113,10 +176,11 @@ public class PrimaryButton extends JButton {
         }
 
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-        g2.dispose();
 
         // 文字和图标
-        super.paintComponent(g);
+        super.paintComponent(g2);
+
+        g2.dispose();
     }
 }
 

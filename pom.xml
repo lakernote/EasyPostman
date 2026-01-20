@@ -6,7 +6,7 @@
 
     <groupId>com.laker.tools</groupId>
     <artifactId>easy-postman</artifactId>
-    <version>4.3.9</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
+    <version>4.3.10</version> <!--保证 win-upgrade-uuid 不变，app-version 每次升级时递增（就是引用的这里啦）。要不然在win无法升级-->
 
     <properties>
         <!-- 编译配置 -->
@@ -16,7 +16,7 @@
         <!-- 主类，用于构建可执行 JAR -->
         <mainClass>com.laker.postman.App</mainClass>
         <!-- 依赖版本号 -->
-        <flatlaf.version>3.6.2</flatlaf.version>
+        <flatlaf.version>3.7</flatlaf.version>
         <hutool.version>5.8.41</hutool.version>
         <jiconfont-swing.version>1.0.1</jiconfont-swing.version>
         <jiconfont-font_awesome.version>4.7.0.1</jiconfont-font_awesome.version>
@@ -254,12 +254,15 @@
                                     <mainClass>${mainClass}</mainClass>
                                 </transformer>
                                 <!-- 合并 GraalVM 的语言注册文件 -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <!-- 合并 META-INF/truffle 目录下的资源 -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/truffle/language</resource>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/truffle/instrument</resource>
                                 </transformer>
                             </transformers>

@@ -188,7 +188,7 @@ public class SplashWindow extends JWindow {
      */
     private void initializeWindow(JPanel content) {
         setContentPane(content);
-        setSize(340, 245); // 设置窗口大小
+        setSize(340, 250); // 设置窗口大小
         setLocationRelativeTo(null);  // 居中显示
 
         // 安全设置透明度和置顶

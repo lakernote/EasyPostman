@@ -1,8 +1,8 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.component.EasyComboBox;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.component.LoadingOverlay;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -39,13 +39,11 @@ public class ResponsePanel extends JPanel {
     private final JLabel separator1; // 分隔符1：状态码和响应时间之间
     private final JLabel separator2; // 分隔符2：响应时间和响应大小之间
     private final ResponseHeadersPanel responseHeadersPanel;
-    @Getter
     private final ResponseBodyPanel responseBodyPanel;
     @Getter
     private final NetworkLogPanel networkLogPanel;
     private final TimelinePanel timelinePanel;
     private final JEditorPane testsPane;
-    @Getter
     private final JButton[] tabButtons;
     private EasyComboBox<String> tabComboBox; // 下拉框用于水平布局
     private final JPanel tabBar; // 保存tabBar引用，用于切换
@@ -945,6 +943,86 @@ public class ResponsePanel extends JPanel {
             return responseBodyPanel.getSaveResponseButton();
         }
         return null;
+    }
+
+    /**
+     * 设置响应体面板的启用状态
+     */
+    public void setResponseBodyEnabled(boolean enabled) {
+        if (responseBodyPanel != null) {
+            responseBodyPanel.setEnabled(enabled);
+        }
+    }
+
+    /**
+     * 切换到指定索引的 tab
+     *
+     * @param tabIndex tab 索引（0-based）
+     */
+    public void switchToTab(int tabIndex) {
+        if (tabIndex < 0 || tabIndex >= tabButtons.length) {
+            return;
+        }
+
+        if (tabButtons[tabIndex].isVisible() && tabButtons[tabIndex].isEnabled()) {
+            tabButtons[tabIndex].doClick();
+        }
+    }
+
+    /**
+     * 切换到 Response Body tab（仅 HTTP 协议）
+     */
+    public void switchToResponseBodyTab() {
+        switchToTab(0); // Response Body 总是第一个 tab
+    }
+
+    /**
+     * 切换到 Response Headers tab
+     */
+    public void switchToResponseHeadersTab() {
+        if (protocol.isHttpProtocol()) {
+            switchToTab(1); // HTTP: Headers 是第二个
+        } else {
+            switchToTab(1); // WebSocket/SSE: Headers 也是第二个（索引1）
+        }
+    }
+
+    /**
+     * 切换到 Tests tab（仅 HTTP 协议）
+     */
+    public void switchToTestsTab() {
+        if (protocol.isHttpProtocol()) {
+            switchToTab(2); // Tests 是第三个 tab
+        }
+    }
+
+    /**
+     * 切换到 Network Log tab（仅 HTTP 协议）
+     */
+    public void switchToNetworkLogTab() {
+        if (protocol.isHttpProtocol()) {
+            switchToTab(3); // Network Log 是第四个 tab
+        }
+    }
+
+    /**
+     * 切换到 Timing tab（仅 HTTP 协议）
+     */
+    public void switchToTimingTab() {
+        if (protocol.isHttpProtocol()) {
+            switchToTab(4); // Timing 是第五个 tab
+        }
+    }
+
+    /**
+     * 切换到 Log tab（WebSocket/SSE 消息日志）
+     */
+    public void switchToLogTab() {
+        if (protocol.isWebSocketProtocol() || protocol.isSseProtocol()) {
+            switchToTab(0); // WebSocket/SSE: Log 是第一个 tab
+        } else if (protocol.isHttpProtocol()) {
+            switchToTab(5); // HTTP: Log 是第六个 tab
+        }
     }
 
     /**

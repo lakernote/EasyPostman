@@ -1162,7 +1162,7 @@ public class RequestEditSubPanel extends JPanel {
         if (protocol.isHttpProtocol()) {
             responsePanel.getNetworkLogPanel().clearLog();
             responsePanel.setResponseTabButtonsEnable(false);
-            responsePanel.getResponseBodyPanel().setEnabled(false);
+            responsePanel.setResponseBodyEnabled(false);
         }
         responsePanel.clearAll();
 
@@ -1179,7 +1179,7 @@ public class RequestEditSubPanel extends JPanel {
             // 响应为空，清空状态码（错误信息已通过异常处理和通知显示）
             responsePanel.setStatus(0);
             if (protocol.isHttpProtocol()) {
-                responsePanel.getResponseBodyPanel().setEnabled(true);
+                responsePanel.setResponseBodyEnabled(true);
             }
             return;
         }
@@ -1189,7 +1189,7 @@ public class RequestEditSubPanel extends JPanel {
         if (!protocol.isWebSocketProtocol() && !protocol.isSseProtocol()) {
             responsePanel.setTiming(resp);
             responsePanel.setResponseBody(resp);
-            responsePanel.getResponseBodyPanel().setEnabled(true);
+            responsePanel.setResponseBodyEnabled(true);
         }
         responsePanel.setStatus(resp.code);
         responsePanel.setResponseTime(resp.costMs);
@@ -1598,7 +1598,7 @@ public class RequestEditSubPanel extends JPanel {
                 responsePanel.setResponseTime(response.costMs);
                 responsePanel.setResponseSize(response.bodySize, null);
                 // 切换到 Response Body tab
-                responsePanel.getTabButtons()[0].doClick();
+                responsePanel.switchToResponseBodyTab();
             });
 
         } catch (Exception ex) {

@@ -60,6 +60,11 @@ import static com.laker.postman.service.http.HttpUtil.validateRequest;
  */
 @Slf4j
 public class RequestEditSubPanel extends JPanel {
+    // 常量定义
+    private static final int MAX_REDIRECT_COUNT = 10;
+    private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
     private final EasyPostmanParamsTablePanel paramsPanel;
@@ -87,11 +92,11 @@ public class RequestEditSubPanel extends JPanel {
     private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
-    private transient SwingWorker<Void, Void> currentWorker;
+    private transient volatile SwingWorker<Void, Void> currentWorker;
     // 当前 SSE 事件源, 用于取消 SSE 请求
-    private transient EventSource currentEventSource;
+    private transient volatile EventSource currentEventSource;
     // WebSocket连接对象
-    private volatile transient WebSocket currentWebSocket;
+    private transient volatile WebSocket currentWebSocket;
     // WebSocket连接ID，用于防止过期连接的回调
     private volatile String currentWebSocketConnectionId;
     JSplitPane splitPane;
@@ -460,9 +465,8 @@ public class RequestEditSubPanel extends JPanel {
                     ScriptExecutionResult preResult = pipeline.executePreScript();
                     if (!preResult.isSuccess()) {
                         // 显示前置脚本执行错误对话框
-                        String errorMessage = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_EXECUTION_FAILED,
+                        validationError = I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_EXECUTION_FAILED,
                                 preResult.getErrorMessage());
-                        validationError = errorMessage;
                         return null;
                     }
 
@@ -498,6 +502,12 @@ public class RequestEditSubPanel extends JPanel {
                         JOptionPane.showMessageDialog(RequestEditSubPanel.this,
                                 validationError,
                                 errorTitle,
+                                JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        // 通用错误处理 - 确保用户能看到所有错误
+                        JOptionPane.showMessageDialog(RequestEditSubPanel.this,
+                                validationError,
+                                "Request Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
                     return;
@@ -559,7 +569,7 @@ public class RequestEditSubPanel extends JPanel {
                 try {
                     responsePanel.setResponseTabButtonsEnable(true);
                     responsePanel.switchTabButtonHttpOrSse("http");
-                    resp = RedirectHandler.executeWithRedirects(req, 10, new SseResEventListener() {
+                    resp = RedirectHandler.executeWithRedirects(req, MAX_REDIRECT_COUNT, new SseResEventListener() {
                         @Override
                         public void onOpen(HttpResponse response) {
                             SwingUtilities.invokeLater(() -> {
@@ -567,7 +577,7 @@ public class RequestEditSubPanel extends JPanel {
                                 updateUIForResponse(response);
                                 // 添加连接成功消息
                                 if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.CONNECTED, timestamp, "Connected to SSE stream", null);
                                 }
                             });
@@ -578,7 +588,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 // 使用 SSEResponsePanel 来显示 SSE 消息
                                 if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
                                     List<TestResult> testResults = handleStreamMessage(pipeline, data);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
                                 }
@@ -592,12 +602,12 @@ public class RequestEditSubPanel extends JPanel {
                     });
                 } catch (DownloadCancelledException ex) {
                     // 用户主动取消下载，这是正常行为，不作为错误处理
-                    log.info("用户取消下载: {}", ex.getMessage());
+                    log.info("User canceled download for request: {} {}", req.method, req.url);
                     // 不显示错误通知，因为这是用户的主动行为
                 } catch (InterruptedIOException ex) {
-                    log.warn(ex.getMessage());
+                    log.warn("Request interrupted: {} {} - {}", req.method, req.url, ex.getMessage());
                 } catch (Exception ex) {
-                    log.error(ex.getMessage(), ex);
+                    log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, ex.getMessage(), ex);
                     ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
                     NotificationUtil.showError(ex.getMessage());
                 }
@@ -637,7 +647,7 @@ public class RequestEditSubPanel extends JPanel {
                                 updateUIForResponse(r);
                                 // 添加连接成功消息
                                 if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.CONNECTED, timestamp, "Connected to SSE stream", null);
                                 }
                             });
@@ -648,7 +658,7 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 // 使用 SSEResponsePanel 来显示 SSE 消息
                                 if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
                                     List<TestResult> testResults = handleStreamMessage(pipeline, data);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
                                 }
@@ -662,12 +672,13 @@ public class RequestEditSubPanel extends JPanel {
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 添加连接关闭消息
                                 if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.CLOSED, timestamp, "SSE stream closed", null);
                                 }
+                                // 在UI线程内清理资源，确保线程安全
+                                currentEventSource = null;
+                                currentWorker = null;
                             });
-                            currentEventSource = null;
-                            currentWorker = null;
                         }
 
                         @Override
@@ -680,18 +691,19 @@ public class RequestEditSubPanel extends JPanel {
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                                 // 添加错误消息
                                 if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
                                     responsePanel.getSseResponsePanel().addMessage(MessageType.WARNING, timestamp, "Error: " + errorMsg, null);
                                 }
+                                // 在UI线程内清理资源，确保线程安全
+                                currentEventSource = null;
+                                currentWorker = null;
                             });
-                            currentEventSource = null;
-                            currentWorker = null;
                         }
                     };
                     currentEventSource = HttpSingleRequestExecutor.executeSSE(req, new SseEventListener(callback, resp, sseBodyBuilder, startTime));
                     responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
-                    log.error(ex.getMessage(), ex);
+                    log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
                         // 清空状态码，通过通知显示错误
                         responsePanel.setStatus(0);
@@ -737,7 +749,7 @@ public class RequestEditSubPanel extends JPanel {
                                 log.debug("Ignoring onOpen callback for expired connection ID: {}, current ID: {}",
                                         connectionId, currentWebSocketConnectionId);
                                 // 关闭过期的连接
-                                webSocket.close(1000, "Connection expired");
+                                webSocket.close(WEBSOCKET_NORMAL_CLOSURE, "Connection expired");
                                 return;
                             }
 
@@ -782,7 +794,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosing(okhttp3.WebSocket webSocket, int code, String reason) {
                             // 检查连接ID是否还有效
-                            if (CharSequenceUtil.isBlank(currentWebSocketConnectionId) || connectionId.equals(currentWebSocketConnectionId)) {
+                            if (isValidWebSocketConnection(connectionId)) {
                                 log.debug("closing WebSocket: code={}, reason={}", code, reason);
                                 handleWebSocketClose();
                             }
@@ -791,7 +803,7 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
                             // 检查连接ID是否还有效
-                            if (CharSequenceUtil.isBlank(currentWebSocketConnectionId) || connectionId.equals(currentWebSocketConnectionId)) {
+                            if (isValidWebSocketConnection(connectionId)) {
                                 log.debug("closed WebSocket: code={}, reason={}", code, reason);
                                 appendWebSocketMessage(MessageType.CLOSED, code + " " + reason);
                                 handleWebSocketClose();
@@ -837,7 +849,7 @@ public class RequestEditSubPanel extends JPanel {
                     });
                     responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
-                    log.error(ex.getMessage(), ex);
+                    log.error("Error executing WebSocket request: {} - {}", req.url, ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
                         // 清空状态码，通过通知显示错误
                         responsePanel.setStatus(0);
@@ -882,9 +894,20 @@ public class RequestEditSubPanel extends JPanel {
 
     private void appendWebSocketMessage(MessageType type, String text, List<TestResult> testResults) {
         if (responsePanel.getProtocol().isWebSocketProtocol() && responsePanel.getWebSocketResponsePanel() != null) {
-            String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            String timestamp = LocalTime.now().format(TIME_FORMATTER);
             responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text, testResults);
         }
+    }
+
+    /**
+     * 检查 WebSocket 连接是否有效
+     *
+     * @param connectionId 要检查的连接ID
+     * @return 如果连接有效返回 true，否则返回 false
+     */
+    private boolean isValidWebSocketConnection(String connectionId) {
+        return CharSequenceUtil.isBlank(currentWebSocketConnectionId) ||
+                connectionId.equals(currentWebSocketConnectionId);
     }
 
     /**

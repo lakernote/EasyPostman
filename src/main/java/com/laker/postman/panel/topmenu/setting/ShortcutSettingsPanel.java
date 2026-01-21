@@ -4,8 +4,10 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -33,13 +35,13 @@ public class ShortcutSettingsPanel extends JPanel {
         titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_SETTINGS_TITLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 3));
         titlePanel.add(titleLabel, BorderLayout.NORTH);
 
         // 添加双击编辑提示
         JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_DOUBLE_CLICK_HINT));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(Font.PLAIN, 12f));
-        hintLabel.setForeground(new java.awt.Color(128, 128, 128));
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        hintLabel.setForeground(new Color(128, 128, 128));
         titlePanel.add(hintLabel, BorderLayout.SOUTH);
 
         add(titlePanel, BorderLayout.NORTH);
@@ -174,6 +176,8 @@ public class ShortcutSettingsPanel extends JPanel {
 
         private void loadShortcuts() {
             shortcuts.clear();
+            shortcuts.add(new ShortcutItem(ShortcutManager.SEND_REQUEST,
+                    I18nUtil.getMessage(MessageKeys.BUTTON_SEND)));
             shortcuts.add(new ShortcutItem(ShortcutManager.NEW_REQUEST,
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST)));
             shortcuts.add(new ShortcutItem(ShortcutManager.SAVE_REQUEST,
@@ -249,6 +253,7 @@ public class ShortcutSettingsPanel extends JPanel {
      */
     private static class ShortcutEditDialog extends JDialog {
         private final ShortcutItem item;
+        @Getter
         private boolean confirmed = false;
         private int newKeyCode = -1;
         private int newModifiers = 0;
@@ -355,9 +360,6 @@ public class ShortcutSettingsPanel extends JPanel {
             dispose();
         }
 
-        public boolean isConfirmed() {
-            return confirmed;
-        }
     }
 }
 

@@ -222,7 +222,7 @@ public class HttpFileParserTest {
 
         HttpRequestItem request = getRequestFromNode(result, 0);
         assertEquals(request.getMethod(), "POST");
-        assertEquals(request.getBodyType(), "urlencoded");
+        assertEquals(request.getBodyType(), "x-www-form-urlencoded");
         assertNotNull(request.getUrlencodedList());
         assertEquals(request.getUrlencodedList().size(), 3, "应该有 3 个 urlencoded 字段");
 
@@ -503,7 +503,7 @@ public class HttpFileParserTest {
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
-        assertEquals(request.getBodyType(), "urlencoded");
+        assertEquals(request.getBodyType(), "x-www-form-urlencoded");
         assertTrue(hasUrlencodedField(request, "name", "John"));
         assertTrue(hasUrlencodedField(request, "email", ""));
         assertTrue(hasUrlencodedField(request, "age", "30"));
@@ -555,7 +555,7 @@ public class HttpFileParserTest {
         // 验证第三个请求（POST with urlencoded）
         HttpRequestItem req3 = getRequestFromNode(result, 2);
         assertEquals(req3.getMethod(), "POST");
-        assertEquals(req3.getBodyType(), "urlencoded");
+        assertEquals(req3.getBodyType(), "x-www-form-urlencoded");
         assertTrue(hasUrlencodedField(req3, "name", "John"));
     }
 
@@ -603,7 +603,7 @@ public class HttpFileParserTest {
 
         HttpRequestItem request = getRequestFromNode(result, 0);
         assertEquals(request.getMethod(), "POST");
-        assertEquals(request.getBodyType(), "urlencoded");
+        assertEquals(request.getBodyType(), "x-www-form-urlencoded");
         assertNotNull(request.getUrlencodedList());
 
         // 验证字段
@@ -753,7 +753,7 @@ public class HttpFileParserTest {
         HttpRequestItem req2 = getRequestFromNode(result, 1);
         assertEquals(req2.getName(), "STEP 2: 生成 Access Token");
         assertEquals(req2.getMethod(), "POST");
-        assertEquals(req2.getBodyType(), "urlencoded");
+        assertEquals(req2.getBodyType(), "x-www-form-urlencoded");
         assertTrue(hasUrlencodedField(req2, "grant_type", "{{grant_type}}"));
         assertTrue(hasUrlencodedField(req2, "assertion", "{{bearerToken}}"));
         assertTrue(hasUrlencodedField(req2, "scope", "{{scope}}"));
@@ -770,7 +770,7 @@ public class HttpFileParserTest {
         assertEquals(req3.getAuthType(), AUTH_TYPE_BASIC);
         assertEquals(req3.getAuthUsername(), "{{client_id}}");
         assertEquals(req3.getAuthPassword(), "{{client_secret}}");
-        assertEquals(req3.getBodyType(), "urlencoded");
+        assertEquals(req3.getBodyType(), "x-www-form-urlencoded");
         assertTrue(hasUrlencodedField(req3, "access_token", "{{accessToken}}"));
     }
 

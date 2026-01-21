@@ -14,6 +14,9 @@ import java.util.regex.Pattern;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_NONE;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
 
 /**
  * HTTP 文件解析器
@@ -325,13 +328,19 @@ public class HttpFileParser {
                         }
                     }
                     request.setUrlencodedList(urlencodedList);
-                    request.setBodyType("urlencoded");
+                    request.setBodyType(BODY_TYPE_FORM_URLENCODED);
                 } else {
                     // 默认作为 raw body
                     request.setBody(body);
-                    request.setBodyType("raw");
+                    request.setBodyType(BODY_TYPE_RAW);
                 }
+            } else {
+                // body 为空
+                request.setBodyType(BODY_TYPE_NONE);
             }
+        } else {
+            // 没有 body
+            request.setBodyType(BODY_TYPE_NONE);
         }
 
         // 如果没有设置名称，使用 URL

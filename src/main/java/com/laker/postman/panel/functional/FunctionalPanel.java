@@ -515,10 +515,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         setTableColumnWidths();
         setTableRenderers();
 
-        // 使用 ModernColors 统一配色
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(false);
-        table.setFillsViewportHeight(true);
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
         table.setTransferHandler(new TableRowTransferHandler(table));

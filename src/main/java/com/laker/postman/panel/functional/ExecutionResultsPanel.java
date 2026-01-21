@@ -66,7 +66,6 @@ public class ExecutionResultsPanel extends JPanel {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(350);
         splitPane.setResizeWeight(0.35);
-        splitPane.setDividerSize(6);
         splitPane.setBorder(null);
 
         // 左侧：结果树
@@ -741,8 +740,6 @@ public class ExecutionResultsPanel extends JPanel {
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
         table.setRowHeight(28);
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
         // 设置列宽

@@ -41,18 +41,20 @@ public class ScriptPanel extends JPanel {
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
 
         // Pre-script 标签带图标
-        JLabel preLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 14, 14));
+        JLabel preLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 18, 18));
+        preLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SCRIPT_PRESCRIPT_TOOLTIP));
         tabbedPane.addTab(null, new RTextScrollPane(prescriptArea));
         tabbedPane.setTabComponentAt(0, preLabel);
 
         // Post-script 标签带图标
-        JLabel postLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 14, 14));
+        JLabel postLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 18, 18));
+        postLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.SCRIPT_POSTSCRIPT_TOOLTIP));
         tabbedPane.addTab(null, new RTextScrollPane(postscriptArea));
         tabbedPane.setTabComponentAt(1, postLabel);
 
         // 创建帮助面板
         JPanel helpPanel = createHelpPanel();
-        JLabel helpLabel = new JLabel(IconUtil.createThemed("icons/help.svg", 14, 14));
+        JLabel helpLabel = new JLabel(IconUtil.createThemed("icons/help.svg", 18, 18));
         tabbedPane.addTab(null, helpPanel);
         tabbedPane.setTabComponentAt(2, helpLabel);
 

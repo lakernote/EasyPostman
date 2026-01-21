@@ -43,7 +43,8 @@ public class NetworkLogPanel extends JPanel {
         JScrollPane logScroll = new JScrollPane(logArea);
 
         // 创建带图标的标签
-        JLabel networkLogLabel = new JLabel(IconUtil.createThemed("icons/console.svg", 14, 14));
+        JLabel networkLogLabel = new JLabel(IconUtil.createThemed("icons/console.svg", 18, 18));
+        networkLogLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG_TOOLTIP));
         tabbedPane.addTab(null, logScroll);
         tabbedPane.setTabComponentAt(0, networkLogLabel);
 
@@ -53,7 +54,8 @@ public class NetworkLogPanel extends JPanel {
         requestDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         requestDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JLabel requestDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 14, 14));
+        JLabel requestDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 18, 18));
+        requestDetailsLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_DETAILS_TOOLTIP));
         tabbedPane.addTab(null, requestDetailsScroll);
         tabbedPane.setTabComponentAt(1, requestDetailsLabel);
 
@@ -63,7 +65,8 @@ public class NetworkLogPanel extends JPanel {
         responseDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         responseDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JLabel responseDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 14, 14));
+        JLabel responseDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 18, 18));
+        responseDetailsLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_DETAILS_TOOLTIP));
         tabbedPane.addTab(null, responseDetailsScroll);
         tabbedPane.setTabComponentAt(2, responseDetailsLabel);
 

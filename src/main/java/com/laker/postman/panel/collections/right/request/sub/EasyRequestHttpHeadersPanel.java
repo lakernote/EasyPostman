@@ -133,8 +133,8 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     }
 
     private void setupLayout() {
-        JScrollPane scrollPane = new JScrollPane(tablePanel);
-        add(scrollPane, BorderLayout.CENTER);
+        // tablePanel 已经内部包含了 JScrollPane，直接添加即可
+        add(tablePanel, BorderLayout.CENTER);
     }
 
     private LinkedHashMap<String, String> initializeTableWithDefaults() {

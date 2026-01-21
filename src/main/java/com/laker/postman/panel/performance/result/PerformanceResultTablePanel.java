@@ -87,11 +87,6 @@ public class PerformanceResultTablePanel extends JPanel {
         table.setRowHeight(24);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(false);
-
-        // 显示表格线
-        table.setShowGrid(true);
-        table.setGridColor(UIManager.getColor("Performance.resultTable.gridColor"));
-
         // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 
@@ -123,7 +118,7 @@ public class PerformanceResultTablePanel extends JPanel {
         }
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
-        split.setDividerLocation(0.3);
+        split.setDividerLocation(400);
         add(split, BorderLayout.CENTER);
     }
 

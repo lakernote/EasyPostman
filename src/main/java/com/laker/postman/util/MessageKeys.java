@@ -163,9 +163,6 @@ public final class MessageKeys {
     public static final String TAB_SCRIPTS = "tab.scripts";
     public static final String TAB_TESTS = "tab.tests";
     public static final String TAB_NETWORK_LOG = "tab.network_log";
-    public static final String TAB_NETWORK_LOG_TOOLTIP = "tab.network_log.tooltip";
-    public static final String TAB_REQUEST_DETAILS_TOOLTIP = "tab.request_details.tooltip";
-    public static final String TAB_RESPONSE_DETAILS_TOOLTIP = "tab.response_details.tooltip";
     public static final String TAB_REQUEST_HEADERS = "tab.request_headers";
     public static final String TAB_REQUEST_BODY = "tab.request_body";
     public static final String TAB_RESPONSE_HEADERS = "tab.response_headers";
@@ -213,8 +210,6 @@ public final class MessageKeys {
 
     // ============ 脚本相关 ============
     public static final String SCRIPT_BUTTON_SNIPPETS = "script.button.snippets";
-    public static final String SCRIPT_PRESCRIPT_TOOLTIP = "script.prescript.tooltip";
-    public static final String SCRIPT_POSTSCRIPT_TOOLTIP = "script.postscript.tooltip";
     public static final String SCRIPT_HELP_TITLE = "script.help.title";
     public static final String SCRIPT_HELP_INTRO = "script.help.intro";
     public static final String SCRIPT_HELP_FEATURES = "script.help.features";

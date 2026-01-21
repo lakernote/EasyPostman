@@ -559,6 +559,221 @@ public class HttpFileParserTest {
         assertTrue(hasUrlencodedField(req3, "name", "John"));
     }
 
+    @Test(description = "测试解析带注释的请求（# 开头）")
+    public void testParseRequestWithComments() {
+        String content = """
+                ### 获取认证 Token
+                # @no-cookie-jar
+                # @no-log
+                # @name GetAuthToken
+                POST https://api.example.com/auth/token
+                Content-Type: application/json
+
+                {
+                  "username": "testuser",
+                  "password": "testpass"
+                }
+                """;
+
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        assertNotNull(result);
+        assertEquals(result.getChildCount(), 1);
+
+        HttpRequestItem request = getRequestFromNode(result, 0);
+        assertEquals(request.getName(), "获取认证 Token");
+        assertEquals(request.getMethod(), "POST");
+        assertEquals(request.getUrl(), "https://api.example.com/auth/token");
+    }
+
+    @Test(description = "测试解析多行 urlencoded body")
+    public void testParseMultilineUrlencodedBody() {
+        String content = """
+                ### 提交多行表单
+                POST https://api.example.com/form
+                Content-Type: application/x-www-form-urlencoded
+
+                grant_type = password &
+                username = testuser &
+                password = testpass &
+                scope = read write
+                """;
+
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        assertNotNull(result);
+
+        HttpRequestItem request = getRequestFromNode(result, 0);
+        assertEquals(request.getMethod(), "POST");
+        assertEquals(request.getBodyType(), "urlencoded");
+        assertNotNull(request.getUrlencodedList());
+
+        // 验证字段
+        assertTrue(hasUrlencodedField(request, "grant_type", "password"));
+        assertTrue(hasUrlencodedField(request, "username", "testuser"));
+        assertTrue(hasUrlencodedField(request, "password", "testpass"));
+        assertTrue(hasUrlencodedField(request, "scope", "read write"));
+    }
+
+    @Test(description = "测试解析带响应处理脚本的请求")
+    public void testParseRequestWithResponseScript() {
+        String content = """
+                ### 获取 Token
+                POST https://api.example.com/token
+                Content-Type: application/json
+
+                {
+                  "username": "test"
+                }
+
+                > {% client.global.set("token", response.body.token); %}
+
+                ### 使用 Token
+                GET https://api.example.com/data
+                Authorization: Bearer {{token}}
+                """;
+
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        assertNotNull(result);
+        assertEquals(result.getChildCount(), 2, "应该解析出 2 个请求");
+
+        HttpRequestItem req1 = getRequestFromNode(result, 0);
+        assertEquals(req1.getName(), "获取 Token");
+        assertEquals(req1.getMethod(), "POST");
+
+        // 验证响应脚本被转换为 Postman 格式
+        assertNotNull(req1.getPostscript(), "应该有后置脚本");
+        assertFalse(req1.getPostscript().isEmpty(), "后置脚本不应为空");
+        assertTrue(req1.getPostscript().contains("pm.environment.set"), "应该转换为 pm.environment.set");
+        assertTrue(req1.getPostscript().contains("pm.response.json()"), "应该转换为 pm.response.json()");
+        assertFalse(req1.getPostscript().contains("client.global.set"), "不应该包含 client.global.set");
+
+        HttpRequestItem req2 = getRequestFromNode(result, 1);
+        assertEquals(req2.getName(), "使用 Token");
+        assertEquals(req2.getMethod(), "GET");
+    }
+
+    @Test(description = "测试脚本转换的各种场景")
+    public void testScriptConversion() {
+        String content = """
+                ### 测试多种脚本语法
+                POST https://api.example.com/test
+                
+                > {% 
+                client.global.set("var1", response.body.value1);
+                client.global.set("var2", response.body.data.value2);
+                client.global.get("existingVar");
+                client.test("Status is 200", function() {
+                    return response.status === 200;
+                });
+                %}
+                """;
+
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        assertNotNull(result);
+        assertEquals(result.getChildCount(), 1);
+
+        HttpRequestItem req = getRequestFromNode(result, 0);
+        String postscript = req.getPostscript();
+
+        // 打印脚本以便调试
+        System.out.println("转换后的脚本:");
+        System.out.println(postscript);
+        System.out.println("---");
+
+        assertNotNull(postscript, "应该有后置脚本");
+        assertTrue(postscript.contains("pm.environment.set(\"var1\""), "应该转换 client.global.set");
+        assertTrue(postscript.contains("pm.response.json().value1"), "应该转换 response.body.value1");
+        assertTrue(postscript.contains("pm.response.json().data.value2"), "应该转换 response.body.data.value2");
+        assertTrue(postscript.contains("pm.environment.get(\"existingVar\")"), "应该转换 client.global.get");
+        assertTrue(postscript.contains("pm.test(\"Status is 200\""), "应该转换 client.test");
+        assertTrue(postscript.contains("pm.response.code"), "应该转换 response.status");
+    }
+
+    @Test(description = "测试解析完整的认证流程（实际案例）")
+    public void testParseRealWorldAuthFlow() {
+        String content = """
+                ### STEP 1: 获取 Bearer Token
+                # @no-cookie-jar
+                # @no-log
+                # @name GetBearerToken
+                POST https://{{auth_server}}/api/v1/auth/bearer-token
+                Content-Type: application/json
+
+                {
+                  "username": "{{username}}",
+                  "password": "{{password}}"
+                }
+
+                > {% client.global.set("bearerToken", response.body.token); %}
+
+                ### STEP 2: 生成 Access Token
+                # @no-cookie-jar
+                # @no-log
+                # @name GenerateAccessToken
+                POST https://{{auth_server}}/api/v1/oauth/token
+                Content-Type: application/x-www-form-urlencoded
+
+                grant_type = {{grant_type}} &
+                assertion = {{bearerToken}} &
+                scope = {{scope}} &
+                include_refresh_token = true &
+                client_id = {{client_id}} &
+                client_secret = {{client_secret}}
+
+                > {% client.global.set("accessToken", response.body.access_token); %}
+
+                ### STEP 3: 验证 Access Token
+                # @no-cookie-jar
+                # @no-log
+                # @name ValidateAccessToken
+                POST https://{{auth_server}}/api/v1/oauth/validate
+                Authorization: Basic {{client_id}} {{client_secret}}
+                Content-Type: application/x-www-form-urlencoded
+
+                access_token = {{accessToken}}
+                """;
+
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        assertNotNull(result, "应该成功解析");
+        assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
+
+        // 验证 STEP 1
+        HttpRequestItem req1 = getRequestFromNode(result, 0);
+        assertEquals(req1.getName(), "STEP 1: 获取 Bearer Token");
+        assertEquals(req1.getMethod(), "POST");
+        assertTrue(req1.getUrl().contains("bearer-token"));
+        assertEquals(req1.getBodyType(), "raw");
+        assertTrue(req1.getBody().contains("{{username}}"));
+
+        // 验证 STEP 1 的响应脚本
+        assertNotNull(req1.getPostscript(), "STEP 1 应该有后置脚本");
+        assertTrue(req1.getPostscript().contains("pm.environment.set(\"bearerToken\""), "应该设置 bearerToken");
+        assertTrue(req1.getPostscript().contains("pm.response.json().token"), "应该从响应中获取 token");
+
+        // 验证 STEP 2
+        HttpRequestItem req2 = getRequestFromNode(result, 1);
+        assertEquals(req2.getName(), "STEP 2: 生成 Access Token");
+        assertEquals(req2.getMethod(), "POST");
+        assertEquals(req2.getBodyType(), "urlencoded");
+        assertTrue(hasUrlencodedField(req2, "grant_type", "{{grant_type}}"));
+        assertTrue(hasUrlencodedField(req2, "assertion", "{{bearerToken}}"));
+        assertTrue(hasUrlencodedField(req2, "scope", "{{scope}}"));
+
+        // 验证 STEP 2 的响应脚本
+        assertNotNull(req2.getPostscript(), "STEP 2 应该有后置脚本");
+        assertTrue(req2.getPostscript().contains("pm.environment.set(\"accessToken\""), "应该设置 accessToken");
+        assertTrue(req2.getPostscript().contains("pm.response.json().access_token"), "应该从响应中获取 access_token");
+
+        // 验证 STEP 3
+        HttpRequestItem req3 = getRequestFromNode(result, 2);
+        assertEquals(req3.getName(), "STEP 3: 验证 Access Token");
+        assertEquals(req3.getMethod(), "POST");
+        assertEquals(req3.getAuthType(), AUTH_TYPE_BASIC);
+        assertEquals(req3.getAuthUsername(), "{{client_id}}");
+        assertEquals(req3.getAuthPassword(), "{{client_secret}}");
+        assertEquals(req3.getBodyType(), "urlencoded");
+        assertTrue(hasUrlencodedField(req3, "access_token", "{{accessToken}}"));
+    }
+
     // 辅助方法：从节点获取 HttpRequestItem
     private HttpRequestItem getRequestFromNode(DefaultMutableTreeNode root, int index) {
         DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) root.getChildAt(index);

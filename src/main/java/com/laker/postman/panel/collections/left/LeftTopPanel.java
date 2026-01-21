@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -335,7 +336,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE));
         // 设置文件过滤器，只显示 .http 文件
-        javax.swing.filechooser.FileFilter httpFilter = new javax.swing.filechooser.FileFilter() {
+        FileFilter httpFilter = new FileFilter() {
             @Override
             public boolean accept(File f) {
                 return f.isDirectory() || f.getName().toLowerCase().endsWith(".http");

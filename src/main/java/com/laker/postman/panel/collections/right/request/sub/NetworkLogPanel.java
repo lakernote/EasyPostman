@@ -5,7 +5,6 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -36,39 +35,26 @@ public class NetworkLogPanel extends JPanel {
         // 创建 TabbedPane
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
 
-        // 1. Network Log Tab - 添加图标
+        // 1. Network Log Tab
         logArea = new JTextPane();
         logArea.setEditable(false);
         doc = logArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(logArea);
+        tabbedPane.addTab("Log", logScroll);
 
-        // 创建带图标的标签
-        JLabel networkLogLabel = new JLabel(IconUtil.createThemed("icons/console.svg", 18, 18));
-        networkLogLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG_TOOLTIP));
-        tabbedPane.addTab(null, logScroll);
-        tabbedPane.setTabComponentAt(0, networkLogLabel);
-
-        // 2. Request Details Tab - 添加图标
+        // 2. Request Details Tab
         requestDetailsPane = createDetailPane();
         JScrollPane requestDetailsScroll = new JScrollPane(requestDetailsPane);
         requestDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         requestDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        tabbedPane.addTab("Request", requestDetailsScroll);
 
-        JLabel requestDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 18, 18));
-        requestDetailsLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_DETAILS_TOOLTIP));
-        tabbedPane.addTab(null, requestDetailsScroll);
-        tabbedPane.setTabComponentAt(1, requestDetailsLabel);
-
-        // 3. Response Details Tab - 添加图标
+        // 3. Response Details Tab
         responseDetailsPane = createDetailPane();
         JScrollPane responseDetailsScroll = new JScrollPane(responseDetailsPane);
         responseDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         responseDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-
-        JLabel responseDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 18, 18));
-        responseDetailsLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_DETAILS_TOOLTIP));
-        tabbedPane.addTab(null, responseDetailsScroll);
-        tabbedPane.setTabComponentAt(2, responseDetailsLabel);
+        tabbedPane.addTab("Response", responseDetailsScroll);
 
         add(tabbedPane, BorderLayout.CENTER);
     }

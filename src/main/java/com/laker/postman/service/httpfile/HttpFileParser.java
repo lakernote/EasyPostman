@@ -12,7 +12,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 
 /**
  * HTTP 文件解析器
@@ -30,6 +31,8 @@ public class HttpFileParser {
     private static final Pattern HTTP_METHOD_PATTERN = Pattern.compile("^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\\s+(.+)$");
     // 匹配头部：Key: Value
     private static final Pattern HEADER_PATTERN = Pattern.compile("^([^:]+):\\s*(.+)$");
+    // 匹配单行注释：# 开头
+    private static final Pattern COMMENT_PATTERN = Pattern.compile("^#\\s*(.*)$");
 
     /**
      * 私有构造函数，防止实例化
@@ -87,7 +90,9 @@ public class HttpFileParser {
         List<HttpRequestItem> requests = new ArrayList<>();
         HttpRequestItem currentRequest = null;
         StringBuilder bodyBuilder = null;
+        StringBuilder responseScriptBuilder = null;
         boolean inBody = false;
+        boolean inResponseScript = false;
         String contentType = null;
 
         for (int i = 0; i < lines.length; i++) {
@@ -103,12 +108,72 @@ public class HttpFileParser {
                 continue;
             }
 
+            // 跳过单行注释（# 开头，但不是 ###）
+            if (COMMENT_PATTERN.matcher(trimmedLine).matches() && !trimmedLine.startsWith("###")) {
+                continue;
+            }
+
+            // 检查响应处理脚本开始（> {% ... %} 格式）
+            if (trimmedLine.startsWith(">") && trimmedLine.contains("{%")) {
+                // 如果在 body 中遇到响应脚本，说明 body 已结束
+                if (inBody) {
+                    inBody = false;
+                }
+                // 初始化响应脚本 builder
+                if (responseScriptBuilder == null) {
+                    responseScriptBuilder = new StringBuilder();
+                } else if (!responseScriptBuilder.isEmpty()) {
+                    responseScriptBuilder.append("\n");
+                }
+                // 提取脚本内容（去掉 > {% 和 %}）
+                String scriptLine = trimmedLine.substring(1).trim(); // 去掉 >
+                if (scriptLine.startsWith("{%") && scriptLine.endsWith("%}")) {
+                    // 单行脚本
+                    scriptLine = scriptLine.substring(2, scriptLine.length() - 2).trim();
+                    responseScriptBuilder.append(scriptLine);
+                    inResponseScript = false; // 单行脚本立即结束
+                } else if (scriptLine.startsWith("{%")) {
+                    // 多行脚本开始
+                    scriptLine = scriptLine.substring(2).trim();
+                    responseScriptBuilder.append(scriptLine);
+                    inResponseScript = true;
+                } else {
+                    // 未知格式，跳过
+                    inResponseScript = false;
+                }
+                continue;
+            }
+
+            // 如果在响应脚本模式中，继续收集多行脚本
+            if (inResponseScript) {
+                if (trimmedLine.endsWith("%}")) {
+                    // 脚本结束
+                    String scriptLine = trimmedLine;
+                    if (scriptLine.endsWith("%}")) {
+                        scriptLine = scriptLine.substring(0, scriptLine.length() - 2).trim();
+                    }
+                    if (!scriptLine.isEmpty()) {
+                        responseScriptBuilder.append("\n").append(scriptLine);
+                    }
+                    inResponseScript = false;
+                } else {
+                    // 继续收集脚本内容
+                    responseScriptBuilder.append("\n").append(trimmedLine);
+                }
+                continue;
+            }
+
             // 检查是否是请求分隔符（### 开头的注释）
             Matcher separatorMatcher = REQUEST_SEPARATOR_PATTERN.matcher(trimmedLine);
             if (separatorMatcher.matches()) {
                 // 保存上一个请求
                 if (currentRequest != null) {
                     finishRequest(currentRequest, bodyBuilder, contentType);
+                    // 处理响应脚本
+                    if (responseScriptBuilder != null && !responseScriptBuilder.isEmpty()) {
+                        String convertedScript = convertResponseScriptToPostman(responseScriptBuilder.toString());
+                        currentRequest.setPostscript(convertedScript);
+                    }
                     requests.add(currentRequest);
                 }
                 // 开始新请求
@@ -117,6 +182,7 @@ public class HttpFileParser {
                 currentRequest.setId(UUID.randomUUID().toString());
                 currentRequest.setName(requestName.isEmpty() ? "未命名请求" : requestName);
                 bodyBuilder = new StringBuilder();
+                responseScriptBuilder = new StringBuilder();
                 inBody = false;
                 contentType = null;
                 continue;
@@ -131,7 +197,9 @@ public class HttpFileParser {
                     currentRequest.setId(UUID.randomUUID().toString());
                     currentRequest.setName("未命名请求");
                     bodyBuilder = new StringBuilder();
+                    responseScriptBuilder = new StringBuilder();
                     inBody = false;
+                    inResponseScript = false;
                     contentType = null;
                 }
                 String method = methodMatcher.group(1).toUpperCase();
@@ -179,10 +247,10 @@ public class HttpFileParser {
 
             // 其他情况视为 body 内容
             if (currentRequest.getMethod() != null &&
-                ("POST".equals(currentRequest.getMethod()) ||
-                 "PUT".equals(currentRequest.getMethod()) ||
-                 "PATCH".equals(currentRequest.getMethod()) ||
-                 "DELETE".equals(currentRequest.getMethod()))) {
+                    ("POST".equals(currentRequest.getMethod()) ||
+                            "PUT".equals(currentRequest.getMethod()) ||
+                            "PATCH".equals(currentRequest.getMethod()) ||
+                            "DELETE".equals(currentRequest.getMethod()))) {
                 inBody = true;
                 if (bodyBuilder != null && !bodyBuilder.isEmpty()) {
                     bodyBuilder.append("\n");
@@ -197,6 +265,11 @@ public class HttpFileParser {
         // 保存最后一个请求
         if (currentRequest != null) {
             finishRequest(currentRequest, bodyBuilder, contentType);
+            // 处理响应脚本
+            if (responseScriptBuilder != null && responseScriptBuilder.length() > 0) {
+                String convertedScript = convertResponseScriptToPostman(responseScriptBuilder.toString());
+                currentRequest.setPostscript(convertedScript);
+            }
             requests.add(currentRequest);
         }
 
@@ -224,13 +297,31 @@ public class HttpFileParser {
                 if (contentType != null && contentType.contains("application/x-www-form-urlencoded")) {
                     // 解析 urlencoded 格式
                     List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-                    String[] pairs = body.split("&");
+
+                    // 处理多行格式（每行可能以 & 结尾）
+                    // 先移除所有换行符和多余的空格，然后按 & 分割
+                    String normalizedBody = body.replaceAll("\\s*&\\s*\\n\\s*", "&")  // 处理 & 后换行
+                            .replaceAll("\\n\\s*", "&")           // 处理换行（视为 & 分隔）
+                            .replaceAll("&+", "&");              // 移除重复的 &
+
+                    String[] pairs = normalizedBody.split("&");
                     for (String pair : pairs) {
-                        String[] kv = pair.split("=", 2);
-                        String name = kv.length > 0 ? kv[0].trim() : "";
-                        String value = kv.length > 1 ? kv[1].trim() : "";
-                        if (!name.isEmpty()) {
-                            urlencodedList.add(new HttpFormUrlencoded(true, name, value));
+                        pair = pair.trim();
+                        if (pair.isEmpty()) {
+                            continue;
+                        }
+
+                        // 处理 key = value 或 key=value 格式
+                        int equalsIndex = pair.indexOf('=');
+                        if (equalsIndex > 0) {
+                            String name = pair.substring(0, equalsIndex).trim();
+                            String value = pair.substring(equalsIndex + 1).trim();
+                            if (!name.isEmpty()) {
+                                urlencodedList.add(new HttpFormUrlencoded(true, name, value));
+                            }
+                        } else if (!pair.contains("=")) {
+                            // 没有等号，视为单独的 key
+                            urlencodedList.add(new HttpFormUrlencoded(true, pair, ""));
                         }
                     }
                     request.setUrlencodedList(urlencodedList);
@@ -262,6 +353,67 @@ public class HttpFileParser {
                 request.setName(request.getUrl());
             }
         }
+    }
+
+    /**
+     * 将 IntelliJ HTTP Client 的响应脚本转换为 Postman 风格的脚本
+     * 例如：client.global.set("token", response.body.token) -> pm.environment.set("token", pm.response.json().token)
+     */
+    private static String convertResponseScriptToPostman(String httpClientScript) {
+        if (httpClientScript == null || httpClientScript.trim().isEmpty()) {
+            return "";
+        }
+
+        StringBuilder postmanScript = new StringBuilder();
+        String[] lines = httpClientScript.split("\n");
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+
+            String convertedLine = line;
+
+            // 转换 client.global.set 为 pm.environment.set
+            if (line.contains("client.global.set")) {
+                convertedLine = line.replace("client.global.set", "pm.environment.set");
+
+                // 转换 response.body 为 pm.response.json()
+                // 例如：response.body.token -> pm.response.json().token
+                convertedLine = convertedLine.replaceAll("response\\.body\\.([a-zA-Z0-9_]+)", "pm.response.json().$1");
+
+                // 如果只有 response.body（没有属性访问），转换为 pm.response.json()
+                convertedLine = convertedLine.replace("response.body", "pm.response.json()");
+            }
+
+            // 转换 client.global.get 为 pm.environment.get
+            if (line.contains("client.global.get")) {
+                convertedLine = convertedLine.replace("client.global.get", "pm.environment.get");
+            }
+
+            // 转换 client.test 为 pm.test
+            if (line.contains("client.test")) {
+                convertedLine = convertedLine.replace("client.test", "pm.test");
+            }
+
+            // 转换 response.status 为 pm.response.code
+            if (line.contains("response.status")) {
+                convertedLine = convertedLine.replace("response.status", "pm.response.code");
+            }
+
+            // 转换 response.headers 为 pm.response.headers
+            if (line.contains("response.headers")) {
+                convertedLine = convertedLine.replace("response.headers", "pm.response.headers");
+            }
+
+            if (!postmanScript.isEmpty()) {
+                postmanScript.append("\n");
+            }
+            postmanScript.append(convertedLine);
+        }
+
+        return postmanScript.toString();
     }
 
     /**

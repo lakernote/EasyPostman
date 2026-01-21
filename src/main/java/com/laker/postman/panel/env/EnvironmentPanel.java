@@ -83,7 +83,6 @@ public class EnvironmentPanel extends SingletonBasePanel {
         JScrollPane envListScroll = new JScrollPane(environmentList);
         envListScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 禁用横向滚动条
         leftPanel.add(envListScroll, BorderLayout.CENTER);
-        add(leftPanel, BorderLayout.WEST);
 
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
@@ -95,7 +94,13 @@ public class EnvironmentPanel extends SingletonBasePanel {
         hintPanel = createShortcutHintPanel();
         rightPanel.add(hintPanel, BorderLayout.SOUTH);
 
-        add(rightPanel, BorderLayout.CENTER);
+        // 使用 JSplitPane 将左右两个面板组合，支持拖动调整大小
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setDividerLocation(250); // 设置分隔条初始位置
+        splitPane.setContinuousLayout(true); // 拖动时实时更新布局
+        splitPane.setResizeWeight(0.3); // 设置左侧面板调整权重（30%）
+
+        add(splitPane, BorderLayout.CENTER);
 
         // 初始化表格验证和自动保存功能
         initTableValidationAndAutoSave();
@@ -193,19 +198,20 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     private JPanel getSearchAndImportPanel() {
-        JPanel importExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel importExportPanel = new JPanel();
+        importExportPanel.setLayout(new BoxLayout(importExportPanel, BoxLayout.X_AXIS));
         importExportPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         importBtn = new ImportButton();
         importBtn.addActionListener(e -> showImportMenu());
-        importExportPanel.add(importBtn);
 
         ExportButton exportBtn = new ExportButton();
         exportBtn.addActionListener(e -> exportEnvironments());
-        importExportPanel.add(exportBtn);
 
         searchField = new SearchTextField();
-        searchField.setPreferredSize(new Dimension(180, 28));
+
+        importExportPanel.add(importBtn);
+        importExportPanel.add(exportBtn);
         importExportPanel.add(searchField);
         return importExportPanel;
     }

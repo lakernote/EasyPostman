@@ -16,6 +16,7 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_NONE;
 import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_DATA;
 import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
 
 /**
@@ -97,6 +98,7 @@ public class HttpFileParser {
         boolean inBody = false;
         boolean inResponseScript = false;
         String contentType = null;
+        String boundary = null;
 
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
@@ -171,7 +173,7 @@ public class HttpFileParser {
             if (separatorMatcher.matches()) {
                 // 保存上一个请求
                 if (currentRequest != null) {
-                    finishRequest(currentRequest, bodyBuilder, contentType);
+                    finishRequest(currentRequest, bodyBuilder, contentType, boundary);
                     // 处理响应脚本
                     if (responseScriptBuilder != null && !responseScriptBuilder.isEmpty()) {
                         String convertedScript = convertResponseScriptToPostman(responseScriptBuilder.toString());
@@ -188,6 +190,7 @@ public class HttpFileParser {
                 responseScriptBuilder = new StringBuilder();
                 inBody = false;
                 contentType = null;
+                boundary = null;
                 continue;
             }
 
@@ -218,14 +221,32 @@ public class HttpFileParser {
             }
 
             // 检查是否是 Content-Type 头部（可能影响 body 解析）
-            if (trimmedLine.toLowerCase().startsWith("content-type:")) {
+            // 只有在未进入 body 时才作为请求头处理
+            if (trimmedLine.toLowerCase().startsWith("content-type:") && !inBody) {
                 Matcher contentTypeMatcher = HEADER_PATTERN.matcher(trimmedLine);
                 if (contentTypeMatcher.matches()) {
-                    contentType = contentTypeMatcher.group(2).trim().toLowerCase();
+                    String originalContentType = contentTypeMatcher.group(2).trim();
+                    contentType = originalContentType.toLowerCase();
+
+                    // 检查是否是 multipart/form-data 并提取 boundary
+                    // 注意：boundary 是大小写敏感的，所以要从原始值中提取
+                    if (contentType.contains("multipart/form-data")) {
+                        // 使用不区分大小写的匹配来找到 boundary 参数
+                        Pattern boundaryPattern = Pattern.compile("boundary=([^;\\s]+)", Pattern.CASE_INSENSITIVE);
+                        Matcher boundaryMatcher = boundaryPattern.matcher(originalContentType);
+                        if (boundaryMatcher.find()) {
+                            boundary = boundaryMatcher.group(1).trim();
+                            // 移除可能的引号
+                            if (boundary.startsWith("\"") && boundary.endsWith("\"")) {
+                                boundary = boundary.substring(1, boundary.length() - 1);
+                            }
+                        }
+                    }
+
                     if (currentRequest.getHeadersList() == null) {
                         currentRequest.setHeadersList(new ArrayList<>());
                     }
-                    currentRequest.getHeadersList().add(new HttpHeader(true, "Content-Type", contentTypeMatcher.group(2).trim()));
+                    currentRequest.getHeadersList().add(new HttpHeader(true, "Content-Type", originalContentType));
                     continue;
                 }
             }
@@ -267,7 +288,7 @@ public class HttpFileParser {
 
         // 保存最后一个请求
         if (currentRequest != null) {
-            finishRequest(currentRequest, bodyBuilder, contentType);
+            finishRequest(currentRequest, bodyBuilder, contentType, boundary);
             // 处理响应脚本
             if (responseScriptBuilder != null && responseScriptBuilder.length() > 0) {
                 String convertedScript = convertResponseScriptToPostman(responseScriptBuilder.toString());
@@ -282,7 +303,7 @@ public class HttpFileParser {
     /**
      * 完成请求解析，设置 body 和其他属性
      */
-    private static void finishRequest(HttpRequestItem request, StringBuilder bodyBuilder, String contentType) {
+    private static void finishRequest(HttpRequestItem request, StringBuilder bodyBuilder, String contentType, String boundary) {
         // 设置协议类型
         if (HttpUtil.isSSERequest(request)) {
             request.setProtocol(RequestItemProtocolEnum.SSE);
@@ -297,38 +318,12 @@ public class HttpFileParser {
             String body = bodyBuilder.toString().trim();
             if (!body.isEmpty()) {
                 // 根据 Content-Type 处理 body
-                if (contentType != null && contentType.contains("application/x-www-form-urlencoded")) {
+                if (contentType != null && contentType.contains("multipart/form-data")) {
+                    // 解析 multipart/form-data 格式
+                    parseMultipartFormData(request, body, boundary);
+                } else if (contentType != null && contentType.contains("application/x-www-form-urlencoded")) {
                     // 解析 urlencoded 格式
-                    List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-
-                    // 处理多行格式（每行可能以 & 结尾）
-                    // 先移除所有换行符和多余的空格，然后按 & 分割
-                    String normalizedBody = body.replaceAll("\\s*&\\s*\\n\\s*", "&")  // 处理 & 后换行
-                            .replaceAll("\\n\\s*", "&")           // 处理换行（视为 & 分隔）
-                            .replaceAll("&+", "&");              // 移除重复的 &
-
-                    String[] pairs = normalizedBody.split("&");
-                    for (String pair : pairs) {
-                        pair = pair.trim();
-                        if (pair.isEmpty()) {
-                            continue;
-                        }
-
-                        // 处理 key = value 或 key=value 格式
-                        int equalsIndex = pair.indexOf('=');
-                        if (equalsIndex > 0) {
-                            String name = pair.substring(0, equalsIndex).trim();
-                            String value = pair.substring(equalsIndex + 1).trim();
-                            if (!name.isEmpty()) {
-                                urlencodedList.add(new HttpFormUrlencoded(true, name, value));
-                            }
-                        } else if (!pair.contains("=")) {
-                            // 没有等号，视为单独的 key
-                            urlencodedList.add(new HttpFormUrlencoded(true, pair, ""));
-                        }
-                    }
-                    request.setUrlencodedList(urlencodedList);
-                    request.setBodyType(BODY_TYPE_FORM_URLENCODED);
+                    parseUrlencodedBody(request, body);
                 } else {
                     // 默认作为 raw body
                     request.setBody(body);
@@ -423,6 +418,149 @@ public class HttpFileParser {
         }
 
         return postmanScript.toString();
+    }
+
+    /**
+     * 解析 application/x-www-form-urlencoded 格式的 body
+     */
+    private static void parseUrlencodedBody(HttpRequestItem request, String body) {
+        List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+
+        // 处理多行格式（每行可能以 & 结尾）
+        // 先移除所有换行符和多余的空格，然后按 & 分割
+        String normalizedBody = body.replaceAll("\\s*&\\s*\\n\\s*", "&")  // 处理 & 后换行
+                .replaceAll("\\n\\s*", "&")           // 处理换行（视为 & 分隔）
+                .replaceAll("&+", "&");              // 移除重复的 &
+
+        String[] pairs = normalizedBody.split("&");
+        for (String pair : pairs) {
+            pair = pair.trim();
+            if (pair.isEmpty()) {
+                continue;
+            }
+
+            // 处理 key = value 或 key=value 格式
+            int equalsIndex = pair.indexOf('=');
+            if (equalsIndex > 0) {
+                String name = pair.substring(0, equalsIndex).trim();
+                String value = pair.substring(equalsIndex + 1).trim();
+                if (!name.isEmpty()) {
+                    urlencodedList.add(new HttpFormUrlencoded(true, name, value));
+                }
+            } else if (!pair.contains("=")) {
+                // 没有等号，视为单独的 key
+                urlencodedList.add(new HttpFormUrlencoded(true, pair, ""));
+            }
+        }
+        request.setUrlencodedList(urlencodedList);
+        request.setBodyType(BODY_TYPE_FORM_URLENCODED);
+    }
+
+    /**
+     * 解析 multipart/form-data 格式的 body
+     */
+    private static void parseMultipartFormData(HttpRequestItem request, String body, String boundary) {
+        if (boundary == null || boundary.isEmpty()) {
+            log.warn("multipart/form-data 缺少 boundary，无法解析");
+            // 降级为 raw body
+            request.setBody(body);
+            request.setBodyType(BODY_TYPE_RAW);
+            return;
+        }
+
+        List<HttpFormData> formDataList = new ArrayList<>();
+
+        // 添加 -- 前缀到 boundary（如果还没有）
+        String fullBoundary = boundary.startsWith("--") ? boundary : "--" + boundary;
+
+        // 使用正则表达式分割，匹配边界前面可能有换行符的情况
+        // 分割模式：可选的换行符 + boundary
+        String splitPattern = "(?:\\r?\\n)?" + Pattern.quote(fullBoundary);
+        String[] parts = body.split(splitPattern);
+
+
+        for (String part : parts) {
+            part = part.trim();
+            // 跳过空 part 和结束标志
+            if (part.isEmpty() || part.equals("--")) {
+                continue;
+            }
+
+            try {
+                // 将 part 按行分割
+                String[] lines = part.split("\\r?\\n");
+
+                String fieldName = null;
+                String fileName = null;
+                StringBuilder contentBuilder = new StringBuilder();
+                boolean foundDoubleNewline = false;
+
+                // 解析 Content-Disposition 头部
+                Pattern dispositionPattern = Pattern.compile(
+                    "Content-Disposition:\\s*form-data;\\s*name=\"([^\"]+)\"(?:;\\s*filename=\"([^\"]+)\")?",
+                    Pattern.CASE_INSENSITIVE
+                );
+
+                int lineIndex = 0;
+                // 先处理所有头部（Content-Disposition, Content-Type等）
+                for (; lineIndex < lines.length; lineIndex++) {
+                    String line = lines[lineIndex];
+
+                    // 检查是否是空行（表示头部结束）
+                    if (line.trim().isEmpty()) {
+                        foundDoubleNewline = true;
+                        lineIndex++; // 跳过空行
+                        break;
+                    }
+
+                    // 解析 Content-Disposition
+                    Matcher dispositionMatcher = dispositionPattern.matcher(line);
+                    if (dispositionMatcher.find()) {
+                        fieldName = dispositionMatcher.group(1);
+                        fileName = dispositionMatcher.group(2);
+                    }
+
+                    // 其他头部（如 Content-Type）我们暂时忽略，只关注 Content-Disposition
+                }
+
+                // 收集内容（空行之后的所有行）
+                if (foundDoubleNewline && fieldName != null) {
+                    for (; lineIndex < lines.length; lineIndex++) {
+                        if (contentBuilder.length() > 0) {
+                            contentBuilder.append("\n");
+                        }
+                        contentBuilder.append(lines[lineIndex]);
+                    }
+
+                    String value = contentBuilder.toString().trim();
+
+                    // 检查是否是文件引用（< ./filename 格式）
+                    if (value.startsWith("<")) {
+                        value = value.substring(1).trim();
+                    }
+
+                    // 判断是文件还是文本字段
+                    if (fileName != null && !fileName.isEmpty()) {
+                        // 文件字段
+                        formDataList.add(new HttpFormData(true, fieldName, HttpFormData.TYPE_FILE, value.isEmpty() ? fileName : value));
+                    } else {
+                        // 文本字段
+                        formDataList.add(new HttpFormData(true, fieldName, HttpFormData.TYPE_TEXT, value));
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析 multipart part 失败: " + e.getMessage(), e);
+            }
+        }
+
+        if (formDataList.isEmpty()) {
+            log.warn("multipart/form-data 解析结果为空，降级为 raw body");
+            request.setBody(body);
+            request.setBodyType(BODY_TYPE_RAW);
+        } else {
+            request.setFormDataList(formDataList);
+            request.setBodyType(BODY_TYPE_FORM_DATA);
+        }
     }
 
     /**

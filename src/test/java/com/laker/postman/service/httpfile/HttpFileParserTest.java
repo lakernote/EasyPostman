@@ -232,6 +232,50 @@ public class HttpFileParserTest {
         assertTrue(hasUrlencodedField(request, "age", "30"));
     }
 
+    @Test(description = "测试解析 multipart/form-data body")
+    public void testParseMultipartFormData() {
+        String content = """
+                ### Send a form with text and file fields
+                POST https://examples.http-client.intellij.net/post
+                Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+                --WebAppBoundary
+                Content-Disposition: form-data; name="element-name"
+                Content-Type: text/plain
+
+                Name
+                --WebAppBoundary
+                Content-Disposition: form-data; name="data"; filename="data.json"
+                Content-Type: application/json
+
+                < ./request-form-data.json
+                --WebAppBoundary--
+                """;
+
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        assertNotNull(result);
+
+        HttpRequestItem request = getRequestFromNode(result, 0);
+        assertEquals(request.getMethod(), "POST");
+        assertEquals(request.getBodyType(), "form-data");
+        assertNotNull(request.getFormDataList());
+        assertEquals(request.getFormDataList().size(), 2, "应该有 2 个 form-data 字段");
+
+        // 验证文本字段
+        boolean hasTextField = request.getFormDataList().stream()
+                .anyMatch(f -> "element-name".equals(f.getKey()) &&
+                             "Name".equals(f.getValue()) &&
+                             f.isText());
+        assertTrue(hasTextField, "应该有名为 element-name 的文本字段");
+
+        // 验证文件字段
+        boolean hasFileField = request.getFormDataList().stream()
+                .anyMatch(f -> "data".equals(f.getKey()) &&
+                             f.getValue().contains("request-form-data.json") &&
+                             !f.isText());
+        assertTrue(hasFileField, "应该有名为 data 的文件字段");
+    }
+
     @Test(description = "测试解析各种 HTTP 方法")
     public void testParseVariousHttpMethods() {
         String content = """

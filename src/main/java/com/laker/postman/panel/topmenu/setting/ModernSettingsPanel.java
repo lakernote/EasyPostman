@@ -13,10 +13,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -206,6 +203,17 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         add(mainContainer, BorderLayout.CENTER);
         add(buttonBar, BorderLayout.SOUTH);
+
+        // Add ESC key handling to trigger cancel button
+        registerKeyboardAction(
+                e -> {
+                    if (cancelBtn != null) {
+                        cancelBtn.doClick();
+                    }
+                },
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        );
     }
 
     /**

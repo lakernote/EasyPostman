@@ -139,14 +139,6 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
                 saveSettings(false);
             }
         });
-
-        inputMap.put(KeyStroke.getKeyStroke("ESCAPE"), "cancel");
-        actionMap.put("cancel", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                cancelBtn.doClick();
-            }
-        });
     }
 
     private void saveSettings(boolean closeAfterSave) {

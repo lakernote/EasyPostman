@@ -29,7 +29,7 @@ public class RequestLinePanel extends JPanel {
     // 尺寸常量
     private static final int ICON_SIZE = 14;
     private static final int COMPONENT_HEIGHT = 32;
-    private static final int METHOD_COMBO_WIDTH = 85;
+    private static final int METHOD_COMBO_WIDTH = 95;
     private static final int PANEL_PADDING = 4;
 
     // 组件

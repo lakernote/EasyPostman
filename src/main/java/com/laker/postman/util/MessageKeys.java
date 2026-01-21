@@ -165,10 +165,8 @@ public final class MessageKeys {
     public static final String TAB_NETWORK_LOG = "tab.network_log";
     public static final String TAB_REQUEST_HEADERS = "tab.request_headers";
     public static final String TAB_REQUEST_BODY = "tab.request_body";
-    public static final String TAB_REQUEST_DETAILS = "tab.request_details";
     public static final String TAB_RESPONSE_HEADERS = "tab.response_headers";
     public static final String TAB_RESPONSE_BODY = "tab.response_body";
-    public static final String TAB_RESPONSE_DETAILS = "tab.response_details";
     public static final String TAB_CLOSE_OTHERS = "tab.close_others";
     public static final String TAB_CLOSE_ALL = "tab.close_all";
     public static final String TAB_UNSAVED_CHANGES_SAVE_CURRENT = "tab.unsaved_changes.save_current";
@@ -199,7 +197,6 @@ public final class MessageKeys {
     public static final String SHORTCUT_DOUBLE_CLICK_HINT = "shortcut.double_click_hint";
 
     // ============ 状态相关 ============
-    public static final String STATUS_CANCELED = "status.canceled";
     public static final String STATUS_SENDING_REQUEST = "status.sending_request";
 
     // ============ WebSocket相关 ============
@@ -212,9 +209,6 @@ public final class MessageKeys {
     public static final String SSE_ERROR = "sse.error";
 
     // ============ 脚本相关 ============
-    public static final String SCRIPT_TAB_PRESCRIPT = "script.tab.prescript";
-    public static final String SCRIPT_TAB_POSTSCRIPT = "script.tab.postscript";
-    public static final String SCRIPT_TAB_HELP = "script.tab.help";
     public static final String SCRIPT_BUTTON_SNIPPETS = "script.button.snippets";
     public static final String SCRIPT_HELP_TITLE = "script.help.title";
     public static final String SCRIPT_HELP_INTRO = "script.help.intro";
@@ -1474,12 +1468,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_JSON_INPUT = "toolbox.json.input";
     public static final String TOOLBOX_JSON_OUTPUT = "toolbox.json.output";
     public static final String TOOLBOX_JSON_ERROR = "toolbox.json.error";
-
-    // 工具箱分类
-    public static final String TOOLBOX_CATEGORY_DATA_PROCESSING = "toolbox.category.data_processing";
-    public static final String TOOLBOX_CATEGORY_SECURITY = "toolbox.category.security";
-    public static final String TOOLBOX_CATEGORY_GENERATOR = "toolbox.category.generator";
-    public static final String TOOLBOX_CATEGORY_ADVANCED = "toolbox.category.advanced";
 
     // JSON 工具状态消息
     public static final String TOOLBOX_JSON_STATUS_EMPTY = "toolbox.json.status.empty";

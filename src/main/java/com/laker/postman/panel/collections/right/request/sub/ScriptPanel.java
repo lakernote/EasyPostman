@@ -37,25 +37,22 @@ public class ScriptPanel extends JPanel {
         postscriptArea = new RSyntaxTextArea(6, 40);
         configureEditor(postscriptArea);
 
-        // 创建选项卡面板
-        tabbedPane = new JTabbedPane();
+        // 创建选项卡面板 垂直方向
+        tabbedPane = new JTabbedPane(SwingConstants.LEFT);
 
         // Pre-script 标签带图标
-        JLabel preLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_PRESCRIPT));
-        preLabel.setIcon(IconUtil.createThemed("icons/arrow-up.svg", 14, 14));
+        JLabel preLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 14, 14));
         tabbedPane.addTab(null, new RTextScrollPane(prescriptArea));
         tabbedPane.setTabComponentAt(0, preLabel);
 
         // Post-script 标签带图标
-        JLabel postLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_POSTSCRIPT));
-        postLabel.setIcon(IconUtil.createThemed("icons/arrow-down.svg", 14, 14));
+        JLabel postLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 14, 14));
         tabbedPane.addTab(null, new RTextScrollPane(postscriptArea));
         tabbedPane.setTabComponentAt(1, postLabel);
 
         // 创建帮助面板
         JPanel helpPanel = createHelpPanel();
-        JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SCRIPT_TAB_HELP));
-        helpLabel.setIcon(IconUtil.createThemed("icons/help.svg", 14, 14));
+        JLabel helpLabel = new JLabel(IconUtil.createThemed("icons/help.svg", 14, 14));
         tabbedPane.addTab(null, helpPanel);
         tabbedPane.setTabComponentAt(2, helpLabel);
 

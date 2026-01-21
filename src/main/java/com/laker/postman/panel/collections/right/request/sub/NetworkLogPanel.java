@@ -1,11 +1,11 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -34,8 +34,7 @@ public class NetworkLogPanel extends JPanel {
         setLayout(new BorderLayout());
 
         // 创建 TabbedPane
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        tabbedPane = new JTabbedPane(SwingConstants.LEFT);
 
         // 1. Network Log Tab - 添加图标
         logArea = new JTextPane();
@@ -44,10 +43,7 @@ public class NetworkLogPanel extends JPanel {
         JScrollPane logScroll = new JScrollPane(logArea);
 
         // 创建带图标的标签
-        JLabel networkLogLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG));
-        FlatSVGIcon networkLogIcon = new FlatSVGIcon("icons/console.svg", 14, 14);
-        networkLogIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("TabbedPane.foreground")));
-        networkLogLabel.setIcon(networkLogIcon);
+        JLabel networkLogLabel = new JLabel(IconUtil.createThemed("icons/console.svg", 14, 14));
         tabbedPane.addTab(null, logScroll);
         tabbedPane.setTabComponentAt(0, networkLogLabel);
 
@@ -57,10 +53,7 @@ public class NetworkLogPanel extends JPanel {
         requestDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         requestDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JLabel requestDetailsLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_DETAILS));
-        FlatSVGIcon requestDetailsIcon = new FlatSVGIcon("icons/arrow-up.svg", 14, 14);
-        requestDetailsIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("TabbedPane.foreground")));
-        requestDetailsLabel.setIcon(requestDetailsIcon);
+        JLabel requestDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-up.svg", 14, 14));
         tabbedPane.addTab(null, requestDetailsScroll);
         tabbedPane.setTabComponentAt(1, requestDetailsLabel);
 
@@ -70,10 +63,7 @@ public class NetworkLogPanel extends JPanel {
         responseDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         responseDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JLabel responseDetailsLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_DETAILS));
-        FlatSVGIcon responseDetailsIcon = new FlatSVGIcon("icons/arrow-down.svg", 14, 14);
-        responseDetailsIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("TabbedPane.foreground")));
-        responseDetailsLabel.setIcon(responseDetailsIcon);
+        JLabel responseDetailsLabel = new JLabel(IconUtil.createThemed("icons/arrow-down.svg", 14, 14));
         tabbedPane.addTab(null, responseDetailsScroll);
         tabbedPane.setTabComponentAt(2, responseDetailsLabel);
 

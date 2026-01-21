@@ -22,6 +22,7 @@ public class ShortcutManager {
     private static final Map<String, ShortcutConfig> shortcuts = new HashMap<>();
 
     // 快捷键ID常量
+    public static final String SEND_REQUEST = "send_request";
     public static final String NEW_REQUEST = "new_request";
     public static final String SAVE_REQUEST = "save_request";
     public static final String CLOSE_CURRENT_TAB = "close_current_tab";
@@ -44,6 +45,11 @@ public class ShortcutManager {
      */
     private static void initDefaultShortcuts() {
         int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+
+        shortcuts.put(SEND_REQUEST, new ShortcutConfig(
+            SEND_REQUEST, "send_request",
+            KeyEvent.VK_ENTER, cmdMask, "Ctrl+Enter", "Cmd+Enter"
+        ));
 
         shortcuts.put(NEW_REQUEST, new ShortcutConfig(
             NEW_REQUEST, "new_request",

@@ -25,7 +25,6 @@ import java.awt.event.ActionListener;
  * 包含：方法选择、URL输入、发送/保存按钮
  * 设计理念：简洁、专业、易用
  */
-@Getter
 public class RequestLinePanel extends JPanel {
     // 尺寸常量
     private static final int ICON_SIZE = 14;
@@ -34,9 +33,13 @@ public class RequestLinePanel extends JPanel {
     private static final int PANEL_PADDING = 4;
 
     // 组件
+    @Getter
     private final JComboBox<String> methodBox;
+    @Getter
     private final JTextField urlField;
+    @Getter
     private final JButton sendButton;
+    @Getter
     private final JButton saveButton;
     private final RequestItemProtocolEnum protocol;
 
@@ -134,8 +137,12 @@ public class RequestLinePanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.BUTTON_SEND);
         String iconPath = protocol.isWebSocketProtocol() ?
                 "icons/connect.svg" : "icons/send.svg";
+        String tooltip = protocol.isWebSocketProtocol() ?
+                I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT_TOOLTIP) :
+                I18nUtil.getMessage(MessageKeys.BUTTON_SEND_TOOLTIP);
 
         PrimaryButton button = new PrimaryButton(text, iconPath);
+        button.setToolTipText(tooltip);
         button.addActionListener(sendAction);
 
         return button;
@@ -220,9 +227,11 @@ public class RequestLinePanel extends JPanel {
         if (protocol.isWebSocketProtocol()) {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT));
             sendButton.setIcon(new FlatSVGIcon("icons/connect.svg", ICON_SIZE, ICON_SIZE));
+            sendButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT_TOOLTIP));
         } else {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
             sendButton.setIcon(new FlatSVGIcon("icons/send.svg", ICON_SIZE, ICON_SIZE));
+            sendButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND_TOOLTIP));
         }
 
         sendButton.setEnabled(true);

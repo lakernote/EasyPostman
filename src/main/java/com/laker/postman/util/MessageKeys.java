@@ -119,10 +119,12 @@ public final class MessageKeys {
 
     // ============ 按钮 ============
     public static final String BUTTON_SEND = "button.send";
+    public static final String BUTTON_SEND_TOOLTIP = "button.send.tooltip";
     public static final String BUTTON_SAVE = "button.save";
     public static final String BUTTON_SAVE_TOOLTIP = "button.save.tooltip";
     public static final String BUTTON_CANCEL = "button.cancel";
     public static final String BUTTON_CLOSE = "button.close";
+    public static final String BUTTON_CONNECT_TOOLTIP = "button.connect.tooltip";
     public static final String BUTTON_START = "button.start";
     public static final String BUTTON_STOP = "button.stop";
     public static final String BUTTON_SEARCH = "button.search";

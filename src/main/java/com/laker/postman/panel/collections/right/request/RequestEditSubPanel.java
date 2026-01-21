@@ -82,6 +82,7 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private final SavedResponse savedResponse;
 
+    @Getter
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
     private final RequestBodyPanel requestBodyPanel;

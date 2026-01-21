@@ -213,6 +213,7 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     // 快捷键 action 名称常量
+    private static final String ACTION_SEND_REQUEST = "sendRequest";
     private static final String ACTION_SAVE_REQUEST = "saveRequest";
     private static final String ACTION_NEW_REQUEST_TAB = "newRequestTab";
     private static final String ACTION_CLOSE_CURRENT_TAB = "closeCurrentTab";
@@ -241,15 +242,39 @@ public class RequestEditPanel extends SingletonBasePanel {
         InputMap inputMap = this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = this.getActionMap();
 
-        // 保存快捷键
+        // 发送请求快捷键 (Cmd+Enter / Ctrl+Enter)
+        KeyStroke sendKey = ShortcutManager.getKeyStroke(ShortcutManager.SEND_REQUEST);
+        if (sendKey != null) {
+            inputMap.put(sendKey, ACTION_SEND_REQUEST);
+            actionMap.put(ACTION_SEND_REQUEST, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // 获取当前活动的 SubPanel 并触发发送按钮点击
+                    RequestEditSubPanel currentSubPanel = getCurrentSubPanel();
+                    if (currentSubPanel != null && currentSubPanel.getRequestLinePanel() != null) {
+                        JButton sendButton = currentSubPanel.getRequestLinePanel().getSendButton();
+                        if (sendButton != null && sendButton.isEnabled()) {
+                            sendButton.doClick();
+                        }
+                    }
+                }
+            });
+        }
+
+        // 保存请求快捷键 (Cmd+S / Ctrl+S)
         KeyStroke saveKey = ShortcutManager.getKeyStroke(ShortcutManager.SAVE_REQUEST);
         if (saveKey != null) {
             inputMap.put(saveKey, ACTION_SAVE_REQUEST);
             actionMap.put(ACTION_SAVE_REQUEST, new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    if (saveCurrentRequest()) {
-                        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_REQUEST_SUCCESS));
+                    // 获取当前活动的 SubPanel 并触发保存按钮点击（保持与发送按钮一致）
+                    RequestEditSubPanel currentSubPanel = getCurrentSubPanel();
+                    if (currentSubPanel != null && currentSubPanel.getRequestLinePanel() != null) {
+                        JButton saveButton = currentSubPanel.getRequestLinePanel().getSaveButton();
+                        if (saveButton != null && saveButton.isEnabled()) {
+                            saveButton.doClick();
+                        }
                     }
                 }
             });

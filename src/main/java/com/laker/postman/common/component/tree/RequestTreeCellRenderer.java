@@ -61,9 +61,32 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         } else if (protocol.isSseProtocol()) {
             method = "SSE";
             methodColor = "#7fbee3";
+        } else {
+            // 优化常见方法名的显示
+            method = abbreviateMethod(method);
         }
 
         setText(buildStyledText(method, methodColor, name));
+    }
+
+    /**
+     * 缩写方法名以节省显示空间
+     * DELETE -> DEL
+     * OPTIONS -> OPT
+     * PATCH -> PAT
+     * TRACE -> TRC
+     */
+    private String abbreviateMethod(String method) {
+        if (method == null) {
+            return "";
+        }
+        return switch (method.toUpperCase()) {
+            case "DELETE" -> "DEL";
+            case "OPTIONS" -> "OPT";
+            case "PATCH" -> "PAT";
+            case "TRACE" -> "TRC";
+            default -> method;
+        };
     }
 
     // Render saved response node with status code and timestamp

@@ -16,9 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -134,6 +137,9 @@ public class WorkspacePanel extends SingletonBasePanel {
             }
         });
 
+        // 拖拽排序支持
+        setupDragAndDrop();
+
         JScrollPane scrollPane = new JScrollPane(workspaceList);
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -188,6 +194,63 @@ public class WorkspacePanel extends SingletonBasePanel {
         panel.add(logToolbar, BorderLayout.SOUTH);
 
         return panel;
+    }
+
+    /**
+     * 设置拖拽排序功能
+     */
+    private void setupDragAndDrop() {
+        workspaceList.setDragEnabled(true);
+        workspaceList.setDropMode(DropMode.INSERT);
+        workspaceList.setTransferHandler(new TransferHandler() {
+            private int fromIndex = -1;
+
+            @Override
+            protected Transferable createTransferable(JComponent c) {
+                fromIndex = workspaceList.getSelectedIndex();
+                Workspace selected = workspaceList.getSelectedValue();
+                return new StringSelection(selected != null ? selected.getName() : "");
+            }
+
+            @Override
+            public int getSourceActions(JComponent c) {
+                return MOVE;
+            }
+
+            @Override
+            public boolean canImport(TransferSupport support) {
+                return support.isDrop();
+            }
+
+            @Override
+            public boolean importData(TransferSupport support) {
+                if (!canImport(support)) return false;
+                JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
+                int toIndex = dl.getIndex();
+                if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return false;
+
+                Workspace moved = listModel.getElementAt(fromIndex);
+                listModel.remove(fromIndex);
+                if (toIndex > fromIndex) toIndex--;
+                listModel.add(toIndex, moved);
+                workspaceList.setSelectedIndex(toIndex);
+
+                // 持久化顺序
+                persistWorkspaceOrder();
+                return true;
+            }
+        });
+    }
+
+    /**
+     * 持久化工作区顺序
+     */
+    private void persistWorkspaceOrder() {
+        List<String> idOrder = new ArrayList<>();
+        for (int i = 0; i < listModel.size(); i++) {
+            idOrder.add(listModel.get(i).getId());
+        }
+        workspaceService.saveWorkspaceOrder(idOrder);
     }
 
     /**

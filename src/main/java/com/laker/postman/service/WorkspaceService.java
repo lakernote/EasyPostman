@@ -1369,4 +1369,39 @@ public class WorkspaceService {
 
         log.info("Successfully converted workspace '{}' from LOCAL to GIT", workspace.getName());
     }
+
+    /**
+     * 保存工作区顺序（拖拽排序后调用）
+     */
+    public void saveWorkspaceOrder(List<String> idOrder) {
+        try {
+            // 根据idOrder重新排序workspaces列表
+            List<Workspace> sortedWorkspaces = new ArrayList<>();
+            for (String id : idOrder) {
+                for (Workspace ws : workspaces) {
+                    if (ws.getId().equals(id)) {
+                        sortedWorkspaces.add(ws);
+                        break;
+                    }
+                }
+            }
+
+            // 添加可能遗漏的工作区（防止数据丢失）
+            for (Workspace ws : workspaces) {
+                if (!sortedWorkspaces.contains(ws)) {
+                    sortedWorkspaces.add(ws);
+                }
+            }
+
+            // 更新工作区列表
+            workspaces = sortedWorkspaces;
+
+            // 持久化到文件
+            saveWorkspaces();
+
+            log.debug("Workspace order saved successfully");
+        } catch (Exception e) {
+            log.error("Failed to save workspace order", e);
+        }
+    }
 }

@@ -25,9 +25,8 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
             boolean isActive = active != null && active.getId().equals(item.getEnvironment().getId());
 
             // 设置图标和样式
-            Color checkedColor = new Color(0x1488FF); // 浅蓝色，亮/暗主题都适用
             if (isActive) {
-                label.setIcon(IconUtil.createColored("icons/check.svg", 18, 18, checkedColor));
+                label.setIcon(IconUtil.create("icons/check.svg", 16, 16));
                 // 激活环境使用加粗字体
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
             } else {

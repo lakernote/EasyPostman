@@ -19,6 +19,7 @@ import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.idea.IntelliJHttpEnvironmentParser;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
@@ -224,8 +225,12 @@ public class EnvironmentPanel extends SingletonBasePanel {
         JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_POSTMAN),
                 IconUtil.create("icons/postman.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM)); // 彩色
         importPostmanItem.addActionListener(e -> importPostmanEnvironments());
+        JMenuItem importIntelliJItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_MENU_IMPORT_INTELLIJ),
+                IconUtil.create("icons/idea-http.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
+        importIntelliJItem.addActionListener(e -> importIntelliJEnvironments());
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
+        importMenu.add(importIntelliJItem);
         importMenu.show(importBtn, 0, importBtn.getHeight());
     }
 
@@ -574,6 +579,35 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 log.error("Import Error", ex);
                 JOptionPane.showMessageDialog(this,
                         I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_FAIL, ex.getMessage()),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    /**
+     * 导入IntelliJ IDEA HTTP Client环境变量JSON文件
+     */
+    private void importIntelliJEnvironments() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_INTELLIJ_TITLE));
+        int userSelection = fileChooser.showOpenDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToOpen = fileChooser.getSelectedFile();
+            try {
+                String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
+                List<Environment> envs = IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(json);
+                if (!envs.isEmpty()) {
+                    // 导入新环境
+                    refreshListAndComboFromAdd(envs);
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_INTELLIJ_INVALID),
+                            I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_INTELLIJ_TITLE), JOptionPane.WARNING_MESSAGE);
+                }
+            } catch (Exception ex) {
+                log.error("Import IntelliJ Error", ex);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_INTELLIJ_FAIL, ex.getMessage()),
                         I18nUtil.getMessage(MessageKeys.GENERAL_ERROR), JOptionPane.ERROR_MESSAGE);
             }
         }

@@ -2,9 +2,13 @@ package com.laker.postman.service.httpfile;
 
 import com.laker.postman.model.*;
 import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -14,14 +18,11 @@ import java.util.regex.Pattern;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_NONE;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_URLENCODED;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_DATA;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
 
 /**
- * HTTP 文件解析器
- * 负责解析 .http 文件格式（REST Client 格式），转换为内部数据结构
+ * IntelliJ IDEA HTTP Client 文件解析器
+ * 负责解析 .http 文件格式（IntelliJ IDEA HTTP Client / REST Client 格式），转换为内部数据结构
  */
 @Slf4j
 public class HttpFileParser {
@@ -48,18 +49,28 @@ public class HttpFileParser {
     /**
      * 解析 HTTP 文件，返回根节点
      *
-     * @param content HTTP 文件内容
+     * @param content  HTTP 文件内容
+     * @param filename 文件名（可选），用于生成更友好的组名
      * @return 集合根节点，如果解析失败返回 null
      */
-    public static DefaultMutableTreeNode parseHttpFile(String content) {
+    public static DefaultMutableTreeNode parseHttpFile(String content, String filename) {
         try {
             if (content == null || content.trim().isEmpty()) {
-                log.error("HTTP文件内容为空");
+                log.error("HTTP file content is empty");
                 return null;
             }
 
-            // 创建分组节点
-            String groupName = "HTTP Import " + System.currentTimeMillis();
+            // 创建分组节点 - 优先使用文件名，否则使用国际化的组名和格式化的时间戳
+            String groupName;
+            if (filename != null && !filename.trim().isEmpty()) {
+                // 移除文件扩展名
+                groupName = filename.replaceAll("\\.http$", "").trim();
+            } else {
+                // 使用默认的国际化组名
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                groupName = I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DEFAULT_GROUP, timestamp);
+            }
+
             RequestGroup collectionGroup = new RequestGroup(groupName);
             DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionGroup});
 
@@ -76,13 +87,13 @@ public class HttpFileParser {
             }
 
             if (collectionNode.getChildCount() == 0) {
-                log.warn("HTTP文件中没有解析到有效的请求");
+                log.warn("No valid requests found in HTTP file");
                 return null;
             }
 
             return collectionNode;
         } catch (Exception e) {
-            log.error("解析HTTP文件失败", e);
+            log.error("Failed to parse HTTP file", e);
             return null;
         }
     }
@@ -185,7 +196,7 @@ public class HttpFileParser {
                 String requestName = separatorMatcher.group(1).trim();
                 currentRequest = new HttpRequestItem();
                 currentRequest.setId(UUID.randomUUID().toString());
-                currentRequest.setName(requestName.isEmpty() ? "未命名请求" : requestName);
+                currentRequest.setName(requestName.isEmpty() ? I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_UNNAMED_REQUEST) : requestName);
                 bodyBuilder = new StringBuilder();
                 responseScriptBuilder = new StringBuilder();
                 inBody = false;
@@ -201,7 +212,7 @@ public class HttpFileParser {
                 if (currentRequest == null) {
                     currentRequest = new HttpRequestItem();
                     currentRequest.setId(UUID.randomUUID().toString());
-                    currentRequest.setName("未命名请求");
+                    currentRequest.setName(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_UNNAMED_REQUEST));
                     bodyBuilder = new StringBuilder();
                     responseScriptBuilder = new StringBuilder();
                     inBody = false;
@@ -339,7 +350,8 @@ public class HttpFileParser {
         }
 
         // 如果没有设置名称，使用 URL
-        if (request.getName() == null || request.getName().isEmpty() || "未命名请求".equals(request.getName())) {
+        String unnamedRequest = I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_UNNAMED_REQUEST);
+        if (request.getName() == null || request.getName().isEmpty() || unnamedRequest.equals(request.getName())) {
             try {
                 java.net.URI uri = new java.net.URI(request.getUrl());
                 String path = uri.getPath();
@@ -497,8 +509,8 @@ public class HttpFileParser {
 
                 // 解析 Content-Disposition 头部
                 Pattern dispositionPattern = Pattern.compile(
-                    "Content-Disposition:\\s*form-data;\\s*name=\"([^\"]+)\"(?:;\\s*filename=\"([^\"]+)\")?",
-                    Pattern.CASE_INSENSITIVE
+                        "Content-Disposition:\\s*form-data;\\s*name=\"([^\"]+)\"(?:;\\s*filename=\"([^\"]+)\")?",
+                        Pattern.CASE_INSENSITIVE
                 );
 
                 int lineIndex = 0;

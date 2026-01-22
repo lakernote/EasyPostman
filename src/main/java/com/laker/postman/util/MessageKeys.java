@@ -283,6 +283,7 @@ public final class MessageKeys {
     public static final String ENV_BUTTON_EXPORT_POSTMAN = "env.button.export_postman";
     public static final String ENV_MENU_IMPORT_EASY = "env.menu.import_easy";
     public static final String ENV_MENU_IMPORT_POSTMAN = "env.menu.import_postman";
+    public static final String ENV_MENU_IMPORT_INTELLIJ = "env.menu.import_intellij";
     public static final String ENV_DIALOG_SAVE_CHANGES_TITLE = "env.dialog.save_changes.title";
     public static final String ENV_DIALOG_SAVE_SUCCESS = "env.dialog.save.success";
     public static final String ENV_DIALOG_EXPORT_TITLE = "env.dialog.export.title";
@@ -294,6 +295,9 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_IMPORT_POSTMAN_TITLE = "env.dialog.import_postman.title";
     public static final String ENV_DIALOG_IMPORT_POSTMAN_FAIL = "env.dialog.import_postman.fail";
     public static final String ENV_DIALOG_IMPORT_POSTMAN_INVALID = "env.dialog.import_postman.invalid";
+    public static final String ENV_DIALOG_IMPORT_INTELLIJ_TITLE = "env.dialog.import_intellij.title";
+    public static final String ENV_DIALOG_IMPORT_INTELLIJ_FAIL = "env.dialog.import_intellij.fail";
+    public static final String ENV_DIALOG_IMPORT_INTELLIJ_INVALID = "env.dialog.import_intellij.invalid";
     public static final String ENV_DIALOG_ADD_TITLE = "env.dialog.add.title";
     public static final String ENV_DIALOG_ADD_PROMPT = "env.dialog.add.prompt";
     public static final String ENV_DIALOG_RENAME_TITLE = "env.dialog.rename.title";
@@ -568,6 +572,8 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL_PARSE_ERROR = "collections.import.curl.parse_error";
     public static final String COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE = "collections.import.http.dialog_title";
     public static final String COLLECTIONS_IMPORT_HTTP_INVALID = "collections.import.http.invalid";
+    public static final String COLLECTIONS_IMPORT_HTTP_DEFAULT_GROUP = "collections.import.http.default_group";
+    public static final String COLLECTIONS_IMPORT_HTTP_UNNAMED_REQUEST = "collections.import.http.unnamed_request";
     public static final String COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE = "collections.import.apipost.dialog_title";
     public static final String COLLECTIONS_IMPORT_APIPOST_INVALID = "collections.import.apipost.invalid";
 

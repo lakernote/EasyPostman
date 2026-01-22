@@ -1,21 +1,16 @@
 package com.laker.postman.service.httpfile;
 
-import java.util.Base64;
-
-import javax.swing.tree.DefaultMutableTreeNode;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-import org.testng.annotations.Test;
-
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import org.testng.annotations.Test;
+
+import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.Base64;
+
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
+import static org.testng.Assert.*;
 
 /**
  * HttpFileParser 单元测试类
@@ -25,20 +20,20 @@ public class HttpFileParserTest {
 
     @Test(description = "测试解析空内容")
     public void testParseEmptyContent() {
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(null);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(null, "test.http");
         assertNull(result, "null 内容应该返回 null");
 
-        result = HttpFileParser.parseHttpFile("");
+        result = HttpFileParser.parseHttpFile("", "test.http");
         assertNull(result, "空字符串应该返回 null");
 
-        result = HttpFileParser.parseHttpFile("   ");
+        result = HttpFileParser.parseHttpFile("   ", "test.http");
         assertNull(result, "空白字符串应该返回 null");
     }
 
     @Test(description = "测试解析简单的 GET 请求")
     public void testParseSimpleGetRequest() {
         String content = "GET https://api.example.com/users";
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
 
         assertNotNull(result, "应该成功解析");
         assertEquals(result.getChildCount(), 1, "应该有一个请求节点");
@@ -60,7 +55,7 @@ public class HttpFileParserTest {
                 GET https://api.example.com/users
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -76,12 +71,12 @@ public class HttpFileParserTest {
         String content = """
                 ### 获取用户列表
                 GET https://api.example.com/users
-
+                
                 ### 创建用户
                 POST https://api.example.com/users
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 2, "应该有两个请求节点");
 
@@ -104,14 +99,14 @@ public class HttpFileParserTest {
                 ### 创建用户
                 POST https://api.example.com/users
                 Content-Type: application/json
-
+                
                 {
                   "name": "John Doe",
                   "email": "john@example.com"
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -125,8 +120,8 @@ public class HttpFileParserTest {
         // 验证 Content-Type 头部
         assertNotNull(request.getHeadersList());
         boolean hasContentType = request.getHeadersList().stream()
-                .anyMatch(h -> "Content-Type".equals(h.getKey()) && 
-                             h.getValue().contains("application/json"));
+                .anyMatch(h -> "Content-Type".equals(h.getKey()) &&
+                        h.getValue().contains("application/json"));
         assertTrue(hasContentType, "应该有 Content-Type 头部");
     }
 
@@ -140,7 +135,7 @@ public class HttpFileParserTest {
                 X-Custom-Header: custom-value
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -161,12 +156,12 @@ public class HttpFileParserTest {
                 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
         assertEquals(request.getAuthType(), AUTH_TYPE_BASIC);
-        
+
         // 验证 Base64 解码
         String decoded = new String(Base64.getDecoder().decode("dXNlcm5hbWU6cGFzc3dvcmQ="));
         String[] parts = decoded.split(":", 2);
@@ -182,7 +177,7 @@ public class HttpFileParserTest {
                 Authorization: Basic {{username}} {{password}}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -199,7 +194,7 @@ public class HttpFileParserTest {
                 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -213,11 +208,11 @@ public class HttpFileParserTest {
                 ### 提交表单
                 POST https://api.example.com/submit
                 Content-Type: application/x-www-form-urlencoded
-
+                
                 name=John+Doe&email=john%40example.com&age=30
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -238,21 +233,21 @@ public class HttpFileParserTest {
                 ### Send a form with text and file fields
                 POST https://examples.http-client.intellij.net/post
                 Content-Type: multipart/form-data; boundary=WebAppBoundary
-
+                
                 --WebAppBoundary
                 Content-Disposition: form-data; name="element-name"
                 Content-Type: text/plain
-
+                
                 Name
                 --WebAppBoundary
                 Content-Disposition: form-data; name="data"; filename="data.json"
                 Content-Type: application/json
-
+                
                 < ./request-form-data.json
                 --WebAppBoundary--
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -264,15 +259,15 @@ public class HttpFileParserTest {
         // 验证文本字段
         boolean hasTextField = request.getFormDataList().stream()
                 .anyMatch(f -> "element-name".equals(f.getKey()) &&
-                             "Name".equals(f.getValue()) &&
-                             f.isText());
+                        "Name".equals(f.getValue()) &&
+                        f.isText());
         assertTrue(hasTextField, "应该有名为 element-name 的文本字段");
 
         // 验证文件字段
         boolean hasFileField = request.getFormDataList().stream()
                 .anyMatch(f -> "data".equals(f.getKey()) &&
-                             f.getValue().contains("request-form-data.json") &&
-                             !f.isText());
+                        f.getValue().contains("request-form-data.json") &&
+                        !f.isText());
         assertTrue(hasFileField, "应该有名为 data 的文件字段");
     }
 
@@ -281,27 +276,27 @@ public class HttpFileParserTest {
         String content = """
                 ### GET 请求
                 GET https://api.example.com/get
-
+                
                 ### POST 请求
                 POST https://api.example.com/post
-
+                
                 ### PUT 请求
                 PUT https://api.example.com/put
-
+                
                 ### DELETE 请求
                 DELETE https://api.example.com/delete
-
+                
                 ### PATCH 请求
                 PATCH https://api.example.com/patch
-
+                
                 ### HEAD 请求
                 HEAD https://api.example.com/head
-
+                
                 ### OPTIONS 请求
                 OPTIONS https://api.example.com/options
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 7, "应该有 7 个请求");
 
@@ -320,7 +315,7 @@ public class HttpFileParserTest {
                 ### 创建复杂对象
                 POST https://api.example.com/complex
                 Content-Type: application/json
-
+                
                 {
                   "name": "John",
                   "address": {
@@ -331,7 +326,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -350,7 +345,7 @@ public class HttpFileParserTest {
                 GET https://api.example.com/users/profile
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -367,7 +362,7 @@ public class HttpFileParserTest {
                 Accept: text/event-stream
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -382,7 +377,7 @@ public class HttpFileParserTest {
                 GET wss://echo-websocket.hoppscotch.io/
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -396,14 +391,14 @@ public class HttpFileParserTest {
                 ### 带空行的请求
                 POST https://api.example.com/data
                 Content-Type: application/json
-
-
+                
+                
                 {
                   "data": "value"
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -415,7 +410,7 @@ public class HttpFileParserTest {
     @Test(description = "测试解析没有分隔符的单个请求")
     public void testParseSingleRequestWithoutSeparator() {
         String content = "GET https://api.example.com/users";
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
 
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
@@ -432,7 +427,7 @@ public class HttpFileParserTest {
                 GET https://api.example.com/search?q=test&limit=10&page=1
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -444,12 +439,12 @@ public class HttpFileParserTest {
         String content = """
                 ### 第一个请求
                 GET https://api.example.com/one
-
+                
                 ### 第二个请求
                 POST https://api.example.com/two
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         // 验证根节点是分组节点
@@ -459,7 +454,6 @@ public class HttpFileParserTest {
 
         RequestGroup group = (RequestGroup) rootUserObject[1];
         assertNotNull(group.getName());
-        assertTrue(group.getName().startsWith("HTTP Import"));
     }
 
     @Test(description = "测试解析无效请求（没有 URL）")
@@ -469,7 +463,7 @@ public class HttpFileParserTest {
                 GET
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         // 没有有效 URL 的请求不应该被添加到结果中
         assertNull(result, "没有有效 URL 的请求应该返回 null");
     }
@@ -483,7 +477,7 @@ public class HttpFileParserTest {
                 X-Another: value with spaces
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -497,13 +491,13 @@ public class HttpFileParserTest {
                 ### 删除资源
                 DELETE https://api.example.com/resource/123
                 Content-Type: application/json
-
+                
                 {
                   "reason": "No longer needed"
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -518,13 +512,13 @@ public class HttpFileParserTest {
                 ### 更新资源
                 PUT https://api.example.com/resource/123
                 Content-Type: application/json
-
+                
                 {
                   "name": "Updated Name"
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -539,11 +533,11 @@ public class HttpFileParserTest {
                 ### 表单提交
                 POST https://api.example.com/form
                 Content-Type: application/x-www-form-urlencoded
-
+                
                 name=John&email=&age=30&empty=
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -561,25 +555,25 @@ public class HttpFileParserTest {
                 GET https://api.example.com/users
                 Accept: application/json
                 Authorization: Bearer token123
-
+                
                 ### 创建用户
                 POST https://api.example.com/users
                 Content-Type: application/json
                 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
-
+                
                 {
                   "name": "John",
                   "email": "john@example.com"
                 }
-
+                
                 ### 提交表单
                 POST https://api.example.com/form
                 Content-Type: application/x-www-form-urlencoded
-
+                
                 name=John&email=john@example.com
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
 
@@ -612,14 +606,14 @@ public class HttpFileParserTest {
                 # @name GetAuthToken
                 POST https://api.example.com/auth/token
                 Content-Type: application/json
-
+                
                 {
                   "username": "testuser",
                   "password": "testpass"
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -635,14 +629,14 @@ public class HttpFileParserTest {
                 ### 提交多行表单
                 POST https://api.example.com/form
                 Content-Type: application/x-www-form-urlencoded
-
+                
                 grant_type = password &
                 username = testuser &
                 password = testpass &
                 scope = read write
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -663,19 +657,19 @@ public class HttpFileParserTest {
                 ### 获取 Token
                 POST https://api.example.com/token
                 Content-Type: application/json
-
+                
                 {
                   "username": "test"
                 }
-
+                
                 > {% client.global.set("token", response.body.token); %}
-
+                
                 ### 使用 Token
                 GET https://api.example.com/data
                 Authorization: Bearer {{token}}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 2, "应该解析出 2 个请求");
 
@@ -711,7 +705,7 @@ public class HttpFileParserTest {
                 %}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -741,30 +735,30 @@ public class HttpFileParserTest {
                 # @name GetBearerToken
                 POST https://{{auth_server}}/api/v1/auth/bearer-token
                 Content-Type: application/json
-
+                
                 {
                   "username": "{{username}}",
                   "password": "{{password}}"
                 }
-
+                
                 > {% client.global.set("bearerToken", response.body.token); %}
-
+                
                 ### STEP 2: 生成 Access Token
                 # @no-cookie-jar
                 # @no-log
                 # @name GenerateAccessToken
                 POST https://{{auth_server}}/api/v1/oauth/token
                 Content-Type: application/x-www-form-urlencoded
-
+                
                 grant_type = {{grant_type}} &
                 assertion = {{bearerToken}} &
                 scope = {{scope}} &
                 include_refresh_token = true &
                 client_id = {{client_id}} &
                 client_secret = {{client_secret}}
-
+                
                 > {% client.global.set("accessToken", response.body.access_token); %}
-
+                
                 ### STEP 3: 验证 Access Token
                 # @no-cookie-jar
                 # @no-log
@@ -772,11 +766,11 @@ public class HttpFileParserTest {
                 POST https://{{auth_server}}/api/v1/oauth/validate
                 Authorization: Basic {{client_id}} {{client_secret}}
                 Content-Type: application/x-www-form-urlencoded
-
+                
                 access_token = {{accessToken}}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content);
+        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
         assertNotNull(result, "应该成功解析");
         assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
 

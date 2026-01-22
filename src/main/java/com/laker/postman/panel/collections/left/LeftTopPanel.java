@@ -353,7 +353,8 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String content = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                DefaultMutableTreeNode collectionNode = HttpFileParser.parseHttpFile(content);
+                String filename = fileToOpen.getName();
+                DefaultMutableTreeNode collectionNode = HttpFileParser.parseHttpFile(content, filename);
                 if (collectionNode != null) {
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();

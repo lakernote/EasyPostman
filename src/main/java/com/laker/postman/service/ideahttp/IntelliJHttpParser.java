@@ -1,24 +1,22 @@
 package com.laker.postman.service.ideahttp;
 
 import com.laker.postman.model.*;
+import com.laker.postman.service.common.AuthParserUtil;
+import com.laker.postman.service.common.CollectionParseResult;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
@@ -26,6 +24,7 @@ import static com.laker.postman.panel.collections.right.request.sub.RequestBodyP
 /**
  * IntelliJ IDEA HTTP Client 文件解析器
  * 负责解析 .http 文件格式（IntelliJ IDEA HTTP Client / REST Client 格式），转换为内部数据结构
+ * 此类只负责解析，不涉及 UI 层的 TreeNode 组装
  */
 @Slf4j
 @UtilityClass
@@ -40,20 +39,20 @@ public class IntelliJHttpParser {
     private static final Pattern COMMENT_PATTERN = Pattern.compile("^#\\s*(.*)$");
 
     /**
-     * 解析 HTTP 文件，返回根节点
+     * 解析 HTTP 文件，返回包含分组信息和请求列表的解析结果
      *
      * @param content  HTTP 文件内容
      * @param filename 文件名（可选），用于生成更友好的组名
-     * @return 集合根节点，如果解析失败返回 null
+     * @return CollectionParseResult，如果解析失败返回 null
      */
-    public static DefaultMutableTreeNode parseHttpFile(String content, String filename) {
+    public static CollectionParseResult parseHttpFile(String content, String filename) {
         try {
             if (content == null || content.trim().isEmpty()) {
                 log.error("HTTP file content is empty");
                 return null;
             }
 
-            // 创建分组节点 - 优先使用文件名，否则使用国际化的组名和格式化的时间戳
+            // 创建分组 - 优先使用文件名，否则使用国际化的组名和格式化的时间戳
             String groupName;
             if (filename != null && !filename.trim().isEmpty()) {
                 // 移除文件扩展名
@@ -65,26 +64,26 @@ public class IntelliJHttpParser {
             }
 
             RequestGroup collectionGroup = new RequestGroup(groupName);
-            DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionGroup});
 
             // 按行分割
             String[] lines = content.split("\n");
             List<HttpRequestItem> requests = parseHttpRequests(lines);
 
-            // 将解析的请求添加到树节点
+            // 过滤有效的请求
+            List<HttpRequestItem> validRequests = new ArrayList<>();
             for (HttpRequestItem request : requests) {
                 if (request != null && request.getUrl() != null && !request.getUrl().isEmpty()) {
-                    DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{REQUEST, request});
-                    collectionNode.add(requestNode);
+                    validRequests.add(request);
                 }
             }
 
-            if (collectionNode.getChildCount() == 0) {
+            if (validRequests.isEmpty()) {
                 log.warn("No valid requests found in HTTP file");
                 return null;
             }
 
-            return collectionNode;
+            // 使用工厂方法创建扁平结构的解析结果
+            return CollectionParseResult.createFlat(collectionGroup, validRequests);
         } catch (Exception e) {
             log.error("Failed to parse HTTP file", e);
             return null;
@@ -140,7 +139,6 @@ public class IntelliJHttpParser {
                     // 单行脚本
                     scriptLine = scriptLine.substring(2, scriptLine.length() - 2).trim();
                     responseScriptBuilder.append(scriptLine);
-                    inResponseScript = false; // 单行脚本立即结束
                 } else if (scriptLine.startsWith("{%")) {
                     // 多行脚本开始
                     scriptLine = scriptLine.substring(2).trim();
@@ -148,7 +146,6 @@ public class IntelliJHttpParser {
                     inResponseScript = true;
                 } else {
                     // 未知格式，跳过
-                    inResponseScript = false;
                 }
                 continue;
             }
@@ -294,7 +291,7 @@ public class IntelliJHttpParser {
         if (currentRequest != null) {
             finishRequest(currentRequest, bodyBuilder, contentType, boundary);
             // 处理响应脚本
-            if (responseScriptBuilder != null && responseScriptBuilder.length() > 0) {
+            if (responseScriptBuilder != null && !responseScriptBuilder.isEmpty()) {
                 String convertedScript = convertResponseScriptToPostman(responseScriptBuilder.toString());
                 currentRequest.setPostscript(convertedScript);
             }
@@ -390,7 +387,7 @@ public class IntelliJHttpParser {
 
                 // 转换 response.body 为 pm.response.json()
                 // 例如：response.body.token -> pm.response.json().token
-                convertedLine = convertedLine.replaceAll("response\\.body\\.([a-zA-Z0-9_]+)", "pm.response.json().$1");
+                convertedLine = convertedLine.replaceAll("response\\.body\\.(\\w+)", "pm.response.json().$1");
 
                 // 如果只有 response.body（没有属性访问），转换为 pm.response.json()
                 convertedLine = convertedLine.replace("response.body", "pm.response.json()");
@@ -531,7 +528,7 @@ public class IntelliJHttpParser {
                 // 收集内容（空行之后的所有行）
                 if (foundDoubleNewline && fieldName != null) {
                     for (; lineIndex < lines.length; lineIndex++) {
-                        if (contentBuilder.length() > 0) {
+                        if (!contentBuilder.isEmpty()) {
                             contentBuilder.append("\n");
                         }
                         contentBuilder.append(lines[lineIndex]);
@@ -574,46 +571,14 @@ public class IntelliJHttpParser {
     private static void parseAuthorization(HttpRequestItem request, String authValue) {
         if (authValue.startsWith("Basic ")) {
             request.setAuthType(AUTH_TYPE_BASIC);
-            String credentials = authValue.substring(6).trim();
-            // 检查是否是变量占位符格式：Basic {{username}} {{password}}
-            if (credentials.contains("{{") && credentials.contains("}}")) {
-                // 变量格式，尝试提取用户名和密码变量
-                // 格式可能是 "Basic {{username}} {{password}}" 或 "Basic {{username}}:{{password}}"
-                String[] parts = credentials.split("\\s+");
-                if (parts.length >= 2) {
-                    // 格式：Basic {{username}} {{password}}
-                    request.setAuthUsername(parts[0]);
-                    request.setAuthPassword(parts[1]);
-                } else {
-                    // 格式：Basic {{username}}:{{password}}
-                    int colonIndex = credentials.indexOf(':');
-                    if (colonIndex > 0) {
-                        request.setAuthUsername(credentials.substring(0, colonIndex));
-                        request.setAuthPassword(credentials.substring(colonIndex + 1));
-                    } else {
-                        request.setAuthUsername(credentials);
-                        request.setAuthPassword("");
-                    }
-                }
-            } else {
-                // Base64 编码格式
-                try {
-                    String decoded = new String(Base64.getDecoder().decode(credentials));
-                    String[] parts = decoded.split(":", 2);
-                    if (parts.length == 2) {
-                        request.setAuthUsername(parts[0]);
-                        request.setAuthPassword(parts[1]);
-                    }
-                } catch (Exception e) {
-                    log.warn("解析 Basic 认证失败，可能是变量格式", e);
-                    // 如果解析失败，可能是变量格式，直接设置
-                    request.setAuthUsername(credentials);
-                    request.setAuthPassword("");
-                }
+            AuthParserUtil.BasicAuthCredentials credentials = AuthParserUtil.parseBasicAuthHeader(authValue);
+            if (credentials != null) {
+                request.setAuthUsername(credentials.getUsername());
+                request.setAuthPassword(credentials.getPassword());
             }
         } else if (authValue.startsWith("Bearer ")) {
             request.setAuthType(AUTH_TYPE_BEARER);
-            request.setAuthToken(authValue.substring(7));
+            request.setAuthToken(authValue.substring(7).trim());
         }
     }
 

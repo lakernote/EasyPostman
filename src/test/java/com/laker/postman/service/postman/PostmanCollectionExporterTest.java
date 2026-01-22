@@ -5,9 +5,9 @@ import cn.hutool.json.JSONObject;
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 
 import static org.testng.Assert.*;
@@ -391,15 +391,15 @@ public class PostmanCollectionExporterTest {
         collection.set("item", items);
 
         // 通过 PostmanCollectionParser 解析完整的 Collection
-        DefaultMutableTreeNode collectionNode = PostmanCollectionParser.parsePostmanCollection(collection.toString());
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(collection.toString());
 
         // 验证
-        assertNotNull(collectionNode);
-        assertEquals(collectionNode.getChildCount(), 1);
+        assertNotNull(result);
+        assertEquals(result.getChildren().size(), 1);
 
-        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
-        Object[] userObject = (Object[]) requestNode.getUserObject();
-        HttpRequestItem imported = (HttpRequestItem) userObject[1];
+        var requestNode = result.getChildren().get(0);
+        assertTrue(requestNode.isRequest());
+        HttpRequestItem imported = requestNode.asRequest();
 
         assertEquals(imported.getName(), original.getName());
         assertEquals(imported.getMethod(), original.getMethod());

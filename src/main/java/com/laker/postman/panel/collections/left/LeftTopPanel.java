@@ -19,6 +19,8 @@ import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.apipost.ApiPostCollectionParser;
+import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.service.common.TreeNodeBuilder;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
@@ -221,7 +223,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                 String groupName = "EasyPostman";
                 DefaultMutableTreeNode easyPostmanGroup = leftPanel.findGroupNode(leftPanel.getRootTreeNode(), groupName);
                 if (easyPostmanGroup == null) {
-                    com.laker.postman.model.RequestGroup group = new com.laker.postman.model.RequestGroup(groupName);
+                    RequestGroup group = new RequestGroup(groupName);
                     easyPostmanGroup = new DefaultMutableTreeNode(new Object[]{GROUP, group});
                     leftPanel.getRootTreeNode().add(easyPostmanGroup);
                 }
@@ -256,8 +258,11 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                DefaultMutableTreeNode collectionNode = PostmanCollectionParser.parsePostmanCollection(json);
-                if (collectionNode != null) {
+                CollectionParseResult parseResult =
+                        PostmanCollectionParser.parsePostmanCollection(json);
+                if (parseResult != null) {
+                    DefaultMutableTreeNode collectionNode =
+                            TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
@@ -354,8 +359,11 @@ public class LeftTopPanel extends SingletonBasePanel {
             try {
                 String content = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 String filename = fileToOpen.getName();
-                DefaultMutableTreeNode collectionNode = IntelliJHttpParser.parseHttpFile(content, filename);
-                if (collectionNode != null) {
+                CollectionParseResult parseResult =
+                        IntelliJHttpParser.parseHttpFile(content, filename);
+                if (parseResult != null) {
+                    DefaultMutableTreeNode collectionNode =
+                            TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
@@ -384,8 +392,11 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                DefaultMutableTreeNode collectionNode = ApiPostCollectionParser.parseApiPostCollection(json);
-                if (collectionNode != null) {
+                CollectionParseResult parseResult =
+                        ApiPostCollectionParser.parseApiPostCollection(json);
+                if (parseResult != null) {
+                    DefaultMutableTreeNode collectionNode =
+                            TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();

@@ -78,12 +78,12 @@ public class IntelliJHttpEnvParser {
 
     /**
      * 预处理JSON字符串，修复常见的语法错误
-     * 例如：移除字符串值后面的分号 "value"; -> "value"
+     * 例如：将字符串值后面的分号替换为逗号 "value"; -> "value",
      */
     private static String preprocessJson(String json) {
-        // 移除字符串后紧跟的分号（这是IntelliJ IDEA HTTP文件可能出现的错误）
-        // 匹配模式: "任意内容";  替换为: "任意内容"
-        return json.replaceAll("\"\\s*;", "\"");
+        // 将字符串后紧跟的分号替换为逗号（这是IntelliJ IDEA HTTP文件可能出现的错误）
+        // 匹配模式: "任意内容";  替换为: "任意内容",
+        return json.replaceAll("\";", "\",");
     }
 
     /**

@@ -3,9 +3,9 @@ package com.laker.postman.service.ideahttp;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Base64;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
@@ -20,7 +20,7 @@ public class IntelliJHttpParserTest {
 
     @Test(description = "测试解析空内容")
     public void testParseEmptyContent() {
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(null, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(null, "test.http");
         assertNull(result, "null 内容应该返回 null");
 
         result = IntelliJHttpParser.parseHttpFile("", "test.http");
@@ -33,16 +33,12 @@ public class IntelliJHttpParserTest {
     @Test(description = "测试解析简单的 GET 请求")
     public void testParseSimpleGetRequest() {
         String content = "GET https://api.example.com/users";
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
 
         assertNotNull(result, "应该成功解析");
-        assertEquals(result.getChildCount(), 1, "应该有一个请求节点");
+        assertEquals(result.getChildren().size(), 1, "应该有一个请求");
 
-        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) result.getChildAt(0);
-        Object[] userObject = (Object[]) requestNode.getUserObject();
-        assertEquals(userObject[0], "request", "节点类型应该是 request");
-
-        HttpRequestItem request = (HttpRequestItem) userObject[1];
+        HttpRequestItem request = result.getChildren().get(0).asRequest();
         assertEquals(request.getMethod(), "GET");
         assertEquals(request.getUrl(), "https://api.example.com/users");
         assertNotNull(request.getName(), "应该有请求名称");
@@ -55,12 +51,11 @@ public class IntelliJHttpParserTest {
                 GET https://api.example.com/users
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 1);
+        assertEquals(result.getChildren().size(), 1);
 
-        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) result.getChildAt(0);
-        HttpRequestItem request = (HttpRequestItem) ((Object[]) requestNode.getUserObject())[1];
+        HttpRequestItem request = result.getChildren().get(0).asRequest();
         assertEquals(request.getName(), "获取用户列表");
         assertEquals(request.getMethod(), "GET");
         assertEquals(request.getUrl(), "https://api.example.com/users");
@@ -76,19 +71,17 @@ public class IntelliJHttpParserTest {
                 POST https://api.example.com/users
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 2, "应该有两个请求节点");
+        assertEquals(result.getChildren().size(), 2, "应该有两个请求");
 
         // 验证第一个请求
-        DefaultMutableTreeNode requestNode1 = (DefaultMutableTreeNode) result.getChildAt(0);
-        HttpRequestItem request1 = (HttpRequestItem) ((Object[]) requestNode1.getUserObject())[1];
+        HttpRequestItem request1 = result.getChildren().get(0).asRequest();
         assertEquals(request1.getName(), "获取用户列表");
         assertEquals(request1.getMethod(), "GET");
 
         // 验证第二个请求
-        DefaultMutableTreeNode requestNode2 = (DefaultMutableTreeNode) result.getChildAt(1);
-        HttpRequestItem request2 = (HttpRequestItem) ((Object[]) requestNode2.getUserObject())[1];
+        HttpRequestItem request2 = result.getChildren().get(1).asRequest();
         assertEquals(request2.getName(), "创建用户");
         assertEquals(request2.getMethod(), "POST");
     }
@@ -106,11 +99,11 @@ public class IntelliJHttpParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 1);
+        assertEquals(result.getChildren().size(), 1);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "POST");
         assertEquals(request.getUrl(), "https://api.example.com/users");
         assertEquals(request.getBodyType(), "raw");
@@ -135,10 +128,10 @@ public class IntelliJHttpParserTest {
                 X-Custom-Header: custom-value
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertNotNull(request.getHeadersList());
         assertEquals(request.getHeadersList().size(), 3, "应该有 3 个请求头");
 
@@ -156,10 +149,10 @@ public class IntelliJHttpParserTest {
                 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getAuthType(), AUTH_TYPE_BASIC);
 
         // 验证 Base64 解码
@@ -177,10 +170,10 @@ public class IntelliJHttpParserTest {
                 Authorization: Basic {{username}} {{password}}
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getAuthType(), AUTH_TYPE_BASIC);
         assertEquals(request.getAuthUsername(), "{{username}}");
         assertEquals(request.getAuthPassword(), "{{password}}");
@@ -194,10 +187,10 @@ public class IntelliJHttpParserTest {
                 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getAuthType(), AUTH_TYPE_BEARER);
         assertEquals(request.getAuthToken(), "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9");
     }
@@ -212,10 +205,10 @@ public class IntelliJHttpParserTest {
                 name=John+Doe&email=john%40example.com&age=30
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "POST");
         assertEquals(request.getBodyType(), "x-www-form-urlencoded");
         assertNotNull(request.getUrlencodedList());
@@ -247,10 +240,10 @@ public class IntelliJHttpParserTest {
                 --WebAppBoundary--
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "POST");
         assertEquals(request.getBodyType(), "form-data");
         assertNotNull(request.getFormDataList());
@@ -296,17 +289,17 @@ public class IntelliJHttpParserTest {
                 OPTIONS https://api.example.com/options
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 7, "应该有 7 个请求");
+        assertEquals(result.getChildren().size(), 7, "应该有 7 个请求");
 
-        assertEquals(getRequestFromNode(result, 0).getMethod(), "GET");
-        assertEquals(getRequestFromNode(result, 1).getMethod(), "POST");
-        assertEquals(getRequestFromNode(result, 2).getMethod(), "PUT");
-        assertEquals(getRequestFromNode(result, 3).getMethod(), "DELETE");
-        assertEquals(getRequestFromNode(result, 4).getMethod(), "PATCH");
-        assertEquals(getRequestFromNode(result, 5).getMethod(), "HEAD");
-        assertEquals(getRequestFromNode(result, 6).getMethod(), "OPTIONS");
+        assertEquals(getRequestFromResult(result, 0).getMethod(), "GET");
+        assertEquals(getRequestFromResult(result, 1).getMethod(), "POST");
+        assertEquals(getRequestFromResult(result, 2).getMethod(), "PUT");
+        assertEquals(getRequestFromResult(result, 3).getMethod(), "DELETE");
+        assertEquals(getRequestFromResult(result, 4).getMethod(), "PATCH");
+        assertEquals(getRequestFromResult(result, 5).getMethod(), "HEAD");
+        assertEquals(getRequestFromResult(result, 6).getMethod(), "OPTIONS");
     }
 
     @Test(description = "测试解析 POST 请求带多行 body")
@@ -326,10 +319,10 @@ public class IntelliJHttpParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "POST");
         assertEquals(request.getBodyType(), "raw");
         assertNotNull(request.getBody());
@@ -345,10 +338,10 @@ public class IntelliJHttpParserTest {
                 GET https://api.example.com/users/profile
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         // 如果没有名称，应该使用 URL 的路径部分作为名称
         assertNotNull(request.getName());
         assertFalse(request.getName().isEmpty());
@@ -362,10 +355,10 @@ public class IntelliJHttpParserTest {
                 Accept: text/event-stream
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getProtocol(), RequestItemProtocolEnum.SSE);
         assertTrue(hasHeader(request, "Accept", "text/event-stream"));
     }
@@ -377,10 +370,10 @@ public class IntelliJHttpParserTest {
                 GET wss://echo-websocket.hoppscotch.io/
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getProtocol(), RequestItemProtocolEnum.WEBSOCKET);
         assertEquals(request.getUrl(), "wss://echo-websocket.hoppscotch.io/");
     }
@@ -398,10 +391,10 @@ public class IntelliJHttpParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "POST");
         assertNotNull(request.getBody());
         assertTrue(request.getBody().contains("\"data\": \"value\""));
@@ -410,12 +403,12 @@ public class IntelliJHttpParserTest {
     @Test(description = "测试解析没有分隔符的单个请求")
     public void testParseSingleRequestWithoutSeparator() {
         String content = "GET https://api.example.com/users";
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
 
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 1);
+        assertEquals(result.getChildren().size(), 1);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "GET");
         assertEquals(request.getUrl(), "https://api.example.com/users");
     }
@@ -427,10 +420,10 @@ public class IntelliJHttpParserTest {
                 GET https://api.example.com/search?q=test&limit=10&page=1
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getUrl(), "https://api.example.com/search?q=test&limit=10&page=1");
     }
 
@@ -444,16 +437,14 @@ public class IntelliJHttpParserTest {
                 POST https://api.example.com/two
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        // 验证根节点是分组节点
-        Object[] rootUserObject = (Object[]) result.getUserObject();
-        assertEquals(rootUserObject[0], "group");
-        assertTrue(rootUserObject[1] instanceof RequestGroup);
-
-        RequestGroup group = (RequestGroup) rootUserObject[1];
+        // 验证分组信息
+        RequestGroup group = result.getGroup();
+        assertNotNull(group);
         assertNotNull(group.getName());
+        assertEquals(result.getChildren().size(), 2);
     }
 
     @Test(description = "测试解析无效请求（没有 URL）")
@@ -463,7 +454,7 @@ public class IntelliJHttpParserTest {
                 GET
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         // 没有有效 URL 的请求不应该被添加到结果中
         assertNull(result, "没有有效 URL 的请求应该返回 null");
     }
@@ -477,10 +468,10 @@ public class IntelliJHttpParserTest {
                 X-Another: value with spaces
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertTrue(hasHeader(request, "X-Custom", "value:with:colons"));
         assertTrue(hasHeader(request, "X-Another", "value with spaces"));
     }
@@ -497,10 +488,10 @@ public class IntelliJHttpParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "DELETE");
         assertNotNull(request.getBody());
         assertTrue(request.getBody().contains("\"reason\""));
@@ -518,10 +509,10 @@ public class IntelliJHttpParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "PUT");
         assertEquals(request.getBodyType(), "raw");
         assertTrue(request.getBody().contains("Updated Name"));
@@ -537,10 +528,10 @@ public class IntelliJHttpParserTest {
                 name=John&email=&age=30&empty=
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getBodyType(), "x-www-form-urlencoded");
         assertTrue(hasUrlencodedField(request, "name", "John"));
         assertTrue(hasUrlencodedField(request, "email", ""));
@@ -573,25 +564,25 @@ public class IntelliJHttpParserTest {
                 name=John&email=john@example.com
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
+        assertEquals(result.getChildren().size(), 3, "应该有 3 个请求");
 
         // 验证第一个请求（GET with Bearer）
-        HttpRequestItem req1 = getRequestFromNode(result, 0);
+        HttpRequestItem req1 = getRequestFromResult(result, 0);
         assertEquals(req1.getMethod(), "GET");
         assertEquals(req1.getAuthType(), AUTH_TYPE_BEARER);
         assertEquals(req1.getAuthToken(), "token123");
 
         // 验证第二个请求（POST with JSON and Basic Auth）
-        HttpRequestItem req2 = getRequestFromNode(result, 1);
+        HttpRequestItem req2 = getRequestFromResult(result, 1);
         assertEquals(req2.getMethod(), "POST");
         assertEquals(req2.getAuthType(), AUTH_TYPE_BASIC);
         assertEquals(req2.getBodyType(), "raw");
         assertTrue(req2.getBody().contains("John"));
 
         // 验证第三个请求（POST with urlencoded）
-        HttpRequestItem req3 = getRequestFromNode(result, 2);
+        HttpRequestItem req3 = getRequestFromResult(result, 2);
         assertEquals(req3.getMethod(), "POST");
         assertEquals(req3.getBodyType(), "x-www-form-urlencoded");
         assertTrue(hasUrlencodedField(req3, "name", "John"));
@@ -613,11 +604,11 @@ public class IntelliJHttpParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 1);
+        assertEquals(result.getChildren().size(), 1);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getName(), "获取认证 Token");
         assertEquals(request.getMethod(), "POST");
         assertEquals(request.getUrl(), "https://api.example.com/auth/token");
@@ -636,10 +627,10 @@ public class IntelliJHttpParserTest {
                 scope = read write
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        HttpRequestItem request = getRequestFromNode(result, 0);
+        HttpRequestItem request = getRequestFromResult(result, 0);
         assertEquals(request.getMethod(), "POST");
         assertEquals(request.getBodyType(), "x-www-form-urlencoded");
         assertNotNull(request.getUrlencodedList());
@@ -669,11 +660,11 @@ public class IntelliJHttpParserTest {
                 Authorization: Bearer {{token}}
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 2, "应该解析出 2 个请求");
+        assertEquals(result.getChildren().size(), 2, "应该解析出 2 个请求");
 
-        HttpRequestItem req1 = getRequestFromNode(result, 0);
+        HttpRequestItem req1 = getRequestFromResult(result, 0);
         assertEquals(req1.getName(), "获取 Token");
         assertEquals(req1.getMethod(), "POST");
 
@@ -684,7 +675,7 @@ public class IntelliJHttpParserTest {
         assertTrue(req1.getPostscript().contains("pm.response.json()"), "应该转换为 pm.response.json()");
         assertFalse(req1.getPostscript().contains("client.global.set"), "不应该包含 client.global.set");
 
-        HttpRequestItem req2 = getRequestFromNode(result, 1);
+        HttpRequestItem req2 = getRequestFromResult(result, 1);
         assertEquals(req2.getName(), "使用 Token");
         assertEquals(req2.getMethod(), "GET");
     }
@@ -705,11 +696,11 @@ public class IntelliJHttpParserTest {
                 %}
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
-        assertEquals(result.getChildCount(), 1);
+        assertEquals(result.getChildren().size(), 1);
 
-        HttpRequestItem req = getRequestFromNode(result, 0);
+        HttpRequestItem req = getRequestFromResult(result, 0);
         String postscript = req.getPostscript();
 
         // 打印脚本以便调试
@@ -770,12 +761,12 @@ public class IntelliJHttpParserTest {
                 access_token = {{accessToken}}
                 """;
 
-        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result, "应该成功解析");
-        assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
+        assertEquals(result.getChildren().size(), 3, "应该有 3 个请求");
 
         // 验证 STEP 1
-        HttpRequestItem req1 = getRequestFromNode(result, 0);
+        HttpRequestItem req1 = getRequestFromResult(result, 0);
         assertEquals(req1.getName(), "STEP 1: 获取 Bearer Token");
         assertEquals(req1.getMethod(), "POST");
         assertTrue(req1.getUrl().contains("bearer-token"));
@@ -788,7 +779,7 @@ public class IntelliJHttpParserTest {
         assertTrue(req1.getPostscript().contains("pm.response.json().token"), "应该从响应中获取 token");
 
         // 验证 STEP 2
-        HttpRequestItem req2 = getRequestFromNode(result, 1);
+        HttpRequestItem req2 = getRequestFromResult(result, 1);
         assertEquals(req2.getName(), "STEP 2: 生成 Access Token");
         assertEquals(req2.getMethod(), "POST");
         assertEquals(req2.getBodyType(), "x-www-form-urlencoded");
@@ -802,7 +793,7 @@ public class IntelliJHttpParserTest {
         assertTrue(req2.getPostscript().contains("pm.response.json().access_token"), "应该从响应中获取 access_token");
 
         // 验证 STEP 3
-        HttpRequestItem req3 = getRequestFromNode(result, 2);
+        HttpRequestItem req3 = getRequestFromResult(result, 2);
         assertEquals(req3.getName(), "STEP 3: 验证 Access Token");
         assertEquals(req3.getMethod(), "POST");
         assertEquals(req3.getAuthType(), AUTH_TYPE_BASIC);
@@ -812,11 +803,9 @@ public class IntelliJHttpParserTest {
         assertTrue(hasUrlencodedField(req3, "access_token", "{{accessToken}}"));
     }
 
-    // 辅助方法：从节点获取 HttpRequestItem
-    private HttpRequestItem getRequestFromNode(DefaultMutableTreeNode root, int index) {
-        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) root.getChildAt(index);
-        Object[] userObject = (Object[]) requestNode.getUserObject();
-        return (HttpRequestItem) userObject[1];
+    // 辅助方法：从解析结果获取 HttpRequestItem
+    private HttpRequestItem getRequestFromResult(CollectionParseResult result, int index) {
+        return result.getChildren().get(index).asRequest();
     }
 
     // 辅助方法：检查请求是否有指定的请求头

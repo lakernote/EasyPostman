@@ -1,9 +1,8 @@
-package com.laker.postman.service.httpfile;
+package com.laker.postman.service.ideahttp;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.service.ideahttp.IntelliJHttpParser;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;

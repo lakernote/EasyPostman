@@ -1,7 +1,6 @@
-package com.laker.postman.service.idea;
+package com.laker.postman.service.ideahttp;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.service.ideahttp.IntelliJHttpEnvParser;
 import org.testng.annotations.Test;
 
 import java.util.List;

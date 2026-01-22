@@ -4,6 +4,7 @@ import com.laker.postman.model.*;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -27,6 +28,7 @@ import static com.laker.postman.panel.collections.right.request.sub.RequestBodyP
  * 负责解析 .http 文件格式（IntelliJ IDEA HTTP Client / REST Client 格式），转换为内部数据结构
  */
 @Slf4j
+@UtilityClass
 public class IntelliJHttpParser {
     // 匹配请求分隔符：### 开头的注释
     private static final Pattern REQUEST_SEPARATOR_PATTERN = Pattern.compile("^###\\s*(.+)$");
@@ -36,13 +38,6 @@ public class IntelliJHttpParser {
     private static final Pattern HEADER_PATTERN = Pattern.compile("^([^:]+):\\s*(.+)$");
     // 匹配单行注释：# 开头
     private static final Pattern COMMENT_PATTERN = Pattern.compile("^#\\s*(.*)$");
-
-    /**
-     * 私有构造函数，防止实例化
-     */
-    private IntelliJHttpParser() {
-        throw new UnsupportedOperationException("Utility class cannot be instantiated");
-    }
 
     /**
      * 解析 HTTP 文件，返回根节点

@@ -380,7 +380,28 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
      * @param values 行数据
      */
     public void addRow(Object... values) {
-        tableModel.addRow(createEmptyRow());
+        if (values == null || values.length == 0) {
+            tableModel.addRow(createEmptyRow());
+        } else {
+            // Create row with provided values
+            Object[] row = new Object[columns.length];
+            row[getEnabledColumnIndex()] = true; // 默认启用
+
+            // Fill in the provided values
+            int valueIndex = 0;
+            for (int i = 0; i < columns.length; i++) {
+                if (i == getEnabledColumnIndex()) {
+                    // Skip enabled column, already set to true
+                } else if (i == getDeleteColumnIndex()) {
+                    row[i] = ""; // Delete column is always empty
+                } else if (valueIndex < values.length) {
+                    row[i] = values[valueIndex++];
+                } else {
+                    row[i] = "";
+                }
+            }
+            tableModel.addRow(row);
+        }
     }
 
     /**

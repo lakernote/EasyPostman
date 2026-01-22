@@ -659,7 +659,7 @@ public class RequestTreeActions {
         Object[] obj = (Object[]) selectedNode.getUserObject();
         String collectionName = getGroupName(obj[1]);
 
-        WorkspaceTransferHelper.transferToWorkspaceQuiet(
+        WorkspaceTransferHelper.transferToWorkspace(
                 collectionName,
                 (targetWorkspace, itemName) -> performCollectionMove(selectedNode, targetWorkspace)
         );

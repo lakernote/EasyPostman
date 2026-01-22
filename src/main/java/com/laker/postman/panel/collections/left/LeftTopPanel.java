@@ -22,7 +22,7 @@ import com.laker.postman.service.apipost.ApiPostCollectionParser;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
-import com.laker.postman.service.httpfile.HttpFileParser;
+import com.laker.postman.service.ideahttp.IntelliJHttpParser;
 import com.laker.postman.service.postman.PostmanCollectionParser;
 import com.laker.postman.service.swagger.SwaggerParser;
 import com.laker.postman.util.I18nUtil;
@@ -354,7 +354,7 @@ public class LeftTopPanel extends SingletonBasePanel {
             try {
                 String content = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 String filename = fileToOpen.getName();
-                DefaultMutableTreeNode collectionNode = HttpFileParser.parseHttpFile(content, filename);
+                DefaultMutableTreeNode collectionNode = IntelliJHttpParser.parseHttpFile(content, filename);
                 if (collectionNode != null) {
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();

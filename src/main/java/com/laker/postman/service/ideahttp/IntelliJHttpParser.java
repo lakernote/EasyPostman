@@ -1,4 +1,4 @@
-package com.laker.postman.service.httpfile;
+package com.laker.postman.service.ideahttp;
 
 import com.laker.postman.model.*;
 import com.laker.postman.service.http.HttpUtil;
@@ -16,6 +16,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.GROUP;
+import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
@@ -25,11 +27,7 @@ import static com.laker.postman.panel.collections.right.request.sub.RequestBodyP
  * 负责解析 .http 文件格式（IntelliJ IDEA HTTP Client / REST Client 格式），转换为内部数据结构
  */
 @Slf4j
-public class HttpFileParser {
-    // 常量定义
-    private static final String GROUP = "group";
-    private static final String REQUEST = "request";
-
+public class IntelliJHttpParser {
     // 匹配请求分隔符：### 开头的注释
     private static final Pattern REQUEST_SEPARATOR_PATTERN = Pattern.compile("^###\\s*(.+)$");
     // 匹配 HTTP 方法 + URL：GET/POST/PUT/DELETE/PATCH + URL
@@ -42,7 +40,7 @@ public class HttpFileParser {
     /**
      * 私有构造函数，防止实例化
      */
-    private HttpFileParser() {
+    private IntelliJHttpParser() {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 

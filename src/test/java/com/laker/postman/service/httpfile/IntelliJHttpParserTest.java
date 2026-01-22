@@ -3,6 +3,7 @@ package com.laker.postman.service.httpfile;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.service.ideahttp.IntelliJHttpParser;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -16,24 +17,24 @@ import static org.testng.Assert.*;
  * HttpFileParser 单元测试类
  * 测试 HTTP 文件解析器的各种功能
  */
-public class HttpFileParserTest {
+public class IntelliJHttpParserTest {
 
     @Test(description = "测试解析空内容")
     public void testParseEmptyContent() {
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(null, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(null, "test.http");
         assertNull(result, "null 内容应该返回 null");
 
-        result = HttpFileParser.parseHttpFile("", "test.http");
+        result = IntelliJHttpParser.parseHttpFile("", "test.http");
         assertNull(result, "空字符串应该返回 null");
 
-        result = HttpFileParser.parseHttpFile("   ", "test.http");
+        result = IntelliJHttpParser.parseHttpFile("   ", "test.http");
         assertNull(result, "空白字符串应该返回 null");
     }
 
     @Test(description = "测试解析简单的 GET 请求")
     public void testParseSimpleGetRequest() {
         String content = "GET https://api.example.com/users";
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
 
         assertNotNull(result, "应该成功解析");
         assertEquals(result.getChildCount(), 1, "应该有一个请求节点");
@@ -55,7 +56,7 @@ public class HttpFileParserTest {
                 GET https://api.example.com/users
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -76,7 +77,7 @@ public class HttpFileParserTest {
                 POST https://api.example.com/users
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 2, "应该有两个请求节点");
 
@@ -106,7 +107,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -135,7 +136,7 @@ public class HttpFileParserTest {
                 X-Custom-Header: custom-value
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -156,7 +157,7 @@ public class HttpFileParserTest {
                 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -177,7 +178,7 @@ public class HttpFileParserTest {
                 Authorization: Basic {{username}} {{password}}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -194,7 +195,7 @@ public class HttpFileParserTest {
                 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -212,7 +213,7 @@ public class HttpFileParserTest {
                 name=John+Doe&email=john%40example.com&age=30
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -247,7 +248,7 @@ public class HttpFileParserTest {
                 --WebAppBoundary--
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -296,7 +297,7 @@ public class HttpFileParserTest {
                 OPTIONS https://api.example.com/options
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 7, "应该有 7 个请求");
 
@@ -326,7 +327,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -345,7 +346,7 @@ public class HttpFileParserTest {
                 GET https://api.example.com/users/profile
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -362,7 +363,7 @@ public class HttpFileParserTest {
                 Accept: text/event-stream
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -377,7 +378,7 @@ public class HttpFileParserTest {
                 GET wss://echo-websocket.hoppscotch.io/
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -398,7 +399,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -410,7 +411,7 @@ public class HttpFileParserTest {
     @Test(description = "测试解析没有分隔符的单个请求")
     public void testParseSingleRequestWithoutSeparator() {
         String content = "GET https://api.example.com/users";
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
 
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
@@ -427,7 +428,7 @@ public class HttpFileParserTest {
                 GET https://api.example.com/search?q=test&limit=10&page=1
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -444,7 +445,7 @@ public class HttpFileParserTest {
                 POST https://api.example.com/two
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         // 验证根节点是分组节点
@@ -463,7 +464,7 @@ public class HttpFileParserTest {
                 GET
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         // 没有有效 URL 的请求不应该被添加到结果中
         assertNull(result, "没有有效 URL 的请求应该返回 null");
     }
@@ -477,7 +478,7 @@ public class HttpFileParserTest {
                 X-Another: value with spaces
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -497,7 +498,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -518,7 +519,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -537,7 +538,7 @@ public class HttpFileParserTest {
                 name=John&email=&age=30&empty=
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -573,7 +574,7 @@ public class HttpFileParserTest {
                 name=John&email=john@example.com
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
 
@@ -613,7 +614,7 @@ public class HttpFileParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -636,7 +637,7 @@ public class HttpFileParserTest {
                 scope = read write
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
         HttpRequestItem request = getRequestFromNode(result, 0);
@@ -669,7 +670,7 @@ public class HttpFileParserTest {
                 Authorization: Bearer {{token}}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 2, "应该解析出 2 个请求");
 
@@ -705,7 +706,7 @@ public class HttpFileParserTest {
                 %}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
         assertEquals(result.getChildCount(), 1);
 
@@ -770,7 +771,7 @@ public class HttpFileParserTest {
                 access_token = {{accessToken}}
                 """;
 
-        DefaultMutableTreeNode result = HttpFileParser.parseHttpFile(content, "test.http");
+        DefaultMutableTreeNode result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result, "应该成功解析");
         assertEquals(result.getChildCount(), 3, "应该有 3 个请求");
 

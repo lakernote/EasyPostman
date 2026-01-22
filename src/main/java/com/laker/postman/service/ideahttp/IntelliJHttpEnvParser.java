@@ -1,8 +1,9 @@
-package com.laker.postman.service.idea;
+package com.laker.postman.service.ideahttp;
 
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
+import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,25 +14,22 @@ import java.util.UUID;
  * IntelliJ IDEA HTTP Client 环境变量解析器
  * 负责解析 IntelliJ IDEA HTTP Client 的 http-client.env.json 格式
  */
-public class IntelliJHttpEnvironmentParser {
-
-    private IntelliJHttpEnvironmentParser() {
-        // Utility class
-    }
+@UtilityClass
+public class IntelliJHttpEnvParser {
 
     /**
      * 解析 IntelliJ IDEA HTTP Client 环境变量JSON，转换为Environment列表
-     *
+     * <p>
      * 支持格式示例：
      * {
-     *   "dev": {
-     *     "host": "localhost",
-     *     "port": "8080"
-     *   },
-     *   "prod": {
-     *     "host": "example.com",
-     *     "port": "443"
-     *   }
+     * "dev": {
+     * "host": "localhost",
+     * "port": "8080"
+     * },
+     * "prod": {
+     * "host": "example.com",
+     * "port": "443"
+     * }
      * }
      *
      * @param json IntelliJ IDEA HTTP Client 环境变量JSON字符串

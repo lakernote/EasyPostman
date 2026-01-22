@@ -1,6 +1,7 @@
 package com.laker.postman.service.idea;
 
 import com.laker.postman.model.Environment;
+import com.laker.postman.service.ideahttp.IntelliJHttpEnvParser;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import static org.testng.Assert.*;
 /**
  * IntelliJHttpEnvironmentParser 单元测试
  */
-public class IntelliJHttpEnvironmentParserTest {
+public class IntelliJHttpEnvParserTest {
 
     @Test
     public void testParseIntelliJEnvironments() {
@@ -40,7 +41,7 @@ public class IntelliJHttpEnvironmentParserTest {
                 }
                 """;
 
-        List<Environment> envs = IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(json);
+        List<Environment> envs = IntelliJHttpEnvParser.parseIntelliJEnvironments(json);
 
         assertNotNull(envs);
         assertEquals(envs.size(), 3);
@@ -84,7 +85,7 @@ public class IntelliJHttpEnvironmentParserTest {
                 }
                 """;
 
-        List<Environment> envs = IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(json);
+        List<Environment> envs = IntelliJHttpEnvParser.parseIntelliJEnvironments(json);
 
         assertNotNull(envs);
         assertEquals(envs.size(), 1);
@@ -99,7 +100,7 @@ public class IntelliJHttpEnvironmentParserTest {
         env.addVariable("port", "8080");
         env.addVariable("protocol", "http");
 
-        String json = IntelliJHttpEnvironmentParser.toIntelliJEnvironmentJson(env);
+        String json = IntelliJHttpEnvParser.toIntelliJEnvironmentJson(env);
 
         assertNotNull(json);
         assertTrue(json.contains("\"dev\""));
@@ -122,7 +123,7 @@ public class IntelliJHttpEnvironmentParserTest {
         prod.addVariable("port", "443");
 
         List<Environment> envs = List.of(dev, prod);
-        String json = IntelliJHttpEnvironmentParser.toIntelliJEnvironmentsJson(envs);
+        String json = IntelliJHttpEnvParser.toIntelliJEnvironmentsJson(envs);
 
         assertNotNull(json);
         assertTrue(json.contains("\"dev\""));
@@ -142,10 +143,10 @@ public class IntelliJHttpEnvironmentParserTest {
         original.addVariable("key3", "value3");
 
         // 导出为JSON
-        String json = IntelliJHttpEnvironmentParser.toIntelliJEnvironmentJson(original);
+        String json = IntelliJHttpEnvParser.toIntelliJEnvironmentJson(original);
 
         // 重新导入
-        List<Environment> imported = IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(json);
+        List<Environment> imported = IntelliJHttpEnvParser.parseIntelliJEnvironments(json);
 
         // 验证
         assertEquals(imported.size(), 1);
@@ -159,7 +160,7 @@ public class IntelliJHttpEnvironmentParserTest {
     @Test(expectedExceptions = RuntimeException.class)
     public void testParseInvalidJson() {
         String invalidJson = "not a valid json";
-        IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(invalidJson);
+        IntelliJHttpEnvParser.parseIntelliJEnvironments(invalidJson);
     }
 
     @Test
@@ -179,7 +180,7 @@ public class IntelliJHttpEnvironmentParserTest {
                 }
                 """;
 
-        List<Environment> envs = IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(jsonWithSemicolons);
+        List<Environment> envs = IntelliJHttpEnvParser.parseIntelliJEnvironments(jsonWithSemicolons);
 
         assertNotNull(envs);
         assertEquals(envs.size(), 2);

@@ -19,7 +19,7 @@ import com.laker.postman.model.EnvironmentVariable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.idea.IntelliJHttpEnvironmentParser;
+import com.laker.postman.service.ideahttp.IntelliJHttpEnvParser;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
@@ -595,7 +595,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                List<Environment> envs = IntelliJHttpEnvironmentParser.parseIntelliJEnvironments(json);
+                List<Environment> envs = IntelliJHttpEnvParser.parseIntelliJEnvironments(json);
                 if (!envs.isEmpty()) {
                     // 导入新环境
                     refreshListAndComboFromAdd(envs);

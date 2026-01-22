@@ -592,10 +592,20 @@ public class EasyTextField extends FlatTextField {
             // 替换 {{ 到光标位置的文本为 {{selected}}
             String before = text.substring(0, openBracePos);
             String after = text.substring(caretPos);
-            String newText = before + "{{" + selected + "}}" + after;
 
-            setText(newText);
-            setCaretPosition(openBracePos + selected.length() + 4); // 光标放在 }} 之后
+            // 检查后面是否已经有 }}，如果有则跳过，避免重复
+            String closingBraces = "}}";
+            if (after.startsWith(closingBraces)) {
+                // 后面已经有 }}，不再添加
+                String newText = before + "{{" + selected + after;
+                setText(newText);
+                setCaretPosition(openBracePos + selected.length() + 4); // 光标放在 }} 之后
+            } else {
+                // 后面没有 }}，正常添加
+                String newText = before + "{{" + selected + "}}" + after;
+                setText(newText);
+                setCaretPosition(openBracePos + selected.length() + 4); // 光标放在 }} 之后
+            }
 
             hideAutocomplete();
         } catch (Exception e) {

@@ -1,10 +1,9 @@
 package com.laker.postman.common.component.list;
 
-import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,20 +25,13 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
             boolean isActive = active != null && active.getId().equals(item.getEnvironment().getId());
 
             // 设置图标和样式
-            Color checkedColor = new Color(0x60a5fa); // 浅蓝色，亮/暗主题都适用
-            // 暗色主题：使用 #6b7280 (灰色，更明亮，与背景 #3c3f41 有足够对比度)
-            // 亮色主题：使用 #cbd5e1 (浅灰色)
-            Color uncheckedColor = FlatLaf.isLafDark() ? new Color(0x6b7280) : new Color(0xcbd5e1);
+            Color checkedColor = new Color(0x1488FF); // 浅蓝色，亮/暗主题都适用
             if (isActive) {
-                FlatSVGIcon icon = new FlatSVGIcon("icons/check.svg", 16, 16);
-                icon.setColorFilter(new FlatSVGIcon.ColorFilter(c -> checkedColor));
-                label.setIcon(icon);
+                label.setIcon(IconUtil.createColored("icons/check.svg", 18, 18, checkedColor));
                 // 激活环境使用加粗字体
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
             } else {
-                FlatSVGIcon icon = new FlatSVGIcon("icons/nocheck.svg", 16, 16);
-                icon.setColorFilter(new FlatSVGIcon.ColorFilter(c -> uncheckedColor));
-                label.setIcon(icon);
+                label.setIcon(IconUtil.createThemed("icons/nocheck.svg", 16, 16));
                 // 普通环境使用常规字体
                 label.setFont(label.getFont().deriveFont(Font.PLAIN));
             }

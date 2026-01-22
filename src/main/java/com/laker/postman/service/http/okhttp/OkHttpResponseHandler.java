@@ -179,7 +179,7 @@ public class OkHttpResponseHandler {
             while ((len = is.read(buf)) != -1) {
                 if (progressDialog.isCancelled()) {
                     deleteTempFile(tempFile);
-                    throw new DownloadCancelledException(I18nUtil.getMessage(MessageKeys.DOWNLOAD_CANCELLED));
+                    throw new DownloadCancelledException();
                 }
                 bos.write(buf, 0, len);
                 totalBytes += len;

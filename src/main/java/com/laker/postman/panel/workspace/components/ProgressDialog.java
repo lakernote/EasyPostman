@@ -234,20 +234,6 @@ public abstract class ProgressDialog extends JDialog {
         );
     }
 
-    /**
-     * 获取当前操作的Worker
-     */
-    protected SwingWorker<Void, String> getCurrentWorker() {
-        return currentWorker;
-    }
-
-    /**
-     * 检查操作是否被取消
-     */
-    protected boolean isOperationCancelled() {
-        return currentWorker != null && currentWorker.isCancelled();
-    }
-
     @Override
     public void dispose() {
         // 确保清理资源

@@ -89,12 +89,12 @@ public class ModernUpdateDialog extends JDialog {
         infoPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +8));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 8));
         titleLabel.setForeground(ModernColors.getTextPrimary());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel versionLabel = new JLabel(String.format("%s %s → %s", I18nUtil.isChinese() ? "版本" : "Version", updateInfo.getCurrentVersion(), updateInfo.getLatestVersion()));
-        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 3));
         versionLabel.setForeground(ModernColors.PRIMARY);
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -130,7 +130,7 @@ public class ModernUpdateDialog extends JDialog {
 
         // 标题
         JLabel titleLabel = new JLabel("📝 " + (I18nUtil.isChinese() ? "更新内容" : "What's New"));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +3));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 3));
         titleLabel.setForeground(ModernColors.getTextPrimary());  // 主题适配的主文本色
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
@@ -141,7 +141,7 @@ public class ModernUpdateDialog extends JDialog {
         textArea.setFocusable(false); // 禁用焦点，避免出现光标
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
+        textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 1));
         textArea.setForeground(ModernColors.getTextPrimary());  // 主题适配的文字颜色
         textArea.setBackground(ModernColors.getBackgroundColor());  // 主题适配的背景色
         textArea.setBorder(new EmptyBorder(12, 12, 12, 12));

@@ -14,9 +14,5 @@ public class DownloadCancelledException extends IOException {
     public DownloadCancelledException() {
         super(I18nUtil.getMessage(MessageKeys.DOWNLOAD_CANCELLED));
     }
-
-    public DownloadCancelledException(String message) {
-        super(message);
-    }
 }
 

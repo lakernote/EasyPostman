@@ -1,8 +1,10 @@
 package com.laker.postman.panel.update;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,8 +25,6 @@ public class AutoUpdateNotification {
     private static final int DISPLAY_DURATION = 5000; // 毫秒
     private static final float FADE_STEP = 0.05f; // 淡入淡出步长
     private static final int FADE_TIMER_DELAY = 10; // 淡入淡出定时器延迟（毫秒）
-    private static final String ACCENT_COLOR_KEY = "Component.accentColor";
-
     private final JDialog dialog;
     private Timer fadeTimer;
     private Timer autoCloseTimer;
@@ -187,13 +187,12 @@ public class AutoUpdateNotification {
     private JPanel createNotificationPanel(UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
         JPanel panel = new JPanel(new BorderLayout(12, 8));
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1),
+                BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1),
                 BorderFactory.createEmptyBorder(16, 16, 16, 16)
         ));
-        panel.setBackground(UIManager.getColor("Panel.background"));
 
         // 左侧图标
-        JLabel iconLabel = new JLabel(loadIcon());
+        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/info.svg", 36, 36));
         iconLabel.setVerticalAlignment(SwingConstants.TOP);
         panel.add(iconLabel, BorderLayout.WEST);
 
@@ -204,7 +203,7 @@ public class AutoUpdateNotification {
 
         // 标题
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 版本信息
@@ -212,15 +211,13 @@ public class AutoUpdateNotification {
                 updateInfo.getCurrentVersion(),
                 updateInfo.getLatestVersion());
         JLabel versionLabel = new JLabel(versionText);
-        versionLabel.setFont(versionLabel.getFont().deriveFont(12f));
-        versionLabel.setForeground(UIManager.getColor(ACCENT_COLOR_KEY));
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 描述
         String description = extractDescription(updateInfo);
         JLabel descLabel = new JLabel("<html><body style='width: 240px'>" + description + "</body></html>");
-        descLabel.setFont(descLabel.getFont().deriveFont(11f));
-        descLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         contentPanel.add(titleLabel);
@@ -278,7 +275,6 @@ public class AutoUpdateNotification {
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setForeground(UIManager.getColor(ACCENT_COLOR_KEY));
         button.addActionListener(e -> {
             fadeOut();
             // 延迟调用，等待淡出动画完成
@@ -289,20 +285,6 @@ public class AutoUpdateNotification {
         return button;
     }
 
-    /**
-     * 加载图标
-     */
-    private Icon loadIcon() {
-        try {
-            FlatSVGIcon icon = new FlatSVGIcon("icons/info.svg");
-            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color ->
-                    UIManager.getColor("Component.accentColor")));
-            return icon.derive(36, 36);
-        } catch (Exception e) {
-            log.warn("Failed to load notification icon", e);
-            return UIManager.getIcon("OptionPane.informationIcon");
-        }
-    }
 
     /**
      * 提取更新描述

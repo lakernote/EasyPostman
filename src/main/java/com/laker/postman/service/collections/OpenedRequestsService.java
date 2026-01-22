@@ -79,7 +79,7 @@ public class OpenedRequestsService {
                     options[0]);
             if (result == 2 || result == JOptionPane.CLOSED_OPTION) {
                 // 用户取消，直接返回
-                throw new CancelException("User cancelled exit to save unsaved changes");
+                throw new CancelException();
             }
             if (result == 0) {
                 // 全部保存

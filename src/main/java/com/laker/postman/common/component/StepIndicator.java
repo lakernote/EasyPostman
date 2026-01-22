@@ -117,7 +117,7 @@ public class StepIndicator extends JPanel {
 
     private JLabel createArrow() {
         JLabel arrow = new JLabel("→");
-        arrow.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +4)); // 比标准字体大4号
+        arrow.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 4)); // 比标准字体大4号
         arrow.setForeground(getArrowColor()); // 使用主题适配的箭头颜色
         return arrow;
     }

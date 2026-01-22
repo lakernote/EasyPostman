@@ -54,16 +54,6 @@ public class ProgressPanel extends JPanel {
     }
 
     /**
-     * 更新进度
-     */
-    public void updateProgress(int progress, String message) {
-        progressBar.setValue(progress);
-        if (message != null) {
-            statusLabel.setText(message);
-        }
-    }
-
-    /**
      * 设置进度文本
      */
     public void setProgressText(String text) {

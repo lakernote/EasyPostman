@@ -16,7 +16,6 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
     private final EasyTextField textField;
     private JTextArea textArea;
     private JScrollPane scrollPane;
-    private Component currentEditor;
     private boolean isMultiLine;
     private JTable currentTable;
     private int currentRow;
@@ -66,7 +65,6 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
             isMultiLine = true;
             textArea.setText(text);
             textArea.setCaretPosition(0);
-            currentEditor = scrollPane;
 
             // 设置 TextArea 的行数（最多5行）
             int lines = Math.min(5, Math.max(2, countLines(text, table, column)));
@@ -80,7 +78,6 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
             // 使用单行编辑器
             isMultiLine = false;
             textField.setText(text);
-            currentEditor = textField;
 
             // 恢复默认行高
             restoreRowHeight(table, row);
@@ -137,11 +134,16 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
 
     /**
      * 判断是否需要多行编辑
-     * 如果文本会被截断（渲染器会显示 ...），则使用多行编辑
+     * 如果文本会被截断（渲染器会显示 ...）或包含换行符，则使用多行编辑
      */
     private boolean needsMultiLineEdit(String text, JTable table, int column) {
         if (text == null || text.isEmpty()) {
             return false;
+        }
+
+        // 如果文本包含换行符，必须使用多行编辑
+        if (text.contains("\n")) {
+            return true;
         }
 
         // 计算可显示的字符数（使用与渲染器相同的逻辑）
@@ -181,12 +183,23 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
         Font font = textField.getFont();
         FontMetrics fm = textField.getFontMetrics(font);
 
-        int textWidth = fm.stringWidth(text);
-        int linesNeeded = (int) Math.ceil((double) textWidth / columnWidth);
+        // 计算实际换行符产生的行数（换行符分割后的数组长度就是行数）
+        String[] lines = text.split("\n", -1);
+        int actualLineCount = lines.length;
 
-        // 考虑实际的换行符
-        int newlineCount = text.split("\n", -1).length;
+        // 计算每一行因为宽度限制需要的额外行数
+        int totalLinesNeeded = 0;
+        for (String line : lines) {
+            if (line.isEmpty()) {
+                totalLinesNeeded += 1; // 空行也占一行
+            } else {
+                int lineWidth = fm.stringWidth(line);
+                int linesForThisLine = Math.max(1, (int) Math.ceil((double) lineWidth / columnWidth));
+                totalLinesNeeded += linesForThisLine;
+            }
+        }
 
-        return Math.max(linesNeeded, newlineCount);
+        // 返回实际需要的总行数（考虑了真实换行符和宽度限制）
+        return Math.max(actualLineCount, totalLinesNeeded);
     }
 }

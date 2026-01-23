@@ -1076,21 +1076,34 @@ public class RequestBodyPanel extends JPanel {
             String text = bodyArea.getText();
             int caretPos = bodyArea.getCaretPosition();
 
-            // 查找光标前最近的 {{
+            // 查找光标前最近的双花括号开始位置
             int openBracePos = text.lastIndexOf("{{", caretPos - 1);
             if (openBracePos == -1) {
                 hideAutocomplete();
                 return;
             }
 
-            // 构建新文本：{{ 之前的部分 + {{变量名}} + 光标之后的部分
+            // 构建新文本
             String before = text.substring(0, openBracePos);
             String after = text.substring(caretPos);
-            String newText = before + "{{" + selected + "}}" + after;
 
-            // 设置新文本并移动光标到 }} 之后
+            // 检查光标后面是否已经有结束的双花括号
+            boolean hasClosingBraces = after.startsWith("}}");
+            String newText;
+            int newCaretPos;
+
+            if (hasClosingBraces) {
+                // 如果后面已经有结束符，则只插入开始符和变量名，不再添加结束符
+                newText = before + "{{" + selected + after;
+                newCaretPos = before.length() + selected.length() + 4; // 光标位置在已存在的结束符之后
+            } else {
+                // 如果后面没有结束符，则添加完整的变量引用语法
+                newText = before + "{{" + selected + "}}" + after;
+                newCaretPos = before.length() + selected.length() + 4; // 光标位置在新添加的结束符之后
+            }
+
+            // 设置新文本并移动光标
             bodyArea.setText(newText);
-            int newCaretPos = before.length() + selected.length() + 4; // {{ + 变量名 + }}
             bodyArea.setCaretPosition(newCaretPos);
 
         } catch (Exception e) {

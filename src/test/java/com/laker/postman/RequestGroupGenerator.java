@@ -38,7 +38,7 @@ public class RequestGroupGenerator {
             jsonArray.add(group);
         }
         // 写入文件
-        FileUtil.writeUtf8String(jsonArray.toStringPretty(), new File(SystemUtil.getUserHomeEasyPostmanPath() + "collections.json"));
+        FileUtil.writeUtf8String(jsonArray.toStringPretty(), new File(SystemUtil.getEasyPostmanPath() + "collections.json"));
         System.out.println("✅ 已生成 " + INT + " 个请求，分为 " + groupCount + " 个分组，保存为 collections.json");
     }
 

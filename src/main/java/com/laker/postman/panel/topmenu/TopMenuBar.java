@@ -177,7 +177,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
 
     private void openLogDirectory() {
         try {
-            Desktop.getDesktop().open(new File(SystemUtil.LOG_DIR));
+            Desktop.getDesktop().open(new File(ConfigPathConstants.LOG_DIR));
         } catch (IOException ex) {
             log.error("Failed to open log directory", ex);
             JOptionPane.showMessageDialog(null,

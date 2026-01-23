@@ -35,7 +35,7 @@ public class RequestGenerator {
         group1.set("children", children);
         jsonArray.add(group1);
         // 写入文件
-        FileUtil.writeUtf8String(jsonArray.toStringPretty(), new File(SystemUtil.getUserHomeEasyPostmanPath() + "collections.json"));
+        FileUtil.writeUtf8String(jsonArray.toStringPretty(), new File(SystemUtil.getEasyPostmanPath() + "collections.json"));
         System.out.println("✅ 已生成 " + INT + " 个请求，保存为 collections.json");
     }
 

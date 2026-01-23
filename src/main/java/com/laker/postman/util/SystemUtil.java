@@ -1,6 +1,7 @@
 package com.laker.postman.util;
 
 import com.laker.postman.model.Workspace;
+import com.laker.postman.service.update.asset.WindowsVersionDetector;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,6 +10,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,21 +30,77 @@ public class SystemUtil {
     private static final String FILE_SEPARATOR = FileSystems.getDefault().getSeparator();
     private static final String LINE_SEPARATOR = System.lineSeparator();
     private static final String PATH_SEPARATOR = File.pathSeparator;
-    /**
-     * 日志目录
-     */
-    public static final String LOG_DIR = getUserHomeEasyPostmanPath() + "logs" + File.separator;
-    /**
-     * 默认工作空间路径
-     */
-    private static final String COLLECTION_PATH = getUserHomeEasyPostmanPath() + "collections.json";
-    /**
-     * 默认环境变量路径
-     */
-    private static final String ENV_PATH = getUserHomeEasyPostmanPath() + "environments.json";
 
-    public static String getUserHomeEasyPostmanPath() {
-        return System.getProperty("user.home") + File.separator + "EasyPostman" + File.separator;
+    /**
+     * 缓存的数据目录路径
+     */
+    private static String cachedDataPath = null;
+
+
+    /**
+     * 获取程序所在目录
+     */
+    private static String getApplicationDirectory() {
+        try {
+            String path = SystemUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
+            File jarFile = new File(decodedPath);
+
+            // 如果是 jar 文件，获取其父目录
+            if (jarFile.isFile()) {
+                return jarFile.getParent() + File.separator;
+            } else {
+                // 开发环境，使用项目根目录
+                return System.getProperty("user.dir") + File.separator;
+            }
+        } catch (Exception e) {
+            log.warn("无法获取应用程序目录，使用当前工作目录", e);
+            return System.getProperty("user.dir") + File.separator;
+        }
+    }
+
+    /**
+     * 检查是否为 Portable 模式
+     * 复用 WindowsVersionDetector 的检测逻辑
+     */
+    private static boolean isPortableMode() {
+        return WindowsVersionDetector.isPortableVersion();
+    }
+
+    /**
+     * 获取数据存储根目录
+     * Portable 模式：程序所在目录/data/
+     * 普通模式：用户主目录/EasyPostman/
+     */
+    public static String getEasyPostmanPath() {
+        if (cachedDataPath != null) {
+            return cachedDataPath;
+        }
+
+        String dataPath;
+        if (isPortableMode()) {
+            // Portable 模式：使用程序所在目录
+            String appDir = getApplicationDirectory();
+            dataPath = appDir + "data" + File.separator;
+            log.info("运行在 Portable 模式，数据目录: {}", dataPath);
+        } else {
+            // 普通模式：使用用户主目录
+            dataPath = System.getProperty("user.home") + File.separator + "EasyPostman" + File.separator;
+        }
+
+        // 确保目录存在
+        try {
+            File dataDir = new File(dataPath);
+            if (!dataDir.exists()) {
+                dataDir.mkdirs();
+                log.info("创建数据目录: {}", dataPath);
+            }
+        } catch (Exception e) {
+            log.error("创建数据目录失败: {}", dataPath, e);
+        }
+
+        cachedDataPath = dataPath;
+        return dataPath;
     }
 
     /**
@@ -98,17 +157,11 @@ public class SystemUtil {
     }
 
     public static String getEnvPathForWorkspace(Workspace ws) {
-        if (ws == null) {
-            return ENV_PATH;
-        }
-        return ws.getPath() + File.separator + "environments.json";
+        return ConfigPathConstants.getEnvironmentsPath(ws);
     }
 
     public static String getCollectionPathForWorkspace(Workspace ws) {
-        if (ws == null) {
-            return COLLECTION_PATH;
-        }
-        return ws.getPath() + File.separator + "collections.json";
+        return ConfigPathConstants.getCollectionsPath(ws);
     }
 
     /**

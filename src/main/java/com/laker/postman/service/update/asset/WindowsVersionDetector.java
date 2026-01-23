@@ -1,13 +1,17 @@
 package com.laker.postman.service.update.asset;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Windows 版本检测器 - 判断是便携版还是安装版
  */
 @Slf4j
+@UtilityClass
 public class WindowsVersionDetector {
 
     private static final String PORTABLE_MARKER = ".portable";
@@ -31,7 +35,7 @@ public class WindowsVersionDetector {
                     .getCodeSource()
                     .getLocation()
                     .getPath();
-            String decodedPath = java.net.URLDecoder.decode(jarPath, java.nio.charset.StandardCharsets.UTF_8);
+            String decodedPath = URLDecoder.decode(jarPath, StandardCharsets.UTF_8);
 
             log.info("Current JAR path: {}", decodedPath);
 
@@ -85,8 +89,8 @@ public class WindowsVersionDetector {
     private static boolean isInstalledPath(String path) {
         String lowerPath = path.toLowerCase();
         return lowerPath.contains("program files") ||
-               lowerPath.contains("appdata\\local\\programs") ||
-               lowerPath.contains("appdata/local/programs");
+                lowerPath.contains("appdata\\local\\programs") ||
+                lowerPath.contains("appdata/local/programs");
     }
 }
 

@@ -14,6 +14,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.collections.RequestCollectionsService;
+import com.laker.postman.util.ConfigPathConstants;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,7 +33,7 @@ import java.nio.file.Paths;
 @Slf4j
 @Component
 public class PerformancePersistenceService {
-    private static final String FILE_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "performance_config.json";
+    private static final String FILE_PATH = ConfigPathConstants.PERFORMANCE_CONFIG;
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5MB
 
     @PostConstruct
@@ -42,7 +43,7 @@ public class PerformancePersistenceService {
 
     private void ensureDirExists() {
         try {
-            Path configDir = Paths.get(SystemUtil.getUserHomeEasyPostmanPath());
+            Path configDir = Paths.get(SystemUtil.getEasyPostmanPath());
             if (!Files.exists(configDir)) {
                 Files.createDirectories(configDir);
             }

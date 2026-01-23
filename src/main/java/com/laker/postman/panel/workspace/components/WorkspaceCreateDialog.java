@@ -115,7 +115,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
      * 设置默认的工作区路径
      */
     private void setDefaultWorkspacePath() {
-        String defaultWorkspaceDir = SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES;
+        String defaultWorkspaceDir = SystemUtil.getEasyPostmanPath() + WORKSPACES;
         pathField.setText(defaultWorkspaceDir);
     }
 
@@ -138,7 +138,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
             cleanName = RandomUtil.randomString(10); // 如果清理后为空，使用随机字符串
         }
 
-        return SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES + File.separator + cleanName;
+        return ConfigPathConstants.WORKSPACES_DIR + cleanName;
     }
 
     @Override
@@ -423,7 +423,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         String currentPath = pathField.getText().trim();
         if (currentPath.isEmpty()) {
-            currentPath = SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES;
+            currentPath = ConfigPathConstants.WORKSPACES_DIR;
         }
 
         // 确保父目录存在
@@ -431,7 +431,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         if (parentDir != null && parentDir.exists()) {
             chooser.setCurrentDirectory(parentDir);
         } else {
-            chooser.setCurrentDirectory(new File(SystemUtil.getUserHomeEasyPostmanPath()));
+            chooser.setCurrentDirectory(new File(SystemUtil.getEasyPostmanPath()));
         }
 
         int result = chooser.showOpenDialog(this);

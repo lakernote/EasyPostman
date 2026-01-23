@@ -2,8 +2,8 @@ package com.laker.postman.service.setting;
 
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
+import com.laker.postman.util.ConfigPathConstants;
 import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -14,7 +14,7 @@ import java.util.Properties;
 
 @Slf4j
 public class SettingManager {
-    private static final String CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "easy_postman_settings.properties";
+    private static final String CONFIG_FILE = ConfigPathConstants.EASY_POSTMAN_SETTINGS;
     private static final Properties props = new Properties();
 
     // 私有构造函数，防止实例化

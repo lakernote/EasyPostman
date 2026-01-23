@@ -18,7 +18,7 @@ public class UserSettingsUtil {
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
     private static final String KEY_WINDOW_EXTENDED_STATE = "windowExtendedState";  // 窗口状态
     private static final String KEY_LANGUAGE = "language";
-    private static final String SETTINGS_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "user_settings.json";
+    private static final String SETTINGS_PATH = ConfigPathConstants.USER_SETTINGS;
     private static final Object lock = new Object();
     private static Map<String, Object> settingsCache = null;
 

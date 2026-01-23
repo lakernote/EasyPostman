@@ -7,9 +7,9 @@ import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.sidebar.ConsolePanel;
+import com.laker.postman.util.ConfigPathConstants;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -26,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Slf4j
 @Component
 public class ClientCertificateService {
-    private static final String CERT_CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "client_certificates.json";
+    private static final String CERT_CONFIG_FILE = ConfigPathConstants.CLIENT_CERTIFICATES;
     private static final List<ClientCertificate> certificates = new CopyOnWriteArrayList<>();
 
 

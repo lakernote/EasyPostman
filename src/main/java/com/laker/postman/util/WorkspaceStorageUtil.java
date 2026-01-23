@@ -22,10 +22,8 @@ import java.util.Map;
 @UtilityClass
 public class WorkspaceStorageUtil {
 
-    private static final String WORKSPACES_FILE = "workspaces.json";
-    private static final String WORKSPACE_SETTINGS_FILE = "workspace_settings.json";
-    private static final String WORKSPACES_PATH = SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACES_FILE;
-    private static final String WORKSPACE_SETTINGS_PATH = SystemUtil.getUserHomeEasyPostmanPath() + WORKSPACE_SETTINGS_FILE;
+    private static final String WORKSPACES_PATH = ConfigPathConstants.WORKSPACES;
+    private static final String WORKSPACE_SETTINGS_PATH = ConfigPathConstants.WORKSPACE_SETTINGS;
     private static final Object lock = new Object();
 
     private static final String DEFAULT_WORKSPACE_ID = "default-workspace";
@@ -47,7 +45,7 @@ public class WorkspaceStorageUtil {
         ws.setId(DEFAULT_WORKSPACE_ID);
         ws.setName(DEFAULT_WORKSPACE_NAME);
         ws.setType(WorkspaceType.LOCAL);
-        ws.setPath(SystemUtil.getUserHomeEasyPostmanPath());
+        ws.setPath(SystemUtil.getEasyPostmanPath());
         ws.setDescription(DEFAULT_WORKSPACE_DESCRIPTION);
         ws.setCreatedAt(System.currentTimeMillis());
         ws.setUpdatedAt(System.currentTimeMillis());

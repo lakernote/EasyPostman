@@ -1,13 +1,16 @@
 package com.laker.postman.service.setting;
 
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.ConfigPathConstants;
 import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -17,7 +20,7 @@ import java.util.Properties;
  * 管理应用程序的所有快捷键配置，支持用户自定义
  */
 public class ShortcutManager {
-    private static final String SHORTCUT_CONFIG_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "shortcuts.properties";
+    private static final String SHORTCUT_CONFIG_FILE = ConfigPathConstants.SHORTCUTS;
     private static final Properties props = new Properties();
     private static final Map<String, ShortcutConfig> shortcuts = new HashMap<>();
 
@@ -47,38 +50,38 @@ public class ShortcutManager {
         int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 
         shortcuts.put(SEND_REQUEST, new ShortcutConfig(
-            SEND_REQUEST, "send_request",
-            KeyEvent.VK_ENTER, cmdMask, "Ctrl+Enter", "Cmd+Enter"
+                SEND_REQUEST, "send_request",
+                KeyEvent.VK_ENTER, cmdMask, "Ctrl+Enter", "Cmd+Enter"
         ));
 
         shortcuts.put(NEW_REQUEST, new ShortcutConfig(
-            NEW_REQUEST, "new_request",
-            KeyEvent.VK_N, cmdMask, "Ctrl+N", "Cmd+N"
+                NEW_REQUEST, "new_request",
+                KeyEvent.VK_N, cmdMask, "Ctrl+N", "Cmd+N"
         ));
 
         shortcuts.put(SAVE_REQUEST, new ShortcutConfig(
-            SAVE_REQUEST, "save_request",
-            KeyEvent.VK_S, cmdMask, "Ctrl+S", "Cmd+S"
+                SAVE_REQUEST, "save_request",
+                KeyEvent.VK_S, cmdMask, "Ctrl+S", "Cmd+S"
         ));
 
         shortcuts.put(CLOSE_CURRENT_TAB, new ShortcutConfig(
-            CLOSE_CURRENT_TAB, "close_current_tab",
-            KeyEvent.VK_W, cmdMask, "Ctrl+W", "Cmd+W"
+                CLOSE_CURRENT_TAB, "close_current_tab",
+                KeyEvent.VK_W, cmdMask, "Ctrl+W", "Cmd+W"
         ));
 
         shortcuts.put(CLOSE_OTHER_TABS, new ShortcutConfig(
-            CLOSE_OTHER_TABS, "close_other_tabs",
-            KeyEvent.VK_W, cmdMask | InputEvent.ALT_DOWN_MASK, "Ctrl+Alt+W", "Cmd+Option+W"
+                CLOSE_OTHER_TABS, "close_other_tabs",
+                KeyEvent.VK_W, cmdMask | InputEvent.ALT_DOWN_MASK, "Ctrl+Alt+W", "Cmd+Option+W"
         ));
 
         shortcuts.put(CLOSE_ALL_TABS, new ShortcutConfig(
-            CLOSE_ALL_TABS, "close_all_tabs",
-            KeyEvent.VK_W, cmdMask | InputEvent.SHIFT_DOWN_MASK, "Ctrl+Shift+W", "Cmd+Shift+W"
+                CLOSE_ALL_TABS, "close_all_tabs",
+                KeyEvent.VK_W, cmdMask | InputEvent.SHIFT_DOWN_MASK, "Ctrl+Shift+W", "Cmd+Shift+W"
         ));
 
         shortcuts.put(EXIT_APP, new ShortcutConfig(
-            EXIT_APP, "exit_app",
-            KeyEvent.VK_Q, cmdMask, "Ctrl+Q", "Cmd+Q"
+                EXIT_APP, "exit_app",
+                KeyEvent.VK_Q, cmdMask, "Ctrl+Q", "Cmd+Q"
         ));
     }
 
@@ -206,7 +209,7 @@ public class ShortcutManager {
         private final String macText;
 
         public ShortcutConfig(String id, String nameKey, int keyCode, int modifiers,
-                            String windowsText, String macText) {
+                              String windowsText, String macText) {
             this.id = id;
             this.nameKey = nameKey;
             this.keyCode = keyCode;

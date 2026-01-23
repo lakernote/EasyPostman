@@ -12,6 +12,7 @@ import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.util.ConfigPathConstants;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,7 +33,7 @@ import java.util.List;
 @Slf4j
 @Component
 public class FunctionalPersistenceService {
-    private static final String FILE_PATH = SystemUtil.getUserHomeEasyPostmanPath() + "functional_config.json";
+    private static final String FILE_PATH = ConfigPathConstants.FUNCTIONAL_CONFIG;
     private static final long MAX_FILE_SIZE = 2L * 1024 * 1024; // 2MB
 
     @PostConstruct
@@ -42,7 +43,7 @@ public class FunctionalPersistenceService {
 
     private void ensureDirExists() {
         try {
-            Path configDir = Paths.get(SystemUtil.getUserHomeEasyPostmanPath());
+            Path configDir = Paths.get(SystemUtil.getEasyPostmanPath());
             if (!Files.exists(configDir)) {
                 Files.createDirectories(configDir);
             }

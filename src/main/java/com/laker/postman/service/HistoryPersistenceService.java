@@ -9,6 +9,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.ConfigPathConstants;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Slf4j
 @Component
 public class HistoryPersistenceService {
-    private static final String HISTORY_FILE = SystemUtil.getUserHomeEasyPostmanPath() + "request_history.json";
+    private static final String HISTORY_FILE = ConfigPathConstants.REQUEST_HISTORY;
 
     // 限制单个响应体保存的最大字符数 (10KB)
     private static final int MAX_BODY_SIZE = 10 * 1024;
@@ -47,7 +48,7 @@ public class HistoryPersistenceService {
 
     private void ensureHistoryDirExists() {
         try {
-            Path historyDir = Paths.get(SystemUtil.getUserHomeEasyPostmanPath());
+            Path historyDir = Paths.get(SystemUtil.getEasyPostmanPath());
             if (!Files.exists(historyDir)) {
                 Files.createDirectories(historyDir);
             }

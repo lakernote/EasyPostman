@@ -77,7 +77,7 @@ public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<H
 
         // 设置列宽
         setEnabledColumnWidth(40);
-        setDeleteColumnWidth(40);
+        setDeleteColumnWidth();
 
         // Setup Tab key navigation to move between columns in the same row
         setupTabKeyNavigation();

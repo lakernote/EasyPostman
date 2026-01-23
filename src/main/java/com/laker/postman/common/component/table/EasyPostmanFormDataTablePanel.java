@@ -113,7 +113,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
         table.getColumnModel().getColumn(COL_TYPE).setMaxWidth(80);
         table.getColumnModel().getColumn(COL_TYPE).setMinWidth(80);
 
-        setDeleteColumnWidth(40);
+        setDeleteColumnWidth();
 
         // Setup Tab key navigation
         setupTabKeyNavigation();

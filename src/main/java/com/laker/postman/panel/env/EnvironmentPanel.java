@@ -9,6 +9,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.ImportButton;
+import com.laker.postman.common.component.button.SaveButton;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
@@ -21,7 +22,6 @@ import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.ideahttp.IntelliJHttpEnvParser;
 import com.laker.postman.service.postman.PostmanEnvironmentParser;
-import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +30,8 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -57,10 +59,10 @@ public class EnvironmentPanel extends SingletonBasePanel {
     private DefaultListModel<EnvironmentItem> environmentListModel;
     private JTextField searchField;
     private ImportButton importBtn;
-    private JPanel hintPanel; // 快捷键提示面板，用于主题切换时更新边框
-    private JLabel hintLabel; // 快捷键提示文本标签，用于主题切换时更新文本
     private String originalVariablesSnapshot; // 原始变量快照，直接用json字符串
     private boolean isLoadingData = false; // 用于控制是否正在加载数据，防止自动保存
+    private SearchTextField tableSearchField; // 表格搜索框
+    private JPanel toolbarPanel; // 表格工具栏面板
 
     @Override
     protected void initUI() {
@@ -87,13 +89,19 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
-        // 变量表格
-        variablesTablePanel = new EasyPostmanEnvironmentTablePanel();
-        rightPanel.add(variablesTablePanel, BorderLayout.CENTER);
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        // 底部快捷键提示面板
-        hintPanel = createShortcutHintPanel();
-        rightPanel.add(hintPanel, BorderLayout.SOUTH);
+        // 顶部工具栏：保存按钮和搜索框
+        JPanel tableToolbarPanel = createTableToolbar();
+        rightPanel.add(tableToolbarPanel, BorderLayout.NORTH);
+
+        // 变量表格容器，添加边距
+        JPanel tableContainer = new JPanel(new BorderLayout());
+        tableContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        variablesTablePanel = new EasyPostmanEnvironmentTablePanel();
+        tableContainer.add(variablesTablePanel, BorderLayout.CENTER);
+        rightPanel.add(tableContainer, BorderLayout.CENTER);
+
 
         // 使用 JSplitPane 将左右两个面板组合，支持拖动调整大小
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
@@ -108,47 +116,50 @@ public class EnvironmentPanel extends SingletonBasePanel {
     }
 
     /**
-     * 创建快捷键提示面板 - 现代科技风格
+     * 创建表格工具栏：保存按钮和搜索框
      */
-    private JPanel createShortcutHintPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
-        panel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
-        panel.setOpaque(true);
+    private JPanel createTableToolbar() {
+        SaveButton saveButton;
+        toolbarPanel = new JPanel();
+        toolbarPanel.setLayout(new BoxLayout(toolbarPanel, BoxLayout.X_AXIS));
+        // 加大边距，底部添加分隔线
+        toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(3, 10, 3, 10)
+        ));
 
-        // 添加提示标签
-        JLabel tipsLabel = new JLabel("💡");
-        tipsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
-        panel.add(tipsLabel);
+        // 左侧弹性空间，将所有控件推到右边
+        toolbarPanel.add(Box.createHorizontalGlue());
 
-        // 添加保存快捷键提示（使用 BUTTON_SAVE 而不是 SAVE_REQUEST）
-        String saveShortcut = ShortcutManager.getShortcutText(ShortcutManager.SAVE_REQUEST);
-        String saveActionName = I18nUtil.getMessage(MessageKeys.BUTTON_SAVE);
+        // 保存按钮
+        saveButton = new SaveButton();
+        saveButton.setPreferredSize(new Dimension(saveButton.getPreferredSize().width, 32));
+        saveButton.setMaximumSize(new Dimension(saveButton.getMaximumSize().width, 32));
+        saveButton.addActionListener(e -> saveVariablesManually());
+        toolbarPanel.add(saveButton);
+        toolbarPanel.add(Box.createHorizontalStrut(4)); // 按钮和搜索框之间的间距
 
-        // 创建提示标签并保存引用
-        String labelText = "💾" + " " + saveActionName + ": " + saveShortcut;
-        hintLabel = new JLabel(labelText);
-        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        hintLabel.setForeground(ModernColors.getTextSecondary());
-        panel.add(hintLabel);
+        // 表格搜索框
+        tableSearchField = new SearchTextField();
+        tableSearchField.setPreferredSize(new Dimension(200, 32));
+        tableSearchField.setMaximumSize(new Dimension(200, 32));
+        tableSearchField.addActionListener(e -> filterTableRows());
 
-        return panel;
-    }
+        // 监听搜索选项变化，触发重新过滤
+        tableSearchField.addPropertyChangeListener("caseSensitive", evt -> {
+            if (!tableSearchField.getText().isEmpty()) {
+                filterTableRows();
+            }
+        });
+        tableSearchField.addPropertyChangeListener("wholeWord", evt -> {
+            if (!tableSearchField.getText().isEmpty()) {
+                filterTableRows();
+            }
+        });
 
-    @Override
-    public void updateUI() {
-        super.updateUI();
-        // 主题切换时重新设置边框，确保分隔线颜色更新
-        if (hintPanel != null) {
-            hintPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
-        }
-        // 更新快捷键提示文本（支持语言切换）
-        if (hintLabel != null) {
-            String saveShortcut = ShortcutManager.getShortcutText(ShortcutManager.SAVE_REQUEST);
-            String saveActionName = I18nUtil.getMessage(MessageKeys.BUTTON_SAVE);
-            String labelText = "💾" + " " + saveActionName + ": " + saveShortcut;
-            hintLabel.setText(labelText);
-            hintLabel.setForeground(ModernColors.getTextSecondary());
-        }
+        toolbarPanel.add(tableSearchField);
+
+        return toolbarPanel;
     }
 
 
@@ -264,6 +275,21 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 reloadEnvironmentList(searchField.getText());
             }
         });
+
+        // 表格搜索框监听器
+        tableSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
+                filterTableRows();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                filterTableRows();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                filterTableRows();
+            }
+        });
         environmentList.addListSelectionListener(e -> { // 监听环境列表左键
             if (!e.getValueIsAdjusting()) {
                 EnvironmentItem item = environmentList.getSelectedValue();
@@ -286,6 +312,18 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 环境列表加载与搜索
         reloadEnvironmentList("");
 
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // 更新工具栏边框颜色
+        if (toolbarPanel != null) {
+            toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                    BorderFactory.createEmptyBorder(3, 10, 3, 10)
+            ));
+        }
     }
 
     /**
@@ -885,5 +923,96 @@ public class EnvironmentPanel extends SingletonBasePanel {
             EnvironmentService.setDataFilePath(originalDataFilePath);
             throw new RuntimeException("转移环境失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 过滤表格行，根据搜索框内容筛选显示符合条件的行
+     * 搜索范围：Name 列和 Value 列
+     */
+    private void filterTableRows() {
+        String keyword = tableSearchField.getText();
+        boolean caseSensitive = tableSearchField.isCaseSensitive();
+        boolean wholeWord = tableSearchField.isWholeWord();
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            // 清空搜索时，显示所有行
+            variablesTablePanel.getTable().setRowSorter(null);
+            return;
+        }
+
+        // 使用 TableRowSorter 进行过滤
+        TableRowSorter<TableModel> sorter =
+                new TableRowSorter<>(variablesTablePanel.getTable().getModel());
+
+        // 转换关键字用于搜索
+        final String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
+
+        // 创建过滤器
+        RowFilter<TableModel, Object> rowFilter = new RowFilter<>() {
+            @Override
+            public boolean include(Entry<? extends TableModel, ?> entry) {
+                // 获取 Name 和 Value 列的值（列索引：1=Name, 2=Value）
+                Object nameObj = entry.getValue(1);
+                Object valueObj = entry.getValue(2);
+
+                String name = nameObj != null ? nameObj.toString() : "";
+                String value = valueObj != null ? valueObj.toString() : "";
+
+                // 转换为搜索文本
+                String searchName = caseSensitive ? name : name.toLowerCase();
+                String searchValue = caseSensitive ? value : value.toLowerCase();
+
+                // 判断是否匹配
+                if (wholeWord) {
+                    // 整词匹配
+                    return matchesWholeWord(searchName, searchKeyword) ||
+                            matchesWholeWord(searchValue, searchKeyword);
+                } else {
+                    // 包含匹配
+                    return searchName.contains(searchKeyword) ||
+                            searchValue.contains(searchKeyword);
+                }
+            }
+        };
+
+        sorter.setRowFilter(rowFilter);
+        variablesTablePanel.getTable().setRowSorter(sorter);
+    }
+
+    /**
+     * 判断文本中是否包含整词匹配的关键字
+     */
+    private boolean matchesWholeWord(String text, String keyword) {
+        if (text == null || keyword == null) {
+            return false;
+        }
+
+        int index = 0;
+        while ((index = text.indexOf(keyword, index)) != -1) {
+            int start = index;
+            int end = index + keyword.length();
+
+            // 检查前一个字符
+            if (start > 0) {
+                char prevChar = text.charAt(start - 1);
+                if (Character.isLetterOrDigit(prevChar) || prevChar == '_') {
+                    index++;
+                    continue;
+                }
+            }
+
+            // 检查后一个字符
+            if (end < text.length()) {
+                char nextChar = text.charAt(end);
+                if (Character.isLetterOrDigit(nextChar) || nextChar == '_') {
+                    index++;
+                    continue;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }

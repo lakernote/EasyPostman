@@ -2,6 +2,7 @@ package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -240,14 +241,12 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
 
     /**
      * 设置删除列的宽度
-     *
-     * @param width 宽度
      */
-    protected void setDeleteColumnWidth(int width) {
+    protected void setDeleteColumnWidth() {
         int colIndex = getDeleteColumnIndex();
-        table.getColumnModel().getColumn(colIndex).setPreferredWidth(width);
-        table.getColumnModel().getColumn(colIndex).setMaxWidth(width);
-        table.getColumnModel().getColumn(colIndex).setMinWidth(width);
+        table.getColumnModel().getColumn(colIndex).setPreferredWidth(30);
+        table.getColumnModel().getColumn(colIndex).setMaxWidth(40);
+        table.getColumnModel().getColumn(colIndex).setMinWidth(20);
     }
 
     /**
@@ -672,8 +671,7 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
         public DeleteButtonRenderer() {
             setHorizontalAlignment(SwingConstants.CENTER);
             setOpaque(true);
-            deleteIcon = new FlatSVGIcon("icons/close.svg", 16, 16);
-            deleteIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+            deleteIcon = IconUtil.createThemed("icons/delete.svg", 18, 18);
         }
 
         @Override

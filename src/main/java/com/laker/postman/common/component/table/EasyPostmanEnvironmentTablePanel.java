@@ -130,7 +130,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
 
         // 设置 Drag+Enable 合并列的宽度（增加宽度以提供更好的视觉效果）
         setEnabledColumnWidth(50);
-        setDeleteColumnWidth(40);
+        setDeleteColumnWidth();
 
         // Setup Tab key navigation to move between columns in the same row
         setupTabKeyNavigation();

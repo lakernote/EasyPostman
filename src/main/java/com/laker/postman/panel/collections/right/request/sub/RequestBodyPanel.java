@@ -6,6 +6,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.util.*;
@@ -80,6 +81,36 @@ public class RequestBodyPanel extends JPanel {
 
     @Setter
     private transient ActionListener wsSendActionListener; // 外部注入的发送回调
+
+    /**
+     * 获取已定义变量的高亮颜色（主题自适应）
+     * 亮模式：浅青色 - 与JSON语法的深红色(163,21,21)形成冷暖对比
+     * 暗模式：淡紫色 - 与JSON语法的绿色(105,134,90)形成补色对比
+     */
+    private static Color getDefinedVariableHighlightColor() {
+        if (ModernColors.isDarkTheme()) {
+            // 暗色主题：淡紫色背景，与JSON绿色文字形成补色对比
+            return new Color(130, 100, 180, 80);
+        } else {
+            // 亮色主题：浅青色背景，与JSON深红色文字形成冷暖对比
+            return new Color(180, 235, 235, 100);
+        }
+    }
+
+    /**
+     * 获取未定义变量的高亮颜色（主题自适应）
+     * 亮模式：浅黄色 - 警告色，与JSON语法的深红色(163,21,21)有明显区分
+     * 暗模式：浅粉色 - 警告效果，与JSON语法的绿色(105,134,90)有明显区分
+     */
+    private static Color getUndefinedVariableHighlightColor() {
+        if (ModernColors.isDarkTheme()) {
+            // 暗色主题：浅粉色背景，警告效果柔和
+            return new Color(200, 120, 150, 85);
+        } else {
+            // 亮色主题：浅黄色背景，温和的警告提示
+            return new Color(255, 250, 205, 120);
+        }
+    }
 
     public RequestBodyPanel(RequestItemProtocolEnum protocol) {
         this.isWebSocketMode = protocol.isWebSocketProtocol();
@@ -293,10 +324,10 @@ public class RequestBodyPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // ====== 变量高亮和悬浮提示 ======
-        // 变量高亮
+        // 变量高亮 - 使用主题自适应颜色
         DefaultHighlighter highlighter = (DefaultHighlighter) bodyArea.getHighlighter();
-        DefaultHighlighter.DefaultHighlightPainter definedPainter = new DefaultHighlighter.DefaultHighlightPainter(new Color(180, 210, 255, 120));
-        DefaultHighlighter.DefaultHighlightPainter undefinedPainter = new DefaultHighlighter.DefaultHighlightPainter(new Color(255, 200, 200, 120));
+        DefaultHighlighter.DefaultHighlightPainter definedPainter = new DefaultHighlighter.DefaultHighlightPainter(getDefinedVariableHighlightColor());
+        DefaultHighlighter.DefaultHighlightPainter undefinedPainter = new DefaultHighlighter.DefaultHighlightPainter(getUndefinedVariableHighlightColor());
         bodyArea.getDocument().addDocumentListener(new DocumentListener() {
             void updateHighlights() {
                 highlighter.removeAllHighlights();

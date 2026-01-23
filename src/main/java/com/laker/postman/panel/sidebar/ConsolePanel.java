@@ -247,9 +247,12 @@ public class ConsolePanel extends SingletonBasePanel {
      */
     private void highlightAllMatches(int length) {
         try {
-            // 使用柔和的黄色高亮所有匹配项（浅色背景）
+            // 使用柔和的黄色高亮所有匹配项 - 主题自适应
+            Color highlightColor = ModernColors.isDarkTheme()
+                    ? new Color(100, 100, 50, 100)  // 暗色主题：深黄色
+                    : new Color(254, 249, 195);      // 亮色主题：浅黄色
             DefaultHighlighter.DefaultHighlightPainter painter =
-                    new DefaultHighlighter.DefaultHighlightPainter(new Color(254, 249, 195));
+                    new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
 
             for (int pos : matchPositions) {
                 consoleLogArea.getHighlighter().addHighlight(pos, pos + length, painter);
@@ -272,9 +275,12 @@ public class ConsolePanel extends SingletonBasePanel {
             consoleLogArea.getHighlighter().removeAllHighlights();
             highlightAllMatches(length);
 
-            // 当前匹配项使用明亮橙色高亮
+            // 当前匹配项使用明亮橙色高亮 - 主题自适应
+            Color currentHighlightColor = ModernColors.isDarkTheme()
+                    ? new Color(150, 100, 50, 120)  // 暗色主题：深橙色
+                    : new Color(254, 215, 170);      // 亮色主题：浅橙色
             DefaultHighlighter.DefaultHighlightPainter currentPainter =
-                    new DefaultHighlighter.DefaultHighlightPainter(new Color(254, 215, 170));
+                    new DefaultHighlighter.DefaultHighlightPainter(currentHighlightColor);
             consoleLogArea.getHighlighter().addHighlight(pos, pos + length, currentPainter);
 
             // 滚动到当前匹配项

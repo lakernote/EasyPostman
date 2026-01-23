@@ -1,0 +1,192 @@
+package com.laker.postman.common.component.table;
+
+import com.laker.postman.common.component.EasyTextField;
+
+import javax.swing.*;
+import javax.swing.table.TableCellEditor;
+import java.awt.*;
+
+/**
+ * 智能值列单元格编辑器
+ * 根据内容长度自动选择：
+ * - 短文本：单行 TextField
+ * - 长文本（超出列宽）：多行 TextArea（自动撑开行高）
+ */
+public class EasySmartValueCellEditor extends AbstractCellEditor implements TableCellEditor {
+    private final EasyTextField textField;
+    private JTextArea textArea;
+    private JScrollPane scrollPane;
+    private Component currentEditor;
+    private boolean isMultiLine;
+    private JTable currentTable;
+    private int currentRow;
+    private int originalRowHeight;
+
+    public EasySmartValueCellEditor() {
+        this(false);
+    }
+
+    /**
+     * @param enableAutoMultiLine 是否启用自动多行编辑（根据内容长度）
+     */
+    public EasySmartValueCellEditor(boolean enableAutoMultiLine) {
+        this.textField = new EasyTextField(1);
+        this.textField.setBorder(null);
+
+        // 初始化多行编辑器
+        if (enableAutoMultiLine) {
+            this.textArea = new JTextArea();
+            this.textArea.setLineWrap(true);
+            this.textArea.setWrapStyleWord(true);
+            this.textArea.setFont(textField.getFont());
+            this.scrollPane = new JScrollPane(textArea);
+            this.scrollPane.setBorder(null);
+            this.scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            this.scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        }
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        if (isMultiLine && textArea != null) {
+            return textArea.getText();
+        }
+        return textField.getText();
+    }
+
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+        this.currentTable = table;
+        this.currentRow = row;
+        String text = value == null ? "" : value.toString();
+
+        // 判断是否需要多行编辑
+        if (textArea != null && needsMultiLineEdit(text, table, column)) {
+            // 使用多行编辑器
+            isMultiLine = true;
+            textArea.setText(text);
+            textArea.setCaretPosition(0);
+            currentEditor = scrollPane;
+
+            // 设置 TextArea 的行数（最多5行）
+            int lines = Math.min(5, Math.max(2, countLines(text, table, column)));
+            textArea.setRows(lines);
+
+            // 🔑 关键：撑开行高以适应多行内容
+            expandRowHeight(table, row, lines);
+
+            return scrollPane;
+        } else {
+            // 使用单行编辑器
+            isMultiLine = false;
+            textField.setText(text);
+            currentEditor = textField;
+
+            // 恢复默认行高
+            restoreRowHeight(table, row);
+
+            return textField;
+        }
+    }
+
+    /**
+     * 撑开行高以适应多行编辑器
+     */
+    private void expandRowHeight(JTable table, int row, int lines) {
+        // 保存原始行高
+        this.originalRowHeight = table.getRowHeight(row);
+
+        // 计算新的行高：基础高度 + 行数 * 行高
+        FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
+        int lineHeight = fm.getHeight();
+        int newHeight = Math.max(60, lineHeight * lines + 10); // 至少60px，加10px为边距
+
+        // 设置新行高
+        table.setRowHeight(row, newHeight);
+    }
+
+    /**
+     * 恢复默认行高
+     */
+    private void restoreRowHeight(JTable table, int row) {
+        if (originalRowHeight > 0) {
+            table.setRowHeight(row, originalRowHeight);
+        } else {
+            // 恢复为默认行高
+            table.setRowHeight(row, table.getRowHeight());
+        }
+    }
+
+    @Override
+    public boolean stopCellEditing() {
+        // 停止编辑时恢复行高
+        if (currentTable != null && currentRow >= 0 && isMultiLine) {
+            restoreRowHeight(currentTable, currentRow);
+        }
+        return super.stopCellEditing();
+    }
+
+    @Override
+    public void cancelCellEditing() {
+        // 取消编辑时恢复行高
+        if (currentTable != null && currentRow >= 0 && isMultiLine) {
+            restoreRowHeight(currentTable, currentRow);
+        }
+        super.cancelCellEditing();
+    }
+
+    /**
+     * 判断是否需要多行编辑
+     * 如果文本会被截断（渲染器会显示 ...），则使用多行编辑
+     */
+    private boolean needsMultiLineEdit(String text, JTable table, int column) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+
+        // 计算可显示的字符数（使用与渲染器相同的逻辑）
+        int columnWidth = table.getColumnModel().getColumn(column).getWidth();
+        Font font = textField.getFont();
+        if (font == null) {
+            return false;
+        }
+
+        FontMetrics fm = textField.getFontMetrics(font);
+        if (fm == null) {
+            return false;
+        }
+
+        int ellipsisWidth = fm.stringWidth("...");
+        int availableWidth = columnWidth - 10 - ellipsisWidth;
+
+        if (availableWidth <= 0) {
+            return false;
+        }
+
+        int textWidth = fm.stringWidth(text);
+
+        // 如果文本宽度超过可用宽度，需要多行编辑
+        return textWidth > availableWidth;
+    }
+
+    /**
+     * 计算文本需要的行数
+     */
+    private int countLines(String text, JTable table, int column) {
+        if (text == null || text.isEmpty()) {
+            return 1;
+        }
+
+        int columnWidth = table.getColumnModel().getColumn(column).getWidth() - 20; // 减去滚动条宽度
+        Font font = textField.getFont();
+        FontMetrics fm = textField.getFontMetrics(font);
+
+        int textWidth = fm.stringWidth(text);
+        int linesNeeded = (int) Math.ceil((double) textWidth / columnWidth);
+
+        // 考虑实际的换行符
+        int newlineCount = text.split("\n", -1).length;
+
+        return Math.max(linesNeeded, newlineCount);
+    }
+}

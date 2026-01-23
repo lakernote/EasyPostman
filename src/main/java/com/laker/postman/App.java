@@ -1,6 +1,7 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.util.SystemInfo;
+import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.ioc.BeanFactory;
@@ -23,7 +24,7 @@ public class App {
 
     public static void main(String[] args) {
         // 0. 初始化 IOC 容器（在 EDT 之前，避免阻塞 UI）
-        BeanFactory.init("com.laker.postman");
+        BeanFactory.init(AppConstants.BASE_PACKAGE);
 
         // 1. 配置平台特定的窗口装饰
         configurePlatformSpecificSettings();

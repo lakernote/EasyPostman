@@ -91,8 +91,10 @@ public class ConfigPathConstants {
 
     /**
      * 日志目录
+     * 使用用户主目录，与 logback.xml 配置保持一致
      */
-    public static final String LOG_DIR = getDataRootPath() + "logs" + File.separator;
+    public static final String LOG_DIR = System.getProperty("user.home") + File.separator +
+            AppConstants.APP_NAME + File.separator + "logs" + File.separator;
 
     // ==================== 工作区相关路径方法 ====================
 

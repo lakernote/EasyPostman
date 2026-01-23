@@ -63,6 +63,7 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 - 📦 Batch requests & stress testing (simplified JMeter), supports report, result tree, and trend chart visualization
 - 📝 Syntax highlighting request editor
 - 🌐 Multi-language support (Simplified Chinese, English)
+- 🎨 Light and dark mode support for comfortable viewing
 - 💾 Local data storage for privacy and security
 - 📂 Import/Export Postman v2.1, curl format
 - 📊 Visualized response results, supports JSON/XML
@@ -74,6 +75,7 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 - 🏢 Workspace management - supports local and Git workspaces for project-level data isolation and version control
 - 🔄 Git integration - supports commit, push, pull, and other version control operations
 - 👥 Team collaboration - share API data via Git workspace
+- ☕ Built-in Java decompiler for analyzing Java classes
 
 ---
 
@@ -84,6 +86,7 @@ and collaborate with your team, enabling seamless multi-device sync and teamwork
 |                          ![icon](docs/icon.png)                          |                        ![welcome](docs/welcome.png)                        |
 |                          ![home](docs/home.png)                          |                     ![workspaces](docs/workspaces.png)                     |
 |                   ![collections](docs/collections.png)                   |             ![collections-import](docs/collections-import.png)             |
+|            ![dark-collections](docs/dark-collections.png)            |          ![dark-performance-trend](docs/dark-performance-trend.png)          |
 |                  ![environments](docs/environments.png)                  |                     ![functional](docs/functional.png)                     |
 |                  ![functional_1](docs/functional_1.png)                  |                   ![functional_2](docs/functional_2.png)                   |
 |                       ![history](docs/history.png)                       |               ![history-timeline](docs/history-timeline.png)               |

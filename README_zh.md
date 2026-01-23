@@ -61,6 +61,7 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 - 📦 批量请求与压力测试（简易版 JMeter），满足多场景需求，支持报告、结果树、趋势图可视化
 - 📝 语法高亮请求编辑器
 - 🌐 多语言支持（简体中文、英文）
+- 🎨 支持亮色和暗色模式，舒适观感
 - 💾 本地数据存储，隐私安全
 - 📂 支持导入导出 Postman v2.1、curl格式
 - 📊 响应结果可视化，支持 JSON/XML 格式
@@ -72,6 +73,7 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 - 🏢 工作区管理 - 支持本地工作区和Git工作区，实现项目级别的数据隔离与版本控制
 - 🔄 Git 集成 - 支持 commit、push、pull 等版本控制操作
 - 👥 团队协作 - 通过 Git 工作区实现团队间的接口数据共享
+- ☕ 内置 Java 反编译工具，便于分析 Java 类文件
 
 ---
 
@@ -82,6 +84,7 @@ Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护
 |                          ![icon](docs/icon.png)                          |                        ![welcome](docs/welcome.png)                        |
 |                          ![home](docs/home.png)                          |                     ![workspaces](docs/workspaces.png)                     |
 |                   ![collections](docs/collections.png)                   |             ![collections-import](docs/collections-import.png)             |
+|            ![dark-collections](docs/dark-collections.png)            |          ![dark-performance-trend](docs/dark-performance-trend.png)          |
 |                  ![environments](docs/environments.png)                  |                     ![functional](docs/functional.png)                     |
 |                  ![functional_1](docs/functional_1.png)                  |                   ![functional_2](docs/functional_2.png)                   |
 |                       ![history](docs/history.png)                       |               ![history-timeline](docs/history-timeline.png)               |

@@ -64,7 +64,7 @@ public class JsonUtil {
      * @return json
      */
     public static String toJsonPrettyStr(String json) {
-        return mapper.readTree(json).toPrettyString();
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json));
     }
 
     /**

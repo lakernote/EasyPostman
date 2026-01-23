@@ -29,19 +29,19 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
      * @param enableAutoMultiLine 是否启用自动多行编辑（根据内容长度）
      */
     public EasySmartValueCellEditor(boolean enableAutoMultiLine) {
-        this.textField = new EasyTextField(1);
-        this.textField.setBorder(null);
+        this.textField = new EasyTextField(1); // 单行文本框
+        this.textField.setBorder(null); // 去掉边框，和表格样式一致
 
         // 初始化多行编辑器
         if (enableAutoMultiLine) {
             this.textArea = new JTextArea();
-            this.textArea.setLineWrap(true);
-            this.textArea.setWrapStyleWord(true);
-            this.textArea.setFont(textField.getFont());
-            this.scrollPane = new JScrollPane(textArea);
-            this.scrollPane.setBorder(null);
-            this.scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-            this.scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            this.textArea.setLineWrap(true); // 自动换行
+            this.textArea.setWrapStyleWord(true); // 按单词换行
+            this.textArea.setFont(textField.getFont()); // 统一字体
+            this.scrollPane = new JScrollPane(textArea); // 包裹在滚动面板中
+            this.scrollPane.setBorder(null); // 去掉边框
+            this.scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED); // 根据需要显示垂直滚动条
+            this.scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 不显示水平滚动条
         }
     }
 
@@ -96,7 +96,10 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
         // 计算新的行高：基础高度 + 行数 * 行高
         FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
         int lineHeight = fm.getHeight();
-        int newHeight = Math.max(60, lineHeight * lines + 10); // 至少60px，加10px为边距
+        // 根据行数动态设置最小高度：2行时至少40px，3行及以上至少60px
+        int minHeight = lines <= 2 ? 40 : 60;
+        int padding = 10; // 上下边距
+        int newHeight = Math.max(minHeight, lineHeight * lines + padding);
 
         // 设置新行高
         table.setRowHeight(row, newHeight);

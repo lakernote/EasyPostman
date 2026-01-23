@@ -165,7 +165,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
 
             // Drag handle label - 加粗的拖拽图标
             dragLabel = new JLabel("⋮⋮");
-            dragLabel.setForeground(UIManager.getColor("Table.dragHandleColor"));
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
             dragLabel.setPreferredSize(new Dimension(16, 28)); // 宽度从 20 减到 16，更紧凑
             dragLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -184,11 +183,8 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
             if (isSelected) {
                 setBackground(table.getSelectionBackground());
-                // 选中时拖拽手柄颜色更深
-                dragLabel.setForeground(UIManager.getColor("Table.dragHandleActiveColor"));
             } else {
                 setBackground(table.getBackground());
-                dragLabel.setForeground(UIManager.getColor("Table.dragHandleColor"));
             }
 
             // Set checkbox state
@@ -215,8 +211,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
 
             // Drag handle label - 加粗的拖拽图标
             dragLabel = new JLabel("⋮⋮");
-            dragLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4)); // 比标准字体大4号并加粗
-            dragLabel.setForeground(UIManager.getColor("Table.dragHandleColor"));
+            dragLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 4)); // 比标准字体大4号并加粗
             dragLabel.setHorizontalAlignment(SwingConstants.CENTER);
             dragLabel.setPreferredSize(new Dimension(16, 28)); // 宽度从 20 减到 16，更紧凑
             dragLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -255,7 +250,6 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
                                                      boolean isSelected, int row, int column) {
             panel.setBackground(table.getSelectionBackground());
             checkBox.setSelected(value instanceof Boolean && (Boolean) value);
-            dragLabel.setForeground(UIManager.getColor("Table.dragHandleActiveColor"));
             return panel;
         }
 

@@ -14,7 +14,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.collections.RequestCollectionsService;
-import com.laker.postman.util.ConfigPathConstants;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 

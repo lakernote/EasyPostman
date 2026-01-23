@@ -2,7 +2,7 @@ package com.laker.postman.service.setting;
 
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.util.ConfigPathConstants;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 

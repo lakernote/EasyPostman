@@ -11,7 +11,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.ConfigPathConstants;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;

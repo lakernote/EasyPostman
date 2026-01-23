@@ -1,6 +1,6 @@
 package com.laker.postman.service.setting;
 
-import com.laker.postman.util.ConfigPathConstants;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import lombok.Getter;
 
 import javax.swing.*;

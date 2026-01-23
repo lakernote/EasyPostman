@@ -7,7 +7,7 @@ import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.util.ConfigPathConstants;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;

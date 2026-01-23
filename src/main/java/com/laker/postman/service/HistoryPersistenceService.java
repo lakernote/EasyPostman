@@ -9,7 +9,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.ConfigPathConstants;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 

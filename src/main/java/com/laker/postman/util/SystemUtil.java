@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.update.asset.WindowsVersionDetector;
 import lombok.experimental.UtilityClass;

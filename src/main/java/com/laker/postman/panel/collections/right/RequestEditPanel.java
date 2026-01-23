@@ -10,13 +10,15 @@ import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.*;
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.RequestsTabsService;
-import com.laker.postman.service.curl.CurlParser;
-import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.util.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -710,38 +712,8 @@ public class RequestEditPanel extends SingletonBasePanel {
                                 I18nUtil.getMessage(MessageKeys.IMPORT_CURL), JOptionPane.YES_NO_OPTION);
                         if (result == JOptionPane.YES_OPTION) {
                             try {
-                                CurlRequest curlRequest = CurlParser.parse(curlText);
-                                if (curlRequest.url != null) {
-                                    HttpRequestItem item = new HttpRequestItem();
-                                    item.setName(null);
-                                    item.setUrl(curlRequest.url);
-                                    item.setMethod(curlRequest.method);
-
-                                    if (curlRequest.headersList != null && !curlRequest.headersList.isEmpty()) {
-                                        item.setHeadersList(curlRequest.headersList);
-                                    }
-
-                                    item.setBody(curlRequest.body);
-
-                                    if (curlRequest.paramsList != null && !curlRequest.paramsList.isEmpty()) {
-                                        item.setParamsList(curlRequest.paramsList);
-                                    }
-
-                                    if (curlRequest.formDataList != null && !curlRequest.formDataList.isEmpty()) {
-                                        item.setFormDataList(curlRequest.formDataList);
-                                    }
-
-                                    if (curlRequest.urlencodedList != null && !curlRequest.urlencodedList.isEmpty()) {
-                                        item.setUrlencodedList(curlRequest.urlencodedList);
-                                    }
-
-                                    if (HttpUtil.isSSERequest(item)) {
-                                        item.setProtocol(RequestItemProtocolEnum.SSE);
-                                    } else if (HttpUtil.isWebSocketRequest(item.getUrl())) {
-                                        item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
-                                    } else {
-                                        item.setProtocol(RequestItemProtocolEnum.HTTP);
-                                    }
+                                HttpRequestItem item = CurlImportUtil.fromCurl(curlText);
+                                if (item != null) {
                                     // 新建Tab并填充内容
                                     RequestEditSubPanel tab = addNewTab(null, item.getProtocol());
                                     item.setId(tab.getId());

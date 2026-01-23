@@ -16,6 +16,7 @@ import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.collections.GroupInheritanceHelper;
+import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -42,6 +43,7 @@ import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -153,6 +155,9 @@ public class RequestEditSubPanel extends JPanel {
         urlField = requestLinePanel.getUrlField();
         urlField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
+                // 优先检测 cURL 命令
+                detectAndParseCurl();
+                // 然后处理 URL 参数解析
                 parseUrlParamsToParamsPanel();
             }
 
@@ -161,6 +166,7 @@ public class RequestEditSubPanel extends JPanel {
             }
 
             public void changedUpdate(DocumentEvent e) {
+                detectAndParseCurl();
                 parseUrlParamsToParamsPanel();
             }
         });
@@ -1715,5 +1721,47 @@ public class RequestEditSubPanel extends JPanel {
             splitPane.setDividerLocation(0.5);
         }
     }
-}
 
+    /**
+     * 检测并解析 cURL 命令
+     */
+    private void detectAndParseCurl() {
+        String text = urlField.getText();
+        if (text != null && text.trim().toLowerCase().startsWith("curl")) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    CurlRequest curlRequest = CurlParser.parse(text.trim());
+                    if (curlRequest.url != null) {
+                        handleCurlParsed(curlRequest);
+                    }
+                } catch (Exception ex) {
+                    // 解析失败时不做处理，用户可能还在输入
+                }
+            });
+        }
+    }
+
+    /**
+     * 处理curl命令解析结果，自动回填到表单
+     */
+    private void handleCurlParsed(CurlRequest curlRequest) {
+        if (curlRequest == null || curlRequest.url == null) {
+            return;
+        }
+
+        try {
+            // 将 CurlRequest 转换为 HttpRequestItem
+            HttpRequestItem item = CurlImportUtil.fromCurlRequest(curlRequest);
+            if (item != null) {
+                // 使用现有的 initPanelData 方法回填数据
+                initPanelData(item);
+                // 清空剪贴板内容，避免重复导入
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+                // 显示成功提示
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PARSE_CURL_SUCCESS));
+            }
+        } catch (Exception e) {
+            // 静默处理错误，用户可能还在输入
+        }
+    }
+}

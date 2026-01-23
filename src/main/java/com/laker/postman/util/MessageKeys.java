@@ -155,6 +155,7 @@ public final class MessageKeys {
     public static final String CLIPBOARD_CURL_DETECTED = "clipboard.curl.detected";
     public static final String IMPORT_CURL = "import.curl";
     public static final String PARSE_CURL_ERROR = "parse.curl.error";
+    public static final String PARSE_CURL_SUCCESS = "parse.curl.success";
     public static final String TIP = "tip";
 
     // ============ 标签页 ============

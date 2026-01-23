@@ -108,6 +108,7 @@ public class JsonUtil {
             // 使用支持注释的 mapper 来解析
             JsonMapper commentSupportedMapper = JsonMapper.builder()
                     .configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true)
+                    .defaultPrettyPrinter(DEFAULT_PRETTY_PRINTER)
                     .build();
 
             // 解析并格式化（注释会丢失）

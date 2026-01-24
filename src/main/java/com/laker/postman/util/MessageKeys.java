@@ -744,6 +744,8 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.jmeter.slow_request_threshold.tooltip";
     public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
     public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
+    public static final String SETTINGS_JMETER_EVENT_LOGGING = "settings.jmeter.event_logging";
+    public static final String SETTINGS_JMETER_EVENT_LOGGING_TOOLTIP = "settings.jmeter.event_logging.tooltip";
 
     // Download settings section
     public static final String SETTINGS_DOWNLOAD_TITLE = "settings.download.title";

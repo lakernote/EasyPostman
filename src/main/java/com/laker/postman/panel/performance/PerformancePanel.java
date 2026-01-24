@@ -1657,7 +1657,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
             if (preOk && running) {  // 执行HTTP请求前再次检查running状态
                 try {
-                    req.logEvent = !efficientMode; // 记录事件日志
+                    req.logEvent = SettingManager.isPerformanceEventLoggingEnabled(); // 根据设置决定是否记录事件日志
                     resp = HttpSingleRequestExecutor.executeHttp(req);
                 } catch (Exception ex) {
                     // 检查是否是被取消/中断的请求

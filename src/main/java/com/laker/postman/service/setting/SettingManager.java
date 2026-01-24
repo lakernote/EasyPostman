@@ -216,6 +216,19 @@ public class SettingManager {
         save();
     }
 
+    public static boolean isPerformanceEventLoggingEnabled() {
+        String val = props.getProperty("performance_event_logging_enabled");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false; // 默认关闭事件日志（提高性能）
+    }
+
+    public static void setPerformanceEventLoggingEnabled(boolean enabled) {
+        props.setProperty("performance_event_logging_enabled", String.valueOf(enabled));
+        save();
+    }
+
     public static boolean isShowDownloadProgressDialog() {
         String val = props.getProperty("show_download_progress_dialog");
         if (val != null) {

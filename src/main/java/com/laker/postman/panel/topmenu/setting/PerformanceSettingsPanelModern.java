@@ -21,6 +21,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
     private JTextField jmeterMaxRequestsPerHostField;
     private JTextField jmeterSlowRequestThresholdField;
     private JTextField trendSamplingField;
+    private JCheckBox eventLoggingCheckBox;
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -94,6 +95,16 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 trendSamplingField
         );
         jmeterSection.add(trendSamplingRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 事件日志开关
+        eventLoggingCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_EVENT_LOGGING));
+        eventLoggingCheckBox.setSelected(SettingManager.isPerformanceEventLoggingEnabled());
+        JPanel eventLoggingRow = createCheckBoxRow(
+                eventLoggingCheckBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_EVENT_LOGGING_TOOLTIP)
+        );
+        jmeterSection.add(eventLoggingRow);
 
         contentPanel.add(jmeterSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
@@ -107,6 +118,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(jmeterMaxRequestsPerHostField);
         trackComponentValue(jmeterSlowRequestThresholdField);
         trackComponentValue(trendSamplingField);
+        trackComponentValue(eventLoggingCheckBox);
     }
 
     private void setupValidators() {
@@ -189,6 +201,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setJmeterMaxRequestsPerHost(Integer.parseInt(jmeterMaxRequestsPerHostField.getText().trim()));
             SettingManager.setJmeterSlowRequestThreshold(Integer.parseInt(jmeterSlowRequestThresholdField.getText().trim()));
             SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
+            SettingManager.setPerformanceEventLoggingEnabled(eventLoggingCheckBox.isSelected());
 
             // 重新跟踪当前值
             originalValues.clear();
@@ -198,6 +211,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(jmeterMaxRequestsPerHostField);
             trackComponentValue(jmeterSlowRequestThresholdField);
             trackComponentValue(trendSamplingField);
+            trackComponentValue(eventLoggingCheckBox);
             setHasUnsavedChanges(false);
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));

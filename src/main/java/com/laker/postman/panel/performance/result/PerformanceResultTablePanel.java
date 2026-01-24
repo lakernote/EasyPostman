@@ -129,17 +129,6 @@ public class PerformanceResultTablePanel extends JPanel {
         leftPanel.add(tableScroll, BorderLayout.CENTER);
 
         detailTabs = new JTabbedPane();
-        for (String key : new String[]{
-                MessageKeys.PERFORMANCE_TAB_REQUEST,
-                MessageKeys.PERFORMANCE_TAB_RESPONSE,
-                MessageKeys.PERFORMANCE_TAB_TESTS,
-                MessageKeys.PERFORMANCE_TAB_TIMING,
-                MessageKeys.PERFORMANCE_TAB_EVENT_INFO
-        }) {
-            JEditorPane pane = new JEditorPane("text/html", "");
-            pane.setEditable(false);
-            detailTabs.addTab(I18nUtil.getMessage(key), new JScrollPane(pane));
-        }
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
         split.setDividerLocation(400);
@@ -289,34 +278,67 @@ public class PerformanceResultTablePanel extends JPanel {
     }
 
     private void renderDetail(ResultNodeInfo info) {
-        setTabHtml(0, HttpHtmlRenderer.renderRequest(info.req));
-        // 响应标签页：整合响应数据和错误信息
-        setTabHtml(1, HttpHtmlRenderer.renderResponseWithError(info));
-        setTabHtml(2,
-                info.testResults == null || info.testResults.isEmpty()
-                        ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_ASSERTION_RESULTS)
-                        : HttpHtmlRenderer.renderTestResults(info.testResults)
+        // 清除所有标签页
+        detailTabs.removeAll();
+
+        int responseTabIndex = -1;
+
+        // 1. Request 标签页（始终显示）
+        if (info.req != null) {
+            addTabWithContent(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REQUEST),
+                    HttpHtmlRenderer.renderRequest(info.req)
+            );
+        }
+
+        // 2. Response 标签页（始终显示，整合响应数据和错误信息）
+        String responseHtml = HttpHtmlRenderer.renderResponseWithError(info);
+        addTabWithContent(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESPONSE),
+                responseHtml
         );
-        setTabHtml(3, HttpHtmlRenderer.renderTimingInfo(info.resp));
-        setTabHtml(4, HttpHtmlRenderer.renderEventInfo(info.resp));
+        responseTabIndex = detailTabs.getTabCount() - 1;
+
+        // 3. Tests 标签页（仅在有断言结果时显示）
+        if (info.testResults != null && !info.testResults.isEmpty()) {
+            addTabWithContent(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TESTS),
+                    HttpHtmlRenderer.renderTestResults(info.testResults)
+            );
+        }
+
+        // 4. Timing 标签页（仅在有事件信息时显示）
+        // 5. Event Info 标签页（仅在有事件信息时显示）
+        if (info.resp != null && info.resp.httpEventInfo != null) {
+            addTabWithContent(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TIMING),
+                    HttpHtmlRenderer.renderTimingInfo(info.resp)
+            );
+            addTabWithContent(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_EVENT_INFO),
+                    HttpHtmlRenderer.renderEventInfo(info.resp)
+            );
+        }
 
         // 如果有错误信息，自动切换到 Response 标签页
-        if (info.errorMsg != null && !info.errorMsg.isEmpty()) {
-            detailTabs.setSelectedIndex(1); // Response 标签页
+        if (info.errorMsg != null && !info.errorMsg.isEmpty() && responseTabIndex >= 0) {
+            detailTabs.setSelectedIndex(responseTabIndex);
         }
     }
 
-    private void setTabHtml(int idx, String html) {
-        JScrollPane scroll = (JScrollPane) detailTabs.getComponentAt(idx);
-        JEditorPane pane = (JEditorPane) scroll.getViewport().getView();
+    /**
+     * 添加标签页并设置内容
+     */
+    private void addTabWithContent(String title, String html) {
+        JEditorPane pane = new JEditorPane("text/html", "");
+        pane.setEditable(false);
         pane.setText(html);
         pane.setCaretPosition(0);
+        detailTabs.addTab(title, new JScrollPane(pane));
     }
 
     private void clearDetailTabs() {
-        for (int i = 0; i < detailTabs.getTabCount(); i++) {
-            setTabHtml(i, "");
-        }
+        detailTabs.removeAll();
     }
 
     // 资源清理

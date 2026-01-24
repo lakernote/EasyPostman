@@ -2,6 +2,8 @@ package com.laker.postman.service.swagger;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.service.common.TreeNodeBuilder;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -79,7 +81,10 @@ public class SwaggerParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(swagger2Json);
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(swagger2Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
 
         assertNotNull(collectionNode);
         Object[] userObject = (Object[]) collectionNode.getUserObject();
@@ -189,7 +194,10 @@ public class SwaggerParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(openapi3Json);
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapi3Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
 
         assertNotNull(collectionNode);
         Object[] userObject = (Object[]) collectionNode.getUserObject();
@@ -230,8 +238,8 @@ public class SwaggerParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(invalidJson);
-        assertNull(collectionNode);
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(invalidJson);
+        assertNull(parseResult);
     }
 
     @Test
@@ -273,7 +281,10 @@ public class SwaggerParserTest {
                 }
                 """;
 
-        DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(swagger2Json);
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(swagger2Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
         assertNotNull(collectionNode);
 
         DefaultMutableTreeNode secureGroup = (DefaultMutableTreeNode) collectionNode.getChildAt(0);

@@ -183,9 +183,12 @@ public class LeftTopPanel extends SingletonBasePanel {
         JMenuItem importPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN),
                 new FlatSVGIcon("icons/postman.svg", 20, 20));
         importPostmanItem.addActionListener(e -> importPostmanCollection());
-        JMenuItem importSwaggerItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER),
+        JMenuItem importSwagger2Item = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER2),
                 new FlatSVGIcon("icons/swagger.svg", 20, 20));
-        importSwaggerItem.addActionListener(e -> importSwaggerCollection());
+        importSwagger2Item.addActionListener(e -> importSwaggerCollection());
+        JMenuItem importOpenApi3Item = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_OPENAPI3),
+                new FlatSVGIcon("icons/openapi.svg", 20, 20));
+        importOpenApi3Item.addActionListener(e -> importSwaggerCollection());
         JMenuItem importHarItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HAR),
                 new FlatSVGIcon("icons/har.svg", 20, 20));
         importHarItem.addActionListener(e -> importHarCollection());
@@ -200,7 +203,8 @@ public class LeftTopPanel extends SingletonBasePanel {
         importCurlItem.addActionListener(e -> importCurlToCollection(null));
         importMenu.add(importEasyToolsItem);
         importMenu.add(importPostmanItem);
-        importMenu.add(importSwaggerItem);
+        importMenu.add(importSwagger2Item);
+        importMenu.add(importOpenApi3Item);
         importMenu.add(importHarItem);
         importMenu.add(importHttpItem);
         importMenu.add(importApiPostItem);
@@ -317,8 +321,10 @@ public class LeftTopPanel extends SingletonBasePanel {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
-                DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(json);
-                if (collectionNode != null) {
+                CollectionParseResult parseResult = SwaggerParser.parseSwagger(json);
+                if (parseResult != null) {
+                    DefaultMutableTreeNode collectionNode =
+                            TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();

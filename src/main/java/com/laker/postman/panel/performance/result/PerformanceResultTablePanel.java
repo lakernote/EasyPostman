@@ -266,7 +266,8 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private void renderDetail(ResultNodeInfo info) {
         setTabHtml(0, HttpHtmlRenderer.renderRequest(info.req));
-        setTabHtml(1, HttpHtmlRenderer.renderResponse(info.resp));
+        // 响应标签页：整合响应数据和错误信息
+        setTabHtml(1, HttpHtmlRenderer.renderResponseWithError(info));
         setTabHtml(2,
                 info.testResults == null || info.testResults.isEmpty()
                         ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_NO_ASSERTION_RESULTS)
@@ -274,6 +275,11 @@ public class PerformanceResultTablePanel extends JPanel {
         );
         setTabHtml(3, HttpHtmlRenderer.renderTimingInfo(info.resp));
         setTabHtml(4, HttpHtmlRenderer.renderEventInfo(info.resp));
+
+        // 如果有错误信息，自动切换到 Response 标签页
+        if (info.errorMsg != null && !info.errorMsg.isEmpty()) {
+            detailTabs.setSelectedIndex(1); // Response 标签页
+        }
     }
 
     private void setTabHtml(int idx, String html) {

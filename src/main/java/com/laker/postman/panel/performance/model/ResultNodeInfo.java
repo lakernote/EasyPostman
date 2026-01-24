@@ -31,7 +31,6 @@ public class ResultNodeInfo {
 
     public ResultNodeInfo(
             String name,
-            boolean success,
             String errorMsg,
             PreparedRequest req,
             HttpResponse resp,

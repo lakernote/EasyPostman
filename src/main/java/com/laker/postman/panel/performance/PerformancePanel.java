@@ -595,8 +595,15 @@ public class PerformancePanel extends SingletonBasePanel {
 
                     // 显示执行完成提示
                     long totalTime = System.currentTimeMillis() - startTime;
-                    int totalRequests = allRequestResults.size();
-                    long successCount = allRequestResults.stream().filter(r -> r.success).count();
+                    int totalRequests;
+                    long successCount;
+
+                    // 使用 statsLock 保护对 allRequestResults 的访问，避免 ConcurrentModificationException
+                    synchronized (statsLock) {
+                        totalRequests = allRequestResults.size();
+                        successCount = allRequestResults.stream().filter(r -> r.success).count();
+                    }
+
                     String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_COMPLETED,
                             totalRequests, successCount, totalTime / 1000.0);
                     NotificationUtil.showSuccess(message);
@@ -1643,7 +1650,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
 
                 performanceResultTablePanel.addResult(
-                    new ResultNodeInfo(apiName, success, errorMsg, req, resp, testResults),
+                    new ResultNodeInfo(apiName, errorMsg, req, resp, testResults),
                     efficientMode,
                     getJmeterSlowRequestThreshold()
                 );

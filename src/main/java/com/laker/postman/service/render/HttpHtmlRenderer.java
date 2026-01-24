@@ -6,6 +6,7 @@ import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
+import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import lombok.experimental.UtilityClass;
 
 import java.text.SimpleDateFormat;
@@ -221,6 +222,96 @@ public class HttpHtmlRenderer {
         // 使用更简单但更有效的换行控制
         sb.append("<pre style='background:").append(bgColor).append(";padding:8px;border-radius:4px;font-size:9px;color:").append(textColor).append(";white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;width:100%;max-width:100%;margin:0;box-sizing:border-box;overflow:hidden;'>").append(escapeHtml(responseBody)).append("</pre>");
         sb.append("</div>");
+        return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
+    }
+
+    /**
+     * 渲染响应信息（整合错误信息 - 扁平化设计）
+     * 当有错误时，在响应内容上方显示简洁的错误提示条
+     */
+    public static String renderResponseWithError(ResultNodeInfo info) {
+        if (info == null) {
+            return renderResponse(null);
+        }
+
+        String bgColor = getThemeBackground();
+        String textColor = getThemeTextColor();
+
+        StringBuilder sb = new StringBuilder();
+
+        // === 错误信息区域（扁平化，无花哨装饰） ===
+        if (info.errorMsg != null && !info.errorMsg.isEmpty()) {
+            sb.append("<div style='background:").append(bgColor)
+                    .append(";border-left:3px solid ").append(COLOR_ERROR)
+                    .append(";padding:10px;margin-bottom:12px;'>");
+            sb.append("<div style='color:").append(COLOR_ERROR)
+                    .append(";font-weight:bold;font-size:10px;margin-bottom:6px;'>⚠ Error</div>");
+            sb.append("<div style='color:").append(textColor)
+                    .append(";font-size:9px;white-space:pre-wrap;word-break:break-all;'>")
+                    .append(escapeHtml(info.errorMsg)).append("</div>");
+            sb.append("</div>");
+        }
+
+        // === 断言失败信息 ===
+        if (info.testResults != null && !info.testResults.isEmpty() && info.hasAssertionFailed()) {
+            sb.append("<div style='background:").append(bgColor)
+                    .append(";border-left:3px solid ").append(COLOR_WARNING)
+                    .append(";padding:10px;margin-bottom:12px;'>");
+            sb.append("<div style='color:").append(COLOR_ERROR)
+                    .append(";font-weight:bold;font-size:10px;margin-bottom:6px;'>✗ Assertion Failed</div>");
+
+            for (com.laker.postman.model.script.TestResult testResult : info.testResults) {
+                if (!testResult.passed) {
+                    sb.append("<div style='margin-bottom:4px;padding:6px;background:").append(getThemeHeaderBackground())
+                            .append(";'>");
+                    sb.append("<div style='color:").append(textColor)
+                            .append(";font-size:9px;font-weight:bold;'>")
+                            .append(escapeHtml(testResult.name)).append("</div>");
+                    if (testResult.message != null && !testResult.message.isEmpty()) {
+                        sb.append("<div style='color:").append(COLOR_ERROR)
+                                .append(";font-size:9px;margin-top:2px;'>").append(escapeHtml(testResult.message)).append("</div>");
+                    }
+                    sb.append("</div>");
+                }
+            }
+            sb.append("</div>");
+        }
+
+        // === 网络错误 ===
+        if (info.resp != null &&
+                info.resp.httpEventInfo != null &&
+                info.resp.httpEventInfo.getErrorMessage() != null &&
+                !info.resp.httpEventInfo.getErrorMessage().isEmpty()) {
+            sb.append("<div style='background:").append(bgColor)
+                    .append(";border-left:3px solid ").append(COLOR_WARNING)
+                    .append(";padding:10px;margin-bottom:12px;'>");
+            sb.append("<div style='color:").append(COLOR_WARNING)
+                    .append(";font-weight:bold;font-size:10px;margin-bottom:6px;'>⚠ Network Error</div>");
+            sb.append("<div style='color:").append(textColor)
+                    .append(";font-size:9px;white-space:pre-wrap;word-break:break-all;'>")
+                    .append(escapeHtml(info.resp.httpEventInfo.getErrorMessage())).append("</div>");
+            sb.append("</div>");
+        }
+
+        // === 标准响应信息（复用 renderResponse 的逻辑） ===
+        if (info.resp != null) {
+            // 直接调用现有的 renderResponse 方法获取响应内容
+            String responseHtml = renderResponse(info.resp);
+            // 提取 body 标签内的内容（去掉外层的 html/body 标签）
+            int bodyStart = responseHtml.indexOf("<body");
+            int bodyEnd = responseHtml.lastIndexOf("</body>");
+            if (bodyStart >= 0 && bodyEnd > bodyStart) {
+                int contentStart = responseHtml.indexOf('>', bodyStart) + 1;
+                sb.append(responseHtml, contentStart, bodyEnd);
+            } else {
+                // 如果解析失败，直接拼接完整内容
+                sb.append(responseHtml);
+            }
+        } else {
+            // 没有响应数据时显示提示信息
+            sb.append("<div style='color:#888;padding:16px;'>无响应数据</div>");
+        }
+
         return createHtmlDocument(DETAIL_FONT_SIZE, sb.toString());
     }
 

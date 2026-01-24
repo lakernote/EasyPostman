@@ -224,12 +224,18 @@ public class RequestTreePopupMenu {
         rename.setEnabled(!isMultipleSelection);
         menu.add(rename);
 
-        // 删除
-        JMenuItem delete = createMenuItem(
-                MessageKeys.COLLECTIONS_MENU_DELETE,
-                "icons/close.svg",
-                e -> actions.deleteSelectedItem()
-        );
+        // 删除（显示选中数量）
+        TreePath[] selectedPaths = requestTree.getSelectionPaths();
+        int selectedCount = selectedPaths != null ? selectedPaths.length : 0;
+
+        String deleteText = I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE);
+        if (selectedCount > 1) {
+            deleteText += " (" + selectedCount + ")";
+        }
+
+        JMenuItem delete = new JMenuItem(deleteText,
+                IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        delete.addActionListener(e -> actions.deleteSelectedItem());
         delete.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
         menu.add(delete);
     }

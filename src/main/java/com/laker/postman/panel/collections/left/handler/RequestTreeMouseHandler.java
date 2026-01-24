@@ -92,8 +92,10 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         int row = requestTree.getClosestRowForLocation(e.getX(), e.getY());
         if (row != -1) {
             TreePath clickedPath = requestTree.getPathForRow(row);
+            // 只有当点击的路径未被选中时，才设置为当前选中项
+            // 如果点击的路径已经被选中，则保持当前的多选状态
             if (clickedPath != null && !requestTree.isPathSelected(clickedPath)) {
-                requestTree.setSelectionRow(row);
+                requestTree.setSelectionPath(clickedPath);
             }
         } else {
             requestTree.clearSelection();

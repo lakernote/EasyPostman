@@ -992,8 +992,8 @@ public class PerformancePanel extends SingletonBasePanel {
         int durationSeconds = tg.duration;
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        long startTime = System.currentTimeMillis();
-        long endTime = useTime ? (startTime + (durationSeconds * 1000L)) : Long.MAX_VALUE;
+        long threadGroupStartTime = System.currentTimeMillis();
+        long endTime = useTime ? (threadGroupStartTime + (durationSeconds * 1000L)) : Long.MAX_VALUE;
 
         for (int i = 0; i < numThreads; i++) {
             if (!running) {
@@ -1651,7 +1651,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
             }
 
-            long startTime = System.currentTimeMillis();
+            long requestStartTime = System.currentTimeMillis();
             long costMs = 0;
             boolean interrupted = false; // 标记是否被中断
 
@@ -1675,7 +1675,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         success = false;
                     }
                 } finally {
-                    costMs = System.currentTimeMillis() - startTime;
+                    costMs = System.currentTimeMillis() - requestStartTime;
                 }
                 // 断言处理（JMeter树断言）
                 for (int j = 0; j < child.getChildCount() && resp != null && running; j++) {
@@ -1730,21 +1730,21 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
             } else {
                 // 前置脚本失败的情况，也需要记录costMs
-                costMs = System.currentTimeMillis() - startTime;
+                costMs = System.currentTimeMillis() - requestStartTime;
             }
 
             // ====== 统计请求结果（断言和后置脚本后，sleep前） ======
             long cost = resp == null ? costMs : resp.costMs;
-            long endTime = startTime + cost; // 如果响应时间有记录，则使用，否则使用计算的cost
+            long endTime = requestStartTime + cost; // 如果响应时间有记录，则使用，否则使用计算的cost
             if (resp != null) {
-                endTime = resp.endTime > 0 ? resp.endTime : startTime + cost;
+                endTime = resp.endTime > 0 ? resp.endTime : requestStartTime + cost;
             }
 
             // 如果请求被中断（压测停止），跳过统计，不计入成功或失败
             if (!interrupted) {
                 // 使用statsLock保护统计数据写入，确保与读取的一致性
                 synchronized (statsLock) {
-                    allRequestResults.add(new RequestResult(startTime, endTime, success, apiId));
+                    allRequestResults.add(new RequestResult(requestStartTime, endTime, success, apiId));
 
                     apiCostMap.computeIfAbsent(apiId, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
                     if (success) {
@@ -1755,9 +1755,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
 
                 performanceResultTablePanel.addResult(
-                    new ResultNodeInfo(apiName, errorMsg, req, resp, testResults),
-                    efficientMode,
-                    getJmeterSlowRequestThreshold()
+                        new ResultNodeInfo(apiName, errorMsg, req, resp, testResults),
+                        efficientMode,
+                        getJmeterSlowRequestThreshold()
                 );
             } else {
                 // 被中断的请求，记录日志但不计入统计

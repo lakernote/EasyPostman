@@ -4,6 +4,7 @@ import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.service.ClientCertificateService;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -108,14 +109,14 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         titleLabel.setForeground(getTextPrimaryColor());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel descLabel = new JLabel("<html>" +
                 I18nUtil.getMessage(MessageKeys.CERT_DESCRIPTION) +
                 "</html>");
-        descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 11));
+        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         descLabel.setForeground(getTextSecondaryColor());
         descLabel.setBorder(new EmptyBorder(6, 0, 0, 0));
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -169,8 +170,8 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         certificateTable.setRowHeight(28);
         certificateTable.setShowGrid(true);
         certificateTable.getTableHeader().setReorderingAllowed(false);
-        certificateTable.getTableHeader().setFont(new Font(certificateTable.getFont().getName(), Font.BOLD, 11));
-        certificateTable.setFont(new Font(certificateTable.getFont().getName(), Font.PLAIN, 11));
+        certificateTable.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
+        certificateTable.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
 
         // 使用后续列调整模式，让表格填充满可用空间
         certificateTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
@@ -306,7 +307,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         textArea.setEditable(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         textArea.setBackground(getBackgroundColor());
         textArea.setForeground(getTextPrimaryColor());
         textArea.setBorder(new EmptyBorder(10, 10, 10, 10));

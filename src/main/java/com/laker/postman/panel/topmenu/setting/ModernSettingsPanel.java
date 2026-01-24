@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -243,14 +244,14 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 标题
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 14));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         titleLabel.setForeground(getTextPrimaryColor());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 描述（可选）
         if (description != null && !description.isEmpty()) {
             JLabel descLabel = new JLabel("<html>" + description + "</html>");
-            descLabel.setFont(new Font(descLabel.getFont().getName(), Font.PLAIN, 11));
+            descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
             descLabel.setForeground(getTextSecondaryColor());
             descLabel.setBorder(new EmptyBorder(4, 0, 8, 0));
             descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -277,7 +278,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 标签
         JLabel label = new JLabel(labelText);
-        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, 12));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         label.setForeground(getTextPrimaryColor());
         label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
         label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
@@ -311,7 +312,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         // 样式化复选框
-        checkBox.setFont(new Font(checkBox.getFont().getName(), Font.PLAIN, 12));
+        checkBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         checkBox.setForeground(getTextPrimaryColor());
         checkBox.setBackground(getCardBackgroundColor());
         checkBox.setFocusPainted(false);
@@ -346,7 +347,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 样式化输入组件
      */
     private void styleInputComponent(JComponent component) {
-        component.setFont(new Font(component.getFont().getName(), Font.PLAIN, 12));
+        component.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         component.setBackground(getInputBackgroundColor());
         component.setForeground(getTextPrimaryColor());
 
@@ -470,7 +471,7 @@ public abstract class ModernSettingsPanel extends JPanel {
             }
         };
 
-        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 12));
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         button.setForeground(isPrimary ? ModernColors.getTextInverse() : getTextPrimaryColor());
         button.setPreferredSize(new Dimension(100, 34));
         button.setContentAreaFilled(false);
@@ -742,11 +743,11 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 警告图标和文本
         JLabel iconLabel = new JLabel("⚠");
-        iconLabel.setFont(new Font(iconLabel.getFont().getName(), Font.BOLD, 14));
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         iconLabel.setForeground(getStateModifiedColor());
 
         warningLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UNSAVED_CHANGES_WARNING));
-        warningLabel.setFont(new Font(warningLabel.getFont().getName(), Font.PLAIN, 11));
+        warningLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         warningLabel.setForeground(getTextPrimaryColor());
 
         // 按钮面板
@@ -782,7 +783,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private JButton createSmallButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font(button.getFont().getName(), Font.PLAIN, 11));
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         button.setForeground(getTextPrimaryColor());
         button.setBackground(getCardBackgroundColor());
         button.setBorder(new CompoundBorder(

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -23,7 +24,6 @@ public class ModernSettingsDialog extends JDialog {
     private static final int MIN_HEIGHT = 300;
     private static final int PREFERRED_WIDTH = 800;
     private static final int PREFERRED_HEIGHT = 550;
-    private static final int TAB_FONT_SIZE = 13;
     private static final int CORNER_RADIUS = 6;
     private static final int TAB_MARGIN = 2;
     private static final int TAB_PADDING = 4;
@@ -135,7 +135,7 @@ public class ModernSettingsDialog extends JDialog {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT);
         pane.setBackground(getTabBackgroundColor());
         pane.setForeground(getTextColor());
-        pane.setFont(new Font(pane.getFont().getName(), Font.PLAIN, TAB_FONT_SIZE));
+        pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         pane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         pane.setUI(new SimpleTabbedPaneUI());
         return pane;

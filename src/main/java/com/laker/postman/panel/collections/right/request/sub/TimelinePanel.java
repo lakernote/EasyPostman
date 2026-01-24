@@ -185,19 +185,19 @@ public class TimelinePanel extends JPanel {
         g2.setColor(getInfoTextColor());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(protocol != null ? protocol : "", labelX + valueXOffset, infoY);
+        g2.drawString(protocol != null ? protocol : "-", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Local Address
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(localAddr != null ? localAddr : "", labelX + valueXOffset, infoY);
+        g2.drawString(localAddr != null ? localAddr : "-", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Remote Address
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(remoteAddr != null ? remoteAddr : "", labelX + valueXOffset, infoY);
+        g2.drawString(remoteAddr != null ? remoteAddr : "-", labelX + valueXOffset, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (remoteLineY > 0) {
@@ -209,13 +209,13 @@ public class TimelinePanel extends JPanel {
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(tls != null ? tls : "", labelX + valueXOffset, infoY);
+        g2.drawString(tls != null ? tls : "-", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Cipher Name
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(cipher != null ? cipher : "", labelX + valueXOffset, infoY);
+        g2.drawString(cipher != null ? cipher : "-", labelX + valueXOffset, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (cipherLineY > 0) {
@@ -227,19 +227,19 @@ public class TimelinePanel extends JPanel {
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(certCN != null ? certCN : "", labelX + valueXOffset, infoY);
+        g2.drawString(certCN != null ? certCN : "-", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Issuer CN
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(issuerCN != null ? issuerCN : "", labelX + valueXOffset, infoY);
+        g2.drawString(issuerCN != null ? issuerCN : "-", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Valid Until
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用用户设置的字体大小;
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        g2.drawString(validUntil != null ? validUntil : "", labelX + valueXOffset, infoY);
+        g2.drawString(validUntil != null ? validUntil : "-", labelX + valueXOffset, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
 
         // SSL Certificate Warning - 如果有警告则显示

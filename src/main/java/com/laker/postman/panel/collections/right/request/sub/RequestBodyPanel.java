@@ -503,19 +503,7 @@ public class RequestBodyPanel extends JPanel {
         }
         String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
         if (RAW_TYPE_JSON.equals(selectedFormat)) {
-            if (!JsonUtil.isTypeJSON(bodyText) && JsonUtil.isTypeJSON5(bodyText)) {
-                int result = JOptionPane.showConfirmDialog(
-                        this,
-                        I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_JSON5_WARNING),
-                        I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT),
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                );
-                if (result != JOptionPane.YES_OPTION) {
-                    return; // 用户选择取消，不执行格式化
-                }
-            }
-            String prettyJson = JsonUtil.formatJson5(bodyText);
+            String prettyJson = JsonUtil.toJsonPrettyStr(bodyText);
             bodyArea.setText(prettyJson);
         } else if (RAW_TYPE_XML.equals(selectedFormat)) {
             bodyArea.setText(XmlUtil.formatXml(bodyText));

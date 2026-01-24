@@ -204,7 +204,7 @@ public class JsonToolPanel extends JPanel {
         }
 
         try {
-            String formatted = JsonUtil.formatJson5(input);
+            String formatted = JsonUtil.toJsonPrettyStr(input);
             outputArea.setText(formatted);
             int lines = formatted.split("\n").length;
             String message = I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_STATUS_FORMATTED,

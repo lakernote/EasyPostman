@@ -1,12 +1,18 @@
 package com.laker.postman.service.swagger;
 
+import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.service.common.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
 import org.testng.annotations.Test;
+import com.laker.postman.service.EnvironmentService;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 import static org.testng.Assert.*;
@@ -294,6 +300,46 @@ public class SwaggerParserTest {
 
         // 应该设置了Bearer认证
         assertEquals(item.getAuthType(), AUTH_TYPE_BEARER);
+    }
+
+    /**
+     * 测试解析服务并保存到环境
+     */
+    @Test
+    void testParseServersOpenAPI3() {
+        // 从resources目录读取zfile.openapi.json文件
+        String openapiJson;
+        try (var stream = getClass().getResourceAsStream("/zfile.openapi.json")) {
+            if (stream == null) {
+                throw new RuntimeException("无法找到资源文件: zfile.openapi.json");
+            }
+            openapiJson = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("读取zfile.openapi.json文件时发生错误", e);
+        }
+
+        System.out.println("开始解析OpenAPI文件...");
+        DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(openapiJson);
+
+        if (collectionNode != null) {
+            System.out.println("OpenAPI解析成功！");
+        } else {
+            System.out.println("OpenAPI解析失败！");
+            return;
+        }
+
+        // 检查环境变量是否被创建
+        System.out.println("\n检查创建的环境变量：");
+        List<Environment> environments = EnvironmentService.getAllEnvironments();
+        for (Environment env : environments) {
+            System.out.println("\n环境名称：" + env.getName());
+            System.out.println("环境ID：" + env.getId());
+            System.out.println("是否激活：" + env.isActive());
+            System.out.println("变量列表：");
+            for (var var : env.getVariables().entrySet()) {
+                System.out.println("  " + var.getKey() + " = " + var.getValue());
+            }
+        }
     }
 }
 

@@ -3,6 +3,7 @@ package com.laker.postman.panel.sidebar;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.AutoScrollToggleButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ public class ConsolePanel extends SingletonBasePanel {
     private JButton prevBtn;
     private JButton nextBtn;
     private JLabel matchCountLabel;
-    private JToggleButton autoScrollBtn;
+    private AutoScrollToggleButton autoScrollBtn;
     private JComboBox<String> logLevelFilter;
     private boolean autoScroll = true;
 
@@ -355,12 +356,7 @@ public class ConsolePanel extends SingletonBasePanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
         rightPanel.setOpaque(false);
 
-        autoScrollBtn = new JToggleButton();
-        autoScrollBtn.setIcon(IconUtil.createThemed("icons/auto-scroll.svg", 16, 16));
-        autoScrollBtn.setSelected(true);
-        autoScrollBtn.setToolTipText("Auto-scroll to bottom");
-        autoScrollBtn.setFocusable(false);
-        autoScrollBtn.setPreferredSize(new Dimension(28, 28));
+        autoScrollBtn = new AutoScrollToggleButton();
 
         JButton clearBtn = getClearBtn();
         clearBtn.setPreferredSize(new Dimension(28, 28));

@@ -6,20 +6,21 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * 自动换行切换按钮
- * 用于切换文本编辑器的自动换行功能
+ * 自动滚动切换按钮
+ * 用于切换控制台的自动滚动功能
  */
-public class WrapToggleButton extends JToggleButton {
+public class AutoScrollToggleButton extends JToggleButton {
 
-    private static final String ICON_PATH = "icons/wrap.svg";
+    private static final String ICON_PATH = "icons/auto-scroll.svg";
 
-    public WrapToggleButton() {
+    public AutoScrollToggleButton() {
         super();
-        updateIcon(false);
+        updateIcon(true); // 默认选中状态
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setFocusable(false); // 去掉按钮的焦点边框
-        setSelected(false); // 默认不启用换行
-        setToolTipText("Toggle Line Wrap");
+        setSelected(true); // 默认启用自动滚动
+        setToolTipText("Auto-scroll to bottom");
+        setPreferredSize(new Dimension(28, 28));
 
         // 添加状态改变监听器，动态更新图标颜色
         addItemListener(e -> updateIcon(isSelected()));

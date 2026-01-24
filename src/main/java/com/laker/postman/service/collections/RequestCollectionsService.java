@@ -42,6 +42,12 @@ public class RequestCollectionsService {
         DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
 
         for (HttpRequestItem item : requestItems) {
+            // 验证请求ID是否有效
+            if (item.getId() == null || item.getId().isEmpty()) {
+                log.warn("Skip restoring request {} as it has null or empty ID", item.getName());
+                continue;
+            }
+
             // 如果不是新请求，检查其在左侧树中是否还存在
             if (!item.isNewRequest()) {
                 DefaultMutableTreeNode node = findRequestNodeById(rootNode, item.getId());

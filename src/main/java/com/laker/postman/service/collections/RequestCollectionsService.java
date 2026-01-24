@@ -42,9 +42,10 @@ public class RequestCollectionsService {
         DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
 
         for (HttpRequestItem item : requestItems) {
-            // 验证请求ID是否有效
-            if (item.getId() == null || item.getId().isEmpty()) {
-                log.warn("Skip restoring request {} as it has null or empty ID", item.getName());
+            // 验证请求对象和ID是否有效
+            if (item == null || item.getId() == null || item.getId().isEmpty()) {
+                log.warn("Skip restoring request as it is null or has null/empty ID: {}",
+                        item != null ? item.getName() : "null");
                 continue;
             }
 

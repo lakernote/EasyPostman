@@ -123,20 +123,4 @@ public enum SidebarTab {
         return new TabInfo(getTitle(), getIcon(), this::getPanel);
     }
 
-    /**
-     * 重置国际化标题缓存（语言切换时调用）
-     */
-    public void resetTitle() {
-        this.title = null;
-    }
-
-    /**
-     * 重置所有枚举的标题缓存（语言切换时调用）
-     */
-    public static void resetAllTitles() {
-        for (SidebarTab tab : values()) {
-            tab.resetTitle();
-        }
-    }
 }
-

@@ -34,6 +34,18 @@ public class SidebarTabPanel extends SingletonBasePanel {
     // Constants
     private static final String ICON_LABEL_NAME = "iconLabel";
     private static final String TITLE_LABEL_NAME = "titleLabel";
+    private static final String TOOLTIP_COLLAPSE_SIDEBAR = "Collapse sidebar";
+    private static final String TOOLTIP_EXPAND_SIDEBAR = "Expand sidebar";
+
+    // 边距和间距常量（与createTabComponent中的布局保持一致）
+    private static final int EXPANDED_TAB_PADDING_VERTICAL = 8;
+    private static final int EXPANDED_TAB_PADDING_HORIZONTAL = 12;
+    private static final int EXPANDED_TAB_SPACING_TOP = 6;
+    private static final int EXPANDED_TAB_SPACING_MIDDLE = 5;
+    private static final int EXPANDED_TAB_SPACING_BOTTOM = 6;
+
+    private static final int COLLAPSED_TAB_PADDING_VERTICAL = 14;
+    private static final int COLLAPSED_TAB_PADDING_HORIZONTAL = 10;
 
     @Getter
     private JTabbedPane tabbedPane;
@@ -168,8 +180,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         sidebarToggleLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 4));
         sidebarToggleLabel.setFocusable(true);
         sidebarToggleLabel.setEnabled(true);
-        // 优化提示文本
-        sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
+        sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
         sidebarToggleLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -184,8 +195,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void toggleSidebarExpansion() {
         sidebarExpanded = !sidebarExpanded;
         SettingManager.setSidebarExpanded(sidebarExpanded);
-        // 更新提示文本
-        sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
+        sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
         recreateTabbedPane();
     }
 
@@ -326,9 +336,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
         boolean stateChanged = (this.sidebarExpanded != newExpanded);
         if (stateChanged) {
             this.sidebarExpanded = newExpanded;
-            // 更新侧边栏切换按钮的提示文本
             if (sidebarToggleLabel != null) {
-                sidebarToggleLabel.setToolTipText(sidebarExpanded ? "Collapse sidebar" : "Expand sidebar");
+                sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
             }
         }
 
@@ -735,13 +744,18 @@ public class SidebarTabPanel extends SingletonBasePanel {
             }
             titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            panel.add(Box.createVerticalStrut(6));
+            panel.add(Box.createVerticalStrut(EXPANDED_TAB_SPACING_TOP));
             panel.add(iconLabel);
-            panel.add(Box.createVerticalStrut(5));
+            panel.add(Box.createVerticalStrut(EXPANDED_TAB_SPACING_MIDDLE));
             panel.add(titleLabel);
-            panel.add(Box.createVerticalStrut(6));
+            panel.add(Box.createVerticalStrut(EXPANDED_TAB_SPACING_BOTTOM));
 
-            panel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+            panel.setBorder(BorderFactory.createEmptyBorder(
+                    EXPANDED_TAB_PADDING_VERTICAL,
+                    EXPANDED_TAB_PADDING_HORIZONTAL,
+                    EXPANDED_TAB_PADDING_VERTICAL,
+                    EXPANDED_TAB_PADDING_HORIZONTAL
+            ));
         } else {
             // 收起状态：只显示图标，居中，增加上下左右间距
             JLabel iconLabel = new JLabel(icon);
@@ -754,8 +768,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
             panel.add(iconLabel);
             panel.add(Box.createVerticalGlue());
 
-            // 增加边距，尤其是上下间距，让图标之间不会挨在一起
-            panel.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
+            panel.setBorder(BorderFactory.createEmptyBorder(
+                    COLLAPSED_TAB_PADDING_VERTICAL,
+                    COLLAPSED_TAB_PADDING_HORIZONTAL,
+                    COLLAPSED_TAB_PADDING_VERTICAL,
+                    COLLAPSED_TAB_PADDING_HORIZONTAL
+            ));
         }
 
         // 只为 panel 添加一个鼠标监听器
@@ -795,8 +813,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
     }
 
     /**
-     * 计算展开状态下的最佳tab宽度
-     * 基于所有tab标题中最长的文本
+     * 计算展开状态下的tab宽度
+     * 基于最长的tab标题文本宽度动态计算
      */
     private int calculateExpandedTabWidth() {
         if (calculatedExpandedTabWidth > 0) {
@@ -813,19 +831,19 @@ public class SidebarTabPanel extends SingletonBasePanel {
             maxWidth = Math.max(maxWidth, textWidth);
         }
 
-        // 计算总宽度：左右边距(12+12) + 文本宽度（为字体13适配）
-        calculatedExpandedTabWidth = maxWidth + 24;
+        // 计算总宽度 = 文本宽度 + 左右边距
+        calculatedExpandedTabWidth = maxWidth + (EXPANDED_TAB_PADDING_HORIZONTAL * 2);
 
-        // 设置最小和最大宽度限制
-        calculatedExpandedTabWidth = Math.max(calculatedExpandedTabWidth, 60); // 最小60px
-        calculatedExpandedTabWidth = Math.min(calculatedExpandedTabWidth, 140); // 最大140px（更宽）
+        // 设置宽度限制范围
+        calculatedExpandedTabWidth = Math.max(calculatedExpandedTabWidth, 60);  // 最小宽度
+        calculatedExpandedTabWidth = Math.min(calculatedExpandedTabWidth, 140); // 最大宽度
 
         return calculatedExpandedTabWidth;
     }
 
     /**
      * 计算收起状态下的tab宽度
-     * 基于图标宽度和左右边距
+     * 基于最宽的图标宽度动态计算
      */
     private int calculateCollapsedTabWidth() {
         if (calculatedCollapsedTabWidth > 0) {
@@ -833,19 +851,16 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
 
         int maxIconWidth = 0;
-        // 遍历所有图标，找出最宽的
         for (TabInfo info : tabInfos) {
             if (info.icon != null) {
-                int iconWidth = info.icon.getIconWidth();
-                maxIconWidth = Math.max(maxIconWidth, iconWidth);
+                maxIconWidth = Math.max(maxIconWidth, info.icon.getIconWidth());
             }
         }
 
-        // 计算总宽度：左右边距(10+10) + 图标宽度（更宽松的边距）
-        // 参考createTabComponent中收起状态的边距设置：BorderFactory.createEmptyBorder(14, 10, 14, 10)
-        calculatedCollapsedTabWidth = maxIconWidth + 20;
+        // 计算总宽度 = 图标宽度 + 左右边距
+        calculatedCollapsedTabWidth = maxIconWidth + (COLLAPSED_TAB_PADDING_HORIZONTAL * 2);
 
-        // 设置最小宽度限制，确保有足够空间
+        // 设置最小宽度限制
         calculatedCollapsedTabWidth = Math.max(calculatedCollapsedTabWidth, 40);
 
         return calculatedCollapsedTabWidth;
@@ -853,7 +868,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     /**
      * 计算展开状态下的tab高度
-     * 基于图标高度、字体高度和上下边距
+     * 基于最高的图标高度和字体高度动态计算
      */
     private int calculateExpandedTabHeight(int fontHeight) {
         if (calculatedExpandedTabHeight > 0) {
@@ -861,19 +876,21 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
 
         int maxIconHeight = 0;
-        // 遍历所有图标，找出最高的
         for (TabInfo info : tabInfos) {
             if (info.icon != null) {
-                int iconHeight = info.icon.getIconHeight();
-                maxIconHeight = Math.max(maxIconHeight, iconHeight);
+                maxIconHeight = Math.max(maxIconHeight, info.icon.getIconHeight());
             }
         }
 
-        // 计算总高度：上padding(8) + 上间距(6) + 图标高度 + 间距(5) + 字体高度 + 下间距(6) + 下padding(8)
-        // 参考createTabComponent中展开状态的布局，适配字体13
-        // Box.createVerticalStrut(6) + icon + Box.createVerticalStrut(5) + text + Box.createVerticalStrut(6)
-        // BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        calculatedExpandedTabHeight = 8 + 6 + maxIconHeight + 5 + fontHeight + 6 + 8;
+        // 计算总高度 = padding + 间距 + 图标高度 + 间距 + 字体高度 + 间距 + padding
+        calculatedExpandedTabHeight =
+                EXPANDED_TAB_PADDING_VERTICAL +
+                        EXPANDED_TAB_SPACING_TOP +
+                        maxIconHeight +
+                        EXPANDED_TAB_SPACING_MIDDLE +
+                        fontHeight +
+                        EXPANDED_TAB_SPACING_BOTTOM +
+                        EXPANDED_TAB_PADDING_VERTICAL;
 
         // 设置最小高度限制
         calculatedExpandedTabHeight = Math.max(calculatedExpandedTabHeight, 70);
@@ -891,17 +908,14 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
 
         int maxIconHeight = 0;
-        // 遍历所有图标，找出最高的
         for (TabInfo info : tabInfos) {
             if (info.icon != null) {
-                int iconHeight = info.icon.getIconHeight();
-                maxIconHeight = Math.max(maxIconHeight, iconHeight);
+                maxIconHeight = Math.max(maxIconHeight, info.icon.getIconHeight());
             }
         }
 
-        // 计算总高度：上下边距(14+14) + 图标高度（更宽松的边距）
-        // 参考createTabComponent中收起状态的边距设置：BorderFactory.createEmptyBorder(14, 10, 14, 10)
-        calculatedCollapsedTabHeight = maxIconHeight + 28;
+        // 计算总高度 = 图标高度 + 上下边距
+        calculatedCollapsedTabHeight = maxIconHeight + (COLLAPSED_TAB_PADDING_VERTICAL * 2);
 
         // 设置最小高度限制
         calculatedCollapsedTabHeight = Math.max(calculatedCollapsedTabHeight, 52);

@@ -38,6 +38,9 @@ public class TimelinePanel extends JPanel {
 
     private HttpEventInfo httpEventInfo;
 
+    // 交互状态
+    private int hoveredBarIndex = -1; // 当前鼠标悬停的瀑布条索引
+
     // 瀑布图参数
     private static final int BAR_HEIGHT = 22; // 瀑布条的高度（增加到22）
     private static final int BAR_GAP = 6; // 瀑布条之间的垂直间距（增加）
@@ -55,14 +58,24 @@ public class TimelinePanel extends JPanel {
     private static final int INFO_BLOCK_V_GAP = 6; // 信息区块之间的垂直间距（增加）
     private static final int INFO_TEXT_LINE_HEIGHT = 20; // 信息文本行高（增加）
     private static final int INFO_TEXT_EXTRA_GAP = 4; // 信息区每项之间额外空白
-    private static final int INFO_TEXT_BOTTOM_PAD = 16;  // 信息区底部内边距
+    private static final int INFO_TEXT_BOTTOM_PAD = 24;  // 信息区底部内边距（增加，避免最后一行与边框太近）
     private static final int INFO_TEXT_LEFT_PAD = 24; // 信息区左侧内边距（增加）
+
+    // 区域间距
+    private static final int AREA_GAP = 10; // 信息区和瀑布条区域之间的间距
 
     /**
      * 检查当前是否为暗色主题
      */
     private boolean isDarkTheme() {
         return FlatLaf.isLafDark();
+    }
+
+    /**
+     * 获取面板背景色 - 主题适配
+     */
+    private Color getPanelBackgroundColor() {
+        return isDarkTheme() ? new Color(30, 31, 34) : new Color(255, 255, 255);
     }
 
     /**
@@ -77,6 +90,13 @@ public class TimelinePanel extends JPanel {
      */
     private Color getInfoBorderColor() {
         return isDarkTheme() ? new Color(70, 73, 75) : new Color(220, 225, 230);
+    }
+
+    /**
+     * 获取瀑布条区域背景色 - 主题适配
+     */
+    private Color getBarAreaBgColor() {
+        return isDarkTheme() ? new Color(35, 37, 39) : new Color(248, 249, 250);
     }
 
     /**
@@ -116,8 +136,10 @@ public class TimelinePanel extends JPanel {
 
     public TimelinePanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
+        setOpaque(true); // 设置为不透明
         this.httpEventInfo = httpEventInfo;
         setStages(stages);
+        setupMouseListeners(); // 设置鼠标监听器
     }
 
     public void setStages(List<Stage> stages) {
@@ -130,6 +152,58 @@ public class TimelinePanel extends JPanel {
     public void setHttpEventInfo(HttpEventInfo info) {
         this.httpEventInfo = info;
         repaint();
+    }
+
+    /**
+     * 设置鼠标监听器，实现交互效果
+     */
+    private void setupMouseListeners() {
+        addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int oldHovered = hoveredBarIndex;
+                hoveredBarIndex = getBarIndexAtPoint(e.getPoint());
+
+                // 只在悬停状态改变时重绘
+                if (oldHovered != hoveredBarIndex) {
+                    setCursor(hoveredBarIndex >= 0 ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                    repaint();
+                }
+            }
+        });
+
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (hoveredBarIndex != -1) {
+                    hoveredBarIndex = -1;
+                    setCursor(Cursor.getDefaultCursor());
+                    repaint();
+                }
+            }
+        });
+    }
+
+    /**
+     * 获取鼠标位置对应的瀑布条索引
+     */
+    private int getBarIndexAtPoint(Point p) {
+        if (p == null || stages.isEmpty()) {
+            return -1;
+        }
+
+        int infoTextBlockHeight = getInfoBlockHeight();
+        int barY = infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP + TOP_PAD;
+
+        for (int i = 0; i < stages.size(); i++) {
+            int barBottom = barY + BAR_HEIGHT;
+            if (p.y >= barY && p.y <= barBottom) {
+                return i;
+            }
+            barY += BAR_HEIGHT + BAR_GAP;
+        }
+
+        return -1;
     }
 
     @Override
@@ -155,9 +229,11 @@ public class TimelinePanel extends JPanel {
         int leftPad = LABEL_LEFT_PAD + labelMaxWidth + LABEL_RIGHT_PAD;
         int infoTextBlockHeight = getInfoBlockHeight();
         int w = leftPad + 150 + DESC_LEFT_PAD + descMaxWidth + RIGHT_PAD;
-        int h = infoTextBlockHeight + TOP_PAD + BOTTOM_PAD + stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
-        h = Math.min(h, 400); // 限制最大高度为400
-        return new Dimension(w, Math.max(h, 120));
+        // 总高度 = 顶部间距 + 信息区高度 + 底部间距 + 区域间距 + 顶部内边距 + 瀑布条总高度 + 底部内边距 + 底部间距
+        int barsTotalHeight = stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
+        int h = INFO_BLOCK_V_GAP + infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP + TOP_PAD + barsTotalHeight + BOTTOM_PAD + INFO_BLOCK_V_GAP;
+        h = Math.min(h, 450); // 稍微增加最大高度限制
+        return new Dimension(w, Math.max(h, 150));
     }
 
     // 信息区高度自适应（去除标题高度和分隔线高度）
@@ -174,6 +250,10 @@ public class TimelinePanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        // 0. 绘制面板背景
+        g2.setColor(getPanelBackgroundColor());
+        g2.fillRect(0, 0, getWidth(), getHeight());
 
         // 1. 绘制信息区
         int infoTextBlockHeight = getInfoBlockHeight();
@@ -294,7 +374,20 @@ public class TimelinePanel extends JPanel {
             g2.setColor(getInfoTextColor()); // 恢复默认颜色
         }
 
-        // 2. 绘制瀑布条区
+        // 2. 绘制瀑布条区域背景和边框
+        int barAreaTop = infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP;
+        int barAreaHeight = getHeight() - barAreaTop - INFO_BLOCK_V_GAP;
+
+        // 绘制瀑布条区域背景
+        g2.setColor(getBarAreaBgColor());
+        g2.fillRoundRect(INFO_BLOCK_H_GAP, barAreaTop, getWidth() - 2 * INFO_BLOCK_H_GAP, barAreaHeight, 10, 10);
+
+        // 绘制瀑布条区域边框（与信息区边框一致）
+        g2.setColor(getInfoBorderColor());
+        g2.setStroke(new BasicStroke(1.0f));
+        g2.drawRoundRect(INFO_BLOCK_H_GAP, barAreaTop, getWidth() - 2 * INFO_BLOCK_H_GAP, barAreaHeight, 10, 10);
+
+        // 3. 绘制瀑布条
         int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
         int descMaxWidth = 0;
@@ -340,7 +433,8 @@ public class TimelinePanel extends JPanel {
         }
 
         // 绘制
-        int barY = getInfoBlockHeight() + TOP_PAD;
+        // 瀑布条Y坐标 = 信息区高度 + 信息区底部间距 + 区域间距 + 瀑布条区域顶部内边距
+        int barY = infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP + TOP_PAD;
         int currentX = leftPad;
 
         // 计算文字垂直居中的位置
@@ -354,9 +448,16 @@ public class TimelinePanel extends JPanel {
             Color[] barColors = getBarColors();
             Color color = barColors[i % barColors.length];
 
+            // 绘制悬停背景高亮
+            boolean isHovered = (i == hoveredBarIndex);
+            if (isHovered) {
+                g2.setColor(isDarkTheme() ? new Color(55, 57, 59) : new Color(240, 242, 245));
+                g2.fillRoundRect(INFO_BLOCK_H_GAP + 8, barY - 3, getWidth() - 2 * INFO_BLOCK_H_GAP - 16, BAR_HEIGHT + 6, 6, 6);
+            }
+
             // label 区域
             g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-            g2.setColor(getLabelTextColor());
+            g2.setColor(isHovered ? (isDarkTheme() ? new Color(230, 230, 230) : new Color(30, 30, 30)) : getLabelTextColor());
             String label = s.label;
             int labelStrW = g2.getFontMetrics().stringWidth(label);
             boolean labelTruncated = false;
@@ -371,8 +472,13 @@ public class TimelinePanel extends JPanel {
                 }
             }
             g2.drawString(label, labelX, barY + textYOffset);
-            // 设置 label 悬浮提示
-            if (labelTruncated) {
+
+            // 设置 tooltip 显示完整信息
+            if (isHovered) {
+                String tooltip = String.format("<html><b>%s</b><br/>Duration: %d ms<br/>%s</html>",
+                    s.label, s.end - s.start, s.desc != null ? s.desc : "");
+                setToolTipText(tooltip);
+            } else if (labelTruncated) {
                 setToolTipText(s.label);
             }
 
@@ -392,6 +498,12 @@ public class TimelinePanel extends JPanel {
                 float brightnessMultiplier = isDarkTheme() ? 1.15f : 1.1f;
                 float darknessMultiplier = isDarkTheme() ? 0.9f : 0.85f;
 
+                // 悬停时增强颜色亮度
+                if (isHovered) {
+                    brightnessMultiplier *= 1.1f;
+                    darknessMultiplier *= 0.95f;
+                }
+
                 Color topColor = brighter(color, brightnessMultiplier);
                 Color bottomColor = darker(color, darknessMultiplier);
 
@@ -403,8 +515,19 @@ public class TimelinePanel extends JPanel {
                 g2.fillRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
 
                 // 添加高光效果（顶部细线）
-                g2.setColor(new Color(255, 255, 255, isDarkTheme() ? 20 : 40));
+                int highlightAlpha = isDarkTheme() ? 20 : 40;
+                if (isHovered) {
+                    highlightAlpha = isDarkTheme() ? 35 : 60;
+                }
+                g2.setColor(new Color(255, 255, 255, highlightAlpha));
                 g2.fillRoundRect(currentX, barY, barW, 2, BAR_RADIUS, BAR_RADIUS);
+
+                // 悬停时添加外边框高亮
+                if (isHovered) {
+                    g2.setColor(new Color(255, 255, 255, isDarkTheme() ? 40 : 80));
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+                }
             }
 
             // 耗时始终在bar内右侧，bar太窄则不显示

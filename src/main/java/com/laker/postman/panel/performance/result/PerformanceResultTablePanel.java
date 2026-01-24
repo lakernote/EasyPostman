@@ -73,6 +73,30 @@ public class PerformanceResultTablePanel extends JPanel {
         }
     }
 
+    /**
+     * 强制刷新所有待处理的结果（测试停止/完成时调用）
+     * 确保 pendingQueue 中的所有数据都显示到表格中
+     */
+    public void flushPendingResults() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::flushPendingResults);
+            return;
+        }
+
+        List<ResultNodeInfo> batch = new ArrayList<>();
+        ResultNodeInfo info;
+
+        // 一次性刷新所有待处理的结果
+        while ((info = pendingQueue.poll()) != null) {
+            batch.add(info);
+        }
+
+        if (!batch.isEmpty()) {
+            tableModel.append(batch);
+            log.debug("强制刷新了 {} 条待处理的结果到结果树", batch.size());
+        }
+    }
+
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
 

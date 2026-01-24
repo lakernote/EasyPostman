@@ -581,17 +581,25 @@ public class PerformancePanel extends SingletonBasePanel {
                     refreshBtn.setEnabled(true); // 测试完成时重新启用刷新按钮
                     timerManager.stopAll(); // 停止所有定时器
 
+                    // 强制刷新 ResultTable 的 pendingQueue（确保所有待处理的结果都显示）
+                    try {
+                        performanceResultTablePanel.flushPendingResults();
+                    } catch (Exception e) {
+                        log.warn("完成时刷新结果树失败", e);
+                    }
+
                     // 执行最后一次趋势图采样，避免漏掉完成前最后时刻的数据
                     try {
-                        sampleTrendData();
+                        // 使用同步版本采样，确保数据立即更新
+                        sampleTrendDataSync();
                     } catch (Exception e) {
                         log.warn("完成时最后一次趋势图采样失败", e);
                     }
 
                     OkHttpClientManager.setDefaultConnectionPoolConfig();
 
-                    // 强制刷新报表
-                    updateReportWithLatestData();
+                    // 使用同步版本刷新报表，确保数据立即更新
+                    updateReportWithLatestDataSync();
 
                     // 显示执行完成提示
                     long totalTime = System.currentTimeMillis() - startTime;
@@ -771,7 +779,43 @@ public class PerformancePanel extends SingletonBasePanel {
         });
     }
 
-    // 采样统计方法（根据配置的采样间隔）
+    /**
+     * 同步刷新报表（用于停止/完成时）
+     * 确保报表立即更新，不使用异步，避免时序问题
+     */
+    private void updateReportWithLatestDataSync() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::updateReportWithLatestDataSync);
+            return;
+        }
+
+        List<RequestResult> resultsCopy;
+        Map<String, List<Long>> apiCostMapCopy;
+        Map<String, Integer> apiSuccessMapCopy;
+        Map<String, Integer> apiFailMapCopy;
+
+        // 使用statsLock统一保护所有统计数据的复制，确保数据一致性
+        synchronized (statsLock) {
+            resultsCopy = new ArrayList<>(allRequestResults);
+
+            apiCostMapCopy = new HashMap<>();
+            for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
+                apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+            }
+
+            apiSuccessMapCopy = new HashMap<>(apiSuccessMap);
+            apiFailMapCopy = new HashMap<>(apiFailMap);
+        }
+
+        // 直接在 EDT 线程中更新（因为已经在 EDT 中了）
+        performanceReportPanel.updateReport(
+                apiCostMapCopy,
+                apiSuccessMapCopy,
+                apiFailMapCopy,
+                resultsCopy
+        );
+    }
+
     private void sampleTrendData() {
         int users = activeThreads.get();
         long now = System.currentTimeMillis();
@@ -836,6 +880,67 @@ public class PerformancePanel extends SingletonBasePanel {
             log.error("趋势图采样失败", ex);
             return null;
         });
+    }
+
+    /**
+     * 同步采样趋势图数据（用于停止/完成时）
+     * 确保趋势图立即更新，不使用异步，避免时序问题
+     */
+    private void sampleTrendDataSync() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::sampleTrendDataSync);
+            return;
+        }
+
+        int users = activeThreads.get();
+        long now = System.currentTimeMillis();
+        Second second = new Second(new Date(now));
+        long samplingIntervalMs = timerManager.getSamplingIntervalMs();
+        long windowStart = now - samplingIntervalMs;
+
+        int totalReq = 0;
+        int errorReq = 0;
+        long totalRespTime = 0;
+        long actualMinTime = Long.MAX_VALUE;
+        long actualMaxTime = 0;
+
+        // 使用statsLock保护，确保数据一致性
+        synchronized (statsLock) {
+            // 遍历所有结果（不能假设顺序，因为多线程并发添加）
+            for (RequestResult result : allRequestResults) {
+                // 只统计在时间窗口内的请求
+                if (result.endTime >= windowStart && result.endTime <= now) {
+                    totalReq++;
+                    if (!result.success) errorReq++;
+                    totalRespTime += result.getResponseTime();
+                    actualMinTime = Math.min(actualMinTime, result.endTime);
+                    actualMaxTime = Math.max(actualMaxTime, result.endTime);
+                }
+            }
+        }
+
+        double avgRespTime = totalReq > 0 ?
+                BigDecimal.valueOf((double) totalRespTime / totalReq)
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .doubleValue()
+                : 0;
+
+        // 修复QPS计算：使用实际时间跨度，而不是采样间隔
+        double qps = 0;
+        if (totalReq > 0 && actualMaxTime > actualMinTime) {
+            long actualSpanMs = actualMaxTime - actualMinTime;
+            qps = totalReq * 1000.0 / actualSpanMs;
+        } else if (totalReq > 0) {
+            // 如果只有一个请求，使用采样间隔（秒）作为分母
+            qps = totalReq / (samplingIntervalMs / 1000.0);
+        }
+
+        double errorPercent = totalReq > 0 ? (double) errorReq / totalReq * 100 : 0;
+
+        // 直接在 EDT 线程中更新（因为已经在 EDT 中了）
+        log.debug("同步采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
+                second, users, avgRespTime, qps, errorPercent, totalReq);
+        performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
     }
 
     // 带进度的执行
@@ -2057,15 +2162,23 @@ public class PerformancePanel extends SingletonBasePanel {
                 Thread.currentThread().interrupt();
             }
         }).thenRun(() -> SwingUtilities.invokeLater(() -> {
+            // 强制刷新 ResultTable 的 pendingQueue（确保所有待处理的结果都显示）
             try {
-                sampleTrendData();
+                performanceResultTablePanel.flushPendingResults();
+            } catch (Exception e) {
+                log.warn("停止时刷新结果树失败", e);
+            }
+
+            try {
+                // 使用同步版本采样，确保数据立即更新
+                sampleTrendDataSync();
             } catch (Exception e) {
                 log.warn("停止时最后一次趋势图采样失败", e);
             }
 
             try {
-                // 强制刷新报表（使用统一的数据更新方法）
-                updateReportWithLatestData();
+                // 使用同步版本刷新报表，确保数据立即更新
+                updateReportWithLatestDataSync();
             } catch (Exception e) {
                 log.warn("停止时最后一次报表刷新失败", e);
             }

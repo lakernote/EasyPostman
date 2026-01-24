@@ -306,6 +306,8 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_RENAME_FAIL = "env.dialog.rename.fail";
     public static final String ENV_DIALOG_DELETE_TITLE = "env.dialog.delete.title";
     public static final String ENV_DIALOG_DELETE_PROMPT = "env.dialog.delete.prompt";
+    public static final String ENV_DIALOG_DELETE_BATCH_PROMPT = "env.dialog.delete.batch_prompt";
+    public static final String ENV_DIALOG_DELETE_SUCCESS = "env.dialog.delete.success";
     public static final String ENV_DIALOG_COPY_FAIL = "env.dialog.copy.fail";
     public static final String ENV_NAME_COPY_SUFFIX = "env.name.copy_suffix";
     public static final String ENV_DIALOG_EXPORT_POSTMAN_TITLE = "env.dialog.export_postman.title";

@@ -27,9 +27,7 @@ import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.TableModelEvent;
+import javax.swing.event.*;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
@@ -78,7 +76,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 环境列表
         environmentListModel = new DefaultListModel<>();
         environmentList = new JList<>(environmentListModel);
-        environmentList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        environmentList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION); // 支持多选
         environmentList.setFixedCellHeight(28); // 设置每行高度
         environmentList.setCellRenderer(new EnvironmentListCellRenderer());
         environmentList.setFixedCellWidth(0); // 让JList自适应宽度
@@ -362,12 +360,40 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         // 设置 Delete 快捷键显示
         deleteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
+
+        // 动态更新删除菜单项文本（显示选中数量）
+        envListMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                int selectedCount = environmentList.getSelectedIndices().length;
+                if (selectedCount > 1) {
+                    deleteItem.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE) + " (" + selectedCount + ")");
+                } else {
+                    deleteItem.setText(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_DELETE));
+                }
+
+                // 复制和重命名只在单选时可用
+                renameItem.setEnabled(selectedCount == 1);
+                copyItem.setEnabled(selectedCount == 1);
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+                // 菜单隐藏时无需处理
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+                // 菜单取消时无需处理
+            }
+        });
+
         JMenuItem exportPostmanItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_EXPORT_POSTMAN),
                 IconUtil.create("icons/postman.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)); // 彩色
         exportPostmanItem.addActionListener(e -> exportSelectedEnvironmentAsPostman());
         renameItem.addActionListener(e -> renameSelectedEnvironment());
         copyItem.addActionListener(e -> copySelectedEnvironment()); // 复制事件
-        deleteItem.addActionListener(e -> deleteSelectedEnvironment());
+        deleteItem.addActionListener(e -> deleteSelectedEnvironments()); // 改为批量删除
         envListMenu.add(renameItem);
         envListMenu.add(copyItem);
         envListMenu.add(deleteItem);
@@ -384,14 +410,14 @@ public class EnvironmentPanel extends SingletonBasePanel {
         environmentList.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                EnvironmentItem selectedItem = environmentList.getSelectedValue();
-                if (selectedItem != null) {
-                    if (e.getKeyCode() == KeyEvent.VK_F2) {
-                        // F2 重命名
+                int selectedCount = environmentList.getSelectedIndices().length;
+                if (selectedCount > 0) {
+                    if (e.getKeyCode() == KeyEvent.VK_F2 && selectedCount == 1) {
+                        // F2 重命名（仅单选时）
                         renameSelectedEnvironment();
                     } else if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                        // Delete 或 Backspace 删除（Mac 上常用 Backspace）
-                        deleteSelectedEnvironment();
+                        // Delete 或 Backspace 批量删除
+                        deleteSelectedEnvironments();
                     }
                 }
             }
@@ -403,7 +429,20 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 if (e.isPopupTrigger() || e.getButton() == MouseEvent.BUTTON3) { // 右键菜单
                     int idx = environmentList.locationToIndex(e.getPoint());
                     if (idx >= 0) {
-                        environmentList.setSelectedIndex(idx);
+                        // 只有当点击的项目不在当前选中列表中时，才改变选择
+                        int[] selectedIndices = environmentList.getSelectedIndices();
+                        boolean isSelected = false;
+                        for (int selectedIdx : selectedIndices) {
+                            if (selectedIdx == idx) {
+                                isSelected = true;
+                                break;
+                            }
+                        }
+                        // 如果点击的项目未被选中，则设置为当前选中项
+                        if (!isSelected) {
+                            environmentList.setSelectedIndex(idx);
+                        }
+                        // 如果点击的项目已经被选中，则保持当前的多选状态
                     }
                     envListMenu.show(environmentList, e.getX(), e.getY());
                 }
@@ -710,23 +749,64 @@ public class EnvironmentPanel extends SingletonBasePanel {
         }
     }
 
-    private void deleteSelectedEnvironment() {
-        EnvironmentItem item = environmentList.getSelectedValue();
-        if (item == null) return;
-        Environment env = item.getEnvironment();
+    /**
+     * 批量删除选中的环境
+     */
+    private void deleteSelectedEnvironments() {
+        List<EnvironmentItem> selectedItems = environmentList.getSelectedValuesList();
+        if (selectedItems == null || selectedItems.isEmpty()) {
+            return;
+        }
+
+        int selectedCount = selectedItems.size();
+        String message;
+        String title = I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_TITLE);
+
+        if (selectedCount == 1) {
+            // 单个删除
+            Environment env = selectedItems.get(0).getEnvironment();
+            message = I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_PROMPT, env.getName());
+        } else {
+            // 批量删除
+            message = I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_BATCH_PROMPT, selectedCount);
+        }
+
         int confirm = JOptionPane.showConfirmDialog(this,
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_PROMPT, env.getName()),
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_TITLE),
+                message,
+                title,
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
+
         if (confirm == JOptionPane.YES_OPTION) {
-            environmentListModel.removeElement(new EnvironmentItem(env));
-            EnvironmentService.deleteEnvironment(env.getId());
-            SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload(); // 刷新顶部下拉框
+            int deletedCount = 0;
+            // 删除选中的环境
+            for (EnvironmentItem item : selectedItems) {
+                try {
+                    Environment env = item.getEnvironment();
+                    environmentListModel.removeElement(item);
+                    EnvironmentService.deleteEnvironment(env.getId());
+                    deletedCount++;
+                    log.info("已删除环境: {}", env.getName());
+                } catch (Exception e) {
+                    log.error("删除环境失败: {}", item.getEnvironment().getName(), e);
+                }
+            }
+
+            // 刷新顶部下拉框
+            SingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload();
+
             // 设置当前的变量表格为激活环境
             loadActiveEnvironmentVariables();
+
+            // 显示删除成功消息
+            if (deletedCount > 0) {
+                NotificationUtil.showSuccess(
+                    I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_SUCCESS, deletedCount)
+                );
+            }
         }
     }
+
 
     // 复制环境方法
     private void copySelectedEnvironment() {

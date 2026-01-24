@@ -309,6 +309,19 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
     public void clear() {
         stopCellEditing();
 
+        // 确保在 EDT 线程中执行表格操作，避免 RowSorter 的线程安全问题
+        if (SwingUtilities.isEventDispatchThread()) {
+            clearInternal();
+        } else {
+            try {
+                SwingUtilities.invokeAndWait(this::clearInternal);
+            } catch (Exception e) {
+                log.error("Error clearing table", e);
+            }
+        }
+    }
+
+    private void clearInternal() {
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);

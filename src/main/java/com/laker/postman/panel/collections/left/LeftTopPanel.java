@@ -13,11 +13,10 @@ import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.topmenu.TopMenuBar;
+import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.apipost.ApiPostCollectionParser;
 import com.laker.postman.service.common.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
@@ -329,6 +328,10 @@ public class LeftTopPanel extends SingletonBasePanel {
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
+
+                    // 导入环境变量
+                    importEnvironmentsFromParseResult(parseResult);
+
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
                     NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER_INVALID));
@@ -336,6 +339,41 @@ public class LeftTopPanel extends SingletonBasePanel {
             } catch (Exception ex) {
                 log.error("Import Swagger error", ex);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_FAIL, ex.getMessage()));
+            }
+        }
+    }
+
+    /**
+     * 从解析结果中导入环境变量
+     */
+    private void importEnvironmentsFromParseResult(CollectionParseResult parseResult) {
+        if (parseResult.getEnvironments() == null || parseResult.getEnvironments().isEmpty()) {
+            return;
+        }
+
+        int importedCount = 0;
+        for (Environment env : parseResult.getEnvironments()) {
+            try {
+                EnvironmentService.saveEnvironment(env);
+                importedCount++;
+                log.info("导入环境变量: {} ({}个变量)", env.getName(), env.getVariableList().size());
+            } catch (Exception e) {
+                log.error("导入环境变量失败: {}", env.getName(), e);
+            }
+        }
+
+        if (importedCount > 0) {
+            log.info("成功导入 {} 个环境", importedCount);
+
+            // 刷新 TopMenuBar 的环境下拉框
+            try {
+                TopMenuBar topMenuBar = SingletonFactory.getInstance(TopMenuBar.class);
+                if (topMenuBar.getEnvironmentComboBox() != null) {
+                    topMenuBar.getEnvironmentComboBox().reload();
+                    log.debug("已刷新环境下拉框");
+                }
+            } catch (Exception e) {
+                log.error("刷新环境下拉框失败", e);
             }
         }
     }

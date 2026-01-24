@@ -38,12 +38,19 @@ class OpenApi3Parser {
         RequestGroup collectionGroup = new RequestGroup(collectionName);
         CollectionParseResult result = new CollectionParseResult(collectionGroup);
 
-        // 获取服务器列表
+        // 解析 servers 并创建环境变量
+        parseServersToEnvironments(openApiRoot, result, title);
+
+        // 获取服务器列表，决定是否使用变量引用
         JSONArray servers = openApiRoot.getJSONArray("servers");
         String baseUrl = "";
+
         if (servers != null && !servers.isEmpty()) {
-            baseUrl = servers.getJSONObject(0).getStr("url", "");
+            // 如果定义了 servers，使用 {{baseUrl}} 变量引用
+            baseUrl = "{{baseUrl}}";
+            log.debug("检测到 {} 个服务器配置，请求URL将使用 {{{{baseUrl}}}} 变量", servers.size());
         }
+
 
         // 解析全局安全配置
         JSONObject components = openApiRoot.getJSONObject("components");
@@ -332,6 +339,57 @@ class OpenApi3Parser {
                 req.setAuthType(AUTH_TYPE_BEARER);
                 req.setAuthToken("");
                 break;
+        }
+    }
+
+    /**
+     * 解析 servers 并创建环境变量
+     */
+    private static void parseServersToEnvironments(JSONObject openApiRoot, CollectionParseResult result, String apiTitle) {
+        JSONArray servers = openApiRoot.getJSONArray("servers");
+        if (servers == null || servers.isEmpty()) {
+            log.debug("OpenAPI 文件中没有定义 servers，跳过环境变量创建");
+            return;
+        }
+
+        log.info("解析到 {} 个服务器配置，将创建对应的环境变量", servers.size());
+
+        for (int i = 0; i < servers.size(); i++) {
+            JSONObject server = servers.getJSONObject(i);
+            String url = server.getStr("url", "");
+            String description = server.getStr("description", "");
+
+            if (url.isEmpty()) {
+                continue;
+            }
+
+            // 创建环境名称
+            String envName;
+            if (!description.isEmpty()) {
+                envName = apiTitle + " - " + description;
+            } else {
+                envName = apiTitle + " - Server " + (i + 1);
+            }
+
+            // 创建环境
+            Environment env = new Environment(envName);
+            env.setId(UUID.randomUUID().toString());
+
+            // 添加 baseUrl 变量
+            env.addVariable("baseUrl", url);
+
+            // 解析 server variables（如果有）
+            JSONObject variables = server.getJSONObject("variables");
+            if (variables != null && !variables.isEmpty()) {
+                for (String varName : variables.keySet()) {
+                    JSONObject varObj = variables.getJSONObject(varName);
+                    String defaultValue = varObj.getStr("default", "");
+                    env.addVariable(varName, defaultValue);
+                }
+            }
+
+            result.addEnvironment(env);
+            log.debug("创建环境: {} -> {}", envName, url);
         }
     }
 }

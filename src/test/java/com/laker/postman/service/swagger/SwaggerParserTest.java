@@ -225,6 +225,8 @@ public class SwaggerParserTest {
         HttpRequestItem getItem = (HttpRequestItem) getRequestUserObject[1];
         assertEquals(getItem.getName(), "Get all users");
         assertEquals(getItem.getMethod(), "GET");
+        // 验证 URL 使用了 {{baseUrl}} 变量引用
+        assertTrue(getItem.getUrl().contains("{{baseUrl}}"), "URL 应该使用 {{baseUrl}} 变量");
         assertTrue(getItem.getUrl().contains("/users"));
 
         // 验证第二个请求 (POST /users)
@@ -319,7 +321,10 @@ public class SwaggerParserTest {
         }
 
         System.out.println("开始解析OpenAPI文件...");
-        DefaultMutableTreeNode collectionNode = SwaggerParser.parseSwagger(openapiJson);
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapiJson);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
 
         if (collectionNode != null) {
             System.out.println("OpenAPI解析成功！");
@@ -340,6 +345,80 @@ public class SwaggerParserTest {
                 System.out.println("  " + var.getKey() + " = " + var.getValue());
             }
         }
+    }
+
+    @Test
+    void testOpenAPI3WithEnvironments() {
+        String openapi3Json = """
+                {
+                  "openapi": "3.0.1",
+                  "info": {
+                    "title": "Test API",
+                    "version": "1.0.0"
+                  },
+                  "servers": [
+                    {
+                      "url": "http://localhost:8080",
+                      "description": "本地环境"
+                    },
+                    {
+                      "url": "http://dev.example.com",
+                      "description": "开发环境"
+                    },
+                    {
+                      "url": "http://prod.example.com",
+                      "description": "生产环境"
+                    }
+                  ],
+                  "paths": {
+                    "/users": {
+                      "get": {
+                        "tags": ["Users"],
+                        "summary": "Get users",
+                        "responses": {
+                          "200": {
+                            "description": "Success"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapi3Json);
+        assertNotNull(parseResult);
+
+        // 验证解析出了3个环境
+        assertEquals(parseResult.getEnvironments().size(), 3);
+
+        // 验证第一个环境
+        Environment env1 = parseResult.getEnvironments().get(0);
+        assertEquals(env1.getName(), "Test API - 本地环境");
+        assertEquals(env1.getVariableList().size(), 1);
+        assertEquals(env1.getVariableList().get(0).getKey(), "baseUrl");
+        assertEquals(env1.getVariableList().get(0).getValue(), "http://localhost:8080");
+
+        // 验证第二个环境
+        Environment env2 = parseResult.getEnvironments().get(1);
+        assertEquals(env2.getName(), "Test API - 开发环境");
+        assertEquals(env2.getVariableList().get(0).getValue(), "http://dev.example.com");
+
+        // 验证第三个环境
+        Environment env3 = parseResult.getEnvironments().get(2);
+        assertEquals(env3.getName(), "Test API - 生产环境");
+        assertEquals(env3.getVariableList().get(0).getValue(), "http://prod.example.com");
+
+        // 验证请求 URL 使用了 {{baseUrl}} 变量引用
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        DefaultMutableTreeNode usersGroup = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
+        DefaultMutableTreeNode getUserRequest = (DefaultMutableTreeNode) usersGroup.getChildAt(0);
+        Object[] requestUserObject = (Object[]) getUserRequest.getUserObject();
+        HttpRequestItem requestItem = (HttpRequestItem) requestUserObject[1];
+
+        // 验证 URL 格式为 {{baseUrl}}/users
+        assertEquals(requestItem.getUrl(), "{{baseUrl}}/users");
+        System.out.println("✅ URL 使用变量引用: " + requestItem.getUrl());
     }
 }
 

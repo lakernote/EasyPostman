@@ -37,8 +37,19 @@ class Swagger2Parser {
         RequestGroup collectionGroup = new RequestGroup(collectionName);
         CollectionParseResult result = new CollectionParseResult(collectionGroup);
 
-        // 获取基础URL
+        // 解析 host/basePath 并创建环境变量
+        parseSchemesToEnvironments(swaggerRoot, result, title);
+
+        // 获取基础URL，如果定义了 host，使用变量引用
         String baseUrl = buildBaseUrl(swaggerRoot);
+        String host = swaggerRoot.getStr("host", "");
+
+        // 如果定义了 host，使用 {{baseUrl}} 变量引用
+        if (!host.isEmpty()) {
+            baseUrl = "{{baseUrl}}";
+            log.debug("检测到 host 配置，请求URL将使用 {{{{baseUrl}}}} 变量");
+        }
+
 
         // 解析全局安全配置
         JSONObject securityDefsMap = swaggerRoot.getJSONObject("securityDefinitions");
@@ -319,6 +330,54 @@ class Swagger2Parser {
                 req.setAuthType(AUTH_TYPE_BEARER);
                 req.setAuthToken("");
                 break;
+        }
+    }
+
+    /**
+     * 解析 Swagger 2.0 的 host/basePath/schemes 并创建环境变量
+     */
+    private static void parseSchemesToEnvironments(JSONObject swaggerRoot, CollectionParseResult result, String apiTitle) {
+        String host = swaggerRoot.getStr("host", "");
+        if (host.isEmpty()) {
+            log.debug("Swagger 2.0 文件中没有定义 host，跳过环境变量创建");
+            return;
+        }
+
+        String basePath = swaggerRoot.getStr("basePath", "");
+        JSONArray schemes = swaggerRoot.getJSONArray("schemes");
+
+        // 如果没有定义 schemes，默认使用 http
+        if (schemes == null || schemes.isEmpty()) {
+            schemes = new JSONArray();
+            schemes.add("http");
+        }
+
+        log.info("解析到 {} 个协议方案，将创建对应的环境变量", schemes.size());
+
+        for (int i = 0; i < schemes.size(); i++) {
+            String scheme = schemes.getStr(i);
+
+            // 构建完整 URL
+            StringBuilder urlBuilder = new StringBuilder(scheme);
+            urlBuilder.append("://").append(host);
+            if (!basePath.isEmpty() && !"/".equals(basePath)) {
+                if (!basePath.startsWith("/")) {
+                    urlBuilder.append("/");
+                }
+                urlBuilder.append(basePath);
+            }
+            String fullUrl = urlBuilder.toString();
+
+            // 创建环境名称
+            String envName = apiTitle + " - " + scheme.toUpperCase();
+
+            // 创建环境
+            Environment env = new Environment(envName);
+            env.setId(UUID.randomUUID().toString());
+            env.addVariable("baseUrl", fullUrl);
+
+            result.addEnvironment(env);
+            log.debug("创建环境: {} -> {}", envName, fullUrl);
         }
     }
 }

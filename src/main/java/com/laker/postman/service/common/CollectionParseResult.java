@@ -1,5 +1,6 @@
 package com.laker.postman.service.common;
 
+import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import lombok.Getter;
@@ -24,16 +25,38 @@ public class CollectionParseResult {
      */
     private final List<CollectionNode> children;
 
+    /**
+     * 环境变量列表（可选，用于导入时创建环境）
+     */
+    private final List<Environment> environments;
+
     public CollectionParseResult(RequestGroup group) {
         this.group = group;
         this.children = new ArrayList<>();
+        this.environments = new ArrayList<>();
     }
 
     public void addChild(CollectionNode child) {
         this.children.add(child);
     }
 
+    /**
+     * 添加环境变量
+     */
+    public void addEnvironment(Environment environment) {
+        if (environment != null) {
+            this.environments.add(environment);
+        }
+    }
 
+    /**
+     * 添加多个环境变量
+     */
+    public void addEnvironments(List<Environment> envList) {
+        if (envList != null && !envList.isEmpty()) {
+            this.environments.addAll(envList);
+        }
+    }
 
     /**
      * 便捷工厂方法：创建扁平结构的解析结果（用于 IntelliJ HTTP 等简单格式）

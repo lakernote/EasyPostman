@@ -76,7 +76,6 @@ public class SavedResponse implements Serializable {
 
         // 保存响应信息
         saved.setCode(response.code);
-        saved.setStatus(response.message);
 
         // 转换响应头
         List<HttpHeader> headers = new ArrayList<>();

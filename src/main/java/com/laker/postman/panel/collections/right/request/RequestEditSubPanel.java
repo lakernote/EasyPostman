@@ -1599,7 +1599,6 @@ public class RequestEditSubPanel extends JPanel {
             // 2. 构建 HttpResponse 对象
             HttpResponse response = new HttpResponse();
             response.code = savedResponse.getCode();
-            response.message = savedResponse.getStatus();
             response.body = savedResponse.getBody();
 
             // 转换 headers

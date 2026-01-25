@@ -72,7 +72,6 @@ public class OkHttpResponseHandler {
      */
     public static void handleResponse(Response okResponse, HttpResponse response, SseResEventListener callback) throws IOException {
         response.code = okResponse.code();
-        response.message = okResponse.message();
         response.headers = new LinkedHashMap<>();
         for (String name : okResponse.headers().names()) {
             // 使用 headers(name) 获取所有同名的 header 值（例如多个 Set-Cookie）

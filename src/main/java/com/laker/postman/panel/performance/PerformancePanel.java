@@ -1754,6 +1754,12 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
                 }
 
+                // ✨ 优化：简化 req 和 resp 对象，移除渲染时不需要的字段
+                req.simplify();  // 移除 id, body, bodyType, headersList, paramsList
+                if (resp != null) {
+                    resp.simplify();  // 移除 filePath, fileName
+                }
+
                 performanceResultTablePanel.addResult(
                         new ResultNodeInfo(apiName, errorMsg, req, resp, testResults),
                         efficientMode,

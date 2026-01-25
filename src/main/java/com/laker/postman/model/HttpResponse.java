@@ -8,7 +8,6 @@ import java.util.Map;
  */
 public class HttpResponse {
     public Map<String, List<String>> headers;
-    public String message;
     public String body;
     public int code; // 添加响应状态码字段
     public String threadName; // 添加线程名称字段
@@ -37,5 +36,16 @@ public class HttpResponse {
         } else {
             headers.put(name, value);
         }
+    }
+
+    /**
+     * 简化对象，将渲染时不需要的字段置为 null，减少内存占用
+     * 保留的字段：code, protocol, threadName, httpEventInfo, headers, body, costMs, endTime, bodySize, headersSize, idleConnectionCount, connectionCount
+     * 置为 null 的字段：filePath, fileName
+     */
+    public void simplify() {
+        this.filePath = null;    // 文件下载路径，渲染时不需要
+        this.fileName = null;    // 文件下载名称，渲染时不需要
+        // isSse, idleConnectionCount, connectionCount 保留（Timing标签页可能需要）
     }
 }

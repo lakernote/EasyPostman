@@ -50,4 +50,18 @@ public class PreparedRequest {
         copy.paramsList = this.paramsList;
         return copy;
     }
+
+    /**
+     * 简化对象，将渲染时不需要的字段置为 null，减少内存占用
+     * 保留的字段：url, method, okHttpHeaders, formDataList, urlencodedList, okHttpRequestBody
+     * 置为 null 的字段：id, body, bodyType, headersList, paramsList
+     */
+    public void simplify() {
+        this.id = null;
+        this.body = null;
+        this.bodyType = null;
+        this.headersList = null;  // 渲染用的是 okHttpHeaders
+        this.paramsList = null;   // 渲染时不显示
+        // isMultipart, followRedirects, logEvent 是基本类型，不占内存
+    }
 }

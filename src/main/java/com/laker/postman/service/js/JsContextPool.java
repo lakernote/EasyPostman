@@ -13,9 +13,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * JS Context 对象池
  * <p>
- * 用于复用 GraalVM Context 对象，避免在高并发场景下频繁创建和销毁 Context 导致的内存溢出。
- * Context 的创建成本较高（需要加载 JS 库、初始化环境等），通过对象池可以显著提升性能。
+ * 通过复用 GraalVM Context 对象来提升性能，避免频繁创建和销毁 Context。
+ * 使用 IIFE (Immediately Invoked Function Expression) 包装用户脚本，实现变量隔离，
+ * 避免 let/const 变量污染全局作用域，使 Context 可以安全复用。
  * </p>
+ *
+ * <h3>原理：</h3>
+ * <pre>
+ * 用户脚本：
+ *   let env = "test";
+ *   console.log(env);
+ *
+ * 自动包装为：
+ *   (function() {
+ *     let env = "test";  // 局部变量，不污染全局作用域
+ *     console.log(env);
+ *   })();
+ * </pre>
  *
  * @author laker
  */
@@ -29,10 +43,12 @@ public class JsContextPool {
     private final BlockingQueue<PooledContext> pool;
     private final int maxSize;
     private final AtomicInteger currentSize = new AtomicInteger(0);
+    private final AtomicInteger totalCreated = new AtomicInteger(0);
+    private final AtomicInteger totalReused = new AtomicInteger(0);
     private volatile boolean closed = false;
 
     /**
-     * 包装的 Context 对象，带有创建时间和使用计数
+     * 包装的 Context 对象，带有统计信息
      */
     public static class PooledContext {
         final Context context;
@@ -47,23 +63,6 @@ public class JsContextPool {
         public Context getContext() {
             useCount.incrementAndGet();
             return context;
-        }
-
-        public void reset() {
-            // 清理全局变量（保留内置库和 polyfill）
-            try {
-                context.eval("js", """
-                        // 清理可能被脚本修改的全局变量
-                        if (typeof pm !== 'undefined') delete globalThis.pm;
-                        if (typeof request !== 'undefined') delete globalThis.request;
-                        if (typeof environment !== 'undefined') delete globalThis.environment;
-                        if (typeof globals !== 'undefined') delete globalThis.globals;
-                        if (typeof responseBody !== 'undefined') delete globalThis.responseBody;
-                        if (typeof tests !== 'undefined') delete globalThis.tests;
-                        """);
-            } catch (Exception e) {
-                log.warn("Failed to reset context: {}", e.getMessage());
-            }
         }
 
         public void close() {
@@ -88,28 +87,34 @@ public class JsContextPool {
 
     /**
      * 获取 Context（带超时）
-     * 优化版本：减少锁竞争，提高并发性能
      *
      * @param timeoutMs 超时时间（毫秒）
      * @return Context 对象
+     * @throws InterruptedException 如果等待被中断
      */
     public PooledContext borrowContext(long timeoutMs) throws InterruptedException {
-        // 先尝试快速获取（非阻塞）
-        PooledContext pooled = pool.poll();
+        if (closed) {
+            throw new IllegalStateException("Context pool is closed");
+        }
 
+        // 1. 尝试从池中快速获取（复用）
+        PooledContext pooled = pool.poll();
         if (pooled != null) {
-            // 从池中获取到了 Context（最快路径）
+            totalReused.incrementAndGet();
+            log.debug("Reused context from pool, reuse count: {}", totalReused.get());
             return pooled;
         }
 
-        // 池为空，检查是否可以创建新的 Context
+        // 2. 池为空，检查是否可以创建新的 Context
         int current = currentSize.get();
         if (current < maxSize) {
-            // 尝试原子性地增加计数（无锁，避免竞争）
+            // 尝试原子性地增加计数
             if (currentSize.compareAndSet(current, current + 1)) {
                 try {
                     pooled = createNewContext();
-                    log.debug("Created new context, pool size: {}/{}", currentSize.get(), maxSize);
+                    totalCreated.incrementAndGet();
+                    log.debug("Created new context #{}, pool size: {}/{}",
+                            totalCreated.get(), currentSize.get(), maxSize);
                     return pooled;
                 } catch (Exception e) {
                     // 创建失败，回滚计数
@@ -119,17 +124,20 @@ public class JsContextPool {
             }
         }
 
-        // 达到最大数量限制，阻塞等待空闲 Context
+        // 3. 达到最大数量限制，阻塞等待空闲 Context
         log.debug("Context pool exhausted ({}), waiting for available context...", current);
         pooled = pool.poll(timeoutMs, TimeUnit.MILLISECONDS);
         if (pooled == null) {
-            throw new IllegalStateException("Failed to acquire context within timeout: " + timeoutMs + "ms. Pool size: " + currentSize.get());
+            throw new IllegalStateException(
+                    String.format("Failed to acquire context within timeout: %dms. Pool size: %d/%d",
+                            timeoutMs, currentSize.get(), maxSize));
         }
+        totalReused.incrementAndGet();
         return pooled;
     }
 
     /**
-     * 归还 Context 到池中
+     * 归还 Context 到池中（复用）
      *
      * @param pooled Context 对象
      */
@@ -139,26 +147,54 @@ public class JsContextPool {
         }
 
         try {
-            // 重置 Context 状态
-            pooled.reset();
+            // 清理全局变量（只清理注入的变量，保留内置对象）
+            cleanupGlobalVariables(pooled.context);
 
-            // 归还到池中
+            // 归还到池中供复用
             if (!pool.offer(pooled, 100, TimeUnit.MILLISECONDS)) {
-                // 归还失败（池已满），关闭 Context
+                // 池已满，关闭 Context
                 pooled.close();
                 currentSize.decrementAndGet();
                 log.debug("Pool is full, closed context. Pool size: {}/{}", currentSize.get(), maxSize);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.warn("Failed to return context to pool: {}", e.getMessage());
+            // 归还失败，关闭 Context
             pooled.close();
             currentSize.decrementAndGet();
         }
     }
 
     /**
+     * 清理全局变量（只清理注入的变量，保留内置对象）
+     * <p>
+     * 注意：由于用户脚本使用 IIFE 包装，let/const 变量都是局部变量，
+     * 这里只需要清理我们注入的全局变量（pm、request 等）
+     * </p>
+     */
+    private void cleanupGlobalVariables(Context context) {
+        try {
+            context.eval("js", """
+                    // 只删除我们注入的全局变量，保留所有内置对象
+                    (function() {
+                        const injectedVars = ['pm', 'request', 'environment', 'globals',
+                                              'responseBody', 'tests', 'iterationData'];
+                        injectedVars.forEach(varName => {
+                            try {
+                                delete globalThis[varName];
+                            } catch (e) {
+                                // 忽略删除失败
+                            }
+                        });
+                    })();
+                    """);
+        } catch (Exception e) {
+            log.warn("Failed to cleanup global variables: {}", e.getMessage());
+        }
+    }
+
+    /**
      * 创建新的 Context 对象
-     * 注意：Context 创建时使用 nullOutputStream，实际的输出流在 JsScriptExecutor 中处理
      */
     private PooledContext createNewContext() {
         try {
@@ -190,7 +226,18 @@ public class JsContextPool {
             pooled.close();
         }
         currentSize.set(0);
-        log.info("JsContextPool shutdown, all contexts closed");
+        double reuseRatio = totalCreated.get() > 0 ? (totalReused.get() * 100.0 / totalCreated.get()) : 0;
+        log.info("JsContextPool shutdown. Total created: {}, Total reused: {}, Reuse ratio: {}%",
+                totalCreated.get(), totalReused.get(), String.format("%.2f", reuseRatio));
+    }
+
+    /**
+     * 获取统计信息
+     */
+    public String getStats() {
+        return String.format("Pool[size=%d/%d, created=%d, reused=%d, ratio=%.2f%%]",
+                currentSize.get(), maxSize, totalCreated.get(), totalReused.get(),
+                totalCreated.get() > 0 ? (totalReused.get() * 100.0 / totalCreated.get()) : 0);
     }
 }
 

@@ -64,7 +64,8 @@ public class JsScriptExecutor {
      * 执行JS脚本，自动注入所有变量、polyfill，并支持输出回调。
      * <p>
      * 使用 Context Pool 复用 Context 对象，提高性能并避免内存溢出。
-     * 注意：由于 GraalVM Context 的输出流在创建时绑定，这里通过自定义 console.log 实现输出捕获。
+     * 使用 IIFE (Immediately Invoked Function Expression) 包装用户脚本，
+     * 避免 let/const 变量污染全局作用域，使 Context 可以安全复用。
      * </p>
      *
      * @param script         脚本内容
@@ -93,8 +94,11 @@ public class JsScriptExecutor {
             // 注入变量（polyfill 已在池创建时注入）
             injectBindings(context, bindings);
 
-            // 执行脚本
-            context.eval("js", script);
+            // 使用 IIFE 包装脚本，避免 let/const 污染全局作用域
+            String wrappedScript = wrapScriptWithIIFE(script);
+
+            // 执行包装后的脚本
+            context.eval("js", wrappedScript);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -116,6 +120,20 @@ public class JsScriptExecutor {
                 CONTEXT_POOL.returnContext(pooledContext);
             }
         }
+    }
+
+    /**
+     * 使用 IIFE 包装脚本，避免 let/const 变量污染全局作用域
+     * <p>
+     * 原理：将用户脚本包装在一个立即执行的函数中，
+     * 使所有 let/const/var 声明的变量都成为局部变量。
+     * </p>
+     *
+     * @param script 原始脚本
+     * @return 包装后的脚本
+     */
+    private static String wrapScriptWithIIFE(String script) {
+        return "(function() {\n" + script + "\n})();";
     }
 
     /**

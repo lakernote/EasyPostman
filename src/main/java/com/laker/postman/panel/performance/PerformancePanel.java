@@ -343,7 +343,7 @@ public class PerformancePanel extends SingletonBasePanel {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftPanel.setOpaque(false);
 
-        JLabel infoIcon = new JLabel(IconUtil.createThemed("icons/info.svg", 14, 14));
+        JLabel infoIcon = new JLabel(IconUtil.create("icons/info.svg", 14, 14));
         leftPanel.add(infoIcon);
 
         JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));

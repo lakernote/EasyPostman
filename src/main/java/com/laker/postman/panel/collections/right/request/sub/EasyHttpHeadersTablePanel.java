@@ -1,8 +1,10 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.laker.postman.common.component.table.AbstractEasyPostmanTablePanel;
-import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
+import com.laker.postman.common.component.table.HttpHeaderKeyEasyTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
+import com.laker.postman.common.component.table.HttpHeaderValueEasyTextFieldCellEditor;
+import com.laker.postman.util.HttpHeaderConstants;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -31,6 +33,9 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
+    // Parent panel reference for handling default headers
+    private EasyRequestHttpHeadersPanel parentPanel;
+
     public EasyHttpHeadersTablePanel() {
         super(new String[]{"", "Key", "Value", ""});
         initializeComponents();
@@ -38,6 +43,118 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
         setupCellRenderersAndEditors();
         setupTableListeners();
         addAutoAppendRowFeature();
+        setupDefaultHeaderDetection();
+    }
+
+    /**
+     * Set parent panel reference
+     */
+    public void setParentPanel(EasyRequestHttpHeadersPanel parentPanel) {
+        this.parentPanel = parentPanel;
+    }
+
+    /**
+     * 设置默认 header 检测
+     * 当用户输入的 key 与默认 header 相同时：
+     * 1. 检测到已存在同名的默认 header
+     * 2. 自动展开默认 headers（如果是隐藏状态）
+     * 3. 清空当前输入
+     * 4. 聚焦到已存在的默认 header 行
+     */
+    private void setupDefaultHeaderDetection() {
+        tableModel.addTableModelListener(e -> {
+            // 只处理 Key 列的更新事件
+            if (e.getType() != javax.swing.event.TableModelEvent.UPDATE) {
+                return;
+            }
+
+            int column = e.getColumn();
+            if (column != COL_KEY) {
+                return;
+            }
+
+            int row = e.getFirstRow();
+            if (row < 0 || row >= tableModel.getRowCount()) {
+                return;
+            }
+
+            // 延迟处理，避免在编辑过程中触发
+            SwingUtilities.invokeLater(() -> handleDefaultHeaderInput(row));
+        });
+    }
+
+    /**
+     * 处理默认 header 输入
+     */
+    private void handleDefaultHeaderInput(int row) {
+        if (parentPanel == null) {
+            return;
+        }
+
+        try {
+            Object keyObj = tableModel.getValueAt(row, COL_KEY);
+            if (keyObj == null) {
+                return;
+            }
+
+            String inputKey = keyObj.toString().trim();
+            if (inputKey.isEmpty()) {
+                return;
+            }
+
+            // 检查是否是默认 header key
+            boolean isDefaultKey = DEFAULT_HEADER_KEYS.stream()
+                    .anyMatch(defaultKey -> defaultKey.equalsIgnoreCase(inputKey));
+
+            if (!isDefaultKey) {
+                return;
+            }
+
+            // 查找是否已存在同名的默认 header（排除当前行）
+            int existingRow = findExistingHeaderRow(inputKey, row);
+            if (existingRow < 0) {
+                // 没有找到已存在的，说明可能是用户想修改默认 header 的值
+                return;
+            }
+
+            // 找到了已存在的默认 header
+            // 1. 清空当前行
+            tableModel.setValueAt("", row, COL_KEY);
+            tableModel.setValueAt("", row, COL_VALUE);
+
+            // 2. 确保默认 headers 可见
+            parentPanel.ensureDefaultHeadersVisible();
+
+            // 3. 延迟聚焦，确保展开动画完成
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    Thread.sleep(100); // 等待展开动画
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+                parentPanel.focusOnHeader(inputKey);
+            });
+
+        } catch (Exception ex) {
+            log.warn("Error handling default header input", ex);
+        }
+    }
+
+    /**
+     * 查找已存在的 header 行（排除指定行）
+     */
+    private int findExistingHeaderRow(String key, int excludeRow) {
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            if (i == excludeRow) {
+                continue;
+            }
+
+            Object keyObj = tableModel.getValueAt(i, COL_KEY);
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // ========== 实现抽象方法 ==========
@@ -167,9 +284,8 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
     }
 
     private void setupCellRenderersAndEditors() {
-        // Set editors for Key and Value columns
-        setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
-        setColumnEditor(COL_VALUE, new EasyPostmanTextFieldCellEditor());
+        setColumnEditor(COL_KEY, new HttpHeaderKeyEasyTextFieldCellEditor(HttpHeaderConstants.COMMON_HEADERS));
+        setColumnEditor(COL_VALUE, new HttpHeaderValueEasyTextFieldCellEditor(COL_KEY));
         setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
         setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
 

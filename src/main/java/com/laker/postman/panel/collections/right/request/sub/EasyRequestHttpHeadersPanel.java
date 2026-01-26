@@ -126,8 +126,9 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel);
 
-        // Create table panel
+        // Create table panel and set parent reference
         tablePanel = new EasyHttpHeadersTablePanel();
+        tablePanel.setParentPanel(this);
 
         add(headerPanel, BorderLayout.NORTH);
     }
@@ -366,6 +367,51 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         }
 
         return false;
+    }
+
+    /**
+     * Show default headers if they are currently hidden
+     */
+    public void ensureDefaultHeadersVisible() {
+        if (!showDefaultHeaders) {
+            toggleDefaultHeadersVisibility();
+        }
+    }
+
+    /**
+     * Focus on a specific header row by key
+     */
+    public void focusOnHeader(String key) {
+        if (tablePanel == null || key == null) {
+            return;
+        }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // Find the row with matching key in the model
+        for (int modelRow = 0; modelRow < model.getRowCount(); modelRow++) {
+            Object keyObj = model.getValueAt(modelRow, 1); // Column 1 is Key
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                // Convert model row to view row (accounting for filter)
+                int viewRow = table.convertRowIndexToView(modelRow);
+                if (viewRow >= 0) {
+                    // Select and scroll to the row
+                    table.setRowSelectionInterval(viewRow, viewRow);
+                    table.scrollRectToVisible(table.getCellRect(viewRow, 1, true));
+
+                    // Start editing the value column
+                    SwingUtilities.invokeLater(() -> {
+                        table.editCellAt(viewRow, 2); // Column 2 is Value
+                        Component editor = table.getEditorComponent();
+                        if (editor != null) {
+                            editor.requestFocus();
+                        }
+                    });
+                }
+                return;
+            }
+        }
     }
 
     /**

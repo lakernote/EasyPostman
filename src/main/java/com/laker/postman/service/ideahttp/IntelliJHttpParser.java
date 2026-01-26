@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +39,8 @@ public class IntelliJHttpParser {
     private static final Pattern HEADER_PATTERN = Pattern.compile("^([^:]+):\\s*(.+)$");
     // 匹配单行注释：# 开头
     private static final Pattern COMMENT_PATTERN = Pattern.compile("^#\\s*(.*)$");
+    // 匹配变量定义：@变量名=值
+    private static final Pattern VARIABLE_PATTERN = Pattern.compile("^@([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(.*)$");
 
     /**
      * 解析 HTTP 文件，返回包含分组信息和请求列表的解析结果
@@ -54,24 +58,28 @@ public class IntelliJHttpParser {
 
             // 创建分组 - 优先使用文件名，否则使用国际化的组名和格式化的时间戳
             String groupName;
+            String environmentName;
             if (filename != null && !filename.trim().isEmpty()) {
                 // 移除文件扩展名
                 groupName = filename.replaceAll("\\.http$", "").trim();
+                environmentName = groupName;
             } else {
                 // 使用默认的国际化组名
                 String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 groupName = I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DEFAULT_GROUP, timestamp);
+                environmentName = "Imported-" + timestamp;
             }
 
             RequestGroup collectionGroup = new RequestGroup(groupName);
 
             // 按行分割
             String[] lines = content.split("\n");
-            List<HttpRequestItem> requests = parseHttpRequests(lines);
 
-            // 过滤有效的请求
+            // 解析环境变量和请求
+            ParseContext context = parseHttpContent(lines);
+
             List<HttpRequestItem> validRequests = new ArrayList<>();
-            for (HttpRequestItem request : requests) {
+            for (HttpRequestItem request : context.requests) {
                 if (request != null && request.getUrl() != null && !request.getUrl().isEmpty()) {
                     validRequests.add(request);
                 }
@@ -82,8 +90,19 @@ public class IntelliJHttpParser {
                 return null;
             }
 
-            // 使用工厂方法创建扁平结构的解析结果
-            return CollectionParseResult.createFlat(collectionGroup, validRequests);
+            // 创建解析结果
+            CollectionParseResult result = CollectionParseResult.createFlat(collectionGroup, validRequests);
+
+            // 如果有环境变量，创建环境对象并添加
+            if (!context.variables.isEmpty()) {
+                Environment environment = new Environment(environmentName);
+                for (Map.Entry<String, String> entry : context.variables.entrySet()) {
+                    environment.addVariable(entry.getKey(), entry.getValue());
+                }
+                result.addEnvironment(environment);
+            }
+
+            return result;
         } catch (Exception e) {
             log.error("Failed to parse HTTP file", e);
             return null;
@@ -91,9 +110,30 @@ public class IntelliJHttpParser {
     }
 
     /**
-     * 解析 HTTP 请求列表
+     * 解析上下文，包含请求列表和变量映射
      */
-    private static List<HttpRequestItem> parseHttpRequests(String[] lines) {
+    private static class ParseContext {
+        List<HttpRequestItem> requests = new ArrayList<>();
+        Map<String, String> variables = new LinkedHashMap<>();
+    }
+
+    /**
+     * 解析 HTTP 文件内容，提取变量和请求
+     */
+    private static ParseContext parseHttpContent(String[] lines) {
+        ParseContext context = new ParseContext();
+        context.requests = parseHttpRequests(lines, context.variables);
+        return context;
+    }
+
+    /**
+     * 解析 HTTP 请求列表
+     *
+     * @param lines 文件行数组
+     * @param variables 用于存储解析出的变量定义
+     * @return 请求列表
+     */
+    private static List<HttpRequestItem> parseHttpRequests(String[] lines, Map<String, String> variables) {
         List<HttpRequestItem> requests = new ArrayList<>();
         HttpRequestItem currentRequest = null;
         StringBuilder bodyBuilder = null;
@@ -113,6 +153,15 @@ public class IntelliJHttpParser {
                     // 空行可能是 body 的一部分
                     bodyBuilder.append("\n");
                 }
+                continue;
+            }
+
+            // 检查是否是变量定义（@ 开头）
+            Matcher variableMatcher = VARIABLE_PATTERN.matcher(trimmedLine);
+            if (variableMatcher.matches()) {
+                String varName = variableMatcher.group(1).trim();
+                String varValue = variableMatcher.group(2).trim();
+                variables.put(varName, varValue);
                 continue;
             }
 

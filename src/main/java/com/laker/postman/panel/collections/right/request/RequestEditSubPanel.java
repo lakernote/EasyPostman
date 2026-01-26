@@ -273,6 +273,11 @@ public class RequestEditSubPanel extends JPanel {
 
         // bodyTypeComboBox 变化时，自动设置 Content-Type
         requestBodyPanel.getBodyTypeComboBox().addActionListener(e -> {
+            // 如果正在加载数据，不自动修改 Content-Type（避免覆盖从文件解析来的 header）
+            if (isLoadingData) {
+                return;
+            }
+
             String selectedType = (String) requestBodyPanel.getBodyTypeComboBox().getSelectedItem();
             if (RequestBodyPanel.BODY_TYPE_NONE.equals(selectedType)) {
                 headersPanel.removeHeader("Content-Type");
@@ -960,15 +965,23 @@ public class RequestEditSubPanel extends JPanel {
             // 这是兼容性代码，防止旧数据bodyType字段为空
             if (CharSequenceUtil.isBlank(item.getBodyType())) {
                 item.setBodyType(RequestBodyPanel.BODY_TYPE_NONE);
-                // 根据请求headers尝试推断bodyType
-                String contentType = HttpUtil.getHeaderIgnoreCase(item, "Content-Type");
-                if (CharSequenceUtil.isNotBlank(contentType)) {
-                    if (contentType.contains("application/x-www-form-urlencoded")) {
-                        item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
-                    } else if (contentType.contains("multipart/form-data")) {
-                        item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_DATA);
-                    } else {
-                        item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+                // 只有支持 body 的请求方法，才根据 Content-Type 推断 bodyType
+                // GET/HEAD/OPTIONS 等方法即使有 Content-Type header 也不推断 bodyType
+                String method = item.getMethod();
+                boolean supportsBody = "POST".equals(method) || "PUT".equals(method) ||
+                        "PATCH".equals(method) || "DELETE".equals(method);
+
+                if (supportsBody) {
+                    // 根据请求headers尝试推断bodyType
+                    String contentType = HttpUtil.getHeaderIgnoreCase(item, "Content-Type");
+                    if (CharSequenceUtil.isNotBlank(contentType)) {
+                        if (contentType.contains("application/x-www-form-urlencoded")) {
+                            item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_URLENCODED);
+                        } else if (contentType.contains("multipart/form-data")) {
+                            item.setBodyType(RequestBodyPanel.BODY_TYPE_FORM_DATA);
+                        } else {
+                            item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+                        }
                     }
                 }
             }
@@ -1069,8 +1082,8 @@ public class RequestEditSubPanel extends JPanel {
      * 解析url中的参数到paramsPanel，并与现有params合并去重
      */
     private void parseUrlParamsToParamsPanel() {
-        if (isUpdatingFromParams) {
-            return; // 如果正在从Params更新URL，避免循环更新
+        if (isUpdatingFromParams || isLoadingData) {
+            return; // 如果正在从Params更新URL或正在加载数据，避免循环更新
         }
 
         isUpdatingFromUrl = true;
@@ -1725,6 +1738,11 @@ public class RequestEditSubPanel extends JPanel {
      * 检测并解析 cURL 命令
      */
     private void detectAndParseCurl() {
+        // 如果正在加载数据，不触发 cURL 解析（避免误解析正常URL）
+        if (isLoadingData) {
+            return;
+        }
+
         String text = urlField.getText();
         if (text != null && text.trim().toLowerCase().startsWith("curl")) {
             SwingUtilities.invokeLater(() -> {

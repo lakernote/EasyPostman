@@ -1,5 +1,6 @@
 package com.laker.postman.service.ideahttp;
 
+import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -825,4 +826,80 @@ public class IntelliJHttpParserTest {
         return request.getUrlencodedList().stream()
                 .anyMatch(f -> key.equals(f.getKey()) && value.equals(f.getValue()));
     }
+
+    @Test(description = "测试解析环境变量定义（@ 开头）")
+    public void testParseEnvironmentVariables() {
+        String content = """
+                ##############################################################################################################################################
+                ### CI Service Integration
+                ##############################################################################################################################################
+                @ciUserId=test-user-uuid-12345
+                @orgId=test-org-uuid-67890
+                @displayName=Test User
+                @userEmail=test@example.com
+                
+                ### get user by uuid
+                GET {{ciUrl}}/identity/scim/v1/Users?startIndex=0&filter=id eq "{{ciUserId}}"
+                Content-Type: application/json
+                Authorization: Bearer {{accessToken}}
+                """;
+
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "ci-service.http");
+        assertNotNull(result, "应该成功解析");
+
+        // 验证环境变量
+        assertNotNull(result.getEnvironments(), "应该有环境变量列表");
+        assertFalse(result.getEnvironments().isEmpty(), "环境变量列表不应为空");
+
+        Environment env = result.getEnvironments().get(0);
+        assertNotNull(env, "应该有环境对象");
+        assertEquals(env.getName(), "ci-service", "环境名称应该基于文件名");
+
+        // 验证变量
+        assertEquals(env.get("ciUserId"), "test-user-uuid-12345");
+        assertEquals(env.get("orgId"), "test-org-uuid-67890");
+        assertEquals(env.get("displayName"), "Test User");
+        assertEquals(env.get("userEmail"), "test@example.com");
+
+        // 验证请求被正确解析
+        assertEquals(result.getChildren().size(), 1, "应该有一个请求");
+        HttpRequestItem request = getRequestFromResult(result, 0);
+        assertEquals(request.getName(), "get user by uuid");
+        assertTrue(request.getUrl().contains("{{ciUserId}}"), "URL 应该包含变量引用");
+    }
+
+    @Test(description = "测试解析多个请求与环境变量")
+    public void testParseMultipleRequestsWithVariables() {
+        String content = """
+                @ciUrl=https://api.example.com
+                @accessToken=test-token-123
+                
+                ### get user by email
+                GET {{ciUrl}}/users?email={{userEmail}}
+                Authorization: Bearer {{accessToken}}
+                
+                ### create user
+                POST {{ciUrl}}/users
+                Content-Type: application/json
+                Authorization: Bearer {{accessToken}}
+                
+                {
+                  "email": "{{userEmail}}",
+                  "name": "{{displayName}}"
+                }
+                """;
+
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
+        assertNotNull(result);
+
+        // 验证环境变量
+        assertEquals(result.getEnvironments().size(), 1);
+        Environment env = result.getEnvironments().get(0);
+        assertEquals(env.get("ciUrl"), "https://api.example.com");
+        assertEquals(env.get("accessToken"), "test-token-123");
+
+        // 验证两个请求
+        assertEquals(result.getChildren().size(), 2);
+    }
+
 }

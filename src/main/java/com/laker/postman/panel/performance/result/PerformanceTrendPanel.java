@@ -62,35 +62,63 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
      * 获取主题适配的图表背景色
      */
     private Color getChartBackgroundColor() {
-        return isDarkTheme() ? new Color(60, 63, 65) : Color.WHITE;
+        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;  // 更深的暗色背景，提高对比度
     }
 
     /**
      * 获取主题适配的图表面板背景色
      */
     private Color getChartPanelBackgroundColor() {
-        return isDarkTheme() ? new Color(60, 63, 65) : Color.WHITE;
+        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;  // 与图表背景一致
     }
 
     /**
      * 获取主题适配的网格线颜色
      */
     private Color getGridLineColor() {
-        return isDarkTheme() ? new Color(80, 83, 85) : new Color(194, 211, 236);
+        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);  // 更亮的网格线，增强可读性
     }
 
     /**
      * 获取主题适配的文本颜色
      */
     private Color getTextColor() {
-        return isDarkTheme() ? new Color(187, 187, 187) : Color.BLACK;
+        return isDarkTheme() ? new Color(200, 200, 200) : Color.BLACK;  // 更亮的文本，提高可读性
     }
 
     /**
      * 获取主题适配的边框颜色
      */
     private Color getChartBorderColor() {
-        return isDarkTheme() ? new Color(80, 83, 85) : new Color(194, 211, 236);
+        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);  // 与网格线一致
+    }
+
+    /**
+     * 获取主题适配的线程数曲线颜色（蓝色系）
+     */
+    private Color getThreadsLineColor() {
+        return isDarkTheme() ? new Color(100, 181, 246) : new Color(33, 150, 243);  // 亮蓝 : 标准蓝
+    }
+
+    /**
+     * 获取主题适配的响应时间曲线颜色（橙色系）
+     */
+    private Color getResponseTimeLineColor() {
+        return isDarkTheme() ? new Color(255, 183, 77) : new Color(255, 152, 0);  // 亮橙 : 标准橙
+    }
+
+    /**
+     * 获取主题适配的QPS曲线颜色（绿色系）
+     */
+    private Color getQpsLineColor() {
+        return isDarkTheme() ? new Color(129, 199, 132) : new Color(56, 142, 60);  // 亮绿 : 深绿
+    }
+
+    /**
+     * 获取主题适配的错误率曲线颜色（红色系）
+     */
+    private Color getErrorRateLineColor() {
+        return isDarkTheme() ? new Color(239, 83, 80) : new Color(211, 47, 47);  // 亮红 : 深红
     }
 
 
@@ -289,16 +317,16 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
         int seriesIndex = 0;
         if (threadsCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex++, Color.BLUE);
+            renderer.setSeriesPaint(seriesIndex++, getThreadsLineColor());
         }
         if (responseTimeCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex++, Color.ORANGE);
+            renderer.setSeriesPaint(seriesIndex++, getResponseTimeLineColor());
         }
         if (qpsCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex++, Color.GREEN.darker());
+            renderer.setSeriesPaint(seriesIndex++, getQpsLineColor());
         }
         if (errorRateCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex, Color.RED);
+            renderer.setSeriesPaint(seriesIndex, getErrorRateLineColor());
         }
         return renderer;
     }
@@ -355,10 +383,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     private JPanel createSeparateChartsPanel() {
         JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
 
-        panel.add(createChartPanel(userCountDataset, MessageKeys.PERFORMANCE_TREND_THREADS, Color.BLUE, true, false));
-        panel.add(createChartPanel(responseTimeDataset, MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS, Color.ORANGE, false, false));
-        panel.add(createChartPanel(qpsDataset, MessageKeys.PERFORMANCE_TREND_QPS, Color.GREEN.darker(), false, false));
-        panel.add(createChartPanel(errorPercentDataset, MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT, Color.RED, false, true));
+        panel.add(createChartPanel(userCountDataset, MessageKeys.PERFORMANCE_TREND_THREADS, getThreadsLineColor(), true, false));
+        panel.add(createChartPanel(responseTimeDataset, MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS, getResponseTimeLineColor(), false, false));
+        panel.add(createChartPanel(qpsDataset, MessageKeys.PERFORMANCE_TREND_QPS, getQpsLineColor(), false, false));
+        panel.add(createChartPanel(errorPercentDataset, MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT, getErrorRateLineColor(), false, true));
 
         return panel;
     }

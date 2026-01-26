@@ -5,6 +5,7 @@ import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -194,7 +195,7 @@ public class PlusPanel extends JPanel {
         createRequestLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         createRequestLabel.setHorizontalAlignment(SwingConstants.CENTER);
         createRequestLabel.setForeground(ModernColors.getTextPrimary());
-        createRequestLabel.setFont(createRequestLabel.getFont().deriveFont(Font.BOLD, 26f));
+        createRequestLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 13));
         contentPanel.add(createRequestLabel);
 
         // 主标题与提示间距
@@ -269,7 +270,7 @@ public class PlusPanel extends JPanel {
         hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         hintLabel.setHorizontalAlignment(SwingConstants.CENTER);
         hintLabel.setForeground(ModernColors.PRIMARY);
-        hintLabel.setFont(hintLabel.getFont().deriveFont(Font.BOLD, 15f));
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
         hintLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         hintLabel.setBorder(BorderFactory.createEmptyBorder(12, 32, 12, 32));
         hintLabel.setOpaque(false);
@@ -341,7 +342,7 @@ public class PlusPanel extends JPanel {
 
         JLabel label = new JLabel(labelText);
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
-        label.setFont(label.getFont().deriveFont(Font.PLAIN, 13f));
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         label.setForeground(ModernColors.getTextHint());
         panel.add(label);
         panel.add(Box.createVerticalStrut(8));

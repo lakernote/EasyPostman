@@ -414,7 +414,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TAB_TESTS = "performance.tab.tests";
     public static final String PERFORMANCE_TAB_TIMING = "performance.tab.timing";
     public static final String PERFORMANCE_TAB_EVENT_INFO = "performance.tab.event_info";
-    public static final String PERFORMANCE_NO_ASSERTION_RESULTS = "performance.no_assertion_results";
     public static final String PERFORMANCE_PROPERTY_SELECT_NODE = "performance.property.select_node";
     public static final String PERFORMANCE_EFFICIENT_MODE = "performance.efficient_mode";
     public static final String PERFORMANCE_EFFICIENT_MODE_TOOLTIP_HTML = "performance.efficient_mode.tooltip.html";
@@ -566,8 +565,6 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_FAIL = "collections.import.fail";
     public static final String COLLECTIONS_IMPORT_POSTMAN_DIALOG_TITLE = "collections.import.postman.dialog_title";
     public static final String COLLECTIONS_IMPORT_POSTMAN_INVALID = "collections.import.postman.invalid";
-    public static final String COLLECTIONS_IMPORT_SWAGGER2_DIALOG_TITLE = "collections.import.swagger2.dialog_title";
-    public static final String COLLECTIONS_IMPORT_OPENAPI3_DIALOG_TITLE = "collections.import.openapi3.dialog_title";
     public static final String COLLECTIONS_IMPORT_SWAGGER_DIALOG_TITLE = "collections.import.swagger.dialog_title";
     public static final String COLLECTIONS_IMPORT_SWAGGER_INVALID = "collections.import.swagger.invalid";
     public static final String COLLECTIONS_IMPORT_HAR_DIALOG_TITLE = "collections.import.har.dialog_title";

@@ -74,11 +74,11 @@ public class CookieJar {
     /**
      * 设置 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略）
+     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
      * @param cookie   Cookie 对象或名称
      * @param callback 回调函数
      */
-    public void set(String url, Value cookie, Value callback) {
+    public void set(Object url, Value cookie, Value callback) {
         try {
             if (cookie.isString()) {
                 // 如果第二个参数是字符串，则假定它是 cookie 名称，需要第三个参数是值
@@ -95,23 +95,23 @@ public class CookieJar {
     /**
      * 设置 Cookie（3 参数版本：url, name, value）
      *
-     * @param url   目标 URL
+     * @param url   目标 URL（支持 String 或 UrlWrapper）
      * @param name  Cookie 名称
      * @param value Cookie 值
      */
-    public void set(String url, String name, String value) {
+    public void set(Object url, String name, String value) {
         cookieApi.set(name, value);
     }
 
     /**
      * 设置 Cookie（4 参数版本：url, name, value, callback）
      *
-     * @param url      目标 URL
+     * @param url      目标 URL（支持 String 或 UrlWrapper）
      * @param name     Cookie 名称
      * @param value    Cookie 值
      * @param callback 回调函数
      */
-    public void set(String url, String name, String value, Value callback) {
+    public void set(Object url, String name, String value, Value callback) {
         try {
             cookieApi.set(name, value);
             invokeCallback(callback, null);
@@ -123,11 +123,11 @@ public class CookieJar {
     /**
      * 获取 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略）
+     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
      * @param name     Cookie 名称
      * @param callback 回调函数，接收 (error, cookie) 参数
      */
-    public void get(String url, String name, Value callback) {
+    public void get(Object url, String name, Value callback) {
         try {
             Cookie cookie = cookieApi.get(name);
             invokeCallback(callback, null, cookie);
@@ -139,10 +139,10 @@ public class CookieJar {
     /**
      * 删除 Cookie（2 参数版本：url, name，无回调）
      *
-     * @param url  目标 URL（兼容参数，当前实现忽略）
+     * @param url  目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
      * @param name Cookie 名称
      */
-    public void unset(String url, String name) {
+    public void unset(Object url, String name) {
         try {
             cookieApi.delete(name);
         } catch (Exception e) {
@@ -154,11 +154,11 @@ public class CookieJar {
     /**
      * 删除 Cookie（3 参数版本：url, name, callback）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略）
+     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
      * @param name     Cookie 名称
      * @param callback 回调函数
      */
-    public void unset(String url, String name, Value callback) {
+    public void unset(Object url, String name, Value callback) {
         try {
             cookieApi.delete(name);
             invokeCallback(callback, null);
@@ -170,10 +170,10 @@ public class CookieJar {
     /**
      * 获取所有 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略）
+     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
      * @param callback 回调函数，接收 (error, cookies) 参数
      */
-    public void getAll(String url, Value callback) {
+    public void getAll(Object url, Value callback) {
         try {
             Cookie[] cookies = cookieApi.toArray();
             invokeCallback(callback, null, cookies);
@@ -185,10 +185,10 @@ public class CookieJar {
     /**
      * 清空所有 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略）
+     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
      * @param callback 回调函数
      */
-    public void clear(String url, Value callback) {
+    public void clear(Object url, Value callback) {
         try {
             cookieApi.clear();
             invokeCallback(callback, null);

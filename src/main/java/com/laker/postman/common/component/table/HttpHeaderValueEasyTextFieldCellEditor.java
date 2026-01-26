@@ -56,7 +56,10 @@ public class HttpHeaderValueEasyTextFieldCellEditor extends AbstractCellEditor i
         } else {
             textField.setSuggestions(suggestions);
             textField.setAutoCompleteEnabled(true);
-            if (textField.getText().isEmpty()) {
+            // 只有当值为空时才自动显示所有建议
+            // 如果已有内容，等用户主动编辑时再触发
+            String currentText = textField.getText();
+            if (currentText == null || currentText.trim().isEmpty()) {
                 textField.showAllSuggestions();
             }
         }

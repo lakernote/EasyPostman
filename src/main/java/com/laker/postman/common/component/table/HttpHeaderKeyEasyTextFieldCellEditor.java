@@ -23,14 +23,18 @@ public class HttpHeaderKeyEasyTextFieldCellEditor extends AbstractCellEditor imp
         this.textField.setSuggestions(suggestions);
         this.textField.setAutoCompleteEnabled(true);
 
-        // 获得焦点时显示建议
+        // 获得焦点时只在文本为空时显示建议
+        // 如果已经有内容，让用户主动编辑时再触发自动补全
         this.textField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
                 SwingUtilities.invokeLater(() -> {
-                    if (textField.getText().isEmpty()) {
+                    String text = textField.getText();
+                    // 只有当文本为空时才自动显示所有建议
+                    if (text == null || text.trim().isEmpty()) {
                         textField.showAllSuggestions();
                     }
+                    // 如果文本不为空，用户需要主动编辑才会触发自动补全
                 });
             }
         });

@@ -188,6 +188,21 @@ public class AutoCompleteEasyTextField extends EasyTextField {
                 listModel.addElement(suggestion);
             }
         } else {
+            // 检查是否完全匹配某个建议（大小写不敏感）
+            boolean exactMatch = false;
+            for (String suggestion : suggestions) {
+                if (suggestion.equalsIgnoreCase(text)) {
+                    exactMatch = true;
+                    break;
+                }
+            }
+
+            // 如果完全匹配，不显示建议列表
+            if (exactMatch) {
+                hidePopup();
+                return;
+            }
+
             // 智能过滤匹配的建议
             // 1. 先添加开头匹配的（优先级高）
             // 2. 再添加包含匹配的（优先级低）

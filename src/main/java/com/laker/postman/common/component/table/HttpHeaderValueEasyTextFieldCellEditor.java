@@ -20,48 +20,65 @@ public class HttpHeaderValueEasyTextFieldCellEditor extends AbstractCellEditor i
     private final int keyColumnIndex;
     private JTable parentTable;
     private int editingRow;
+    private String currentHeaderKey;
 
     public HttpHeaderValueEasyTextFieldCellEditor(int keyColumnIndex) {
         this.keyColumnIndex = keyColumnIndex;
         this.textField = new AutoCompleteEasyTextField(1);
         this.textField.setBorder(null);
 
-        // 获得焦点时根据 Key 显示建议
+        // 优化：获得焦点时根据 Key 更新建议
         this.textField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
-                SwingUtilities.invokeLater(HttpHeaderValueEasyTextFieldCellEditor.this::updateSuggestionsForCurrentKey);
+                updateSuggestionsForCurrentKey();
             }
         });
     }
 
     private void updateSuggestionsForCurrentKey() {
-        if (parentTable == null || editingRow < 0) {
-            textField.setAutoCompleteEnabled(false);
+        if (parentTable == null || editingRow < 0 || editingRow >= parentTable.getModel().getRowCount()) {
+            disableAutoComplete();
             return;
         }
 
         // 获取对应的 Key 值
         Object keyValue = parentTable.getModel().getValueAt(editingRow, keyColumnIndex);
-        if (keyValue == null) {
-            textField.setAutoCompleteEnabled(false);
+        String headerKey = (keyValue != null) ? keyValue.toString().trim() : "";
+
+        // 优化：只在 headerKey 改变时才更新 suggestions
+        if (headerKey.isEmpty() || headerKey.equals(currentHeaderKey)) {
+            if (headerKey.isEmpty()) {
+                disableAutoComplete();
+            } else {
+                // headerKey 没变，只需要显示建议（如果已启用）
+                showSuggestionsIfEmpty();
+            }
             return;
         }
 
-        String headerKey = keyValue.toString().trim();
+        currentHeaderKey = headerKey;
         List<String> suggestions = HttpHeaderConstants.getCommonValuesForHeader(headerKey);
 
-        if (suggestions.isEmpty()) {
-            textField.setAutoCompleteEnabled(false);
+        if (suggestions == null || suggestions.isEmpty()) {
+            disableAutoComplete();
         } else {
             textField.setSuggestions(suggestions);
             textField.setAutoCompleteEnabled(true);
-            // 只有当值为空时才自动显示所有建议
-            // 如果已有内容，等用户主动编辑时再触发
-            String currentText = textField.getText();
-            if (currentText == null || currentText.trim().isEmpty()) {
-                textField.showAllSuggestions();
-            }
+            showSuggestionsIfEmpty();
+        }
+    }
+
+    private void disableAutoComplete() {
+        textField.setAutoCompleteEnabled(false);
+        currentHeaderKey = null;
+    }
+
+    private void showSuggestionsIfEmpty() {
+        // 只有当值为空时才自动显示所有建议
+        String currentText = textField.getText();
+        if (currentText == null || currentText.trim().isEmpty()) {
+            SwingUtilities.invokeLater(textField::showAllSuggestions);
         }
     }
 

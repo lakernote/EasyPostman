@@ -85,6 +85,7 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
 
     /**
      * 处理默认 header 输入
+     * 当用户在自定义 header 行输入默认 header 名称时，自动跳转到对应的默认 header 行
      */
     private void handleDefaultHeaderInput(int row) {
         if (parentPanel == null) {
@@ -125,19 +126,28 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
             // 2. 确保默认 headers 可见
             parentPanel.ensureDefaultHeadersVisible();
 
-            // 3. 延迟聚焦，确保展开动画完成
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    Thread.sleep(100); // 等待展开动画
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                }
-                parentPanel.focusOnHeader(inputKey);
-            });
+            // 3. 延迟聚焦到默认 header 行
+            focusOnExistingHeader(inputKey);
 
         } catch (Exception ex) {
             log.warn("Error handling default header input", ex);
         }
+    }
+
+    /**
+     * 聚焦到已存在的 header（带延迟以等待UI更新完成）
+     */
+    private void focusOnExistingHeader(String headerKey) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 短暂等待，确保展开动画完成
+                Thread.sleep(100);
+                parentPanel.focusOnHeader(headerKey);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                log.warn("Interrupted while focusing on header", ex);
+            }
+        });
     }
 
     /**
@@ -283,13 +293,23 @@ public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map
         setupTabKeyNavigation();
     }
 
+    /**
+     * 设置单元格渲染器和编辑器
+     * - Key 列：使用智能自动补全编辑器，提供常见的 HTTP Header 名称建议
+     * - Value 列：使用上下文感知编辑器，根据 Key 提供对应的值建议
+     */
     private void setupCellRenderersAndEditors() {
+        // Key 列：支持自动补全的编辑器（显示常见 HTTP Header 名称）
         setColumnEditor(COL_KEY, new HttpHeaderKeyEasyTextFieldCellEditor(HttpHeaderConstants.COMMON_HEADERS));
+
+        // Value 列：智能编辑器（根据 Key 动态提供建议）
         setColumnEditor(COL_VALUE, new HttpHeaderValueEasyTextFieldCellEditor(COL_KEY));
+
+        // 设置渲染器以支持变量高亮等功能
         setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
         setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
 
-        // Set custom renderer for delete column
+        // 删除列使用自定义按钮渲染器
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
     }
 

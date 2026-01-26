@@ -379,39 +379,63 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     }
 
     /**
-     * Focus on a specific header row by key
+     * 聚焦到指定的 header 行并开始编辑 Value 列
+     * 用于从自定义 header 行跳转到默认 header 行
+     *
+     * @param key header 的 key 名称（大小写不敏感）
      */
     public void focusOnHeader(String key) {
-        if (tablePanel == null || key == null) {
+        if (tablePanel == null || key == null || key.trim().isEmpty()) {
             return;
         }
 
         JTable table = tablePanel.getTable();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
-        // Find the row with matching key in the model
-        for (int modelRow = 0; modelRow < model.getRowCount(); modelRow++) {
-            Object keyObj = model.getValueAt(modelRow, 1); // Column 1 is Key
-            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
-                // Convert model row to view row (accounting for filter)
-                int viewRow = table.convertRowIndexToView(modelRow);
-                if (viewRow >= 0) {
-                    // Select and scroll to the row
-                    table.setRowSelectionInterval(viewRow, viewRow);
-                    table.scrollRectToVisible(table.getCellRect(viewRow, 1, true));
+        // 在模型中查找匹配的行
+        int modelRow = findHeaderRowInModel(model, key);
+        if (modelRow < 0) {
+            return;
+        }
 
-                    // Start editing the value column
-                    SwingUtilities.invokeLater(() -> {
-                        table.editCellAt(viewRow, 2); // Column 2 is Value
-                        Component editor = table.getEditorComponent();
-                        if (editor != null) {
-                            editor.requestFocus();
-                        }
-                    });
-                }
-                return;
+        // 转换为视图行索引（考虑过滤器）
+        int viewRow = table.convertRowIndexToView(modelRow);
+        if (viewRow < 0) {
+            return;
+        }
+
+        // 选中并滚动到该行
+        table.setRowSelectionInterval(viewRow, viewRow);
+        table.scrollRectToVisible(table.getCellRect(viewRow, 2, true));
+
+        // 延迟启动编辑，确保UI已更新
+        startEditingValueCell(table, viewRow);
+    }
+
+    /**
+     * 在表格模型中查找指定 key 的行
+     */
+    private int findHeaderRowInModel(DefaultTableModel model, String key) {
+        for (int row = 0; row < model.getRowCount(); row++) {
+            Object keyObj = model.getValueAt(row, 1); // Column 1 is Key
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                return row;
             }
         }
+        return -1;
+    }
+
+    /**
+     * 启动 Value 单元格的编辑
+     */
+    private void startEditingValueCell(JTable table, int viewRow) {
+        SwingUtilities.invokeLater(() -> {
+            table.editCellAt(viewRow, 2); // Column 2 is Value
+            Component editor = table.getEditorComponent();
+            if (editor != null) {
+                editor.requestFocus();
+            }
+        });
     }
 
     /**

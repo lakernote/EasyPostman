@@ -6,6 +6,7 @@ import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -14,11 +15,17 @@ import java.util.List;
  * 新增：支持普通文本的自动补全功能
  */
 public class AutoCompleteEasyTextField extends EasyTextField {
+    private static final int MAX_VISIBLE_ROWS = 8;
+    private static final int ROW_HEIGHT = 28;
+    private static final int MIN_POPUP_WIDTH = 200;
+    private static final int POPUP_BORDER_WIDTH = 4;
+
     private JWindow popup;
     private JList<String> suggestionList;
     private DefaultListModel<String> listModel;
     private List<String> suggestions;
     private boolean autoCompleteEnabled = false;
+    private boolean isUpdatingSuggestions = false;
 
     public AutoCompleteEasyTextField(int columns) {
         super(columns);
@@ -39,8 +46,16 @@ public class AutoCompleteEasyTextField extends EasyTextField {
      * 设置自动补全建议列表
      */
     public void setSuggestions(List<String> suggestions) {
-        this.suggestions = suggestions != null ? new ArrayList<>(suggestions) : new ArrayList<>();
-        this.autoCompleteEnabled = !this.suggestions.isEmpty();
+        if (suggestions == null || suggestions.isEmpty()) {
+            this.suggestions = Collections.emptyList();
+            this.autoCompleteEnabled = false;
+            hidePopup();
+        } else {
+            // 只有当列表真正改变时才更新
+            if (!suggestions.equals(this.suggestions)) {
+                this.suggestions = new ArrayList<>(suggestions);
+            }
+        }
     }
 
     /**
@@ -54,16 +69,18 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     }
 
     private void initAutoComplete() {
-        this.suggestions = new ArrayList<>();
+        this.suggestions = Collections.emptyList();
         this.listModel = new DefaultListModel<>();
         this.suggestionList = new JList<>(listModel);
         this.popup = new JWindow();
 
         popup.setFocusableWindowState(false);
+        popup.setType(Window.Type.POPUP);
 
         suggestionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        suggestionList.setVisibleRowCount(8);
+        suggestionList.setVisibleRowCount(MAX_VISIBLE_ROWS);
         suggestionList.setFont(getFont());
+        suggestionList.setFocusable(false);
 
         suggestionList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
@@ -83,27 +100,27 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     }
 
     private void setupAutoCompleteListeners() {
-        // 监听文本变化
+        // 监听文本变化 - 优化：减少不必要的更新
         getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                if (autoCompleteEnabled) {
+            private void scheduleUpdate() {
+                if (autoCompleteEnabled && !isUpdatingSuggestions) {
                     SwingUtilities.invokeLater(() -> updateSuggestions());
                 }
+            }
+
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                scheduleUpdate();
             }
 
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                if (autoCompleteEnabled) {
-                    SwingUtilities.invokeLater(() -> updateSuggestions());
-                }
+                scheduleUpdate();
             }
 
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                if (autoCompleteEnabled) {
-                    SwingUtilities.invokeLater(() -> updateSuggestions());
-                }
+                scheduleUpdate();
             }
         });
 
@@ -114,39 +131,7 @@ public class AutoCompleteEasyTextField extends EasyTextField {
                 if (!popup.isVisible() || !autoCompleteEnabled) {
                     return;
                 }
-
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_DOWN:
-                        e.consume();
-                        int selectedIndex = suggestionList.getSelectedIndex();
-                        if (selectedIndex < listModel.getSize() - 1) {
-                            suggestionList.setSelectedIndex(selectedIndex + 1);
-                            suggestionList.ensureIndexIsVisible(selectedIndex + 1);
-                        }
-                        break;
-                    case KeyEvent.VK_UP:
-                        e.consume();
-                        int upSelectedIndex = suggestionList.getSelectedIndex();
-                        if (upSelectedIndex > 0) {
-                            suggestionList.setSelectedIndex(upSelectedIndex - 1);
-                            suggestionList.ensureIndexIsVisible(upSelectedIndex - 1);
-                        }
-                        break;
-                    case KeyEvent.VK_ENTER:
-                    case KeyEvent.VK_TAB:
-                        if (suggestionList.getSelectedIndex() >= 0) {
-                            e.consume();
-                            acceptSelectedSuggestion();
-                        }
-                        break;
-                    case KeyEvent.VK_ESCAPE:
-                        e.consume();
-                        hidePopup();
-                        break;
-                    default:
-                        // Do nothing for other keys
-                        break;
-                }
+                handleKeyboardNavigation(e);
             }
         });
 
@@ -173,62 +158,122 @@ public class AutoCompleteEasyTextField extends EasyTextField {
         });
     }
 
+    private void handleKeyboardNavigation(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_DOWN:
+                e.consume();
+                moveSelection(1);
+                break;
+            case KeyEvent.VK_UP:
+                e.consume();
+                moveSelection(-1);
+                break;
+            case KeyEvent.VK_ENTER, KeyEvent.VK_TAB:
+                if (suggestionList.getSelectedIndex() >= 0) {
+                    e.consume();
+                    acceptSelectedSuggestion();
+                }
+                break;
+            case KeyEvent.VK_ESCAPE:
+                e.consume();
+                hidePopup();
+                break;
+            default:
+                // Do nothing for other keys
+                break;
+        }
+    }
+
+    private void moveSelection(int direction) {
+        int currentIndex = suggestionList.getSelectedIndex();
+        int newIndex = currentIndex + direction;
+
+        if (newIndex >= 0 && newIndex < listModel.getSize()) {
+            suggestionList.setSelectedIndex(newIndex);
+            suggestionList.ensureIndexIsVisible(newIndex);
+        }
+    }
+
     private void updateSuggestions() {
-        if (!autoCompleteEnabled || suggestions.isEmpty()) {
+        if (!autoCompleteEnabled || suggestions.isEmpty() || isUpdatingSuggestions) {
             hidePopup();
             return;
         }
 
-        String text = getText().trim();
-        listModel.clear();
+        isUpdatingSuggestions = true;
+        try {
+            String text = getText();
+            text = (text == null) ? "" : text.trim();
 
-        if (text.isEmpty()) {
-            // 空文本时显示所有建议
-            for (String suggestion : suggestions) {
-                listModel.addElement(suggestion);
-            }
-        } else {
-            // 检查是否完全匹配某个建议（大小写不敏感）
-            boolean exactMatch = false;
-            for (String suggestion : suggestions) {
-                if (suggestion.equalsIgnoreCase(text)) {
-                    exactMatch = true;
-                    break;
-                }
+            listModel.clear();
+
+            if (text.isEmpty()) {
+                addAllSuggestions();
+            } else {
+                filterAndAddSuggestions(text);
             }
 
-            // 如果完全匹配，不显示建议列表
-            if (exactMatch) {
-                hidePopup();
-                return;
-            }
+            updatePopupVisibility();
+        } finally {
+            isUpdatingSuggestions = false;
+        }
+    }
 
-            // 智能过滤匹配的建议
-            // 1. 先添加开头匹配的（优先级高）
-            // 2. 再添加包含匹配的（优先级低）
-            String lowerText = text.toLowerCase();
-            List<String> startsWithMatches = new ArrayList<>();
-            List<String> containsMatches = new ArrayList<>();
+    private void addAllSuggestions() {
+        for (String suggestion : suggestions) {
+            listModel.addElement(suggestion);
+        }
+    }
 
-            for (String suggestion : suggestions) {
-                String lowerSuggestion = suggestion.toLowerCase();
-                if (lowerSuggestion.startsWith(lowerText)) {
-                    startsWithMatches.add(suggestion);
-                } else if (lowerSuggestion.contains(lowerText)) {
-                    containsMatches.add(suggestion);
-                }
-            }
-
-            // 先添加开头匹配的
-            for (String match : startsWithMatches) {
-                listModel.addElement(match);
-            }
-            // 再添加包含匹配的
-            for (String match : containsMatches) {
-                listModel.addElement(match);
-            }
+    private void filterAndAddSuggestions(String text) {
+        // 检查是否完全匹配
+        if (hasExactMatch(text)) {
+            return; // 完全匹配时不显示建议列表
         }
 
+        // 三级匹配策略：精确前缀 > 忽略大小写前缀 > 包含匹配
+        if (tryAddPrefixMatches(text, true)) {
+            return;
+        }
+        if (tryAddPrefixMatches(text, false)) {
+            return;
+        }
+        addContainsMatches(text);
+    }
+
+    private boolean hasExactMatch(String text) {
+        for (String suggestion : suggestions) {
+            if (suggestion.equalsIgnoreCase(text)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryAddPrefixMatches(String text, boolean caseSensitive) {
+        boolean found = false;
+        String compareText = caseSensitive ? text : text.toLowerCase();
+
+        for (String suggestion : suggestions) {
+            String compareSuggestion = caseSensitive ? suggestion : suggestion.toLowerCase();
+            if (compareSuggestion.startsWith(compareText)) {
+                listModel.addElement(suggestion);
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    private void addContainsMatches(String text) {
+        String lowerText = text.toLowerCase();
+        for (String suggestion : suggestions) {
+            if (suggestion.toLowerCase().contains(lowerText)) {
+                listModel.addElement(suggestion);
+            }
+        }
+    }
+
+    private void updatePopupVisibility() {
         if (listModel.isEmpty()) {
             hidePopup();
         } else {
@@ -238,13 +283,36 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     }
 
     private void showPopup() {
+        if (!isShowing()) {
+            hidePopup();
+            return;
+        }
+
         try {
             Point location = getLocationOnScreen();
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
+            int popupWidth = Math.max(getWidth(), MIN_POPUP_WIDTH);
+            int popupHeight = Math.min(listModel.getSize() * ROW_HEIGHT + POPUP_BORDER_WIDTH,
+                                      MAX_VISIBLE_ROWS * ROW_HEIGHT + POPUP_BORDER_WIDTH);
+
             int x = location.x;
             int y = location.y + getHeight();
 
-            int popupWidth = Math.max(getWidth(), 200);
-            int popupHeight = Math.min(listModel.getSize() * 28 + 4, 224);
+            // 检查右边界
+            if (x + popupWidth > screenSize.width) {
+                x = screenSize.width - popupWidth - 10;
+            }
+
+            // 检查下边界，如果空间不够则显示在上方
+            if (y + popupHeight > screenSize.height) {
+                y = location.y - popupHeight;
+                // 如果上方也不够，则尽可能显示在下方
+                if (y < 0) {
+                    y = location.y + getHeight();
+                    popupHeight = Math.min(popupHeight, screenSize.height - y - 10);
+                }
+            }
 
             popup.setLocation(x, y);
             popup.setSize(popupWidth, popupHeight);
@@ -254,6 +322,7 @@ public class AutoCompleteEasyTextField extends EasyTextField {
             }
         } catch (IllegalComponentStateException e) {
             // 组件不可见时忽略
+            hidePopup();
         }
     }
 
@@ -266,7 +335,13 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     private void acceptSelectedSuggestion() {
         String selected = suggestionList.getSelectedValue();
         if (selected != null) {
-            setText(selected);
+            isUpdatingSuggestions = true;
+            try {
+                setText(selected);
+                setCaretPosition(selected.length());
+            } finally {
+                isUpdatingSuggestions = false;
+            }
             hidePopup();
         }
     }

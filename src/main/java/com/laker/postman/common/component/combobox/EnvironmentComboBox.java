@@ -33,9 +33,12 @@ public class EnvironmentComboBox extends JComboBox<EnvironmentItem> {
             if (isUpdating) return;
             EnvironmentItem item = (EnvironmentItem) getSelectedItem();
             if (item != null && item.getEnvironment() != null) {
-                EnvironmentService.setActiveEnvironment(item.getEnvironment().getId());
-                if (onEnvironmentChange != null) {
-                    onEnvironmentChange.accept(item.getEnvironment());
+                String envId = item.getEnvironment().getId();
+                if (envId != null) {
+                    EnvironmentService.setActiveEnvironment(envId);
+                    if (onEnvironmentChange != null) {
+                        onEnvironmentChange.accept(item.getEnvironment());
+                    }
                 }
             }
         });
@@ -91,11 +94,15 @@ public class EnvironmentComboBox extends JComboBox<EnvironmentItem> {
             }
         }
         if (activeEnv != null) {
-            for (int i = 0; i < getItemCount(); i++) {
-                EnvironmentItem item = getItemAt(i);
-                if (item.getEnvironment().getId().equals(activeEnv.getId())) {
-                    setSelectedIndex(i);
-                    break;
+            String activeId = activeEnv.getId();
+            if (activeId != null) {
+                for (int i = 0; i < getItemCount(); i++) {
+                    EnvironmentItem item = getItemAt(i);
+                    Environment itemEnv = item.getEnvironment();
+                    if (itemEnv != null && itemEnv.getId() != null && itemEnv.getId().equals(activeId)) {
+                        setSelectedIndex(i);
+                        break;
+                    }
                 }
             }
         } else if (getItemCount() > 0) {
@@ -108,11 +115,13 @@ public class EnvironmentComboBox extends JComboBox<EnvironmentItem> {
      * 选中指定环境
      */
     public void setSelectedEnvironment(Environment env) {
-        if (env == null) return;
+        if (env == null || env.getId() == null) return;
         isUpdating = true;
+        String envId = env.getId();
         for (int i = 0; i < getItemCount(); i++) {
             EnvironmentItem item = getItemAt(i);
-            if (item.getEnvironment().getId().equals(env.getId())) {
+            Environment itemEnv = item.getEnvironment();
+            if (itemEnv != null && itemEnv.getId() != null && itemEnv.getId().equals(envId)) {
                 setSelectedIndex(i);
                 break;
             }

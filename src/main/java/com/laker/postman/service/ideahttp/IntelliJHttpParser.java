@@ -1,5 +1,6 @@
 package com.laker.postman.service.ideahttp;
 
+import cn.hutool.core.util.IdUtil;
 import com.laker.postman.model.*;
 import com.laker.postman.service.common.AuthParserUtil;
 import com.laker.postman.service.common.CollectionParseResult;
@@ -96,6 +97,7 @@ public class IntelliJHttpParser {
             // 如果有环境变量，创建环境对象并添加
             if (!context.variables.isEmpty()) {
                 Environment environment = new Environment(environmentName);
+                environment.setId("env-" + IdUtil.simpleUUID()); // 设置唯一 ID
                 for (Map.Entry<String, String> entry : context.variables.entrySet()) {
                     environment.addVariable(entry.getKey(), entry.getValue());
                 }

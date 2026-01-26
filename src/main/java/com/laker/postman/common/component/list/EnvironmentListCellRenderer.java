@@ -21,8 +21,16 @@ public class EnvironmentListCellRenderer extends DefaultListCellRenderer {
             label.setToolTipText(envName); // 超出显示tip
             Environment active = EnvironmentService.getActiveEnvironment();
 
-            // 判断是否是激活环境
-            boolean isActive = active != null && active.getId().equals(item.getEnvironment().getId());
+            // 判断是否是激活环境（需要处理 id 为 null 的情况）
+            boolean isActive = false;
+            if (active != null && item.getEnvironment() != null) {
+                String activeId = active.getId();
+                String itemId = item.getEnvironment().getId();
+                // 两个 id 都不为 null 时才比较
+                if (activeId != null && itemId != null) {
+                    isActive = activeId.equals(itemId);
+                }
+            }
 
             // 设置图标和样式
             if (isActive) {

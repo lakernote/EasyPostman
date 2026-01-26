@@ -51,6 +51,9 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 
 @Slf4j
 public class LeftTopPanel extends SingletonBasePanel {
+    // 记录上次文件选择器打开的目录（应用运行期间保持）
+    private static File lastSelectedDirectory = null;
+
     private SearchTextField searchField;
     private ImportButton importBtn;
 
@@ -216,11 +219,12 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void importRequestCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToOpen);
             try {
                 // 导入时不清空老数据，而是全部加入到一个新分组下
                 String groupName = "EasyPostman";
@@ -254,11 +258,12 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void importPostmanCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 CollectionParseResult parseResult =
@@ -285,11 +290,12 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void importHarCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HAR_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 DefaultMutableTreeNode collectionNode = HarParser.parseHar(json);
@@ -313,11 +319,12 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void importSwaggerCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 CollectionParseResult parseResult = SwaggerParser.parseSwagger(json);
@@ -382,7 +389,7 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void importHttpFile() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE));
         // 设置文件过滤器，只显示 .http 文件
         FileFilter httpFilter = new FileFilter() {
@@ -400,6 +407,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToOpen);
             try {
                 String content = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 String filename = fileToOpen.getName();
@@ -433,11 +441,12 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void importApiPostCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 CollectionParseResult parseResult =
@@ -549,12 +558,13 @@ public class LeftTopPanel extends SingletonBasePanel {
     private void exportRequestCollection() {
         RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
         int userSelection = fileChooser.showSaveDialog(mainFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
+            updateLastSelectedDirectory(fileToSave);
             try {
                 leftPanel.getPersistence().exportRequestCollection(fileToSave);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
@@ -657,6 +667,34 @@ public class LeftTopPanel extends SingletonBasePanel {
             tree.expandPath(parent);
         } else {
             tree.collapsePath(parent);
+        }
+    }
+
+    /**
+     * 创建带有上次路径记忆的文件选择器
+     *
+     * @return JFileChooser 实例
+     */
+    private static JFileChooser createFileChooserWithLastPath() {
+        JFileChooser fileChooser = new JFileChooser();
+        if (lastSelectedDirectory != null && lastSelectedDirectory.exists()) {
+            fileChooser.setCurrentDirectory(lastSelectedDirectory);
+        }
+        return fileChooser;
+    }
+
+    /**
+     * 更新上次选择的目录
+     *
+     * @param selectedFile 用户选择的文件
+     */
+    private static void updateLastSelectedDirectory(File selectedFile) {
+        if (selectedFile != null) {
+            if (selectedFile.isDirectory()) {
+                lastSelectedDirectory = selectedFile;
+            } else {
+                lastSelectedDirectory = selectedFile.getParentFile();
+            }
         }
     }
 }

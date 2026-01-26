@@ -1,6 +1,7 @@
 package com.laker.postman.service;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -193,6 +194,10 @@ public class EnvironmentService {
      * 添加或更新环境
      */
     public static void saveEnvironment(Environment environment) {
+        // 如果环境没有 ID，自动生成一个
+        if (environment.getId() == null) {
+            environment.setId("env-" + IdUtil.simpleUUID());
+        }
         environments.put(environment.getId(), environment);
         saveEnvironments();
     }

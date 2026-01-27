@@ -8,10 +8,7 @@ import com.laker.postman.model.IterationResult;
 import com.laker.postman.model.RequestResult;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.TimeDisplayUtil;
+import com.laker.postman.util.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -462,17 +459,15 @@ public class ExecutionResultsPanel extends JPanel {
         reqPane.setEditable(false);
         reqPane.setText(HttpHtmlRenderer.renderRequest(request.getReq()));
         reqPane.setCaretPosition(0);
-        detailTabs.addTab("Request", new FlatSVGIcon(ICON_HTTP, 16, 16), new JScrollPane(reqPane));
+        detailTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST), new JScrollPane(reqPane));
 
         // 响应信息
-        if (request.getResponse() != null) {
-            JEditorPane respPane = new JEditorPane();
-            respPane.setContentType(TEXT_HTML);
-            respPane.setEditable(false);
-            respPane.setText(HttpHtmlRenderer.renderResponse(request.getResponse()));
-            respPane.setCaretPosition(0);
-            detailTabs.addTab("Response", new FlatSVGIcon("icons/check.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(respPane));
-        }
+        JEditorPane respPane = new JEditorPane();
+        respPane.setContentType(TEXT_HTML);
+        respPane.setEditable(false);
+        respPane.setText(HttpHtmlRenderer.renderResponseWithError(request));
+        respPane.setCaretPosition(0);
+        detailTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE), new JScrollPane(respPane));
 
         // Timing & Event Info
         if (request.getResponse() != null && request.getResponse().httpEventInfo != null) {
@@ -481,14 +476,14 @@ public class ExecutionResultsPanel extends JPanel {
             timingPane.setEditable(false);
             timingPane.setText(HttpHtmlRenderer.renderTimingInfo(request.getResponse()));
             timingPane.setCaretPosition(0);
-            detailTabs.addTab("Timing", new FlatSVGIcon("icons/time.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(timingPane));
+            detailTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_TIMING), new JScrollPane(timingPane));
 
             JEditorPane eventInfoPane = new JEditorPane();
             eventInfoPane.setContentType(TEXT_HTML);
             eventInfoPane.setEditable(false);
             eventInfoPane.setText(HttpHtmlRenderer.renderEventInfo(request.getResponse()));
             eventInfoPane.setCaretPosition(0);
-            detailTabs.addTab("Event Info", new FlatSVGIcon("icons/detail.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(eventInfoPane));
+            detailTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_EVENTS), new JScrollPane(eventInfoPane));
         }
 
         // Tests
@@ -498,7 +493,7 @@ public class ExecutionResultsPanel extends JPanel {
             testsPane.setEditable(false);
             testsPane.setText(HttpHtmlRenderer.renderTestResults(request.getTestResults()));
             testsPane.setCaretPosition(0);
-            detailTabs.addTab("Tests", new FlatSVGIcon("icons/code.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))), new JScrollPane(testsPane));
+            detailTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_TESTS), new JScrollPane(testsPane));
         }
 
         // 恢复上次选中的 tab
@@ -551,9 +546,8 @@ public class ExecutionResultsPanel extends JPanel {
         @Override
         public String toString() {
 
-            return String.format("%s | %s | %s",
+            return String.format("%s | %s",
                     request.getRequestName(),
-                    request.getMethod(),
                     request.getStatus());
         }
     }
@@ -574,7 +568,7 @@ public class ExecutionResultsPanel extends JPanel {
                 renderRequestNode(requestData, sel);
             } else {
                 // 根节点
-                setIcon(new FlatSVGIcon("icons/history.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+                setIcon(IconUtil.createThemed("icons/history.svg", 16, 16));
             }
 
             return this;
@@ -601,7 +595,7 @@ public class ExecutionResultsPanel extends JPanel {
                 }
             } else {
                 // 无测试：默认图标
-                setIcon(new FlatSVGIcon("icons/functional.svg", 16, 16).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+                setIcon(IconUtil.createThemed("icons/functional.svg", 16, 16));
                 if (!selected) {
                     setForeground(ModernColors.getTextSecondary());
                 }
@@ -615,7 +609,7 @@ public class ExecutionResultsPanel extends JPanel {
 
             if (skippedText.equals(status)) {
                 // 跳过状态：灰色图标和文字
-                setIcon(new FlatSVGIcon("icons/info.svg", 16, 16));
+                setIcon(IconUtil.createThemed("icons/info.svg", 16, 16));
                 setForegroundIfNotSelected(ModernColors.getTextHint(), selected);
             } else if (assertion == null) {
                 // 未执行：灰色图标和文字
@@ -623,7 +617,7 @@ public class ExecutionResultsPanel extends JPanel {
                 setForegroundIfNotSelected(ModernColors.getTextDisabled(), selected);
             } else if (AssertionResult.NO_TESTS.equals(assertion)) {
                 // 无测试：蓝色图标和文字
-                setIcon(new FlatSVGIcon("icons/nocheck.svg", 16, 16));
+                setIcon(IconUtil.createThemed("icons/nocheck.svg", 16, 16));
                 setForegroundIfNotSelected(ModernColors.getTextSecondary(), selected);
             } else if (AssertionResult.PASS.equals(assertion)) {
                 // 通过：绿色图标和文字

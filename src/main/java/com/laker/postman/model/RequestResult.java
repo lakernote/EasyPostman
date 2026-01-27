@@ -21,10 +21,12 @@ public class RequestResult {
     private final AssertionResult assertion;
     private final List<TestResult> testResults;
     private final long timestamp;
+    private final String errorMessage;
 
     public RequestResult(String requestName, String method, String url,
                          PreparedRequest req, HttpResponse response, long cost, String status,
-                         AssertionResult assertion, List<TestResult> testResults) {
+                         AssertionResult assertion, List<TestResult> testResults, String errorMessage) {
+        this.errorMessage = errorMessage;
         this.requestName = requestName;
         this.method = method;
         this.url = url;

@@ -349,7 +349,8 @@ public class FunctionalPanel extends SingletonBasePanel {
                 result.cost,
                 result.status,
                 result.assertion,
-                row.testResults
+                row.testResults,
+                result.errorMessage
         );
         iterationResult.addRequestResult(requestResult);
 
@@ -389,6 +390,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         HttpResponse resp;
         long cost;
         String status;
+        String errorMessage;
         AssertionResult assertion;
     }
 
@@ -425,18 +427,12 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
 
         HttpResponse resp = null;
-        String status; // HTTP状态码或执行状态（需要国际化）
+        String status = "-"; // HTTP状态码
         AssertionResult assertion = AssertionResult.NO_TESTS; // 断言结果
 
+
         if (!preResult.isSuccess()) {
-            // 前置脚本失败
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED);
-        } else if (HttpUtil.isSSERequest(req)) {
-            // SSE请求跳过
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-        } else if (item.getProtocol().isWebSocketProtocol()) {
-            // WebSocket请求跳过
-            status = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+            result.errorMessage = preResult.getErrorMessage();
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
@@ -456,8 +452,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             } catch (Exception ex) {
                 log.error("请求执行失败", ex);
                 ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                status = ex.getMessage(); // 错误消息作为状态
                 assertion = AssertionResult.FAIL; // 错误消息也作为断言结果
+                result.errorMessage = ex.getMessage();
             }
         }
         long cost = System.currentTimeMillis() - start;

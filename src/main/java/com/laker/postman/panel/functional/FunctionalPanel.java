@@ -741,7 +741,15 @@ public class FunctionalPanel extends SingletonBasePanel {
         RequestCollectionsService.showMultiSelectRequestDialog(
                 selected -> {
                     if (selected == null || selected.isEmpty()) return;
-                    loadRequests(selected);
+                    // 过滤只保留HTTP类型的请求
+                    List<HttpRequestItem> httpOnlyList = selected.stream()
+                            .filter(reqItem -> reqItem.getProtocol() != null && reqItem.getProtocol().isHttpProtocol())
+                            .toList();
+                    if (httpOnlyList.isEmpty()) {
+                        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SUPPORTED));
+                        return;
+                    }
+                    loadRequests(httpOnlyList);
                 }
         );
     }

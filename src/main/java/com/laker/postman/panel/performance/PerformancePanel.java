@@ -1925,10 +1925,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         .toList();
 
                 if (httpOnlyList.isEmpty()) {
-                    JOptionPane.showMessageDialog(PerformancePanel.this,
-                            I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_ONLY_HTTP_SUPPORTED),
-                            I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
-                            JOptionPane.WARNING_MESSAGE);
+                    NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SUPPORTED));
                     return;
                 }
 

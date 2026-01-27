@@ -113,7 +113,7 @@ public class ExecutionResultsPanel extends JPanel {
 
         // 左侧标题
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_EXECUTION_HISTORY));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         // 右侧工具按钮
@@ -603,18 +603,17 @@ public class ExecutionResultsPanel extends JPanel {
         }
 
         private void renderRequestNode(RequestNodeData requestData, boolean selected) {
-            String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
             AssertionResult assertion = requestData.request.getAssertion();
             String status = requestData.request.getStatus();
 
-            if (skippedText.equals(status)) {
-                // 跳过状态：灰色图标和文字
-                setIcon(IconUtil.createThemed("icons/info.svg", 16, 16));
-                setForegroundIfNotSelected(ModernColors.getTextHint(), selected);
-            } else if (assertion == null) {
+            if (assertion == null) {
                 // 未执行：灰色图标和文字
                 setIcon(new FlatSVGIcon(ExecutionResultsPanel.ICON_HTTP, 16, 16));
                 setForegroundIfNotSelected(ModernColors.getTextDisabled(), selected);
+            } else if (AssertionResult.FAIL.equals(assertion) || FunctionalPanel.ERROR.equals(status)) {
+                // 失败：红色图标和文字
+                setIcon(new FlatSVGIcon("icons/fail.svg", 16, 16));
+                setForegroundIfNotSelected(ModernColors.ERROR_DARK, selected);
             } else if (AssertionResult.NO_TESTS.equals(assertion)) {
                 // 无测试：蓝色图标和文字
                 setIcon(IconUtil.createThemed("icons/nocheck.svg", 16, 16));
@@ -623,10 +622,7 @@ public class ExecutionResultsPanel extends JPanel {
                 // 通过：绿色图标和文字
                 setIcon(new FlatSVGIcon("icons/pass.svg", 16, 16));
                 setForegroundIfNotSelected(ModernColors.SUCCESS_DARK, selected);
-            } else if (AssertionResult.FAIL.equals(assertion)) {
-                // 失败：红色图标和文字
-                setIcon(new FlatSVGIcon("icons/fail.svg", 16, 16));
-                setForegroundIfNotSelected(ModernColors.ERROR_DARK, selected);
+
             } else {
                 // 其他状态：默认图标
                 setIcon(new FlatSVGIcon(ExecutionResultsPanel.ICON_HTTP, 16, 16));

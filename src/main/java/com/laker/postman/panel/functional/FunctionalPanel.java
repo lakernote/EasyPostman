@@ -30,12 +30,14 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
 @Slf4j
 public class FunctionalPanel extends SingletonBasePanel {
+    public static final String ERROR = "Error";
     private JTable table;
     private FunctionalRunnerTableModel tableModel;
     private StartButton runBtn;
@@ -275,7 +277,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         if (csvDataPanel.hasData() && iteration < csvDataPanel.getRowCount()) {
             return csvDataPanel.getRowData(iteration);
         }
-        return java.util.Collections.emptyMap();
+        return Collections.emptyMap();
     }
 
     private int processIterationRequests(int rowCount, int selectedCount, int iterations,
@@ -427,12 +429,13 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
 
         HttpResponse resp = null;
-        String status = "-"; // HTTP状态码
+        String status; // HTTP状态码
         AssertionResult assertion = AssertionResult.NO_TESTS; // 断言结果
 
 
         if (!preResult.isSuccess()) {
             result.errorMessage = preResult.getErrorMessage();
+            status = ERROR;
         } else {
             try {
                 req.logEvent = true; // 确保日志事件开启
@@ -454,6 +457,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                 ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
                 assertion = AssertionResult.FAIL; // 错误消息也作为断言结果
                 result.errorMessage = ex.getMessage();
+                status = ERROR;
             }
         }
         long cost = System.currentTimeMillis() - start;
@@ -598,10 +602,9 @@ public class FunctionalPanel extends SingletonBasePanel {
     private void applyStatusColors(Component c, String status) {
         Color foreground = ModernColors.getTextPrimary();
 
-        // 检查是否是"跳过"状态
-        String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-        if (skippedText.equals(status)) {
-            foreground = ModernColors.getTextHint();
+        if (ERROR.equalsIgnoreCase(status)) {
+            // 错误状态：使用错误色
+            foreground = ModernColors.ERROR_DARK;
         } else {
             // 尝试解析状态码
             try {
@@ -620,8 +623,8 @@ public class FunctionalPanel extends SingletonBasePanel {
                 // 非数字状态（如错误消息）
                 foreground = ModernColors.ERROR_DARK;
             }
-        }
 
+        }
         // 只设置文字颜色
         c.setForeground(foreground);
     }
@@ -631,27 +634,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-                // 获取状态列的值来判断是否跳过
-                String status = "";
-                try {
-                    Object statusValue = table.getValueAt(row, 4); // 状态列是第4列
-                    if (statusValue != null) {
-                        status = statusValue.toString();
-                    }
-                } catch (Exception e) {
-                    // 忽略异常
-                }
-
-                String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-
                 if (value != null && !"-".equals(value)) {
-
-                    // 检查状态列是否为"跳过"（status是跳过，assertion会是描述信息）
-                    if (skippedText.equals(status)) {
-                        setText("💨"); // 跳过符号
-                        c.setForeground(ModernColors.getTextHint());
-                    } else if (value instanceof AssertionResult assertionResult) {
+                    if (value instanceof AssertionResult assertionResult) {
                         setText(assertionResult.getDisplayValue());
                     }
                 } else {

@@ -104,4 +104,67 @@ public class TemporaryVariablesApi {
     public Map<String, String> toObject() {
         return new java.util.LinkedHashMap<>(variablesMap);
     }
+
+    /**
+     * 替换字符串中的变量占位符
+     * 将字符串中的 {{variableName}} 格式占位符替换为实际的变量值
+     * 同时支持 Postman 动态变量，如 {{$guid}}, {{$timestamp}}, {{$randomInt}} 等
+     *
+     * @param template 包含变量占位符的模板字符串
+     * @return 替换后的字符串
+     */
+    public String replaceIn(String template) {
+        if (template == null) {
+            return null;
+        }
+
+        String result = template;
+
+        // 首先替换 Postman 动态变量
+        result = replaceDynamicVariables(result);
+
+        // 然后替换用户定义的临时变量
+        for (Map.Entry<String, String> entry : variablesMap.entrySet()) {
+            String placeholder = "{{" + entry.getKey() + "}}";
+            if (result.contains(placeholder)) {
+                result = result.replace(placeholder, entry.getValue());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 替换 Postman 动态变量
+     */
+    private String replaceDynamicVariables(String template) {
+        String result = template;
+
+        // {{$guid}} - 生成 UUID
+        if (result.contains("{{$guid}}")) {
+            result = result.replace("{{$guid}}", java.util.UUID.randomUUID().toString());
+        }
+
+        // {{$timestamp}} - 当前时间戳（秒）
+        if (result.contains("{{$timestamp}}")) {
+            result = result.replace("{{$timestamp}}", String.valueOf(System.currentTimeMillis() / 1000));
+        }
+
+        // {{$randomInt}} - 随机整数 (0-1000)
+        if (result.contains("{{$randomInt}}")) {
+            result = result.replace("{{$randomInt}}", String.valueOf(new java.util.Random().nextInt(1001)));
+        }
+
+        // {{$randomUUID}} - 生成 UUID (别名)
+        if (result.contains("{{$randomUUID}}")) {
+            result = result.replace("{{$randomUUID}}", java.util.UUID.randomUUID().toString());
+        }
+
+        // {{$isoTimestamp}} - ISO 8601 格式时间戳
+        if (result.contains("{{$isoTimestamp}}")) {
+            result = result.replace("{{$isoTimestamp}}", java.time.Instant.now().toString());
+        }
+
+        return result;
+    }
 }

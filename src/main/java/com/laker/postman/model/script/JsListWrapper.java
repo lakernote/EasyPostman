@@ -5,7 +5,9 @@ import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpParam;
 import lombok.Getter;
+import org.graalvm.polyglot.Value;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -425,6 +427,92 @@ public class JsListWrapper<T> {
                 break;
         }
         return null;
+    }
+
+    /**
+     * Postman API: pm.request.headers.count()
+     * 获取列表中元素的数量
+     */
+    public int count() {
+        return list.size();
+    }
+
+    /**
+     * Postman API: pm.request.headers.clear()
+     * 清空所有元素
+     */
+    public void clear() {
+        list.clear();
+    }
+
+    /**
+     * Postman API: pm.request.headers.each(callback)
+     * 遍历所有元素，对每个元素执行回调函数
+     */
+    public void each(Value callback) {
+        if (callback == null || !callback.canExecute()) {
+            return;
+        }
+
+        for (T item : list) {
+            try {
+                callback.execute(item);
+            } catch (Exception e) {
+                // 继续遍历其他元素
+            }
+        }
+    }
+
+    /**
+     * Postman API: pm.request.headers.toObject()
+     * 将列表转换为 Map 对象（键值对形式）
+     */
+    public Map<String, String> toObject() {
+        Map<String, String> result = new LinkedHashMap<>();
+
+        switch (type) {
+            case HEADER:
+                @SuppressWarnings("unchecked")
+                List<HttpHeader> headerList = (List<HttpHeader>) list;
+                for (HttpHeader header : headerList) {
+                    if (header.isEnabled()) {
+                        result.put(header.getKey(), header.getValue());
+                    }
+                }
+                break;
+
+            case FORM_DATA:
+                @SuppressWarnings("unchecked")
+                List<HttpFormData> formDataList = (List<HttpFormData>) list;
+                for (HttpFormData formData : formDataList) {
+                    if (formData.isEnabled()) {
+                        result.put(formData.getKey(), formData.getValue());
+                    }
+                }
+                break;
+
+            case URLENCODED:
+                @SuppressWarnings("unchecked")
+                List<HttpFormUrlencoded> urlencodedList = (List<HttpFormUrlencoded>) list;
+                for (HttpFormUrlencoded urlencoded : urlencodedList) {
+                    if (urlencoded.isEnabled()) {
+                        result.put(urlencoded.getKey(), urlencoded.getValue());
+                    }
+                }
+                break;
+
+            case PARAM:
+                @SuppressWarnings("unchecked")
+                List<HttpParam> paramList = (List<HttpParam>) list;
+                for (HttpParam param : paramList) {
+                    if (param.isEnabled()) {
+                        result.put(param.getKey(), param.getValue());
+                    }
+                }
+                break;
+        }
+
+        return result;
     }
 
 }

@@ -25,6 +25,11 @@ public class JsScriptExecutor {
     private static final JsContextPool CONTEXT_POOL;
     private static final int CONTEXT_ACQUIRE_TIMEOUT_MS = 5000; // 获取 Context 超时时间
 
+    /**
+     * ThreadLocal 存储当前正在执行的原始脚本，用于错误报告
+     */
+    private static final ThreadLocal<String> CURRENT_SCRIPT = new ThreadLocal<>();
+
     static {
         int poolSize = Math.max(16, Runtime.getRuntime().availableProcessors() * 4);
         CONTEXT_POOL = new JsContextPool(poolSize);
@@ -82,6 +87,9 @@ public class JsScriptExecutor {
         JsContextPool.PooledContext pooledContext = null;
 
         try {
+            // 保存原始脚本到 ThreadLocal，用于错误报告
+            CURRENT_SCRIPT.set(script);
+
             // 从池中获取 Context
             pooledContext = CONTEXT_POOL.borrowContext(CONTEXT_ACQUIRE_TIMEOUT_MS);
             Context context = pooledContext.getContext();
@@ -115,6 +123,9 @@ public class JsScriptExecutor {
             log.error(errorMsg, e);
             throw new ScriptExecutionException(errorMsg, e);
         } finally {
+            // 清理 ThreadLocal
+            CURRENT_SCRIPT.remove();
+
             // 归还 Context 到池中
             if (pooledContext != null) {
                 CONTEXT_POOL.returnContext(pooledContext);
@@ -123,10 +134,23 @@ public class JsScriptExecutor {
     }
 
     /**
+     * 用户脚本在包装后的起始行号偏移量
+     * IIFE 包装器会添加一行: (function() {
+     * 因此用户脚本从第 2 行开始
+     */
+    private static final int USER_SCRIPT_LINE_OFFSET = 1;
+
+    /**
      * 使用 IIFE 包装脚本，避免 let/const 变量污染全局作用域
      * <p>
      * 原理：将用户脚本包装在一个立即执行的函数中，
      * 使所有 let/const/var 声明的变量都成为局部变量。
+     * </p>
+     * <p>
+     * 包装格式：
+     * 第1行: (function() {
+     * 第2行开始: 用户脚本
+     * 最后: })();
      * </p>
      *
      * @param script 原始脚本
@@ -169,6 +193,9 @@ public class JsScriptExecutor {
 
     /**
      * 格式化Polyglot异常信息
+     * <p>
+     * 注意：由于脚本可能被 Group/Request 合并，以及 IIFE 包装，
+     * 行号可能不准确。因此主要依赖显示错误代码内容来帮助定位问题。
      */
     private static String formatPolyglotError(PolyglotException e) {
         if (e.isHostException()) {
@@ -177,12 +204,46 @@ public class JsScriptExecutor {
         if (e.isGuestException()) {
             StringBuilder sb = new StringBuilder();
             sb.append(e.getMessage());
+
             if (e.getSourceLocation() != null) {
-                sb.append(" (Line: ").append(e.getSourceLocation().getStartLine()).append(")");
+                int reportedLine = e.getSourceLocation().getStartLine();
+
+                // 尝试获取错误代码行（基于包装后的行号）
+                int adjustedLine = reportedLine - USER_SCRIPT_LINE_OFFSET;
+                adjustedLine = Math.max(1, adjustedLine);
+                String codeAtLine = getCodeLineFromScript(adjustedLine);
+
+                // 显示错误代码（这是最重要的，用户可以直接搜索定位）
+                if (codeAtLine != null && !codeAtLine.trim().isEmpty()) {
+                    sb.append("\n>>> ").append(codeAtLine.trim());
+                }
             }
             return sb.toString();
         }
         return e.getMessage();
+    }
+
+    /**
+     * 从原始脚本中获取指定行号的代码
+     *
+     * @param lineNumber 行号（1-based）
+     * @return 代码行内容，如果无法获取则返回 null
+     */
+    private static String getCodeLineFromScript(int lineNumber) {
+        try {
+            String script = CURRENT_SCRIPT.get();
+            if (script == null) {
+                return null;
+            }
+
+            String[] lines = script.split("\n");
+            if (lineNumber > 0 && lineNumber <= lines.length) {
+                return lines[lineNumber - 1];
+            }
+        } catch (Exception ex) {
+            log.trace("Failed to get code line: {}", ex.getMessage());
+        }
+        return null;
     }
 
     /**

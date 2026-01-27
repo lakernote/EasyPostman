@@ -1,16 +1,12 @@
 package com.laker.postman.model.script;
 
-import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.*;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.http.HttpService;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Postman 脚本 API 上下文 (pm 对象)
@@ -451,6 +447,181 @@ public class PostmanApiContext {
         }
 
         return cookie;
+    }
+
+    /**
+     * 发送 HTTP 请求
+     * 对应脚本中的: pm.sendRequest(requestOptions, callback)
+     *
+     * @param requestOptions 请求配置，可以是 URL 字符串或包含请求详情的对象
+     * @param callback       回调函数，接收 (error, response) 两个参数
+     */
+    public void sendRequest(Object requestOptions, Value callback) {
+        if (requestOptions == null) {
+            log.warn("pm.sendRequest: requestOptions is null");
+            return;
+        }
+
+        try {
+            PreparedRequest preparedRequest = buildPreparedRequest(requestOptions);
+
+            if (preparedRequest.url == null || preparedRequest.url.isEmpty()) {
+                throw new IllegalArgumentException("pm.sendRequest: URL is required");
+            }
+            if (preparedRequest.method == null || preparedRequest.method.isEmpty()) {
+                throw new IllegalArgumentException("pm.sendRequest: HTTP method is required");
+            }
+
+            HttpResponse httpResponse = HttpService.sendRequest(preparedRequest, null);
+            ResponseAssertion responseWrapper = new ResponseAssertion(httpResponse);
+
+            if (callback != null && callback.canExecute()) {
+                callback.execute(Value.asValue(null), responseWrapper);
+            }
+
+        } catch (Exception e) {
+            log.error("pm.sendRequest failed: {}", e.getMessage(), e);
+
+            if (callback != null && callback.canExecute()) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("message", e.getMessage());
+                error.put("name", e.getClass().getSimpleName());
+
+                try {
+                    callback.execute(Value.asValue(error), Value.asValue(null));
+                } catch (Exception callbackEx) {
+                    log.error("Error executing callback: {}", callbackEx.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * 从请求配置对象构建 PreparedRequest
+     *
+     * @param requestOptions 请求配置（可以是字符串 URL 或配置对象）
+     * @return PreparedRequest
+     */
+    private PreparedRequest buildPreparedRequest(Object requestOptions) {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.headersList = new ArrayList<>();
+        preparedRequest.paramsList = new ArrayList<>();
+        preparedRequest.method = "GET";
+
+        if (requestOptions instanceof String urlStr) {
+            preparedRequest.url = urlStr;
+        } else if (requestOptions instanceof Map<?, ?> optionsMap) {
+            // 提取 URL
+            Object urlObj = optionsMap.get("url");
+            if (urlObj != null) {
+                String url = String.valueOf(urlObj);
+                if (!url.isEmpty() && !url.equals("null") && !url.equals("undefined")) {
+                    preparedRequest.url = url;
+                }
+            }
+
+            // 提取 method
+            Object methodObj = optionsMap.get("method");
+            if (methodObj != null) {
+                String method = String.valueOf(methodObj);
+                if (!method.isEmpty() && !method.equals("null") && !method.equals("undefined")) {
+                    preparedRequest.method = method.toUpperCase();
+                }
+            }
+
+            // 提取 header
+            Object headerObj = optionsMap.get("header");
+            if (headerObj instanceof Map) {
+                Map<?, ?> headerMap = (Map<?, ?>) headerObj;
+                for (Map.Entry<?, ?> entry : headerMap.entrySet()) {
+                    HttpHeader header = new HttpHeader();
+                    header.setEnabled(true);
+                    header.setKey(String.valueOf(entry.getKey()));
+                    header.setValue(String.valueOf(entry.getValue()));
+                    preparedRequest.headersList.add(header);
+                }
+            } else if (headerObj instanceof List) {
+                List<?> headerList = (List<?>) headerObj;
+                for (Object item : headerList) {
+                    if (item instanceof Map) {
+                        Map<?, ?> headerItem = (Map<?, ?>) item;
+                        Object keyObj = headerItem.get("key");
+                        Object valueObj = headerItem.get("value");
+                        if (keyObj != null && valueObj != null) {
+                            HttpHeader header = new HttpHeader();
+                            header.setEnabled(true);
+                            header.setKey(String.valueOf(keyObj));
+                            header.setValue(String.valueOf(valueObj));
+                            preparedRequest.headersList.add(header);
+                        }
+                    }
+                }
+            }
+
+            // 提取 body
+            Object bodyObj = optionsMap.get("body");
+            if (bodyObj instanceof Map) {
+                Map<?, ?> bodyMap = (Map<?, ?>) bodyObj;
+                Object modeObj = bodyMap.get("mode");
+
+                if (modeObj != null) {
+                    String mode = String.valueOf(modeObj);
+
+                    if ("raw".equals(mode)) {
+                        Object rawObj = bodyMap.get("raw");
+                        if (rawObj != null) {
+                            preparedRequest.bodyType = "raw";
+                            preparedRequest.body = String.valueOf(rawObj);
+                        }
+                    } else if ("formdata".equals(mode)) {
+                        Object formDataObj = bodyMap.get("formdata");
+                        if (formDataObj instanceof List) {
+                            preparedRequest.bodyType = "formdata";
+                            preparedRequest.formDataList = new ArrayList<>();
+                            List<?> formDataList = (List<?>) formDataObj;
+                            for (Object item : formDataList) {
+                                if (item instanceof Map) {
+                                    Map<?, ?> formDataItem = (Map<?, ?>) item;
+                                    Object keyObj = formDataItem.get("key");
+                                    Object valueObj = formDataItem.get("value");
+                                    if (keyObj != null && valueObj != null) {
+                                        HttpFormData formData = new HttpFormData();
+                                        formData.setEnabled(true);
+                                        formData.setKey(String.valueOf(keyObj));
+                                        formData.setValue(String.valueOf(valueObj));
+                                        formData.setType(HttpFormData.TYPE_TEXT);
+                                        preparedRequest.formDataList.add(formData);
+                                    }
+                                }
+                            }
+                        }
+                    } else if ("urlencoded".equals(mode)) {
+                        Object urlencodedObj = bodyMap.get("urlencoded");
+                        if (urlencodedObj instanceof List) {
+                            preparedRequest.bodyType = "x-www-form-urlencoded";
+                            preparedRequest.urlencodedList = new ArrayList<>();
+                            List<?> urlencodedList = (List<?>) urlencodedObj;
+                            for (Object item : urlencodedList) {
+                                if (item instanceof Map) {
+                                    Map<?, ?> urlencodedItem = (Map<?, ?>) item;
+                                    Object keyObj = urlencodedItem.get("key");
+                                    Object valueObj = urlencodedItem.get("value");
+                                    if (keyObj != null && valueObj != null) {
+                                        HttpFormUrlencoded urlencoded = new HttpFormUrlencoded();
+                                        urlencoded.setEnabled(true);
+                                        urlencoded.setKey(String.valueOf(keyObj));
+                                        urlencoded.setValue(String.valueOf(valueObj));
+                                        preparedRequest.urlencodedList.add(urlencoded);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return preparedRequest;
     }
 
 }

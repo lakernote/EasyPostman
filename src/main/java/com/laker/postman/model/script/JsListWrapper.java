@@ -99,6 +99,23 @@ public class JsListWrapper<T> {
     }
 
     /**
+     * JS 脚本调用：pm.request.headers.add('Content-Type: application/json')
+     * 支持 "key: value" 格式的字符串
+     */
+    public void add(String headerString) {
+        if (headerString == null || headerString.trim().isEmpty()) return;
+
+        // 尝试解析 "key: value" 格式
+        int colonIndex = headerString.indexOf(':');
+        if (colonIndex > 0 && colonIndex < headerString.length() - 1) {
+            String key = headerString.substring(0, colonIndex).trim();
+            String value = headerString.substring(colonIndex + 1).trim();
+            add(key, value);
+        }
+        // 如果不包含冒号，忽略此调用（不符合格式）
+    }
+
+    /**
      * JS 脚本调用：pm.request.headers.add('X-Custom', 'Value')
      */
     public void add(String key, String value) {

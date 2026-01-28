@@ -1171,7 +1171,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private String convertMarkdownToHtml(String markdown) {
         if (markdown == null || markdown.isEmpty()) {
-            return "<html><body style='margin:0;padding:0;font-size:10px;'></body></html>";
+            return "<html><body style='margin:0;padding:12px;font-size:10px;'></body></html>";
         }
 
         StringBuilder html = new StringBuilder();
@@ -1181,7 +1181,7 @@ public class MarkdownEditorPanel extends JPanel {
 
         // 在 body 上使用 inline style 设置基本样式（不使用 StyleSheet）
         html.append("<body style='");
-        html.append("margin:0;padding:0;");
+        html.append("margin:0;padding:12px;");
         html.append("font-family:sans-serif;");
         html.append("font-size:10px;");
         html.append("line-height:1.6;");

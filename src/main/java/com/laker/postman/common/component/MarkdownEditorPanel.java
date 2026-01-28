@@ -165,9 +165,18 @@ public class MarkdownEditorPanel extends JPanel {
         // 默认选中分栏模式
         splitViewBtn.setSelected(true);
 
-        splitViewBtn.addActionListener(e -> { viewMode = MODE_SPLIT; updateViewMode(); });
-        editViewBtn.addActionListener(e -> { viewMode = MODE_EDIT_ONLY; updateViewMode(); });
-        previewViewBtn.addActionListener(e -> { viewMode = MODE_PREVIEW_ONLY; updateViewMode(); });
+        splitViewBtn.addActionListener(e -> {
+            viewMode = MODE_SPLIT;
+            updateViewMode();
+        });
+        editViewBtn.addActionListener(e -> {
+            viewMode = MODE_EDIT_ONLY;
+            updateViewMode();
+        });
+        previewViewBtn.addActionListener(e -> {
+            viewMode = MODE_PREVIEW_ONLY;
+            updateViewMode();
+        });
 
         toolbarContainer.add(splitViewBtn);
         toolbarContainer.add(editViewBtn);
@@ -506,6 +515,8 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("strong { font-weight: 600; }");
         styleSheet.addRule("em { font-style: italic; }");
         styleSheet.addRule("del { text-decoration: line-through; }");
+        styleSheet.addRule("s { text-decoration: line-through; }");
+        styleSheet.addRule("strike { text-decoration: line-through; }");
 
         // 代码样式
         styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
@@ -1135,8 +1146,8 @@ public class MarkdownEditorPanel extends JPanel {
         text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
         text = text.replaceAll("(?<!_)_(.+?)_(?!_)", "<em>$1</em>");
 
-        // 删除线 ~~text~~
-        text = text.replaceAll("~~(.+?)~~", "<del>$1</del>");
+        // 删除线 ~~text~~ - 使用 strike 标签，Swing HTMLEditorKit 原生支持
+        text = text.replaceAll("~~(.+?)~~", "<strike>$1</strike>");
 
         // 高亮 ==text== (部分编辑器支持)
         text = text.replaceAll("==(.+?)==", "<mark>$1</mark>");

@@ -110,6 +110,9 @@ public final class MessageKeys {
     public static final String MARKDOWN_HEADING1 = "markdown.heading1";
     public static final String MARKDOWN_HEADING2 = "markdown.heading2";
     public static final String MARKDOWN_HEADING3 = "markdown.heading3";
+    public static final String MARKDOWN_HEADING4 = "markdown.heading4";
+    public static final String MARKDOWN_HEADING5 = "markdown.heading5";
+    public static final String MARKDOWN_HEADING6 = "markdown.heading6";
     public static final String MARKDOWN_BOLD = "markdown.bold";
     public static final String MARKDOWN_ITALIC = "markdown.italic";
     public static final String MARKDOWN_STRIKETHROUGH = "markdown.strikethrough";

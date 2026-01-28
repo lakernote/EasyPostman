@@ -39,7 +39,6 @@ public class MarkdownEditorPanel extends JPanel {
     private JTextArea lineNumberArea;
     private JEditorPane previewPane;
     private JSplitPane splitPane;
-    private JToggleButton previewToggle;
     private JPanel toolbarPanel;
     private final List<DocumentListener> changeListeners = new ArrayList<>();
     private final UndoManager undoManager = new UndoManager();
@@ -110,30 +109,46 @@ public class MarkdownEditorPanel extends JPanel {
     private StyleSheet createDynamicStyleSheet() {
         StyleSheet styleSheet = new StyleSheet();
 
-        // 根据当前主题选择颜色
-        boolean isDark = UIManager.getBoolean("laf.dark");
-        String textColor = isDark ? "#e0e0e0" : "#24292e";
-        String bgColor = isDark ? "#1e1e1e" : "#fff";
+        // 根据当前主题选择颜色（使用 ModernColors）
+        boolean isDark = ModernColors.isDarkTheme();
+
+        // 文本和背景颜色
+        String textColor = toHex(ModernColors.getTextPrimary());
+        String bgColor = toHex(ModernColors.getCardBackgroundColor());
+        String secondaryText = toHex(ModernColors.getTextSecondary());
+        String hintText = toHex(ModernColors.getTextHint());
+
+        // 代码块颜色
         String codeBlockBg = isDark ? "#2d2d2d" : "#f6f8fa";
         String inlineCodeBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(27,31,35,0.05)";
-        String borderColor = isDark ? "#3d3d3d" : "#eaecef";
-        String quoteBorder = isDark ? "#555" : "#dfe2e5";
-        String quoteColor = isDark ? "#a0a0a0" : "#6a737d";
-        String linkColor = isDark ? "#4a9eff" : "#0366d6";
-        String tableBorder = isDark ? "#444" : "#dfe2e5";
-        String tableHeaderBg = isDark ? "#2a2a2a" : "#f6f8fa";
+
+        // 边框和分隔线颜色
+        String borderColor = toHex(ModernColors.getBorderLightColor());
+        String dividerColor = toHex(ModernColors.getDividerBorderColor());
+
+        // 引用块颜色
+        String quoteBorder = toHex(ModernColors.getBorderMediumColor());
+        String quoteColor = secondaryText;
+
+        // 链接颜色
+        String linkColor = toHex(ModernColors.PRIMARY);
+
+        // 表格颜色
+        String tableBorder = borderColor;
+        String tableHeaderBg = toHex(ModernColors.getHoverBackgroundColor());
+        String tableStripeBg = isDark ? "#3a3c3e" : "#f6f8fa";
 
         // 基础样式
         styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; color: " + textColor + "; padding: 16px; background: " + bgColor + "; }");
 
         // 标题样式
-        styleSheet.addRule("h1, h2 { border-bottom: 1px solid " + borderColor + "; padding-bottom: 0.3em; }");
+        styleSheet.addRule("h1, h2 { border-bottom: 1px solid " + dividerColor + "; padding-bottom: 0.3em; }");
         styleSheet.addRule("h1 { font-size: 2em; margin: 0.67em 0; font-weight: 600; }");
         styleSheet.addRule("h2 { font-size: 1.5em; margin: 0.75em 0; font-weight: 600; }");
         styleSheet.addRule("h3 { font-size: 1.25em; margin: 1em 0; font-weight: 600; }");
         styleSheet.addRule("h4 { font-size: 1em; margin: 1.33em 0; font-weight: 600; }");
         styleSheet.addRule("h5 { font-size: 0.875em; margin: 1.67em 0; font-weight: 600; }");
-        styleSheet.addRule("h6 { font-size: 0.85em; margin: 2.33em 0; font-weight: 600; color: " + quoteColor + "; }");
+        styleSheet.addRule("h6 { font-size: 0.85em; margin: 2.33em 0; font-weight: 600; color: " + hintText + "; }");
 
         // 段落和文本
         styleSheet.addRule("p { margin-top: 0; margin-bottom: 16px; }");
@@ -162,6 +177,7 @@ public class MarkdownEditorPanel extends JPanel {
         // 表格（普通 Markdown 表格）
         styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: table; width: 100%; margin-top: 0; margin-bottom: 16px; }");
         styleSheet.addRule("table tr { background-color: " + bgColor + "; border-top: 1px solid " + tableBorder + "; }");
+        styleSheet.addRule("table tr:nth-child(2n) { background-color: " + tableStripeBg + "; }");
         styleSheet.addRule("table th, table td { padding: 6px 13px; border: 1px solid " + tableBorder + "; }");
         styleSheet.addRule("table th { font-weight: 600; background-color: " + tableHeaderBg + "; }");
 
@@ -176,7 +192,7 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("table.list-item td { border: 0 !important; padding: 0 !important; vertical-align: top !important; line-height: 1.6 !important; background: transparent !important; }");
 
         // 水平线
-        styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: " + borderColor + "; border: 0; }");
+        styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: " + dividerColor + "; border: 0; }");
 
         // 链接
         styleSheet.addRule("a { color: " + linkColor + "; text-decoration: none; }");
@@ -186,6 +202,13 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("img { max-width: 100%; box-sizing: content-box; background-color: " + bgColor + "; border-style: none; }");
 
         return styleSheet;
+    }
+
+    /**
+     * 将 Color 转换为十六进制字符串
+     */
+    private String toHex(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 
     private void initUI() {
@@ -807,6 +830,166 @@ public class MarkdownEditorPanel extends JPanel {
                 showFindDialog();
             }
         });
+
+        // Ctrl+H - 替换
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_DOWN_MASK), "replace");
+        actionMap.put("replace", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showFindDialog();
+            }
+        });
+
+        // Ctrl+` - 行内代码
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_QUOTE, InputEvent.CTRL_DOWN_MASK), "inlineCode");
+        actionMap.put("inlineCode", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertFormat("`", "`");
+            }
+        });
+
+        // Ctrl+Shift+K - 删除线
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "strikethrough");
+        actionMap.put("strikethrough", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertFormat("~~", "~~");
+            }
+        });
+
+        // Ctrl+Shift+C - 代码块
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "codeBlock");
+        actionMap.put("codeBlock", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertFormat("```\n", "\n```");
+            }
+        });
+
+        // Ctrl+Shift+Q - 引用
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "quote");
+        actionMap.put("quote", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertLinePrefix("> ");
+            }
+        });
+
+        // Ctrl+Shift+L - 无序列表
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "unorderedList");
+        actionMap.put("unorderedList", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertLinePrefix("- ");
+            }
+        });
+
+        // Ctrl+Shift+O - 有序列表
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "orderedList");
+        actionMap.put("orderedList", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertLinePrefix("1. ");
+            }
+        });
+
+        // Ctrl+Shift+T - 任务列表
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "taskList");
+        actionMap.put("taskList", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertLinePrefix("- [ ] ");
+            }
+        });
+
+        // Ctrl+1-6 - 标题级别
+        for (int i = 1; i <= 6; i++) {
+            final int level = i;
+            inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, InputEvent.CTRL_DOWN_MASK), "heading" + i);
+            actionMap.put("heading" + i, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String prefix = "#".repeat(level) + " ";
+                    insertLinePrefix(prefix);
+                }
+            });
+        }
+
+        // Ctrl+Shift+H - 水平线
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "horizontalLine");
+        actionMap.put("horizontalLine", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int pos = editorArea.getCaretPosition();
+                editorArea.insert("\n---\n", pos);
+                editorArea.requestFocus();
+            }
+        });
+
+        // Ctrl+Shift+I - 插入图片
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "image");
+        actionMap.put("image", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertFormat("![", "](url)");
+            }
+        });
+
+        // Ctrl+Shift+T - 插入表格
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK), "table");
+        actionMap.put("table", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertTable();
+            }
+        });
+
+        // Ctrl+S - 触发保存事件（通知监听器）
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK), "save");
+        actionMap.put("save", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 触发文档变化事件，让外部监听器处理保存
+                editorArea.getDocument().putProperty("save-requested", true);
+            }
+        });
+
+        // Ctrl+E - 导出HTML
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK), "export");
+        actionMap.put("export", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                exportToHtml();
+            }
+        });
+
+        // Ctrl+Shift+C - 复制HTML（不与代码块冲突，使用Alt）
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK), "copyHtml");
+        actionMap.put("copyHtml", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                copyHtmlToClipboard();
+            }
+        });
+    }
+
+    /**
+     * 在行首插入前缀（用于列表、引用、标题等）
+     */
+    private void insertLinePrefix(String prefix) {
+        try {
+            int pos = editorArea.getCaretPosition();
+            int lineStart = editorArea.getLineStartOffset(editorArea.getLineOfOffset(pos));
+            editorArea.insert(prefix, lineStart);
+            editorArea.setCaretPosition(lineStart + prefix.length());
+            editorArea.requestFocus();
+        } catch (Exception e) {
+            // 如果出错，就在光标位置插入
+            int pos = editorArea.getCaretPosition();
+            editorArea.insert(prefix, pos);
+            editorArea.requestFocus();
+        }
     }
 
     /**
@@ -876,27 +1059,28 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 显示查找对话框
+     * 显示查找对话框（使用国际化文本）
      */
     private void showFindDialog() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "查找", true);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE), true);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.getRootPane().setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
-        panel.add(new JLabel("查找:"));
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_LABEL)));
         JTextField findField = new JTextField(20);
         panel.add(findField);
 
-        panel.add(new JLabel("替换为:"));
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_LABEL)));
         JTextField replaceField = new JTextField(20);
         panel.add(replaceField);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton findButton = new JButton("查找下一个");
-        JButton replaceButton = new JButton("替换");
-        JButton replaceAllButton = new JButton("全部替换");
-        JButton closeButton = new JButton("关闭");
+        JButton findButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_NEXT));
+        JButton replaceButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE));
+        JButton replaceAllButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_ALL));
+        JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_CLOSE));
 
         findButton.addActionListener(e -> {
             String text = editorArea.getText();
@@ -907,7 +1091,10 @@ public class MarkdownEditorPanel extends JPanel {
                 editorArea.setSelectionStart(index);
                 editorArea.setSelectionEnd(index + find.length());
             } else {
-                JOptionPane.showMessageDialog(dialog, "未找到匹配项", "查找", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(dialog,
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_NOT_FOUND),
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
+                        JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
@@ -925,7 +1112,10 @@ public class MarkdownEditorPanel extends JPanel {
             String replace = replaceField.getText();
             text = text.replace(find, replace);
             editorArea.setText(text);
-            JOptionPane.showMessageDialog(dialog, "替换完成", "查找", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(dialog,
+                    I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_COMPLETE),
+                    I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
+                    JOptionPane.INFORMATION_MESSAGE);
         });
 
         closeButton.addActionListener(e -> dialog.dispose());
@@ -943,11 +1133,11 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 导出为 HTML
+     * 导出为 HTML（使用国际化文本）
      */
     private void exportToHtml() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("导出 HTML");
+        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML));
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("HTML 文件", "html"));
 
         if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -958,21 +1148,30 @@ public class MarkdownEditorPanel extends JPanel {
                     file = new java.io.File(file.getAbsolutePath() + ".html");
                 }
                 java.nio.file.Files.writeString(file.toPath(), html);
-                JOptionPane.showMessageDialog(this, "导出成功！", "导出", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_SUCCESS),
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML),
+                        JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_FAILED) + ": " + ex.getMessage(),
+                        I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                        JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     /**
-     * 复制 HTML 到剪贴板
+     * 复制 HTML 到剪贴板（使用国际化文本）
      */
     private void copyHtmlToClipboard() {
         String html = convertMarkdownToHtml(editorArea.getText());
         StringSelection selection = new StringSelection(html);
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-        JOptionPane.showMessageDialog(this, "HTML 已复制到剪贴板！", "复制", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this,
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_HTML_COPIED),
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_COPY_HTML),
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

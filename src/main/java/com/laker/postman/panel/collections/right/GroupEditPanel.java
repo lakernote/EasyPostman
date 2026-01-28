@@ -177,21 +177,11 @@ public class GroupEditPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(Box.createHorizontalGlue(), gbc);
 
-        // Description Label
+        // Description Markdown Editor - 占据两行 (gridy 0 和 1)
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        JLabel descLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION_LABEL));
-        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
-        descLabel.setBorder(new EmptyBorder(5, 0, 0, 0)); // 顶部对齐文本区域
-        formPanel.add(descLabel, gbc);
-
-        // Description Markdown Editor
-        gbc.gridx = 1;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 3;  // 占据所有列
+        gbc.gridheight = 2; // 占据两行
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
@@ -203,11 +193,11 @@ public class GroupEditPanel extends JPanel {
         descriptionEditor.setPreferredSize(new Dimension(800, 350));
         formPanel.add(descriptionEditor, gbc);
 
-
         // Description hint
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 3;
+        gbc.gridheight = 1;
         gbc.weightx = 0;
         gbc.weighty = 0;
         gbc.fill = GridBagConstraints.NONE;

@@ -528,9 +528,10 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("blockquote > :first-child { margin-top: 0; }");
         styleSheet.addRule("blockquote > :last-child { margin-bottom: 0; }");
 
-        // 列表
-        styleSheet.addRule("ul, ol { padding-left: 2em; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("li { word-wrap: break-all; }");
+        // 列表 - 调整左侧对齐，与其他元素（任务列表、代码块、标题等）保持一致
+        // 使用较小的 padding-left 值，使列表标记尽可能靠近左边缘
+        styleSheet.addRule("ul, ol { padding-left: 1.2em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("li { word-wrap: break-all; margin-left: 0; padding-left: 0; }");
         styleSheet.addRule("li > p { margin-top: 16px; }");
         styleSheet.addRule("li + li { margin-top: 0.25em; }");
 
@@ -546,6 +547,11 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("table.task-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
         styleSheet.addRule("table.task-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
         styleSheet.addRule("table.task-item td { border: 0 !important; padding: 0 !important; vertical-align: middle !important; line-height: 1.6 !important; background: transparent !important; }");
+
+        // 普通列表表格样式（无序列表和有序列表）- 与任务列表保持一致
+        styleSheet.addRule("table.list-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
+        styleSheet.addRule("table.list-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
+        styleSheet.addRule("table.list-item td { border: 0 !important; padding: 0 !important; vertical-align: top !important; line-height: 1.6 !important; background: transparent !important; }");
 
         // 水平线
         styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; }");
@@ -1058,31 +1064,49 @@ public class MarkdownEditorPanel extends JPanel {
                 html.append("</tr>");
                 html.append("</table>");
             }
-            // 无序列表
+            // 无序列表 - 使用表格布局实现完全左对齐
             else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
-                if (inOrderedList) {
-                    html.append("</ol>");
-                    inOrderedList = false;
-                }
-                if (!inList) {
-                    html.append("<ul>");
-                    inList = true;
-                }
+                closeLists(html, inList, inOrderedList);
+                inList = false;
+                inOrderedList = false;
+
                 String content = line.substring(line.indexOf(" ") + 1);
-                html.append("<li>").append(processInlineMarkdown(content)).append("</li>");
+
+                // 使用表格布局，与任务列表保持一致的左对齐
+                html.append("<table class='list-item' cellpadding='0' cellspacing='0' border='0' style='border: 0; border-collapse: separate; margin: 0; padding: 0; margin-bottom: 0.25em; width: 100%; background: transparent;'>");
+                html.append("<tr style='border: 0; border-top: 0; background: transparent;'>");
+                html.append("<td style='border: 0; padding: 0; margin: 0; width: 1%; padding-right: 6px; background: transparent; vertical-align: top; white-space: nowrap;'>");
+                html.append("•"); // Unicode bullet point
+                html.append("</td>");
+                html.append("<td style='border: 0; padding: 0; margin: 0; background: transparent; vertical-align: top;'>");
+                html.append(processInlineMarkdown(content));
+                html.append("</td>");
+                html.append("</tr>");
+                html.append("</table>");
             }
-            // 有序列表
+            // 有序列表 - 使用表格布局实现完全左对齐
             else if (line.trim().matches("^\\d+\\.\\s.*")) {
-                if (inList && !inOrderedList) {
-                    html.append("</ul>");
-                    inList = false;
-                }
-                if (!inOrderedList) {
-                    html.append("<ol>");
-                    inOrderedList = true;
-                }
-                String content = line.substring(line.indexOf(" ") + 1);
-                html.append("<li>").append(processInlineMarkdown(content)).append("</li>");
+                closeLists(html, inList, inOrderedList);
+                inList = false;
+                inOrderedList = false;
+
+                // 提取序号和内容
+                String trimmed = line.trim();
+                int dotIndex = trimmed.indexOf('.');
+                String number = trimmed.substring(0, dotIndex + 1); // 包括点号
+                String content = trimmed.substring(dotIndex + 1).trim();
+
+                // 使用表格布局，与任务列表保持一致的左对齐
+                html.append("<table class='list-item' cellpadding='0' cellspacing='0' border='0' style='border: 0; border-collapse: separate; margin: 0; padding: 0; margin-bottom: 0.25em; width: 100%; background: transparent;'>");
+                html.append("<tr style='border: 0; border-top: 0; background: transparent;'>");
+                html.append("<td style='border: 0; padding: 0; margin: 0; width: 1%; padding-right: 6px; background: transparent; vertical-align: top; text-align: left; white-space: nowrap;'>");
+                html.append(number);
+                html.append("</td>");
+                html.append("<td style='border: 0; padding: 0; margin: 0; background: transparent; vertical-align: top;'>");
+                html.append(processInlineMarkdown(content));
+                html.append("</td>");
+                html.append("</tr>");
+                html.append("</table>");
             }
             // 引用
             else if (line.trim().startsWith("> ")) {

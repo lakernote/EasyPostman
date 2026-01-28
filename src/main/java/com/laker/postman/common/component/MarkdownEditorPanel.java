@@ -105,7 +105,7 @@ public class MarkdownEditorPanel extends JPanel {
 
     private String getCodeBlockStyle() {
         return "background-color:" + toHex(ModernColors.getConsoleTextAreaBg()) +
-                ";padding:16px;overflow:auto;font-size:12px;line-height:1.5;border-radius:6px;border:1px solid " +
+                ";padding:16px;overflow:auto;font-size:10px;line-height:1.5;border-radius:6px;border:1px solid " +
                 toHex(ModernColors.getBorderLightColor()) +
                 ";margin:0 0 16px 0;font-family:monospace;color:" +
                 toHex(ModernColors.getConsoleText()) +
@@ -117,24 +117,24 @@ public class MarkdownEditorPanel extends JPanel {
         String bgColor = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
         String textColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
         return "background-color:" + bgColor + ";color:" + textColor +
-                ";padding:2px 6px;margin:0 2px;font-size:12px;border-radius:3px;font-family:monospace;";
+                ";padding:2px 6px;margin:0 2px;font-size:10px;border-radius:3px;font-family:monospace;";
     }
 
     private String getHeadingStyle(int level) {
         String dividerColor = toHex(ModernColors.getDividerBorderColor());
         switch (level) {
             case 1:
-                return "font-size:28px;font-weight:600;margin:24px 0 16px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+                return "font-size:20px;font-weight:600;margin:24px 0 16px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
             case 2:
-                return "font-size:24px;font-weight:600;margin:20px 0 14px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+                return "font-size:18px;font-weight:600;margin:20px 0 14px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
             case 3:
-                return "font-size:20px;font-weight:600;margin:18px 0 12px 0;";
+                return "font-size:16px;font-weight:600;margin:18px 0 12px 0;";
             case 4:
-                return "font-size:16px;font-weight:600;margin:16px 0 10px 0;";
+                return "font-size:14px;font-weight:600;margin:16px 0 10px 0;";
             case 5:
-                return "font-size:14px;font-weight:600;margin:14px 0 8px 0;";
+                return "font-size:12px;font-weight:600;margin:14px 0 8px 0;";
             case 6:
-                return "font-size:13px;font-weight:600;margin:12px 0 8px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
+                return "font-size:11px;font-weight:600;margin:12px 0 8px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
             default:
                 return "";
         }
@@ -1175,7 +1175,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private String convertMarkdownToHtml(String markdown) {
         if (markdown == null || markdown.isEmpty()) {
-            return "<html><body style='margin:0;padding:0;font-size:14px;'></body></html>";
+            return "<html><body style='margin:0;padding:0;font-size:10px;'></body></html>";
         }
 
         StringBuilder html = new StringBuilder();
@@ -1187,7 +1187,7 @@ public class MarkdownEditorPanel extends JPanel {
         html.append("<body style='");
         html.append("margin:0;padding:0;");
         html.append("font-family:sans-serif;");
-        html.append("font-size:14px;");
+        html.append("font-size:10px;");
         html.append("line-height:1.6;");
         html.append("color:").append(toHex(ModernColors.getTextPrimary())).append(";");
         html.append("background:").append(toHex(ModernColors.getCardBackgroundColor())).append(";");

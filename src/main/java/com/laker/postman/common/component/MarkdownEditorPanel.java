@@ -498,8 +498,8 @@ public class MarkdownEditorPanel extends JPanel {
         HTMLEditorKit kit = new HTMLEditorKit();
         StyleSheet styleSheet = new StyleSheet(); // 创建新的 StyleSheet 而不是使用默认的
 
-        // 基础样式
-        styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #24292e; padding: 16px; background: #fff; }");
+        // 基础样式 - 优化中文字体显示
+        styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; color: #24292e; padding: 16px; background: #fff; }");
 
         // 标题样式
         styleSheet.addRule("h1, h2 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }");
@@ -518,10 +518,10 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("s { text-decoration: line-through; }");
         styleSheet.addRule("strike { text-decoration: line-through; }");
 
-        // 代码样式 - 设置合适的字体大小，确保可读性
-        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 13px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 13px; line-height: 1.5; border-radius: 6px; margin-top: 0; margin-bottom: 16px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; padding: 0; margin: 0; font-size: 13px; }");
+        // 代码样式 - 优化字体大小，对中文显示更友好
+        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 12px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 12px; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; padding: 0; margin: 0; font-size: 12px; }");
 
         // 引用
         styleSheet.addRule("blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; margin: 0 0 16px 0; }");
@@ -531,7 +531,7 @@ public class MarkdownEditorPanel extends JPanel {
         // 列表 - 调整左侧对齐，与其他元素（任务列表、代码块、标题等）保持一致
         // 使用较小的 padding-left 值，使列表标记尽可能靠近左边缘
         styleSheet.addRule("ul, ol { padding-left: 1.2em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("li { word-wrap: break-all; margin-left: 0; padding-left: 0; }");
+        styleSheet.addRule("li { word-wrap: break-word; margin-left: 0; padding-left: 0; }");
         styleSheet.addRule("li > p { margin-top: 16px; }");
         styleSheet.addRule("li + li { margin-top: 0.25em; }");
 

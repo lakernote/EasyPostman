@@ -104,6 +104,47 @@ public final class MessageKeys {
     public static final String GENERAL_SEARCH = "general.search";
     public static final String CONSOLE_TITLE = "console.title";
 
+    // ============ Markdown 编辑器 ============
+    public static final String MARKDOWN_UNDO = "markdown.undo";
+    public static final String MARKDOWN_REDO = "markdown.redo";
+    public static final String MARKDOWN_HEADING1 = "markdown.heading1";
+    public static final String MARKDOWN_HEADING2 = "markdown.heading2";
+    public static final String MARKDOWN_HEADING3 = "markdown.heading3";
+    public static final String MARKDOWN_BOLD = "markdown.bold";
+    public static final String MARKDOWN_ITALIC = "markdown.italic";
+    public static final String MARKDOWN_STRIKETHROUGH = "markdown.strikethrough";
+    public static final String MARKDOWN_INLINE_CODE = "markdown.inline_code";
+    public static final String MARKDOWN_LINK = "markdown.link";
+    public static final String MARKDOWN_IMAGE = "markdown.image";
+    public static final String MARKDOWN_TABLE = "markdown.table";
+    public static final String MARKDOWN_CODE_BLOCK = "markdown.code_block";
+    public static final String MARKDOWN_UNORDERED_LIST = "markdown.unordered_list";
+    public static final String MARKDOWN_TASK_LIST = "markdown.task_list";
+    public static final String MARKDOWN_QUOTE = "markdown.quote";
+    public static final String MARKDOWN_HORIZONTAL_LINE = "markdown.horizontal_line";
+    public static final String MARKDOWN_MORE = "markdown.more";
+    public static final String MARKDOWN_VIEW_SPLIT = "markdown.view_split";
+    public static final String MARKDOWN_VIEW_EDIT_ONLY = "markdown.view_edit_only";
+    public static final String MARKDOWN_VIEW_PREVIEW_ONLY = "markdown.view_preview_only";
+    public static final String MARKDOWN_FIND = "markdown.find";
+    public static final String MARKDOWN_FIND_TITLE = "markdown.find_title";
+    public static final String MARKDOWN_FIND_LABEL = "markdown.find_label";
+    public static final String MARKDOWN_REPLACE_LABEL = "markdown.replace_label";
+    public static final String MARKDOWN_FIND_NEXT = "markdown.find_next";
+    public static final String MARKDOWN_REPLACE = "markdown.replace";
+    public static final String MARKDOWN_REPLACE_ALL = "markdown.replace_all";
+    public static final String MARKDOWN_CLOSE = "markdown.close";
+    public static final String MARKDOWN_NOT_FOUND = "markdown.not_found";
+    public static final String MARKDOWN_REPLACE_COMPLETE = "markdown.replace_complete";
+    public static final String MARKDOWN_EXPORT_HTML = "markdown.export_html";
+    public static final String MARKDOWN_COPY_HTML = "markdown.copy_html";
+    public static final String MARKDOWN_EXPORT_SUCCESS = "markdown.export_success";
+    public static final String MARKDOWN_EXPORT_FAILED = "markdown.export_failed";
+    public static final String MARKDOWN_HTML_COPIED = "markdown.html_copied";
+    public static final String MARKDOWN_WORD_COUNT = "markdown.word_count";
+    public static final String MARKDOWN_LINE_COL = "markdown.line_col";
+    public static final String MARKDOWN_READY = "markdown.ready";
+
     // ============ 工作区选择对话框 ============
     public static final String WORKSPACE_SELECT_HINT = "workspace.select.hint";
     public static final String WORKSPACE_SELECT_REQUIRED = "workspace.select.required";

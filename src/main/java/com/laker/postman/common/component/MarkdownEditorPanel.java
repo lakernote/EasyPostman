@@ -2,6 +2,8 @@ package com.laker.postman.common.component;
 
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -61,6 +63,131 @@ public class MarkdownEditorPanel extends JPanel {
         setupKeyBindings();
     }
 
+    @Override
+    public void updateUI() {
+        super.updateUI();
+
+        // 主题切换时重新创建工具栏和状态栏，更新颜色
+        if (toolbarPanel != null && editorPanelRef != null && previewPanelRef != null) {
+            removeAll();
+
+            // 重新创建工具栏以更新颜色
+            toolbarPanel = createEnhancedToolbar();
+            add(toolbarPanel, BorderLayout.NORTH);
+
+            add(splitPane, BorderLayout.CENTER);
+
+            // 重新创建状态栏
+            JPanel statusBar = createStatusBar();
+            add(statusBar, BorderLayout.SOUTH);
+
+            // 更新预览面板的样式
+            updatePreviewPaneStyles();
+
+            revalidate();
+            repaint();
+        }
+    }
+
+    /**
+     * 更新预览面板的样式以适应主题变化
+     */
+    private void updatePreviewPaneStyles() {
+        if (previewPane != null) {
+            // 重新设置HTML编辑器的样式
+            HTMLEditorKit kit = new HTMLEditorKit();
+            StyleSheet styleSheet = createDynamicStyleSheet();
+            kit.setStyleSheet(styleSheet);
+            previewPane.setEditorKit(kit);
+            // 触发预览更新
+            updatePreview();
+        }
+    }
+
+    /**
+     * 创建动态的StyleSheet以支持暗色/亮色主题
+     */
+    private StyleSheet createDynamicStyleSheet() {
+        StyleSheet styleSheet = new StyleSheet();
+
+        // 根据当前主题选择颜色
+        boolean isDark = UIManager.getBoolean("laf.dark");
+        String textColor = isDark ? "#e0e0e0" : "#24292e";
+        String bgColor = isDark ? "#1e1e1e" : "#fff";
+        String codeBlockBg = isDark ? "#2d2d2d" : "#f6f8fa";
+        String inlineCodeBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(27,31,35,0.05)";
+        String borderColor = isDark ? "#3d3d3d" : "#eaecef";
+        String quoteBorder = isDark ? "#555" : "#dfe2e5";
+        String quoteColor = isDark ? "#a0a0a0" : "#6a737d";
+        String linkColor = isDark ? "#4a9eff" : "#0366d6";
+        String tableBorder = isDark ? "#444" : "#dfe2e5";
+        String tableHeaderBg = isDark ? "#2a2a2a" : "#f6f8fa";
+
+        // 基础样式
+        styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; color: " + textColor + "; padding: 16px; background: " + bgColor + "; }");
+
+        // 标题样式
+        styleSheet.addRule("h1, h2 { border-bottom: 1px solid " + borderColor + "; padding-bottom: 0.3em; }");
+        styleSheet.addRule("h1 { font-size: 2em; margin: 0.67em 0; font-weight: 600; }");
+        styleSheet.addRule("h2 { font-size: 1.5em; margin: 0.75em 0; font-weight: 600; }");
+        styleSheet.addRule("h3 { font-size: 1.25em; margin: 1em 0; font-weight: 600; }");
+        styleSheet.addRule("h4 { font-size: 1em; margin: 1.33em 0; font-weight: 600; }");
+        styleSheet.addRule("h5 { font-size: 0.875em; margin: 1.67em 0; font-weight: 600; }");
+        styleSheet.addRule("h6 { font-size: 0.85em; margin: 2.33em 0; font-weight: 600; color: " + quoteColor + "; }");
+
+        // 段落和文本
+        styleSheet.addRule("p { margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("strong { font-weight: 600; }");
+        styleSheet.addRule("em { font-style: italic; }");
+        styleSheet.addRule("del { text-decoration: line-through; }");
+        styleSheet.addRule("s { text-decoration: line-through; }");
+        styleSheet.addRule("strike { text-decoration: line-through; }");
+
+        // 代码样式 - 优化字体大小，对中文显示更友好
+        styleSheet.addRule("code { background-color: " + inlineCodeBg + "; padding: 0.2em 0.4em; margin: 0; font-size: 12px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre { background-color: " + codeBlockBg + "; padding: 16px; overflow: auto; font-size: 12px; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; padding: 0; margin: 0; font-size: 12px; }");
+
+        // 引用
+        styleSheet.addRule("blockquote { padding: 0 1em; color: " + quoteColor + "; border-left: 0.25em solid " + quoteBorder + "; margin: 0 0 16px 0; }");
+        styleSheet.addRule("blockquote > :first-child { margin-top: 0; }");
+        styleSheet.addRule("blockquote > :last-child { margin-bottom: 0; }");
+
+        // 列表 - 调整左侧对齐，与其他元素（任务列表、代码块、标题等）保持一致
+        styleSheet.addRule("ul, ol { padding-left: 1.2em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("li { word-wrap: break-word; margin-left: 0; padding-left: 0; }");
+        styleSheet.addRule("li > p { margin-top: 16px; }");
+        styleSheet.addRule("li + li { margin-top: 0.25em; }");
+
+        // 表格（普通 Markdown 表格）
+        styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: table; width: 100%; margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("table tr { background-color: " + bgColor + "; border-top: 1px solid " + tableBorder + "; }");
+        styleSheet.addRule("table th, table td { padding: 6px 13px; border: 1px solid " + tableBorder + "; }");
+        styleSheet.addRule("table th { font-weight: 600; background-color: " + tableHeaderBg + "; }");
+
+        // 任务列表表格样式
+        styleSheet.addRule("table.task-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
+        styleSheet.addRule("table.task-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
+        styleSheet.addRule("table.task-item td { border: 0 !important; padding: 0 !important; vertical-align: middle !important; line-height: 1.6 !important; background: transparent !important; }");
+
+        // 普通列表表格样式
+        styleSheet.addRule("table.list-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
+        styleSheet.addRule("table.list-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
+        styleSheet.addRule("table.list-item td { border: 0 !important; padding: 0 !important; vertical-align: top !important; line-height: 1.6 !important; background: transparent !important; }");
+
+        // 水平线
+        styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: " + borderColor + "; border: 0; }");
+
+        // 链接
+        styleSheet.addRule("a { color: " + linkColor + "; text-decoration: none; }");
+        styleSheet.addRule("a:hover { text-decoration: underline; }");
+
+        // 图片
+        styleSheet.addRule("img { max-width: 100%; box-sizing: content-box; background-color: " + bgColor + "; border-style: none; }");
+
+        return styleSheet;
+    }
+
     private void initUI() {
         setLayout(new BorderLayout());
 
@@ -84,25 +211,24 @@ public class MarkdownEditorPanel extends JPanel {
         add(statusBar, BorderLayout.SOUTH);
 
         // 延迟设置分割位置，等待组件布局完成
-        SwingUtilities.invokeLater(() -> {
-            splitPane.setDividerLocation(0.5);
-        });
+        SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.5));
     }
 
     /**
-     * 创建增强的工具栏（扁平化设计，支持响应式换行）
+     * 创建增强的工具栏（扁平化设计，支持响应式换行，支持国际化和主题）
      */
     private JPanel createEnhancedToolbar() {
         JPanel toolbarContainer = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 2));
         toolbarContainer.setBorder(BorderFactory.createCompoundBorder(
-                new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
+                new MatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
                 new EmptyBorder(3, 5, 3, 5)
         ));
-        toolbarContainer.setBackground(new Color(250, 250, 250));
+        toolbarContainer.setOpaque(true);
+        toolbarContainer.setBackground(UIManager.getColor("Panel.background"));
 
         // 撤销/重做组
-        undoButton = createFlatButton("↶", "撤销 (Ctrl+Z)", e -> undo());
-        redoButton = createFlatButton("↷", "重做 (Ctrl+Y)", e -> redo());
+        undoButton = createFlatButton("↶", I18nUtil.getMessage(MessageKeys.MARKDOWN_UNDO), e -> undo());
+        redoButton = createFlatButton("↷", I18nUtil.getMessage(MessageKeys.MARKDOWN_REDO), e -> redo());
         undoButton.setEnabled(false);
         redoButton.setEnabled(false);
         toolbarContainer.add(undoButton);
@@ -110,34 +236,34 @@ public class MarkdownEditorPanel extends JPanel {
         toolbarContainer.add(createVerticalDivider());
 
         // 标题组
-        toolbarContainer.add(createFlatButton("H1", "一级标题", "# ", ""));
-        toolbarContainer.add(createFlatButton("H2", "二级标题", "## ", ""));
-        toolbarContainer.add(createFlatButton("H3", "三级标题", "### ", ""));
+        toolbarContainer.add(createFlatButton("H1", I18nUtil.getMessage(MessageKeys.MARKDOWN_HEADING1), "# ", ""));
+        toolbarContainer.add(createFlatButton("H2", I18nUtil.getMessage(MessageKeys.MARKDOWN_HEADING2), "## ", ""));
+        toolbarContainer.add(createFlatButton("H3", I18nUtil.getMessage(MessageKeys.MARKDOWN_HEADING3), "### ", ""));
         toolbarContainer.add(createVerticalDivider());
 
         // 文本格式组
-        toolbarContainer.add(createFlatButton("<html><b>B</b></html>", "粗体 (Ctrl+B)", "**", "**"));
-        toolbarContainer.add(createFlatButton("<html><i>I</i></html>", "斜体 (Ctrl+I)", "_", "_"));
-        toolbarContainer.add(createFlatButton("<html><s>S</s></html>", "删除线", "~~", "~~"));
-        toolbarContainer.add(createFlatButton("<html><code>`</code></html>", "行内代码", "`", "`"));
+        toolbarContainer.add(createFlatButton("<html><b>B</b></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_BOLD), "**", "**"));
+        toolbarContainer.add(createFlatButton("<html><i>I</i></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_ITALIC), "_", "_"));
+        toolbarContainer.add(createFlatButton("<html><s>S</s></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_STRIKETHROUGH), "~~", "~~"));
+        toolbarContainer.add(createFlatButton("<html><code>`</code></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_INLINE_CODE), "`", "`"));
         toolbarContainer.add(createVerticalDivider());
 
         // 插入组
-        toolbarContainer.add(createFlatButton("🔗", "链接 (Ctrl+K)", "[", "](url)"));
-        toolbarContainer.add(createFlatButton("🖼", "图片", "![", "](url)"));
-        toolbarContainer.add(createFlatActionButton("⊞", "表格", this::insertTable));
-        toolbarContainer.add(createFlatButton("{}", "代码块", "```\n", "\n```"));
+        toolbarContainer.add(createFlatButton("🔗", I18nUtil.getMessage(MessageKeys.MARKDOWN_LINK), "[", "](url)"));
+        toolbarContainer.add(createFlatButton("🖼", I18nUtil.getMessage(MessageKeys.MARKDOWN_IMAGE), "![", "](url)"));
+        toolbarContainer.add(createFlatActionButton("⊞", I18nUtil.getMessage(MessageKeys.MARKDOWN_TABLE), this::insertTable));
+        toolbarContainer.add(createFlatButton("{}", I18nUtil.getMessage(MessageKeys.MARKDOWN_CODE_BLOCK), "```\n", "\n```"));
         toolbarContainer.add(createVerticalDivider());
 
         // 列表组
-        toolbarContainer.add(createFlatButton("•", "无序列表", "- ", ""));
-        toolbarContainer.add(createFlatButton("☑", "任务列表", "- [ ] ", ""));
-        toolbarContainer.add(createFlatButton("❝", "引用", "> ", ""));
-        toolbarContainer.add(createFlatButton("─", "分割线", "---\n", ""));
+        toolbarContainer.add(createFlatButton("•", I18nUtil.getMessage(MessageKeys.MARKDOWN_UNORDERED_LIST), "- ", ""));
+        toolbarContainer.add(createFlatButton("☑", I18nUtil.getMessage(MessageKeys.MARKDOWN_TASK_LIST), "- [ ] ", ""));
+        toolbarContainer.add(createFlatButton("❝", I18nUtil.getMessage(MessageKeys.MARKDOWN_QUOTE), "> ", ""));
+        toolbarContainer.add(createFlatButton("─", I18nUtil.getMessage(MessageKeys.MARKDOWN_HORIZONTAL_LINE), "---\n", ""));
         toolbarContainer.add(createVerticalDivider());
 
         // 更多功能按钮
-        JButton moreButton = createFlatButton("⋮", "更多", null);
+        JButton moreButton = createFlatButton("⋮", I18nUtil.getMessage(MessageKeys.MARKDOWN_MORE), null);
         JPopupMenu moreMenu = createMoreMenu();
         moreButton.addActionListener(e -> moreMenu.show(moreButton, 0, moreButton.getHeight()));
         toolbarContainer.add(moreButton);
@@ -148,9 +274,9 @@ public class MarkdownEditorPanel extends JPanel {
         JToggleButton editViewBtn = new JToggleButton("✎");
         JToggleButton previewViewBtn = new JToggleButton("👁");
 
-        splitViewBtn.setToolTipText("分栏模式");
-        editViewBtn.setToolTipText("仅编辑");
-        previewViewBtn.setToolTipText("仅预览");
+        splitViewBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.MARKDOWN_VIEW_SPLIT));
+        editViewBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.MARKDOWN_VIEW_EDIT_ONLY));
+        previewViewBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.MARKDOWN_VIEW_PREVIEW_ONLY));
 
         ButtonGroup viewGroup = new ButtonGroup();
         viewGroup.add(splitViewBtn);
@@ -265,19 +391,19 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 创建更多功能菜单
+     * 创建更多功能菜单（使用国际化文本）
      */
     private JPopupMenu createMoreMenu() {
         JPopupMenu menu = new JPopupMenu();
 
-        JMenuItem findItem = new JMenuItem("🔍 查找替换");
+        JMenuItem findItem = new JMenuItem("🔍 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND));
         findItem.setToolTipText("Ctrl+F");
         findItem.addActionListener(e -> showFindDialog());
 
-        JMenuItem exportItem = new JMenuItem("💾 导出 HTML");
+        JMenuItem exportItem = new JMenuItem("💾 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML));
         exportItem.addActionListener(e -> exportToHtml());
 
-        JMenuItem copyItem = new JMenuItem("📋 复制 HTML");
+        JMenuItem copyItem = new JMenuItem("📋 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_COPY_HTML));
         copyItem.addActionListener(e -> copyHtmlToClipboard());
 
         menu.add(findItem);

@@ -852,20 +852,21 @@ public class MarkdownEditorPanel extends JPanel {
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
         statusBar.setBorder(new MatteBorder(1, 0, 0, 0, ModernColors.getBorderLightColor()));
 
-        JLabel statusLabel = new JLabel("就绪");
+        JLabel statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_READY));
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusLabel.setForeground(Color.GRAY);
         statusBar.add(statusLabel);
 
         // 字数统计
-        JLabel wordCountLabel = new JLabel("字数: 0");
+        JLabel wordCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS) + ": 0");
         wordCountLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         wordCountLabel.setForeground(Color.GRAY);
         statusBar.add(new JSeparator(SwingConstants.VERTICAL));
         statusBar.add(wordCountLabel);
 
         // 行列号
-        JLabel positionLabel = new JLabel("行: 1, 列: 1");
+        JLabel positionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_LINE) + ": 1, " +
+                                          I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_COLUMN) + ": 1");
         positionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         positionLabel.setForeground(Color.GRAY);
         statusBar.add(new JSeparator(SwingConstants.VERTICAL));
@@ -877,11 +878,14 @@ public class MarkdownEditorPanel extends JPanel {
                 int pos = editorArea.getCaretPosition();
                 int line = editorArea.getLineOfOffset(pos);
                 int col = pos - editorArea.getLineStartOffset(line);
-                positionLabel.setText(String.format("行: %d, 列: %d", line + 1, col + 1));
+                positionLabel.setText(String.format("%s: %d, %s: %d",
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_LINE), line + 1,
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_COLUMN), col + 1));
 
                 String text = editorArea.getText();
-                wordCountLabel.setText(String.format("字数: %d | 字符: %d",
-                        text.split("\\s+").length, text.length()));
+                wordCountLabel.setText(String.format("%s: %d | %s: %d",
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS), text.split("\\s+").length,
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_CHARS), text.length()));
             } catch (Exception ex) {
                 // Ignore
             }

@@ -110,9 +110,6 @@ public final class MessageKeys {
     public static final String MARKDOWN_HEADING1 = "markdown.heading1";
     public static final String MARKDOWN_HEADING2 = "markdown.heading2";
     public static final String MARKDOWN_HEADING3 = "markdown.heading3";
-    public static final String MARKDOWN_HEADING4 = "markdown.heading4";
-    public static final String MARKDOWN_HEADING5 = "markdown.heading5";
-    public static final String MARKDOWN_HEADING6 = "markdown.heading6";
     public static final String MARKDOWN_BOLD = "markdown.bold";
     public static final String MARKDOWN_ITALIC = "markdown.italic";
     public static final String MARKDOWN_STRIKETHROUGH = "markdown.strikethrough";
@@ -147,9 +144,11 @@ public final class MessageKeys {
     public static final String MARKDOWN_EXPORT_SUCCESS = "markdown.export_success";
     public static final String MARKDOWN_EXPORT_FAILED = "markdown.export_failed";
     public static final String MARKDOWN_HTML_COPIED = "markdown.html_copied";
-    public static final String MARKDOWN_WORD_COUNT = "markdown.word_count";
-    public static final String MARKDOWN_LINE_COL = "markdown.line_col";
     public static final String MARKDOWN_READY = "markdown.ready";
+    public static final String MARKDOWN_STATUS_LINE = "markdown.status_line";
+    public static final String MARKDOWN_STATUS_COLUMN = "markdown.status_column";
+    public static final String MARKDOWN_STATUS_WORDS = "markdown.status_words";
+    public static final String MARKDOWN_STATUS_CHARS = "markdown.status_chars";
 
     // ============ 工作区选择对话框 ============
     public static final String WORKSPACE_SELECT_HINT = "workspace.select.hint";
@@ -161,7 +160,6 @@ public final class MessageKeys {
     public static final String WORKSPACE_TRANSFER_SELECT_DIALOG_TITLE = "workspace.transfer.select_dialog_title";
     public static final String WORKSPACE_TRANSFER_CONFIRM_MESSAGE = "workspace.transfer.confirm_message";
     public static final String WORKSPACE_TRANSFER_CONFIRM_TITLE = "workspace.transfer.confirm_title";
-    public static final String WORKSPACE_TRANSFER_SUCCESS = "workspace.transfer.success";
     public static final String WORKSPACE_TRANSFER_FAIL = "workspace.transfer.fail";
 
     // ============ 按钮 ============

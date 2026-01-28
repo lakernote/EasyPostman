@@ -265,9 +265,6 @@ public class HttpHtmlRenderer {
         // === 错误信息区域 ===
         appendErrorSection(sb, errorMessage, bgColor, textColor);
 
-        // === 断言失败信息 ===
-        appendAssertionFailureSection(sb, testResults, bgColor, textColor);
-
         // === 网络错误 ===
         appendNetworkErrorSection(sb, eventInfo, bgColor, textColor);
 
@@ -293,43 +290,6 @@ public class HttpHtmlRenderer {
                     .append(escapeHtml(errorMessage)).append("</div>");
             sb.append("</div>");
         }
-    }
-
-    /**
-     * 添加断言失败信息区域
-     */
-    private static void appendAssertionFailureSection(StringBuilder sb, List<TestResult> testResults,
-                                                      String bgColor, String textColor) {
-        if (testResults == null || testResults.isEmpty()) {
-            return;
-        }
-
-        boolean hasFailure = testResults.stream().anyMatch(t -> !t.passed);
-        if (!hasFailure) {
-            return;
-        }
-
-        sb.append("<div style='background:").append(bgColor)
-                .append(";border-left:3px solid ").append(COLOR_WARNING)
-                .append(";padding:10px;margin-bottom:12px;'>");
-        sb.append("<div style='color:").append(COLOR_ERROR)
-                .append(";font-weight:bold;font-size:10px;margin-bottom:6px;'>✗ Assertion Failed</div>");
-
-        for (TestResult testResult : testResults) {
-            if (!testResult.passed) {
-                sb.append("<div style='margin-bottom:4px;padding:6px;background:").append(getThemeHeaderBackground())
-                        .append(";'>");
-                sb.append("<div style='color:").append(textColor)
-                        .append(";font-size:9px;font-weight:bold;'>")
-                        .append(escapeHtml(testResult.name)).append("</div>");
-                if (testResult.message != null && !testResult.message.isEmpty()) {
-                    sb.append("<div style='color:").append(COLOR_ERROR)
-                            .append(";font-size:9px;margin-top:2px;'>").append(escapeHtml(testResult.message)).append("</div>");
-                }
-                sb.append("</div>");
-            }
-        }
-        sb.append("</div>");
     }
 
     /**

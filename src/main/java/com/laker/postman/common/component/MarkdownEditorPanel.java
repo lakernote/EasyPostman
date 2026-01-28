@@ -518,10 +518,10 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("s { text-decoration: line-through; }");
         styleSheet.addRule("strike { text-decoration: line-through; }");
 
-        // 代码样式
-        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; max-width: auto; padding: 0; margin: 0; overflow: visible; line-height: inherit; word-wrap: normal; }");
+        // 代码样式 - 增大字体，提高可读性
+        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 95%; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 95%; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; max-width: auto; padding: 0; margin: 0; overflow: visible; line-height: inherit; word-wrap: normal; font-size: 100%; }");
 
         // 引用
         styleSheet.addRule("blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; margin: 0 0 16px 0; }");
@@ -534,11 +534,13 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("li > p { margin-top: 16px; }");
         styleSheet.addRule("li + li { margin-top: 0.25em; }");
 
-        // 任务列表
-        styleSheet.addRule("input[type='checkbox'] { margin-right: 0.5em; }");
+        // 任务列表 - 修复 checkbox 和文本的垂直对齐
+        styleSheet.addRule("ul.task-list { list-style: none; padding-left: 1.5em; }");
+        styleSheet.addRule("li.task-list-item { list-style: none; }");
+        styleSheet.addRule("input[type='checkbox'] { margin-right: 0.5em; vertical-align: middle; margin-top: -2px; }");
 
         // 表格
-        styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: block; width: max-content; max-width: 100%; overflow: auto; margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: table; width: 100%; margin-top: 0; margin-bottom: 16px; }");
         styleSheet.addRule("table tr { background-color: #fff; border-top: 1px solid #c6cbd1; }");
         styleSheet.addRule("table tr:nth-child(2n) { background-color: #f6f8fa; }");
         styleSheet.addRule("table th, table td { padding: 6px 13px; border: 1px solid #dfe2e5; }");
@@ -966,8 +968,12 @@ public class MarkdownEditorPanel extends JPanel {
                     html.append("<tr>");
                 }
 
-                String[] cells = line.split("\\|");
-                for (int j = 1; j < cells.length - 1; j++) {
+                String[] cells = line.split("\\|", -1); // -1 保留尾部空字符串
+                // 去除首尾的空元素（| 开头和结尾导致的）
+                int start = cells[0].trim().isEmpty() ? 1 : 0;
+                int end = cells[cells.length - 1].trim().isEmpty() ? cells.length - 1 : cells.length;
+
+                for (int j = start; j < end; j++) {
                     String cell = cells[j].trim();
                     if (isHeader) {
                         html.append("<th>").append(processInlineMarkdown(cell)).append("</th>");

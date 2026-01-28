@@ -10,8 +10,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -37,7 +35,7 @@ import java.util.List;
 public class MarkdownEditorPanel extends JPanel {
     private JTextArea editorArea;
     private JTextArea lineNumberArea;
-    private JEditorPane previewPane;
+    private JTextPane previewPane;
     private JSplitPane splitPane;
     private JPanel toolbarPanel;
     private final List<DocumentListener> changeListeners = new ArrayList<>();
@@ -93,12 +91,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private void updatePreviewPaneStyles() {
         if (previewPane != null) {
-            // 重新设置HTML编辑器的样式
-            HTMLEditorKit kit = new HTMLEditorKit();
-            StyleSheet styleSheet = createDynamicStyleSheet();
-            kit.setStyleSheet(styleSheet);
-            previewPane.setEditorKit(kit);
-            // 触发预览更新
+            // 只需要重新生成 HTML，因为样式是 inline 的
             updatePreview();
         }
     }
@@ -107,257 +100,163 @@ public class MarkdownEditorPanel extends JPanel {
      * 创建动态的StyleSheet以支持暗色/亮色主题
      * 完全使用 ModernColors 配色方案，确保与应用整体风格一致
      */
-    private StyleSheet createDynamicStyleSheet() {
-        StyleSheet styleSheet = new StyleSheet();
-
-        // 根据当前主题选择颜色（使用 ModernColors）
-        boolean isDark = ModernColors.isDarkTheme();
-
-        // 文本颜色
-        String textColor = toHex(ModernColors.getTextPrimary());
-        String secondaryText = toHex(ModernColors.getTextSecondary());
-        String hintText = toHex(ModernColors.getTextHint());
-
-        // 背景颜色
-        String bgColor = toHex(ModernColors.getCardBackgroundColor());
-        String hoverBgColor = toHex(ModernColors.getHoverBackgroundColor());
-
-        // 代码块颜色 - 使用 Console 的配色，暗色模式下优化对比度
-        String codeBlockBg = toHex(ModernColors.getConsoleTextAreaBg());
-        String inlineCodeBg = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
-        String inlineCodeColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
-
-        // 边框和分隔线颜色
-        String borderLight = toHex(ModernColors.getBorderLightColor());
-        String dividerColor = toHex(ModernColors.getDividerBorderColor());
-
-        // 链接和强调色 - 暗色模式下使用更亮的蓝色
-        String linkColor = isDark ? "#4a9eff" : toHex(ModernColors.PRIMARY);
-        String linkHoverColor = isDark ? "#66b3ff" : toHex(ModernColors.PRIMARY_DARK);
-
-        // 表格颜色 - 暗色模式下优化对比度
-        String tableStripeBg = isDark ? toHex(new Color(50, 52, 54)) : toHex(new Color(249, 250, 251));
-        String tableHeaderBg = isDark ? toHex(new Color(55, 58, 60)) : hoverBgColor;
-
-        // 引用块颜色 - 暗色模式下使用更柔和的颜色
-        String quoteBorderColor = isDark ? "#4a9eff" : toHex(ModernColors.ACCENT_LIGHT);
-        String quoteBgColor = isDark ? "rgba(74, 158, 255, 0.08)" : "rgba(6, 182, 212, 0.03)";
-
-        // === 基础样式 ===
-        styleSheet.addRule("body { " +
-                "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; " +
-                "font-size: 14px; " +
-                "line-height: 1.6; " +
-                "color: " + textColor + "; " +
-                "padding: 16px; " +
-                "background: " + bgColor + "; " +
-                "}");
-
-        // === 标题样式 ===
-        styleSheet.addRule("h1, h2 { " +
-                "border-bottom: 2px solid " + dividerColor + "; " +
-                "padding-bottom: 0.3em; " +
-                "margin-top: 24px; " +
-                "margin-bottom: 16px; " +
-                "}");
-        styleSheet.addRule("h1 { font-size: 2em; font-weight: 600; }");
-        styleSheet.addRule("h2 { font-size: 1.5em; font-weight: 600; }");
-        styleSheet.addRule("h3 { font-size: 1.25em; margin: 1em 0; font-weight: 600; }");
-        styleSheet.addRule("h4 { font-size: 1em; margin: 1.33em 0; font-weight: 600; }");
-        styleSheet.addRule("h5 { font-size: 0.875em; margin: 1.67em 0; font-weight: 600; }");
-        styleSheet.addRule("h6 { font-size: 0.85em; margin: 2.33em 0; font-weight: 600; color: " + hintText + "; }");
-
-        // === 段落和文本 ===
-        styleSheet.addRule("p { margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("strong { font-weight: 600; color: " + textColor + "; }");
-        styleSheet.addRule("em { font-style: italic; }");
-        styleSheet.addRule("del, s, strike { text-decoration: line-through; opacity: 0.65; }");
-
-        // === 代码样式 - 优化暗色模式的对比度和可读性 ===
-        styleSheet.addRule("code { " +
-                "background-color: " + inlineCodeBg + "; " +
-                "color: " + inlineCodeColor + "; " +
-                "padding: 0.2em 0.4em; " +
-                "margin: 0; " +
-                "font-size: 85%; " +
-                "border-radius: 3px; " +
-                "font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; " +
-                "}");
-
-        styleSheet.addRule("pre { " +
-                "background-color: " + codeBlockBg + "; " +
-                "padding: 16px; " +
-                "overflow: auto; " +
-                "font-size: 85%; " +
-                "line-height: 1.45; " +
-                "border-radius: 6px; " +
-                "border: 1px solid " + borderLight + "; " +
-                "margin-top: 0; " +
-                "margin-bottom: 16px; " +
-                "font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; " +
-                "}");
-
-        styleSheet.addRule("pre code { " +
-                "background-color: transparent; " +
-                "color: " + toHex(ModernColors.getConsoleText()) + "; " +
-                "border: 0; " +
-                "display: inline; " +
-                "padding: 0; " +
-                "margin: 0; " +
-                "font-size: 100%; " +
-                "}");
-
-        // === 引用块 - 暗色模式下使用更柔和的蓝色调 ===
-        styleSheet.addRule("blockquote { " +
-                "padding: 0.5em 1em; " +
-                "color: " + secondaryText + "; " +
-                "border-left: 4px solid " + quoteBorderColor + "; " +
-                "background-color: " + quoteBgColor + "; " +
-                "margin: 0 0 16px 0; " +
-                "border-radius: 0 4px 4px 0; " +
-                "}");
-        styleSheet.addRule("blockquote > :first-child { margin-top: 0; }");
-        styleSheet.addRule("blockquote > :last-child { margin-bottom: 0; }");
-
-        // === 列表 ===
-        styleSheet.addRule("ul, ol { padding-left: 1.5em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("li { word-wrap: break-word; margin-left: 0; padding-left: 0.2em; margin-bottom: 0.25em; }");
-        styleSheet.addRule("li > p { margin-top: 16px; }");
-
-        // === 表格 - 暗色模式下优化对比度 ===
-        styleSheet.addRule("table { " +
-                "border-spacing: 0; " +
-                "border-collapse: collapse; " +
-                "display: table; " +
-                "width: 100%; " +
-                "margin-top: 0; " +
-                "margin-bottom: 16px; " +
-                "border: 1px solid " + borderLight + "; " +
-                "border-radius: 6px; " +
-                "overflow: hidden; " +
-                "}");
-
-        styleSheet.addRule("table tr { " +
-                "background-color: " + bgColor + "; " +
-                "border-top: 1px solid " + borderLight + "; " +
-                "}");
-
-        styleSheet.addRule("table tr:nth-child(2n) { " +
-                "background-color: " + tableStripeBg + "; " +
-                "}");
-
-        styleSheet.addRule("table th, table td { " +
-                "padding: 8px 13px; " +
-                "border: 1px solid " + borderLight + "; " +
-                "}");
-
-        styleSheet.addRule("table th { " +
-                "font-weight: 600; " +
-                "background-color: " + tableHeaderBg + "; " +
-                "color: " + textColor + "; " +
-                "}");
-
-        // === 任务列表表格样式 ===
-        styleSheet.addRule("table.task-item { " +
-                "border: 0 !important; " +
-                "margin: 0 !important; " +
-                "padding: 0 !important; " +
-                "margin-bottom: 0.25em !important; " +
-                "border-spacing: 0 !important; " +
-                "width: 100% !important; " +
-                "background: transparent !important; " +
-                "border-collapse: separate !important; " +
-                "}");
-
-        styleSheet.addRule("table.task-item tr { " +
-                "border: 0 !important; " +
-                "background: transparent !important; " +
-                "border-top: 0 !important; " +
-                "}");
-
-        styleSheet.addRule("table.task-item td { " +
-                "border: 0 !important; " +
-                "padding: 0 !important; " +
-                "vertical-align: middle !important; " +
-                "line-height: 1.6 !important; " +
-                "background: transparent !important; " +
-                "}");
-
-        // === 普通列表表格样式 ===
-        styleSheet.addRule("table.list-item { " +
-                "border: 0 !important; " +
-                "margin: 0 !important; " +
-                "padding: 0 !important; " +
-                "margin-bottom: 0.25em !important; " +
-                "border-spacing: 0 !important; " +
-                "width: 100% !important; " +
-                "background: transparent !important; " +
-                "border-collapse: separate !important; " +
-                "}");
-
-        styleSheet.addRule("table.list-item tr { " +
-                "border: 0 !important; " +
-                "background: transparent !important; " +
-                "border-top: 0 !important; " +
-                "}");
-
-        styleSheet.addRule("table.list-item td { " +
-                "border: 0 !important; " +
-                "padding: 0 !important; " +
-                "vertical-align: top !important; " +
-                "line-height: 1.6 !important; " +
-                "background: transparent !important; " +
-                "}");
-
-        // === 水平线 ===
-        styleSheet.addRule("hr { " +
-                "height: 2px; " +
-                "padding: 0; " +
-                "margin: 24px 0; " +
-                "background-color: " + dividerColor + "; " +
-                "border: 0; " +
-                "border-radius: 1px; " +
-                "}");
-
-        // === 链接 - 暗色模式下使用更亮的蓝色 ===
-        styleSheet.addRule("a { " +
-                "color: " + linkColor + "; " +
-                "text-decoration: none; " +
-                "border-bottom: 1px solid transparent; " +
-                "transition: all 0.2s ease; " +
-                "}");
-
-        styleSheet.addRule("a:hover { " +
-                "color: " + linkHoverColor + "; " +
-                "border-bottom-color: " + linkHoverColor + "; " +
-                "}");
-
-        // === 图片 ===
-        styleSheet.addRule("img { " +
-                "max-width: 100%; " +
-                "height: auto; " +
-                "box-sizing: content-box; " +
-                "background-color: " + bgColor + "; " +
-                "border-style: none; " +
-                "border-radius: 4px; " +
-                "}");
-
-        // === 高亮文本（如果支持）===
-        styleSheet.addRule("mark { " +
-                "background-color: " + toHex(ModernColors.getWarningBackgroundColor()) + "; " +
-                "color: " + textColor + "; " +
-                "padding: 0.1em 0.2em; " +
-                "border-radius: 2px; " +
-                "}");
-
-        return styleSheet;
-    }
+    /**
+     * 创建动态的StyleSheet以支持暗色/亮色主题
+     *
+     * 策略：创建完全独立的 StyleSheet，通过给每个 MarkdownEditorPanel 实例设置唯一的 base URL 来隔离
+     */
 
     /**
      * 将 Color 转换为十六进制字符串
      */
     private String toHex(Color color) {
         return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    /**
+     * 生成表格的 inline style
+     */
+    private String getTableStyle() {
+        return "border-collapse:collapse;width:100%;margin:0 0 16px 0;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
+    }
+
+    /**
+     * 生成表格单元格的 inline style
+     */
+    private String getTableCellStyle() {
+        return "padding:8px 12px;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
+    }
+
+    /**
+     * 生成表格表头的 inline style
+     */
+    private String getTableHeaderStyle() {
+        boolean isDark = ModernColors.isDarkTheme();
+        String bgColor = isDark ? toHex(new Color(55, 58, 60)) : toHex(ModernColors.getHoverBackgroundColor());
+        return getTableCellStyle() + "font-weight:600;background-color:" + bgColor + ";";
+    }
+
+    /**
+     * 生成代码块的 inline style
+     */
+    private String getCodeBlockStyle() {
+        return "background-color:" + toHex(ModernColors.getConsoleTextAreaBg()) +
+               ";padding:16px;overflow:auto;font-size:12px;line-height:1.5;border-radius:6px;border:1px solid " +
+               toHex(ModernColors.getBorderLightColor()) +
+               ";margin:0 0 16px 0;font-family:monospace;color:" +
+               toHex(ModernColors.getConsoleText()) +
+               ";display:block;white-space:pre;word-wrap:normal;";
+    }
+
+    /**
+     * 生成行内代码的 inline style
+     */
+    private String getInlineCodeStyle() {
+        boolean isDark = ModernColors.isDarkTheme();
+        String bgColor = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
+        String textColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
+        return "background-color:" + bgColor + ";color:" + textColor +
+               ";padding:2px 6px;margin:0 2px;font-size:12px;border-radius:3px;font-family:monospace;";
+    }
+
+    /**
+     * 生成标题的 inline style
+     */
+    private String getHeadingStyle(int level) {
+        String dividerColor = toHex(ModernColors.getDividerBorderColor());
+        switch (level) {
+            case 1:
+                return "font-size:28px;font-weight:600;margin:24px 0 16px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+            case 2:
+                return "font-size:24px;font-weight:600;margin:20px 0 14px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+            case 3:
+                return "font-size:20px;font-weight:600;margin:18px 0 12px 0;";
+            case 4:
+                return "font-size:16px;font-weight:600;margin:16px 0 10px 0;";
+            case 5:
+                return "font-size:14px;font-weight:600;margin:14px 0 8px 0;";
+            case 6:
+                return "font-size:13px;font-weight:600;margin:12px 0 8px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
+            default:
+                return "";
+        }
+    }
+
+    /**
+     * 生成引用块的 inline style
+     */
+    private String getBlockquoteStyle() {
+        boolean isDark = ModernColors.isDarkTheme();
+        String borderColor = isDark ? "#4a9eff" : toHex(ModernColors.ACCENT_LIGHT);
+        String bgColor = isDark ? "rgba(74,158,255,0.08)" : "rgba(6,182,212,0.03)";
+        return "padding:8px 16px;color:" + toHex(ModernColors.getTextSecondary()) +
+                ";border-left:4px solid " + borderColor + ";background-color:" + bgColor +
+                ";margin:0 0 16px 0;border-radius:0 4px 4px 0;";
+    }
+
+    /**
+     * 生成水平线的 inline style
+     */
+    private String getHrStyle() {
+        return "height:2px;margin:24px 0;background-color:" + toHex(ModernColors.getDividerBorderColor()) + ";border:0;";
+    }
+
+    /**
+     * 获取当前主题的文本颜色
+     */
+    private String getTextColor() {
+        return toHex(ModernColors.getTextPrimary());
+    }
+
+    /**
+     * 获取当前主题的次要文本颜色
+     */
+    private String getSecondaryTextColor() {
+        return toHex(ModernColors.getTextSecondary());
+    }
+
+    /**
+     * 获取当前主题的背景颜色
+     */
+    private String getBgColor() {
+        return toHex(ModernColors.getCardBackgroundColor());
+    }
+
+    /**
+     * 获取当前主题的代码块背景颜色
+     */
+    private String getCodeBgColor() {
+        return toHex(ModernColors.getConsoleTextAreaBg());
+    }
+
+    /**
+     * 获取当前主题的行内代码背景颜色
+     */
+    private String getInlineCodeBg() {
+        boolean isDark = ModernColors.isDarkTheme();
+        return isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
+    }
+
+    /**
+     * 获取当前主题的行内代码文字颜色
+     */
+    private String getInlineCodeColor() {
+        boolean isDark = ModernColors.isDarkTheme();
+        return isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
+    }
+
+    /**
+     * 获取当前主题的边框颜色
+     */
+    private String getBorderColor() {
+        return toHex(ModernColors.getBorderLightColor());
+    }
+
+    /**
+     * 获取当前主题的分隔线颜色
+     */
+    private String getDividerColor() {
+        return toHex(ModernColors.getDividerBorderColor());
     }
 
     private void initUI() {
@@ -758,85 +657,14 @@ public class MarkdownEditorPanel extends JPanel {
     private JPanel createPreviewPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        previewPane = new JEditorPane();
+        previewPane = new JTextPane();
         previewPane.setContentType("text/html");
         previewPane.setEditable(false);
-        previewPane.setBorder(new EmptyBorder(10, 10, 10, 10));
+        previewPane.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        // 创建独立的 HTMLEditorKit 实例，避免影响全局 HTML 渲染器
-        // 重要：不要使用共享的 HTMLEditorKit，这会影响其他组件（如 JTree）的 HTML 渲染
-        HTMLEditorKit kit = new HTMLEditorKit();
-        StyleSheet styleSheet = new StyleSheet(); // 创建新的 StyleSheet 而不是使用默认的
+        // 不设置任何自定义的 EditorKit 和 StyleSheet
+        // 完全使用默认的，样式通过 HTML inline styles 控制
 
-        // 基础样式 - 优化中文字体显示
-        styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; color: #24292e; padding: 16px; background: #fff; }");
-
-        // 标题样式
-        styleSheet.addRule("h1, h2 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }");
-        styleSheet.addRule("h1 { font-size: 2em; margin: 0.67em 0; font-weight: 600; }");
-        styleSheet.addRule("h2 { font-size: 1.5em; margin: 0.75em 0; font-weight: 600; }");
-        styleSheet.addRule("h3 { font-size: 1.25em; margin: 1em 0; font-weight: 600; }");
-        styleSheet.addRule("h4 { font-size: 1em; margin: 1.33em 0; font-weight: 600; }");
-        styleSheet.addRule("h5 { font-size: 0.875em; margin: 1.67em 0; font-weight: 600; }");
-        styleSheet.addRule("h6 { font-size: 0.85em; margin: 2.33em 0; font-weight: 600; color: #6a737d; }");
-
-        // 段落和文本
-        styleSheet.addRule("p { margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("strong { font-weight: 600; }");
-        styleSheet.addRule("em { font-style: italic; }");
-        styleSheet.addRule("del { text-decoration: line-through; }");
-        styleSheet.addRule("s { text-decoration: line-through; }");
-        styleSheet.addRule("strike { text-decoration: line-through; }");
-
-        // 代码样式 - 优化字体大小，对中文显示更友好
-        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 12px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 12px; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; padding: 0; margin: 0; font-size: 12px; }");
-
-        // 引用
-        styleSheet.addRule("blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; margin: 0 0 16px 0; }");
-        styleSheet.addRule("blockquote > :first-child { margin-top: 0; }");
-        styleSheet.addRule("blockquote > :last-child { margin-bottom: 0; }");
-
-        // 列表 - 调整左侧对齐，与其他元素（任务列表、代码块、标题等）保持一致
-        // 使用较小的 padding-left 值，使列表标记尽可能靠近左边缘
-        styleSheet.addRule("ul, ol { padding-left: 1.2em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("li { word-wrap: break-word; margin-left: 0; padding-left: 0; }");
-        styleSheet.addRule("li > p { margin-top: 16px; }");
-        styleSheet.addRule("li + li { margin-top: 0.25em; }");
-
-        // 表格（普通 Markdown 表格）
-        styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: table; width: 100%; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("table tr { background-color: #fff; border-top: 1px solid #c6cbd1; }");
-        styleSheet.addRule("table tr:nth-child(2n) { background-color: #f6f8fa; }");
-        styleSheet.addRule("table th, table td { padding: 6px 13px; border: 1px solid #dfe2e5; }");
-        styleSheet.addRule("table th { font-weight: 600; background-color: #f6f8fa; }");
-
-        // 任务列表表格样式 - 必须在普通表格样式之后，以覆盖默认样式
-        // 使用 !important 或更具体的选择器确保优先级
-        styleSheet.addRule("table.task-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
-        styleSheet.addRule("table.task-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
-        styleSheet.addRule("table.task-item td { border: 0 !important; padding: 0 !important; vertical-align: middle !important; line-height: 1.6 !important; background: transparent !important; }");
-
-        // 普通列表表格样式（无序列表和有序列表）- 与任务列表保持一致
-        styleSheet.addRule("table.list-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
-        styleSheet.addRule("table.list-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
-        styleSheet.addRule("table.list-item td { border: 0 !important; padding: 0 !important; vertical-align: top !important; line-height: 1.6 !important; background: transparent !important; }");
-
-        // 水平线
-        styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; }");
-
-        // 链接
-        styleSheet.addRule("a { color: #0366d6; text-decoration: none; }");
-        styleSheet.addRule("a:hover { text-decoration: underline; }");
-
-        // 图片
-        styleSheet.addRule("img { max-width: 100%; box-sizing: content-box; background-color: #fff; border-style: none; }");
-
-        // 将独立的 StyleSheet 设置到 kit 中
-        kit.setStyleSheet(styleSheet);
-        // 设置独立的 EditorKit 到预览面板，隔离样式影响
-        previewPane.setEditorKit(kit);
 
         JScrollPane scrollPane = new JScrollPane(previewPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
@@ -866,7 +694,7 @@ public class MarkdownEditorPanel extends JPanel {
 
         // 行列号
         JLabel positionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_LINE) + ": 1, " +
-                                          I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_COLUMN) + ": 1");
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_COLUMN) + ": 1");
         positionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         positionLabel.setForeground(Color.GRAY);
         statusBar.add(new JSeparator(SwingConstants.VERTICAL));
@@ -1228,13 +1056,13 @@ public class MarkdownEditorPanel extends JPanel {
         // 查找下一个
         findNextButton.addActionListener(e -> {
             performFind(findField.getText(), true, caseSensitiveCheck.isSelected(),
-                       wrapSearchCheck.isSelected(), dialog);
+                    wrapSearchCheck.isSelected(), dialog);
         });
 
         // 查找上一个
         findPrevButton.addActionListener(e -> {
             performFind(findField.getText(), false, caseSensitiveCheck.isSelected(),
-                       wrapSearchCheck.isSelected(), dialog);
+                    wrapSearchCheck.isSelected(), dialog);
         });
 
         // 替换
@@ -1245,12 +1073,12 @@ public class MarkdownEditorPanel extends JPanel {
 
             if (selected != null && !selected.isEmpty()) {
                 boolean matches = caseSensitive ? find.equals(selected) :
-                                 find.equalsIgnoreCase(selected);
+                        find.equalsIgnoreCase(selected);
                 if (matches) {
                     editorArea.replaceSelection(replaceField.getText());
                     // 替换后自动查找下一个
                     performFind(findField.getText(), true, caseSensitive,
-                               wrapSearchCheck.isSelected(), dialog);
+                            wrapSearchCheck.isSelected(), dialog);
                 }
             }
         });
@@ -1327,14 +1155,14 @@ public class MarkdownEditorPanel extends JPanel {
     /**
      * 执行查找操作
      *
-     * @param searchText 要查找的文本
-     * @param forward true=向前查找，false=向后查找
+     * @param searchText    要查找的文本
+     * @param forward       true=向前查找，false=向后查找
      * @param caseSensitive 是否区分大小写
-     * @param wrapAround 是否循环查找
-     * @param parentDialog 父对话框，用于显示消息
+     * @param wrapAround    是否循环查找
+     * @param parentDialog  父对话框，用于显示消息
      */
     private void performFind(String searchText, boolean forward, boolean caseSensitive,
-                            boolean wrapAround, JDialog parentDialog) {
+                             boolean wrapAround, JDialog parentDialog) {
         if (searchText == null || searchText.isEmpty()) {
             return;
         }
@@ -1483,19 +1311,30 @@ public class MarkdownEditorPanel extends JPanel {
         previewPane.setCaretPosition(0);
     }
 
+
     /**
      * 企业级 Markdown 到 HTML 转换
      * 支持完整的 GitHub Flavored Markdown (GFM) 语法
      */
     private String convertMarkdownToHtml(String markdown) {
         if (markdown == null || markdown.isEmpty()) {
-            return "<html><body></body></html>";
+            return "<html><body style='margin:0;padding:0;font-size:14px;'></body></html>";
         }
 
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html><html><head>");
         html.append("<meta charset='UTF-8'>");
-        html.append("</head><body>");
+        html.append("</head>");
+
+        // 在 body 上使用 inline style 设置基本样式（不使用 StyleSheet）
+        html.append("<body style='");
+        html.append("margin:0;padding:0;");
+        html.append("font-family:sans-serif;");
+        html.append("font-size:14px;");
+        html.append("line-height:1.6;");
+        html.append("color:").append(toHex(ModernColors.getTextPrimary())).append(";");
+        html.append("background:").append(toHex(ModernColors.getCardBackgroundColor())).append(";");
+        html.append("'>");
 
         String[] lines = markdown.split("\n");
         boolean inCodeBlock = false;
@@ -1516,7 +1355,9 @@ public class MarkdownEditorPanel extends JPanel {
                 } else {
                     // 提取语言标识
                     codeLanguage = line.trim().substring(3).trim();
-                    html.append("<pre><code");
+                    html.append("<pre style='").append(getCodeBlockStyle()).append("'>");
+                    // 给 code 标签添加 style，移除可能的边框和背景
+                    html.append("<code style='background:transparent;border:0;padding:0;margin:0;display:block;'");
                     if (!codeLanguage.isEmpty()) {
                         html.append(" class='language-").append(escapeHtml(codeLanguage)).append("'");
                     }
@@ -1527,14 +1368,16 @@ public class MarkdownEditorPanel extends JPanel {
             }
 
             if (inCodeBlock) {
-                html.append(escapeHtml(line)).append("\n");
+                // 去除行尾空白字符，避免渲染为方框
+                String codeLine = line.replaceAll("\\s+$", "");
+                html.append(escapeHtml(codeLine)).append("\n");
                 continue;
             }
 
             // 表格处理
             if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
                 if (!inTable) {
-                    html.append("<table>");
+                    html.append("<table style='").append(getTableStyle()).append("'>");
                     inTable = true;
                 }
 
@@ -1566,9 +1409,9 @@ public class MarkdownEditorPanel extends JPanel {
                 for (int j = start; j < end; j++) {
                     String cell = cells[j].trim();
                     if (isHeader) {
-                        html.append("<th>").append(processInlineMarkdown(cell)).append("</th>");
+                        html.append("<th style='").append(getTableHeaderStyle()).append("'>").append(processInlineMarkdown(cell)).append("</th>");
                     } else {
-                        html.append("<td>").append(processInlineMarkdown(cell)).append("</td>");
+                        html.append("<td style='").append(getTableCellStyle()).append("'>").append(processInlineMarkdown(cell)).append("</td>");
                     }
                 }
 
@@ -1590,39 +1433,39 @@ public class MarkdownEditorPanel extends JPanel {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<h1>").append(processInlineMarkdown(line.substring(2))).append("</h1>");
+                html.append("<h1 style='").append(getHeadingStyle(1)).append("'>").append(processInlineMarkdown(line.substring(2))).append("</h1>");
             } else if (line.startsWith("## ")) {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<h2>").append(processInlineMarkdown(line.substring(3))).append("</h2>");
+                html.append("<h2 style='").append(getHeadingStyle(2)).append("'>").append(processInlineMarkdown(line.substring(3))).append("</h2>");
             } else if (line.startsWith("### ")) {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<h3>").append(processInlineMarkdown(line.substring(4))).append("</h3>");
+                html.append("<h3 style='").append(getHeadingStyle(3)).append("'>").append(processInlineMarkdown(line.substring(4))).append("</h3>");
             } else if (line.startsWith("#### ")) {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<h4>").append(processInlineMarkdown(line.substring(5))).append("</h4>");
+                html.append("<h4 style='").append(getHeadingStyle(4)).append("'>").append(processInlineMarkdown(line.substring(5))).append("</h4>");
             } else if (line.startsWith("##### ")) {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<h5>").append(processInlineMarkdown(line.substring(6))).append("</h5>");
+                html.append("<h5 style='").append(getHeadingStyle(5)).append("'>").append(processInlineMarkdown(line.substring(6))).append("</h5>");
             } else if (line.startsWith("###### ")) {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<h6>").append(processInlineMarkdown(line.substring(7))).append("</h6>");
+                html.append("<h6 style='").append(getHeadingStyle(6)).append("'>").append(processInlineMarkdown(line.substring(7))).append("</h6>");
             }
             // 水平线
             else if (line.trim().equals("---") || line.trim().equals("***") || line.trim().equals("___")) {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<hr>");
+                html.append("<hr style='").append(getHrStyle()).append("'>");
             }
             // 任务列表 - 使用表格布局确保对齐，优化样式
             else if (line.trim().matches("^[-*]\\s+\\[[ xX]\\]\\s+.*")) {
@@ -1697,7 +1540,7 @@ public class MarkdownEditorPanel extends JPanel {
                 inList = false;
                 inOrderedList = false;
                 String content = line.substring(line.indexOf(">") + 1).trim();
-                html.append("<blockquote>").append(processInlineMarkdown(content)).append("</blockquote>");
+                html.append("<blockquote style='").append(getBlockquoteStyle()).append("'>").append(processInlineMarkdown(content)).append("</blockquote>");
             }
             // 空行
             else if (line.trim().isEmpty()) {
@@ -1775,7 +1618,7 @@ public class MarkdownEditorPanel extends JPanel {
         text = text.replaceAll("==(.+?)==", "<mark>$1</mark>");
 
         // 行内代码 `code` (必须在其他处理之后，避免代码中的特殊字符被处理)
-        text = text.replaceAll("`(.+?)`", "<code>$1</code>");
+        text = text.replaceAll("`(.+?)`", "<code style='" + getInlineCodeStyle() + "'>$1</code>");
 
         // 图片 ![alt](url)
         text = text.replaceAll("!\\[([^\\]]*)\\]\\(([^)]+)\\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width: 100%;\" />");

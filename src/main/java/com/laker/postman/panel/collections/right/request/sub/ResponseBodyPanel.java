@@ -16,6 +16,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -45,6 +46,7 @@ public class ResponseBodyPanel extends JPanel {
     private Map<String, List<String>> lastHeaders;
     private final EasyComboBox<String> syntaxComboBox;
     private final FormatButton formatButton;
+    private final CopyButton copyButton;
     private final PreviousButton prevButton;
     private final NextButton nextButton;
     private final WrapToggleButton wrapButton;
@@ -122,6 +124,11 @@ public class ResponseBodyPanel extends JPanel {
         toolBarPanel.add(formatButton);
         toolBarPanel.add(Box.createHorizontalStrut(4));
 
+        // 复制按钮
+        copyButton = new CopyButton();
+        toolBarPanel.add(copyButton);
+        toolBarPanel.add(Box.createHorizontalStrut(4));
+
         // 下载按钮
         downloadButton = new DownloadButton();
         toolBarPanel.add(downloadButton);
@@ -137,6 +144,7 @@ public class ResponseBodyPanel extends JPanel {
 
         downloadButton.addActionListener(e -> saveFile());
         formatButton.addActionListener(e -> formatContent());
+        copyButton.addActionListener(e -> copyToClipboard());
         wrapButton.addActionListener(e -> toggleLineWrap());
         searchField.addActionListener(e -> search(true));
         prevButton.addActionListener(e -> search(false));
@@ -408,6 +416,25 @@ public class ResponseBodyPanel extends JPanel {
     }
 
     /**
+     * 复制内容到剪贴板
+     * 将响应体内容复制到系统剪贴板
+     */
+    private void copyToClipboard() {
+        String text = responseBodyPane.getText();
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+
+        try {
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(new StringSelection(text), null);
+            NotificationUtil.showInfo("Content copied to clipboard");
+        } catch (Exception ex) {
+            NotificationUtil.showError("Copy Error: " + ex.getMessage());
+        }
+    }
+
+    /**
      * 从响应头中获取 Content-Type
      *
      * @return Content-Type 的值，如果不存在则返回空字符串
@@ -558,6 +585,7 @@ public class ResponseBodyPanel extends JPanel {
         scrollPane.setEnabled(enabled);
 
         if (formatButton != null) formatButton.setEnabled(enabled);
+        if (copyButton != null) copyButton.setEnabled(enabled);
         if (prevButton != null) prevButton.setEnabled(enabled);
         if (nextButton != null) nextButton.setEnabled(enabled);
         if (wrapButton != null) wrapButton.setEnabled(enabled);

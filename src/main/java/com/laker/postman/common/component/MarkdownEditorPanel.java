@@ -122,22 +122,18 @@ public class MarkdownEditorPanel extends JPanel {
 
     private String getHeadingStyle(int level) {
         String dividerColor = toHex(ModernColors.getDividerBorderColor());
-        switch (level) {
-            case 1:
-                return "font-size:20px;font-weight:600;margin:24px 0 16px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
-            case 2:
-                return "font-size:18px;font-weight:600;margin:20px 0 14px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
-            case 3:
-                return "font-size:16px;font-weight:600;margin:18px 0 12px 0;";
-            case 4:
-                return "font-size:14px;font-weight:600;margin:16px 0 10px 0;";
-            case 5:
-                return "font-size:12px;font-weight:600;margin:14px 0 8px 0;";
-            case 6:
-                return "font-size:11px;font-weight:600;margin:12px 0 8px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
-            default:
-                return "";
-        }
+        return switch (level) {
+            case 1 ->
+                    "font-size:18px;font-weight:600;margin:6px 0 6px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+            case 2 ->
+                    "font-size:16px;font-weight:600;margin:6px 0 4px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+            case 3 -> "font-size:14px;font-weight:600;margin:6px 0 4px 0;";
+            case 4 -> "font-size:12px;font-weight:600;margin:6px 0 4px 0;";
+            case 5 -> "font-size:11px;font-weight:600;margin:6px 0 4px 0;";
+            case 6 ->
+                    "font-size:10px;font-weight:600;margin:8px 0 6px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
+            default -> "";
+        };
     }
 
     private String getBlockquoteStyle() {

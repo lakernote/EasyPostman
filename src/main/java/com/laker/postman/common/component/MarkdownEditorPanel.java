@@ -105,6 +105,7 @@ public class MarkdownEditorPanel extends JPanel {
 
     /**
      * 创建动态的StyleSheet以支持暗色/亮色主题
+     * 完全使用 ModernColors 配色方案，确保与应用整体风格一致
      */
     private StyleSheet createDynamicStyleSheet() {
         StyleSheet styleSheet = new StyleSheet();
@@ -112,94 +113,242 @@ public class MarkdownEditorPanel extends JPanel {
         // 根据当前主题选择颜色（使用 ModernColors）
         boolean isDark = ModernColors.isDarkTheme();
 
-        // 文本和背景颜色
+        // 文本颜色
         String textColor = toHex(ModernColors.getTextPrimary());
-        String bgColor = toHex(ModernColors.getCardBackgroundColor());
         String secondaryText = toHex(ModernColors.getTextSecondary());
         String hintText = toHex(ModernColors.getTextHint());
 
-        // 代码块颜色
-        String codeBlockBg = isDark ? "#2d2d2d" : "#f6f8fa";
-        String inlineCodeBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(27,31,35,0.05)";
+        // 背景颜色
+        String bgColor = toHex(ModernColors.getCardBackgroundColor());
+        String hoverBgColor = toHex(ModernColors.getHoverBackgroundColor());
+
+        // 代码块颜色 - 使用 Console 的配色，暗色模式下优化对比度
+        String codeBlockBg = toHex(ModernColors.getConsoleTextAreaBg());
+        String inlineCodeBg = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
+        String inlineCodeColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
 
         // 边框和分隔线颜色
-        String borderColor = toHex(ModernColors.getBorderLightColor());
+        String borderLight = toHex(ModernColors.getBorderLightColor());
         String dividerColor = toHex(ModernColors.getDividerBorderColor());
 
-        // 引用块颜色
-        String quoteBorder = toHex(ModernColors.getBorderMediumColor());
-        String quoteColor = secondaryText;
+        // 链接和强调色 - 暗色模式下使用更亮的蓝色
+        String linkColor = isDark ? "#4a9eff" : toHex(ModernColors.PRIMARY);
+        String linkHoverColor = isDark ? "#66b3ff" : toHex(ModernColors.PRIMARY_DARK);
 
-        // 链接颜色
-        String linkColor = toHex(ModernColors.PRIMARY);
+        // 表格颜色 - 暗色模式下优化对比度
+        String tableStripeBg = isDark ? toHex(new Color(50, 52, 54)) : toHex(new Color(249, 250, 251));
+        String tableHeaderBg = isDark ? toHex(new Color(55, 58, 60)) : hoverBgColor;
 
-        // 表格颜色
-        String tableBorder = borderColor;
-        String tableHeaderBg = toHex(ModernColors.getHoverBackgroundColor());
-        String tableStripeBg = isDark ? "#3a3c3e" : "#f6f8fa";
+        // 引用块颜色 - 暗色模式下使用更柔和的颜色
+        String quoteBorderColor = isDark ? "#4a9eff" : toHex(ModernColors.ACCENT_LIGHT);
+        String quoteBgColor = isDark ? "rgba(74, 158, 255, 0.08)" : "rgba(6, 182, 212, 0.03)";
 
-        // 基础样式
-        styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; color: " + textColor + "; padding: 16px; background: " + bgColor + "; }");
+        // === 基础样式 ===
+        styleSheet.addRule("body { " +
+                "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; " +
+                "font-size: 14px; " +
+                "line-height: 1.6; " +
+                "color: " + textColor + "; " +
+                "padding: 16px; " +
+                "background: " + bgColor + "; " +
+                "}");
 
-        // 标题样式
-        styleSheet.addRule("h1, h2 { border-bottom: 1px solid " + dividerColor + "; padding-bottom: 0.3em; }");
-        styleSheet.addRule("h1 { font-size: 2em; margin: 0.67em 0; font-weight: 600; }");
-        styleSheet.addRule("h2 { font-size: 1.5em; margin: 0.75em 0; font-weight: 600; }");
+        // === 标题样式 ===
+        styleSheet.addRule("h1, h2 { " +
+                "border-bottom: 2px solid " + dividerColor + "; " +
+                "padding-bottom: 0.3em; " +
+                "margin-top: 24px; " +
+                "margin-bottom: 16px; " +
+                "}");
+        styleSheet.addRule("h1 { font-size: 2em; font-weight: 600; }");
+        styleSheet.addRule("h2 { font-size: 1.5em; font-weight: 600; }");
         styleSheet.addRule("h3 { font-size: 1.25em; margin: 1em 0; font-weight: 600; }");
         styleSheet.addRule("h4 { font-size: 1em; margin: 1.33em 0; font-weight: 600; }");
         styleSheet.addRule("h5 { font-size: 0.875em; margin: 1.67em 0; font-weight: 600; }");
         styleSheet.addRule("h6 { font-size: 0.85em; margin: 2.33em 0; font-weight: 600; color: " + hintText + "; }");
 
-        // 段落和文本
+        // === 段落和文本 ===
         styleSheet.addRule("p { margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("strong { font-weight: 600; }");
+        styleSheet.addRule("strong { font-weight: 600; color: " + textColor + "; }");
         styleSheet.addRule("em { font-style: italic; }");
-        styleSheet.addRule("del { text-decoration: line-through; }");
-        styleSheet.addRule("s { text-decoration: line-through; }");
-        styleSheet.addRule("strike { text-decoration: line-through; }");
+        styleSheet.addRule("del, s, strike { text-decoration: line-through; opacity: 0.65; }");
 
-        // 代码样式 - 优化字体大小，对中文显示更友好
-        styleSheet.addRule("code { background-color: " + inlineCodeBg + "; padding: 0.2em 0.4em; margin: 0; font-size: 12px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre { background-color: " + codeBlockBg + "; padding: 16px; overflow: auto; font-size: 12px; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; padding: 0; margin: 0; font-size: 12px; }");
+        // === 代码样式 - 优化暗色模式的对比度和可读性 ===
+        styleSheet.addRule("code { " +
+                "background-color: " + inlineCodeBg + "; " +
+                "color: " + inlineCodeColor + "; " +
+                "padding: 0.2em 0.4em; " +
+                "margin: 0; " +
+                "font-size: 85%; " +
+                "border-radius: 3px; " +
+                "font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; " +
+                "}");
 
-        // 引用
-        styleSheet.addRule("blockquote { padding: 0 1em; color: " + quoteColor + "; border-left: 0.25em solid " + quoteBorder + "; margin: 0 0 16px 0; }");
+        styleSheet.addRule("pre { " +
+                "background-color: " + codeBlockBg + "; " +
+                "padding: 16px; " +
+                "overflow: auto; " +
+                "font-size: 85%; " +
+                "line-height: 1.45; " +
+                "border-radius: 6px; " +
+                "border: 1px solid " + borderLight + "; " +
+                "margin-top: 0; " +
+                "margin-bottom: 16px; " +
+                "font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; " +
+                "}");
+
+        styleSheet.addRule("pre code { " +
+                "background-color: transparent; " +
+                "color: " + toHex(ModernColors.getConsoleText()) + "; " +
+                "border: 0; " +
+                "display: inline; " +
+                "padding: 0; " +
+                "margin: 0; " +
+                "font-size: 100%; " +
+                "}");
+
+        // === 引用块 - 暗色模式下使用更柔和的蓝色调 ===
+        styleSheet.addRule("blockquote { " +
+                "padding: 0.5em 1em; " +
+                "color: " + secondaryText + "; " +
+                "border-left: 4px solid " + quoteBorderColor + "; " +
+                "background-color: " + quoteBgColor + "; " +
+                "margin: 0 0 16px 0; " +
+                "border-radius: 0 4px 4px 0; " +
+                "}");
         styleSheet.addRule("blockquote > :first-child { margin-top: 0; }");
         styleSheet.addRule("blockquote > :last-child { margin-bottom: 0; }");
 
-        // 列表 - 调整左侧对齐，与其他元素（任务列表、代码块、标题等）保持一致
-        styleSheet.addRule("ul, ol { padding-left: 1.2em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("li { word-wrap: break-word; margin-left: 0; padding-left: 0; }");
+        // === 列表 ===
+        styleSheet.addRule("ul, ol { padding-left: 1.5em; margin-left: 0; margin-top: 0; margin-bottom: 16px; }");
+        styleSheet.addRule("li { word-wrap: break-word; margin-left: 0; padding-left: 0.2em; margin-bottom: 0.25em; }");
         styleSheet.addRule("li > p { margin-top: 16px; }");
-        styleSheet.addRule("li + li { margin-top: 0.25em; }");
 
-        // 表格（普通 Markdown 表格）
-        styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: table; width: 100%; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("table tr { background-color: " + bgColor + "; border-top: 1px solid " + tableBorder + "; }");
-        styleSheet.addRule("table tr:nth-child(2n) { background-color: " + tableStripeBg + "; }");
-        styleSheet.addRule("table th, table td { padding: 6px 13px; border: 1px solid " + tableBorder + "; }");
-        styleSheet.addRule("table th { font-weight: 600; background-color: " + tableHeaderBg + "; }");
+        // === 表格 - 暗色模式下优化对比度 ===
+        styleSheet.addRule("table { " +
+                "border-spacing: 0; " +
+                "border-collapse: collapse; " +
+                "display: table; " +
+                "width: 100%; " +
+                "margin-top: 0; " +
+                "margin-bottom: 16px; " +
+                "border: 1px solid " + borderLight + "; " +
+                "border-radius: 6px; " +
+                "overflow: hidden; " +
+                "}");
 
-        // 任务列表表格样式
-        styleSheet.addRule("table.task-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
-        styleSheet.addRule("table.task-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
-        styleSheet.addRule("table.task-item td { border: 0 !important; padding: 0 !important; vertical-align: middle !important; line-height: 1.6 !important; background: transparent !important; }");
+        styleSheet.addRule("table tr { " +
+                "background-color: " + bgColor + "; " +
+                "border-top: 1px solid " + borderLight + "; " +
+                "}");
 
-        // 普通列表表格样式
-        styleSheet.addRule("table.list-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
-        styleSheet.addRule("table.list-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
-        styleSheet.addRule("table.list-item td { border: 0 !important; padding: 0 !important; vertical-align: top !important; line-height: 1.6 !important; background: transparent !important; }");
+        styleSheet.addRule("table tr:nth-child(2n) { " +
+                "background-color: " + tableStripeBg + "; " +
+                "}");
 
-        // 水平线
-        styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: " + dividerColor + "; border: 0; }");
+        styleSheet.addRule("table th, table td { " +
+                "padding: 8px 13px; " +
+                "border: 1px solid " + borderLight + "; " +
+                "}");
 
-        // 链接
-        styleSheet.addRule("a { color: " + linkColor + "; text-decoration: none; }");
-        styleSheet.addRule("a:hover { text-decoration: underline; }");
+        styleSheet.addRule("table th { " +
+                "font-weight: 600; " +
+                "background-color: " + tableHeaderBg + "; " +
+                "color: " + textColor + "; " +
+                "}");
 
-        // 图片
-        styleSheet.addRule("img { max-width: 100%; box-sizing: content-box; background-color: " + bgColor + "; border-style: none; }");
+        // === 任务列表表格样式 ===
+        styleSheet.addRule("table.task-item { " +
+                "border: 0 !important; " +
+                "margin: 0 !important; " +
+                "padding: 0 !important; " +
+                "margin-bottom: 0.25em !important; " +
+                "border-spacing: 0 !important; " +
+                "width: 100% !important; " +
+                "background: transparent !important; " +
+                "border-collapse: separate !important; " +
+                "}");
+
+        styleSheet.addRule("table.task-item tr { " +
+                "border: 0 !important; " +
+                "background: transparent !important; " +
+                "border-top: 0 !important; " +
+                "}");
+
+        styleSheet.addRule("table.task-item td { " +
+                "border: 0 !important; " +
+                "padding: 0 !important; " +
+                "vertical-align: middle !important; " +
+                "line-height: 1.6 !important; " +
+                "background: transparent !important; " +
+                "}");
+
+        // === 普通列表表格样式 ===
+        styleSheet.addRule("table.list-item { " +
+                "border: 0 !important; " +
+                "margin: 0 !important; " +
+                "padding: 0 !important; " +
+                "margin-bottom: 0.25em !important; " +
+                "border-spacing: 0 !important; " +
+                "width: 100% !important; " +
+                "background: transparent !important; " +
+                "border-collapse: separate !important; " +
+                "}");
+
+        styleSheet.addRule("table.list-item tr { " +
+                "border: 0 !important; " +
+                "background: transparent !important; " +
+                "border-top: 0 !important; " +
+                "}");
+
+        styleSheet.addRule("table.list-item td { " +
+                "border: 0 !important; " +
+                "padding: 0 !important; " +
+                "vertical-align: top !important; " +
+                "line-height: 1.6 !important; " +
+                "background: transparent !important; " +
+                "}");
+
+        // === 水平线 ===
+        styleSheet.addRule("hr { " +
+                "height: 2px; " +
+                "padding: 0; " +
+                "margin: 24px 0; " +
+                "background-color: " + dividerColor + "; " +
+                "border: 0; " +
+                "border-radius: 1px; " +
+                "}");
+
+        // === 链接 - 暗色模式下使用更亮的蓝色 ===
+        styleSheet.addRule("a { " +
+                "color: " + linkColor + "; " +
+                "text-decoration: none; " +
+                "border-bottom: 1px solid transparent; " +
+                "transition: all 0.2s ease; " +
+                "}");
+
+        styleSheet.addRule("a:hover { " +
+                "color: " + linkHoverColor + "; " +
+                "border-bottom-color: " + linkHoverColor + "; " +
+                "}");
+
+        // === 图片 ===
+        styleSheet.addRule("img { " +
+                "max-width: 100%; " +
+                "height: auto; " +
+                "box-sizing: content-box; " +
+                "background-color: " + bgColor + "; " +
+                "border-style: none; " +
+                "border-radius: 4px; " +
+                "}");
+
+        // === 高亮文本（如果支持）===
+        styleSheet.addRule("mark { " +
+                "background-color: " + toHex(ModernColors.getWarningBackgroundColor()) + "; " +
+                "color: " + textColor + "; " +
+                "padding: 0.1em 0.2em; " +
+                "border-radius: 2px; " +
+                "}");
 
         return styleSheet;
     }
@@ -538,34 +687,6 @@ public class MarkdownEditorPanel extends JPanel {
         JSeparator separator = new JSeparator(SwingConstants.VERTICAL);
         separator.setPreferredSize(new Dimension(1, 20));
         separator.setForeground(new Color(220, 220, 220));
-        return separator;
-    }
-
-    /**
-     * 创建工具栏分组
-     */
-    private JPanel createToolbarSection(String title, JComponent[] components) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
-        panel.setOpaque(false);
-
-        JLabel label = new JLabel(title + ":");
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        label.setForeground(Color.GRAY);
-        panel.add(label);
-
-        for (JComponent component : components) {
-            panel.add(component);
-        }
-
-        return panel;
-    }
-
-    /**
-     * 创建分隔符
-     */
-    private Component createSeparator() {
-        JSeparator separator = new JSeparator(SwingConstants.VERTICAL);
-        separator.setMaximumSize(new Dimension(1, 30));
         return separator;
     }
 

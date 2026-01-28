@@ -134,6 +134,9 @@ public final class MessageKeys {
     public static final String MARKDOWN_FIND_LABEL = "markdown.find_label";
     public static final String MARKDOWN_REPLACE_LABEL = "markdown.replace_label";
     public static final String MARKDOWN_FIND_NEXT = "markdown.find_next";
+    public static final String MARKDOWN_FIND_PREV = "markdown.find_prev";
+    public static final String MARKDOWN_CASE_SENSITIVE = "markdown.case_sensitive";
+    public static final String MARKDOWN_WRAP_SEARCH = "markdown.wrap_search";
     public static final String MARKDOWN_REPLACE = "markdown.replace";
     public static final String MARKDOWN_REPLACE_ALL = "markdown.replace_all";
     public static final String MARKDOWN_CLOSE = "markdown.close";

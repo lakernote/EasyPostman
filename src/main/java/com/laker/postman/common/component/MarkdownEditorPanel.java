@@ -1184,73 +1184,206 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private void showFindDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-                I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE), true);
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE), false); // 改为非模态对话框
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.getRootPane().setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
-        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_LABEL)));
+        // 主面板
+        JPanel mainPanel = new JPanel(new BorderLayout(5, 10));
+
+        // 输入面板
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_LABEL)));
         JTextField findField = new JTextField(20);
-        panel.add(findField);
+        inputPanel.add(findField);
 
-        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_LABEL)));
+        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_LABEL)));
         JTextField replaceField = new JTextField(20);
-        panel.add(replaceField);
+        inputPanel.add(replaceField);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton findButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_NEXT));
+        mainPanel.add(inputPanel, BorderLayout.NORTH);
+
+        // 选项面板
+        JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JCheckBox caseSensitiveCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.MARKDOWN_CASE_SENSITIVE), false);
+        JCheckBox wrapSearchCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.MARKDOWN_WRAP_SEARCH), true);
+        optionsPanel.add(caseSensitiveCheck);
+        optionsPanel.add(wrapSearchCheck);
+        mainPanel.add(optionsPanel, BorderLayout.CENTER);
+
+        dialog.add(mainPanel, BorderLayout.CENTER);
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+        JButton findNextButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_NEXT));
+        JButton findPrevButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_PREV));
         JButton replaceButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE));
         JButton replaceAllButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_ALL));
         JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_CLOSE));
 
-        findButton.addActionListener(e -> {
-            String text = editorArea.getText();
-            String find = findField.getText();
-            int pos = editorArea.getCaretPosition();
-            int index = text.indexOf(find, pos);
-            if (index >= 0) {
-                editorArea.setSelectionStart(index);
-                editorArea.setSelectionEnd(index + find.length());
-            } else {
-                JOptionPane.showMessageDialog(dialog,
-                        I18nUtil.getMessage(MessageKeys.MARKDOWN_NOT_FOUND),
-                        I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
-                        JOptionPane.INFORMATION_MESSAGE);
-            }
+        // 查找下一个
+        findNextButton.addActionListener(e -> {
+            performFind(findField.getText(), true, caseSensitiveCheck.isSelected(),
+                       wrapSearchCheck.isSelected(), dialog);
         });
 
+        // 查找上一个
+        findPrevButton.addActionListener(e -> {
+            performFind(findField.getText(), false, caseSensitiveCheck.isSelected(),
+                       wrapSearchCheck.isSelected(), dialog);
+        });
+
+        // 替换
         replaceButton.addActionListener(e -> {
             String selected = editorArea.getSelectedText();
             String find = findField.getText();
-            if (find.equals(selected)) {
-                editorArea.replaceSelection(replaceField.getText());
+            boolean caseSensitive = caseSensitiveCheck.isSelected();
+
+            if (selected != null && !selected.isEmpty()) {
+                boolean matches = caseSensitive ? find.equals(selected) :
+                                 find.equalsIgnoreCase(selected);
+                if (matches) {
+                    editorArea.replaceSelection(replaceField.getText());
+                    // 替换后自动查找下一个
+                    performFind(findField.getText(), true, caseSensitive,
+                               wrapSearchCheck.isSelected(), dialog);
+                }
             }
         });
 
+        // 全部替换
         replaceAllButton.addActionListener(e -> {
             String text = editorArea.getText();
             String find = findField.getText();
             String replace = replaceField.getText();
-            text = text.replace(find, replace);
-            editorArea.setText(text);
+
+            if (find.isEmpty()) {
+                return;
+            }
+
+            int count = 0;
+            if (caseSensitiveCheck.isSelected()) {
+                // 区分大小写
+                String newText = text;
+                int index = 0;
+                while ((index = newText.indexOf(find, index)) != -1) {
+                    count++;
+                    index += find.length();
+                }
+                newText = text.replace(find, replace);
+                editorArea.setText(newText);
+            } else {
+                // 不区分大小写
+                StringBuilder result = new StringBuilder();
+                String lowerText = text.toLowerCase();
+                String lowerFind = find.toLowerCase();
+                int lastIndex = 0;
+                int index;
+
+                while ((index = lowerText.indexOf(lowerFind, lastIndex)) != -1) {
+                    result.append(text, lastIndex, index);
+                    result.append(replace);
+                    lastIndex = index + find.length();
+                    count++;
+                }
+                result.append(text.substring(lastIndex));
+                editorArea.setText(result.toString());
+            }
+
             JOptionPane.showMessageDialog(dialog,
-                    I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_COMPLETE),
+                    I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_COMPLETE) + " (" + count + ")",
                     I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
                     JOptionPane.INFORMATION_MESSAGE);
         });
 
         closeButton.addActionListener(e -> dialog.dispose());
 
-        buttonPanel.add(findButton);
+        buttonPanel.add(findPrevButton);
+        buttonPanel.add(findNextButton);
         buttonPanel.add(replaceButton);
         buttonPanel.add(replaceAllButton);
         buttonPanel.add(closeButton);
 
-        dialog.add(panel, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 设置默认按钮
+        dialog.getRootPane().setDefaultButton(findNextButton);
+
+        // 回车键查找下一个
+        findField.addActionListener(e -> findNextButton.doClick());
+
         dialog.pack();
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
+
+        // 聚焦到查找框
+        SwingUtilities.invokeLater(findField::requestFocus);
+    }
+
+    /**
+     * 执行查找操作
+     *
+     * @param searchText 要查找的文本
+     * @param forward true=向前查找，false=向后查找
+     * @param caseSensitive 是否区分大小写
+     * @param wrapAround 是否循环查找
+     * @param parentDialog 父对话框，用于显示消息
+     */
+    private void performFind(String searchText, boolean forward, boolean caseSensitive,
+                            boolean wrapAround, JDialog parentDialog) {
+        if (searchText == null || searchText.isEmpty()) {
+            return;
+        }
+
+        String text = editorArea.getText();
+        String searchInText = caseSensitive ? text : text.toLowerCase();
+        String searchFor = caseSensitive ? searchText : searchText.toLowerCase();
+
+        int currentPos = forward ? editorArea.getSelectionEnd() : editorArea.getSelectionStart();
+        int index = -1;
+
+        if (forward) {
+            // 向前查找
+            index = searchInText.indexOf(searchFor, currentPos);
+
+            // 如果没找到且允许循环，从头开始
+            if (index == -1 && wrapAround && currentPos > 0) {
+                index = searchInText.indexOf(searchFor, 0);
+            }
+        } else {
+            // 向后查找
+            index = searchInText.lastIndexOf(searchFor, currentPos - 1);
+
+            // 如果没找到且允许循环，从末尾开始
+            if (index == -1 && wrapAround && currentPos < text.length()) {
+                index = searchInText.lastIndexOf(searchFor, text.length());
+            }
+        }
+
+        if (index >= 0) {
+            // 找到了，选中并滚动到可见区域
+            editorArea.setSelectionStart(index);
+            editorArea.setSelectionEnd(index + searchText.length());
+            editorArea.getCaret().setSelectionVisible(true);
+
+            // 滚动到选中的文本
+            try {
+                Rectangle rect = editorArea.modelToView(index);
+                if (rect != null) {
+                    editorArea.scrollRectToVisible(rect);
+                }
+            } catch (Exception ex) {
+                // 忽略滚动错误
+            }
+
+            editorArea.requestFocus();
+        } else {
+            // 没找到
+            JOptionPane.showMessageDialog(parentDialog,
+                    I18nUtil.getMessage(MessageKeys.MARKDOWN_NOT_FOUND),
+                    I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     /**

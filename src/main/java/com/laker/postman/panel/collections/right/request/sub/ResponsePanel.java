@@ -750,29 +750,11 @@ public class ResponsePanel extends JPanel {
     }
 
     /**
-     * 显示加载遮罩并自定义消息
-     */
-    public void showLoadingOverlay(String message) {
-        if (loadingOverlay != null) {
-            SwingUtilities.invokeLater(() -> loadingOverlay.showLoading(message));
-        }
-    }
-
-    /**
      * 隐藏加载遮罩
      */
     public void hideLoadingOverlay() {
         if (loadingOverlay != null) {
-            SwingUtilities.invokeLater(() -> loadingOverlay.hideLoading());
-        }
-    }
-
-    /**
-     * 更新加载消息
-     */
-    public void updateLoadingMessage(String message) {
-        if (loadingOverlay != null && loadingOverlay.isLoading()) {
-            SwingUtilities.invokeLater(() -> loadingOverlay.setMessage(message));
+            SwingUtilities.invokeLater(loadingOverlay::hideLoading);
         }
     }
 
@@ -974,55 +956,6 @@ public class ResponsePanel extends JPanel {
      */
     public void switchToResponseBodyTab() {
         switchToTab(0); // Response Body 总是第一个 tab
-    }
-
-    /**
-     * 切换到 Response Headers tab
-     */
-    public void switchToResponseHeadersTab() {
-        if (protocol.isHttpProtocol()) {
-            switchToTab(1); // HTTP: Headers 是第二个
-        } else {
-            switchToTab(1); // WebSocket/SSE: Headers 也是第二个（索引1）
-        }
-    }
-
-    /**
-     * 切换到 Tests tab（仅 HTTP 协议）
-     */
-    public void switchToTestsTab() {
-        if (protocol.isHttpProtocol()) {
-            switchToTab(2); // Tests 是第三个 tab
-        }
-    }
-
-    /**
-     * 切换到 Network Log tab（仅 HTTP 协议）
-     */
-    public void switchToNetworkLogTab() {
-        if (protocol.isHttpProtocol()) {
-            switchToTab(3); // Network Log 是第四个 tab
-        }
-    }
-
-    /**
-     * 切换到 Timing tab（仅 HTTP 协议）
-     */
-    public void switchToTimingTab() {
-        if (protocol.isHttpProtocol()) {
-            switchToTab(4); // Timing 是第五个 tab
-        }
-    }
-
-    /**
-     * 切换到 Log tab（WebSocket/SSE 消息日志）
-     */
-    public void switchToLogTab() {
-        if (protocol.isWebSocketProtocol() || protocol.isSseProtocol()) {
-            switchToTab(0); // WebSocket/SSE: Log 是第一个 tab
-        } else if (protocol.isHttpProtocol()) {
-            switchToTab(5); // HTTP: Log 是第六个 tab
-        }
     }
 
     /**

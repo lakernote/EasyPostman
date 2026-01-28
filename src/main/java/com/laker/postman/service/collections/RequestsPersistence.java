@@ -166,6 +166,11 @@ public class RequestsPersistence {
             }
         }
 
+        // 解析分组描述
+        if (groupJson.containsKey("description")) {
+            group.setDescription(groupJson.getStr("description", ""));
+        }
+
         // 解析分组级别的认证信息
         if (groupJson.containsKey("authType")) {
             group.setAuthType(groupJson.getStr("authType", ""));
@@ -235,6 +240,7 @@ public class RequestsPersistence {
             // 新格式：使用RequestGroup对象
             groupJson.set("id", group.getId());
             groupJson.set("name", group.getName());
+            groupJson.set("description", group.getDescription());
             groupJson.set("authType", group.getAuthType());
             groupJson.set("authUsername", group.getAuthUsername());
             groupJson.set("authPassword", group.getAuthPassword());

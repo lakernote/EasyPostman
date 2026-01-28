@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
+import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
@@ -37,11 +38,13 @@ public class GroupEditPanel extends JPanel {
 
     // UI Components
     private JTextField nameField;
+    private MarkdownEditorPanel descriptionEditor;
     private AuthTabPanel authTabPanel;
     private ScriptPanel scriptPanel;
 
     // 原始数据快照，用于检测变化
     private String originalName;
+    private String originalDescription;
     private String originalAuthType;
     private String originalAuthUsername;
     private String originalAuthPassword;
@@ -174,26 +177,49 @@ public class GroupEditPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(Box.createHorizontalGlue(), gbc);
 
-        // Description
+        // Description Label
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.gridwidth = 3;
+        gbc.gridwidth = 1;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        JLabel descLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION) +
-                        "</i></html>"
-        );
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        JLabel descLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION_LABEL));
+        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+        descLabel.setBorder(new EmptyBorder(5, 0, 0, 0)); // 顶部对齐文本区域
         formPanel.add(descLabel, gbc);
 
-        // 垂直填充
-        gbc.gridy = 2;
+        // Description Markdown Editor
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        formPanel.add(Box.createVerticalGlue(), gbc);
+        gbc.anchor = GridBagConstraints.WEST;
 
-        panel.add(formPanel, BorderLayout.NORTH);
+        descriptionEditor = new MarkdownEditorPanel();
+        // 使用最小尺寸而不是固定尺寸，让编辑器自适应容器大小
+        descriptionEditor.setMinimumSize(new Dimension(600, 250));
+        descriptionEditor.setPreferredSize(new Dimension(800, 350));
+        formPanel.add(descriptionEditor, gbc);
+
+
+        // Description hint
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        JLabel hintLabel = new JLabel(
+                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
+                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION_PLACEHOLDER) +
+                        "</i></html>"
+        );
+        formPanel.add(hintLabel, gbc);
+
+        panel.add(formPanel, BorderLayout.CENTER);
         return panel;
     }
 
@@ -203,6 +229,21 @@ public class GroupEditPanel extends JPanel {
     private void setupAutoSaveListeners() {
         // 监听名称字段变化
         nameField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
+                triggerAutoSave();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                triggerAutoSave();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                triggerAutoSave();
+            }
+        });
+
+        // 监听描述字段变化
+        descriptionEditor.addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
                 triggerAutoSave();
             }
@@ -262,6 +303,7 @@ public class GroupEditPanel extends JPanel {
 
         // 保存数据到模型
         group.setName(newName);
+        group.setDescription(descriptionEditor.getText());
         group.setAuthType(authTabPanel.getAuthType());
         group.setAuthUsername(authTabPanel.getUsername());
         group.setAuthPassword(authTabPanel.getPassword());
@@ -292,6 +334,7 @@ public class GroupEditPanel extends JPanel {
      */
     private boolean isModified() {
         if (!safeEquals(originalName, nameField.getText())) return true;
+        if (!safeEquals(originalDescription, descriptionEditor.getText())) return true;
         if (!safeEquals(originalAuthType, authTabPanel.getAuthType())) return true;
         if (!safeEquals(originalAuthUsername, authTabPanel.getUsername())) return true;
         if (!safeEquals(originalAuthPassword, authTabPanel.getPassword())) return true;
@@ -315,6 +358,7 @@ public class GroupEditPanel extends JPanel {
      */
     private void updateOriginalSnapshot() {
         originalName = nameField.getText();
+        originalDescription = descriptionEditor.getText();
         originalAuthType = authTabPanel.getAuthType();
         originalAuthUsername = authTabPanel.getUsername();
         originalAuthPassword = authTabPanel.getPassword();
@@ -326,6 +370,7 @@ public class GroupEditPanel extends JPanel {
     private void loadGroupData() {
         // Load general data
         nameField.setText(group.getName());
+        descriptionEditor.setText(group.getDescription() != null ? group.getDescription() : "");
 
         // Load auth data using AuthTabPanel
         authTabPanel.setAuthType(group.getAuthType());

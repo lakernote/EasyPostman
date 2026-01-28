@@ -607,6 +607,8 @@ public final class MessageKeys {
     public static final String GROUP_EDIT_NAME_LABEL = "group.edit.name.label";
     public static final String GROUP_EDIT_NAME_EMPTY = "group.edit.name.empty";
     public static final String GROUP_EDIT_DESCRIPTION = "group.edit.description";
+    public static final String GROUP_EDIT_DESCRIPTION_LABEL = "group.edit.description.label";
+    public static final String GROUP_EDIT_DESCRIPTION_PLACEHOLDER = "group.edit.description.placeholder";
     public static final String GROUP_EDIT_AUTH_INFO = "group.edit.auth.info";
     public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
     public static final String GROUP_EDIT_VALIDATION_ERROR = "group.edit.validation.error";

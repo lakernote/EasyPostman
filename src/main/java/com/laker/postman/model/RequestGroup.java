@@ -16,6 +16,7 @@ import java.util.UUID;
 public class RequestGroup implements Serializable {
     private String id = ""; // 唯一标识符
     private String name = ""; // 分组名称
+    private String description = ""; // 分组描述
     private String authType = AuthType.NONE.getConstant(); // 认证类型（none/basic/bearer），分组默认无认证
     private String authUsername = ""; // Basic用户名
     private String authPassword = ""; // Basic密码

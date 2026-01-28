@@ -518,10 +518,10 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("s { text-decoration: line-through; }");
         styleSheet.addRule("strike { text-decoration: line-through; }");
 
-        // 代码样式 - 增大字体，提高可读性
-        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 95%; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
-        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 95%; line-height: 1.45; border-radius: 6px; margin-top: 0; margin-bottom: 16px; }");
-        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; max-width: auto; padding: 0; margin: 0; overflow: visible; line-height: inherit; word-wrap: normal; font-size: 100%; }");
+        // 代码样式 - 设置合适的字体大小，确保可读性
+        styleSheet.addRule("code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 13px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre { background-color: #f6f8fa; padding: 16px; overflow: auto; font-size: 13px; line-height: 1.5; border-radius: 6px; margin-top: 0; margin-bottom: 16px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; }");
+        styleSheet.addRule("pre code { background-color: transparent; border: 0; display: inline; padding: 0; margin: 0; font-size: 13px; }");
 
         // 引用
         styleSheet.addRule("blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; margin: 0 0 16px 0; }");
@@ -534,17 +534,18 @@ public class MarkdownEditorPanel extends JPanel {
         styleSheet.addRule("li > p { margin-top: 16px; }");
         styleSheet.addRule("li + li { margin-top: 0.25em; }");
 
-        // 任务列表 - 修复 checkbox 和文本的垂直对齐
-        styleSheet.addRule("ul.task-list { list-style: none; padding-left: 1.5em; }");
-        styleSheet.addRule("li.task-list-item { list-style: none; }");
-        styleSheet.addRule("input[type='checkbox'] { margin-right: 0.5em; vertical-align: middle; margin-top: -2px; }");
-
-        // 表格
+        // 表格（普通 Markdown 表格）
         styleSheet.addRule("table { border-spacing: 0; border-collapse: collapse; display: table; width: 100%; margin-top: 0; margin-bottom: 16px; }");
         styleSheet.addRule("table tr { background-color: #fff; border-top: 1px solid #c6cbd1; }");
         styleSheet.addRule("table tr:nth-child(2n) { background-color: #f6f8fa; }");
         styleSheet.addRule("table th, table td { padding: 6px 13px; border: 1px solid #dfe2e5; }");
         styleSheet.addRule("table th { font-weight: 600; background-color: #f6f8fa; }");
+
+        // 任务列表表格样式 - 必须在普通表格样式之后，以覆盖默认样式
+        // 使用 !important 或更具体的选择器确保优先级
+        styleSheet.addRule("table.task-item { border: 0 !important; margin: 0 !important; padding: 0 !important; margin-bottom: 0.25em !important; border-spacing: 0 !important; width: 100% !important; background: transparent !important; border-collapse: separate !important; }");
+        styleSheet.addRule("table.task-item tr { border: 0 !important; background: transparent !important; border-top: 0 !important; }");
+        styleSheet.addRule("table.task-item td { border: 0 !important; padding: 0 !important; vertical-align: middle !important; line-height: 1.6 !important; background: transparent !important; }");
 
         // 水平线
         styleSheet.addRule("hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; }");
@@ -1034,20 +1035,28 @@ public class MarkdownEditorPanel extends JPanel {
                 inOrderedList = false;
                 html.append("<hr>");
             }
-            // 任务列表
+            // 任务列表 - 使用表格布局确保对齐，优化样式
             else if (line.trim().matches("^[-*]\\s+\\[[ xX]\\]\\s+.*")) {
-                if (!inList) {
-                    html.append("<ul class='task-list'>");
-                    inList = true;
-                }
+                closeLists(html, inList, inOrderedList);
+                inList = false;
+                inOrderedList = false;
+
                 boolean checked = line.toLowerCase().contains("[x]");
                 String content = line.trim().replaceFirst("^[-*]\\s+\\[[ xX]\\]\\s+", "");
-                html.append("<li class='task-list-item'>");
-                html.append("<input type='checkbox' disabled ");
-                if (checked) html.append("checked");
-                html.append("> ");
+
+                // 使用内联样式彻底覆盖表格样式，移除所有边框
+                html.append("<table class='task-item' cellpadding='0' cellspacing='0' border='0' style='border: 0; border-collapse: separate; margin: 0; padding: 0; margin-bottom: 0.25em; width: 100%; background: transparent;'>");
+                html.append("<tr style='border: 0; border-top: 0; background: transparent;'>");
+                html.append("<td style='border: 0; padding: 0; margin: 0; width: 18px; padding-right: 6px; background: transparent; vertical-align: middle;'>");
+                html.append("<input type='checkbox' disabled");
+                if (checked) html.append(" checked");
+                html.append(">");
+                html.append("</td>");
+                html.append("<td style='border: 0; padding: 0; margin: 0; background: transparent; vertical-align: middle;'>");
                 html.append(processInlineMarkdown(content));
-                html.append("</li>");
+                html.append("</td>");
+                html.append("</tr>");
+                html.append("</table>");
             }
             // 无序列表
             else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {

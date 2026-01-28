@@ -726,6 +726,8 @@ public final class MessageKeys {
     public static final String SETTINGS_REQUEST_FOLLOW_REDIRECTS_CHECKBOX = "settings.request.follow_redirects.checkbox";
     public static final String SETTINGS_REQUEST_SSL_VERIFICATION_TOOLTIP = "settings.request.ssl_verification.tooltip";
     public static final String SETTINGS_REQUEST_SSL_VERIFICATION_CHECKBOX = "settings.request.ssl_verification.checkbox";
+    public static final String SETTINGS_REQUEST_DEFAULT_PROTOCOL = "settings.request.default_protocol";
+    public static final String SETTINGS_REQUEST_DEFAULT_PROTOCOL_TOOLTIP = "settings.request.default_protocol.tooltip";
 
     // JMeter settings section
     public static final String SETTINGS_JMETER_TITLE = "settings.jmeter.title";

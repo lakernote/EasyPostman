@@ -1288,7 +1288,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 如果urlField内容没有协议，自动补全https:// 或 wss://，根据protocol判断
+     * 如果urlField内容没有协议，自动补全 http:// 或 https:// 或 ws:// 或 wss://，根据 protocol 和用户配置判断
      */
     private void autoPrependHttpsIfNeeded() {
         String url = urlField.getText().trim();
@@ -1298,9 +1298,12 @@ public class RequestEditSubPanel extends JPanel {
         String lower = url.toLowerCase();
         if (!(lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("ws://") || lower.startsWith("wss://"))) {
             if (protocol != null && protocol.isWebSocketProtocol()) {
-                url = "wss://" + url;
+                // WebSocket 协议：根据默认协议设置补全 ws:// 或 wss://
+                String defaultProtocol = SettingManager.getDefaultProtocol();
+                url = ("https".equals(defaultProtocol) ? "wss://" : "ws://") + url;
             } else {
-                url = "https://" + url;
+                // HTTP 协议：根据默认协议设置补全 http:// 或 https://
+                url = SettingManager.getDefaultProtocol() + "://" + url;
             }
             urlField.setText(url);
         }

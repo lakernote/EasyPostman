@@ -21,6 +21,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private JTextField maxDownloadSizeField;
     private JCheckBox followRedirectsCheckBox;
     private JCheckBox sslVerificationDisabledCheckBox;
+    private JComboBox<String> defaultProtocolComboBox;
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -87,6 +88,18 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SSL_VERIFICATION_TOOLTIP)
         );
         requestSection.add(sslVerificationRow);
+        requestSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 默认协议设置
+        String[] protocolOptions = {"https", "http"};
+        defaultProtocolComboBox = new JComboBox<>(protocolOptions);
+        defaultProtocolComboBox.setSelectedItem(SettingManager.getDefaultProtocol());
+        JPanel defaultProtocolRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_DEFAULT_PROTOCOL),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_DEFAULT_PROTOCOL_TOOLTIP),
+                defaultProtocolComboBox
+        );
+        requestSection.add(defaultProtocolRow);
 
         contentPanel.add(requestSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
@@ -99,6 +112,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(maxDownloadSizeField);
         trackComponentValue(followRedirectsCheckBox);
         trackComponentValue(sslVerificationDisabledCheckBox);
+        trackComponentValue(defaultProtocolComboBox);
     }
 
     private void setupValidators() {
@@ -165,6 +179,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
             SettingManager.setRequestSslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
+            SettingManager.setDefaultProtocol((String) defaultProtocolComboBox.getSelectedItem());
 
             // Clear client cache to apply new settings
             OkHttpClientManager.clearClientCache();
@@ -176,6 +191,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(maxDownloadSizeField);
             trackComponentValue(followRedirectsCheckBox);
             trackComponentValue(sslVerificationDisabledCheckBox);
+            trackComponentValue(defaultProtocolComboBox);
             setHasUnsavedChanges(false);
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));

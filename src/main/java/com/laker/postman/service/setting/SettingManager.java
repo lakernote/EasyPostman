@@ -291,6 +291,25 @@ public class SettingManager {
         OkHttpClientManager.clearClientCache();
     }
 
+    /**
+     * 获取默认协议（当URL没有协议时自动补全）
+     * 支持的值：http, https
+     */
+    public static String getDefaultProtocol() {
+        String val = props.getProperty("default_protocol");
+        if (val != null && (val.equals("http") || val.equals("https"))) {
+            return val;
+        }
+        return "http"; // 默认使用 http
+    }
+
+    public static void setDefaultProtocol(String protocol) {
+        if (protocol != null && (protocol.equals("http") || protocol.equals("https"))) {
+            props.setProperty("default_protocol", protocol);
+            save();
+        }
+    }
+
     public static int getMaxHistoryCount() {
         String val = props.getProperty("max_history_count");
         if (val != null) {

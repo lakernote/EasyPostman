@@ -1,6 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -21,16 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 企业级 Markdown 编辑器组件
- * 功能特性：
- * - 左右分栏编辑预览
- * - 丰富的工具栏和快捷键
- * - 行号显示
- * - 撤销/重做
- * - 查找替换
- * - 全屏模式
- * - 导出功能
- * - 完整的 Markdown 语法支持
+ * Markdown 编辑器组件
+ * 支持实时预览、工具栏、撤销/重做、查找替换、导出等功能
  */
 public class MarkdownEditorPanel extends JPanel {
     private JTextArea editorArea;
@@ -41,17 +34,14 @@ public class MarkdownEditorPanel extends JPanel {
     private final List<DocumentListener> changeListeners = new ArrayList<>();
     private final UndoManager undoManager = new UndoManager();
 
-    // 保存编辑器和预览面板的引用，避免视图切换时丢失
     private JPanel editorPanelRef;
     private JPanel previewPanelRef;
 
-    // 视图模式
     private static final int MODE_SPLIT = 0;
     private static final int MODE_EDIT_ONLY = 1;
     private static final int MODE_PREVIEW_ONLY = 2;
     private int viewMode = MODE_SPLIT;
 
-    // 工具栏按钮
     private JButton undoButton;
     private JButton redoButton;
 
@@ -64,21 +54,17 @@ public class MarkdownEditorPanel extends JPanel {
     public void updateUI() {
         super.updateUI();
 
-        // 主题切换时重新创建工具栏和状态栏，更新颜色
         if (toolbarPanel != null && editorPanelRef != null && previewPanelRef != null) {
             removeAll();
 
-            // 重新创建工具栏以更新颜色
             toolbarPanel = createEnhancedToolbar();
             add(toolbarPanel, BorderLayout.NORTH);
 
             add(splitPane, BorderLayout.CENTER);
 
-            // 重新创建状态栏
             JPanel statusBar = createStatusBar();
             add(statusBar, BorderLayout.SOUTH);
 
-            // 更新预览面板的样式
             updatePreviewPaneStyles();
 
             revalidate();
@@ -87,24 +73,14 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 更新预览面板的样式以适应主题变化
+     * 更新预览面板样式以适应主题变化
      */
     private void updatePreviewPaneStyles() {
         if (previewPane != null) {
-            // 只需要重新生成 HTML，因为样式是 inline 的
             updatePreview();
         }
     }
 
-    /**
-     * 创建动态的StyleSheet以支持暗色/亮色主题
-     * 完全使用 ModernColors 配色方案，确保与应用整体风格一致
-     */
-    /**
-     * 创建动态的StyleSheet以支持暗色/亮色主题
-     *
-     * 策略：创建完全独立的 StyleSheet，通过给每个 MarkdownEditorPanel 实例设置唯一的 base URL 来隔离
-     */
 
     /**
      * 将 Color 转换为十六进制字符串
@@ -113,55 +89,37 @@ public class MarkdownEditorPanel extends JPanel {
         return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 
-    /**
-     * 生成表格的 inline style
-     */
     private String getTableStyle() {
         return "border-collapse:collapse;width:100%;margin:0 0 16px 0;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
     }
 
-    /**
-     * 生成表格单元格的 inline style
-     */
     private String getTableCellStyle() {
         return "padding:8px 12px;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
     }
 
-    /**
-     * 生成表格表头的 inline style
-     */
     private String getTableHeaderStyle() {
         boolean isDark = ModernColors.isDarkTheme();
         String bgColor = isDark ? toHex(new Color(55, 58, 60)) : toHex(ModernColors.getHoverBackgroundColor());
         return getTableCellStyle() + "font-weight:600;background-color:" + bgColor + ";";
     }
 
-    /**
-     * 生成代码块的 inline style
-     */
     private String getCodeBlockStyle() {
         return "background-color:" + toHex(ModernColors.getConsoleTextAreaBg()) +
-               ";padding:16px;overflow:auto;font-size:12px;line-height:1.5;border-radius:6px;border:1px solid " +
-               toHex(ModernColors.getBorderLightColor()) +
-               ";margin:0 0 16px 0;font-family:monospace;color:" +
-               toHex(ModernColors.getConsoleText()) +
-               ";display:block;white-space:pre;word-wrap:normal;";
+                ";padding:16px;overflow:auto;font-size:12px;line-height:1.5;border-radius:6px;border:1px solid " +
+                toHex(ModernColors.getBorderLightColor()) +
+                ";margin:0 0 16px 0;font-family:monospace;color:" +
+                toHex(ModernColors.getConsoleText()) +
+                ";display:block;white-space:pre;word-wrap:normal;";
     }
 
-    /**
-     * 生成行内代码的 inline style
-     */
     private String getInlineCodeStyle() {
         boolean isDark = ModernColors.isDarkTheme();
         String bgColor = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
         String textColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
         return "background-color:" + bgColor + ";color:" + textColor +
-               ";padding:2px 6px;margin:0 2px;font-size:12px;border-radius:3px;font-family:monospace;";
+                ";padding:2px 6px;margin:0 2px;font-size:12px;border-radius:3px;font-family:monospace;";
     }
 
-    /**
-     * 生成标题的 inline style
-     */
     private String getHeadingStyle(int level) {
         String dividerColor = toHex(ModernColors.getDividerBorderColor());
         switch (level) {
@@ -182,9 +140,6 @@ public class MarkdownEditorPanel extends JPanel {
         }
     }
 
-    /**
-     * 生成引用块的 inline style
-     */
     private String getBlockquoteStyle() {
         boolean isDark = ModernColors.isDarkTheme();
         String borderColor = isDark ? "#4a9eff" : toHex(ModernColors.ACCENT_LIGHT);
@@ -194,99 +149,34 @@ public class MarkdownEditorPanel extends JPanel {
                 ";margin:0 0 16px 0;border-radius:0 4px 4px 0;";
     }
 
-    /**
-     * 生成水平线的 inline style
-     */
     private String getHrStyle() {
         return "height:2px;margin:24px 0;background-color:" + toHex(ModernColors.getDividerBorderColor()) + ";border:0;";
     }
 
-    /**
-     * 获取当前主题的文本颜色
-     */
-    private String getTextColor() {
-        return toHex(ModernColors.getTextPrimary());
-    }
-
-    /**
-     * 获取当前主题的次要文本颜色
-     */
-    private String getSecondaryTextColor() {
-        return toHex(ModernColors.getTextSecondary());
-    }
-
-    /**
-     * 获取当前主题的背景颜色
-     */
-    private String getBgColor() {
-        return toHex(ModernColors.getCardBackgroundColor());
-    }
-
-    /**
-     * 获取当前主题的代码块背景颜色
-     */
-    private String getCodeBgColor() {
-        return toHex(ModernColors.getConsoleTextAreaBg());
-    }
-
-    /**
-     * 获取当前主题的行内代码背景颜色
-     */
-    private String getInlineCodeBg() {
-        boolean isDark = ModernColors.isDarkTheme();
-        return isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
-    }
-
-    /**
-     * 获取当前主题的行内代码文字颜色
-     */
-    private String getInlineCodeColor() {
-        boolean isDark = ModernColors.isDarkTheme();
-        return isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
-    }
-
-    /**
-     * 获取当前主题的边框颜色
-     */
-    private String getBorderColor() {
-        return toHex(ModernColors.getBorderLightColor());
-    }
-
-    /**
-     * 获取当前主题的分隔线颜色
-     */
-    private String getDividerColor() {
-        return toHex(ModernColors.getDividerBorderColor());
-    }
 
     private void initUI() {
         setLayout(new BorderLayout());
 
-        // 先创建编辑器和预览面板（在创建工具栏之前，因为工具栏需要引用它们）
         editorPanelRef = createEditorPanel();
         previewPanelRef = createPreviewPanel();
 
-        // 创建分割面板
         splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorPanelRef, previewPanelRef);
         splitPane.setResizeWeight(0.5);
         splitPane.setBorder(null);
 
-        // 创建工具栏（在编辑器创建之后）
         toolbarPanel = createEnhancedToolbar();
         add(toolbarPanel, BorderLayout.NORTH);
 
         add(splitPane, BorderLayout.CENTER);
 
-        // 创建状态栏（在编辑器创建之后）
         JPanel statusBar = createStatusBar();
         add(statusBar, BorderLayout.SOUTH);
 
-        // 延迟设置分割位置，等待组件布局完成
         SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.5));
     }
 
     /**
-     * 创建增强的工具栏（扁平化设计，支持响应式换行，支持国际化和主题）
+     * 创建工具栏
      */
     private JPanel createEnhancedToolbar() {
         JPanel toolbarContainer = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 2));
@@ -297,7 +187,6 @@ public class MarkdownEditorPanel extends JPanel {
         toolbarContainer.setOpaque(true);
         toolbarContainer.setBackground(UIManager.getColor("Panel.background"));
 
-        // 撤销/重做组
         undoButton = createFlatButton("↶", I18nUtil.getMessage(MessageKeys.MARKDOWN_UNDO), e -> undo());
         redoButton = createFlatButton("↷", I18nUtil.getMessage(MessageKeys.MARKDOWN_REDO), e -> redo());
         undoButton.setEnabled(false);
@@ -306,41 +195,35 @@ public class MarkdownEditorPanel extends JPanel {
         toolbarContainer.add(redoButton);
         toolbarContainer.add(createVerticalDivider());
 
-        // 标题组
         toolbarContainer.add(createFlatButton("H1", I18nUtil.getMessage(MessageKeys.MARKDOWN_HEADING1), "# ", ""));
         toolbarContainer.add(createFlatButton("H2", I18nUtil.getMessage(MessageKeys.MARKDOWN_HEADING2), "## ", ""));
         toolbarContainer.add(createFlatButton("H3", I18nUtil.getMessage(MessageKeys.MARKDOWN_HEADING3), "### ", ""));
         toolbarContainer.add(createVerticalDivider());
 
-        // 文本格式组
         toolbarContainer.add(createFlatButton("<html><b>B</b></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_BOLD), "**", "**"));
         toolbarContainer.add(createFlatButton("<html><i>I</i></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_ITALIC), "_", "_"));
         toolbarContainer.add(createFlatButton("<html><s>S</s></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_STRIKETHROUGH), "~~", "~~"));
         toolbarContainer.add(createFlatButton("<html><code>`</code></html>", I18nUtil.getMessage(MessageKeys.MARKDOWN_INLINE_CODE), "`", "`"));
         toolbarContainer.add(createVerticalDivider());
 
-        // 插入组
         toolbarContainer.add(createFlatButton("🔗", I18nUtil.getMessage(MessageKeys.MARKDOWN_LINK), "[", "](url)"));
         toolbarContainer.add(createFlatButton("🖼", I18nUtil.getMessage(MessageKeys.MARKDOWN_IMAGE), "![", "](url)"));
         toolbarContainer.add(createFlatActionButton("⊞", I18nUtil.getMessage(MessageKeys.MARKDOWN_TABLE), this::insertTable));
         toolbarContainer.add(createFlatButton("{}", I18nUtil.getMessage(MessageKeys.MARKDOWN_CODE_BLOCK), "```\n", "\n```"));
         toolbarContainer.add(createVerticalDivider());
 
-        // 列表组
         toolbarContainer.add(createFlatButton("•", I18nUtil.getMessage(MessageKeys.MARKDOWN_UNORDERED_LIST), "- ", ""));
         toolbarContainer.add(createFlatButton("☑", I18nUtil.getMessage(MessageKeys.MARKDOWN_TASK_LIST), "- [ ] ", ""));
         toolbarContainer.add(createFlatButton("❝", I18nUtil.getMessage(MessageKeys.MARKDOWN_QUOTE), "> ", ""));
         toolbarContainer.add(createFlatButton("─", I18nUtil.getMessage(MessageKeys.MARKDOWN_HORIZONTAL_LINE), "---\n", ""));
         toolbarContainer.add(createVerticalDivider());
 
-        // 更多功能按钮
         JButton moreButton = createFlatButton("⋮", I18nUtil.getMessage(MessageKeys.MARKDOWN_MORE), null);
         JPopupMenu moreMenu = createMoreMenu();
         moreButton.addActionListener(e -> moreMenu.show(moreButton, 0, moreButton.getHeight()));
         toolbarContainer.add(moreButton);
         toolbarContainer.add(createVerticalDivider());
 
-        // 视图切换 - 使用图标按钮组
         JToggleButton splitViewBtn = new JToggleButton("⚏");
         JToggleButton editViewBtn = new JToggleButton("✎");
         JToggleButton previewViewBtn = new JToggleButton("👁");
@@ -354,12 +237,10 @@ public class MarkdownEditorPanel extends JPanel {
         viewGroup.add(editViewBtn);
         viewGroup.add(previewViewBtn);
 
-        // 先设置样式，再设置选中状态
         styleToggleButton(splitViewBtn);
         styleToggleButton(editViewBtn);
         styleToggleButton(previewViewBtn);
 
-        // 默认选中分栏模式
         splitViewBtn.setSelected(true);
 
         splitViewBtn.addActionListener(e -> {
@@ -383,7 +264,7 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 自定义 WrapLayout - 支持自动换行的 FlowLayout
+     * 支持自动换行的 FlowLayout
      */
     private static class WrapLayout extends FlowLayout {
         public WrapLayout(int align, int hgap, int vgap) {
@@ -426,7 +307,6 @@ public class MarkdownEditorPanel extends JPanel {
                         Dimension d = preferred ? m.getPreferredSize() : m.getMinimumSize();
 
                         if (rowWidth + d.width > maxWidth) {
-                            // 换行
                             addRow(dim, rowWidth, rowHeight);
                             rowWidth = 0;
                             rowHeight = 0;
@@ -462,7 +342,7 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 创建更多功能菜单（使用国际化文本）
+     * 创建更多功能菜单
      */
     private JPopupMenu createMoreMenu() {
         JPopupMenu menu = new JPopupMenu();
@@ -485,9 +365,6 @@ public class MarkdownEditorPanel extends JPanel {
         return menu;
     }
 
-    /**
-     * 创建扁平化按钮
-     */
     private JButton createFlatButton(String text, String tooltip, ActionListener action) {
         JButton button = new JButton(text);
         button.setToolTipText(tooltip);
@@ -496,12 +373,10 @@ public class MarkdownEditorPanel extends JPanel {
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
         button.setMargin(new Insets(4, 8, 4, 8));
-        // 不设置固定宽度，让按钮根据内容自适应
         button.setPreferredSize(null);
         button.setMinimumSize(new Dimension(28, 28));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // 鼠标悬停效果
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -524,30 +399,20 @@ public class MarkdownEditorPanel extends JPanel {
         return button;
     }
 
-    /**
-     * 创建扁平化格式按钮
-     */
     private JButton createFlatButton(String text, String tooltip, String prefix, String suffix) {
         return createFlatButton(text, tooltip, e -> insertFormat(prefix, suffix));
     }
 
-    /**
-     * 创建扁平化操作按钮（Runnable）
-     */
     private JButton createFlatActionButton(String text, String tooltip, Runnable action) {
         return createFlatButton(text, tooltip, e -> action.run());
     }
 
-    /**
-     * 样式化切换按钮
-     */
     private void styleToggleButton(JToggleButton button) {
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
         button.setMargin(new Insets(4, 10, 4, 10));
-        // 不设置固定宽度，让按钮根据图标自适应
         button.setPreferredSize(null);
         button.setMinimumSize(new Dimension(32, 28));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -579,9 +444,6 @@ public class MarkdownEditorPanel extends JPanel {
         });
     }
 
-    /**
-     * 创建垂直分割线
-     */
     private Component createVerticalDivider() {
         JSeparator separator = new JSeparator(SwingConstants.VERTICAL);
         separator.setPreferredSize(new Dimension(1, 20));
@@ -590,14 +452,14 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     /**
-     * 创建编辑器面板（包含行号）
+     * 创建编辑器面板
      */
     private JPanel createEditorPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
         // 行号区域
         lineNumberArea = new JTextArea("1");
-        lineNumberArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        lineNumberArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
         lineNumberArea.setBackground(new Color(240, 240, 240));
         lineNumberArea.setForeground(Color.GRAY);
         lineNumberArea.setEditable(false);
@@ -606,7 +468,7 @@ public class MarkdownEditorPanel extends JPanel {
 
         // 编辑器区域
         editorArea = new JTextArea();
-        editorArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        editorArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
         editorArea.setLineWrap(true);
         editorArea.setWrapStyleWord(true);
         editorArea.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -660,12 +522,7 @@ public class MarkdownEditorPanel extends JPanel {
         previewPane = new JTextPane();
         previewPane.setContentType("text/html");
         previewPane.setEditable(false);
-        previewPane.setBorder(new EmptyBorder(16, 16, 16, 16));
-
-        // 不设置任何自定义的 EditorKit 和 StyleSheet
-        // 完全使用默认的，样式通过 HTML inline styles 控制
-
-
+        previewPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         JScrollPane scrollPane = new JScrollPane(previewPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
 
@@ -1636,12 +1493,7 @@ public class MarkdownEditorPanel extends JPanel {
      * HTML 转义
      */
     private String escapeHtml(String text) {
-        if (text == null) return "";
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+        return HttpHtmlRenderer.escapeHtml(text);
     }
 
     /**
@@ -1665,42 +1517,6 @@ public class MarkdownEditorPanel extends JPanel {
      */
     public void addDocumentListener(DocumentListener listener) {
         changeListeners.add(listener);
-    }
-
-    /**
-     * 设置工具栏可见性
-     */
-    public void setToolbarVisible(boolean visible) {
-        if (toolbarPanel != null) {
-            toolbarPanel.setVisible(visible);
-        }
-    }
-
-    /**
-     * 设置状态栏可见性
-     */
-    public void setStatusBarVisible(boolean visible) {
-        Component[] components = getComponents();
-        for (Component comp : components) {
-            if (comp instanceof JPanel) {
-                JPanel panel = (JPanel) comp;
-                if (panel.getLayout() instanceof FlowLayout) {
-                    // 状态栏使用 FlowLayout
-                    panel.setVisible(visible);
-                    break;
-                }
-            }
-        }
-    }
-
-    /**
-     * 简化模式：隐藏工具栏和状态栏，适合嵌入场景
-     */
-    public void setSimpleMode(boolean simple) {
-        setToolbarVisible(!simple);
-        setStatusBarVisible(!simple);
-        revalidate();
-        repaint();
     }
 
     /**

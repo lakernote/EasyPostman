@@ -2,11 +2,11 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.model.CookieInfo;
 import com.laker.postman.service.http.CookieService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -138,35 +138,15 @@ public class CookieTablePanel extends JPanel {
         // 右侧按钮
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
-        JButton btnAdd = createIconButton(
-                I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_ADD),
-                "icons/plus.svg",
-                I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_ADD)
-        );
+        PlusButton btnAdd = new PlusButton();
 
-        JButton btnEdit = createIconButton(
-                I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_EDIT),
-                "icons/edit.svg",
-                I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_EDIT)
-        );
+        EditButton btnEdit = new EditButton();
 
-        JButton btnDelete = createIconButton(
-                I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_DELETE),
-                "icons/close.svg",
-                I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_DELETE)
-        );
+        CloseButton btnDelete = new CloseButton();
 
-        JButton btnClear = createIconButton(
-                I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_CLEAR),
-                "icons/clear.svg",
-                I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_CLEAR)
-        );
+        ClearButton btnClear = new ClearButton();
 
-        JButton btnRefresh = createIconButton(
-                I18nUtil.getMessage(MessageKeys.COOKIE_BUTTON_REFRESH),
-                "icons/refresh.svg",
-                I18nUtil.getMessage(MessageKeys.COOKIE_TOOLTIP_REFRESH)
-        );
+        RefreshButton btnRefresh = new RefreshButton();
 
         btnAdd.addActionListener(e -> addCookieDialog());
         btnEdit.addActionListener(e -> editSelectedCookie());
@@ -185,21 +165,6 @@ public class CookieTablePanel extends JPanel {
         return topPanel;
     }
 
-    /**
-     * 创建图标按钮
-     */
-    private JButton createIconButton(String text, String iconPath, String tooltip) {
-        JButton button = new JButton(text);
-        try {
-            button.setIcon(IconUtil.createThemed(iconPath, 16, 16));
-        } catch (Exception e) {
-            // 如果图标加载失败，只显示文本
-        }
-        button.setToolTipText(tooltip);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return button;
-    }
 
     /**
      * 配置表格样式

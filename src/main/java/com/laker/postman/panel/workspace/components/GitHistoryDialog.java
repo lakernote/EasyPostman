@@ -31,6 +31,8 @@ public class GitHistoryDialog extends JDialog {
     private JTable historyTable;
     private DefaultTableModel tableModel;
     private List<GitCommitInfo> commits;
+    private JButton viewDetailsButton;
+    private JButton restoreButton;
     /**
      * -- GETTER --
      * 是否需要刷新请求集合面板
@@ -50,7 +52,7 @@ public class GitHistoryDialog extends JDialog {
     private void initUI() {
         setSize(700, 400);
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(10, 10)); // 设置边距
+        setLayout(new BorderLayout(0, 0)); // 移除边距
 
         // 创建工具栏
         add(createToolbar(), BorderLayout.NORTH);
@@ -63,8 +65,8 @@ public class GitHistoryDialog extends JDialog {
     }
 
     private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        toolbar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        toolbar.setBorder(BorderFactory.createEmptyBorder(8, 10, 3, 10)); // 减少下边距
         RefreshButton refreshButton = new RefreshButton();
         refreshButton.addActionListener(e -> loadHistory());
         toolbar.add(refreshButton);
@@ -114,28 +116,39 @@ public class GitHistoryDialog extends JDialog {
         });
 
         JScrollPane scrollPane = new JScrollPane(historyTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 8, 10)); // 优化边距
         return scrollPane;
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 3));
+        panel.setBorder(BorderFactory.createEmptyBorder(3, 10, 10, 10)); // 优化边距，减少上边距
 
-        JButton viewDetailsButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_VIEW_DETAILS));
+        viewDetailsButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_VIEW_DETAILS));
         viewDetailsButton.setIcon(IconUtil.createThemed("icons/detail.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        viewDetailsButton.setEnabled(false); // 初始状态禁用
         viewDetailsButton.addActionListener(e -> viewCommitDetails());
         panel.add(viewDetailsButton);
 
-        JButton restoreButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE));
-        restoreButton.setIcon(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        restoreButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE));
+        restoreButton.setIcon(IconUtil.createThemed("icons/history.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        restoreButton.setEnabled(false); // 初始状态禁用
         restoreButton.addActionListener(e -> restoreToCommit());
         panel.add(restoreButton);
-
         JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_CLOSE));
         closeButton.setIcon(IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         closeButton.addActionListener(e -> dispose());
         panel.add(closeButton);
+
+        // 添加表格选择监听器，根据选择状态启用/禁用按钮
+        historyTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                boolean hasSelection = historyTable.getSelectedRow() >= 0
+                        && commits != null && !commits.isEmpty();
+                viewDetailsButton.setEnabled(hasSelection);
+                restoreButton.setEnabled(hasSelection);
+            }
+        });
 
         return panel;
     }
@@ -177,6 +190,9 @@ public class GitHistoryDialog extends JDialog {
 
         if (commits == null || commits.isEmpty()) {
             tableModel.addRow(new Object[]{I18nUtil.getMessage(MessageKeys.GIT_HISTORY_NO_COMMITS), "", "", ""});
+            // 禁用操作按钮
+            if (viewDetailsButton != null) viewDetailsButton.setEnabled(false);
+            if (restoreButton != null) restoreButton.setEnabled(false);
             return;
         }
 
@@ -194,6 +210,9 @@ public class GitHistoryDialog extends JDialog {
                     dateFormat.format(new Date(commit.getCommitTime()))
             });
         }
+
+        // 清除选择，确保按钮状态正确
+        historyTable.clearSelection();
     }
 
     private void viewCommitDetails() {

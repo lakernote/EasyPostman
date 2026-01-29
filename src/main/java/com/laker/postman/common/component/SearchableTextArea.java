@@ -146,12 +146,12 @@ public class SearchableTextArea extends JPanel {
         Dimension panelSize = searchPanel.getPreferredSize();
 
         // 确保面板有足够的宽度和高度
-        int panelWidth = Math.max(panelSize.width, 300);  // 最小宽度 300px
+        int panelWidth = Math.max(panelSize.width, 250);  // 最小宽度 250px
         int panelHeight = panelSize.height;
 
         // 计算右上角位置
         int x = Math.max(10, overlayPanel.getWidth() - panelWidth - 10);
-        int y = 10;
+        int y = 5;
 
         // 设置面板位置和大小
         searchPanel.setBounds(x, y, panelWidth, panelHeight);

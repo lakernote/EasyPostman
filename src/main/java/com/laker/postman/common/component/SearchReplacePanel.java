@@ -13,28 +13,6 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-/**
- * 搜索替换面板组件
- * <p>
- * 类似 Postman 的搜索替换功能，按 Cmd+F 呼出，显示在右上角。
- * 支持搜索、替换、大小写敏感、正则表达式、整词匹配等功能。
- * </p>
- *
- * <h2>使用示例</h2>
- * <pre>{@code
- * RSyntaxTextArea textArea = new RSyntaxTextArea();
- * SearchReplacePanel searchPanel = new SearchReplacePanel(textArea);
- *
- * // 将搜索面板添加到父容器（通常是 JLayeredPane 或带 OverlayLayout 的面板）
- * JPanel container = new JPanel(new BorderLayout());
- * container.add(new RTextScrollPane(textArea), BorderLayout.CENTER);
- *
- * // 使用 OverlayLayout 或 JLayeredPane 来实现浮动效果
- * JLayeredPane layeredPane = new JLayeredPane();
- * layeredPane.setLayout(new OverlayLayout(layeredPane));
- * layeredPane.add(searchPanel, JLayeredPane.PALETTE_LAYER);
- * }</pre>
- */
 @Slf4j
 public class SearchReplacePanel extends JPanel {
 
@@ -58,7 +36,7 @@ public class SearchReplacePanel extends JPanel {
         searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 展开/收起替换面板的按钮（放在最左边，类似 Postman）
-        toggleReplaceBtn = new JToggleButton(IconUtil.createThemed("icons/arrow-up.svg", 16, 16));
+        toggleReplaceBtn = new JToggleButton(IconUtil.createThemed("icons/expand.svg", 16, 16));
         toggleReplaceBtn.setToolTipText("Toggle Replace");
         toggleReplaceBtn.setFocusable(false);
         toggleReplaceBtn.setContentAreaFilled(false);
@@ -136,8 +114,8 @@ public class SearchReplacePanel extends JPanel {
         });
 
         // 替换按钮
-        JButton replaceBtn = createIconButton("icons/edit.svg", "Replace", e -> replace());
-        JButton replaceAllBtn = createIconButton("icons/switch.svg", "Replace All", e -> replaceAll());
+        JButton replaceBtn = createIconButton("icons/replace.svg", "Replace", e -> replace());
+        JButton replaceAllBtn = createIconButton("icons/replace-all.svg", "Replace All", e -> replaceAll());
 
         // 组装替换面板
         replacePanel.add(spacer);  // 左侧占位符
@@ -158,9 +136,9 @@ public class SearchReplacePanel extends JPanel {
             replacePanel.setVisible(selected);
             // 更新图标
             if (selected) {
-                toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/arrow-down.svg", 16, 16));
+                toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/collapse.svg", 16, 16));
             } else {
-                toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/arrow-up.svg", 16, 16));
+                toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/expand.svg", 16, 16));
             }
             // 先标记需要重新布局
             invalidate();
@@ -213,7 +191,7 @@ public class SearchReplacePanel extends JPanel {
     public void showSearch() {
         replacePanel.setVisible(false);
         toggleReplaceBtn.setSelected(false);
-        toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/arrow-up.svg", 16, 16));
+        toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/expand.svg", 16, 16));
         setVisible(true);
 
         // 如果有选中文本，将其作为搜索内容
@@ -232,7 +210,7 @@ public class SearchReplacePanel extends JPanel {
     public void showReplace() {
         replacePanel.setVisible(true);
         toggleReplaceBtn.setSelected(true);
-        toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/arrow-down.svg", 16, 16));
+        toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/collapse.svg", 16, 16));
         setVisible(true);
 
         // 如果有选中文本，将其作为搜索内容

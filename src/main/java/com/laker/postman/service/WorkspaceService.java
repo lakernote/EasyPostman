@@ -1485,9 +1485,10 @@ public class WorkspaceService {
                     !status.getUntracked().isEmpty() ||
                     !status.getMissing().isEmpty();
 
-            // 2. 如果有未提交的更改且需要创建备份
+            // 2. 如果有未提交的更改
             if (hasChanges) {
                 if (createBackup) {
+                    // 创建备份提交
                     git.add().addFilepattern(".").call();
                     String backupMessage = "Backup before restore to " + commitId.substring(0, 8);
                     var backupCommit = git.commit().setMessage(backupMessage).call();
@@ -1496,49 +1497,78 @@ public class WorkspaceService {
                     result.details += "   Message: " + backupMessage + "\n\n";
                     log.info("Created backup commit {} for workspace: {}", backupCommitId.substring(0, 8), workspace.getName());
                 } else {
-                    // 如果不创建备份，则丢弃未提交的更改
+                    // 丢弃未提交的更改
                     git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
                     result.details += "⚠️  Discarded uncommitted changes\n\n";
                 }
             }
 
-            // 3. 保存当前的 HEAD 位置
-            String currentHead = repository.resolve("HEAD").getName();
+            // 3. 保存当前 HEAD 位置
+            ObjectId currentHead = repository.resolve("HEAD");
 
-            // 4. 使用 reset --soft 到目标提交，这样文件内容不变但索引会更新
-            // 然后使用 reset --hard 到目标提交来真正恢复文件
+            // 4. 使用标准 Git 方式恢复文件内容（保留历史）
+            // 相当于: git reset --soft <commit> && git reset HEAD@{1}
+            // 这样可以将目标提交的文件状态加载到索引，而不移动 HEAD
+
+            // Step 1: 临时将 HEAD 移到目标提交（soft reset，不改变工作目录和索引）
             git.reset()
-                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD)
+                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.SOFT)
                 .setRef(commitId)
+                .call();
+
+            // Step 2: 将索引重置为目标提交的状态（现在索引=目标提交的文件状态）
+            git.reset()
+                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.MIXED)  // 只重置索引，不改工作目录
+                .setRef(commitId)
+                .call();
+
+            // Step 3: 将 HEAD 移回原位置（soft，保持索引为目标提交状态）
+            git.reset()
+                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.SOFT)
+                .setRef(currentHead.getName())
+                .call();
+
+            // Step 4: 将索引的内容检出到工作目录
+            git.checkout()
+                .setAllPaths(true)
+                .setForced(true)
                 .call();
 
             result.details += "📁 Restored files from commit: " + commitId.substring(0, 8) + "\n";
 
-            // 5. 将 HEAD 移回到之前的位置，但保持工作目录的文件内容（来自目标提交）
-            // 使用 git reset --soft 回到原来的 HEAD
-            git.reset()
-                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.SOFT)
-                .setRef(currentHead)
+            // 5. 将所有更改添加到暂存区（包括删除的文件）
+            git.add()
+                .addFilepattern(".")
+                .setUpdate(true)  // 包括删除
+                .call();
+            // 还需要添加新文件
+            git.add()
+                .addFilepattern(".")
                 .call();
 
-            // 现在工作目录的文件是目标版本的，但 HEAD 还在原位置
-            // 需要将这些变更添加到暂存区
-            git.add().addFilepattern(".").call();
+            // 6. 检查是否有变化需要提交
+            var statusAfterRestore = git.status().call();
+            boolean hasChangesToCommit = !statusAfterRestore.getAdded().isEmpty() ||
+                    !statusAfterRestore.getModified().isEmpty() ||
+                    !statusAfterRestore.getRemoved().isEmpty();
 
-            // 6. 创建一个新的提交来记录这次恢复操作
-            String restoreMessage = "Restore to commit " + commitId.substring(0, 8);
-            if (backupCommitId != null) {
-                restoreMessage += "\n\nBackup commit: " + backupCommitId.substring(0, 8);
-                restoreMessage += "\nYou can restore to the backup anytime from history.";
+            if (hasChangesToCommit) {
+                // 7. 创建恢复提交（保留历史记录）
+                String restoreMessage = "Restore to commit " + commitId.substring(0, 8);
+                if (backupCommitId != null) {
+                    restoreMessage += "\n\nBackup: " + backupCommitId.substring(0, 8);
+                }
+                var restoreCommit = git.commit()
+                    .setMessage(restoreMessage)
+                    .call();
+
+                result.details += "✅ Created restore commit: " + restoreCommit.getName().substring(0, 8) + "\n";
+                result.details += "   (All history is preserved!)\n\n";
+            } else {
+                result.details += "ℹ️  No changes detected, already at target state\n\n";
             }
 
-            var restoreCommit = git.commit()
-                .setMessage(restoreMessage)
-                .call();
-
-            result.details += "✅ Created restore commit: " + restoreCommit.getName().substring(0, 8) + "\n\n";
-
-            // 7. 更新工作区的最后提交ID
+            // 8. 更新工作区的最后提交ID
             workspace.setLastCommitId(getLastCommitId(git));
             workspace.setUpdatedAt(System.currentTimeMillis());
             saveWorkspaces();
@@ -1548,12 +1578,11 @@ public class WorkspaceService {
 
             if (backupCommitId != null) {
                 result.details += "💡 Your data is safe:\n";
-                result.details += "   - Backup: " + backupCommitId.substring(0, 8) + " (before restore)\n";
-                result.details += "   - Restore: " + restoreCommit.getName().substring(0, 8) + " (current)\n";
-                result.details += "   - All commits are visible in history!\n";
+                result.details += "   - Previous state: " + backupCommitId.substring(0, 8) + " (backup)\n";
+                result.details += "   - All commits are preserved in history!\n";
             }
 
-            log.info("Restored workspace {} to commit {} successfully",
+            log.info("Restored workspace {} to commit {} successfully (history preserved)",
                     workspace.getName(), commitId.substring(0, 8));
         } catch (Exception e) {
             result.success = false;

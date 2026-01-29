@@ -88,7 +88,17 @@ public class SearchReplacePanel extends JPanel {
 
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                scheduleSearchUpdate();
+                // 如果搜索框被清空，立即清除文本区域的选中内容和状态
+                if (searchField.getText().isEmpty()) {
+                    // 取消之前的定时器
+                    if (searchDebounceTimer != null && searchDebounceTimer.isRunning()) {
+                        searchDebounceTimer.stop();
+                    }
+                    clearTextSelection();
+                    statusLabel.setText("");
+                } else {
+                    scheduleSearchUpdate();
+                }
             }
 
             @Override
@@ -282,6 +292,7 @@ public class SearchReplacePanel extends JPanel {
         String searchText = searchField.getText();
         if (searchText.isEmpty()) {
             statusLabel.setText("");
+            clearTextSelection();
             return;
         }
 
@@ -290,6 +301,9 @@ public class SearchReplacePanel extends JPanel {
 
         SearchResult result = SearchEngine.find(textArea, context);
         updateStatusFromResult(result);
+
+        // 确保文本区域获得焦点以显示选中效果
+        textArea.requestFocusInWindow();
     }
 
     /**
@@ -299,6 +313,7 @@ public class SearchReplacePanel extends JPanel {
         String searchText = searchField.getText();
         if (searchText.isEmpty()) {
             statusLabel.setText("");
+            clearTextSelection();
             return;
         }
 
@@ -306,6 +321,9 @@ public class SearchReplacePanel extends JPanel {
         context.setSearchForward(false);
         SearchResult result = SearchEngine.find(textArea, context);
         updateStatusFromResult(result);
+
+        // 确保文本区域获得焦点以显示选中效果
+        textArea.requestFocusInWindow();
     }
 
     /**
@@ -537,17 +555,39 @@ public class SearchReplacePanel extends JPanel {
             int totalCount = calculateTotalMatches();
 
             if (totalCount > 0) {
-                // 计算当前匹配索引
-                int currentIndex = calculateCurrentIndex(savedSelStart);
-                statusLabel.setText(currentIndex + " of " + totalCount);
+                // 输入搜索文本时，从文档开头开始搜索并高亮第一个匹配
+                textArea.setCaretPosition(0);
+                SearchContext context = createSearchContext();
+                context.setSearchForward(true);
+                SearchResult firstResult = SearchEngine.find(textArea, context);
+
+                if (firstResult.wasFound()) {
+                    // 显示 "1 of total"
+                    statusLabel.setText("1 of " + totalCount);
+                } else {
+                    statusLabel.setText(MSG_NO_RESULTS);
+                }
             } else {
                 statusLabel.setText(MSG_NO_RESULTS);
             }
         } finally {
-            // 恢复光标和选择
-            textArea.setCaretPosition(savedCaret);
-            textArea.setSelectionStart(savedSelStart);
-            textArea.setSelectionEnd(savedSelEnd);
+            // 不恢复光标，保持在第一个匹配位置
+            // 但如果没有找到，恢复原来的位置
+            if (statusLabel.getText().equals(MSG_NO_RESULTS)) {
+                textArea.setCaretPosition(savedCaret);
+                textArea.setSelectionStart(savedSelStart);
+                textArea.setSelectionEnd(savedSelEnd);
+            }
+        }
+    }
+
+    /**
+     * 清除文本区域的选中内容
+     */
+    private void clearTextSelection() {
+        if (textArea != null) {
+            textArea.setSelectionStart(textArea.getCaretPosition());
+            textArea.setSelectionEnd(textArea.getCaretPosition());
         }
     }
 }

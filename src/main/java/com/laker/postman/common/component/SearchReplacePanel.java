@@ -94,7 +94,7 @@ public class SearchReplacePanel extends JPanel {
                     if (searchDebounceTimer != null && searchDebounceTimer.isRunning()) {
                         searchDebounceTimer.stop();
                     }
-                    clearTextSelection();
+                    clearSearchHighlights();
                     statusLabel.setText("");
                 } else {
                     scheduleSearchUpdate();
@@ -281,6 +281,8 @@ public class SearchReplacePanel extends JPanel {
      * 隐藏搜索面板
      */
     public void hidePanel() {
+        // 清除搜索高亮和选中状态
+        clearSearchHighlights();
         setVisible(false);
         textArea.requestFocusInWindow();
     }
@@ -292,7 +294,7 @@ public class SearchReplacePanel extends JPanel {
         String searchText = searchField.getText();
         if (searchText.isEmpty()) {
             statusLabel.setText("");
-            clearTextSelection();
+            clearSearchHighlights();
             return;
         }
 
@@ -313,7 +315,7 @@ public class SearchReplacePanel extends JPanel {
         String searchText = searchField.getText();
         if (searchText.isEmpty()) {
             statusLabel.setText("");
-            clearTextSelection();
+            clearSearchHighlights();
             return;
         }
 
@@ -588,6 +590,22 @@ public class SearchReplacePanel extends JPanel {
         if (textArea != null) {
             textArea.setSelectionStart(textArea.getCaretPosition());
             textArea.setSelectionEnd(textArea.getCaretPosition());
+        }
+    }
+
+    /**
+     * 清除搜索高亮和选中状态
+     */
+    private void clearSearchHighlights() {
+        if (textArea != null) {
+            // 清除选中状态
+            clearTextSelection();
+            // 使 SearchEngine 清除之前的搜索状态
+            // 通过执行一次空搜索来重置状态
+            SearchContext context = new SearchContext();
+            context.setSearchFor("");
+            context.setMarkAll(false);
+            SearchEngine.find(textArea, context);
         }
     }
 }

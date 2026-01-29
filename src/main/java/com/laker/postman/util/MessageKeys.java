@@ -403,9 +403,28 @@ public final class MessageKeys {
     public static final String WORKSPACE_GIT_PULL = "workspace.git.pull";
     public static final String WORKSPACE_GIT_PUSH = "workspace.git.push";
     public static final String WORKSPACE_GIT_COMMIT = "workspace.git.commit";
+    public static final String WORKSPACE_GIT_HISTORY = "workspace.git.history";
     public static final String WORKSPACE_GIT_AUTH_UPDATE = "workspace.git.auth.update";
     public static final String WORKSPACE_GIT_AUTH_UPDATE_SUCCESS = "workspace.git.auth.update.success";
     public static final String WORKSPACE_GIT_AUTH_UPDATE_FAILED = "workspace.git.auth.update.failed";
+
+    // Git History Dialog
+    public static final String GIT_HISTORY_TITLE = "git.history.title";
+    public static final String GIT_HISTORY_COMMIT_ID = "git.history.commit.id";
+    public static final String GIT_HISTORY_MESSAGE = "git.history.message";
+    public static final String GIT_HISTORY_AUTHOR = "git.history.author";
+    public static final String GIT_HISTORY_DATE = "git.history.date";
+    public static final String GIT_HISTORY_RESTORE = "git.history.restore";
+    public static final String GIT_HISTORY_VIEW_DETAILS = "git.history.view.details";
+    public static final String GIT_HISTORY_LOADING = "git.history.loading";
+    public static final String GIT_HISTORY_NO_COMMITS = "git.history.no.commits";
+    public static final String GIT_HISTORY_RESTORE_CONFIRM = "git.history.restore.confirm";
+    public static final String GIT_HISTORY_RESTORE_BACKUP = "git.history.restore.backup";
+    public static final String GIT_HISTORY_RESTORE_SUCCESS = "git.history.restore.success";
+    public static final String GIT_HISTORY_RESTORE_FAILED = "git.history.restore.failed";
+    public static final String GIT_HISTORY_COMMIT_DETAILS = "git.history.commit.details";
+    public static final String GIT_HISTORY_CLOSE = "git.history.close";
+    public static final String GIT_HISTORY_REFRESH = "git.history.refresh";
     public static final String WORKSPACE_VALIDATION_NAME_REQUIRED = "workspace.validation.name.required";
     public static final String WORKSPACE_VALIDATION_PATH_REQUIRED = "workspace.validation.path.required";
     public static final String WORKSPACE_VALIDATION_GIT_URL_REQUIRED = "workspace.validation.git.url.required";

@@ -11,6 +11,7 @@ import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -1403,5 +1404,218 @@ public class WorkspaceService {
         } catch (Exception e) {
             log.error("Failed to save workspace order", e);
         }
+    }
+
+    /**
+     * 获取工作区的 Git 提交历史
+     * @param workspaceId 工作区ID
+     * @param maxCount 最大返回数量，0表示返回所有
+     * @return Git 提交信息列表
+     */
+    public List<GitCommitInfo> getGitHistory(String workspaceId, int maxCount) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        List<GitCommitInfo> commits = new ArrayList<>();
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            Iterable<RevCommit> logs;
+            if (maxCount > 0) {
+                logs = git.log().setMaxCount(maxCount).call();
+            } else {
+                logs = git.log().call();
+            }
+
+            for (RevCommit revCommit : logs) {
+                GitCommitInfo commitInfo = new GitCommitInfo();
+                commitInfo.setCommitId(revCommit.getName());
+                commitInfo.setShortCommitId(revCommit.getName().substring(0, 8));
+                commitInfo.setMessage(revCommit.getFullMessage());
+
+                PersonIdent author = revCommit.getAuthorIdent();
+                commitInfo.setAuthorName(author.getName());
+                commitInfo.setAuthorEmail(author.getEmailAddress());
+                commitInfo.setCommitTime(revCommit.getCommitTime() * 1000L); // 转换为毫秒
+
+                PersonIdent committer = revCommit.getCommitterIdent();
+                commitInfo.setCommitterName(committer.getName());
+                commitInfo.setCommitterEmail(committer.getEmailAddress());
+
+                commits.add(commitInfo);
+            }
+
+            log.info("Retrieved {} commits for workspace: {}", commits.size(), workspace.getName());
+        } catch (NoHeadException e) {
+            log.warn("No commits found in workspace: {}", workspace.getName());
+            // 返回空列表，不抛异常
+        } catch (Exception e) {
+            log.error("Failed to get Git history for workspace: {}", workspace.getName(), e);
+            throw e;
+        }
+
+        return commits;
+    }
+
+    /**
+     * 恢复工作区到指定的 Git 提交版本
+     * 使用 checkout + commit 方式，保留完整的历史记录
+     * @param workspaceId 工作区ID
+     * @param commitId 提交ID
+     * @param createBackup 是否在恢复前创建备份提交（保存未提交的更改）
+     * @return 操作结果
+     */
+    public GitOperationResult restoreToCommit(String workspaceId, String commitId, boolean createBackup) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        GitOperationResult result = new GitOperationResult();
+        String backupCommitId = null;
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            // 1. 检查是否有未提交的更改
+            var status = git.status().call();
+            boolean hasChanges = !status.getAdded().isEmpty() ||
+                    !status.getModified().isEmpty() ||
+                    !status.getRemoved().isEmpty() ||
+                    !status.getUntracked().isEmpty() ||
+                    !status.getMissing().isEmpty();
+
+            // 2. 如果有未提交的更改且需要创建备份
+            if (hasChanges) {
+                if (createBackup) {
+                    git.add().addFilepattern(".").call();
+                    String backupMessage = "Backup before restore to " + commitId.substring(0, 8);
+                    var backupCommit = git.commit().setMessage(backupMessage).call();
+                    backupCommitId = backupCommit.getName();
+                    result.details += "✅ Created backup commit: " + backupCommitId.substring(0, 8) + "\n";
+                    result.details += "   Message: " + backupMessage + "\n\n";
+                    log.info("Created backup commit {} for workspace: {}", backupCommitId.substring(0, 8), workspace.getName());
+                } else {
+                    // 如果不创建备份，则丢弃未提交的更改
+                    git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
+                    result.details += "⚠️  Discarded uncommitted changes\n\n";
+                }
+            }
+
+            // 3. 使用 checkout 恢复文件内容（不移动 HEAD）
+            // 这样可以保留历史记录，只是将文件内容恢复到目标版本
+            git.checkout()
+                .setStartPoint(commitId)
+                .addPath(".")  // checkout 所有文件
+                .call();
+
+            result.details += "📁 Restored files from commit: " + commitId.substring(0, 8) + "\n";
+
+            // 4. 创建一个新的提交来记录这次恢复操作
+            String restoreMessage = "Restore to commit " + commitId.substring(0, 8);
+            if (backupCommitId != null) {
+                restoreMessage += "\n\nBackup commit: " + backupCommitId.substring(0, 8);
+                restoreMessage += "\nYou can restore to the backup anytime from history.";
+            }
+
+            var restoreCommit = git.commit()
+                .setMessage(restoreMessage)
+                .setAll(true)  // 自动添加所有更改
+                .call();
+
+            result.details += "✅ Created restore commit: " + restoreCommit.getName().substring(0, 8) + "\n\n";
+
+            // 5. 更新工作区的最后提交ID
+            workspace.setLastCommitId(getLastCommitId(git));
+            workspace.setUpdatedAt(System.currentTimeMillis());
+            saveWorkspaces();
+
+            result.success = true;
+            result.message = "Successfully restored to commit " + commitId.substring(0, 8);
+
+            if (backupCommitId != null) {
+                result.details += "💡 Your data is safe:\n";
+                result.details += "   - Backup: " + backupCommitId.substring(0, 8) + " (before restore)\n";
+                result.details += "   - Restore: " + restoreCommit.getName().substring(0, 8) + " (current)\n";
+                result.details += "   - All commits are visible in history!\n";
+            }
+
+            log.info("Restored workspace {} to commit {} using checkout+commit",
+                    workspace.getName(), commitId.substring(0, 8));
+        } catch (Exception e) {
+            result.success = false;
+            result.message = "Failed to restore to commit";
+            result.details = "Error: " + e.getMessage();
+            log.error("Failed to restore workspace to commit", e);
+            throw e;
+        }
+
+        return result;
+    }
+
+    /**
+     * 查看指定提交的详细信息
+     * @param workspaceId 工作区ID
+     * @param commitId 提交ID
+     * @return 提交详细信息
+     */
+    public String getCommitDetails(String workspaceId, String commitId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        if (workspace.getType() != WorkspaceType.GIT) {
+            throw new IllegalStateException("Not a Git workspace");
+        }
+
+        StringBuilder details = new StringBuilder();
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            Repository repository = git.getRepository();
+            try (RevWalk revWalk = new RevWalk(repository)) {
+                ObjectId objectId = repository.resolve(commitId);
+                RevCommit commit = revWalk.parseCommit(objectId);
+
+                details.append("Commit: ").append(commit.getName()).append("\n");
+                details.append("Author: ").append(commit.getAuthorIdent().getName())
+                       .append(" <").append(commit.getAuthorIdent().getEmailAddress()).append(">\n");
+                details.append("Date: ").append(new java.util.Date(commit.getCommitTime() * 1000L)).append("\n");
+                details.append("\n").append(commit.getFullMessage()).append("\n\n");
+
+                // 获取该提交的文件变更
+                if (commit.getParentCount() > 0) {
+                    RevCommit parent = revWalk.parseCommit(commit.getParent(0).getId());
+
+                    // 使用 CanonicalTreeParser 直接解析树对象
+                    CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
+                    CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
+
+                    try (var reader = repository.newObjectReader()) {
+                        oldTreeParser.reset(reader, parent.getTree().getId());
+                        newTreeParser.reset(reader, commit.getTree().getId());
+                    }
+
+                    List<DiffEntry> diffs = git.diff()
+                            .setOldTree(oldTreeParser)
+                            .setNewTree(newTreeParser)
+                            .call();
+
+                    if (!diffs.isEmpty()) {
+                        details.append("Changed files:\n");
+                        for (DiffEntry entry : diffs) {
+                            String changeType = switch (entry.getChangeType()) {
+                                case ADD -> "A";
+                                case MODIFY -> "M";
+                                case DELETE -> "D";
+                                case RENAME -> "R";
+                                case COPY -> "C";
+                            };
+                            details.append("  ").append(changeType).append(" ").append(entry.getNewPath()).append("\n");
+                        }
+                    }
+                } else {
+                    details.append("(Initial commit)\n");
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to get commit details", e);
+            throw e;
+        }
+
+        return details.toString();
     }
 }

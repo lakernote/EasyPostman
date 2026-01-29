@@ -351,15 +351,21 @@ public class WorkspacePanel extends SingletonBasePanel {
         commitItem.addActionListener(e -> performGitCommit(workspace));
         menu.add(commitItem);
 
+        // 2.查看历史 始终显示
+        JMenuItem historyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_HISTORY));
+        historyItem.setIcon(IconUtil.createThemed("icons/history.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        historyItem.addActionListener(e -> showGitHistory(workspace));
+        menu.add(historyItem);
+
         try {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
-            if (remoteStatus.hasRemote) { // 2.只有已配置远程仓库的工作区才显示拉取操作
+            if (remoteStatus.hasRemote) { // 3.只有已配置远程仓库的工作区才显示拉取操作
                 JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
                 pullItem.setIcon(IconUtil.createThemed(GitOperation.PULL.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                 pullItem.addActionListener(e -> performGitPull(workspace));
                 menu.add(pullItem);
 
-                if (remoteStatus.hasUpstream) { // 3.只有有上游分支的工作区才显示推送操作
+                if (remoteStatus.hasUpstream) { // 4.只有有上游分支的工作区才显示推送操作
                     JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
                     pushItem.setIcon(IconUtil.createThemed(GitOperation.PUSH.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                     pushItem.addActionListener(e -> performGitPush(workspace));
@@ -472,6 +478,26 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             // 刷新 requests 和 env 面板
+            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+            SingletonFactory.getInstance(EnvironmentPanel.class)
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+            refreshWorkspaceList();
+        }
+    }
+
+    /**
+     * 显示 Git 历史记录
+     */
+    private void showGitHistory(Workspace workspace) {
+        GitHistoryDialog dialog = new GitHistoryDialog(
+                SwingUtilities.getWindowAncestor(this),
+                workspace
+        );
+        dialog.setVisible(true);
+
+        // 如果恢复了版本，需要刷新请求集合和环境变量面板
+        if (dialog.isNeedRefresh()) {
             SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
             SingletonFactory.getInstance(EnvironmentPanel.class)

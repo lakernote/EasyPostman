@@ -2,8 +2,11 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
-import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.button.*;
+import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.button.FormatButton;
+import com.laker.postman.common.component.button.SearchButton;
+import com.laker.postman.common.component.button.WebSocketSendButton;
+import com.laker.postman.common.component.button.WebSocketTimedSendButton;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -15,7 +18,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -71,7 +73,8 @@ public class RequestBodyPanel extends JPanel {
     private WebSocketTimedSendButton wsTimedSendButton; // 定时发送按钮
     private JTextField wsIntervalField; // 定时间隔输入框
     private JCheckBox wsClearInputCheckBox; // 清空输入复选框
-    private SearchTextField searchField; // HTTP模式下的搜索框
+    private SearchableTextArea searchableTextArea; // 集成了搜索功能的文本编辑器（HTTP模式）
+    private SearchButton searchButton; // 搜索按钮（HTTP模式）
 
     // 自动补全相关
     private JWindow autocompleteWindow;
@@ -146,16 +149,26 @@ public class RequestBodyPanel extends JPanel {
         topPanel.add(rawTypeComboBox);
         topPanel.add(Box.createHorizontalStrut(4));
 
-        // 搜索区控件
-        searchField = new SearchTextField();
-        PreviousButton prevButton = new PreviousButton();
-        NextButton nextButton = new NextButton();
-        topPanel.add(searchField);
+        // 搜索按钮 - 点击弹出 SearchReplacePanel
+        searchButton = new SearchButton();
+        searchButton.addActionListener(e -> {
+            if (searchableTextArea != null) {
+                searchableTextArea.getTextArea().requestFocusInWindow();
+                // 触发 Cmd+F 快捷键
+                KeyEvent keyEvent = new KeyEvent(
+                        searchableTextArea.getTextArea(),
+                        KeyEvent.KEY_PRESSED,
+                        System.currentTimeMillis(),
+                        Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx(),
+                        KeyEvent.VK_F,
+                        'f'
+                );
+                searchableTextArea.getTextArea().dispatchEvent(keyEvent);
+            }
+        });
+        topPanel.add(searchButton);
         topPanel.add(Box.createHorizontalStrut(4));
-        topPanel.add(prevButton);
-        topPanel.add(Box.createHorizontalStrut(4));
-        topPanel.add(nextButton);
-        topPanel.add(Box.createHorizontalStrut(4));
+
         formatButton = new FormatButton();
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
@@ -174,44 +187,18 @@ public class RequestBodyPanel extends JPanel {
         add(bodyCardPanel, BorderLayout.CENTER);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
 
-        // 搜索跳转逻辑（只在raw类型时可用）
-        searchField.addActionListener(e -> {
-            if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), true);
-        });
-        prevButton.addActionListener(e -> {
-            if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), false);
-        });
-        nextButton.addActionListener(e -> {
-            if (isBodyTypeRAW()) searchInBodyArea(bodyArea, searchField.getText(), true);
-        });
-
-        // 监听搜索选项变化，触发重新搜索
-        searchField.addPropertyChangeListener("caseSensitive", evt -> {
-            if (isBodyTypeRAW() && !searchField.getText().isEmpty()) {
-                searchInBodyArea(bodyArea, searchField.getText(), true);
-            }
-        });
-        searchField.addPropertyChangeListener("wholeWord", evt -> {
-            if (isBodyTypeRAW() && !searchField.getText().isEmpty()) {
-                searchInBodyArea(bodyArea, searchField.getText(), true);
-            }
-        });
-        // 切换body类型时，控制搜索区显示
+        // 切换body类型时，控制搜索按钮和格式化按钮的显示
         bodyTypeComboBox.addActionListener(e -> {
             boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
             rawTypeComboBox.setVisible(isRaw);
             formatButton.setVisible(isRaw);
-            searchField.setVisible(isRaw);
-            prevButton.setVisible(isRaw);
-            nextButton.setVisible(isRaw);
+            searchButton.setVisible(isRaw);
         });
         // 初始化显示状态
         boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
         rawTypeComboBox.setVisible(isRaw);
         formatButton.setVisible(isRaw);
-        searchField.setVisible(isRaw);
-        prevButton.setVisible(isRaw);
-        nextButton.setVisible(isRaw);
+        searchButton.setVisible(isRaw);
     }
 
     /**
@@ -320,8 +307,9 @@ public class RequestBodyPanel extends JPanel {
         // ====== 添加变量自动补全功能 ======
         initAutocomplete();
 
-        RTextScrollPane scrollPane = new RTextScrollPane(bodyArea); // 使用RSyntaxTextArea的滚动面板 显示行号
-        panel.add(scrollPane, BorderLayout.CENTER);
+        // 使用 SearchableTextArea 包装 bodyArea，集成搜索替换功能
+        searchableTextArea = new SearchableTextArea(bodyArea);
+        panel.add(searchableTextArea, BorderLayout.CENTER);
 
         // ====== 变量高亮和悬浮提示 ======
         // 变量高亮 - 使用主题自适应颜色
@@ -513,113 +501,6 @@ public class RequestBodyPanel extends JPanel {
 
     }
 
-    /**
-     * 在 bodyArea 中搜索关键字并跳转，支持大小写敏感、整词匹配、循环查找
-     */
-    private void searchInBodyArea(RSyntaxTextArea area, String keyword, boolean forward) {
-        if (keyword == null || keyword.isEmpty()) return;
-        String text = area.getText();
-        if (text == null || text.isEmpty()) return;
-
-        // 获取搜索选项
-        boolean caseSensitive = searchField != null && searchField.isCaseSensitive();
-        boolean wholeWord = searchField != null && searchField.isWholeWord();
-
-        int caret = area.getCaretPosition();
-        int pos;
-
-        if (forward) {
-            // 向后查找
-            int start = caret;
-            if (area.getSelectedText() != null) {
-                start = area.getSelectionEnd();
-            }
-            pos = findNext(text, keyword, start, caseSensitive, wholeWord);
-            if (pos == -1) {
-                // 循环查找：从头开始
-                pos = findNext(text, keyword, 0, caseSensitive, wholeWord);
-            }
-        } else {
-            // 向前查找
-            int start = caret;
-            if (area.getSelectedText() != null) {
-                start = area.getSelectionStart() - 1;
-            }
-            pos = findPrevious(text, keyword, start, caseSensitive, wholeWord);
-            if (pos == -1) {
-                // 循环查找：从末尾开始
-                pos = findPrevious(text, keyword, text.length(), caseSensitive, wholeWord);
-            }
-        }
-
-        if (pos != -1) {
-            area.setCaretPosition(pos);
-            area.select(pos, pos + keyword.length());
-            area.requestFocusInWindow();
-        }
-    }
-
-    /**
-     * 向后查找匹配
-     */
-    private int findNext(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
-        String searchText = caseSensitive ? text : text.toLowerCase();
-        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
-
-        int pos = fromIndex;
-        while ((pos = searchText.indexOf(searchKeyword, pos)) != -1) {
-            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
-                return pos;
-            }
-            pos++;
-        }
-        return -1;
-    }
-
-    /**
-     * 向前查找匹配
-     */
-    private int findPrevious(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
-        if (fromIndex > text.length()) {
-            fromIndex = text.length();
-        }
-
-        String searchText = caseSensitive ? text : text.toLowerCase();
-        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
-
-        int pos = fromIndex;
-        while ((pos = searchText.lastIndexOf(searchKeyword, pos)) != -1) {
-            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
-                return pos;
-            }
-            pos--;
-            if (pos < 0) break;
-        }
-        return -1;
-    }
-
-    /**
-     * 判断是否为整词匹配
-     */
-    private boolean isWholeWord(String text, int start, int length) {
-        int end = start + length;
-
-        // 检查前一个字符
-        if (start > 0) {
-            char prevChar = text.charAt(start - 1);
-            if (Character.isLetterOrDigit(prevChar) || prevChar == '_') {
-                return false;
-            }
-        }
-
-        // 检查后一个字符
-        if (end < text.length()) {
-            char nextChar = text.charAt(end);
-            return !Character.isLetterOrDigit(nextChar) && nextChar != '_';
-        }
-
-        return true;
-    }
 
     // getter方法，供主面板调用
     public String getBodyType() {

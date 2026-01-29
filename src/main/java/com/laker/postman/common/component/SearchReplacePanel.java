@@ -1,6 +1,8 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -17,12 +19,23 @@ import java.awt.event.KeyEvent;
 @Slf4j
 public class SearchReplacePanel extends JPanel {
 
+    // 图标路径常量
+    private static final String ICON_EXPAND = "icons/expand.svg";
+    private static final String ICON_COLLAPSE = "icons/collapse.svg";
+
+    // 状态消息常量
+    private static final String MSG_NO_RESULTS = "No results";
+    private static final String MSG_REPLACED_FORMAT = "%d replaced";
+
     private final RSyntaxTextArea textArea;
     private final SearchTextField searchField;
     private final FlatTextField replaceField;
     private final JToggleButton toggleReplaceBtn;
     private final JPanel replacePanel;
     private final JLabel statusLabel;  // 搜索结果状态标签
+
+    // 防抖Timer，避免输入时频繁搜索
+    private Timer searchDebounceTimer;
 
     public SearchReplacePanel(RSyntaxTextArea textArea) {
         this.textArea = textArea;
@@ -38,7 +51,7 @@ public class SearchReplacePanel extends JPanel {
         searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 展开/收起替换面板的按钮（放在最左边，类似 Postman）
-        toggleReplaceBtn = new JToggleButton(IconUtil.createThemed("icons/expand.svg", 16, 16));
+        toggleReplaceBtn = new JToggleButton(IconUtil.createThemed(ICON_EXPAND, 16, 16));
         toggleReplaceBtn.setToolTipText("Toggle Replace");
         toggleReplaceBtn.setFocusable(false);
         toggleReplaceBtn.setContentAreaFilled(false);
@@ -66,21 +79,21 @@ public class SearchReplacePanel extends JPanel {
             }
         });
 
-        // 添加文本变化监听器，实时更新搜索结果状态
+        // 添加文本变化监听器，实时更新搜索结果状态（使用防抖）
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                updateSearchStatus();
+                scheduleSearchUpdate();
             }
 
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                updateSearchStatus();
+                scheduleSearchUpdate();
             }
 
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                updateSearchStatus();
+                scheduleSearchUpdate();
             }
         });
 
@@ -88,10 +101,11 @@ public class SearchReplacePanel extends JPanel {
         JButton findPrevBtn = createIconButton("icons/arrow-up.svg", "Previous (Shift+Enter)", e -> findPrevious());
         JButton findNextBtn = createIconButton("icons/arrow-down.svg", "Next (Enter)", e -> findNext());
 
+
         // 状态标签
-        statusLabel = new JLabel("");
-        statusLabel.setFont(statusLabel.getFont().deriveFont(11f));
-        statusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        statusLabel = new JLabel(MSG_NO_RESULTS);
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        statusLabel.setForeground(ModernColors.getTextDisabled());
         statusLabel.setPreferredSize(new Dimension(70, 24));
         statusLabel.setMaximumSize(new Dimension(90, 24));
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -166,9 +180,9 @@ public class SearchReplacePanel extends JPanel {
             replacePanel.setVisible(selected);
             // 更新图标
             if (selected) {
-                toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/collapse.svg", 16, 16));
+                toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_COLLAPSE, 16, 16));
             } else {
-                toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/expand.svg", 16, 16));
+                toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_EXPAND, 16, 16));
             }
             // 先标记需要重新布局
             invalidate();
@@ -221,7 +235,7 @@ public class SearchReplacePanel extends JPanel {
     public void showSearch() {
         replacePanel.setVisible(false);
         toggleReplaceBtn.setSelected(false);
-        toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/expand.svg", 16, 16));
+        toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_EXPAND, 16, 16));
         setVisible(true);
 
         // 如果有选中文本，将其作为搜索内容
@@ -240,7 +254,7 @@ public class SearchReplacePanel extends JPanel {
     public void showReplace() {
         replacePanel.setVisible(true);
         toggleReplaceBtn.setSelected(true);
-        toggleReplaceBtn.setIcon(IconUtil.createThemed("icons/collapse.svg", 16, 16));
+        toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_COLLAPSE, 16, 16));
         setVisible(true);
 
         // 如果有选中文本，将其作为搜索内容
@@ -307,7 +321,13 @@ public class SearchReplacePanel extends JPanel {
         SearchContext context = createSearchContext();
         context.setSearchForward(true);
 
-        SearchEngine.replace(textArea, context).wasFound();
+        SearchResult result = SearchEngine.replace(textArea, context);
+        if (result.wasFound()) {
+            // 替换成功后自动查找下一个
+            findNext();
+        } else {
+            statusLabel.setText(MSG_NO_RESULTS);
+        }
     }
 
     /**
@@ -322,7 +342,19 @@ public class SearchReplacePanel extends JPanel {
 
         SearchContext context = createSearchContext();
 
-        SearchEngine.replaceAll(textArea, context).getCount();
+        SearchResult result = SearchEngine.replaceAll(textArea, context);
+        int count = result.getCount();
+
+        // 显示替换结果
+        if (count > 0) {
+            statusLabel.setText(String.format(MSG_REPLACED_FORMAT, count));
+            // 2秒后清除状态
+            Timer timer = new Timer(2000, e -> updateSearchStatus());
+            timer.setRepeats(false);
+            timer.start();
+        } else {
+            statusLabel.setText(MSG_NO_RESULTS);
+        }
     }
 
     /**
@@ -352,7 +384,7 @@ public class SearchReplacePanel extends JPanel {
                 statusLabel.setText("");
             }
         } else {
-            statusLabel.setText("No results");
+            statusLabel.setText(MSG_NO_RESULTS);
         }
     }
 
@@ -427,6 +459,21 @@ public class SearchReplacePanel extends JPanel {
     }
 
     /**
+     * 调度搜索状态更新（防抖）
+     */
+    private void scheduleSearchUpdate() {
+        // 取消之前的定时器
+        if (searchDebounceTimer != null && searchDebounceTimer.isRunning()) {
+            searchDebounceTimer.stop();
+        }
+
+        // 创建新的防抖定时器，300ms 后执行
+        searchDebounceTimer = new Timer(300, e -> updateSearchStatus());
+        searchDebounceTimer.setRepeats(false);
+        searchDebounceTimer.start();
+    }
+
+    /**
      * 更新搜索状态（用于实时更新）
      */
     private void updateSearchStatus() {
@@ -455,7 +502,7 @@ public class SearchReplacePanel extends JPanel {
                 int currentIndex = calculateCurrentIndex(savedSelStart);
                 statusLabel.setText(currentIndex + " of " + totalCount);
             } else {
-                statusLabel.setText("No results");
+                statusLabel.setText(MSG_NO_RESULTS);
             }
         } finally {
             // 恢复光标和选择

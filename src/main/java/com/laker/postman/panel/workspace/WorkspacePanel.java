@@ -8,7 +8,6 @@ import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.panel.workspace.components.*;
-import com.laker.postman.panel.workspace.components.ConvertToGitDialog;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -308,14 +307,12 @@ public class WorkspacePanel extends SingletonBasePanel {
 
     private void addGitMenuItems(JPopupMenu menu, Workspace workspace) {
         if (workspace.getType() != WorkspaceType.GIT) {
-            // 对于本地工作区，添加"转换为Git工作区"菜单
-            if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
-                JMenuItem convertToGitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT));
-                convertToGitItem.setIcon(IconUtil.create("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-                convertToGitItem.addActionListener(e -> convertToGitWorkspace(workspace));
-                menu.add(convertToGitItem);
-                menu.addSeparator();
-            }
+            // 工作区会通过 .gitignore
+            JMenuItem convertToGitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT));
+            convertToGitItem.setIcon(IconUtil.create("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+            convertToGitItem.addActionListener(e -> convertToGitWorkspace(workspace));
+            menu.add(convertToGitItem);
+            menu.addSeparator();
             return;
         }
 

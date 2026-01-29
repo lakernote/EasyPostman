@@ -23,6 +23,7 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -242,17 +243,75 @@ public class WorkspaceService {
      * 创建初始提交
      */
     private void createInitialCommit(Git git, Workspace workspace) throws Exception {
+        // 创建 .gitignore 文件（关键步骤：必须在 git add 之前创建）
+        createGitignore(workspace);
+
         // 创建README文件
         Path readmePath = Paths.get(workspace.getPath(), "README.md");
         Files.write(readmePath, String.format("# %s\n\n%s",
                 workspace.getName(),
                 workspace.getDescription() != null ? workspace.getDescription() : "EasyPostman Workspace").getBytes());
 
-        // 添加并提交
+        // 添加并提交（git add . 会自动遵循 .gitignore 规则）
         git.add().addFilepattern(".").call();
         git.commit().setMessage("Initial commit").call();
 
         workspace.setLastCommitId(getLastCommitId(git));
+    }
+
+    /**
+     * 为工作区创建 .gitignore 文件
+     * 默认工作区使用白名单模式：只追踪明确指定的文件，其他全部忽略
+     * 这样即使以后新增全局配置文件，也不会被误提交
+     */
+    private void createGitignore(Workspace workspace) throws IOException {
+        Path gitignorePath = Paths.get(workspace.getPath(), ".gitignore");
+
+        List<String> ignorePatterns = new ArrayList<>();
+
+        if (WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+            // 默认工作区：使用白名单模式（更安全）
+            ignorePatterns.add("# ==========================================");
+            ignorePatterns.add("# EasyPostman Default Workspace .gitignore");
+            ignorePatterns.add("# ==========================================");
+            ignorePatterns.add("# WHITELIST MODE: Ignore everything by default,");
+            ignorePatterns.add("# only track explicitly specified files.");
+            ignorePatterns.add("#");
+            ignorePatterns.add("# This ensures that any new global config files");
+            ignorePatterns.add("# added in the future will NOT be tracked by Git.");
+            ignorePatterns.add("");
+            ignorePatterns.add("# Ignore everything by default");
+            ignorePatterns.add("*");
+            ignorePatterns.add("");
+            ignorePatterns.add("# Explicitly track workspace-specific files");
+            ignorePatterns.add("!.gitignore");
+            ignorePatterns.add("!README.md");
+            ignorePatterns.add("!collections.json");
+            ignorePatterns.add("!environments.json");
+            ignorePatterns.add("");
+            ignorePatterns.add("# Note: All other files (global configs, settings, etc.)");
+            ignorePatterns.add("# will be automatically ignored, including any new files");
+            ignorePatterns.add("# added in the future.");
+
+        } else {
+            // 普通工作区：标准 .gitignore
+            ignorePatterns.add("# EasyPostman Workspace");
+            ignorePatterns.add("");
+            ignorePatterns.add("# Temporary files");
+            ignorePatterns.add("*.tmp");
+            ignorePatterns.add("*.bak");
+            ignorePatterns.add("*~");
+            ignorePatterns.add("");
+            ignorePatterns.add("# OS generated files");
+            ignorePatterns.add(".DS_Store");
+            ignorePatterns.add("Thumbs.db");
+        }
+
+        Files.write(gitignorePath, ignorePatterns, StandardCharsets.UTF_8);
+        log.info("Created .gitignore for workspace '{}' (isDefault: {}, mode: {})",
+                workspace.getName(),
+                WorkspaceStorageUtil.isDefaultWorkspace(workspace),
+                WorkspaceStorageUtil.isDefaultWorkspace(workspace) ? "WHITELIST" : "STANDARD");
     }
 
     /**

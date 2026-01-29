@@ -32,6 +32,10 @@ public class SearchReplacePanel extends JPanel {
     private static final int CORNER_RADIUS = 12;  // 圆角半径
     private static final int SHADOW_SIZE = 8;     // 阴影大小
 
+    // 布局间距常量
+    private static final int TOGGLE_BUTTON_SIZE = 20;  // 切换按钮尺寸
+    private static final int HORIZONTAL_STRUT_SMALL = 2;  // 小间距
+
     private final RSyntaxTextArea textArea;
     private final SearchTextField searchField;
     private final FlatTextField replaceField;
@@ -62,8 +66,8 @@ public class SearchReplacePanel extends JPanel {
         toggleReplaceBtn.setFocusable(false);
         toggleReplaceBtn.setContentAreaFilled(false);
         toggleReplaceBtn.setBorderPainted(false);
-        toggleReplaceBtn.setPreferredSize(new Dimension(20, 20));
-        toggleReplaceBtn.setMaximumSize(new Dimension(20, 20));
+        toggleReplaceBtn.setPreferredSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
+        toggleReplaceBtn.setMaximumSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
         toggleReplaceBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // 添加悬停效果
@@ -148,14 +152,14 @@ public class SearchReplacePanel extends JPanel {
 
         // 组装搜索面板
         searchPanel.add(toggleReplaceBtn);
-        searchPanel.add(Box.createHorizontalStrut(2));
+        searchPanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
         searchPanel.add(searchField);
-        searchPanel.add(Box.createHorizontalStrut(2));
+        searchPanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
         searchPanel.add(findPrevBtn);
         searchPanel.add(findNextBtn);
         searchPanel.add(Box.createHorizontalStrut(4));
         searchPanel.add(statusLabel);
-        searchPanel.add(Box.createHorizontalStrut(2));
+        searchPanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
         searchPanel.add(closeBtn);
         searchPanel.add(Box.createHorizontalGlue());
 
@@ -168,11 +172,12 @@ public class SearchReplacePanel extends JPanel {
         replacePanel.setVisible(false);
         replacePanel.setOpaque(false);  // 透明以显示父面板的圆角背景
 
-        // 左侧占位符，保持与搜索框对齐
+        // 左侧占位符，保持与搜索框对齐（切换按钮宽度 + 水平间距）
+        int spacerWidth = TOGGLE_BUTTON_SIZE + HORIZONTAL_STRUT_SMALL;
         JPanel spacer = new JPanel();
         spacer.setOpaque(false);
-        spacer.setPreferredSize(new Dimension(16, 16));  // 与切换按钮宽度一致
-        spacer.setMaximumSize(new Dimension(16, 16));
+        spacer.setPreferredSize(new Dimension(spacerWidth, TOGGLE_BUTTON_SIZE));
+        spacer.setMaximumSize(new Dimension(spacerWidth, TOGGLE_BUTTON_SIZE));
 
         // 替换输入框
         replaceField = new FlatTextField();
@@ -195,12 +200,11 @@ public class SearchReplacePanel extends JPanel {
         JButton replaceAllBtn = createIconButton("icons/replace-all.svg", "Replace All", e -> replaceAll());
 
         // 组装替换面板
-        replacePanel.add(spacer);  // 左侧占位符
-        replacePanel.add(Box.createHorizontalStrut(2));
+        replacePanel.add(spacer);  // 左侧占位符（已包含按钮宽度+间距）
         replacePanel.add(replaceField);
-        replacePanel.add(Box.createHorizontalStrut(2));
+        replacePanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
         replacePanel.add(replaceBtn);
-        replacePanel.add(Box.createHorizontalStrut(2));
+        replacePanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
         replacePanel.add(replaceAllBtn);
         replacePanel.add(Box.createHorizontalGlue());
 

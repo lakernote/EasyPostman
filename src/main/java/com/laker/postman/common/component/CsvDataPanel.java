@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
+import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.*;
@@ -61,27 +62,20 @@ public class CsvDataPanel extends JPanel {
      * 创建 CSV 状态显示面板
      */
     private JPanel createCsvStatusPanel() {
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
         statusPanel.setOpaque(false);
         statusPanel.setVisible(false); // 初始隐藏
 
-        // CSV 状态图标和文本
-        JLabel csvIcon = new JLabel(IconUtil.createThemed("icons/csv.svg", 16, 16));
+        // 状态文本
         csvStatusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
         csvStatusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         csvStatusLabel.setForeground(ModernColors.getTextHint());
 
         // CSV 清除按钮
-        JButton csvClearBtn = new JButton();
-        csvClearBtn.setIcon(IconUtil.createThemed("icons/close.svg", 14, 14));
-        csvClearBtn.setPreferredSize(new Dimension(20, 20));
+        CloseButton csvClearBtn = new CloseButton();
         csvClearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_TOOLTIP));
-        csvClearBtn.setBorderPainted(false);
-        csvClearBtn.setContentAreaFilled(false);
-        csvClearBtn.setFocusPainted(false);
         csvClearBtn.addActionListener(e -> clearCsvData());
 
-        statusPanel.add(csvIcon);
         statusPanel.add(csvStatusLabel);
         statusPanel.add(csvClearBtn);
 

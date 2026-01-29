@@ -16,7 +16,7 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
     // 可配置的类型列索引，默认为2（Form-Data表格中Type列的索引）
     private static final int typeColumnIndex = 2;
 
-    private final EasyPostmanTextFieldCellEditor textEditor;
+    private final EasySmartValueCellEditor textEditor;
     private FileCellEditor fileEditor;
     private String currentType;
 
@@ -29,7 +29,7 @@ public class TextOrFileTableCellEditor extends DefaultCellEditor {
      */
     public TextOrFileTableCellEditor() {
         super(new JTextField());
-        textEditor = new EasyPostmanTextFieldCellEditor();
+        textEditor = new EasySmartValueCellEditor(); // 启用智能多行编辑
     }
 
     /**

@@ -170,10 +170,7 @@ public final class MessageKeys {
     public static final String BUTTON_CANCEL = "button.cancel";
     public static final String BUTTON_CLOSE = "button.close";
     public static final String BUTTON_CONNECT_TOOLTIP = "button.connect.tooltip";
-    public static final String BUTTON_START = "button.start";
-    public static final String BUTTON_STOP = "button.stop";
     public static final String BUTTON_SEARCH = "button.search";
-    public static final String BUTTON_LOAD = "button.load";
     public static final String BUTTON_CLEAR = "button.clear";
     public static final String BUTTON_REFRESH = "button.refresh";
     public static final String BUTTON_CONNECT = "button.connect";
@@ -284,16 +281,6 @@ public final class MessageKeys {
     // ============ Cookie相关 ============
     public static final String COOKIES_TITLE = "cookies.title";
     public static final String COOKIES_MANAGER_TITLE = "cookies.manager_title";
-    public static final String COOKIE_BUTTON_DELETE = "cookie.button.delete";
-    public static final String COOKIE_BUTTON_CLEAR = "cookie.button.clear";
-    public static final String COOKIE_BUTTON_ADD = "cookie.button.add";
-    public static final String COOKIE_BUTTON_EDIT = "cookie.button.edit";
-    public static final String COOKIE_BUTTON_REFRESH = "cookie.button.refresh";
-    public static final String COOKIE_TOOLTIP_ADD = "cookie.tooltip.add";
-    public static final String COOKIE_TOOLTIP_EDIT = "cookie.tooltip.edit";
-    public static final String COOKIE_TOOLTIP_DELETE = "cookie.tooltip.delete";
-    public static final String COOKIE_TOOLTIP_CLEAR = "cookie.tooltip.clear";
-    public static final String COOKIE_TOOLTIP_REFRESH = "cookie.tooltip.refresh";
     public static final String COOKIE_DIALOG_CLEAR_CONFIRM = "cookie.dialog.clear_confirm";
     public static final String COOKIE_DIALOG_CLEAR_CONFIRM_TITLE = "cookie.dialog.clear_confirm_title";
     public static final String COOKIE_DIALOG_ADD_TITLE = "cookie.dialog.add_title";
@@ -365,11 +352,9 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST = "functional.msg.no_runnable_request";
     public static final String FUNCTIONAL_MSG_CSV_DETECTED = "functional.msg.csv_detected";
     public static final String FUNCTIONAL_MSG_CSV_TITLE = "functional.msg.csv_title";
-    public static final String FUNCTIONAL_STATUS_PRE_SCRIPT_FAILED = "functional.status.pre_script_failed";
     public static final String FUNCTIONAL_STATUS_SKIPPED = "functional.status.skipped";
 
     // ============ 工作区相关 ============
-    public static final String WORKSPACE_NEW = "workspace.new";
     public static final String WORKSPACE_CREATE = "workspace.create";
     public static final String WORKSPACE_NAME = "workspace.name";
     public static final String WORKSPACE_DEFAULT_NAME = "workspace.default.name";
@@ -424,7 +409,6 @@ public final class MessageKeys {
     public static final String GIT_HISTORY_RESTORE_FAILED = "git.history.restore.failed";
     public static final String GIT_HISTORY_COMMIT_DETAILS = "git.history.commit.details";
     public static final String GIT_HISTORY_CLOSE = "git.history.close";
-    public static final String GIT_HISTORY_REFRESH = "git.history.refresh";
     public static final String WORKSPACE_VALIDATION_NAME_REQUIRED = "workspace.validation.name.required";
     public static final String WORKSPACE_VALIDATION_PATH_REQUIRED = "workspace.validation.path.required";
     public static final String WORKSPACE_VALIDATION_GIT_URL_REQUIRED = "workspace.validation.git.url.required";
@@ -573,8 +557,6 @@ public final class MessageKeys {
     public static final String EXIT_CANCEL = "exit.cancel";
 
     // ============ 集合相关 ============
-    public static final String COLLECTIONS_EXPORT_TOOLTIP = "collections.export.tooltip";
-    public static final String COLLECTIONS_IMPORT_TOOLTIP = "collections.import.tooltip";
     public static final String COLLECTIONS_IMPORT_CURL_DETECTED = "collections.import.curl.detected";
     public static final String COLLECTIONS_IMPORT_CURL_TITLE = "collections.import.curl.title";
     public static final String COLLECTIONS_IMPORT_EASY = "collections.import.easy";
@@ -608,7 +590,6 @@ public final class MessageKeys {
     public static final String COLLECTIONS_MENU_ADD_TO_FUNCTIONAL = "collections.menu.add_to_functional";
 
     // Functional Test Table
-    public static final String FUNCTIONAL_TABLE_COLUMN_SELECT = "functional.table.column.select";
     public static final String FUNCTIONAL_TABLE_COLUMN_NAME = "functional.table.column.name";
     public static final String FUNCTIONAL_TABLE_COLUMN_URL = "functional.table.column.url";
     public static final String FUNCTIONAL_TABLE_COLUMN_METHOD = "functional.table.column.method";
@@ -670,8 +651,6 @@ public final class MessageKeys {
     public static final String GROUP_EDIT_TAB_GENERAL = "group.edit.tab.general";
     public static final String GROUP_EDIT_NAME_LABEL = "group.edit.name.label";
     public static final String GROUP_EDIT_NAME_EMPTY = "group.edit.name.empty";
-    public static final String GROUP_EDIT_DESCRIPTION = "group.edit.description";
-    public static final String GROUP_EDIT_DESCRIPTION_LABEL = "group.edit.description.label";
     public static final String GROUP_EDIT_DESCRIPTION_PLACEHOLDER = "group.edit.description.placeholder";
     public static final String GROUP_EDIT_AUTH_INFO = "group.edit.auth.info";
     public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
@@ -859,11 +838,9 @@ public final class MessageKeys {
     public static final String SETTINGS_SAVE_ERROR_MESSAGE = "settings.save.error.message";
 
     // ============ 请求Body相关 ============
-    public static final String REQUEST_BODY_FORMAT = "request.body.format";
     public static final String REQUEST_BODY_NONE = "request.body.none";
     public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";
     public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
-    public static final String REQUEST_BODY_FORMAT_JSON5_WARNING = "request.body.format.json5.warning";
 
     // ============ 响应头面板相关 ============
     public static final String RESPONSE_HEADERS_COPY_SELECTED = "response.headers.copy_selected";

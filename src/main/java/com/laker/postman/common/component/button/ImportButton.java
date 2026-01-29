@@ -1,8 +1,6 @@
 package com.laker.postman.common.component.button;
 
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +13,7 @@ import java.awt.event.MouseEvent;
 public class ImportButton extends JButton {
     public ImportButton() {
         setIcon(IconUtil.createThemed("icons/import.svg", 20, 20));
-        setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_TOOLTIP));
+        setToolTipText("Import");
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

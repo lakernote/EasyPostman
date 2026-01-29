@@ -148,13 +148,13 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private JButton createIconButton(String iconPath, String tooltip) {
-        JButton button = new JButton(new FlatSVGIcon(iconPath, 14, 14)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        JButton button = new JButton(IconUtil.createThemed(iconPath, 14, 14));
         button.setToolTipText(tooltip);
         button.setPreferredSize(new Dimension(24, 24));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return button;
     }
 

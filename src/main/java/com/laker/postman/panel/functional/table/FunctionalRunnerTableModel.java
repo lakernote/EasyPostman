@@ -26,7 +26,6 @@ public class FunctionalRunnerTableModel extends AbstractTableModel {
     @Override
     public String getColumnName(int column) {
         return switch (column) {
-            case 0 -> I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_COLUMN_SELECT);
             case 1 -> I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_COLUMN_NAME);
             case 2 -> I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_COLUMN_URL);
             case 3 -> I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_COLUMN_METHOD);

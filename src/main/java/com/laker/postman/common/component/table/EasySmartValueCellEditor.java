@@ -13,7 +13,7 @@ import java.awt.*;
  * - 长文本（超出列宽）：多行 TextArea（自动撑开行高）
  */
 public class EasySmartValueCellEditor extends AbstractCellEditor implements TableCellEditor {
-    private final EasyTextField textField;
+    protected EasyTextField textField;
     private JTextArea textArea;
     private JScrollPane scrollPane;
     private boolean isMultiLine;

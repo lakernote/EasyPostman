@@ -1459,7 +1459,7 @@ public class WorkspaceService {
 
     /**
      * 恢复工作区到指定的 Git 提交版本
-     * 使用 checkout + commit 方式，保留完整的历史记录
+     * 使用 reset + commit 方式，保留完整的历史记录
      * @param workspaceId 工作区ID
      * @param commitId 提交ID
      * @param createBackup 是否在恢复前创建备份提交（保存未提交的更改）
@@ -1475,6 +1475,8 @@ public class WorkspaceService {
         String backupCommitId = null;
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
+            Repository repository = git.getRepository();
+
             // 1. 检查是否有未提交的更改
             var status = git.status().call();
             boolean hasChanges = !status.getAdded().isEmpty() ||
@@ -1500,16 +1502,30 @@ public class WorkspaceService {
                 }
             }
 
-            // 3. 使用 checkout 恢复文件内容（不移动 HEAD）
-            // 这样可以保留历史记录，只是将文件内容恢复到目标版本
-            git.checkout()
-                .setStartPoint(commitId)
-                .addPath(".")  // checkout 所有文件
+            // 3. 保存当前的 HEAD 位置
+            String currentHead = repository.resolve("HEAD").getName();
+
+            // 4. 使用 reset --soft 到目标提交，这样文件内容不变但索引会更新
+            // 然后使用 reset --hard 到目标提交来真正恢复文件
+            git.reset()
+                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD)
+                .setRef(commitId)
                 .call();
 
             result.details += "📁 Restored files from commit: " + commitId.substring(0, 8) + "\n";
 
-            // 4. 创建一个新的提交来记录这次恢复操作
+            // 5. 将 HEAD 移回到之前的位置，但保持工作目录的文件内容（来自目标提交）
+            // 使用 git reset --soft 回到原来的 HEAD
+            git.reset()
+                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.SOFT)
+                .setRef(currentHead)
+                .call();
+
+            // 现在工作目录的文件是目标版本的，但 HEAD 还在原位置
+            // 需要将这些变更添加到暂存区
+            git.add().addFilepattern(".").call();
+
+            // 6. 创建一个新的提交来记录这次恢复操作
             String restoreMessage = "Restore to commit " + commitId.substring(0, 8);
             if (backupCommitId != null) {
                 restoreMessage += "\n\nBackup commit: " + backupCommitId.substring(0, 8);
@@ -1518,12 +1534,11 @@ public class WorkspaceService {
 
             var restoreCommit = git.commit()
                 .setMessage(restoreMessage)
-                .setAll(true)  // 自动添加所有更改
                 .call();
 
             result.details += "✅ Created restore commit: " + restoreCommit.getName().substring(0, 8) + "\n\n";
 
-            // 5. 更新工作区的最后提交ID
+            // 7. 更新工作区的最后提交ID
             workspace.setLastCommitId(getLastCommitId(git));
             workspace.setUpdatedAt(System.currentTimeMillis());
             saveWorkspaces();
@@ -1538,7 +1553,7 @@ public class WorkspaceService {
                 result.details += "   - All commits are visible in history!\n";
             }
 
-            log.info("Restored workspace {} to commit {} using checkout+commit",
+            log.info("Restored workspace {} to commit {} successfully",
                     workspace.getName(), commitId.substring(0, 8));
         } catch (Exception e) {
             result.success = false;

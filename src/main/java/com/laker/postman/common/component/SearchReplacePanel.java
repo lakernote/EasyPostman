@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
+import org.fife.ui.rtextarea.SearchResult;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -21,6 +22,7 @@ public class SearchReplacePanel extends JPanel {
     private final FlatTextField replaceField;
     private final JToggleButton toggleReplaceBtn;
     private final JPanel replacePanel;
+    private final JLabel statusLabel;  // 搜索结果状态标签
 
     public SearchReplacePanel(RSyntaxTextArea textArea) {
         this.textArea = textArea;
@@ -64,9 +66,35 @@ public class SearchReplacePanel extends JPanel {
             }
         });
 
+        // 添加文本变化监听器，实时更新搜索结果状态
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateSearchStatus();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateSearchStatus();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateSearchStatus();
+            }
+        });
+
         // 查找按钮
         JButton findPrevBtn = createIconButton("icons/arrow-up.svg", "Previous (Shift+Enter)", e -> findPrevious());
         JButton findNextBtn = createIconButton("icons/arrow-down.svg", "Next (Enter)", e -> findNext());
+
+        // 状态标签
+        statusLabel = new JLabel("");
+        statusLabel.setFont(statusLabel.getFont().deriveFont(11f));
+        statusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        statusLabel.setPreferredSize(new Dimension(70, 24));
+        statusLabel.setMaximumSize(new Dimension(90, 24));
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // 关闭按钮
         JButton closeBtn = createIconButton("icons/close.svg", "Close (Esc)", e -> hidePanel());
@@ -79,6 +107,8 @@ public class SearchReplacePanel extends JPanel {
         searchPanel.add(Box.createHorizontalStrut(2));
         searchPanel.add(findPrevBtn);
         searchPanel.add(findNextBtn);
+        searchPanel.add(Box.createHorizontalStrut(4));
+        searchPanel.add(statusLabel);
         searchPanel.add(Box.createHorizontalStrut(2));
         searchPanel.add(closeBtn);
         searchPanel.add(Box.createHorizontalGlue());
@@ -237,13 +267,15 @@ public class SearchReplacePanel extends JPanel {
     private void findNext() {
         String searchText = searchField.getText();
         if (searchText.isEmpty()) {
+            statusLabel.setText("");
             return;
         }
 
         SearchContext context = createSearchContext();
         context.setSearchForward(true);
 
-        SearchEngine.find(textArea, context).wasFound();
+        SearchResult result = SearchEngine.find(textArea, context);
+        updateStatusFromResult(result);
     }
 
     /**
@@ -252,12 +284,14 @@ public class SearchReplacePanel extends JPanel {
     private void findPrevious() {
         String searchText = searchField.getText();
         if (searchText.isEmpty()) {
+            statusLabel.setText("");
             return;
         }
 
         SearchContext context = createSearchContext();
         context.setSearchForward(false);
-        SearchEngine.find(textArea, context).wasFound();
+        SearchResult result = SearchEngine.find(textArea, context);
+        updateStatusFromResult(result);
     }
 
     /**
@@ -302,6 +336,133 @@ public class SearchReplacePanel extends JPanel {
         context.setRegularExpression(false);  // 不支持正则表达式
         context.setWholeWord(searchField.isWholeWord());
         return context;
+    }
+
+    /**
+     * 根据搜索结果更新状态标签
+     */
+    private void updateStatusFromResult(SearchResult result) {
+        if (result.wasFound()) {
+            int totalCount = result.getCount();
+            if (totalCount > 0) {
+                // 计算当前是第几个匹配
+                int currentIndex = getCurrentMatchIndex();
+                statusLabel.setText(currentIndex + " of " + totalCount);
+            } else {
+                statusLabel.setText("");
+            }
+        } else {
+            statusLabel.setText("No results");
+        }
+    }
+
+    /**
+     * 计算当前选中位置对应的匹配索引
+     */
+    private int calculateCurrentIndex(int selStart) {
+        try {
+            String searchText = searchField.getText();
+            if (searchText.isEmpty()) {
+                return 1;
+            }
+
+            // 从文档开头开始计数
+            textArea.setCaretPosition(0);
+            SearchContext context = createSearchContext();
+            context.setSearchForward(true);
+
+            int index = 0;
+
+            while (true) {
+                SearchResult tempResult = SearchEngine.find(textArea, context);
+                if (!tempResult.wasFound()) {
+                    break;
+                }
+                index++;
+
+                int matchStart = tempResult.getMatchRange().getStartOffset();
+
+                // 找到第一个起始位置 >= 当前选中位置的匹配项
+                if (matchStart >= selStart) {
+                    return index;
+                }
+            }
+
+            // 如果所有匹配都在选中位置之前，返回总数
+            return Math.max(1, index);
+        } catch (Exception e) {
+            log.warn("Failed to calculate current index", e);
+            return 1;
+        }
+    }
+
+    /**
+     * 计算当前匹配项是第几个
+     */
+    private int getCurrentMatchIndex() {
+        try {
+            String searchText = searchField.getText();
+            if (searchText.isEmpty()) {
+                return 1;
+            }
+
+            // 获取当前选中的位置
+            int currentSelStart = textArea.getSelectionStart();
+
+            // 保存当前状态
+            int savedCaret = textArea.getCaretPosition();
+
+            int result = calculateCurrentIndex(currentSelStart);
+
+            // 恢复光标
+            textArea.setCaretPosition(savedCaret);
+            textArea.setSelectionStart(currentSelStart);
+            textArea.setSelectionEnd(textArea.getSelectionEnd());
+
+            return result;
+        } catch (Exception e) {
+            log.warn("Failed to calculate match index", e);
+            return 1;
+        }
+    }
+
+    /**
+     * 更新搜索状态（用于实时更新）
+     */
+    private void updateSearchStatus() {
+        String searchText = searchField.getText();
+        if (searchText.isEmpty()) {
+            statusLabel.setText("");
+            return;
+        }
+
+        // 保存当前状态
+        int savedCaret = textArea.getCaretPosition();
+        int savedSelStart = textArea.getSelectionStart();
+        int savedSelEnd = textArea.getSelectionEnd();
+
+        try {
+            // 从文档开头开始搜索以获取总数
+            textArea.setCaretPosition(0);
+            SearchContext context = createSearchContext();
+            context.setSearchForward(true);
+
+            SearchResult firstResult = SearchEngine.find(textArea, context);
+
+            if (firstResult.wasFound()) {
+                int totalCount = firstResult.getCount();
+                // 计算当前匹配索引
+                int currentIndex = calculateCurrentIndex(savedSelStart);
+                statusLabel.setText(currentIndex + " of " + totalCount);
+            } else {
+                statusLabel.setText("No results");
+            }
+        } finally {
+            // 恢复光标和选择
+            textArea.setCaretPosition(savedCaret);
+            textArea.setSelectionStart(savedSelStart);
+            textArea.setSelectionEnd(savedSelEnd);
+        }
     }
 
 

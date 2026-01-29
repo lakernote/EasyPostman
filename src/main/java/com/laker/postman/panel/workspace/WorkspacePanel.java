@@ -307,12 +307,16 @@ public class WorkspacePanel extends SingletonBasePanel {
 
     private void addGitMenuItems(JPopupMenu menu, Workspace workspace) {
         if (workspace.getType() != WorkspaceType.GIT) {
-            // 工作区会通过 .gitignore
+            // 所有本地工作区都可以转换为Git工作区（包括默认工作区）
+            // 默认工作区会通过 .gitignore 自动隔离全局配置文件
             JMenuItem convertToGitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT));
             convertToGitItem.setIcon(IconUtil.create("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
             convertToGitItem.addActionListener(e -> convertToGitWorkspace(workspace));
             menu.add(convertToGitItem);
-            menu.addSeparator();
+            // 只有非默认工作区才添加分隔符（因为后面还有重命名和删除选项）
+            if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+                menu.addSeparator();
+            }
             return;
         }
 
@@ -322,7 +326,10 @@ public class WorkspacePanel extends SingletonBasePanel {
         }
 
         addStandardGitMenuItems(menu, workspace);
-        menu.addSeparator();
+        // 只有非默认工作区才添加分隔符（因为后面还有重命名和删除选项）
+        if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+            menu.addSeparator();
+        }
     }
 
     private void addInitializedGitMenuItems(JPopupMenu menu, Workspace workspace) {

@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
@@ -36,9 +37,7 @@ public class SearchTextField extends FlatTextField {
 
     public SearchTextField() {
         super();
-        FlatSVGIcon icon = new FlatSVGIcon("icons/search.svg", 16, 16);
-        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        setLeadingIcon(icon);
+        setLeadingIcon(IconUtil.createThemed("icons/search.svg", 16, 16));
         setPlaceholderText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
         setPreferredSize(new Dimension(220, 28));

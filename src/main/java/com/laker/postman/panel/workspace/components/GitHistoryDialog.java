@@ -1,5 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.model.GitCommitInfo;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
@@ -32,7 +33,7 @@ public class GitHistoryDialog extends JDialog {
     private List<GitCommitInfo> commits;
     /**
      * -- GETTER --
-     *  是否需要刷新请求集合面板
+     * 是否需要刷新请求集合面板
      */
     @Getter
     private boolean needRefresh = false;
@@ -64,10 +65,7 @@ public class GitHistoryDialog extends JDialog {
     private JPanel createToolbar() {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         toolbar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        JButton refreshButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_REFRESH));
-        refreshButton.setIcon(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        refreshButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        RefreshButton refreshButton = new RefreshButton();
         refreshButton.addActionListener(e -> loadHistory());
         toolbar.add(refreshButton);
 
@@ -90,8 +88,6 @@ public class GitHistoryDialog extends JDialog {
         };
 
         historyTable = new JTable(tableModel);
-        historyTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        historyTable.setRowHeight(30);
         historyTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         historyTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
@@ -128,19 +124,16 @@ public class GitHistoryDialog extends JDialog {
 
         JButton viewDetailsButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_VIEW_DETAILS));
         viewDetailsButton.setIcon(IconUtil.createThemed("icons/detail.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        viewDetailsButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         viewDetailsButton.addActionListener(e -> viewCommitDetails());
         panel.add(viewDetailsButton);
 
         JButton restoreButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE));
         restoreButton.setIcon(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        restoreButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         restoreButton.addActionListener(e -> restoreToCommit());
         panel.add(restoreButton);
 
         JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_CLOSE));
         closeButton.setIcon(IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        closeButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         closeButton.addActionListener(e -> dispose());
         panel.add(closeButton);
 
@@ -225,7 +218,6 @@ public class GitHistoryDialog extends JDialog {
 
                     JTextArea textArea = new JTextArea(details);
                     textArea.setEditable(false);
-                    textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
                     textArea.setCaretPosition(0);
 
                     JScrollPane scrollPane = new JScrollPane(textArea);
@@ -267,9 +259,8 @@ public class GitHistoryDialog extends JDialog {
         // 创建确认对话框，带备份选项
         JCheckBox backupCheckBox = new JCheckBox(
                 I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE_BACKUP),
-                true
+                false
         );
-        backupCheckBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
         Object[] message = {
                 I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE_CONFIRM, commit.getShortCommitId()),

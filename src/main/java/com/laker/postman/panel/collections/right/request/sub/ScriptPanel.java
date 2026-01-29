@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -32,19 +32,21 @@ public class ScriptPanel extends JPanel {
         // 初始化并配置 PreScript 编辑器
         prescriptArea = new RSyntaxTextArea(6, 40);
         configureEditor(prescriptArea);
+        SearchableTextArea prescriptSearchableArea = new SearchableTextArea(prescriptArea);
 
         // 初始化并配置 PostScript 编辑器
         postscriptArea = new RSyntaxTextArea(6, 40);
         configureEditor(postscriptArea);
+        SearchableTextArea postscriptSearchableArea = new SearchableTextArea(postscriptArea);
 
         // 创建选项卡面板 垂直方向
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
 
         // Pre-script 标签带图标
-        tabbedPane.addTab("Pre-script", new RTextScrollPane(prescriptArea));
+        tabbedPane.addTab("Pre-script", prescriptSearchableArea);
 
         // Post-script 标签带图标
-        tabbedPane.addTab("Post-script", new RTextScrollPane(postscriptArea));
+        tabbedPane.addTab("Post-script", postscriptSearchableArea);
 
         // 创建帮助面板
         JPanel helpPanel = createHelpPanel();

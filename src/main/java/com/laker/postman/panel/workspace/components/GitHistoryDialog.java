@@ -48,9 +48,9 @@ public class GitHistoryDialog extends JDialog {
     }
 
     private void initUI() {
-        setSize(900, 600);
+        setSize(700, 400);
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(10, 10)); // 设置边距
 
         // 创建工具栏
         add(createToolbar(), BorderLayout.NORTH);

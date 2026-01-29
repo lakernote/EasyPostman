@@ -14,7 +14,6 @@ import java.awt.event.MouseEvent;
  */
 public class SearchButton extends JButton {
     public SearchButton() {
-        super();
         setIcon(IconUtil.createThemed("icons/search.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
         // 扁平化设计

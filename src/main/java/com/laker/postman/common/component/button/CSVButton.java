@@ -1,6 +1,6 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,10 +12,8 @@ import java.awt.event.MouseEvent;
  */
 public class CSVButton extends JButton {
     public CSVButton() {
-        super("  CSV ");
-        FlatSVGIcon icon = new FlatSVGIcon("icons/csv.svg", 20, 20);
-        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        setIcon(icon);
+        setIcon(IconUtil.createThemed("icons/csv.svg", 20, 20));
+        setToolTipText("CSV Data");
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

@@ -15,8 +15,8 @@ import java.awt.event.MouseEvent;
  */
 public class WebSocketTimedSendButton extends JButton {
     public WebSocketTimedSendButton() {
-        super(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_START));
-        setIcon(IconUtil.createThemed("icons/time.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        setIcon(IconUtil.createThemed("icons/time.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
+        setToolTipText(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_START));
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

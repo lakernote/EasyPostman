@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
  */
 public class SaveResponseButton extends JButton {
     public SaveResponseButton() {
-        super();
         setIcon(IconUtil.createThemed("icons/save.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         setToolTipText("Save Response");
         // 扁平化设计

@@ -1,8 +1,6 @@
 package com.laker.postman.common.component.button;
 
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,9 +12,8 @@ import java.awt.event.MouseEvent;
  */
 public class ExportButton extends JButton {
     public ExportButton() {
-        super();
         setIcon(IconUtil.createThemed("icons/export.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
-        setToolTipText(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_TOOLTIP));
+        setToolTipText("Export");
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

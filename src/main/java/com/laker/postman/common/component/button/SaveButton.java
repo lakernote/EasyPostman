@@ -1,8 +1,6 @@
 package com.laker.postman.common.component.button;
 
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +13,7 @@ import java.awt.event.MouseEvent;
 public class SaveButton extends JButton {
     public SaveButton() {
         setIcon(IconUtil.createThemed("icons/save.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
-        setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE_TOOLTIP));
+        setToolTipText("Save");
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

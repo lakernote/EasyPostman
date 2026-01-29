@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace;
 
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
@@ -83,10 +84,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         toolbar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 新建工作区按钮
-        JButton newButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_NEW));
-        newButton.setIcon(IconUtil.createThemed("icons/plus.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
-        newButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        newButton.setFocusable(false); // 去掉按钮聚焦虚线
+        JButton newButton = new PlusButton();
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
         toolbar.add(newButton);
 

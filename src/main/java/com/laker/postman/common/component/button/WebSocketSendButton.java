@@ -1,8 +1,6 @@
 package com.laker.postman.common.component.button;
 
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,8 +13,8 @@ import java.awt.event.MouseEvent;
  */
 public class WebSocketSendButton extends JButton {
     public WebSocketSendButton() {
-        super(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_BUTTON_SEND));
         setIcon(IconUtil.createThemed("icons/send.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        setToolTipText("Send");
         setVisible(true);
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框

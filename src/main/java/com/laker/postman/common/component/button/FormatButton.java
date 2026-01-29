@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
  */
 public class FormatButton extends JButton {
     public FormatButton() {
-        super();
         setIcon(IconUtil.createThemed("icons/format.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         setToolTipText("Format");
         // 扁平化设计

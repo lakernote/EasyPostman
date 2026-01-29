@@ -1,8 +1,6 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,10 +12,8 @@ import java.awt.event.MouseEvent;
  */
 public class StopButton extends JButton {
     public StopButton() {
-        super(I18nUtil.getMessage(MessageKeys.BUTTON_STOP));
-        FlatSVGIcon icon = new FlatSVGIcon("icons/stop.svg", 20, 20);
-        icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
-        setIcon(icon);
+        setIcon(IconUtil.createThemed("icons/stop.svg", 20, 20));
+        setToolTipText("Stop");
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

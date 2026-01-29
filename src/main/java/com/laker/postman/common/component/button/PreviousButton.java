@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
  */
 public class PreviousButton extends JButton {
     public PreviousButton() {
-        super();
         setIcon(IconUtil.createThemed("icons/arrow-up.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         setToolTipText("Previous");
         // 扁平化设计

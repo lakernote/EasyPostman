@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
  */
 public class NextButton extends JButton {
     public NextButton() {
-        super();
         setIcon(IconUtil.createThemed("icons/arrow-down.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         setToolTipText("Next");
         // 扁平化设计

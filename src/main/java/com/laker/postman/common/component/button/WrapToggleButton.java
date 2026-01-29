@@ -14,7 +14,6 @@ public class WrapToggleButton extends JToggleButton {
     private static final String ICON_PATH = "icons/wrap.svg";
 
     public WrapToggleButton() {
-        super();
         updateIcon(false);
         setToolTipText("Toggle Line Wrap");
         // 扁平化设计

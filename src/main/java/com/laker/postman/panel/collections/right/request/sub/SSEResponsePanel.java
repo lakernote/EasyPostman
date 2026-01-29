@@ -4,11 +4,11 @@ import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.MessageType;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -33,7 +33,7 @@ public class SSEResponsePanel extends JPanel {
     private final DefaultTableModel tableModel;
     private final JComboBox<String> typeFilterBox;
     private final JTextField searchField;
-    private final JButton clearButton;
+    private final ClearButton clearButton;
     private final List<MessageRow> allRows = new ArrayList<>();
 
     private static final String[] COLUMN_NAMES = {
@@ -59,8 +59,7 @@ public class SSEResponsePanel extends JPanel {
         JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
-        clearButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR_MESSAGES));
-        clearButton.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        clearButton = new ClearButton();
         toolBar.add(typeFilterBox);
         toolBar.add(searchField);
         toolBar.add(clearButton);

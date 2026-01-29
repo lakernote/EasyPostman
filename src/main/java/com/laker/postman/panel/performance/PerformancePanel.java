@@ -210,7 +210,7 @@ public class PerformancePanel extends SingletonBasePanel {
         // 保存/加载用例按钮 ==========
         topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 3)); // 按钮面板 宽度间距4，高度间距3
         runBtn = new StartButton();
         stopBtn = new StopButton();
         stopBtn.setEnabled(false);

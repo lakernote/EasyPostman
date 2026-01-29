@@ -147,7 +147,7 @@ public class RequestBodyPanel extends JPanel {
         boolean showFormatControls = isBodyTypeRAW();
         rawTypeComboBox.setVisible(showFormatControls);
         topPanel.add(rawTypeComboBox);
-        topPanel.add(Box.createHorizontalStrut(4));
+        topPanel.add(Box.createHorizontalStrut(2));
 
         // 搜索按钮 - 点击弹出 SearchReplacePanel
         searchButton = new SearchButton();
@@ -158,7 +158,7 @@ public class RequestBodyPanel extends JPanel {
             }
         });
         topPanel.add(searchButton);
-        topPanel.add(Box.createHorizontalStrut(4));
+        topPanel.add(Box.createHorizontalStrut(1));
 
         formatButton = new FormatButton();
         formatButton.addActionListener(e -> formatBody());

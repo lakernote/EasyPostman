@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace;
 
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.model.*;
@@ -183,9 +184,7 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 添加清空日志按钮
         JPanel logToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
-        JButton clearLogButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        clearLogButton.setIcon(IconUtil.createThemed("icons/clear.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
-        clearLogButton.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        ClearButton clearLogButton = new ClearButton();
         clearLogButton.addActionListener(e -> logArea.setText(""));
         logToolbar.add(clearLogButton);
         panel.add(logToolbar, BorderLayout.SOUTH);

@@ -150,7 +150,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         btnPanel.setOpaque(false);
 
         JButton loadBtn = new LoadButton();

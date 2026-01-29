@@ -104,22 +104,22 @@ public class ResponseBodyPanel extends JPanel {
             searchableTextArea.showSearch();
         });
         toolBarPanel.add(searchButton);
-        toolBarPanel.add(Box.createHorizontalStrut(4));
+        toolBarPanel.add(Box.createHorizontalStrut(1)); // 间隔
 
         // 换行按钮
         wrapButton = new WrapToggleButton();
         toolBarPanel.add(wrapButton);
-        toolBarPanel.add(Box.createHorizontalStrut(4));
+        toolBarPanel.add(Box.createHorizontalStrut(1));
 
         // 格式化按钮
         formatButton = new FormatButton();
         toolBarPanel.add(formatButton);
-        toolBarPanel.add(Box.createHorizontalStrut(4));
+        toolBarPanel.add(Box.createHorizontalStrut(1));
 
         // 复制按钮
         copyButton = new CopyButton();
         toolBarPanel.add(copyButton);
-        toolBarPanel.add(Box.createHorizontalStrut(4));
+        toolBarPanel.add(Box.createHorizontalStrut(1));
 
         // 下载按钮
         downloadButton = new DownloadButton();
@@ -127,7 +127,7 @@ public class ResponseBodyPanel extends JPanel {
 
         // 只有 HTTP 请求才显示保存响应按钮
         if (enableSaveButton) {
-            toolBarPanel.add(Box.createHorizontalStrut(4));
+            toolBarPanel.add(Box.createHorizontalStrut(1));
             saveResponseButton = new SaveResponseButton();
             toolBarPanel.add(saveResponseButton);
         }

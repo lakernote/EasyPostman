@@ -19,9 +19,11 @@ import java.awt.event.KeyEvent;
  *
  * <h2>使用示例</h2>
  * <pre>{@code
- * // 创建带搜索功能的文本编辑器
- * SearchableTextArea searchableArea = new SearchableTextArea();
- * RSyntaxTextArea textArea = searchableArea.getTextArea();
+ * // 创建带搜索替换功能的文本编辑器（默认启用替换功能）
+ * SearchableTextArea searchableArea = new SearchableTextArea(textArea);
+ *
+ * // 创建仅搜索功能的文本编辑器（禁用替换功能）
+ * SearchableTextArea searchOnlyArea = new SearchableTextArea(textArea, false);
  *
  * // 配置文本编辑器
  * textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
@@ -30,7 +32,7 @@ import java.awt.event.KeyEvent;
  * panel.add(searchableArea, BorderLayout.CENTER);
  *
  * // Cmd+F / Ctrl+F 会自动触发搜索
- * // Cmd+Shift+F / Ctrl+Shift+F 会自动触发替换
+ * // Cmd+Shift+F / Ctrl+Shift+F 会自动触发替换（仅在启用替换功能时可用）
  * }</pre>
  */
 public class SearchableTextArea extends JPanel {
@@ -40,9 +42,24 @@ public class SearchableTextArea extends JPanel {
     private final RTextScrollPane scrollPane;
     private final SearchReplacePanel searchPanel;
     private final JPanel overlayPanel;
+    private final boolean enableReplace;
 
+    /**
+     * 创建带搜索替换功能的文本编辑器（默认启用替换功能）
+     */
     public SearchableTextArea(RSyntaxTextArea textArea) {
+        this(textArea, true);
+    }
+
+    /**
+     * 创建带搜索功能的文本编辑器
+     *
+     * @param textArea      文本编辑器
+     * @param enableReplace 是否启用替换功能
+     */
+    public SearchableTextArea(RSyntaxTextArea textArea, boolean enableReplace) {
         this.textArea = textArea;
+        this.enableReplace = enableReplace;
 
         setLayout(new BorderLayout());
 
@@ -50,7 +67,7 @@ public class SearchableTextArea extends JPanel {
         scrollPane = new RTextScrollPane(textArea);
 
         // 创建搜索替换面板
-        searchPanel = new SearchReplacePanel(textArea);
+        searchPanel = new SearchReplacePanel(textArea, enableReplace);
 
         // 监听搜索面板大小变化，自动更新位置
         searchPanel.addComponentListener(new ComponentAdapter() {
@@ -119,18 +136,20 @@ public class SearchableTextArea extends JPanel {
             }
         });
 
-        // Cmd+Shift+F / Ctrl+Shift+F - 显示替换
-        KeyStroke replaceKey = KeyStroke.getKeyStroke(KeyEvent.VK_F,
-                Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | java.awt.event.InputEvent.SHIFT_DOWN_MASK);
+        // Cmd+Shift+F / Ctrl+Shift+F - 显示替换（仅在启用替换功能时注册）
+        if (enableReplace) {
+            KeyStroke replaceKey = KeyStroke.getKeyStroke(KeyEvent.VK_F,
+                    Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | java.awt.event.InputEvent.SHIFT_DOWN_MASK);
 
-        textArea.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(replaceKey, "showReplace");
-        textArea.getActionMap().put("showReplace", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                searchPanel.showReplace();
-                updateSearchPanelPosition();
-            }
-        });
+            textArea.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(replaceKey, "showReplace");
+            textArea.getActionMap().put("showReplace", new AbstractAction() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    searchPanel.showReplace();
+                    updateSearchPanelPosition();
+                }
+            });
+        }
     }
 
     /**
@@ -158,5 +177,21 @@ public class SearchableTextArea extends JPanel {
         overlayPanel.setSize(overlayPanel.getParent().getSize());
         overlayPanel.revalidate();
         overlayPanel.repaint();
+    }
+
+    /**
+     * 显示搜索面板
+     */
+    public void showSearch() {
+        searchPanel.showSearch();
+        updateSearchPanelPosition();
+    }
+
+    /**
+     * 显示替换面板
+     */
+    public void showReplace() {
+        searchPanel.showReplace();
+        updateSearchPanelPosition();
     }
 }

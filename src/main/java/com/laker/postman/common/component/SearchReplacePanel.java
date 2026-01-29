@@ -42,12 +42,26 @@ public class SearchReplacePanel extends JPanel {
     private final JToggleButton toggleReplaceBtn;
     private final JPanel replacePanel;
     private final JLabel statusLabel;  // 搜索结果状态标签
+    private final boolean enableReplace;  // 是否启用替换功能
 
     // 防抖Timer，避免输入时频繁搜索
     private Timer searchDebounceTimer;
 
+    /**
+     * 创建搜索替换面板（默认启用替换功能）
+     */
     public SearchReplacePanel(RSyntaxTextArea textArea) {
+        this(textArea, true);
+    }
+
+    /**
+     * 创建搜索替换面板
+     * @param textArea 目标文本区域
+     * @param enableReplace 是否启用替换功能
+     */
+    public SearchReplacePanel(RSyntaxTextArea textArea, boolean enableReplace) {
         this.textArea = textArea;
+        this.enableReplace = enableReplace;
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         // 使用现代化的圆角边框和内边距
@@ -69,6 +83,7 @@ public class SearchReplacePanel extends JPanel {
         toggleReplaceBtn.setPreferredSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
         toggleReplaceBtn.setMaximumSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
         toggleReplaceBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        toggleReplaceBtn.setVisible(enableReplace);  // 根据参数控制是否显示
 
         // 添加悬停效果
         toggleReplaceBtn.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -356,6 +371,11 @@ public class SearchReplacePanel extends JPanel {
      * 显示搜索替换面板（替换模式）
      */
     public void showReplace() {
+        if (!enableReplace) {
+            // 如果未启用替换功能，则只显示搜索
+            showSearch();
+            return;
+        }
         replacePanel.setVisible(true);
         toggleReplaceBtn.setSelected(true);
         toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_COLLAPSE, 16, 16));

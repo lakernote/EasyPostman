@@ -154,16 +154,7 @@ public class RequestBodyPanel extends JPanel {
         searchButton.addActionListener(e -> {
             if (searchableTextArea != null) {
                 searchableTextArea.getTextArea().requestFocusInWindow();
-                // 触发 Cmd+F 快捷键
-                KeyEvent keyEvent = new KeyEvent(
-                        searchableTextArea.getTextArea(),
-                        KeyEvent.KEY_PRESSED,
-                        System.currentTimeMillis(),
-                        Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx(),
-                        KeyEvent.VK_F,
-                        'f'
-                );
-                searchableTextArea.getTextArea().dispatchEvent(keyEvent);
+                searchableTextArea.showSearch();
             }
         });
         topPanel.add(searchButton);

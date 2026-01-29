@@ -3,7 +3,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 import cn.hutool.core.util.XmlUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyComboBox;
-import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
@@ -12,7 +12,6 @@ import com.laker.postman.util.*;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,15 +41,13 @@ public class ResponseBodyPanel extends JPanel {
     private SaveResponseButton saveResponseButton; // 保存响应按钮（仅HTTP请求）
     private String currentFilePath;
     private String fileName = DEFAULT_FILE_NAME; // 默认下载文件名
-    private final SearchTextField searchField;
+    private final SearchButton searchButton; // 搜索按钮
     private Map<String, List<String>> lastHeaders;
     private final EasyComboBox<String> syntaxComboBox;
     private final FormatButton formatButton;
     private final CopyButton copyButton;
-    private final PreviousButton prevButton;
-    private final NextButton nextButton;
     private final WrapToggleButton wrapButton;
-    RTextScrollPane scrollPane;
+    private final SearchableTextArea searchableTextArea; // 带搜索功能的文本编辑器
 
     // 常量定义
     private static final int LARGE_RESPONSE_THRESHOLD = 500 * 1024; // 500KB threshold
@@ -77,9 +74,9 @@ public class ResponseBodyPanel extends JPanel {
         // 加载编辑器主题 - 支持亮色和暗色主题自适应
         EditorThemeUtil.loadTheme(responseBodyPane);
 
-        scrollPane = new RTextScrollPane(responseBodyPane);
-        scrollPane.setLineNumbersEnabled(true); // 显示行号
-        add(scrollPane, BorderLayout.CENTER);
+        // 使用 SearchableTextArea 包装，禁用替换功能（仅搜索）
+        searchableTextArea = new SearchableTextArea(responseBodyPane, false);
+        add(searchableTextArea, BorderLayout.CENTER);
 
         JPanel toolBarPanel = new JPanel();
         toolBarPanel.setLayout(new BoxLayout(toolBarPanel, BoxLayout.X_AXIS));
@@ -100,18 +97,13 @@ public class ResponseBodyPanel extends JPanel {
         // 弹性空间，将右侧控件推到右边
         toolBarPanel.add(Box.createHorizontalGlue());
 
-        // 搜索框
-        searchField = new SearchTextField();
-        toolBarPanel.add(searchField);
-        toolBarPanel.add(Box.createHorizontalStrut(4));
-
-        // 搜索导航按钮
-        prevButton = new PreviousButton();
-        toolBarPanel.add(prevButton);
-        toolBarPanel.add(Box.createHorizontalStrut(4));
-
-        nextButton = new NextButton();
-        toolBarPanel.add(nextButton);
+        // 搜索按钮
+        searchButton = new SearchButton();
+        searchButton.addActionListener(e -> {
+            responseBodyPane.requestFocusInWindow();
+            searchableTextArea.showSearch();
+        });
+        toolBarPanel.add(searchButton);
         toolBarPanel.add(Box.createHorizontalStrut(4));
 
         // 换行按钮
@@ -146,22 +138,7 @@ public class ResponseBodyPanel extends JPanel {
         formatButton.addActionListener(e -> formatContent());
         copyButton.addActionListener(e -> copyToClipboard());
         wrapButton.addActionListener(e -> toggleLineWrap());
-        searchField.addActionListener(e -> search(true));
-        prevButton.addActionListener(e -> search(false));
-        nextButton.addActionListener(e -> search(true));
         syntaxComboBox.addActionListener(e -> onSyntaxComboChanged());
-
-        // 监听搜索选项变化，触发重新搜索
-        searchField.addPropertyChangeListener("caseSensitive", evt -> {
-            if (!searchField.getText().isEmpty()) {
-                search(true);
-            }
-        });
-        searchField.addPropertyChangeListener("wholeWord", evt -> {
-            if (!searchField.getText().isEmpty()) {
-                search(true);
-            }
-        });
     }
 
     /**
@@ -192,131 +169,6 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setLineWrap(isWrapEnabled);
     }
 
-    /**
-     * 搜索关键字，支持大小写敏感和整词匹配
-     *
-     * @param forward true 表示向前搜索，false 表示向后搜索
-     */
-    private void search(boolean forward) {
-        String keyword = searchField.getText();
-        if (keyword == null || keyword.isEmpty()) {
-            return;
-        }
-
-        String text = responseBodyPane.getText();
-        if (text == null || text.isEmpty()) {
-            return;
-        }
-
-        // 获取搜索选项
-        boolean caseSensitive = searchField.isCaseSensitive();
-        boolean wholeWord = searchField.isWholeWord();
-
-        int caret = responseBodyPane.getCaretPosition();
-        int pos;
-
-        if (forward) {
-            // 向后查找
-            int start = caret;
-            if (responseBodyPane.getSelectedText() != null) {
-                start = responseBodyPane.getSelectionEnd();
-            }
-            pos = findNext(text, keyword, start, caseSensitive, wholeWord);
-            if (pos == -1) {
-                // 循环查找：从头开始
-                pos = findNext(text, keyword, 0, caseSensitive, wholeWord);
-            }
-        } else {
-            // 向前查找
-            int start = caret;
-            if (responseBodyPane.getSelectedText() != null) {
-                start = responseBodyPane.getSelectionStart() - 1;
-            }
-            pos = findPrevious(text, keyword, start, caseSensitive, wholeWord);
-            if (pos == -1) {
-                // 循环查找：从末尾开始
-                pos = findPrevious(text, keyword, text.length(), caseSensitive, wholeWord);
-            }
-        }
-
-        if (pos != -1) {
-            selectAndFocusText(pos, keyword.length());
-        }
-    }
-
-    /**
-     * 向后查找匹配
-     */
-    private int findNext(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
-        String searchText = caseSensitive ? text : text.toLowerCase();
-        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
-
-        int pos = fromIndex;
-        while ((pos = searchText.indexOf(searchKeyword, pos)) != -1) {
-            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
-                return pos;
-            }
-            pos++;
-        }
-        return -1;
-    }
-
-    /**
-     * 向前查找匹配
-     */
-    private int findPrevious(String text, String keyword, int fromIndex, boolean caseSensitive, boolean wholeWord) {
-        if (fromIndex > text.length()) {
-            fromIndex = text.length();
-        }
-
-        String searchText = caseSensitive ? text : text.toLowerCase();
-        String searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
-
-        int pos = fromIndex;
-        while ((pos = searchText.lastIndexOf(searchKeyword, pos)) != -1) {
-            if (!wholeWord || isWholeWord(text, pos, keyword.length())) {
-                return pos;
-            }
-            pos--;
-            if (pos < 0) break;
-        }
-        return -1;
-    }
-
-    /**
-     * 判断是否为整词匹配
-     */
-    private boolean isWholeWord(String text, int start, int length) {
-        int end = start + length;
-
-        // 检查前一个字符
-        if (start > 0) {
-            char prevChar = text.charAt(start - 1);
-            if (Character.isLetterOrDigit(prevChar) || prevChar == '_') {
-                return false;
-            }
-        }
-
-        // 检查后一个字符
-        if (end < text.length()) {
-            char nextChar = text.charAt(end);
-            return !Character.isLetterOrDigit(nextChar) && nextChar != '_';
-        }
-
-        return true;
-    }
-
-    /**
-     * 选中并聚焦到指定位置的文本
-     *
-     * @param pos    起始位置
-     * @param length 长度
-     */
-    private void selectAndFocusText(int pos, int length) {
-        responseBodyPane.setCaretPosition(pos);
-        responseBodyPane.select(pos, pos + length);
-        responseBodyPane.requestFocusInWindow();
-    }
 
     /**
      * 保存文件
@@ -580,14 +432,12 @@ public class ResponseBodyPanel extends JPanel {
         super.setEnabled(enabled);
         responseBodyPane.setEnabled(enabled);
         syntaxComboBox.setEnabled(enabled);
-        searchField.setEnabled(enabled);
+        searchButton.setEnabled(enabled);
         downloadButton.setEnabled(enabled);
-        scrollPane.setEnabled(enabled);
+        searchableTextArea.setEnabled(enabled);
 
         if (formatButton != null) formatButton.setEnabled(enabled);
         if (copyButton != null) copyButton.setEnabled(enabled);
-        if (prevButton != null) prevButton.setEnabled(enabled);
-        if (nextButton != null) nextButton.setEnabled(enabled);
         if (wrapButton != null) wrapButton.setEnabled(enabled);
         if (saveResponseButton != null) saveResponseButton.setEnabled(enabled);
     }
@@ -604,7 +454,6 @@ public class ResponseBodyPanel extends JPanel {
         lastHeaders = null;
         responseBodyPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         responseBodyPane.setCaretPosition(0);
-        searchField.setText("");
         syntaxComboBox.setSelectedIndex(SyntaxType.AUTO_DETECT.getIndex());
         sizeWarningLabel.setVisible(false);
     }

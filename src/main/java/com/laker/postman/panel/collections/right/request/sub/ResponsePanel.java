@@ -951,12 +951,6 @@ public class ResponsePanel extends JPanel {
         }
     }
 
-    /**
-     * 切换到 Response Body tab（仅 HTTP 协议）
-     */
-    public void switchToResponseBodyTab() {
-        switchToTab(0); // Response Body 总是第一个 tab
-    }
 
     /**
      * 更新请求详情（委托给 NetworkLogPanel）

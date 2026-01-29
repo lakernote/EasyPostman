@@ -1643,7 +1643,8 @@ public class RequestEditSubPanel extends JPanel {
                 responsePanel.setResponseTime(response.costMs);
                 responsePanel.setResponseSize(response.bodySize, null);
                 // 切换到 Response Body tab
-                responsePanel.switchToResponseBodyTab();
+                responsePanel.switchToTab(0);
+                responsePanel.setResponseBodyEnabled(true);
             });
 
         } catch (Exception ex) {

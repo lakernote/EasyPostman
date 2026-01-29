@@ -375,16 +375,60 @@ public class SearchReplacePanel extends JPanel {
      */
     private void updateStatusFromResult(SearchResult result) {
         if (result.wasFound()) {
-            int totalCount = result.getCount();
+            // 计算总匹配数和当前索引
+            int totalCount = calculateTotalMatches();
             if (totalCount > 0) {
                 // 计算当前是第几个匹配
-                int currentIndex = getCurrentMatchIndex();
+                int currentIndex = getCurrentMatchIndex(totalCount);
                 statusLabel.setText(currentIndex + " of " + totalCount);
             } else {
                 statusLabel.setText("");
             }
         } else {
             statusLabel.setText(MSG_NO_RESULTS);
+        }
+    }
+
+    /**
+     * 计算文档中的总匹配数
+     */
+    private int calculateTotalMatches() {
+        try {
+            String searchText = searchField.getText();
+            if (searchText.isEmpty()) {
+                return 0;
+            }
+
+            // 保存当前状态
+            int savedCaret = textArea.getCaretPosition();
+            int savedSelStart = textArea.getSelectionStart();
+            int savedSelEnd = textArea.getSelectionEnd();
+
+            try {
+                // 从文档开头开始计数
+                textArea.setCaretPosition(0);
+                SearchContext context = createSearchContext();
+                context.setSearchForward(true);
+
+                int count = 0;
+                while (true) {
+                    SearchResult tempResult = SearchEngine.find(textArea, context);
+                    if (!tempResult.wasFound()) {
+                        break;
+                    }
+                    count++;
+                }
+
+                return count;
+            } finally {
+                // 恢复光标和选择
+                textArea.setCaretPosition(savedCaret);
+                textArea.setSelectionStart(savedSelStart);
+                textArea.setSelectionEnd(savedSelEnd);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate total matches", e);
+            return 0;
         }
     }
 
@@ -431,10 +475,10 @@ public class SearchReplacePanel extends JPanel {
     /**
      * 计算当前匹配项是第几个
      */
-    private int getCurrentMatchIndex() {
+    private int getCurrentMatchIndex(int totalCount) {
         try {
             String searchText = searchField.getText();
-            if (searchText.isEmpty()) {
+            if (searchText.isEmpty() || totalCount == 0) {
                 return 1;
             }
 
@@ -489,15 +533,10 @@ public class SearchReplacePanel extends JPanel {
         int savedSelEnd = textArea.getSelectionEnd();
 
         try {
-            // 从文档开头开始搜索以获取总数
-            textArea.setCaretPosition(0);
-            SearchContext context = createSearchContext();
-            context.setSearchForward(true);
+            // 计算总匹配数
+            int totalCount = calculateTotalMatches();
 
-            SearchResult firstResult = SearchEngine.find(textArea, context);
-
-            if (firstResult.wasFound()) {
-                int totalCount = firstResult.getCount();
+            if (totalCount > 0) {
                 // 计算当前匹配索引
                 int currentIndex = calculateCurrentIndex(savedSelStart);
                 statusLabel.setText(currentIndex + " of " + totalCount);
@@ -511,6 +550,4 @@ public class SearchReplacePanel extends JPanel {
             textArea.setSelectionEnd(savedSelEnd);
         }
     }
-
-
 }

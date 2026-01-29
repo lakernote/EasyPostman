@@ -1,6 +1,7 @@
 package com.laker.postman.panel.history;
 
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.HttpResponse;
@@ -11,7 +12,6 @@ import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -57,9 +57,7 @@ public class HistoryPanel extends SingletonBasePanel {
         ));
         JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.MENU_HISTORY));
         title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
-        JButton clearBtn = new JButton(IconUtil.createThemed("icons/clear.svg", 24, 24));
-        clearBtn.setMargin(new Insets(0, 4, 0, 4));
-        clearBtn.setFocusPainted(false);
+        ClearButton clearBtn = new ClearButton();
         clearBtn.addActionListener(e -> clearRequestHistory());
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnPanel.setOpaque(false);

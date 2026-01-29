@@ -8,13 +8,14 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * 下载按钮
+ * 关闭按钮
+ * 用于关闭对话框或面板
  */
-public class DownloadButton extends JButton {
-
-    public DownloadButton() {
-        setIcon(IconUtil.createThemed("icons/download.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        setToolTipText("Download");
+public class CloseButton extends JButton {
+    public CloseButton() {
+        super();
+        setIcon(IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        setToolTipText("Close");
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

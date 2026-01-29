@@ -4,8 +4,11 @@ import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.AutoScrollToggleButton;
+import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.CloseButton;
+import com.laker.postman.common.component.button.NextButton;
+import com.laker.postman.common.component.button.PreviousButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -23,9 +26,9 @@ public class ConsolePanel extends SingletonBasePanel {
     private JTextPane consoleLogArea;
     private transient StyledDocument consoleDoc;
     private SearchTextField searchField;
-    private JButton closeBtn;
-    private JButton prevBtn;
-    private JButton nextBtn;
+    private CloseButton closeBtn;
+    private PreviousButton prevBtn;
+    private NextButton nextBtn;
     private JLabel matchCountLabel;
     private AutoScrollToggleButton autoScrollBtn;
     private JComboBox<String> logLevelFilter;
@@ -329,16 +332,12 @@ public class ConsolePanel extends SingletonBasePanel {
         searchField = new SearchTextField();
         searchField.setPreferredSize(new Dimension(200, 28));
 
-        prevBtn = new JButton();
-        prevBtn.setIcon(IconUtil.createThemed("icons/arrow-up.svg", 16, 16));
+        prevBtn = new PreviousButton();
         prevBtn.setToolTipText("Previous match (Shift+Enter)");
-        prevBtn.setFocusable(false);
         prevBtn.setPreferredSize(new Dimension(28, 28));
 
-        nextBtn = new JButton();
-        nextBtn.setIcon(IconUtil.createThemed("icons/arrow-down.svg", 16, 16));
+        nextBtn = new NextButton();
         nextBtn.setToolTipText("Next match (Enter)");
-        nextBtn.setFocusable(false);
         nextBtn.setPreferredSize(new Dimension(28, 28));
 
         matchCountLabel = new JLabel("");
@@ -353,20 +352,16 @@ public class ConsolePanel extends SingletonBasePanel {
         centerPanel.add(matchCountLabel);
 
         // 右侧：工具按钮
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 1, 0));
         rightPanel.setOpaque(false);
 
         autoScrollBtn = new AutoScrollToggleButton();
 
-        JButton clearBtn = getClearBtn();
-        clearBtn.setPreferredSize(new Dimension(28, 28));
+        ClearButton clearBtn = new ClearButton();
+        clearBtn.addActionListener(e -> clearConsole());
 
-        closeBtn = new JButton();
-        closeBtn.setIcon(IconUtil.createThemed("icons/close.svg", 16, 16));
+        closeBtn = new CloseButton();
         closeBtn.setToolTipText("Hide console");
-        closeBtn.setFocusable(false);
-        closeBtn.setPreferredSize(new Dimension(28, 28));
-
         rightPanel.add(autoScrollBtn);
         rightPanel.add(clearBtn);
         rightPanel.add(closeBtn);
@@ -378,14 +373,6 @@ public class ConsolePanel extends SingletonBasePanel {
         add(logScroll, BorderLayout.CENTER);
     }
 
-    private JButton getClearBtn() {
-        JButton clearBtn = new JButton();
-        clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
-        clearBtn.setToolTipText("Clear console");
-        clearBtn.setFocusable(false);
-        clearBtn.addActionListener(e -> clearConsole());
-        return clearBtn;
-    }
 
     /**
      * 清空控制台

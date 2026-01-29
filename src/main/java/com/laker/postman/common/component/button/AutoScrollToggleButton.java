@@ -16,11 +16,13 @@ public class AutoScrollToggleButton extends JToggleButton {
     public AutoScrollToggleButton() {
         super();
         updateIcon(true); // 默认选中状态
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        setFocusable(false); // 去掉按钮的焦点边框
-        setSelected(true); // 默认启用自动滚动
         setToolTipText("Auto-scroll to bottom");
         setPreferredSize(new Dimension(28, 28));
+        // 扁平化设计
+        setFocusable(false);// 去掉按钮的焦点边框
+        setBorderPainted(false); // 不绘制边框
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        setSelected(true); // 默认启用自动滚动
 
         // 添加状态改变监听器，动态更新图标颜色
         addItemListener(e -> updateIcon(isSelected()));

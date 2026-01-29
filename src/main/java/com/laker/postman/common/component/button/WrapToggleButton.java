@@ -16,10 +16,12 @@ public class WrapToggleButton extends JToggleButton {
     public WrapToggleButton() {
         super();
         updateIcon(false);
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        setFocusable(false); // 去掉按钮的焦点边框
-        setSelected(false); // 默认不启用换行
         setToolTipText("Toggle Line Wrap");
+        // 扁平化设计
+        setFocusable(false);// 去掉按钮的焦点边框
+        setBorderPainted(false); // 不绘制边框
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        setSelected(false); // 默认不启用换行
 
         // 添加状态改变监听器，动态更新图标颜色
         addItemListener(e -> updateIcon(isSelected()));

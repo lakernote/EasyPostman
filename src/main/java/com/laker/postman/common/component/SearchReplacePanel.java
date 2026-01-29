@@ -15,6 +15,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.geom.RoundRectangle2D;
 
 @Slf4j
 public class SearchReplacePanel extends JPanel {
@@ -26,6 +27,10 @@ public class SearchReplacePanel extends JPanel {
     // 状态消息常量
     private static final String MSG_NO_RESULTS = "No results";
     private static final String MSG_REPLACED_FORMAT = "%d replaced";
+
+    // 现代化设计常量
+    private static final int CORNER_RADIUS = 12;  // 圆角半径
+    private static final int SHADOW_SIZE = 8;     // 阴影大小
 
     private final RSyntaxTextArea textArea;
     private final SearchTextField searchField;
@@ -41,14 +46,15 @@ public class SearchReplacePanel extends JPanel {
         this.textArea = textArea;
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1),
-                new EmptyBorder(3, 3, 3, 3)
-        ));
+        // 使用现代化的圆角边框和内边距
+        setBorder(new EmptyBorder(8, 10, 8, 10));
+        // 设置为不透明，以便自定义绘制背景
+        setOpaque(false);
         // 搜索面板
         JPanel searchPanel = new JPanel();
         searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.X_AXIS));
         searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        searchPanel.setOpaque(false);  // 透明以显示父面板的圆角背景
 
         // 展开/收起替换面板的按钮（放在最左边，类似 Postman）
         toggleReplaceBtn = new JToggleButton(IconUtil.createThemed(ICON_EXPAND, 16, 16));
@@ -56,8 +62,24 @@ public class SearchReplacePanel extends JPanel {
         toggleReplaceBtn.setFocusable(false);
         toggleReplaceBtn.setContentAreaFilled(false);
         toggleReplaceBtn.setBorderPainted(false);
-        toggleReplaceBtn.setPreferredSize(new Dimension(16, 16));
-        toggleReplaceBtn.setMaximumSize(new Dimension(16, 16));
+        toggleReplaceBtn.setPreferredSize(new Dimension(20, 20));
+        toggleReplaceBtn.setMaximumSize(new Dimension(20, 20));
+        toggleReplaceBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // 添加悬停效果
+        toggleReplaceBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (!toggleReplaceBtn.isSelected()) {
+                    toggleReplaceBtn.setContentAreaFilled(true);
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                toggleReplaceBtn.setContentAreaFilled(false);
+            }
+        });
         // actionListener 将在 replacePanel 创建后设置
 
         // 搜索输入框 - 使用 SearchTextField 复用大小写敏感和整词匹配功能
@@ -144,6 +166,7 @@ public class SearchReplacePanel extends JPanel {
         replacePanel.setLayout(new BoxLayout(replacePanel, BoxLayout.X_AXIS));
         replacePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         replacePanel.setVisible(false);
+        replacePanel.setOpaque(false);  // 透明以显示父面板的圆角背景
 
         // 左侧占位符，保持与搜索框对齐
         JPanel spacer = new JPanel();
@@ -215,23 +238,90 @@ public class SearchReplacePanel extends JPanel {
     }
 
     @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        // 启用抗锯齿以获得平滑的圆角
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int width = getWidth();
+        int height = getHeight();
+
+        // 绘制柔和的阴影
+        for (int i = 0; i < SHADOW_SIZE; i++) {
+            int alpha = (int) (30 * (1.0 - (float) i / SHADOW_SIZE));
+            g2.setColor(new Color(0, 0, 0, alpha));
+            g2.draw(new RoundRectangle2D.Float(
+                    i,
+                    i,
+                    width - 1.0f - i * 2.0f,
+                    height - 1.0f - i * 2.0f,
+                    CORNER_RADIUS + SHADOW_SIZE - (float) i,
+                    CORNER_RADIUS + SHADOW_SIZE - (float) i
+            ));
+        }
+
+        // 绘制圆角背景
+        g2.setColor(getBackground() != null ? getBackground() : UIManager.getColor("Panel.background"));
+        g2.fill(new RoundRectangle2D.Float(
+                SHADOW_SIZE / 2.0f,
+                SHADOW_SIZE / 2.0f,
+                width - (float) SHADOW_SIZE,
+                height - (float) SHADOW_SIZE,
+                CORNER_RADIUS,
+                CORNER_RADIUS
+        ));
+
+        // 绘制细微的边框
+        g2.setColor(UIManager.getColor("Component.borderColor"));
+        g2.draw(new RoundRectangle2D.Float(
+                SHADOW_SIZE / 2.0f,
+                SHADOW_SIZE / 2.0f,
+                width - SHADOW_SIZE - 1.0f,
+                height - SHADOW_SIZE - 1.0f,
+                CORNER_RADIUS,
+                CORNER_RADIUS
+        ));
+
+        g2.dispose();
+    }
+
+    @Override
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
         // 确保宽度足够显示所有控件
         int minWidth = 280;  // 减小最小宽度以匹配更紧凑的设计
-        // 高度根据是否显示替换面板动态调整
-        int height = replacePanel.isVisible() ? 70 : 36;
+        // 高度根据是否显示替换面板动态调整，增加阴影空间
+        int height = replacePanel.isVisible() ? 70 + SHADOW_SIZE : 36 + SHADOW_SIZE;
         return new Dimension(Math.max(size.width, minWidth), Math.max(size.height, height));
     }
 
     /**
-     * 创建图标按钮
+     * 创建图标按钮 - 现代化扁平设计
      */
     private JButton createIconButton(String iconPath, String tooltip, java.awt.event.ActionListener listener) {
         JButton btn = new JButton(IconUtil.createThemed(iconPath, 16, 16));
         btn.setToolTipText(tooltip);
         btn.setPreferredSize(new Dimension(24, 24));
         btn.setMaximumSize(new Dimension(24, 24));
+        btn.setFocusable(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // 添加悬停效果
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setContentAreaFilled(true);
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setContentAreaFilled(false);
+            }
+        });
+
         if (listener != null) {
             btn.addActionListener(listener);
         }

@@ -22,7 +22,7 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
     private int originalRowHeight;
 
     public EasySmartValueCellEditor() {
-        this(false);
+        this(true);
     }
 
     /**

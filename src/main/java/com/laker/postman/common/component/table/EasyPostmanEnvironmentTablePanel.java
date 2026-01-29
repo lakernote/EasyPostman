@@ -144,7 +144,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         // 为 Value 列使用智能编辑器，自动根据内容长度选择单行/多行编辑
-        setColumnEditor(COL_VALUE, new EasySmartValueCellEditor(true));
+        setColumnEditor(COL_VALUE, new EasySmartValueCellEditor());
         setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
         setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
 

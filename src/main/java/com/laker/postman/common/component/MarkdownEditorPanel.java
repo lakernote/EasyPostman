@@ -522,7 +522,9 @@ public class MarkdownEditorPanel extends JPanel {
         statusBar.add(statusLabel);
 
         // 字数统计
-        JLabel wordCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS) + ": 0");
+        JLabel wordCountLabel = new JLabel(String.format("%s: 0 | %s: 0",
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS),
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_CHARS)));
         wordCountLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         wordCountLabel.setForeground(Color.GRAY);
         statusBar.add(new JSeparator(SwingConstants.VERTICAL));
@@ -547,9 +549,18 @@ public class MarkdownEditorPanel extends JPanel {
                         I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_COLUMN), col + 1));
 
                 String text = editorArea.getText();
+                // 计算单词数：空文本或只有空白字符时为0
+                int wordCount = 0;
+                int charCount = 0;
+                if (text != null) {
+                    charCount = text.length();
+                    if (!text.trim().isEmpty()) {
+                        wordCount = text.trim().split("\\s+").length;
+                    }
+                }
                 wordCountLabel.setText(String.format("%s: %d | %s: %d",
-                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS), text.split("\\s+").length,
-                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_CHARS), text.length()));
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS), wordCount,
+                        I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_CHARS), charCount));
             } catch (Exception ex) {
                 // Ignore
             }

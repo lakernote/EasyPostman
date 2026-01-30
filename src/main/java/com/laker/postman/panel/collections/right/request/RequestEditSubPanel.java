@@ -190,19 +190,8 @@ public class RequestEditSubPanel extends JPanel {
 
         // 2.0 Docs Tab - 放在第一个，像 Postman 一样
         descriptionEditor = new MarkdownEditorPanel();
-        JPanel docsPanel = new JPanel(new BorderLayout());
-        docsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        docsPanel.add(descriptionEditor, BorderLayout.CENTER);
 
-        JPanel docsHintPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        JLabel docsHintLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_DESCRIPTION_PLACEHOLDER) +
-                        "</i></html>"
-        );
-        docsHintPanel.add(docsHintLabel);
-        docsPanel.add(docsHintPanel, BorderLayout.SOUTH);
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE), docsPanel);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE), descriptionEditor);
 
         // 2.1 Params
         paramsPanel = new EasyPostmanParamsTablePanel();
@@ -332,9 +321,11 @@ public class RequestEditSubPanel extends JPanel {
             public void insertUpdate(DocumentEvent e) {
                 updateTabDirty();
             }
+
             public void removeUpdate(DocumentEvent e) {
                 updateTabDirty();
             }
+
             public void changedUpdate(DocumentEvent e) {
                 updateTabDirty();
             }

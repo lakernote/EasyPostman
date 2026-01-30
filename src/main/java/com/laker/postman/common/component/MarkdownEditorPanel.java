@@ -108,9 +108,8 @@ public class MarkdownEditorPanel extends JPanel {
 
     private String getCodeBlockStyle() {
         return "background-color:" + toHex(ModernColors.getConsoleTextAreaBg()) +
-                ";padding:8px;overflow:auto;font-size:10px;line-height:1.5;border-radius:4px;border:1px solid " +
-                toHex(ModernColors.getBorderLightColor()) +
-                ";margin:0 0 8px 0;font-family:monospace;color:" +
+                ";padding:8px;overflow:auto;font-size:10px;line-height:1.5;border-radius:4px;" +
+                "margin:0 0 8px 0;font-family:monospace;color:" +
                 toHex(ModernColors.getConsoleText()) +
                 ";display:block;white-space:pre;word-wrap:normal;";
     }
@@ -951,14 +950,13 @@ public class MarkdownEditorPanel extends JPanel {
             // 代码块
             if (line.trim().startsWith("```")) {
                 if (inCodeBlock) {
-                    html.append("</code></pre>");
+                    html.append("</pre>");
                     inCodeBlock = false;
+                    codeLanguage = "";
                 } else {
                     // 提取语言标识
                     codeLanguage = line.trim().substring(3).trim();
-                    html.append("<pre style='").append(getCodeBlockStyle()).append("'>");
-                    // 给 code 标签添加 style，移除可能的边框和背景
-                    html.append("<code style='background:transparent;border:0;padding:0;margin:0;display:block;'");
+                    html.append("<pre style='").append(getCodeBlockStyle()).append("'");
                     if (!codeLanguage.isEmpty()) {
                         html.append(" class='language-").append(escapeHtml(codeLanguage)).append("'");
                     }

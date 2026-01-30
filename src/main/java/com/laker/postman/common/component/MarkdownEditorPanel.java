@@ -2,9 +2,12 @@ package com.laker.postman.common.component;
 
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -23,11 +26,11 @@ import java.util.List;
 
 /**
  * Markdown 编辑器组件
- * 支持实时预览、工具栏、撤销/重做、查找替换、导出等功能
+ * 支持实时预览、工具栏、撤销/重做、导出等功能
  */
 public class MarkdownEditorPanel extends JPanel {
-    private JTextArea editorArea;
-    private JTextArea lineNumberArea;
+    private RSyntaxTextArea editorArea;
+    private SearchableTextArea searchableTextArea;
     private JTextPane previewPane;
     private JSplitPane splitPane;
     private JPanel toolbarPanel;
@@ -343,18 +346,12 @@ public class MarkdownEditorPanel extends JPanel {
     private JPopupMenu createMoreMenu() {
         JPopupMenu menu = new JPopupMenu();
 
-        JMenuItem findItem = new JMenuItem("🔍 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND));
-        findItem.setToolTipText("Ctrl+F");
-        findItem.addActionListener(e -> showFindDialog());
-
         JMenuItem exportItem = new JMenuItem("💾 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML));
         exportItem.addActionListener(e -> exportToHtml());
 
         JMenuItem copyItem = new JMenuItem("📋 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_COPY_HTML));
         copyItem.addActionListener(e -> copyHtmlToClipboard());
 
-        menu.add(findItem);
-        menu.addSeparator();
         menu.add(exportItem);
         menu.add(copyItem);
 
@@ -453,22 +450,17 @@ public class MarkdownEditorPanel extends JPanel {
     private JPanel createEditorPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // 行号区域
-        lineNumberArea = new JTextArea("1");
-        lineNumberArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
-        lineNumberArea.setBackground(new Color(240, 240, 240));
-        lineNumberArea.setForeground(Color.GRAY);
-        lineNumberArea.setEditable(false);
-        lineNumberArea.setBorder(new EmptyBorder(10, 5, 10, 5));
-        lineNumberArea.setPreferredSize(new Dimension(40, Integer.MAX_VALUE));
-
-        // 编辑器区域
-        editorArea = new JTextArea();
+        // 创建 RSyntaxTextArea 用于 Markdown 编辑
+        editorArea = new RSyntaxTextArea();
+        editorArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN); // 设置为 Markdown 语法高亮
+        editorArea.setCodeFoldingEnabled(false); // Markdown 不需要代码折叠
+        editorArea.setTabSize(4); // 设置 Tab 宽度为 4 个空格
         editorArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
-        editorArea.setLineWrap(true);
-        editorArea.setWrapStyleWord(true);
-        editorArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-        editorArea.setTabSize(4);
+        // 加载编辑器主题 - 支持亮色和暗色主题自适应
+        EditorThemeUtil.loadTheme(editorArea);
+
+        // 使用 SearchableTextArea 包装器（启用搜索替换功能）
+        searchableTextArea = new SearchableTextArea(editorArea, true);
 
         // 添加撤销/重做支持
         editorArea.getDocument().addUndoableEditListener(e -> {
@@ -476,36 +468,28 @@ public class MarkdownEditorPanel extends JPanel {
             updateUndoRedoButtons();
         });
 
-        // 监听内容变化，更新行号和预览
+        // 监听内容变化，更新预览
         editorArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                updateLineNumbers();
                 updatePreview();
                 notifyChangeListeners(e);
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                updateLineNumbers();
                 updatePreview();
                 notifyChangeListeners(e);
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                updateLineNumbers();
                 updatePreview();
                 notifyChangeListeners(e);
             }
         });
 
-        // 滚动同步
-        JScrollPane editorScrollPane = new JScrollPane(editorArea);
-        editorScrollPane.setRowHeaderView(lineNumberArea);
-        editorScrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
-
-        panel.add(editorScrollPane, BorderLayout.CENTER);
+        panel.add(searchableTextArea, BorderLayout.CENTER);
         return panel;
     }
 
@@ -628,23 +612,6 @@ public class MarkdownEditorPanel extends JPanel {
             }
         });
 
-        // Ctrl+F - 查找
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK), "find");
-        actionMap.put("find", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showFindDialog();
-            }
-        });
-
-        // Ctrl+H - 替换
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_DOWN_MASK), "replace");
-        actionMap.put("replace", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showFindDialog();
-            }
-        });
 
         // Ctrl+` - 行内代码
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_QUOTE, InputEvent.CTRL_DOWN_MASK), "inlineCode");
@@ -864,212 +831,6 @@ public class MarkdownEditorPanel extends JPanel {
         }
     }
 
-    /**
-     * 显示查找对话框（使用国际化文本）
-     */
-    private void showFindDialog() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-                I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE), false); // 改为非模态对话框
-        dialog.setLayout(new BorderLayout(10, 10));
-        dialog.getRootPane().setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // 主面板
-        JPanel mainPanel = new JPanel(new BorderLayout(5, 10));
-
-        // 输入面板
-        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 5, 5));
-        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_LABEL)));
-        JTextField findField = new JTextField(20);
-        inputPanel.add(findField);
-
-        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_LABEL)));
-        JTextField replaceField = new JTextField(20);
-        inputPanel.add(replaceField);
-
-        mainPanel.add(inputPanel, BorderLayout.NORTH);
-
-        // 选项面板
-        JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JCheckBox caseSensitiveCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.MARKDOWN_CASE_SENSITIVE), false);
-        JCheckBox wrapSearchCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.MARKDOWN_WRAP_SEARCH), true);
-        optionsPanel.add(caseSensitiveCheck);
-        optionsPanel.add(wrapSearchCheck);
-        mainPanel.add(optionsPanel, BorderLayout.CENTER);
-
-        dialog.add(mainPanel, BorderLayout.CENTER);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
-        JButton findNextButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_NEXT));
-        JButton findPrevButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_PREV));
-        JButton replaceButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE));
-        JButton replaceAllButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_ALL));
-        JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.MARKDOWN_CLOSE));
-
-        // 查找下一个
-        findNextButton.addActionListener(e -> {
-            performFind(findField.getText(), true, caseSensitiveCheck.isSelected(),
-                    wrapSearchCheck.isSelected(), dialog);
-        });
-
-        // 查找上一个
-        findPrevButton.addActionListener(e -> {
-            performFind(findField.getText(), false, caseSensitiveCheck.isSelected(),
-                    wrapSearchCheck.isSelected(), dialog);
-        });
-
-        // 替换
-        replaceButton.addActionListener(e -> {
-            String selected = editorArea.getSelectedText();
-            String find = findField.getText();
-            boolean caseSensitive = caseSensitiveCheck.isSelected();
-
-            if (selected != null && !selected.isEmpty()) {
-                boolean matches = caseSensitive ? find.equals(selected) :
-                        find.equalsIgnoreCase(selected);
-                if (matches) {
-                    editorArea.replaceSelection(replaceField.getText());
-                    // 替换后自动查找下一个
-                    performFind(findField.getText(), true, caseSensitive,
-                            wrapSearchCheck.isSelected(), dialog);
-                }
-            }
-        });
-
-        // 全部替换
-        replaceAllButton.addActionListener(e -> {
-            String text = editorArea.getText();
-            String find = findField.getText();
-            String replace = replaceField.getText();
-
-            if (find.isEmpty()) {
-                return;
-            }
-
-            int count = 0;
-            if (caseSensitiveCheck.isSelected()) {
-                // 区分大小写
-                String newText = text;
-                int index = 0;
-                while ((index = newText.indexOf(find, index)) != -1) {
-                    count++;
-                    index += find.length();
-                }
-                newText = text.replace(find, replace);
-                editorArea.setText(newText);
-            } else {
-                // 不区分大小写
-                StringBuilder result = new StringBuilder();
-                String lowerText = text.toLowerCase();
-                String lowerFind = find.toLowerCase();
-                int lastIndex = 0;
-                int index;
-
-                while ((index = lowerText.indexOf(lowerFind, lastIndex)) != -1) {
-                    result.append(text, lastIndex, index);
-                    result.append(replace);
-                    lastIndex = index + find.length();
-                    count++;
-                }
-                result.append(text.substring(lastIndex));
-                editorArea.setText(result.toString());
-            }
-
-            JOptionPane.showMessageDialog(dialog,
-                    I18nUtil.getMessage(MessageKeys.MARKDOWN_REPLACE_COMPLETE) + " (" + count + ")",
-                    I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
-                    JOptionPane.INFORMATION_MESSAGE);
-        });
-
-        closeButton.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(findPrevButton);
-        buttonPanel.add(findNextButton);
-        buttonPanel.add(replaceButton);
-        buttonPanel.add(replaceAllButton);
-        buttonPanel.add(closeButton);
-
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        // 设置默认按钮
-        dialog.getRootPane().setDefaultButton(findNextButton);
-
-        // 回车键查找下一个
-        findField.addActionListener(e -> findNextButton.doClick());
-
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
-
-        // 聚焦到查找框
-        SwingUtilities.invokeLater(findField::requestFocus);
-    }
-
-    /**
-     * 执行查找操作
-     *
-     * @param searchText    要查找的文本
-     * @param forward       true=向前查找，false=向后查找
-     * @param caseSensitive 是否区分大小写
-     * @param wrapAround    是否循环查找
-     * @param parentDialog  父对话框，用于显示消息
-     */
-    private void performFind(String searchText, boolean forward, boolean caseSensitive,
-                             boolean wrapAround, JDialog parentDialog) {
-        if (searchText == null || searchText.isEmpty()) {
-            return;
-        }
-
-        String text = editorArea.getText();
-        String searchInText = caseSensitive ? text : text.toLowerCase();
-        String searchFor = caseSensitive ? searchText : searchText.toLowerCase();
-
-        int currentPos = forward ? editorArea.getSelectionEnd() : editorArea.getSelectionStart();
-        int index = -1;
-
-        if (forward) {
-            // 向前查找
-            index = searchInText.indexOf(searchFor, currentPos);
-
-            // 如果没找到且允许循环，从头开始
-            if (index == -1 && wrapAround && currentPos > 0) {
-                index = searchInText.indexOf(searchFor, 0);
-            }
-        } else {
-            // 向后查找
-            index = searchInText.lastIndexOf(searchFor, currentPos - 1);
-
-            // 如果没找到且允许循环，从末尾开始
-            if (index == -1 && wrapAround && currentPos < text.length()) {
-                index = searchInText.lastIndexOf(searchFor, text.length());
-            }
-        }
-
-        if (index >= 0) {
-            // 找到了，选中并滚动到可见区域
-            editorArea.setSelectionStart(index);
-            editorArea.setSelectionEnd(index + searchText.length());
-            editorArea.getCaret().setSelectionVisible(true);
-
-            // 滚动到选中的文本
-            try {
-                Rectangle rect = editorArea.modelToView(index);
-                if (rect != null) {
-                    editorArea.scrollRectToVisible(rect);
-                }
-            } catch (Exception ex) {
-                // 忽略滚动错误
-            }
-
-            editorArea.requestFocus();
-        } else {
-            // 没找到
-            JOptionPane.showMessageDialog(parentDialog,
-                    I18nUtil.getMessage(MessageKeys.MARKDOWN_NOT_FOUND),
-                    I18nUtil.getMessage(MessageKeys.MARKDOWN_FIND_TITLE),
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
 
     /**
      * 导出为 HTML（使用国际化文本）
@@ -1140,18 +901,6 @@ public class MarkdownEditorPanel extends JPanel {
         splitPane.revalidate();
         splitPane.repaint();
         updatePreview();
-    }
-
-    /**
-     * 更新行号
-     */
-    private void updateLineNumbers() {
-        int lineCount = editorArea.getLineCount();
-        StringBuilder lineNumbers = new StringBuilder();
-        for (int i = 1; i <= lineCount; i++) {
-            lineNumbers.append(i).append("\n");
-        }
-        lineNumberArea.setText(lineNumbers.toString());
     }
 
     /**

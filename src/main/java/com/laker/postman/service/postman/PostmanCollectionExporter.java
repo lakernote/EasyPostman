@@ -43,6 +43,12 @@ public class PostmanCollectionExporter {
 
         info.put("name", groupName);
         info.put("schema", "https://schema.getpostman.com/json/collection/v2.1.0/collection.json");
+
+        // 导出集合描述
+        if (rootGroup != null && rootGroup.getDescription() != null && !rootGroup.getDescription().isEmpty()) {
+            info.put("description", rootGroup.getDescription());
+        }
+
         collection.put("info", info);
 
         // 导出集合级别的认证（从根节点）
@@ -109,6 +115,11 @@ public class PostmanCollectionExporter {
                         // 新格式：使用RequestGroup对象
                         folder.put("name", group.getName());
 
+                        // 导出分组描述
+                        if (group.getDescription() != null && !group.getDescription().isEmpty()) {
+                            folder.put("description", group.getDescription());
+                        }
+
                         // 导出分组级别的认证
                         if (group.hasAuth()) {
                             JSONObject auth = new JSONObject();
@@ -172,6 +183,12 @@ public class PostmanCollectionExporter {
         JSONObject postmanItem = new JSONObject();
         postmanItem.put("name", item.getName());
         JSONObject request = new JSONObject();
+
+        // 导出请求描述
+        if (item.getDescription() != null && !item.getDescription().isEmpty()) {
+            request.put("description", item.getDescription());
+        }
+
         request.put("method", item.getMethod());
         // url
         JSONObject url = new JSONObject();

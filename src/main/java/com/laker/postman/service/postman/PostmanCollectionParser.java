@@ -45,9 +45,16 @@ public class PostmanCollectionParser {
         try {
             JSONObject postmanRoot = JSONUtil.parseObj(json);
             if (postmanRoot.containsKey("info") && postmanRoot.containsKey("item")) {
-                // 解析 collection 名称
-                String collectionName = postmanRoot.getJSONObject("info").getStr("name", "Postman");
+                // 解析 collection 名称和描述
+                JSONObject info = postmanRoot.getJSONObject("info");
+                String collectionName = info.getStr("name", "Postman");
                 RequestGroup collectionGroup = new RequestGroup(collectionName);
+
+                // 解析集合描述
+                String description = info.getStr("description");
+                if (description != null && !description.isEmpty()) {
+                    collectionGroup.setDescription(description);
+                }
 
                 // 解析集合级别的认证
                 if (postmanRoot.containsKey("auth")) {
@@ -95,6 +102,12 @@ public class PostmanCollectionParser {
                 // 文件夹节点
                 String folderName = item.getStr("name", "default group");
                 RequestGroup group = new RequestGroup(folderName);
+
+                // 解析文件夹描述
+                String description = item.getStr("description");
+                if (description != null && !description.isEmpty()) {
+                    group.setDescription(description);
+                }
 
                 // 解析分组级别的认证
                 JSONObject auth = item.getJSONObject("auth");
@@ -273,6 +286,12 @@ public class PostmanCollectionParser {
         req.setName(item.getStr("name", "未命名请求"));
         JSONObject request = item.getJSONObject("request");
         if (request != null) {
+            // 解析请求描述
+            String description = request.getStr("description");
+            if (description != null && !description.isEmpty()) {
+                req.setDescription(description);
+            }
+
             req.setMethod(request.getStr("method", "GET"));
             // url
             Object urlObj = request.get("url");

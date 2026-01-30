@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
 import com.laker.postman.common.exception.DownloadCancelledException;
@@ -92,6 +93,7 @@ public class RequestEditSubPanel extends JPanel {
     private HttpRequestItem originalRequestItem;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;
+    private final MarkdownEditorPanel descriptionEditor; // Docs tab
     private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // 当前请求的 SwingWorker，用于支持取消
@@ -186,6 +188,22 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs = new JTabbedPane(); // 2. 创建请求选项卡面板
         reqTabs.setMinimumSize(new Dimension(400, 120));
 
+        // 2.0 Docs Tab - 放在第一个，像 Postman 一样
+        descriptionEditor = new MarkdownEditorPanel();
+        JPanel docsPanel = new JPanel(new BorderLayout());
+        docsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        docsPanel.add(descriptionEditor, BorderLayout.CENTER);
+
+        JPanel docsHintPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        JLabel docsHintLabel = new JLabel(
+                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
+                        I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_DESCRIPTION_PLACEHOLDER) +
+                        "</i></html>"
+        );
+        docsHintPanel.add(docsHintLabel);
+        docsPanel.add(docsHintPanel, BorderLayout.SOUTH);
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE), docsPanel);
+
         // 2.1 Params
         paramsPanel = new EasyPostmanParamsTablePanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel); // 2.1 添加参数选项卡
@@ -257,10 +275,14 @@ public class RequestEditSubPanel extends JPanel {
             reqTabs.remove(authTabPanel);
             // 初始时禁用发送和定时按钮，只有连接后才可用
             requestBodyPanel.setWebSocketConnected(false);
-        }
-        if (protocol.isSseProtocol()) {
+        } else if (protocol.isSseProtocol()) {
+            // SSE协议：默认选中Params Tab
+            reqTabs.setSelectedComponent(paramsPanel);
             // 隐藏认证tab
             reqTabs.remove(authTabPanel);
+        } else {
+            // HTTP协议：默认选中Params Tab（避免默认显示Docs tab）
+            reqTabs.setSelectedComponent(paramsPanel);
         }
         // 监听表单内容变化，动态更新tab红点
         addDirtyListeners();
@@ -305,6 +327,18 @@ public class RequestEditSubPanel extends JPanel {
         addDocumentListener(urlField.getDocument());
         // 监听methodBox
         methodBox.addActionListener(e -> updateTabDirty());
+        // 监听descriptionEditor
+        descriptionEditor.addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
+                updateTabDirty();
+            }
+            public void removeUpdate(DocumentEvent e) {
+                updateTabDirty();
+            }
+            public void changedUpdate(DocumentEvent e) {
+                updateTabDirty();
+            }
+        });
         // 监听headersPanel
         headersPanel.addTableModelListener(e -> updateTabDirty());
         // 监听paramsPanel
@@ -1020,6 +1054,10 @@ public class RequestEditSubPanel extends JPanel {
             // 前置/后置脚本
             scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
             scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
+
+            // 文档描述
+            descriptionEditor.setText(item.getDescription() == null ? "" : item.getDescription());
+
             // 设置原始数据用于脏检测
             setOriginalRequestItem(item);
 
@@ -1038,6 +1076,7 @@ public class RequestEditSubPanel extends JPanel {
         HttpRequestItem item = new HttpRequestItem();
         item.setId(this.id); // 保证id不丢失
         item.setName(this.name); // 保证name不丢失
+        item.setDescription(descriptionEditor.getText()); // 保存文档描述
         item.setUrl(urlField.getText().trim());
         item.setMethod((String) methodBox.getSelectedItem());
         item.setProtocol(protocol);

@@ -17,6 +17,7 @@ import java.util.List;
 public class HttpRequestItem implements Serializable {
     private String id = ""; // 唯一标识符
     private String name = ""; // 请求名称
+    private String description = ""; // 请求描述（支持Markdown）
     private String url = ""; // 请求URL
     private String method = "GET"; // 请求方法（GET, POST, PUT, DELETE等）
     private RequestItemProtocolEnum protocol = RequestItemProtocolEnum.HTTP; // 协议类型，默认HTTP

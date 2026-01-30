@@ -656,6 +656,10 @@ public final class MessageKeys {
     public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
     public static final String GROUP_EDIT_VALIDATION_ERROR = "group.edit.validation.error";
 
+    // ============ Request Docs Tab 相关 ============
+    public static final String REQUEST_DOCS_TAB_TITLE = "request.docs.tab.title";
+    public static final String REQUEST_DOCS_DESCRIPTION_PLACEHOLDER = "request.docs.description.placeholder";
+
     // ============ 功能测试执行结果相关 ============
     public static final String FUNCTIONAL_EXECUTION_RESULTS = "functional.execution.results";
     public static final String FUNCTIONAL_EXECUTION_HISTORY = "functional.execution.history";

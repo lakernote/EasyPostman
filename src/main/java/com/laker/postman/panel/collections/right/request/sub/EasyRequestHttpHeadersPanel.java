@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -125,9 +126,8 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         countLabel = createCountLabel();
 
         // Create Bulk Edit button
-        JButton bulkEditButton = new JButton(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
-        bulkEditButton.setFocusable(false);
-        bulkEditButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        EditButton bulkEditButton = new EditButton();
+        bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
         bulkEditButton.addActionListener(e -> showBulkEditDialog());
 
         headerPanel.add(label);

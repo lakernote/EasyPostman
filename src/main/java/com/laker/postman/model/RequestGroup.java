@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -25,6 +27,8 @@ public class RequestGroup implements Serializable {
     private String prescript = "";
     // 后置脚本（响应后执行）
     private String postscript = "";
+    // 公共请求头（会被子请求继承）
+    private List<HttpHeader> headers = new ArrayList<>();
 
     public RequestGroup() {
         this.id = UUID.randomUUID().toString();
@@ -54,6 +58,13 @@ public class RequestGroup implements Serializable {
      */
     public boolean hasPostScript() {
         return postscript != null && !postscript.trim().isEmpty();
+    }
+
+    /**
+     * 判断分组是否有公共请求头
+     */
+    public boolean hasHeaders() {
+        return headers != null && !headers.isEmpty();
     }
 }
 

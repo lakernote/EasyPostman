@@ -159,7 +159,7 @@ public class RequestLinePanel extends JPanel {
         button.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE_TOOLTIP));
         button.addActionListener(e -> {
             if (SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest()) {
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_REQUEST_SUCCESS));
+                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
             }
         });
 

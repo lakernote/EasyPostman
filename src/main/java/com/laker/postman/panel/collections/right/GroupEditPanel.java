@@ -4,12 +4,15 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
+import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -18,6 +21,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.util.List;
 
 /**
  * 分组编辑面板 - 现代化版本
@@ -41,6 +47,8 @@ public class GroupEditPanel extends JPanel {
     private MarkdownEditorPanel descriptionEditor;
     private AuthTabPanel authTabPanel;
     private ScriptPanel scriptPanel;
+    private EasyRequestHttpHeadersPanel headersPanel;
+    private JTabbedPane tabbedPane;
 
     // 原始数据快照，用于检测变化
     private String originalName;
@@ -51,6 +59,7 @@ public class GroupEditPanel extends JPanel {
     private String originalAuthToken;
     private String originalPrescript;
     private String originalPostscript;
+    private List<HttpHeader> originalHeaders;
 
     // 防抖定时器
     private Timer autoSaveTimer;
@@ -64,6 +73,7 @@ public class GroupEditPanel extends JPanel {
         initUI();
         loadGroupData();
         setupAutoSaveListeners();
+        setupSaveShortcut();
     }
 
     private void initAutoSaveTimer() {
@@ -83,11 +93,28 @@ public class GroupEditPanel extends JPanel {
         add(headerPanel, BorderLayout.NORTH);
 
         // 中间内容区域 - 使用 Tabs
-        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane = new JTabbedPane();
         tabbedPane.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         // General Tab
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TAB_GENERAL), createGeneralPanel());
+
+        // Headers Tab - 公共请求头配置
+        headersPanel = new EasyRequestHttpHeadersPanel();
+        JPanel headersWrapperPanel = new JPanel(new BorderLayout());
+        headersWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        headersWrapperPanel.add(headersPanel, BorderLayout.CENTER);
+
+        JPanel headersInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        JLabel headersInfoLabel = new JLabel(
+                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
+                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_HEADERS_INFO) +
+                        "</i></html>"
+        );
+        headersInfoPanel.add(headersInfoLabel);
+        headersWrapperPanel.add(headersInfoPanel, BorderLayout.SOUTH);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_HEADERS), headersWrapperPanel);
+
 
         // Authorization Tab - 复用 AuthTabPanel
         authTabPanel = new AuthTabPanel();
@@ -119,6 +146,7 @@ public class GroupEditPanel extends JPanel {
         scriptWrapperPanel.add(scriptInfoPanel, BorderLayout.SOUTH);
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptWrapperPanel);
 
+
         add(tabbedPane, BorderLayout.CENTER);
     }
 
@@ -147,7 +175,7 @@ public class GroupEditPanel extends JPanel {
 
     private JPanel createGeneralPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -203,7 +231,7 @@ public class GroupEditPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
         JLabel hintLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
+                "<html><i style='color: #64748b; font-size: 10px;'>ℹ " +
                         I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION_PLACEHOLDER) +
                         "</i></html>"
         );
@@ -252,6 +280,42 @@ public class GroupEditPanel extends JPanel {
 
         // 监听脚本面板变化
         scriptPanel.addDirtyListeners(this::triggerAutoSave);
+
+        // 监听请求头面板变化
+        headersPanel.addTableModelListener(e -> triggerAutoSave());
+    }
+
+    /**
+     * 设置保存快捷键 (Command+S / Ctrl+S)
+     */
+    private void setupSaveShortcut() {
+        // 获取快捷键修饰符（Mac 使用 Command，其他系统使用 Ctrl）
+        int modifierKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+
+        // 创建 KeyStroke (Cmd+S / Ctrl+S)
+        KeyStroke saveKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, modifierKey);
+
+        // 绑定快捷键到 InputMap
+        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = getActionMap();
+
+        String actionKey = "saveGroup";
+        inputMap.put(saveKeyStroke, actionKey);
+
+        // 定义快捷键动作：立即保存（绕过防抖）
+        actionMap.put(actionKey, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 停止防抖定时器
+                if (autoSaveTimer.isRunning()) {
+                    autoSaveTimer.stop();
+                }
+                // 立即保存
+                autoSaveGroupData();
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
+
+            }
+        });
     }
 
     /**
@@ -300,6 +364,7 @@ public class GroupEditPanel extends JPanel {
         group.setAuthToken(authTabPanel.getToken());
         group.setPrescript(scriptPanel.getPrescript());
         group.setPostscript(scriptPanel.getPostscript());
+        group.setHeaders(headersPanel.getHeadersList());
 
         // 通知保存完成（触发持久化）
         if (onSave != null) {
@@ -308,11 +373,9 @@ public class GroupEditPanel extends JPanel {
 
         // 如果名称改变了，更新 Tab 标题
         if (nameChanged) {
-            SwingUtilities.invokeLater(() -> {
-                SingletonFactory.getInstance(
-                        RequestEditPanel.class
-                ).updateGroupTabTitle(this, newName);
-            });
+            SwingUtilities.invokeLater(() -> SingletonFactory.getInstance(
+                    RequestEditPanel.class
+            ).updateGroupTabTitle(this, newName));
         }
 
         // 更新原始数据快照
@@ -331,6 +394,7 @@ public class GroupEditPanel extends JPanel {
         if (!safeEquals(originalAuthToken, authTabPanel.getToken())) return true;
         if (!safeEquals(originalPrescript, scriptPanel.getPrescript())) return true;
         if (!safeEquals(originalPostscript, scriptPanel.getPostscript())) return true;
+        if (!headersEquals(originalHeaders, headersPanel.getHeadersList())) return true;
         return false;
     }
 
@@ -341,6 +405,23 @@ public class GroupEditPanel extends JPanel {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         return a.equals(b);
+    }
+
+    /**
+     * 比较两个 Headers 列表是否相同
+     */
+    private boolean headersEquals(List<HttpHeader> a, List<HttpHeader> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            HttpHeader ha = a.get(i);
+            HttpHeader hb = b.get(i);
+            if (ha.isEnabled() != hb.isEnabled()) return false;
+            if (!safeEquals(ha.getKey(), hb.getKey())) return false;
+            if (!safeEquals(ha.getValue(), hb.getValue())) return false;
+        }
+        return true;
     }
 
     /**
@@ -355,6 +436,7 @@ public class GroupEditPanel extends JPanel {
         originalAuthToken = authTabPanel.getToken();
         originalPrescript = scriptPanel.getPrescript();
         originalPostscript = scriptPanel.getPostscript();
+        originalHeaders = new java.util.ArrayList<>(headersPanel.getHeadersList());
     }
 
     private void loadGroupData() {
@@ -371,6 +453,16 @@ public class GroupEditPanel extends JPanel {
         // Load script data using ScriptPanel
         scriptPanel.setPrescript(group.getPrescript() != null ? group.getPrescript() : "");
         scriptPanel.setPostscript(group.getPostscript() != null ? group.getPostscript() : "");
+
+        // Load headers data using EasyRequestHttpHeadersPanel
+        if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
+            headersPanel.setHeadersList(group.getHeaders());
+        }
+
+        // 如果 headers 中有超过 4 个请求头，默认选中第二个 tab (Headers)
+        if (group.getHeaders() != null && group.getHeaders().size() > 4) {
+            tabbedPane.setSelectedIndex(1);
+        }
 
         // 初始化原始数据快照
         updateOriginalSnapshot();

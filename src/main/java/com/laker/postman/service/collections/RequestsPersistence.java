@@ -3,6 +3,7 @@ package com.laker.postman.service.collections;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.SavedResponse;
@@ -187,6 +188,16 @@ public class RequestsPersistence {
             group.setPostscript(groupJson.getStr("postscript", ""));
         }
 
+        // 解析分组级别的公共请求头
+        if (groupJson.containsKey("headers")) {
+            JSONArray headersArray = groupJson.getJSONArray("headers");
+            if (headersArray != null && !headersArray.isEmpty()) {
+                List<HttpHeader> headers =
+                        JSONUtil.toList(headersArray, HttpHeader.class);
+                group.setHeaders(headers);
+            }
+        }
+
         DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
         JSONArray children = groupJson.getJSONArray("children");
         if (children != null) {
@@ -247,6 +258,10 @@ public class RequestsPersistence {
             groupJson.set("authToken", group.getAuthToken());
             groupJson.set("prescript", group.getPrescript());
             groupJson.set("postscript", group.getPostscript());
+            // 保存公共请求头
+            if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
+                groupJson.set("headers", group.getHeaders());
+            }
         } else if (groupData instanceof String name) {
             // 旧格式兼容：字符串名称
             groupJson.set("name", name);

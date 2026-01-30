@@ -189,7 +189,7 @@ public final class MessageKeys {
     public static final String PLEASE_SELECT_GROUP = "please.select.group";
     public static final String PLEASE_SELECT_VALID_GROUP = "please.select.valid.group";
     public static final String SUCCESS = "success";
-    public static final String SAVE_REQUEST_SUCCESS = "save.request.success";
+    public static final String SAVE_SUCCESS = "save.success";
     public static final String UPDATE_REQUEST_FAILED = "update.request.failed";
     public static final String ERROR = "error";
 
@@ -202,6 +202,7 @@ public final class MessageKeys {
 
     // ============ 标签页 ============
     public static final String TAB_PARAMS = "tab.params";
+    public static final String TAB_HEADERS = "tab.headers";
     public static final String TAB_AUTHORIZATION = "tab.authorization";
     public static final String TAB_SCRIPTS = "tab.scripts";
     public static final String TAB_TESTS = "tab.tests";
@@ -218,6 +219,11 @@ public final class MessageKeys {
     public static final String TAB_UNSAVED_CHANGES_TITLE = "tab.unsaved_changes.title";
     public static final String TAB_CLOSE_CURRENT = "tab.close_current";
     public static final String SAVED_RESPONSE_READONLY = "saved_response.readonly";
+
+    // ============ Bulk Edit 相关 ============
+    public static final String BULK_EDIT = "bulk.edit";
+    public static final String BULK_EDIT_HEADERS = "bulk.edit.headers";
+    public static final String BULK_EDIT_HINT = "bulk.edit.hint";
 
     // ============ 快捷键设置 ============
     public static final String SHORTCUT_SETTINGS_TITLE = "shortcut.settings.title";
@@ -654,6 +660,7 @@ public final class MessageKeys {
     public static final String GROUP_EDIT_DESCRIPTION_PLACEHOLDER = "group.edit.description.placeholder";
     public static final String GROUP_EDIT_AUTH_INFO = "group.edit.auth.info";
     public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
+    public static final String GROUP_EDIT_HEADERS_INFO = "group.edit.headers.info";
     public static final String GROUP_EDIT_VALIDATION_ERROR = "group.edit.validation.error";
 
     // ============ Request Docs Tab 相关 ============

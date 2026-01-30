@@ -1063,12 +1063,11 @@ public class RequestEditPanel extends SingletonBasePanel {
             for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
                 if (i != previewTabIndex) {
                     Component comp = tabbedPane.getComponentAt(i);
-                    if (comp instanceof GroupEditPanel existingPanel) {
-                        if (groupId.equals(existingPanel.getGroup().getId())) {
+                    if (comp instanceof GroupEditPanel existingPanel && groupId.equals(existingPanel.getGroup().getId())) {
                             tabbedPane.setSelectedIndex(i);
                             return true;
                         }
-                    }
+
                 }
             }
         }

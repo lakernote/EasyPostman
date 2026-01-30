@@ -2,7 +2,9 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
 
 import javax.swing.*;
@@ -122,9 +124,17 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         eyeButton = createEyeButton();
         countLabel = createCountLabel();
 
+        // Create Bulk Edit button
+        JButton bulkEditButton = new JButton(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
+        bulkEditButton.setFocusable(false);
+        bulkEditButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        bulkEditButton.addActionListener(e -> showBulkEditDialog());
+
         headerPanel.add(label);
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel);
+        headerPanel.add(Box.createHorizontalStrut(10)); // 添加间距
+        headerPanel.add(bulkEditButton);
 
         // Create table panel and set parent reference
         tablePanel = new EasyHttpHeadersTablePanel();
@@ -590,5 +600,113 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
         // If no empty row at the end, add new row directly
         model.addRow(new Object[]{true, key, value, ""});
+    }
+
+    /**
+     * 显示批量编辑对话框
+     * 支持以 "Key: Value" 格式批量粘贴和编辑请求头
+     */
+    private void showBulkEditDialog() {
+        // 1. 将当前表格数据转换为文本格式（Key: Value\n）
+        StringBuilder text = new StringBuilder();
+        List<HttpHeader> currentHeaders = getHeadersList();
+        for (HttpHeader header : currentHeaders) {
+            if (!header.getKey().isEmpty()) {
+                text.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
+            }
+        }
+
+        // 2. 创建文本编辑区域
+        JTextArea textArea = new JTextArea(text.toString(), 20, 60);
+        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        textArea.setLineWrap(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+
+        // 3. 添加提示信息
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.BULK_EDIT_HINT));
+        hintLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+        panel.add(hintLabel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 4. 显示对话框
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                panel,
+                I18nUtil.getMessage(MessageKeys.BULK_EDIT_HEADERS),
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        // 5. 解析文本并更新表格
+        if (result == JOptionPane.OK_OPTION) {
+            parseBulkText(textArea.getText());
+        }
+    }
+
+    /**
+     * 解析批量编辑的文本内容
+     * 支持格式：
+     * - Key: Value
+     * - Key:Value
+     * - Key = Value
+     * - Key=Value
+     * 空行会被忽略
+     */
+    private void parseBulkText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            // 如果文本为空，清空所有非默认请求头
+            clearNonDefaultHeaders();
+            return;
+        }
+
+        List<HttpHeader> headers = new ArrayList<>();
+        String[] lines = text.split("\n");
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("//")) {
+                continue; // 忽略空行和注释
+            }
+
+            // 支持 ":" 和 "=" 两种分隔符
+            String[] parts = null;
+            if (line.contains(":")) {
+                parts = line.split(":", 2);
+            } else if (line.contains("=")) {
+                parts = line.split("=", 2);
+            }
+
+            if (parts != null && parts.length == 2) {
+                String key = parts[0].trim();
+                String value = parts[1].trim();
+                if (!key.isEmpty()) {
+                    headers.add(new HttpHeader(true, key, value));
+                }
+            } else if (line.contains(":") || line.contains("=")) {
+                // 如果包含分隔符但解析失败，可能是值为空的情况
+                String key = line.replaceAll("[=:].*", "").trim();
+                if (!key.isEmpty()) {
+                    headers.add(new HttpHeader(true, key, ""));
+                }
+            }
+        }
+
+        // 更新表格数据
+        setHeadersList(headers);
+    }
+
+    /**
+     * 清空所有非默认请求头
+     */
+    private void clearNonDefaultHeaders() {
+        List<HttpHeader> defaultOnlyHeaders = new ArrayList<>();
+        // 只保留默认请求头
+        for (Object[] defaultHeader : DEFAULT_HEADERS) {
+            String key = (String) defaultHeader[0];
+            String value = (String) defaultHeader[1];
+            defaultOnlyHeaders.add(new HttpHeader(true, key, value));
+        }
+        setHeadersList(defaultOnlyHeaders);
     }
 }

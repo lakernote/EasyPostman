@@ -2,17 +2,16 @@ package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.button.EditButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.SystemUtil;
+import com.laker.postman.util.*;
 
 import javax.swing.*;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
@@ -133,7 +132,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         headerPanel.add(label);
         headerPanel.add(eyeButton);
         headerPanel.add(countLabel);
-        headerPanel.add(Box.createHorizontalStrut(10)); // 添加间距
+        headerPanel.add(Box.createHorizontalStrut(5)); // 添加间距
         headerPanel.add(bulkEditButton);
 
         // Create table panel and set parent reference
@@ -617,32 +616,90 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         }
 
         // 2. 创建文本编辑区域
-        JTextArea textArea = new JTextArea(text.toString(), 20, 60);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        JTextArea textArea = new JTextArea(text.toString());
         textArea.setLineWrap(false);
+        textArea.setTabSize(4);
+        // 设置背景色，使其看起来像可编辑区域
+        textArea.setBackground(ModernColors.getInputBackgroundColor());
+        textArea.setForeground(ModernColors.getTextPrimary());
+        textArea.setCaretColor(ModernColors.PRIMARY);
+
+        // 将光标定位到文本末尾
+        textArea.setCaretPosition(textArea.getDocument().getLength());
+
         JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(600, 400));
 
-        // 3. 添加提示信息
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        // 3. 创建提示标签 - 使用国际化，垂直排列
+        JPanel hintPanel = new JPanel();
+        hintPanel.setLayout(new BoxLayout(hintPanel, BoxLayout.Y_AXIS));
+        hintPanel.setOpaque(false);
+
+        // 主提示文本
         JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.BULK_EDIT_HINT));
-        hintLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
-        panel.add(hintLabel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        hintLabel.setForeground(ModernColors.getTextPrimary());
 
-        // 4. 显示对话框
-        int result = JOptionPane.showConfirmDialog(
-                this,
-                panel,
-                I18nUtil.getMessage(MessageKeys.BULK_EDIT_HEADERS),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
+        // 支持格式说明
+        JLabel formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.BULK_EDIT_SUPPORTED_FORMATS));
+        formatLabel.setForeground(ModernColors.getTextSecondary());
+        formatLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        formatLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        hintPanel.add(hintLabel);
+        hintPanel.add(Box.createVerticalStrut(6)); // 添加3像素的间距
+        hintPanel.add(formatLabel);
+        hintPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        // 4. 组装内容面板
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 5));
+        contentPanel.add(hintPanel, BorderLayout.NORTH);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // 5. 创建按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+
+        buttonPanel.add(okButton);
+        buttonPanel.add(cancelButton);
+
+        // 6. 创建自定义对话框
+        Window window = SwingUtilities.getWindowAncestor(tablePanel);
+        JDialog dialog = new JDialog(window, I18nUtil.getMessage(MessageKeys.BULK_EDIT_HEADERS), Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout());
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 设置对话框属性
+        dialog.setSize(650, 400);
+        dialog.setMinimumSize(new Dimension(500, 300));
+        dialog.setResizable(true);
+        dialog.setLocationRelativeTo(tablePanel);
+
+        // 7. 按钮事件处理
+        okButton.addActionListener(e -> {
+            parseBulkText(textArea.getText());
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        // 8. 支持 ESC 键关闭对话框
+        dialog.getRootPane().registerKeyboardAction(
+                e -> dialog.dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
         );
 
-        // 5. 解析文本并更新表格
-        if (result == JOptionPane.OK_OPTION) {
-            parseBulkText(textArea.getText());
-        }
+        // 9. 设置默认按钮
+        dialog.getRootPane().setDefaultButton(okButton);
+
+        // 10. 显示对话框
+        dialog.setVisible(true);
     }
+
 
     /**
      * 解析批量编辑的文本内容

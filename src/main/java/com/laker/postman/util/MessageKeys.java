@@ -224,7 +224,7 @@ public final class MessageKeys {
     public static final String BULK_EDIT = "bulk.edit";
     public static final String BULK_EDIT_HEADERS = "bulk.edit.headers";
     public static final String BULK_EDIT_HINT = "bulk.edit.hint";
-
+    public static final String BULK_EDIT_SUPPORTED_FORMATS = "bulk.edit.supported.formats";
     // ============ 快捷键设置 ============
     public static final String SHORTCUT_SETTINGS_TITLE = "shortcut.settings.title";
     public static final String SHORTCUT_ACTION = "shortcut.action";

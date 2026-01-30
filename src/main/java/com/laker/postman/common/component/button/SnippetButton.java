@@ -17,6 +17,7 @@ public class SnippetButton extends JButton {
     public SnippetButton() {
         setIcon(IconUtil.createThemed("icons/code.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         setToolTipText(I18nUtil.getMessage(MessageKeys.SCRIPT_BUTTON_SNIPPETS));
+        setText(I18nUtil.getMessage(MessageKeys.SCRIPT_BUTTON_SNIPPETS));
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setContentAreaFilled(false); // 不填充内容区域

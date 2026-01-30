@@ -93,11 +93,11 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     private String getTableStyle() {
-        return "border-collapse:collapse;width:100%;margin:0 0 16px 0;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
+        return "border-collapse:collapse;width:100%;margin:0 0 8px 0;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
     }
 
     private String getTableCellStyle() {
-        return "padding:8px 12px;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
+        return "padding:4px 8px;border:1px solid " + toHex(ModernColors.getBorderLightColor()) + ";";
     }
 
     private String getTableHeaderStyle() {
@@ -108,9 +108,9 @@ public class MarkdownEditorPanel extends JPanel {
 
     private String getCodeBlockStyle() {
         return "background-color:" + toHex(ModernColors.getConsoleTextAreaBg()) +
-                ";padding:16px;overflow:auto;font-size:10px;line-height:1.5;border-radius:6px;border:1px solid " +
+                ";padding:8px;overflow:auto;font-size:10px;line-height:1.5;border-radius:4px;border:1px solid " +
                 toHex(ModernColors.getBorderLightColor()) +
-                ";margin:0 0 16px 0;font-family:monospace;color:" +
+                ";margin:0 0 8px 0;font-family:monospace;color:" +
                 toHex(ModernColors.getConsoleText()) +
                 ";display:block;white-space:pre;word-wrap:normal;";
     }
@@ -120,21 +120,21 @@ public class MarkdownEditorPanel extends JPanel {
         String bgColor = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
         String textColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
         return "background-color:" + bgColor + ";color:" + textColor +
-                ";padding:2px 6px;margin:0 2px;font-size:10px;border-radius:3px;font-family:monospace;";
+                ";padding:1px 4px;margin:0 1px;font-size:10px;border-radius:3px;font-family:monospace;";
     }
 
     private String getHeadingStyle(int level) {
         String dividerColor = toHex(ModernColors.getDividerBorderColor());
         return switch (level) {
             case 1 ->
-                    "font-size:18px;font-weight:600;margin:6px 0 6px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
+                    "font-size:18px;font-weight:600;margin:4px 0 4px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.2em;";
             case 2 ->
-                    "font-size:16px;font-weight:600;margin:6px 0 4px 0;border-bottom:2px solid " + dividerColor + ";padding-bottom:0.3em;";
-            case 3 -> "font-size:14px;font-weight:600;margin:6px 0 4px 0;";
-            case 4 -> "font-size:12px;font-weight:600;margin:6px 0 4px 0;";
-            case 5 -> "font-size:11px;font-weight:600;margin:6px 0 4px 0;";
+                    "font-size:16px;font-weight:600;margin:4px 0 3px 0;border-bottom:1px solid " + dividerColor + ";padding-bottom:0.2em;";
+            case 3 -> "font-size:14px;font-weight:600;margin:4px 0 3px 0;";
+            case 4 -> "font-size:12px;font-weight:600;margin:4px 0 3px 0;";
+            case 5 -> "font-size:11px;font-weight:600;margin:4px 0 3px 0;";
             case 6 ->
-                    "font-size:10px;font-weight:600;margin:8px 0 6px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
+                    "font-size:10px;font-weight:600;margin:4px 0 3px 0;color:" + toHex(ModernColors.getTextHint()) + ";";
             default -> "";
         };
     }
@@ -143,9 +143,9 @@ public class MarkdownEditorPanel extends JPanel {
         boolean isDark = ModernColors.isDarkTheme();
         String borderColor = isDark ? "#4a9eff" : toHex(ModernColors.ACCENT_LIGHT);
         String bgColor = isDark ? "rgba(74,158,255,0.08)" : "rgba(6,182,212,0.03)";
-        return "padding:8px 16px;color:" + toHex(ModernColors.getTextSecondary()) +
-                ";border-left:4px solid " + borderColor + ";background-color:" + bgColor +
-                ";margin:0 0 16px 0;border-radius:0 4px 4px 0;";
+        return "padding:6px 10px;color:" + toHex(ModernColors.getTextSecondary()) +
+                ";border-left:3px solid " + borderColor + ";background-color:" + bgColor +
+                ";margin:0 0 8px 0;border-radius:0 3px 3px 0;";
     }
 
     private String getHrStyle() {
@@ -930,7 +930,7 @@ public class MarkdownEditorPanel extends JPanel {
 
         // 在 body 上使用 inline style 设置基本样式（不使用 StyleSheet）
         html.append("<body style='");
-        html.append("margin:0;padding:6px;"); // 设置内边距
+        html.append("margin:0;padding:8px;"); // 设置内边距，更紧凑
         html.append("font-family:sans-serif;");
         html.append("font-size:10px;");
         html.append("line-height:1.6;");
@@ -953,7 +953,6 @@ public class MarkdownEditorPanel extends JPanel {
                 if (inCodeBlock) {
                     html.append("</code></pre>");
                     inCodeBlock = false;
-                    codeLanguage = "";
                 } else {
                     // 提取语言标识
                     codeLanguage = line.trim().substring(3).trim();
@@ -1156,7 +1155,7 @@ public class MarkdownEditorPanel extends JPanel {
                 closeLists(html, inList, inOrderedList);
                 inList = false;
                 inOrderedList = false;
-                html.append("<p>").append(processInlineMarkdown(line)).append("</p>");
+                html.append("<p style='margin:0 0 6px 0;'>").append(processInlineMarkdown(line)).append("</p>");
             }
         }
 

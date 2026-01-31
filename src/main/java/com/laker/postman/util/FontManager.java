@@ -118,12 +118,8 @@ public class FontManager {
      * 更新所有已存在的窗口
      */
     private static void updateExistingWindows() {
-        log.info("Updating all windows for font change...");
-
         // 使用统一的刷新管理器更新所有窗口
         UIRefreshManager.refreshAllWindows();
-
-        log.info("All windows updated successfully for font change");
     }
 
     /**

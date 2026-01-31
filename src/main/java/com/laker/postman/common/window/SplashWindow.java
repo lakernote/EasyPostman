@@ -157,13 +157,13 @@ public class SplashWindow extends JWindow {
 
         // 应用名称
         JLabel appNameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.APP_NAME), SwingConstants.CENTER);
-        appNameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +8));
+        appNameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 8));
         appNameLabel.setForeground(getTextColor());
         infoPanel.add(appNameLabel);
 
         // 版本号
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion(), SwingConstants.CENTER);
-        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 4));
         versionLabel.setForeground(getTextColor());
         infoPanel.add(versionLabel);
 
@@ -177,7 +177,7 @@ public class SplashWindow extends JWindow {
         JPanel bottomPanel = new JPanel(new BorderLayout(0, 3));
         bottomPanel.setOpaque(false);
         statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SPLASH_STATUS_STARTING), SwingConstants.CENTER);
-        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +3)); // 比标准字体大3号
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 3)); // 比标准字体大3号
         statusLabel.setForeground(getTextColor());
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
         return bottomPanel;

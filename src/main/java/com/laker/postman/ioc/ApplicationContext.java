@@ -634,8 +634,6 @@ public class ApplicationContext {
      * 销毁所有Bean，调用@PreDestroy方法和DisposableBean接口
      */
     public void destroy() {
-        log.info("Destroying all beans...");
-
         // 1. 先调用所有@PreDestroy方法
         for (Map.Entry<Object, List<Method>> entry : preDestroyMethods.entrySet()) {
             Object instance = entry.getKey();

@@ -46,7 +46,7 @@ public class App {
      * 配置平台特定的设置。
      * <p>
      * Linux 平台：启用自定义窗口装饰以获得更好的原生外观体验。
-     * 参考：https://www.formdev.com/flatlaf/window-decorations/
+     * 参考：<a href="https://www.formdev.com/flatlaf/window-decorations/">flatlaf 文档</a>
      * </p>
      */
     private static void configurePlatformSpecificSettings() {
@@ -107,7 +107,6 @@ public class App {
      */
     private static void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("Application shutting down...");
             try {
                 // 销毁 IOC 容器，调用所有 @PreDestroy 方法
                 BeanFactory.destroy();

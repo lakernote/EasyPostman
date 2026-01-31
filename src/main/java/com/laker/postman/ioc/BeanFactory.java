@@ -14,9 +14,7 @@ public class BeanFactory {
      * 初始化IOC容器，扫描指定包
      */
     public static void init(String... basePackages) {
-        log.info("Initializing IOC container, scanning packages: {}", (Object) basePackages);
         context.scan(basePackages);
-        log.info("IOC container initialized successfully");
     }
 
     /**

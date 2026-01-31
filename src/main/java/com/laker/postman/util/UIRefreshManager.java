@@ -36,12 +36,8 @@ public class UIRefreshManager {
      * 适用场景：主题切换、字体切换
      */
     public static void refreshAllWindows() {
-        log.info("Refreshing all windows UI...");
-
         try {
             Window[] windows = Window.getWindows();
-            int refreshedCount = 0;
-
             for (Window window : windows) {
                 if (window.isDisplayable()) {
                     // 更新组件树 UI，应用新的 Look and Feel
@@ -52,13 +48,9 @@ public class UIRefreshManager {
 
                     // 重绘窗口
                     window.repaint();
-
-                    refreshedCount++;
                     log.debug("Refreshed window: {}", window.getClass().getSimpleName());
                 }
             }
-
-            log.info("Successfully refreshed {} window(s)", refreshedCount);
         } catch (Exception e) {
             log.error("Failed to refresh windows", e);
         }

@@ -80,7 +80,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
-    private JButton refreshBtn;
+    private RefreshButton refreshBtn;
     private JCheckBox efficientCheckBox; // 高效模式复选框
     private JLabel progressLabel; // 进度标签
     private JPanel topPanel; // 顶部工具栏面板，用于主题切换时更新边框

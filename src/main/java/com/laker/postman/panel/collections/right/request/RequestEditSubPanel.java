@@ -70,7 +70,7 @@ public class RequestEditSubPanel extends JPanel {
 
     private final JTextField urlField;
     private final JComboBox<String> methodBox;
-    private final EasyPostmanParamsTablePanel paramsPanel;
+    private final EasyRequestParamsPanel paramsPanel;
     private final EasyRequestHttpHeadersPanel headersPanel;
     @Getter
     private String id;
@@ -194,7 +194,7 @@ public class RequestEditSubPanel extends JPanel {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE), descriptionEditor);
 
         // 2.1 Params
-        paramsPanel = new EasyPostmanParamsTablePanel();
+        paramsPanel = new EasyRequestParamsPanel();
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel); // 2.1 添加参数选项卡
 
         // 添加Params面板的监听器，实现从Params到URL的联动

@@ -223,6 +223,7 @@ public final class MessageKeys {
     // ============ Bulk Edit 相关 ============
     public static final String BULK_EDIT = "bulk.edit";
     public static final String BULK_EDIT_HEADERS = "bulk.edit.headers";
+    public static final String BULK_EDIT_PARAMS = "bulk.edit.params";
     public static final String BULK_EDIT_HINT = "bulk.edit.hint";
     public static final String BULK_EDIT_SUPPORTED_FORMATS = "bulk.edit.supported.formats";
     // ============ 快捷键设置 ============

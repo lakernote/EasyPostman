@@ -402,17 +402,17 @@ public class FunctionalPanel extends SingletonBasePanel {
         long start = System.currentTimeMillis();
         HttpRequestItem item = row.requestItem;
 
-        // 每次执行都重新构建PreparedRequest，避免变量污染
+        // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
         PreparedRequest req = PreparedRequestBuilder.build(item);
         result.req = req;
         // 每次执行前清理临时变量
         EnvironmentService.clearTemporaryVariables();
 
-        // 创建脚本执行流水线
+        // 创建脚本执行流水线（使用 req 中合并后的脚本）
         ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
                 .request(req)
-                .preScript(item.getPrescript())
-                .postScript(item.getPostscript())
+                .preScript(req.prescript)
+                .postScript(req.postscript)
                 .build();
 
         // 添加 CSV 数据到脚本执行环境
@@ -737,7 +737,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     // 加载选中的请求到表格
     public void loadRequests(List<HttpRequestItem> requests) {
         for (HttpRequestItem item : requests) {
-            // 不在这里进行变量替换，延迟到前置脚本执行后
+            // build() 会自动应用 group 继承
             PreparedRequest req = PreparedRequestBuilder.build(item);
             tableModel.addRow(new RunnerRowData(item, req));
         }
@@ -812,6 +812,7 @@ public class FunctionalPanel extends SingletonBasePanel {
             } else {
                 // 更新请求数据
                 try {
+                    // build() 会自动应用 group 继承
                     PreparedRequest preparedRequest = PreparedRequestBuilder.build(latestRequestItem);
                     row.requestItem = latestRequestItem;
                     row.preparedRequest = preparedRequest;

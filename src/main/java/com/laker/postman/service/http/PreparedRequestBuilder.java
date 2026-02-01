@@ -1,10 +1,15 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,35 +21,50 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 /**
  * 负责构建 PreparedRequest
  */
+@Slf4j
 @UtilityClass
 public class PreparedRequestBuilder {
 
+    /**
+     * 构建 PreparedRequest
+     * <p>
+     * 自动应用 group 继承规则：
+     * - 如果请求来自 Collections，会自动合并父级 group 的配置（认证、脚本、请求头）
+     * - 合并后的脚本会存储在 PreparedRequest 中，供后续使用
+     *
+     * @param item 请求项
+     * @return 构建好的 PreparedRequest（包含合并后的脚本）
+     */
     public static PreparedRequest build(HttpRequestItem item) {
+        // 1. 先应用 group 继承（如果适用）
+        HttpRequestItem effectiveItem = applyGroupInheritance(item);
+
+        // 2. 构建 PreparedRequest
         PreparedRequest req = new PreparedRequest();
-        req.id = item.getId();
-        req.method = item.getMethod();
+        req.id = effectiveItem.getId();
+        req.method = effectiveItem.getMethod();
 
         // 拼接 params 到 url，但暂不替换变量
         // Build params map from paramsList
         Map<String, String> params = new LinkedHashMap<>();
-        if (item.getParamsList() != null) {
-            for (HttpParam param : item.getParamsList()) {
+        if (effectiveItem.getParamsList() != null) {
+            for (HttpParam param : effectiveItem.getParamsList()) {
                 if (param.isEnabled()) {
                     params.put(param.getKey(), param.getValue());
                 }
             }
         }
-        String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), params);
+        String urlString = HttpRequestUtil.buildUrlWithParams(effectiveItem.getUrl(), params);
         req.url = HttpRequestUtil.encodeUrlParams(urlString); // 暂不替换变量
 
-        req.body = item.getBody(); // 暂不替换变量
-        req.bodyType = item.getBodyType();
+        req.body = effectiveItem.getBody(); // 暂不替换变量
+        req.bodyType = effectiveItem.getBodyType();
 
         // 根据 formDataList 判断是否是 multipart
         boolean hasFormData = false;
         boolean hasFormFiles = false;
-        if (item.getFormDataList() != null) {
-            for (HttpFormData data : item.getFormDataList()) {
+        if (effectiveItem.getFormDataList() != null) {
+            for (HttpFormData data : effectiveItem.getFormDataList()) {
                 if (data.isEnabled()) {
                     if (data.isText()) {
                         hasFormData = true;
@@ -59,12 +79,66 @@ public class PreparedRequestBuilder {
 
         // 填充 List 数据，支持相同 key
         // 先复制原始 headersList，然后添加认证头
-        req.headersList = buildHeadersListWithAuth(item);
-        req.formDataList = item.getFormDataList();
-        req.urlencodedList = item.getUrlencodedList();
-        req.paramsList = item.getParamsList();
+        req.headersList = buildHeadersListWithAuth(effectiveItem);
+        req.formDataList = effectiveItem.getFormDataList();
+        req.urlencodedList = effectiveItem.getUrlencodedList();
+        req.paramsList = effectiveItem.getParamsList();
+
+        // 3. 存储合并后的脚本（供 ScriptExecutionPipeline 使用）
+        req.prescript = effectiveItem.getPrescript();
+        req.postscript = effectiveItem.getPostscript();
 
         return req;
+    }
+
+    /**
+     * 应用 group 继承规则
+     * <p>
+     * 尝试从 Collections 树中查找该请求，如果找到则应用父级 group 的配置（认证、脚本、请求头）。
+     * 如果请求不在 Collections 中（例如来自 Functional/Performance 的独立请求），则直接返回原始请求。
+     * <p>
+     * 使用场景：
+     * - Collections 面板：在执行请求前应用继承
+     * - Functional 面板：在执行批量测试前应用继承
+     * - Performance 面板：在执行压测前应用继承
+     *
+     * @param item 原始请求项
+     * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
+     */
+    public static HttpRequestItem applyGroupInheritance(HttpRequestItem item) {
+        if (item == null) {
+            return null;
+        }
+
+        try {
+            // 尝试获取 Collections 树的根节点
+            RequestCollectionsLeftPanel leftPanel =
+                    SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+
+            DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
+            if (rootNode == null) {
+                log.trace("Collections 树根节点为空，跳过 group 继承");
+                return item;
+            }
+
+            // 在树中查找该请求的节点
+            DefaultMutableTreeNode requestNode =
+                    GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
+
+            if (requestNode != null) {
+                // 找到了！应用 group 继承
+                log.debug("为请求 [{}] 应用 group 继承", item.getName());
+                return GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
+            } else {
+                // 没找到，可能是从其他地方（Functional/Performance）导入的请求
+                log.trace("请求 [{}] 不在 Collections 树中，使用原始配置", item.getName());
+                return item;
+            }
+        } catch (Exception e) {
+            // 任何异常都不应该影响请求的正常执行
+            log.debug("应用 group 继承时发生异常（将使用原始配置）: {}", e.getMessage());
+            return item;
+        }
     }
 
     /**

@@ -1618,13 +1618,14 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
             }
             // ====== 前置脚本 ======
+            // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
             req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
 
-            // 创建脚本执行流水线
+            // 创建脚本执行流水线（使用 req 中合并后的脚本）
             ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
                     .request(req)
-                    .preScript(jtNode.httpRequestItem.getPrescript())
-                    .postScript(jtNode.httpRequestItem.getPostscript())
+                    .preScript(req.prescript)
+                    .postScript(req.postscript)
                     .build();
 
             // 注入 CSV 变量

@@ -25,6 +25,10 @@ public class PreparedRequest {
     public boolean followRedirects = true; // 默认自动重定向
     public boolean logEvent = false; // 默认不记录事件日志
 
+    // 脚本字段（已应用 group 继承）
+    public String prescript;
+    public String postscript;
+
     public Headers okHttpHeaders; // OkHttp 特有的 Headers 对象
     public String okHttpRequestBody; // 真实OkHttp请求体内容
 
@@ -44,6 +48,8 @@ public class PreparedRequest {
         copy.isMultipart = this.isMultipart;
         copy.followRedirects = this.followRedirects;
         copy.logEvent = this.logEvent;
+        copy.prescript = this.prescript;
+        copy.postscript = this.postscript;
         copy.headersList = this.headersList;
         copy.formDataList = this.formDataList;
         copy.urlencodedList = this.urlencodedList;

@@ -486,16 +486,15 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     }
 
-                    // 应用分组级别的认证和脚本继承
-                    effectiveItem = applyGroupInheritance(item);
+                    // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
+                    req = PreparedRequestBuilder.build(item);
+                    effectiveItem = item; // 保持兼容性
 
-                    req = PreparedRequestBuilder.build(effectiveItem);
-
-                    // 创建脚本执行流水线
+                    // 创建脚本执行流水线（使用 req 中合并后的脚本）
                     pipeline = ScriptExecutionPipeline.builder()
                             .request(req)
-                            .preScript(effectiveItem.getPrescript())
-                            .postScript(effectiveItem.getPostscript())
+                            .preScript(req.prescript)
+                            .postScript(req.postscript)
                             .build();
 
                     // 执行前置脚本
@@ -565,36 +564,6 @@ public class RequestEditSubPanel extends JPanel {
         preparationWorker.execute();
     }
 
-    /**
-     * 应用分组级别的认证和脚本继承
-     * 查找请求所在的分组，合并分组级别的配置
-     */
-    private HttpRequestItem applyGroupInheritance(HttpRequestItem item) {
-        if (item == null || item.getId() == null) {
-            return item;
-        }
-
-        try {
-            // 获取集合树的根节点
-            RequestCollectionsLeftPanel leftPanel =
-                    SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-            DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
-
-            // 查找请求节点
-            DefaultMutableTreeNode requestNode =
-                    GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
-
-            if (requestNode != null) {
-                // 合并分组设置
-                return GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
-            }
-        } catch (Exception e) {
-            log.warn("Failed to apply group inheritance: {}", e.getMessage());
-        }
-
-        // 如果无法应用继承，返回原始请求
-        return item;
-    }
 
     // 普通HTTP请求处理
     private void handleHttpRequest(PreparedRequest req, ScriptExecutionPipeline pipeline) {

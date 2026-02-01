@@ -113,11 +113,6 @@ public class ScriptRequestAccessor {
     public boolean followRedirects;
 
     /**
-     * 是否记录事件日志
-     */
-    public boolean logEvent;
-
-    /**
      * 构造脚本请求访问器
      * <p>
      * 会确保所有集合字段非空，并创建可在 JavaScript 中操作的包装器。
@@ -156,6 +151,5 @@ public class ScriptRequestAccessor {
         this.body = req.body;
         this.isMultipart = req.isMultipart;
         this.followRedirects = req.followRedirects;
-        this.logEvent = req.logEvent;
     }
 }

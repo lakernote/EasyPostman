@@ -36,6 +36,10 @@ public class EasyConsoleEventListener extends EventListener {
     private RequestEditSubPanel editSubPanel;
     private final PreparedRequest preparedRequest;
 
+    // 精细化控制开关
+    private final boolean collectEventInfo; // 是否收集完整事件信息（DNS、连接等）
+    private final boolean enableNetworkLog; // 是否启用网络日志面板输出
+
     public EasyConsoleEventListener(PreparedRequest preparedRequest) {
         this.callStartNanos = System.nanoTime();
         String threadName = Thread.currentThread().getName();
@@ -44,9 +48,19 @@ public class EasyConsoleEventListener extends EventListener {
         eventInfoThreadLocal.set(info);
         this.preparedRequest = preparedRequest;
         this.reqItemId = preparedRequest.id;
+        this.collectEventInfo = preparedRequest.collectEventInfo;
+        this.enableNetworkLog = preparedRequest.enableNetworkLog;
     }
 
+    /**
+     * 记录网络日志到 NetworkLogPanel（仅在 enableNetworkLog=true 时使用）
+     */
     private void log(NetworkLogStage stage, String msg) {
+        // 只有启用了网络日志才输出到 NetworkLogPanel
+        if (!enableNetworkLog) {
+            return;
+        }
+
         long now = System.nanoTime();
         long elapsedMs = (now - callStartNanos) / 1_000_000;
         try {
@@ -67,6 +81,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void callStart(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setCallStart(System.currentTimeMillis());
         Request request = call.request();
         log(NetworkLogStage.CALL_START, request.method() + " " + request.url());
@@ -74,12 +91,18 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void proxySelectStart(Call call, HttpUrl url) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setProxySelectStart(System.currentTimeMillis());
         log(NetworkLogStage.PROXY_SELECT_START, "Selecting proxy for " + url);
     }
 
     @Override
     public void proxySelectEnd(Call call, HttpUrl url, List<Proxy> proxies) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setProxySelectEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
         sb.append("Proxies: ");
@@ -94,18 +117,27 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void dnsStart(Call call, String domainName) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setDnsStart(System.currentTimeMillis());
         log(NetworkLogStage.DNS_START, domainName);
     }
 
     @Override
     public void dnsEnd(Call call, String domainName, List<InetAddress> inetAddressList) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setDnsEnd(System.currentTimeMillis());
         log(NetworkLogStage.DNS_END, domainName + " -> " + inetAddressList);
     }
 
     @Override
     public void connectStart(Call call, InetSocketAddress inetSocketAddress, Proxy proxy) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setConnectStart(System.currentTimeMillis());
         info.setRemoteAddress(inetSocketAddress.toString());
         log(NetworkLogStage.CONNECT_START, inetSocketAddress + " via " + proxy.type());
@@ -113,12 +145,18 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void secureConnectStart(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setSecureConnectStart(System.currentTimeMillis());
         log(NetworkLogStage.SECURE_CONNECT_START, "TLS handshake start");
     }
 
     @Override
     public void secureConnectEnd(Call call, Handshake handshake) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setSecureConnectEnd(System.currentTimeMillis());
         if (handshake != null) {
             info.setTlsVersion(handshake.tlsVersion().javaName());
@@ -252,6 +290,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void connectEnd(Call call, InetSocketAddress inetSocketAddress, Proxy proxy, Protocol protocol) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setConnectEnd(System.currentTimeMillis());
         info.setProtocol(protocol);
         log(NetworkLogStage.CONNECT_END, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol);
@@ -259,6 +300,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void connectFailed(Call call, InetSocketAddress inetSocketAddress, Proxy proxy, Protocol protocol, IOException ioe) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setConnectEnd(System.currentTimeMillis());
         info.setError(ioe);
         log(NetworkLogStage.CONNECT_FAILED, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol + ", error: " + ioe.getMessage());
@@ -266,6 +310,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void connectionAcquired(Call call, Connection connection) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setConnectionAcquired(System.currentTimeMillis());
         try {
             Socket socket = connection.socket();
@@ -282,24 +329,33 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void connectionReleased(Call call, Connection connection) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setConnectionReleased(System.currentTimeMillis());
         log(NetworkLogStage.CONNECTION_RELEASED, "Connection released: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
     public void requestHeadersStart(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setRequestHeadersStart(System.currentTimeMillis());
         log(NetworkLogStage.REQUEST_HEADERS_START, "");
     }
 
     @Override
     public void requestHeadersEnd(Call call, Request request) {
-        info.setHeaderBytesSent(request.headers().toString().getBytes().length);
+        Headers headers = request.headers();
+        preparedRequest.okHttpHeaders = headers;
+        if (!collectEventInfo) {
+            return;
+        }
+        info.setHeaderBytesSent(headers.toString().getBytes().length);
         info.setRequestHeadersEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        Headers headers = request.headers();
-        preparedRequest.okHttpHeaders = headers;
         for (int i = 0; i < headers.size(); i++) {
             String name = headers.name(i);
             String value = headers.value(i);
@@ -314,7 +370,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestBodyStart(Call call) {
-        info.setRequestBodyStart(System.currentTimeMillis());
+        if (collectEventInfo) {
+            info.setRequestBodyStart(System.currentTimeMillis());
+        }
         Request request = call.request();
         if (request.body() != null) {
             MediaType contentType = request.body().contentType();
@@ -370,14 +428,19 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestBodyEnd(Call call, long byteCount) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setBodyBytesSent(byteCount);
         info.setRequestBodyEnd(System.currentTimeMillis());
         log(NetworkLogStage.REQUEST_BODY_END, "bytes=" + byteCount);
     }
 
-
     @Override
     public void requestFailed(Call call, IOException ioe) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
         log(NetworkLogStage.REQUEST_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
@@ -385,12 +448,18 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseHeadersStart(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setResponseHeadersStart(System.currentTimeMillis());
         log(NetworkLogStage.RESPONSE_HEADERS_START, "");
     }
 
     @Override
     public void responseHeadersEnd(Call call, Response response) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setHeaderBytesReceived(response.headers().toString().getBytes().length);
         info.setResponseHeadersEnd(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder("\n");
@@ -439,20 +508,28 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseBodyStart(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setResponseBodyStart(System.currentTimeMillis());
         log(NetworkLogStage.RESPONSE_BODY_START, "");
     }
 
     @Override
     public void responseBodyEnd(Call call, long byteCount) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setBodyBytesReceived(byteCount);
         info.setResponseBodyEnd(System.currentTimeMillis());
         log(NetworkLogStage.RESPONSE_BODY_END, "bytes=" + byteCount);
-
     }
 
     @Override
     public void responseFailed(Call call, IOException ioe) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
@@ -461,12 +538,18 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void callEnd(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setCallEnd(System.currentTimeMillis());
         log(NetworkLogStage.CALL_END, "done");
     }
 
     @Override
     public void callFailed(Call call, IOException ioe) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setCallFailed(System.currentTimeMillis());
         info.setErrorMessage(ioe.getMessage());
         info.setError(ioe);
@@ -476,6 +559,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void canceled(Call call) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setCanceled(System.currentTimeMillis());
         log(NetworkLogStage.CANCELED, "Call was canceled");
     }
@@ -483,6 +569,9 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void satisfactionFailure(Call call, Response response) {
+        if (!collectEventInfo) {
+            return;
+        }
         info.setErrorMessage("Response does not satisfy request: " + response.code() + " " + response.message());
         log(NetworkLogStage.SATISFACTION_FAILURE, "Response does not satisfy request: " + response.code() + " " + response.message());
     }
@@ -490,16 +579,25 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void cacheHit(Call call, Response response) {
+        if (!enableNetworkLog) {
+            return;
+        }
         log(NetworkLogStage.CACHE_HIT, "Response served from cache: " + response.code() + " " + response.message());
     }
 
     @Override
     public void cacheMiss(Call call) {
+        if (!enableNetworkLog) {
+            return;
+        }
         log(NetworkLogStage.CACHE_MISS, "No cache hit for this call");
     }
 
     @Override
     public void cacheConditionalHit(Call call, Response cachedResponse) {
+        if (!enableNetworkLog) {
+            return;
+        }
         log(NetworkLogStage.CACHE_CONDITIONAL_HIT, "Response served from conditional cache: " + cachedResponse.code() + " " + cachedResponse.message());
     }
 

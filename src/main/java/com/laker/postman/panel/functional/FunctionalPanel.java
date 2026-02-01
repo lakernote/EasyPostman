@@ -404,6 +404,12 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
         PreparedRequest req = PreparedRequestBuilder.build(item);
+
+        // Functional 场景：收集完整信息（用于结果展示），但不输出 UI 日志
+        req.collectBasicInfo = true;   // 收集 headers、body
+        req.collectEventInfo = true;   // 收集完整事件信息（DNS、连接时间等），用于结果表格展示
+        req.enableNetworkLog = false;  // 不输出 NetworkLogPanel，避免 UI 开销
+
         result.req = req;
         // 每次执行前清理临时变量
         EnvironmentService.clearTemporaryVariables();
@@ -438,7 +444,6 @@ public class FunctionalPanel extends SingletonBasePanel {
             status = ERROR;
         } else {
             try {
-                req.logEvent = true; // 确保日志事件开启
                 resp = HttpSingleRequestExecutor.executeHttp(req);
                 status = String.valueOf(resp.code); // HTTP状态码
 

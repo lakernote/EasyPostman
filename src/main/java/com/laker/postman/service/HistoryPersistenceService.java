@@ -3,13 +3,13 @@ package com.laker.postman.service;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -265,7 +265,6 @@ public class HistoryPersistenceService {
         requestJson.set("body", requestBody);
         requestJson.set("id", item.request.id);
         requestJson.set("followRedirects", item.request.followRedirects);
-        requestJson.set("logEvent", item.request.logEvent);
         requestJson.set("isMultipart", item.request.isMultipart);
 
         // 请求头 - 优先保存实际发送的okHttpHeaders
@@ -370,7 +369,6 @@ public class HistoryPersistenceService {
         request.okHttpRequestBody = request.body;
         request.id = requestJson.getStr("id");
         request.followRedirects = requestJson.getBool("followRedirects", true);
-        request.logEvent = requestJson.getBool("logEvent", false);
         request.isMultipart = requestJson.getBool("isMultipart", false);
 
         // 重建请求头 - 构建 okHttpHeaders 供 HttpHtmlRenderer 使用

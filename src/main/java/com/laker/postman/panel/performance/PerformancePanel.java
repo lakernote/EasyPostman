@@ -1658,7 +1658,11 @@ public class PerformancePanel extends SingletonBasePanel {
 
             if (preOk && running) {  // 执行HTTP请求前再次检查running状态
                 try {
-                    req.logEvent = SettingManager.isPerformanceEventLoggingEnabled(); // 根据设置决定是否记录事件日志
+                    // Performance 场景：精细化控制事件收集
+                    req.collectBasicInfo = true; // 始终收集基本信息（headers、body），用于结果展示
+                    req.collectEventInfo = SettingManager.isPerformanceEventLoggingEnabled(); // 根据设置决定是否收集完整事件信息
+                    req.enableNetworkLog = false; // 压测场景不输出 NetworkLog，避免 UI 线程阻塞
+
                     resp = HttpSingleRequestExecutor.executeHttp(req);
                 } catch (Exception ex) {
                     // 检查是否是被取消/中断的请求
@@ -1759,6 +1763,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 req.simplify();  // 移除 id, body, bodyType, headersList, paramsList
                 if (resp != null) {
                     resp.simplify();  // 移除 filePath, fileName
+                    if (!req.collectEventInfo) {
+                        resp.httpEventInfo = null;
+                    }
                 }
 
                 performanceResultTablePanel.addResult(

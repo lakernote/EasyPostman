@@ -23,7 +23,11 @@ public class PreparedRequest {
 
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
-    public boolean logEvent = false; // 默认不记录事件日志
+
+    // 事件监听控制（精细化控制）
+    public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
+    public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
+    public boolean enableNetworkLog = false; // 启用网络日志面板输出，默认关闭
 
     // 脚本字段（已应用 group 继承）
     public String prescript;
@@ -47,7 +51,9 @@ public class PreparedRequest {
         copy.okHttpRequestBody = this.okHttpRequestBody;
         copy.isMultipart = this.isMultipart;
         copy.followRedirects = this.followRedirects;
-        copy.logEvent = this.logEvent;
+        copy.collectBasicInfo = this.collectBasicInfo;
+        copy.collectEventInfo = this.collectEventInfo;
+        copy.enableNetworkLog = this.enableNetworkLog;
         copy.prescript = this.prescript;
         copy.postscript = this.postscript;
         copy.headersList = this.headersList;

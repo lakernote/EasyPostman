@@ -27,7 +27,11 @@ public class RedirectHandler {
     public static HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects, SseResEventListener callback) throws Exception {
         // 创建工作副本
         PreparedRequest workingReq = req.shallowCopy();
-        workingReq.logEvent = true; // 记录事件日志
+
+        // Collection 场景：启用完整的事件收集和日志输出
+        workingReq.collectBasicInfo = true;  // 收集基本信息（headers、body）
+        workingReq.collectEventInfo = true;  // 收集完整事件信息（DNS、连接等）
+        workingReq.enableNetworkLog = true;  // 启用网络日志面板输出
 
         URL prevUrl = new URL(workingReq.url);
         int redirectCount = 0;

@@ -39,14 +39,35 @@ public class HttpService {
      * - 压缩前体积先被记录。
      * - br/deflate/gzip 都能自动解压。
      * - 业务逻辑拦截器可安全处理解压后的响应体。
+     * <p>
+     * EasyConsoleEventListener 精细化控制说明：
+     * - collectBasicInfo: 收集基本信息（headers、body），用于历史记录、HTML 渲染
+     * - collectEventInfo: 收集完整事件信息（DNS、连接、SSL等），用于性能分析
+     * - enableNetworkLog: 输出到 NetworkLogPanel，用于调试
+     * <p>
+     * 优化：只有至少一个开关为 true 时才创建 EventListener
+     * - 如果三个开关都为 false，则不创建 EventListener（最小性能开销）
+     * <p>
+     * 各场景配置：
+     * - Collection: collectBasicInfo=true, collectEventInfo=true, enableNetworkLog=true (全功能)
+     * - Functional: collectBasicInfo=true, collectEventInfo=true, enableNetworkLog=false (不输出UI日志)
+     * - Performance: collectBasicInfo=true, collectEventInfo=可选, enableNetworkLog=false (根据设置)
      */
     private static OkHttpClient buildDynamicClient(OkHttpClient baseClient, PreparedRequest preparedRequest, int timeoutMs) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
         // 添加自动解压拦截器
         builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
-        if (preparedRequest.logEvent) {
+
+        // 只有至少需要一种信息收集时才创建 EventListener
+        // 如果三个开关都是 false，则不创建（最小性能开销）
+        boolean needEventListener = preparedRequest.collectBasicInfo
+                || preparedRequest.collectEventInfo
+                || preparedRequest.enableNetworkLog;
+
+        if (needEventListener) {
             builder.eventListenerFactory(call -> new EasyConsoleEventListener(preparedRequest));
         }
+
         if (timeoutMs > 0) {
             builder.connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)

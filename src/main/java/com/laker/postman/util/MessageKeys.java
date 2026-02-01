@@ -320,6 +320,10 @@ public final class MessageKeys {
     public static final String ENV_BUTTON_DUPLICATE = "env.button.duplicate";
     public static final String ENV_BUTTON_DELETE = "env.button.delete";
     public static final String ENV_BUTTON_EXPORT_POSTMAN = "env.button.export_postman";
+    public static final String ENV_BULK_EDIT = "env.bulk.edit";
+    public static final String ENV_BULK_EDIT_VARIABLES = "env.bulk.edit.variables";
+    public static final String ENV_BULK_EDIT_HINT = "env.bulk.edit.hint";
+    public static final String ENV_BULK_EDIT_SUPPORTED_FORMATS = "env.bulk.edit.supported.formats";
     public static final String ENV_MENU_IMPORT_EASY = "env.menu.import_easy";
     public static final String ENV_MENU_IMPORT_POSTMAN = "env.menu.import_postman";
     public static final String ENV_MENU_IMPORT_INTELLIJ = "env.menu.import_intellij";

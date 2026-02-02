@@ -8,40 +8,73 @@ import java.awt.*;
 
 /**
  * 智能值列单元格编辑器
- * 根据内容长度自动选择：
+ * <p>
+ * 根据内容长度自动选择编辑器：
  * - 短文本：单行 TextField
- * - 长文本（超出列宽）：多行 TextArea（自动撑开行高）
+ * - 长文本（超出列宽）或包含换行符：多行 TextArea（自动撑开行高）
+ * <p>
+ * 特性：
+ * - 自动检测文本长度，超出列宽时使用多行编辑器
+ * - 支持换行符的文本编辑
+ * - 编辑时自动撑开行高，结束时恢复
+ * - 保护期机制防止行高撑开时意外关闭编辑器
  */
 public class EasySmartValueCellEditor extends AbstractCellEditor implements TableCellEditor {
+    /** 单行文本编辑器 */
     protected EasyTextField textField;
+
+    /** 多行文本编辑器 */
     private JTextArea textArea;
+
+    /** 多行编辑器的滚动面板 */
     private JScrollPane scrollPane;
+
+    /** 当前是否使用多行编辑器 */
     private boolean isMultiLine;
+
+    /** 当前正在编辑的表格 */
     private JTable currentTable;
+
+    /** 当前正在编辑的行 */
     private int currentRow;
+
+    /** 原始行高（用于恢复） */
     private int originalRowHeight;
+
+    /** 行高是否已撑开 */
+    private boolean rowHeightExpanded = false;
+
+    /** 最后一次撑开行高的时间戳 */
+    private long lastExpandTime = 0;
+
+    /** 撑开后的保护期时长（毫秒），防止意外关闭编辑器 */
+    private static final long EXPAND_PROTECTION_MS = 200;
 
     public EasySmartValueCellEditor() {
         this(true);
     }
 
     /**
-     * @param enableAutoMultiLine 是否启用自动多行编辑（根据内容长度）
+     * 构造函数
+     *
+     * @param enableAutoMultiLine 是否启用自动多行编辑（根据内容长度判断）
      */
     public EasySmartValueCellEditor(boolean enableAutoMultiLine) {
-        this.textField = new EasyTextField(1); // 单行文本框
-        this.textField.setBorder(null); // 去掉边框，和表格样式一致
+        // 初始化单行编辑器
+        this.textField = new EasyTextField(1);
+        this.textField.setBorder(null);
 
         // 初始化多行编辑器
         if (enableAutoMultiLine) {
             this.textArea = new JTextArea();
-            this.textArea.setLineWrap(true); // 自动换行
-            this.textArea.setWrapStyleWord(true); // 按单词换行
-            this.textArea.setFont(textField.getFont()); // 统一字体
-            this.scrollPane = new JScrollPane(textArea); // 包裹在滚动面板中
-            this.scrollPane.setBorder(null); // 去掉边框
-            this.scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED); // 根据需要显示垂直滚动条
-            this.scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 不显示水平滚动条
+            this.textArea.setLineWrap(true);
+            this.textArea.setWrapStyleWord(true);
+            this.textArea.setFont(textField.getFont());
+
+            this.scrollPane = new JScrollPane(textArea);
+            this.scrollPane.setBorder(null);
+            this.scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            this.scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         }
     }
 
@@ -70,8 +103,39 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
             int lines = Math.min(5, Math.max(2, countLines(text, table, column)));
             textArea.setRows(lines);
 
-            // 🔑 关键：撑开行高以适应多行内容
-            expandRowHeight(table, row, lines);
+            // 检查当前行高是否已经撑开
+            int currentRowHeight = table.getRowHeight(row);
+            boolean alreadyExpanded = currentRowHeight > 28;
+
+            // 只在未撑开时才撑开行高
+            if (!alreadyExpanded) {
+                // 保存原始行高并计算新行高
+                this.originalRowHeight = currentRowHeight;
+                FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
+                int lineHeight = fm.getHeight();
+                int padding = 20;
+                int calculatedHeight = lineHeight * lines + padding;
+                int minHeight = lines <= 2 ? 50 : 70;
+                int newHeight = Math.max(minHeight, calculatedHeight);
+
+                // 立即撑开行高，但延迟 revalidate
+                table.setRowHeight(row, newHeight);
+                rowHeightExpanded = true;
+                lastExpandTime = System.currentTimeMillis();
+
+                // 延迟更新布局，等待编辑器组件完全显示后再更新
+                // 双重 invokeLater 确保编辑器完全初始化
+                SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(() -> {
+                    if (currentTable != null && rowHeightExpanded) {
+                        currentTable.revalidate();
+                        currentTable.repaint();
+                    }
+                }));
+            } else {
+                // 行高已经撑开，不需要再次撑开，但需要标记为已撑开状态
+                this.originalRowHeight = 28;
+                rowHeightExpanded = true;
+            }
 
             return scrollPane;
         } else {
@@ -79,60 +143,84 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
             isMultiLine = false;
             textField.setText(text);
 
-            // 恢复默认行高
-            restoreRowHeight(table, row);
-
             return textField;
         }
     }
 
-    /**
-     * 撑开行高以适应多行编辑器
-     */
-    private void expandRowHeight(JTable table, int row, int lines) {
-        // 保存原始行高
-        this.originalRowHeight = table.getRowHeight(row);
 
-        // 计算新的行高：基础高度 + 行数 * 行高
-        FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
-        int lineHeight = fm.getHeight();
-        // 根据行数动态设置最小高度：2行时至少40px，3行及以上至少60px
-        int minHeight = lines <= 2 ? 40 : 60;
-        int padding = 10; // 上下边距
-        int newHeight = Math.max(minHeight, lineHeight * lines + padding);
-
-        // 设置新行高
-        table.setRowHeight(row, newHeight);
-    }
-
-    /**
-     * 恢复默认行高
-     */
-    private void restoreRowHeight(JTable table, int row) {
-        if (originalRowHeight > 0) {
-            table.setRowHeight(row, originalRowHeight);
-        } else {
-            // 恢复为默认行高
-            table.setRowHeight(row, table.getRowHeight());
-        }
-    }
 
     @Override
     public boolean stopCellEditing() {
-        // 停止编辑时恢复行高
-        if (currentTable != null && currentRow >= 0 && isMultiLine) {
-            restoreRowHeight(currentTable, currentRow);
+        // 保护期：如果刚撑开行高（<200ms），拒绝停止编辑
+        if (rowHeightExpanded && lastExpandTime > 0) {
+            long elapsed = System.currentTimeMillis() - lastExpandTime;
+            if (elapsed < EXPAND_PROTECTION_MS) {
+                return false; // 拒绝停止编辑
+            }
         }
+
+        // 恢复行高
+        if (currentTable != null && currentRow >= 0 && rowHeightExpanded) {
+            restoreRowHeight(currentTable, currentRow);
+            rowHeightExpanded = false;
+            lastExpandTime = 0;
+        }
+
         return super.stopCellEditing();
     }
 
     @Override
     public void cancelCellEditing() {
-        // 取消编辑时恢复行高
-        if (currentTable != null && currentRow >= 0 && isMultiLine) {
-            restoreRowHeight(currentTable, currentRow);
+        // 保护期：如果刚撑开行高，不恢复行高，尝试重启编辑
+        if (rowHeightExpanded && lastExpandTime > 0) {
+            long elapsed = System.currentTimeMillis() - lastExpandTime;
+            if (elapsed < EXPAND_PROTECTION_MS) {
+                // 保存信息用于重启
+                final JTable table = currentTable;
+                final int row = currentRow;
+                final int col = 2; // Value 列固定为 2
+
+                super.cancelCellEditing(); // 完成取消
+
+                // 延迟重启编辑
+                SwingUtilities.invokeLater(() -> {
+                    if (table != null) {
+                        table.editCellAt(row, col);
+                        Component editor = table.getEditorComponent();
+                        if (editor != null) {
+                            editor.requestFocusInWindow();
+                        }
+                    }
+                });
+                return; // 不恢复行高
+            }
         }
+
+        // 正常情况：恢复行高
+        if (currentTable != null && currentRow >= 0 && rowHeightExpanded) {
+            restoreRowHeight(currentTable, currentRow);
+            rowHeightExpanded = false;
+            lastExpandTime = 0;
+        }
+
         super.cancelCellEditing();
+    }
+
+    /**
+     * 恢复行高到原始值
+     */
+    private void restoreRowHeight(JTable table, int row) {
+        if (originalRowHeight > 0) {
+            table.setRowHeight(row, originalRowHeight);
+        }
+
+        // 异步更新布局
+        SwingUtilities.invokeLater(() -> {
+            table.revalidate();
+            table.repaint();
+        });
+
+        originalRowHeight = 0;
     }
 
     /**

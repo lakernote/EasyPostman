@@ -12,8 +12,9 @@ import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePa
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.service.VariableResolver;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.*;
+import com.laker.postman.util.VariableParser;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -312,11 +313,10 @@ public class RequestBodyPanel extends JPanel {
             void updateHighlights() {
                 highlighter.removeAllHighlights();
                 String text = bodyArea.getText();
-                java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
+                java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
                     // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
-                    boolean isDefined = VariableResolver.isVariableDefined(seg.name)
-                            || VariableUtil.isBuiltInFunction(seg.name);
+                    boolean isDefined = VariableResolver.isVariableDefined(seg.name);
                     try {
                         highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
                     } catch (BadLocationException ignored) {
@@ -339,11 +339,10 @@ public class RequestBodyPanel extends JPanel {
         // 初始化高亮
         SwingUtilities.invokeLater(() -> {
             String text = bodyArea.getText();
-            java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
+            java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
             for (VariableSegment seg : segments) {
                 // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
-                boolean isDefined = VariableResolver.isVariableDefined(seg.name)
-                        || VariableUtil.isBuiltInFunction(seg.name);
+                boolean isDefined = VariableResolver.isVariableDefined(seg.name);
                 try {
                     highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
                 } catch (BadLocationException ignored) {
@@ -356,17 +355,15 @@ public class RequestBodyPanel extends JPanel {
             public void mouseMoved(MouseEvent e) {
                 int pos = bodyArea.viewToModel2D(e.getPoint());
                 String text = bodyArea.getText();
-                java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
+                java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
                     if (pos >= seg.start && pos <= seg.end) {
                         String varName = seg.name;
 
                         // 检查是否是内置函数
-                        if (VariableUtil.isBuiltInFunction(varName)) {
-                            String desc = currentVariables != null ?
-                                    currentVariables.get(varName) :
-                                    "Dynamic function generates value at runtime";
-                            bodyArea.setToolTipText(buildTooltip(varName, desc, true, true));
+                        if (VariableResolver.isVariableDefined(varName)) {
+                            String value = VariableResolver.resolveVariable(varName);
+                            bodyArea.setToolTipText(buildTooltip(varName, value, true, true));
                             return;
                         }
 

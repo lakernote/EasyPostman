@@ -7,6 +7,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;

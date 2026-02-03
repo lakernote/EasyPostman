@@ -2,9 +2,10 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.service.VariableResolver;
+import com.laker.postman.service.variable.VariableResolver;
+import com.laker.postman.service.variable.BuiltInFunctionService;
 import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.VariableUtil;
+import com.laker.postman.util.VariableParser;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -92,7 +93,7 @@ public class EasyTextField extends FlatTextField {
         super.paintComponent(g);
 
         String value = getText();
-        List<VariableSegment> segments = VariableUtil.getVariableSegments(value);
+        List<VariableSegment> segments = VariableParser.getVariableSegments(value);
         if (segments.isEmpty()) return;
 
         try {
@@ -117,8 +118,7 @@ public class EasyTextField extends FlatTextField {
                     x += w;
                 }
                 // 判断变量状态：环境变量、临时变量或内置函数
-                boolean isDefined = VariableResolver.isVariableDefined(seg.name)
-                        || VariableUtil.isBuiltInFunction(seg.name);
+                boolean isDefined = VariableResolver.isVariableDefined(seg.name);
                 Color bgColor = isDefined ? DEFINED_VAR_BG : UNDEFINED_VAR_BG;
                 Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
                 String varText = value.substring(seg.start, seg.end);
@@ -617,7 +617,7 @@ public class EasyTextField extends FlatTextField {
     @Override
     public String getToolTipText(MouseEvent event) {
         String value = getText();
-        List<VariableSegment> segments = VariableUtil.getVariableSegments(value);
+        List<VariableSegment> segments = VariableParser.getVariableSegments(value);
         if (segments.isEmpty()) return super.getToolTipText(event);
 
         try {
@@ -645,7 +645,7 @@ public class EasyTextField extends FlatTextField {
                     String varName = seg.name;
 
                     // 检查是否是内置函数
-                    if (VariableUtil.isBuiltInFunction(varName)) {
+                    if (BuiltInFunctionService.getInstance().isBuiltInFunction(varName)) {
                         String desc = currentVariables != null ?
                                 currentVariables.get(varName) :
                                 "Dynamic function generates value at runtime";

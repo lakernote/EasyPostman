@@ -7,7 +7,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.VariableResolver;
+import com.laker.postman.service.variable.VariableResolver;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

@@ -288,13 +288,13 @@ public class PreparedRequestBuilder {
         replaceVariablesInHeadersList(req.headersList);
         replaceVariablesInFormDataList(req.formDataList);
         replaceVariablesInUrlencodedList(req.urlencodedList);
-        replaceVariablesInParamsList(req.paramsList);
 
-        // 重新构建 URL（包含脚本动态添加的 params）
-        rebuildUrlWithParams(req);
-
-        // 替换URL中的变量
+        // 先替换 URL 和 paramsList 中的变量，然后再重建 URL
+        // 这样可以避免重复参数的问题（例如：URL 中有 {{a}}=3，paramsList 中也有 {{a}}=3）
         req.url = VariableResolver.resolve(req.url);
+        replaceVariablesInParamsList(req.paramsList);
+        // 此时 URL 和 paramsList 中的变量都已替换，buildUrlWithParams 可以正确检测重复
+        rebuildUrlWithParams(req);
 
         // 替换Body中的变量
         req.body = VariableResolver.resolve(req.body);

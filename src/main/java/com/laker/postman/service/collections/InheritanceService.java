@@ -45,23 +45,11 @@ public class InheritanceService {
     }
 
     /**
-     * 应用分组继承规则
-     * <p>
-     * 核心入口方法，统一处理所有继承逻辑
-     *
-     * @param item 原始请求项
-     * @return 应用了继承后的请求项（新对象），如果不需要继承则返回原对象
-     */
-    public HttpRequestItem applyInheritance(HttpRequestItem item) {
-        return applyInheritance(item, true);
-    }
-
-    /**
      * 应用分组继承规则（可选是否使用缓存）
      * <p>
      * 用于处理未保存的请求（如 UI 中修改但未保存）
      *
-     * @param item 原始请求项
+     * @param item     原始请求项
      * @param useCache 是否使用缓存
      * @return 应用了继承后的请求项（新对象），如果不需要继承则返回原对象
      */

@@ -27,7 +27,6 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.PerformancePersistenceService;
-import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -35,6 +34,7 @@ import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
@@ -1619,8 +1619,7 @@ public class PerformancePanel extends SingletonBasePanel {
             }
             // ====== 前置脚本 ======
             // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-            // useCache=true：使用缓存，压测时需要高性能
-            req = PreparedRequestBuilder.build(jtNode.httpRequestItem, true);
+            req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
 
             // 创建脚本执行流水线（使用 req 中合并后的脚本）
             ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()

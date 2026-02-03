@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.laker.postman.common.constants.HttpConstants.HEADER_AUTHORIZATION;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
 
@@ -22,9 +23,6 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 @UtilityClass
 public class PreparedRequestBuilder {
 
-    // ==================== 常量定义 ====================
-
-    private static final String HEADER_AUTHORIZATION = "Authorization";
 
     /**
      * 负责所有继承逻辑和缓存管理
@@ -116,6 +114,27 @@ public class PreparedRequestBuilder {
         return req;
     }
 
+
+    /**
+     * 在前置脚本执行后，替换所有变量占位符
+     */
+    public static void replaceVariablesAfterPreScript(PreparedRequest req) {
+        // 替换 List 中的变量，支持相同 key
+        replaceVariablesInHeadersList(req.headersList);
+        replaceVariablesInFormDataList(req.formDataList);
+        replaceVariablesInUrlencodedList(req.urlencodedList);
+
+        // 先替换 URL 和 paramsList 中的变量，然后再重建 URL
+        // 这样可以避免重复参数的问题（例如：URL 中有 {{a}}=3，paramsList 中也有 {{a}}=3）
+        req.url = VariableResolver.resolve(req.url);
+        replaceVariablesInParamsList(req.paramsList);
+        // 此时 URL 和 paramsList 中的变量都已替换，buildUrlWithParams 可以正确检测重复
+        rebuildUrlWithParams(req);
+
+        // 替换Body中的变量
+        req.body = VariableResolver.resolve(req.body);
+    }
+
     /**
      * 构建包含参数的 URL（暂不替换变量）
      */
@@ -149,26 +168,6 @@ public class PreparedRequestBuilder {
     }
 
     /**
-     * 应用 group 继承规则
-     * <p>
-     * 尝试从 Collections 树中查找该请求，如果找到则应用父级 group 的配置（认证、脚本、请求头）。
-     * 如果请求不在 Collections 中（例如来自 Functional/Performance 的独立请求），则直接返回原始请求。
-     * <p>
-     * 使用场景：
-     * - Collections 面板：在执行请求前应用继承
-     * - Functional 面板：在执行批量测试前应用继承
-     * - Performance 面板：在执行压测前应用继承
-     * <p>
-     * 新架构：完全委托给 InheritanceService
-     *
-     * @param item 原始请求项
-     * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
-     */
-    public static HttpRequestItem applyGroupInheritance(HttpRequestItem item) {
-        return applyGroupInheritance(item, true);
-    }
-
-    /**
      * 应用 group 继承规则（可选是否使用缓存）
      * <p>
      * 用于处理未保存的请求（如 UI 中修改但未保存）
@@ -177,7 +176,7 @@ public class PreparedRequestBuilder {
      * @param useCache 是否使用缓存
      * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
      */
-    public static HttpRequestItem applyGroupInheritance(HttpRequestItem item, boolean useCache) {
+    private static HttpRequestItem applyGroupInheritance(HttpRequestItem item, boolean useCache) {
         return inheritanceService.applyInheritance(item, useCache);
     }
 
@@ -271,25 +270,6 @@ public class PreparedRequestBuilder {
         return authHeader;
     }
 
-    /**
-     * 在前置脚本执行后，替换所有变量占位符
-     */
-    public static void replaceVariablesAfterPreScript(PreparedRequest req) {
-        // 替换 List 中的变量，支持相同 key
-        replaceVariablesInHeadersList(req.headersList);
-        replaceVariablesInFormDataList(req.formDataList);
-        replaceVariablesInUrlencodedList(req.urlencodedList);
-
-        // 先替换 URL 和 paramsList 中的变量，然后再重建 URL
-        // 这样可以避免重复参数的问题（例如：URL 中有 {{a}}=3，paramsList 中也有 {{a}}=3）
-        req.url = VariableResolver.resolve(req.url);
-        replaceVariablesInParamsList(req.paramsList);
-        // 此时 URL 和 paramsList 中的变量都已替换，buildUrlWithParams 可以正确检测重复
-        rebuildUrlWithParams(req);
-
-        // 替换Body中的变量
-        req.body = VariableResolver.resolve(req.body);
-    }
 
     /**
      * 重新构建 URL，包含脚本中动态添加的 params

@@ -15,7 +15,6 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -27,6 +26,7 @@ import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -484,8 +484,7 @@ public class RequestEditSubPanel extends JPanel {
                             return null;
                         }
                     }
-
-                    req = PreparedRequestBuilder.build(item, false);
+                    req = PreparedRequestBuilder.build(item, !isModified()); // 仅当未修改时使用缓存
                     effectiveItem = item; // 保持兼容性
 
                     // 创建脚本执行流水线（使用 req 中合并后的脚本）

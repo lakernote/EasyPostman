@@ -403,7 +403,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         HttpRequestItem item = row.requestItem;
 
         // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-        PreparedRequest req = PreparedRequestBuilder.build(item);
+        PreparedRequest req = PreparedRequestBuilder.build(item, true);
 
         // Functional 场景：收集完整信息（用于结果展示），但不输出 UI 日志
         req.collectBasicInfo = true;   // 收集 headers、body
@@ -743,7 +743,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     public void loadRequests(List<HttpRequestItem> requests) {
         for (HttpRequestItem item : requests) {
             // build() 会自动应用 group 继承
-            PreparedRequest req = PreparedRequestBuilder.build(item);
+            PreparedRequest req = PreparedRequestBuilder.build(item, true);
             tableModel.addRow(new RunnerRowData(item, req));
         }
         table.setEnabled(true);
@@ -818,7 +818,7 @@ public class FunctionalPanel extends SingletonBasePanel {
                 // 更新请求数据
                 try {
                     // build() 会自动应用 group 继承
-                    PreparedRequest preparedRequest = PreparedRequestBuilder.build(latestRequestItem);
+                    PreparedRequest preparedRequest = PreparedRequestBuilder.build(latestRequestItem, true);
                     row.requestItem = latestRequestItem;
                     row.preparedRequest = preparedRequest;
                     row.name = latestRequestItem.getName();

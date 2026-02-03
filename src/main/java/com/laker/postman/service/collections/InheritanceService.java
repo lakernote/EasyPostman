@@ -64,13 +64,26 @@ public class InheritanceService {
      * @return 应用了继承后的请求项（新对象），如果不需要继承则返回原对象
      */
     public HttpRequestItem applyInheritance(HttpRequestItem item) {
+        return applyInheritance(item, true);
+    }
+
+    /**
+     * 应用分组继承规则（可选是否使用缓存）
+     * <p>
+     * 用于处理未保存的请求（如 UI 中修改但未保存）
+     *
+     * @param item 原始请求项
+     * @param useCache 是否使用缓存
+     * @return 应用了继承后的请求项（新对象），如果不需要继承则返回原对象
+     */
+    public HttpRequestItem applyInheritance(HttpRequestItem item, boolean useCache) {
         if (item == null) {
             return null;
         }
 
-        // 1. 检查缓存
+        // 1. 如果使用缓存，先检查缓存
         String requestId = item.getId();
-        if (requestId != null) {
+        if (useCache && requestId != null) {
             Optional<HttpRequestItem> cached = cache.get(requestId);
             if (cached.isPresent()) {
                 log.trace("缓存命中: {}", item.getName());
@@ -78,11 +91,11 @@ public class InheritanceService {
             }
         }
 
-        // 2. 缓存未命中，执行继承计算
+        // 2. 缓存未命中或不使用缓存，执行继承计算
         HttpRequestItem result = applyInheritanceInternal(item);
 
-        // 3. 缓存结果
-        if (requestId != null && result != null) {
+        // 3. 如果使用缓存，缓存结果
+        if (useCache && requestId != null && result != null) {
             cache.put(requestId, result);
         }
 

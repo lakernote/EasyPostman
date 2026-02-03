@@ -16,7 +16,6 @@ import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -486,8 +485,7 @@ public class RequestEditSubPanel extends JPanel {
                         }
                     }
 
-                    // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-                    req = PreparedRequestBuilder.build(item);
+                    req = PreparedRequestBuilder.build(item, false);
                     effectiveItem = item; // 保持兼容性
 
                     // 创建脚本执行流水线（使用 req 中合并后的脚本）

@@ -239,6 +239,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
         userObj[1] = item;
         treeModel.nodeChanged(requestNode);
+
+        PreparedRequestBuilder.invalidateCacheForRequest(item.getId());
+
         persistence.saveRequestGroups();
         // 保存后去除Tab红点
         SwingUtilities.invokeLater(() -> {

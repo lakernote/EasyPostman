@@ -1619,7 +1619,8 @@ public class PerformancePanel extends SingletonBasePanel {
             }
             // ====== 前置脚本 ======
             // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-            req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
+            // useCache=true：使用缓存，压测时需要高性能
+            req = PreparedRequestBuilder.build(jtNode.httpRequestItem, true);
 
             // 创建脚本执行流水线（使用 req 中合并后的脚本）
             ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()

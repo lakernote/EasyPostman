@@ -46,6 +46,26 @@ public class PreparedRequestBuilder {
         inheritanceService.invalidateCache();
     }
 
+    /**
+     * 使特定请求的缓存失效（精细化缓存控制）
+     * <p>
+     * 调用时机：仅修改单个请求时
+     *
+     * @param requestId 请求ID
+     */
+    public static void invalidateCacheForRequest(String requestId) {
+        inheritanceService.invalidateCache(requestId);
+    }
+
+    /**
+     * 获取缓存统计信息（用于监控和调试）
+     *
+     * @return 统计信息字符串
+     */
+    public static String getCacheStats() {
+        return inheritanceService.getCacheStats();
+    }
+
 
     /**
      * 构建 PreparedRequest
@@ -53,13 +73,30 @@ public class PreparedRequestBuilder {
      * 自动应用 group 继承规则：
      * - 如果请求来自 Collections，会自动合并父级 group 的配置（认证、脚本、请求头）
      * - 合并后的脚本会存储在 PreparedRequest 中，供后续使用
+     * <p>
+     * 智能缓存：
+     * - 如果请求在 Collections 中，使用缓存（基于保存的版本）
+     * - 如果请求可能被修改但未保存（来自 UI），不使用缓存
      *
      * @param item 请求项
      * @return 构建好的 PreparedRequest（包含合并后的脚本）
      */
     public static PreparedRequest build(HttpRequestItem item) {
+        return build(item, true); // 默认使用缓存
+    }
+
+    /**
+     * 构建 PreparedRequest（可选是否使用缓存）
+     * <p>
+     * 用于处理未保存的请求（如 UI 中修改但未保存到 Collections）
+     *
+     * @param item 请求项
+     * @param useCache 是否使用缓存（false 表示强制重新计算继承）
+     * @return 构建好的 PreparedRequest（包含合并后的脚本）
+     */
+    public static PreparedRequest build(HttpRequestItem item, boolean useCache) {
         // 1. 先应用 group 继承（如果适用）
-        HttpRequestItem effectiveItem = applyGroupInheritance(item);
+        HttpRequestItem effectiveItem = applyGroupInheritance(item, useCache);
 
         // 2. 构建 PreparedRequest
         PreparedRequest req = new PreparedRequest();
@@ -137,7 +174,20 @@ public class PreparedRequestBuilder {
      * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
      */
     public static HttpRequestItem applyGroupInheritance(HttpRequestItem item) {
-        return inheritanceService.applyInheritance(item);
+        return applyGroupInheritance(item, true);
+    }
+
+    /**
+     * 应用 group 继承规则（可选是否使用缓存）
+     * <p>
+     * 用于处理未保存的请求（如 UI 中修改但未保存）
+     *
+     * @param item 原始请求项
+     * @param useCache 是否使用缓存
+     * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
+     */
+    public static HttpRequestItem applyGroupInheritance(HttpRequestItem item, boolean useCache) {
+        return inheritanceService.applyInheritance(item, useCache);
     }
 
     /**

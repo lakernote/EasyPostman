@@ -80,6 +80,10 @@ public class RequestTreeActions {
 
         leftPanel.getTreeModel().reload(parentNode);
         requestTree.expandPath(new TreePath(parentNode.getPath()));
+
+        // 缓存失效（新增分组可能影响子请求的继承）
+        PreparedRequestBuilder.invalidateCache();
+
         leftPanel.getPersistence().saveRequestGroups();
     }
 
@@ -158,6 +162,10 @@ public class RequestTreeActions {
             obj[1] = new RequestGroup(newName);
         }
         leftPanel.getTreeModel().nodeChanged(node);
+
+        // 缓存失效（分组名称改变会影响脚本注释）
+        PreparedRequestBuilder.invalidateCache();
+
         leftPanel.getPersistence().saveRequestGroups();
     }
 
@@ -358,6 +366,9 @@ public class RequestTreeActions {
         if (tabbedPane.getTabCount() > 1) {
             tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
         }
+
+        // 缓存失效（删除节点可能影响树结构）
+        PreparedRequestBuilder.invalidateCache();
 
         leftPanel.getPersistence().saveRequestGroups();
     }
@@ -605,6 +616,10 @@ public class RequestTreeActions {
             parent.insert(copyNode, idx);
             leftPanel.getTreeModel().reload(parent);
             requestTree.expandPath(new TreePath(parent.getPath()));
+
+            // 缓存失效（复制分组可能影响树结构）
+            PreparedRequestBuilder.invalidateCache();
+
             leftPanel.getPersistence().saveRequestGroups();
         }
     }
@@ -699,6 +714,10 @@ public class RequestTreeActions {
         if (parent != null) {
             parent.remove(collectionNode);
             leftPanel.getTreeModel().reload();
+
+            // 缓存失效（移动集合会改变树结构）
+            PreparedRequestBuilder.invalidateCache();
+
             leftPanel.getPersistence().saveRequestGroups();
         }
 

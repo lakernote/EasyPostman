@@ -9,6 +9,7 @@ import com.laker.postman.model.RequestGroup;
 import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
+import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -365,6 +366,9 @@ public class GroupEditPanel extends JPanel {
         group.setPrescript(scriptPanel.getPrescript());
         group.setPostscript(scriptPanel.getPostscript());
         group.setHeaders(headersPanel.getHeadersList());
+
+        // ⚡ 重要：使缓存失效，确保分组修改立即生效
+        PreparedRequestBuilder.invalidateCache();
 
         // 通知保存完成（触发持久化）
         if (onSave != null) {

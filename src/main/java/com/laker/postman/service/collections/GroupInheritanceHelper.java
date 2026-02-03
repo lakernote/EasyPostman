@@ -100,13 +100,18 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 收集分组设置、脚本和请求头
+     * 收集分组设置、脚本和请求头（优化版：使用迭代代替递归）
      * <p>
      * 核心策略：
      * - 认证：就近原则，找到第一个有认证的分组就停止
      * - 前置脚本：从外到内收集（外层先执行）
      * - 后置脚本：从内到外收集（内层先执行）
      * - 请求头：从外到内收集（内层覆盖外层）
+     * <p>
+     * 优化点：
+     * - 使用迭代代替递归，避免栈溢出
+     * - 减少树节点访问次数
+     * - 提前终止不必要的遍历
      */
     private static void collectGroupSettings(
             HttpRequestItem item,
@@ -119,76 +124,141 @@ public class GroupInheritanceHelper {
             return;
         }
 
-        Object userObj = groupNode.getUserObject();
-        if (!(userObj instanceof Object[] obj) || !"group".equals(obj[0])) {
-            // 不是分组节点，继续向上递归
-            TreeNode parent = groupNode.getParent();
-            if (parent instanceof DefaultMutableTreeNode parentNode &&
-                    !"root".equals(String.valueOf(parentNode.getUserObject()))) {
-                collectGroupSettings(item, parentNode, preScripts, postScripts, headers);
+        // 第一步：从当前节点向上收集所有分组节点（外层到内层）
+        List<RequestGroup> groupChain = collectGroupChain(groupNode);
+
+        if (groupChain.isEmpty()) {
+            return;
+        }
+
+        // 第二步：应用认证继承（就近原则：从内到外查找第一个有认证的分组）
+        applyAuthInheritance(item, groupChain);
+
+        // 第三步：收集脚本和请求头
+        collectScriptsAndHeaders(groupChain, preScripts, postScripts, headers);
+    }
+
+    /**
+     * 收集分组链（从外到内）
+     */
+    private static List<RequestGroup> collectGroupChain(DefaultMutableTreeNode startNode) {
+        List<RequestGroup> groupChain = new ArrayList<>();
+        TreeNode currentNode = startNode;
+
+        while (currentNode != null) {
+            Object userObj = ((DefaultMutableTreeNode) currentNode).getUserObject();
+
+            // 检查是否是根节点
+            if ("root".equals(String.valueOf(userObj))) {
+                break;
             }
-            return;
+
+            // 检查是否是分组节点
+            if (userObj instanceof Object[] obj && "group".equals(obj[0])) {
+                Object groupData = obj[1];
+                if (groupData instanceof RequestGroup group) {
+                    groupChain.add(0, group); // 插入到列表头部，保持外层到内层的顺序
+                }
+            }
+
+            currentNode = currentNode.getParent();
         }
 
-        Object groupData = obj[1];
-        if (!(groupData instanceof RequestGroup group)) {
-            return;
+        return groupChain;
+    }
+
+    /**
+     * 应用认证继承（就近原则：从内到外查找第一个有认证的分组）
+     */
+    private static void applyAuthInheritance(HttpRequestItem item, List<RequestGroup> groupChain) {
+        if (!AuthType.INHERIT.getConstant().equals(item.getAuthType())) {
+            return; // 不需要继承认证
         }
 
-        // 【认证】就近原则：内层优先，一旦找到有认证的分组就设置并停止继承
-        if (AuthType.INHERIT.getConstant().equals(item.getAuthType()) && group.hasAuth()) {
-            item.setAuthType(group.getAuthType());
-            item.setAuthUsername(group.getAuthUsername());
-            item.setAuthPassword(group.getAuthPassword());
-            item.setAuthToken(group.getAuthToken());
-        }
-
-        // 先递归处理父分组（外层）
-        TreeNode parent = groupNode.getParent();
-        if (parent instanceof DefaultMutableTreeNode parentNode &&
-                !"root".equals(String.valueOf(parentNode.getUserObject()))) {
-            collectGroupSettings(item, parentNode, preScripts, postScripts, headers);
-        }
-
-        // 【前置脚本】在递归返回后添加（这样外层脚本在列表前面，内层在后面）
-        if (group.hasPreScript()) {
-            preScripts.add(ScriptFragment.of(group.getName() + " script", group.getPrescript()));
-        }
-
-        // 【后置脚本】在递归返回后添加（这样内层脚本在列表前面，外层在后面）
-        if (group.hasPostScript()) {
-            postScripts.add(ScriptFragment.of(group.getName() + " script", group.getPostscript()));
-        }
-
-        // 【请求头】在递归返回后添加（这样外层请求头在列表前面，内层在后面）
-        // 后续合并时会按顺序处理，内层覆盖外层的同名请求头
-        if (group.hasHeaders() && CollUtil.isNotEmpty(group.getHeaders())) {
-            headers.addAll(group.getHeaders());
+        // 从内到外查找第一个有认证的分组
+        for (int i = groupChain.size() - 1; i >= 0; i--) {
+            RequestGroup group = groupChain.get(i);
+            if (group.hasAuth()) {
+                item.setAuthType(group.getAuthType());
+                item.setAuthUsername(group.getAuthUsername());
+                item.setAuthPassword(group.getAuthPassword());
+                item.setAuthToken(group.getAuthToken());
+                return; // 找到后立即返回
+            }
         }
     }
 
     /**
-     * 克隆请求对象（浅拷贝，足够用于临时合并）
+     * 收集脚本和请求头
+     */
+    private static void collectScriptsAndHeaders(
+            List<RequestGroup> groupChain,
+            List<ScriptFragment> preScripts,
+            List<ScriptFragment> postScripts,
+            List<HttpHeader> headers) {
+
+        // 【前置脚本】外层到内层顺序添加
+        for (RequestGroup group : groupChain) {
+            if (group.hasPreScript()) {
+                preScripts.add(ScriptFragment.of(group.getName() + " PreScript", group.getPrescript()));
+            }
+        }
+
+        // 【后置脚本】内层到外层顺序添加（反向遍历）
+        for (int i = groupChain.size() - 1; i >= 0; i--) {
+            RequestGroup group = groupChain.get(i);
+            if (group.hasPostScript()) {
+                postScripts.add(ScriptFragment.of(group.getName() + " PostScript", group.getPostscript()));
+            }
+        }
+
+        // 【请求头】外层到内层顺序添加（后续合并时内层覆盖外层）
+        for (RequestGroup group : groupChain) {
+            if (group.hasHeaders() && CollUtil.isNotEmpty(group.getHeaders())) {
+                headers.addAll(group.getHeaders());
+            }
+        }
+    }
+
+    /**
+     * 克隆请求对象（深拷贝关键字段，避免修改原对象）
+     * <p>
+     * 优化点：
+     * - 对集合类字段进行深拷贝，避免修改原对象
+     * - 使用链式调用提高可读性
      */
     private static HttpRequestItem cloneRequest(HttpRequestItem item) {
         HttpRequestItem clone = new HttpRequestItem();
+
+        // 基本字段
         clone.setId(item.getId());
         clone.setName(item.getName());
         clone.setUrl(item.getUrl());
         clone.setMethod(item.getMethod());
         clone.setProtocol(item.getProtocol());
-        clone.setHeadersList(item.getHeadersList());
         clone.setBodyType(item.getBodyType());
         clone.setBody(item.getBody());
-        clone.setParamsList(item.getParamsList());
-        clone.setFormDataList(item.getFormDataList());
-        clone.setUrlencodedList(item.getUrlencodedList());
+
+        // 认证字段
         clone.setAuthType(item.getAuthType());
         clone.setAuthUsername(item.getAuthUsername());
         clone.setAuthPassword(item.getAuthPassword());
         clone.setAuthToken(item.getAuthToken());
+
+        // 脚本字段
         clone.setPrescript(item.getPrescript());
         clone.setPostscript(item.getPostscript());
+
+        // 集合字段（深拷贝以避免修改原对象）
+        clone.setHeadersList(item.getHeadersList() != null ?
+            new ArrayList<>(item.getHeadersList()) : new ArrayList<>());
+        clone.setParamsList(item.getParamsList() != null ?
+            new ArrayList<>(item.getParamsList()) : new ArrayList<>());
+        clone.setFormDataList(item.getFormDataList() != null ?
+            new ArrayList<>(item.getFormDataList()) : new ArrayList<>());
+        clone.setUrlencodedList(item.getUrlencodedList() != null ?
+            new ArrayList<>(item.getUrlencodedList()) : new ArrayList<>());
+
         return clone;
     }
 
@@ -265,37 +335,65 @@ public class GroupInheritanceHelper {
      * - Group B: [X-API-Key: key2, Content-Type: json]
      * - Request: [X-API-Key: key3, Custom: value]
      * - 结果: [Accept: *, Content-Type: json, X-API-Key: key3, Custom: value]
+     * <p>
+     * 优化点：
+     * - 提前返回空情况
+     * - 预估容量减少扩容
+     * - 批量过滤无效请求头
      *
      * @param groupHeaders   Group 级别的请求头列表（已按从外到内排序）
      * @param requestHeaders Request 级别的请求头列表
      * @return 合并后的请求头列表
      */
     private static List<HttpHeader> mergeHeaders(List<HttpHeader> groupHeaders, List<HttpHeader> requestHeaders) {
+        boolean hasGroupHeaders = CollUtil.isNotEmpty(groupHeaders);
+        boolean hasRequestHeaders = CollUtil.isNotEmpty(requestHeaders);
+
+        // 优化：提前返回空情况
+        if (!hasGroupHeaders && !hasRequestHeaders) {
+            return new ArrayList<>();
+        }
+
+        if (!hasGroupHeaders) {
+            return new ArrayList<>(requestHeaders);
+        }
+
+        if (!hasRequestHeaders) {
+            return new ArrayList<>(groupHeaders);
+        }
+
         // 使用 LinkedHashMap 保持插入顺序，同时支持覆盖
         // Key 使用小写以实现不区分大小写的匹配
-        Map<String, HttpHeader> mergedMap = new LinkedHashMap<>();
+        // 预估容量以减少扩容
+        int estimatedSize = groupHeaders.size() + requestHeaders.size();
+        Map<String, HttpHeader> mergedMap = new LinkedHashMap<>((int) (estimatedSize / 0.75) + 1);
 
         // 1. 先添加 Group 级别的请求头（外层到内层）
-        if (CollUtil.isNotEmpty(groupHeaders)) {
-            for (HttpHeader header : groupHeaders) {
-                if (header != null && header.getKey() != null && !header.getKey().trim().isEmpty()) {
-                    String keyLower = header.getKey().toLowerCase();
-                    mergedMap.put(keyLower, header);
-                }
+        for (HttpHeader header : groupHeaders) {
+            if (isValidHeader(header)) {
+                String keyLower = header.getKey().toLowerCase();
+                mergedMap.put(keyLower, header);
             }
         }
 
         // 2. 再添加 Request 级别的请求头（覆盖同名的 Group 请求头）
-        if (CollUtil.isNotEmpty(requestHeaders)) {
-            for (HttpHeader header : requestHeaders) {
-                if (header != null && header.getKey() != null && !header.getKey().trim().isEmpty()) {
-                    String keyLower = header.getKey().toLowerCase();
-                    mergedMap.put(keyLower, header);
-                }
+        for (HttpHeader header : requestHeaders) {
+            if (isValidHeader(header)) {
+                String keyLower = header.getKey().toLowerCase();
+                mergedMap.put(keyLower, header);
             }
         }
 
         // 3. 返回合并后的列表
         return new ArrayList<>(mergedMap.values());
+    }
+
+    /**
+     * 验证请求头是否有效
+     */
+    private static boolean isValidHeader(HttpHeader header) {
+        return header != null &&
+               header.getKey() != null &&
+               !header.getKey().trim().isEmpty();
     }
 }

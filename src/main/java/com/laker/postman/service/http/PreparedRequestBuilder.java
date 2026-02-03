@@ -27,6 +27,10 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 @UtilityClass
 public class PreparedRequestBuilder {
 
+    // ==================== 常量定义 ====================
+
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+
     // ==================== 预计算缓存（方案B：性能优化） ====================
 
     /**
@@ -65,9 +69,36 @@ public class PreparedRequestBuilder {
     public static void invalidateCache() {
         long oldVersion = cacheVersion.get();
         long newVersion = cacheVersion.incrementAndGet();
-        log.debug("预计算缓存已失效：版本 {} -> {}", oldVersion, newVersion);
-        // 可选：清空缓存以释放内存（懒加载会重新计算）
-        effectiveItemCache.clear();
+        effectiveItemCache.clear(); // 清空缓存以释放内存
+        log.debug("预计算缓存已失效：版本 {} -> {}",
+            oldVersion, newVersion);
+    }
+
+    /**
+     * 使特定请求的缓存失效（精细化缓存控制）
+     * 调用时机：仅修改单个请求时
+     *
+     * @param requestId 请求ID
+     */
+    @SuppressWarnings("unused") // 公共 API，供未来使用
+    public static void invalidateCacheForRequest(String requestId) {
+        if (requestId != null) {
+            CachedEffectiveItem removed = effectiveItemCache.remove(requestId);
+            if (removed != null) {
+                log.debug("请求缓存已失效：{}", requestId);
+            }
+        }
+    }
+
+    /**
+     * 获取缓存统计信息（用于监控和调试）
+     *
+     * @return 格式：版本号=x, 缓存项=y
+     */
+    @SuppressWarnings("unused") // 公共 API，供未来使用
+    public static String getCacheStats() {
+        return String.format("版本号=%d, 缓存项=%d",
+            cacheVersion.get(), effectiveItemCache.size());
     }
 
     /**
@@ -88,42 +119,17 @@ public class PreparedRequestBuilder {
         PreparedRequest req = new PreparedRequest();
         req.id = effectiveItem.getId();
         req.method = effectiveItem.getMethod();
-
-        // 拼接 params 到 url，但暂不替换变量
-        // Build params map from paramsList
-        Map<String, String> params = new LinkedHashMap<>();
-        if (effectiveItem.getParamsList() != null) {
-            for (HttpParam param : effectiveItem.getParamsList()) {
-                if (param.isEnabled()) {
-                    params.put(param.getKey(), param.getValue());
-                }
-            }
-        }
-        String urlString = HttpRequestUtil.buildUrlWithParams(effectiveItem.getUrl(), params);
-        req.url = HttpRequestUtil.encodeUrlParams(urlString); // 暂不替换变量
-
-        req.body = effectiveItem.getBody(); // 暂不替换变量
+        req.body = effectiveItem.getBody();
         req.bodyType = effectiveItem.getBodyType();
 
-        // 根据 formDataList 判断是否是 multipart
-        boolean hasFormData = false;
-        boolean hasFormFiles = false;
-        if (effectiveItem.getFormDataList() != null) {
-            for (HttpFormData data : effectiveItem.getFormDataList()) {
-                if (data.isEnabled()) {
-                    if (data.isText()) {
-                        hasFormData = true;
-                    } else if (data.isFile()) {
-                        hasFormFiles = true;
-                    }
-                }
-            }
-        }
-        req.isMultipart = hasFormData || hasFormFiles;
+        // 构建 URL（拼接参数但暂不替换变量）
+        req.url = buildUrlWithParams(effectiveItem);
+
+        // 判断是否为 multipart 请求
+        req.isMultipart = checkIsMultipart(effectiveItem.getFormDataList());
         req.followRedirects = SettingManager.isFollowRedirects();
 
         // 填充 List 数据，支持相同 key
-        // 先复制原始 headersList，然后添加认证头
         req.headersList = buildHeadersListWithAuth(effectiveItem);
         req.formDataList = effectiveItem.getFormDataList();
         req.urlencodedList = effectiveItem.getUrlencodedList();
@@ -134,6 +140,38 @@ public class PreparedRequestBuilder {
         req.postscript = effectiveItem.getPostscript();
 
         return req;
+    }
+
+    /**
+     * 构建包含参数的 URL（暂不替换变量）
+     */
+    private static String buildUrlWithParams(HttpRequestItem item) {
+        Map<String, String> params = new LinkedHashMap<>();
+        if (item.getParamsList() != null) {
+            for (HttpParam param : item.getParamsList()) {
+                if (param.isEnabled()) {
+                    params.put(param.getKey(), param.getValue());
+                }
+            }
+        }
+        String urlString = HttpRequestUtil.buildUrlWithParams(item.getUrl(), params);
+        return HttpRequestUtil.encodeUrlParams(urlString);
+    }
+
+    /**
+     * 检查是否为 multipart 请求
+     */
+    private static boolean checkIsMultipart(List<HttpFormData> formDataList) {
+        if (formDataList == null) {
+            return false;
+        }
+
+        for (HttpFormData data : formDataList) {
+            if (data.isEnabled() && (data.isText() || data.isFile())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -222,6 +260,10 @@ public class PreparedRequestBuilder {
     /**
      * 构建包含认证信息的 headersList
      * 如果配置了认证，会自动添加 Authorization 头（如果不存在）
+     * <p>
+     * 优化点：
+     * - 提前判断认证类型，避免不必要的遍历
+     * - 使用 Stream API 简化代码
      */
     private static List<HttpHeader> buildHeadersListWithAuth(HttpRequestItem item) {
         List<HttpHeader> headersList = new ArrayList<>();
@@ -231,46 +273,78 @@ public class PreparedRequestBuilder {
             headersList.addAll(item.getHeadersList());
         }
 
-        // 检查是否已有 Authorization 头
-        boolean hasAuthHeader = false;
-        if (item.getHeadersList() != null) {
-            for (HttpHeader header : item.getHeadersList()) {
-                if (header.isEnabled() && "Authorization".equalsIgnoreCase(header.getKey())) {
-                    hasAuthHeader = true;
-                    break;
-                }
-            }
+        // 提前判断：如果认证类型无效，直接返回
+        String authType = item.getAuthType();
+        if (authType == null ||
+            (!AUTH_TYPE_BASIC.equals(authType) && !AUTH_TYPE_BEARER.equals(authType))) {
+            return headersList;
         }
 
-        // 如果没有 Authorization 头，根据 authType 添加
-        if (!hasAuthHeader) {
-            String authType = item.getAuthType();
-            if (AUTH_TYPE_BASIC.equals(authType)) {
-                String username = EnvironmentService.replaceVariables(item.getAuthUsername());
-                String password = EnvironmentService.replaceVariables(item.getAuthPassword());
-                if (username != null) {
-                    String token = java.util.Base64.getEncoder().encodeToString(
-                            (username + ":" + (password == null ? "" : password)).getBytes()
-                    );
-                    HttpHeader authHeader = new HttpHeader();
-                    authHeader.setKey("Authorization");
-                    authHeader.setValue("Basic " + token);
-                    authHeader.setEnabled(true);
-                    headersList.add(authHeader);
-                }
-            } else if (AUTH_TYPE_BEARER.equals(authType)) {
-                String token = EnvironmentService.replaceVariables(item.getAuthToken());
-                if (token != null && !token.isEmpty()) {
-                    HttpHeader authHeader = new HttpHeader();
-                    authHeader.setKey("Authorization");
-                    authHeader.setValue("Bearer " + token);
-                    authHeader.setEnabled(true);
-                    headersList.add(authHeader);
-                }
-            }
+        // 检查是否已有 Authorization 头（使用 Stream API）
+        boolean hasAuthHeader = item.getHeadersList() != null &&
+            item.getHeadersList().stream()
+                .anyMatch(h -> h.isEnabled() && HEADER_AUTHORIZATION.equalsIgnoreCase(h.getKey()));
+
+        // 如果已有 Authorization 头，直接返回
+        if (hasAuthHeader) {
+            return headersList;
+        }
+
+        // 添加认证头
+        HttpHeader authHeader = createAuthHeader(item, authType);
+        if (authHeader != null) {
+            headersList.add(authHeader);
         }
 
         return headersList;
+    }
+
+    /**
+     * 创建认证头
+     */
+    private static HttpHeader createAuthHeader(HttpRequestItem item, String authType) {
+        if (AUTH_TYPE_BASIC.equals(authType)) {
+            return createBasicAuthHeader(item);
+        } else if (AUTH_TYPE_BEARER.equals(authType)) {
+            return createBearerAuthHeader(item);
+        }
+        return null;
+    }
+
+    /**
+     * 创建 Basic 认证头
+     */
+    private static HttpHeader createBasicAuthHeader(HttpRequestItem item) {
+        String username = EnvironmentService.replaceVariables(item.getAuthUsername());
+        if (username == null || username.isEmpty()) {
+            return null;
+        }
+
+        String password = EnvironmentService.replaceVariables(item.getAuthPassword());
+        String credentials = username + ":" + (password == null ? "" : password);
+        String token = java.util.Base64.getEncoder().encodeToString(credentials.getBytes());
+
+        HttpHeader authHeader = new HttpHeader();
+        authHeader.setKey(HEADER_AUTHORIZATION);
+        authHeader.setValue("Basic " + token);
+        authHeader.setEnabled(true);
+        return authHeader;
+    }
+
+    /**
+     * 创建 Bearer 认证头
+     */
+    private static HttpHeader createBearerAuthHeader(HttpRequestItem item) {
+        String token = EnvironmentService.replaceVariables(item.getAuthToken());
+        if (token == null || token.isEmpty()) {
+            return null;
+        }
+
+        HttpHeader authHeader = new HttpHeader();
+        authHeader.setKey(HEADER_AUTHORIZATION);
+        authHeader.setValue("Bearer " + token);
+        authHeader.setEnabled(true);
+        return authHeader;
     }
 
     /**

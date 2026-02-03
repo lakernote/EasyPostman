@@ -190,37 +190,9 @@ public class CsvDataPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // 列数输入
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.3;
-        JLabel columnCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_COLUMN_COUNT));
-        columnCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        contentPanel.add(columnCountLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 0.7;
-        JTextField columnCountField = new JTextField("3");
-        columnCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        contentPanel.add(columnCountField, gbc);
-
-        // 行数输入
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0.3;
-        JLabel rowCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_ROW_COUNT));
-        rowCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        contentPanel.add(rowCountLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 0.7;
-        JTextField rowCountField = new JTextField("5");
-        rowCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        contentPanel.add(rowCountField, gbc);
-
         // 列标题输入
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 0;
         gbc.weightx = 0.3;
         JLabel headersLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_COLUMN_HEADERS));
         headersLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -235,11 +207,25 @@ public class CsvDataPanel extends JPanel {
 
         // 占位符提示
         gbc.gridx = 1;
-        gbc.gridy = 3;
+        gbc.gridy = 1;
         JLabel placeholderLabel = new JLabel("eg: username,password,email");
         placeholderLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2)); // 比标准字体小2号
         placeholderLabel.setForeground(ModernColors.getTextHint());
         contentPanel.add(placeholderLabel, gbc);
+
+        // 行数输入
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.3;
+        JLabel rowCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_ROW_COUNT));
+        rowCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        contentPanel.add(rowCountLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        JTextField rowCountField = new JTextField("5");
+        rowCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        contentPanel.add(rowCountField, gbc);
 
         dialog.add(contentPanel, BorderLayout.CENTER);
 
@@ -250,19 +236,6 @@ public class CsvDataPanel extends JPanel {
         JButton createBtn = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         createBtn.addActionListener(e -> {
             try {
-                // 验证列数
-                int columnCount;
-                try {
-                    columnCount = Integer.parseInt(columnCountField.getText().trim());
-                    if (columnCount < 1 || columnCount > 50) {
-                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_INVALID_COLUMN_COUNT));
-                        return;
-                    }
-                } catch (NumberFormatException ex) {
-                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_INVALID_COLUMN_COUNT));
-                    return;
-                }
-
                 // 验证行数
                 int rowCount;
                 try {
@@ -279,24 +252,30 @@ public class CsvDataPanel extends JPanel {
                 // 处理列标题
                 List<String> headers = new ArrayList<>();
                 String headersText = headersField.getText().trim();
-                if (CharSequenceUtil.isNotBlank(headersText)) {
-                    // 用户指定了列标题
-                    String[] headerArray = headersText.split(",");
-                    for (String header : headerArray) {
-                        headers.add(header.trim());
-                    }
+                if (CharSequenceUtil.isBlank(headersText)) {
+                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
+                    return;
+                }
 
-                    // 验证列标题数量
-                    if (headers.size() != columnCount) {
-                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_MISMATCH,
-                                headers.size(), columnCount));
-                        return;
+                // 解析列标题
+                String[] headerArray = headersText.split(",");
+                for (String header : headerArray) {
+                    String trimmedHeader = header.trim();
+                    if (CharSequenceUtil.isNotBlank(trimmedHeader)) {
+                        headers.add(trimmedHeader);
                     }
-                } else {
-                    // 自动生成列标题
-                    for (int i = 1; i <= columnCount; i++) {
-                        headers.add("Column" + i);
-                    }
+                }
+
+                if (headers.isEmpty()) {
+                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
+                    return;
+                }
+
+                // 验证列数范围（从列标题自动计算）
+                int columnCount = headers.size();
+                if (columnCount > 50) {
+                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_TOO_MANY_COLUMNS, columnCount));
+                    return;
                 }
 
                 // 创建空数据

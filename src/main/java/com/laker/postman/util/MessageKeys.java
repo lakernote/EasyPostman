@@ -917,12 +917,11 @@ public final class MessageKeys {
     public static final String CSV_FILE_NOT_CSV = "csv.file_not_csv";
     public static final String CSV_CREATE_MANUAL_DIALOG_TITLE = "csv.create_manual.dialog_title";
     public static final String CSV_CREATE_MANUAL_DESCRIPTION = "csv.create_manual.description";
-    public static final String CSV_CREATE_MANUAL_COLUMN_COUNT = "csv.create_manual.column_count";
     public static final String CSV_CREATE_MANUAL_ROW_COUNT = "csv.create_manual.row_count";
     public static final String CSV_CREATE_MANUAL_COLUMN_HEADERS = "csv.create_manual.column_headers";
-    public static final String CSV_CREATE_MANUAL_INVALID_COLUMN_COUNT = "csv.create_manual.invalid_column_count";
     public static final String CSV_CREATE_MANUAL_INVALID_ROW_COUNT = "csv.create_manual.invalid_row_count";
-    public static final String CSV_CREATE_MANUAL_HEADERS_MISMATCH = "csv.create_manual.headers_mismatch";
+    public static final String CSV_CREATE_MANUAL_HEADERS_REQUIRED = "csv.create_manual.headers_required";
+    public static final String CSV_CREATE_MANUAL_TOO_MANY_COLUMNS = "csv.create_manual.too_many_columns";
 
     // ============ OkHttpResponseHandler ============
     public static final String DOWNLOAD_PROGRESS_TITLE = "download.progress.title";

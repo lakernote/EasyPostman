@@ -28,6 +28,8 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.PerformancePersistenceService;
+import com.laker.postman.service.VariableResolver;
+import com.laker.postman.service.VariableResolver;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -1606,7 +1608,7 @@ public class PerformancePanel extends SingletonBasePanel {
             List<TestResult> testResults = new ArrayList<>();
 
             // 清理上次的临时变量
-            EnvironmentService.clearTemporaryVariables();
+            VariableResolver.clearTemporaryVariables();
 
             // ====== CSV变量注入 ======
             Map<String, String> csvRow = null;

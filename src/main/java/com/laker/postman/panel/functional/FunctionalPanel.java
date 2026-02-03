@@ -15,6 +15,8 @@ import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.FunctionalPersistenceService;
+import com.laker.postman.service.VariableResolver;
+import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -412,7 +414,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         result.req = req;
         // 每次执行前清理临时变量
-        EnvironmentService.clearTemporaryVariables();
+        VariableResolver.clearTemporaryVariables();
 
         // 创建脚本执行流水线（使用 req 中合并后的脚本）
         ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()

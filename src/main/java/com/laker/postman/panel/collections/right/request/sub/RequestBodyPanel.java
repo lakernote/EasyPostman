@@ -12,6 +12,7 @@ import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePa
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
+import com.laker.postman.service.VariableResolver;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -314,7 +315,7 @@ public class RequestBodyPanel extends JPanel {
                 java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
                     // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
-                    boolean isDefined = VariableUtil.isVariableDefined(seg.name)
+                    boolean isDefined = VariableResolver.isVariableDefined(seg.name)
                             || VariableUtil.isBuiltInFunction(seg.name);
                     try {
                         highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
@@ -341,7 +342,7 @@ public class RequestBodyPanel extends JPanel {
             java.util.List<VariableSegment> segments = VariableUtil.getVariableSegments(text);
             for (VariableSegment seg : segments) {
                 // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
-                boolean isDefined = VariableUtil.isVariableDefined(seg.name)
+                boolean isDefined = VariableResolver.isVariableDefined(seg.name)
                         || VariableUtil.isBuiltInFunction(seg.name);
                 try {
                     highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
@@ -370,7 +371,7 @@ public class RequestBodyPanel extends JPanel {
                         }
 
                         // 环境变量
-                        String varValue = VariableUtil.getVariableValue(varName);
+                        String varValue = VariableResolver.resolveVariable(varName);
                         if (varValue != null) {
                             bodyArea.setToolTipText(buildTooltip(varName, varValue, false, true));
                         } else {
@@ -800,7 +801,7 @@ public class RequestBodyPanel extends JPanel {
         String prefix = text.substring(openBracePos + 2, caretPos);
 
         // 过滤变量列表
-        currentVariables = VariableUtil.filterVariables(prefix);
+        currentVariables = VariableResolver.filterVariables(prefix);
 
         if (currentVariables.isEmpty()) {
             hideAutocomplete();

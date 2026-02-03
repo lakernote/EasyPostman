@@ -1,8 +1,6 @@
 package com.laker.postman.util;
 
-import com.laker.postman.model.Environment;
 import com.laker.postman.model.VariableSegment;
-import com.laker.postman.service.EnvironmentService;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -57,46 +55,15 @@ public class VariableUtil {
         return segments;
     }
 
-    public static boolean isVariableDefined(String varName) {
-        if (varName == null) return false;
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        return activeEnv != null && activeEnv.getVariable(varName) != null;
-    }
-
-    public static String getVariableValue(String varName) {
-        if (varName == null) return null;
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        if (activeEnv != null && activeEnv.getVariable(varName) != null) {
-            Object v = activeEnv.getVariable(varName);
-            return v == null ? null : v.toString();
-        }
-        return null;
-    }
-
     /**
-     * 获取所有可用的变量（包括环境变量和内置函数）
-     * 返回 Map<变量名, 变量值或描述>
+     * 获取所有内置函数（返回函数名和描述）
      */
-    public static Map<String, String> getAllAvailableVariables() {
-        Map<String, String> allVars = new LinkedHashMap<>();
-
-        // 添加当前激活环境的变量
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
-        if (activeEnv != null && activeEnv.getVariables() != null) {
-            for (Map.Entry<String, String> entry : activeEnv.getVariables().entrySet()) {
-                String value = entry.getValue();
-                // 如果值太长，截断显示
-                if (value != null && value.length() > 50) {
-                    value = value.substring(0, 47) + "...";
-                }
-                allVars.put(entry.getKey(), value);
-            }
-        }
-        // 添加内置函数
+    public static Map<String, String> getAllBuiltInFunctions() {
+        Map<String, String> functions = new LinkedHashMap<>();
         for (String func : BUILT_IN_FUNCTIONS) {
-            allVars.put(func, getBuiltInFunctionDescription(func));
+            functions.put(func, getBuiltInFunctionDescription(func));
         }
-        return allVars;
+        return functions;
     }
 
     /**
@@ -111,24 +78,6 @@ public class VariableUtil {
         }
     }
 
-    /**
-     * 根据前缀过滤变量列表
-     */
-    public static Map<String, String> filterVariables(String prefix) {
-        Map<String, String> allVars = getAllAvailableVariables();
-        if (prefix == null || prefix.isEmpty()) {
-            return allVars;
-        }
-
-        Map<String, String> filtered = new LinkedHashMap<>();
-        String lowerPrefix = prefix.toLowerCase();
-        for (Map.Entry<String, String> entry : allVars.entrySet()) {
-            if (entry.getKey().toLowerCase().startsWith(lowerPrefix)) {
-                filtered.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return filtered;
-    }
 
     /**
      * 判断是否是内置函数

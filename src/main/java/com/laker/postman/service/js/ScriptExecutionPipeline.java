@@ -7,6 +7,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.VariableResolver;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -197,21 +198,16 @@ public class ScriptExecutionPipeline {
         if (csvData != null && !csvData.isEmpty()) {
             PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
             if (pm != null) {
+                // 设置 CSV 数据到 pm.variables
                 for (Map.Entry<String, String> entry : csvData.entrySet()) {
                     pm.variables.set(entry.getKey(), entry.getValue());
                 }
+
+                // 同步到 VariableResolver，以便在 HTTP 请求变量替换时使用
+                VariableResolver.setAllTemporaryVariables(csvData);
+                log.debug("已同步 {} 个 CSV 变量到 VariableResolver", csvData.size());
             }
         }
-    }
-
-    /**
-     * 获取 PostmanApiContext
-     */
-    public PostmanApiContext getPostmanContext() {
-        if (bindings == null) {
-            return null;
-        }
-        return (PostmanApiContext) bindings.get("pm");
     }
 
 

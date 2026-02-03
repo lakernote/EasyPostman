@@ -15,7 +15,7 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.panel.history.HistoryPanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.VariableResolver;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
@@ -470,7 +470,7 @@ public class RequestEditSubPanel extends JPanel {
                     });
 
                     // 清理上次请求的临时变量
-                    EnvironmentService.clearTemporaryVariables();
+                    VariableResolver.clearTemporaryVariables();
 
                     item = getCurrentRequest();
 

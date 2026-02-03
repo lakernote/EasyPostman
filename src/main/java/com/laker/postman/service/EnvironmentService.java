@@ -7,63 +7,33 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.util.VariableUtil;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * 环境变量管理服务，负责环境变量的持久化、加载和处理
+ * 环境变量管理服务，负责环境变量的持久化、加载和管理
  */
 @Slf4j
+@UtilityClass
 public class EnvironmentService {
 
-    private EnvironmentService() {
-        // 工具类不应该被实例化
-    }
-
     private static final Map<String, Environment> environments = Collections.synchronizedMap(new LinkedHashMap<>());
-    /**
-     * -- GETTER --
-     * 获取当前激活的环境
-     */
+
     @Getter
     private static Environment activeEnvironment = null;
 
-    private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{(.+?)}}");
-
-    // 临时变量，仅本次请求有效，优先级高于环境变量
-    private static final ThreadLocal<Map<String, String>> temporaryVariables = ThreadLocal.withInitial(ConcurrentHashMap::new);
 
     // 当前数据文件路径
     private static String currentDataFilePath;
 
     static {
         loadEnvironments();
-    }
-
-    public static void setTemporaryVariable(String key, String value) {
-        if (value != null) {
-            temporaryVariables.get().put(key, value);
-        } else {
-            temporaryVariables.get().remove(key);
-        }
-    }
-
-    public static String getTemporaryVariable(String key) {
-        return temporaryVariables.get().get(key);
-    }
-
-    public static void clearTemporaryVariables() {
-        temporaryVariables.get().clear();
-        temporaryVariables.remove();
     }
 
     /**
@@ -244,39 +214,15 @@ public class EnvironmentService {
     }
 
     /**
-     * 替换文本中的环境变量占位符
+     * 替换文本中的环境变量占位符 (委托给 VariableResolver)
      * 例如: {{baseUrl}}/api/users -> https://api.example.com/api/users
      * 优先级: 临时变量 > 环境变量 > 内置函数
+     *
+     * @deprecated 请直接使用 VariableResolver.resolve()
      */
+    @Deprecated
     public static String replaceVariables(String text) {
-        if (text == null || text.isEmpty()) {
-            return text;
-        }
-
-        Matcher matcher = VAR_PATTERN.matcher(text);
-        StringBuilder result = new StringBuilder();
-
-        while (matcher.find()) {
-            String varName = matcher.group(1);
-            String value = temporaryVariables.get().get(varName); // 优先查临时变量
-            if (value == null && activeEnvironment != null) {
-                value = activeEnvironment.getVariable(varName);
-            }
-            // 检查是否是内置函数
-            if (value == null && VariableUtil.isBuiltInFunction(varName)) {
-                value = VariableUtil.generateBuiltInFunctionValue(varName);
-            }
-            // 如果变量不存在，保留原样
-            if (value == null) {
-                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(0)));
-            } else {
-                // 使用 Matcher.quoteReplacement 来避免 $ 和 \ 被当作特殊字符处理
-                matcher.appendReplacement(result, Matcher.quoteReplacement(value));
-            }
-        }
-
-        matcher.appendTail(result);
-        return result.toString();
+        return VariableResolver.resolve(text);
     }
 
     /**

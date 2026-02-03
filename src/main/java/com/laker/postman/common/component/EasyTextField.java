@@ -2,6 +2,7 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.model.VariableSegment;
+import com.laker.postman.service.VariableResolver;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.VariableUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -116,7 +117,7 @@ public class EasyTextField extends FlatTextField {
                     x += w;
                 }
                 // 判断变量状态：环境变量、临时变量或内置函数
-                boolean isDefined = VariableUtil.isVariableDefined(seg.name)
+                boolean isDefined = VariableResolver.isVariableDefined(seg.name)
                         || VariableUtil.isBuiltInFunction(seg.name);
                 Color bgColor = isDefined ? DEFINED_VAR_BG : UNDEFINED_VAR_BG;
                 Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
@@ -498,7 +499,7 @@ public class EasyTextField extends FlatTextField {
         String prefix = text.substring(openBracePos + 2, caretPos);
 
         // 过滤变量列表
-        currentVariables = VariableUtil.filterVariables(prefix);
+        currentVariables = VariableResolver.filterVariables(prefix);
 
         if (currentVariables.isEmpty()) {
             hideAutocomplete();
@@ -652,7 +653,7 @@ public class EasyTextField extends FlatTextField {
                     }
 
                     // 环境变量
-                    String varValue = VariableUtil.getVariableValue(varName);
+                    String varValue = VariableResolver.resolveVariable(varName);
                     if (varValue != null) {
                         return buildTooltip(varName, varValue, false, true);
                     } else {

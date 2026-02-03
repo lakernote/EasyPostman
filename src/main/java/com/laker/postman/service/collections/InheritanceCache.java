@@ -20,10 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * - 发送请求前，先查缓存，避免重复计算继承规则
  * - 修改分组设置后，清空缓存，确保数据一致性
  * <p>
- * 实现策略：
- * - 使用 ConcurrentHashMap 保证线程安全
- * - 失效策略：粗粒度全局清空（简单可靠）
- * - 不使用 TTL（由业务层控制失效时机）
  *
  * @author laker
  * @since 4.3.22
@@ -40,16 +36,6 @@ public class InheritanceCache {
      * - 不需要显式加锁
      */
     private final Map<String, HttpRequestItem> cache = new ConcurrentHashMap<>();
-
-    /**
-     * 缓存统计：命中次数
-     */
-    private long hitCount = 0;
-
-    /**
-     * 缓存统计：未命中次数
-     */
-    private long missCount = 0;
 
     /**
      * 获取缓存的请求
@@ -70,13 +56,10 @@ public class InheritanceCache {
         HttpRequestItem cached = cache.get(requestId);
 
         if (cached != null) {
-            hitCount++;
-            log.trace("缓存命中: {}", requestId);
             return Optional.of(cached);
         }
 
-        missCount++;
-        log.trace("缓存未命中: {}", requestId);
+        log.warn("缓存未命中: {}", requestId);
         return Optional.empty();
     }
 
@@ -88,7 +71,7 @@ public class InheritanceCache {
      * 2. 直接放入 Map
      *
      * @param requestId 请求ID
-     * @param item 已应用继承的请求对象
+     * @param item      已应用继承的请求对象
      */
     public void put(String requestId, HttpRequestItem item) {
         if (requestId == null || requestId.trim().isEmpty() || item == null) {
@@ -97,7 +80,7 @@ public class InheritanceCache {
         }
 
         cache.put(requestId, item);
-        log.trace("缓存已存储: {}", requestId);
+        log.info("缓存已存储: {}", requestId);
     }
 
     /**
@@ -164,29 +147,4 @@ public class InheritanceCache {
         return cache.isEmpty();
     }
 
-    /**
-     * 获取缓存统计信息
-     * <p>
-     * 用于监控和调试
-     *
-     * @return 统计信息字符串
-     */
-    public String getStats() {
-        long total = hitCount + missCount;
-        double hitRate = total > 0 ? (double) hitCount / total * 100 : 0;
-
-        return String.format(
-            "缓存项=%d, 命中=%d, 未命中=%d, 命中率=%.1f%%",
-            cache.size(), hitCount, missCount, hitRate
-        );
-    }
-
-    /**
-     * 重置统计信息
-     */
-    public void resetStats() {
-        hitCount = 0;
-        missCount = 0;
-        log.debug("缓存统计信息已重置");
-    }
 }

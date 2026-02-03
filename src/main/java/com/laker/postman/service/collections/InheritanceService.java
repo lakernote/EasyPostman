@@ -31,15 +31,6 @@ public class InheritanceService {
      */
     public InheritanceService() {
         this(new DefaultTreeNodeRepository(), new InheritanceCache());
-
-        // 注册树变更监听器，自动失效缓存
-        treeRepository.registerChangeListener(() -> {
-            cache.clear(); // 简化：直接清空
-            // 同时失效 Repository 的索引
-            if (treeRepository instanceof DefaultTreeNodeRepository repo) {
-                repo.invalidateIndex();
-            }
-        });
     }
 
     /**
@@ -155,23 +146,4 @@ public class InheritanceService {
         log.debug("请求缓存已失效: {}", requestId);
     }
 
-    /**
-     * 获取缓存统计信息
-     *
-     * @return 统计信息
-     */
-    public String getCacheStats() {
-        return cache.getStats();
-    }
-
-    /**
-     * 通知树结构已变更
-     * <p>
-     * 应该在修改树结构后调用，会自动触发缓存失效
-     */
-    public void notifyTreeChanged() {
-        if (treeRepository instanceof DefaultTreeNodeRepository repo) {
-            repo.notifyTreeChanged();
-        }
-    }
 }

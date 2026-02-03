@@ -57,15 +57,6 @@ public class PreparedRequestBuilder {
         inheritanceService.invalidateCache(requestId);
     }
 
-    /**
-     * 获取缓存统计信息（用于监控和调试）
-     *
-     * @return 统计信息字符串
-     */
-    public static String getCacheStats() {
-        return inheritanceService.getCacheStats();
-    }
-
 
     /**
      * 构建 PreparedRequest

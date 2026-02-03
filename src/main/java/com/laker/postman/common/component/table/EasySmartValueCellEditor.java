@@ -20,35 +20,70 @@ import java.awt.*;
  * - 保护期机制防止行高撑开时意外关闭编辑器
  */
 public class EasySmartValueCellEditor extends AbstractCellEditor implements TableCellEditor {
-    /** 单行文本编辑器 */
+    /**
+     * 单行文本编辑器
+     */
     protected EasyTextField textField;
 
-    /** 多行文本编辑器 */
+    /**
+     * 多行文本编辑器
+     */
     private JTextArea textArea;
 
-    /** 多行编辑器的滚动面板 */
+    /**
+     * 多行编辑器的滚动面板
+     */
     private JScrollPane scrollPane;
 
-    /** 当前是否使用多行编辑器 */
+    /**
+     * 当前是否使用多行编辑器
+     */
     private boolean isMultiLine;
 
-    /** 当前正在编辑的表格 */
+    /**
+     * 当前正在编辑的表格
+     */
     private JTable currentTable;
 
-    /** 当前正在编辑的行 */
+    /**
+     * 当前正在编辑的行
+     */
     private int currentRow;
 
-    /** 原始行高（用于恢复） */
+    /**
+     * 原始行高（用于恢复）
+     */
     private int originalRowHeight;
 
-    /** 行高是否已撑开 */
+    /**
+     * 行高是否已撑开
+     */
     private boolean rowHeightExpanded = false;
 
-    /** 最后一次撑开行高的时间戳 */
+    /**
+     * 最后一次撑开行高的时间戳
+     */
     private long lastExpandTime = 0;
 
-    /** 撑开后的保护期时长（毫秒），防止意外关闭编辑器 */
+    /**
+     * 撑开后的保护期时长（毫秒），防止意外关闭编辑器
+     */
     private static final long EXPAND_PROTECTION_MS = 200;
+
+    /**
+     * 多行编辑器的最大行数
+     */
+    private static final int MAX_EDITOR_LINES = 5;
+
+    /**
+     * 多行编辑器的最小行数
+     */
+    private static final int MIN_EDITOR_LINES = 2;
+
+    /**
+     * 默认行高
+     */
+    private static final int DEFAULT_ROW_HEIGHT = 28;
 
     public EasySmartValueCellEditor() {
         this(true);
@@ -67,8 +102,7 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
         // 初始化多行编辑器
         if (enableAutoMultiLine) {
             this.textArea = new JTextArea();
-            this.textArea.setLineWrap(true);
-            this.textArea.setWrapStyleWord(true);
+            this.textArea.setLineWrap(true); // 自动换行
             this.textArea.setFont(textField.getFont());
 
             this.scrollPane = new JScrollPane(textArea);
@@ -94,59 +128,76 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
 
         // 判断是否需要多行编辑
         if (textArea != null && needsMultiLineEdit(text, table, column)) {
-            // 使用多行编辑器
-            isMultiLine = true;
-            textArea.setText(text);
-            textArea.setCaretPosition(0);
-
-            // 设置 TextArea 的行数（最多5行）
-            int lines = Math.min(5, Math.max(2, countLines(text, table, column)));
-            textArea.setRows(lines);
-
-            // 检查当前行高是否已经撑开
-            int currentRowHeight = table.getRowHeight(row);
-            boolean alreadyExpanded = currentRowHeight > 28;
-
-            // 只在未撑开时才撑开行高
-            if (!alreadyExpanded) {
-                // 保存原始行高并计算新行高
-                this.originalRowHeight = currentRowHeight;
-                FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
-                int lineHeight = fm.getHeight();
-                int padding = 20;
-                int calculatedHeight = lineHeight * lines + padding;
-                int minHeight = lines <= 2 ? 50 : 70;
-                int newHeight = Math.max(minHeight, calculatedHeight);
-
-                // 立即撑开行高，但延迟 revalidate
-                table.setRowHeight(row, newHeight);
-                rowHeightExpanded = true;
-                lastExpandTime = System.currentTimeMillis();
-
-                // 延迟更新布局，等待编辑器组件完全显示后再更新
-                // 双重 invokeLater 确保编辑器完全初始化
-                SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(() -> {
-                    if (currentTable != null && rowHeightExpanded) {
-                        currentTable.revalidate();
-                        currentTable.repaint();
-                    }
-                }));
-            } else {
-                // 行高已经撑开，不需要再次撑开，但需要标记为已撑开状态
-                this.originalRowHeight = 28;
-                rowHeightExpanded = true;
-            }
-
-            return scrollPane;
+            return setupMultiLineEditor(text, table, row, column);
         } else {
             // 使用单行编辑器
             isMultiLine = false;
             textField.setText(text);
-
             return textField;
         }
     }
 
+    /**
+     * 设置多行编辑器并处理行高
+     */
+    private Component setupMultiLineEditor(String text, JTable table, int row, int column) {
+        // 使用多行编辑器
+        isMultiLine = true;
+        textArea.setText(text);
+        textArea.setCaretPosition(0);
+
+        // 设置 TextArea 的行数（最少2行，最多5行）
+        int lines = Math.min(MAX_EDITOR_LINES, Math.max(MIN_EDITOR_LINES, countLines(text, table, column)));
+        textArea.setRows(lines);
+
+        // 检查当前行高是否已经撑开
+        int currentRowHeight = table.getRowHeight(row);
+        boolean alreadyExpanded = currentRowHeight > DEFAULT_ROW_HEIGHT;
+
+        // 只在未撑开时才撑开行高
+        if (!alreadyExpanded) {
+            expandRowHeight(table, row, lines);
+        } else {
+            // 行高已经撑开，不需要再次撑开，但需要标记为已撑开状态
+            this.originalRowHeight = DEFAULT_ROW_HEIGHT;
+            rowHeightExpanded = true;
+        }
+
+        return scrollPane;
+    }
+
+    /**
+     * 撑开行高以适应多行编辑器
+     */
+    private void expandRowHeight(JTable table, int row, int lines) {
+        // 保存原始行高并计算新行高
+        this.originalRowHeight = table.getRowHeight(row);
+        FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
+        int lineHeight = fm.getHeight();
+
+        // 根据实际行数计算高度：行高 * 行数 + 上下内边距
+        // 内边距：上下各 4px，滚动条区域 6px，共约 14px
+        int padding = 14;
+        int newHeight = lineHeight * lines + padding;
+
+        // 确保最小高度足够显示内容（避免文字被截断）
+        int minHeight = lineHeight * lines + 10;
+        newHeight = Math.max(minHeight, newHeight);
+
+        // 立即撑开行高，但延迟 revalidate
+        table.setRowHeight(row, newHeight);
+        rowHeightExpanded = true;
+        lastExpandTime = System.currentTimeMillis();
+
+        // 延迟更新布局，等待编辑器组件完全显示后再更新
+        // 双重 invokeLater 确保编辑器完全初始化
+        SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(() -> {
+            if (currentTable != null && rowHeightExpanded) {
+                currentTable.revalidate();
+                currentTable.repaint();
+            }
+        }));
+    }
 
 
     @Override
@@ -263,7 +314,7 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
     }
 
     /**
-     * 计算文本需要的行数
+     * 计算文本需要的行数（已考虑最大行数限制）
      */
     private int countLines(String text, JTable table, int column) {
         if (text == null || text.isEmpty()) {
@@ -288,9 +339,14 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
                 int linesForThisLine = Math.max(1, (int) Math.ceil((double) lineWidth / columnWidth));
                 totalLinesNeeded += linesForThisLine;
             }
+
+            // 提前退出：如果已经超过最大行数，直接返回最大值
+            if (totalLinesNeeded >= MAX_EDITOR_LINES) {
+                return MAX_EDITOR_LINES;
+            }
         }
 
-        // 返回实际需要的总行数（考虑了真实换行符和宽度限制）
-        return Math.max(actualLineCount, totalLinesNeeded);
+        // 返回实际需要的总行数（考虑了真实换行符和宽度限制），但不超过最大行数
+        return Math.min(MAX_EDITOR_LINES, Math.max(actualLineCount, totalLinesNeeded));
     }
 }

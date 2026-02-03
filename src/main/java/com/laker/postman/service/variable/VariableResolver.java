@@ -38,13 +38,21 @@ public class VariableResolver {
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{(.+?)}}");
 
     /**
-     * 变量提供者列表，按优先级排序
+     * 变量提供者列表，按优先级排序（优先级数值越小越优先）
      */
-    private static final List<VariableProvider> PROVIDERS = Arrays.asList(
-            TemporaryVariableService.getInstance(),
-            EnvironmentVariableService.getInstance(),
-            BuiltInFunctionService.getInstance()
-    );
+    private static final List<VariableProvider> PROVIDERS;
+
+    static {
+        // 初始化提供者列表并按优先级排序
+        List<VariableProvider> providers = new ArrayList<>(Arrays.asList(
+                TemporaryVariableService.getInstance(),
+                EnvironmentVariableService.getInstance(),
+                BuiltInFunctionService.getInstance()
+        ));
+        // 按优先级排序：优先级数值越小越靠前
+        providers.sort(Comparator.comparingInt(VariableProvider::getPriority));
+        PROVIDERS = Collections.unmodifiableList(providers);
+    }
 
     /**
      * 批量设置临时变量（用于同步 pm.variables）
@@ -148,11 +156,8 @@ public class VariableResolver {
     public static Map<String, String> getAllAvailableVariables() {
         Map<String, String> allVars = new LinkedHashMap<>();
 
-        // 按优先级倒序添加（优先级高的后添加，会覆盖优先级低的）
-        List<VariableProvider> reversedProviders = new ArrayList<>(PROVIDERS);
-        Collections.reverse(reversedProviders);
-
-        for (VariableProvider provider : reversedProviders) {
+        // 正序遍历，优先级高的先添加，使用 putIfAbsent 避免被低优先级的同名变量覆盖
+        for (VariableProvider provider : PROVIDERS) {
             Map<String, String> providerVars = provider.getAll();
             for (Map.Entry<String, String> entry : providerVars.entrySet()) {
                 String value = entry.getValue();
@@ -160,7 +165,8 @@ public class VariableResolver {
                 if (value != null && value.length() > 50) {
                     value = value.substring(0, 47) + "...";
                 }
-                allVars.put(entry.getKey(), value);
+                // 使用 putIfAbsent 保证高优先级的变量不会被覆盖
+                allVars.putIfAbsent(entry.getKey(), value);
             }
         }
 

@@ -7,7 +7,6 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
@@ -212,18 +211,6 @@ public class EnvironmentService {
             activeEnvironment = env;
             saveEnvironments();
         }
-    }
-
-    /**
-     * 替换文本中的环境变量占位符 (委托给 VariableResolver)
-     * 例如: {{baseUrl}}/api/users -> https://api.example.com/api/users
-     * 优先级: 临时变量 > 环境变量 > 内置函数
-     *
-     * @deprecated 请直接使用 VariableResolver.resolve()
-     */
-    @Deprecated
-    public static String replaceVariables(String text) {
-        return VariableResolver.resolve(text);
     }
 
     /**

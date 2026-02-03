@@ -1,9 +1,9 @@
 package com.laker.postman.service.http;
 
 import com.laker.postman.model.*;
-import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.collections.InheritanceService;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -90,7 +90,7 @@ public class PreparedRequestBuilder {
      * <p>
      * 用于处理未保存的请求（如 UI 中修改但未保存到 Collections）
      *
-     * @param item 请求项
+     * @param item     请求项
      * @param useCache 是否使用缓存（false 表示强制重新计算继承）
      * @return 构建好的 PreparedRequest（包含合并后的脚本）
      */
@@ -182,7 +182,7 @@ public class PreparedRequestBuilder {
      * <p>
      * 用于处理未保存的请求（如 UI 中修改但未保存）
      *
-     * @param item 原始请求项
+     * @param item     原始请求项
      * @param useCache 是否使用缓存
      * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
      */
@@ -248,12 +248,12 @@ public class PreparedRequestBuilder {
      * 创建 Basic 认证头
      */
     private static HttpHeader createBasicAuthHeader(HttpRequestItem item) {
-        String username = EnvironmentService.replaceVariables(item.getAuthUsername());
+        String username = VariableResolver.resolve(item.getAuthUsername());
         if (username == null || username.isEmpty()) {
             return null;
         }
 
-        String password = EnvironmentService.replaceVariables(item.getAuthPassword());
+        String password = VariableResolver.resolve(item.getAuthPassword());
         String credentials = username + ":" + (password == null ? "" : password);
         String token = java.util.Base64.getEncoder().encodeToString(credentials.getBytes());
 
@@ -268,7 +268,7 @@ public class PreparedRequestBuilder {
      * 创建 Bearer 认证头
      */
     private static HttpHeader createBearerAuthHeader(HttpRequestItem item) {
-        String token = EnvironmentService.replaceVariables(item.getAuthToken());
+        String token = VariableResolver.resolve(item.getAuthToken());
         if (token == null || token.isEmpty()) {
             return null;
         }
@@ -294,10 +294,10 @@ public class PreparedRequestBuilder {
         rebuildUrlWithParams(req);
 
         // 替换URL中的变量
-        req.url = EnvironmentService.replaceVariables(req.url);
+        req.url = VariableResolver.resolve(req.url);
 
         // 替换Body中的变量
-        req.body = EnvironmentService.replaceVariables(req.body);
+        req.body = VariableResolver.resolve(req.body);
     }
 
     /**
@@ -325,8 +325,8 @@ public class PreparedRequestBuilder {
         if (list == null) return;
         for (HttpHeader item : list) {
             if (item.isEnabled()) {
-                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
-                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+                item.setKey(VariableResolver.resolve(item.getKey()));
+                item.setValue(VariableResolver.resolve(item.getValue()));
             }
         }
     }
@@ -335,8 +335,8 @@ public class PreparedRequestBuilder {
         if (list == null) return;
         for (HttpFormData item : list) {
             if (item.isEnabled()) {
-                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
-                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+                item.setKey(VariableResolver.resolve(item.getKey()));
+                item.setValue(VariableResolver.resolve(item.getValue()));
             }
         }
     }
@@ -345,8 +345,8 @@ public class PreparedRequestBuilder {
         if (list == null) return;
         for (HttpFormUrlencoded item : list) {
             if (item.isEnabled()) {
-                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
-                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+                item.setKey(VariableResolver.resolve(item.getKey()));
+                item.setValue(VariableResolver.resolve(item.getValue()));
             }
         }
     }
@@ -355,8 +355,8 @@ public class PreparedRequestBuilder {
         if (list == null) return;
         for (HttpParam item : list) {
             if (item.isEnabled()) {
-                item.setKey(EnvironmentService.replaceVariables(item.getKey()));
-                item.setValue(EnvironmentService.replaceVariables(item.getValue()));
+                item.setKey(VariableResolver.resolve(item.getKey()));
+                item.setValue(VariableResolver.resolve(item.getValue()));
             }
         }
     }

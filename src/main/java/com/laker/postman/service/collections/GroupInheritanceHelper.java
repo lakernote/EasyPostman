@@ -1,12 +1,10 @@
 package com.laker.postman.service.collections;
 
 import cn.hutool.core.collection.CollUtil;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.js.ScriptFragment;
 import com.laker.postman.service.js.ScriptMerger;
 import lombok.experimental.UtilityClass;
@@ -262,65 +260,7 @@ public class GroupInheritanceHelper {
         return clone;
     }
 
-    /**
-     * 在树中通过请求 ID 查找请求节点
-     *
-     * @param root      树的根节点
-     * @param requestId 要查找的请求 ID
-     * @return 请求节点，如果未找到则返回 null
-     */
-    public static DefaultMutableTreeNode findRequestNode(DefaultMutableTreeNode root, String requestId) {
-        if (root == null || requestId == null) {
-            return null;
-        }
 
-        // 性能优化：优先使用索引缓存（O(1) 查找）
-        try {
-            RequestCollectionsLeftPanel leftPanel =
-                SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-
-            DefaultMutableTreeNode indexed = leftPanel.getNodeByRequestId(requestId);
-            if (indexed != null) {
-                return indexed; // 缓存命中，直接返回
-            }
-        } catch (Exception e) {
-            // 索引查找失败，降级到树遍历
-            log.trace("索引查找失败，降级到树遍历: {}", e.getMessage());
-        }
-
-        // 降级方案：使用原有的树遍历（O(n) 查找）
-        return findRequestNodeByTraversal(root, requestId);
-    }
-
-    /**
-     * 通过树遍历查找请求节点（降级方案）
-     * 时间复杂度：O(n)
-     */
-    private static DefaultMutableTreeNode findRequestNodeByTraversal(DefaultMutableTreeNode root, String requestId) {
-        if (root == null || requestId == null) {
-            return null;
-        }
-
-        // 检查当前节点
-        Object userObj = root.getUserObject();
-        if (userObj instanceof Object[] obj && "request".equals(obj[0])) {
-            HttpRequestItem req = (HttpRequestItem) obj[1];
-            if (requestId.equals(req.getId())) {
-                return root;
-            }
-        }
-
-        // 递归搜索子节点
-        for (int i = 0; i < root.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) root.getChildAt(i);
-            DefaultMutableTreeNode result = findRequestNode(child, requestId);
-            if (result != null) {
-                return result;
-            }
-        }
-
-        return null;
-    }
 
     /**
      * 合并请求头（从外到内累积，内层覆盖外层的同名请求头）

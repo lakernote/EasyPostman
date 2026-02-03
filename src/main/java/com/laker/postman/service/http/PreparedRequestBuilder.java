@@ -1,21 +1,16 @@
 package com.laker.postman.service.http;
 
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.collections.GroupInheritanceHelper;
+import com.laker.postman.service.collections.InheritanceService;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
@@ -31,75 +26,26 @@ public class PreparedRequestBuilder {
 
     private static final String HEADER_AUTHORIZATION = "Authorization";
 
-    // ==================== 预计算缓存（方案B：性能优化） ====================
-
     /**
-     * 缓存版本号：Collection 修改时递增，使所有缓存失效
-     * 使用场景：编辑分组的 auth/headers/scripts 时调用 invalidateCache()
+     * 负责所有继承逻辑和缓存管理
      */
-    private static final AtomicLong cacheVersion = new AtomicLong(0);
+    private static final InheritanceService inheritanceService = new InheritanceService();
 
-    /**
-     * 预计算缓存：requestId -> CachedEffectiveItem
-     * 存储已应用 group 继承的请求配置，避免重复计算
-     * 线程安全：使用 ConcurrentHashMap 支持高并发访问
-     */
-    private static final Map<String, CachedEffectiveItem> effectiveItemCache = new ConcurrentHashMap<>();
-
-    /**
-     * 缓存的已继承请求配置
-     */
-    private static class CachedEffectiveItem {
-        HttpRequestItem effectiveItem;
-        long version;
-
-        CachedEffectiveItem(HttpRequestItem effectiveItem, long version) {
-            this.effectiveItem = effectiveItem;
-            this.version = version;
-        }
-    }
 
     /**
      * 使所有预计算缓存失效
+     * <p>
      * 调用时机：
      * 1. 修改分组的 auth/headers/scripts
      * 2. 添加/删除/移动节点
      * 3. 导入 Collection
+     * <p>
+     * 委托给 InheritanceService 处理
      */
     public static void invalidateCache() {
-        long oldVersion = cacheVersion.get();
-        long newVersion = cacheVersion.incrementAndGet();
-        effectiveItemCache.clear(); // 清空缓存以释放内存
-        log.debug("预计算缓存已失效：版本 {} -> {}",
-            oldVersion, newVersion);
+        inheritanceService.invalidateCache();
     }
 
-    /**
-     * 使特定请求的缓存失效（精细化缓存控制）
-     * 调用时机：仅修改单个请求时
-     *
-     * @param requestId 请求ID
-     */
-    @SuppressWarnings("unused") // 公共 API，供未来使用
-    public static void invalidateCacheForRequest(String requestId) {
-        if (requestId != null) {
-            CachedEffectiveItem removed = effectiveItemCache.remove(requestId);
-            if (removed != null) {
-                log.debug("请求缓存已失效：{}", requestId);
-            }
-        }
-    }
-
-    /**
-     * 获取缓存统计信息（用于监控和调试）
-     *
-     * @return 格式：版本号=x, 缓存项=y
-     */
-    @SuppressWarnings("unused") // 公共 API，供未来使用
-    public static String getCacheStats() {
-        return String.format("版本号=%d, 缓存项=%d",
-            cacheVersion.get(), effectiveItemCache.size());
-    }
 
     /**
      * 构建 PreparedRequest
@@ -184,77 +130,14 @@ public class PreparedRequestBuilder {
      * - Collections 面板：在执行请求前应用继承
      * - Functional 面板：在执行批量测试前应用继承
      * - Performance 面板：在执行压测前应用继承
+     * <p>
+     * 新架构：完全委托给 InheritanceService
      *
      * @param item 原始请求项
      * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
      */
     public static HttpRequestItem applyGroupInheritance(HttpRequestItem item) {
-        if (item == null) {
-            return null;
-        }
-
-        // 性能优化：检查预计算缓存
-        String requestId = item.getId();
-        if (requestId != null) {
-            CachedEffectiveItem cached = effectiveItemCache.get(requestId);
-            long currentVersion = cacheVersion.get();
-
-            if (cached != null && cached.version == currentVersion) {
-                // 缓存命中！直接返回（节省树遍历和合并计算）
-                log.trace("预计算缓存命中：{}", item.getName());
-                return cached.effectiveItem;
-            }
-        }
-
-        // 缓存未命中，执行完整的继承计算
-        HttpRequestItem effectiveItem = applyGroupInheritanceInternal(item);
-
-        // 存入缓存
-        if (requestId != null && effectiveItem != null) {
-            effectiveItemCache.put(requestId,
-                new CachedEffectiveItem(effectiveItem, cacheVersion.get()));
-        }
-
-        return effectiveItem;
-    }
-
-    /**
-     * 内部方法：执行实际的 group 继承计算（不使用缓存）
-     */
-    private static HttpRequestItem applyGroupInheritanceInternal(HttpRequestItem item) {
-        if (item == null) {
-            return null;
-        }
-
-        try {
-            // 尝试获取 Collections 树的根节点
-            RequestCollectionsLeftPanel leftPanel =
-                    SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-
-            DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
-            if (rootNode == null) {
-                log.trace("Collections 树根节点为空，跳过 group 继承");
-                return item;
-            }
-
-            // 在树中查找该请求的节点（已优化为 O(1) 索引查找）
-            DefaultMutableTreeNode requestNode =
-                    GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
-
-            if (requestNode != null) {
-                // 找到了！应用 group 继承
-                log.debug("为请求 [{}] 应用 group 继承", item.getName());
-                return GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
-            } else {
-                // 没找到，可能是从其他地方（Functional/Performance）导入的请求
-                log.trace("请求 [{}] 不在 Collections 树中，使用原始配置", item.getName());
-                return item;
-            }
-        } catch (Exception e) {
-            // 任何异常都不应该影响请求的正常执行
-            log.debug("应用 group 继承时发生异常（将使用原始配置）: {}", e.getMessage());
-            return item;
-        }
+        return inheritanceService.applyInheritance(item);
     }
 
     /**
@@ -276,14 +159,14 @@ public class PreparedRequestBuilder {
         // 提前判断：如果认证类型无效，直接返回
         String authType = item.getAuthType();
         if (authType == null ||
-            (!AUTH_TYPE_BASIC.equals(authType) && !AUTH_TYPE_BEARER.equals(authType))) {
+                (!AUTH_TYPE_BASIC.equals(authType) && !AUTH_TYPE_BEARER.equals(authType))) {
             return headersList;
         }
 
         // 检查是否已有 Authorization 头（使用 Stream API）
         boolean hasAuthHeader = item.getHeadersList() != null &&
-            item.getHeadersList().stream()
-                .anyMatch(h -> h.isEnabled() && HEADER_AUTHORIZATION.equalsIgnoreCase(h.getKey()));
+                item.getHeadersList().stream()
+                        .anyMatch(h -> h.isEnabled() && HEADER_AUTHORIZATION.equalsIgnoreCase(h.getKey()));
 
         // 如果已有 Authorization 头，直接返回
         if (hasAuthHeader) {

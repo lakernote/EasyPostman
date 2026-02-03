@@ -23,6 +23,7 @@ import com.laker.postman.service.common.TreeNodeBuilder;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.ideahttp.IntelliJHttpParser;
 import com.laker.postman.service.postman.PostmanCollectionParser;
 import com.laker.postman.service.swagger.SwaggerParser;
@@ -242,6 +243,10 @@ public class LeftTopPanel extends SingletonBasePanel {
                     easyPostmanGroup.add(groupNode);
                 }
                 leftPanel.getTreeModel().reload();
+
+                // 缓存失效（导入Collection）
+                PreparedRequestBuilder.invalidateCache();
+
                 leftPanel.getPersistence().saveRequestGroups();
                 leftPanel.getRequestTree().expandPath(new TreePath(easyPostmanGroup.getPath()));
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));

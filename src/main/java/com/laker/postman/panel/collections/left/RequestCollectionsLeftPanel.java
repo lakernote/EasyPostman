@@ -16,6 +16,7 @@ import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsPersistence;
+import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 请求集合面板，展示所有请求分组和请求项
@@ -53,6 +55,13 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private DefaultTreeModel treeModel;
     @Getter
     private transient RequestsPersistence persistence;
+
+    /**
+     * 请求节点索引缓存：requestId -> TreeNode
+     * 用于 O(1) 时间复杂度的快速查找，避免每次都遍历整棵树
+     * 线程安全：使用 ConcurrentHashMap 支持并发访问
+     */
+    private final Map<String, DefaultMutableTreeNode> requestNodeIndex = new ConcurrentHashMap<>();
 
     @Override
     protected void initUI() {
@@ -123,6 +132,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 // 后台线程：执行耗时的IO操作
                 () -> {
                     persistence.initRequestGroupsFromFile();
+                    // 加载完成后重建索引缓存（性能优化）
+                    rebuildRequestNodeIndex();
                     return RequestCollectionsService.getLastNonNewRequest();
                 },
                 // EDT线程：更新UI
@@ -156,6 +167,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private void saveRequestGroups() {
         persistence.saveRequestGroups();
+        // 保存后使预计算缓存失效（可能有修改）
+        PreparedRequestBuilder.invalidateCache();
     }
 
 
@@ -179,6 +192,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         groupNode.add(requestNode);
         treeModel.reload(groupNode);
         requestTree.expandPath(new TreePath(groupNode.getPath()));
+        // 添加到索引并失效缓存
+        addToIndex(item.getId(), requestNode);
         persistence.saveRequestGroups();
     }
 
@@ -347,6 +362,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     if (persistence != null) {
                         persistence.setDataFilePath(collectionFilePath);
                     }
+                    // 加载完成后重建索引缓存（性能优化）
+                    rebuildRequestNodeIndex();
                 })
                 .onSuccess(() -> {
                     // EDT线程：更新UI
@@ -374,4 +391,80 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         }
     }
 
+    // ==================== 索引缓存管理方法（性能优化） ====================
+
+    /**
+     * 重建请求节点索引
+     * 在以下情况需要调用：
+     * 1. 加载 Collection
+     * 2. 添加/删除节点
+     * 3. 导入 Collection
+     * <p>
+     * 时间复杂度：O(n)，n 为树中所有节点数量
+     */
+    public void rebuildRequestNodeIndex() {
+        requestNodeIndex.clear();
+        if (rootTreeNode != null) {
+            buildIndexRecursively(rootTreeNode);
+            log.debug("重建请求节点索引完成，共 {} 个请求", requestNodeIndex.size());
+        }
+    }
+
+    /**
+     * 递归构建索引
+     */
+    private void buildIndexRecursively(DefaultMutableTreeNode node) {
+        if (node == null) {
+            return;
+        }
+
+        Object userObj = node.getUserObject();
+        if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
+            HttpRequestItem req = (HttpRequestItem) obj[1];
+            if (req != null && req.getId() != null) {
+                requestNodeIndex.put(req.getId(), node);
+            }
+        }
+
+        // 递归处理子节点
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            buildIndexRecursively(child);
+        }
+    }
+
+    /**
+     * 通过请求ID快速查找节点（O(1) 时间复杂度）
+     *
+     * @param requestId 请求ID
+     * @return 节点，如果未找到则返回 null
+     */
+    public DefaultMutableTreeNode getNodeByRequestId(String requestId) {
+        if (requestId == null) {
+            return null;
+        }
+        return requestNodeIndex.get(requestId);
+    }
+
+    /**
+     * 添加单个请求到索引
+     * 在增量添加节点时使用，避免全量重建
+     */
+    public void addToIndex(String requestId, DefaultMutableTreeNode node) {
+        if (requestId != null && node != null) {
+            requestNodeIndex.put(requestId, node);
+        }
+    }
+
+    /**
+     * 从索引中移除请求
+     * 在删除节点时使用
+     */
+    public void removeFromIndex(String requestId) {
+        if (requestId != null) {
+            requestNodeIndex.remove(requestId);
+        }
+    }
+
 }
+

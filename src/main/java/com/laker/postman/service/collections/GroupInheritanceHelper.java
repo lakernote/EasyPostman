@@ -1,13 +1,16 @@
 package com.laker.postman.service.collections;
 
 import cn.hutool.core.collection.CollUtil;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.service.js.ScriptFragment;
 import com.laker.postman.service.js.ScriptMerger;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
@@ -46,6 +49,7 @@ import java.util.Map;
  * - 示例：FolderA(X-API-Key: key1) -> FolderB(X-API-Key: key2, X-Extra: val) -> Request(X-API-Key: key3)
  * => 最终使用: X-API-Key: key3, X-Extra: val
  */
+@Slf4j
 @UtilityClass
 public class GroupInheritanceHelper {
 
@@ -196,6 +200,33 @@ public class GroupInheritanceHelper {
      * @return 请求节点，如果未找到则返回 null
      */
     public static DefaultMutableTreeNode findRequestNode(DefaultMutableTreeNode root, String requestId) {
+        if (root == null || requestId == null) {
+            return null;
+        }
+
+        // 性能优化：优先使用索引缓存（O(1) 查找）
+        try {
+            RequestCollectionsLeftPanel leftPanel =
+                SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+
+            DefaultMutableTreeNode indexed = leftPanel.getNodeByRequestId(requestId);
+            if (indexed != null) {
+                return indexed; // 缓存命中，直接返回
+            }
+        } catch (Exception e) {
+            // 索引查找失败，降级到树遍历
+            log.trace("索引查找失败，降级到树遍历: {}", e.getMessage());
+        }
+
+        // 降级方案：使用原有的树遍历（O(n) 查找）
+        return findRequestNodeByTraversal(root, requestId);
+    }
+
+    /**
+     * 通过树遍历查找请求节点（降级方案）
+     * 时间复杂度：O(n)
+     */
+    private static DefaultMutableTreeNode findRequestNodeByTraversal(DefaultMutableTreeNode root, String requestId) {
         if (root == null || requestId == null) {
             return null;
         }

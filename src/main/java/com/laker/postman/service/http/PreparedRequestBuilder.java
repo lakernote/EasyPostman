@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
@@ -24,6 +26,49 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 @Slf4j
 @UtilityClass
 public class PreparedRequestBuilder {
+
+    // ==================== 预计算缓存（方案B：性能优化） ====================
+
+    /**
+     * 缓存版本号：Collection 修改时递增，使所有缓存失效
+     * 使用场景：编辑分组的 auth/headers/scripts 时调用 invalidateCache()
+     */
+    private static final AtomicLong cacheVersion = new AtomicLong(0);
+
+    /**
+     * 预计算缓存：requestId -> CachedEffectiveItem
+     * 存储已应用 group 继承的请求配置，避免重复计算
+     * 线程安全：使用 ConcurrentHashMap 支持高并发访问
+     */
+    private static final Map<String, CachedEffectiveItem> effectiveItemCache = new ConcurrentHashMap<>();
+
+    /**
+     * 缓存的已继承请求配置
+     */
+    private static class CachedEffectiveItem {
+        HttpRequestItem effectiveItem;
+        long version;
+
+        CachedEffectiveItem(HttpRequestItem effectiveItem, long version) {
+            this.effectiveItem = effectiveItem;
+            this.version = version;
+        }
+    }
+
+    /**
+     * 使所有预计算缓存失效
+     * 调用时机：
+     * 1. 修改分组的 auth/headers/scripts
+     * 2. 添加/删除/移动节点
+     * 3. 导入 Collection
+     */
+    public static void invalidateCache() {
+        long oldVersion = cacheVersion.get();
+        long newVersion = cacheVersion.incrementAndGet();
+        log.debug("预计算缓存已失效：版本 {} -> {}", oldVersion, newVersion);
+        // 可选：清空缓存以释放内存（懒加载会重新计算）
+        effectiveItemCache.clear();
+    }
 
     /**
      * 构建 PreparedRequest
@@ -110,6 +155,39 @@ public class PreparedRequestBuilder {
             return null;
         }
 
+        // 性能优化：检查预计算缓存
+        String requestId = item.getId();
+        if (requestId != null) {
+            CachedEffectiveItem cached = effectiveItemCache.get(requestId);
+            long currentVersion = cacheVersion.get();
+
+            if (cached != null && cached.version == currentVersion) {
+                // 缓存命中！直接返回（节省树遍历和合并计算）
+                log.trace("预计算缓存命中：{}", item.getName());
+                return cached.effectiveItem;
+            }
+        }
+
+        // 缓存未命中，执行完整的继承计算
+        HttpRequestItem effectiveItem = applyGroupInheritanceInternal(item);
+
+        // 存入缓存
+        if (requestId != null && effectiveItem != null) {
+            effectiveItemCache.put(requestId,
+                new CachedEffectiveItem(effectiveItem, cacheVersion.get()));
+        }
+
+        return effectiveItem;
+    }
+
+    /**
+     * 内部方法：执行实际的 group 继承计算（不使用缓存）
+     */
+    private static HttpRequestItem applyGroupInheritanceInternal(HttpRequestItem item) {
+        if (item == null) {
+            return null;
+        }
+
         try {
             // 尝试获取 Collections 树的根节点
             RequestCollectionsLeftPanel leftPanel =
@@ -121,7 +199,7 @@ public class PreparedRequestBuilder {
                 return item;
             }
 
-            // 在树中查找该请求的节点
+            // 在树中查找该请求的节点（已优化为 O(1) 索引查找）
             DefaultMutableTreeNode requestNode =
                     GroupInheritanceHelper.findRequestNode(rootNode, item.getId());
 

@@ -477,13 +477,11 @@ public class RequestEditSubPanel extends JPanel {
                     // 根据协议类型进行URL验证
                     String url = item.getUrl();
                     RequestItemProtocolEnum protocol = item.getProtocol();
-                    if (protocol.isWebSocketProtocol()) {
-                        // WebSocket只允许ws://或wss://协议
-                        if (!url.toLowerCase().startsWith("ws://") && !url.toLowerCase().startsWith("wss://")) {
+                    if (protocol.isWebSocketProtocol() && !url.toLowerCase().startsWith("ws://") && !url.toLowerCase().startsWith("wss://")) {
                             validationError = "WebSocket requests must use ws:// or wss:// protocol";
                             return null;
                         }
-                    }
+
                     req = PreparedRequestBuilder.build(item, !isModified()); // 仅当未修改时使用缓存
                     effectiveItem = item; // 保持兼容性
 

@@ -1,11 +1,9 @@
 package com.laker.postman.service.collections;
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -36,7 +34,7 @@ public class InheritanceService {
 
         // 注册树变更监听器，自动失效缓存
         treeRepository.registerChangeListener(() -> {
-            cache.invalidateAll();
+            cache.clear(); // 简化：直接清空
             // 同时失效 Repository 的索引
             if (treeRepository instanceof DefaultTreeNodeRepository repo) {
                 repo.invalidateIndex();
@@ -116,21 +114,17 @@ public class InheritanceService {
                 return item;
             }
 
-            // 2. 获取分组链
+            // 2. 应用继承（mergeGroupSettings 内部会收集分组链）
             DefaultMutableTreeNode requestNode = nodeOpt.get();
-            List<RequestGroup> groupChain = treeRepository.getAncestorGroups(requestNode);
+            HttpRequestItem result = GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
 
-            // 3. 创建上下文
-            InheritanceContext context = new InheritanceContext(item, groupChain);
-
-            // 4. 应用继承
-            if (!context.hasGroups()) {
+            if (result == item) {
                 log.trace("请求 [{}] 没有父分组，使用原始配置", item.getName());
-                return item;
+            } else {
+                log.debug("为请求 [{}] 应用分组继承", item.getName());
             }
 
-            log.debug("为请求 [{}] 应用 {} 层分组继承", item.getName(), context.getGroupCount());
-            return GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
+            return result;
 
         } catch (Exception e) {
             log.debug("应用继承时发生异常（将使用原始配置）: {}", e.getMessage());
@@ -147,7 +141,7 @@ public class InheritanceService {
      * - 导入 Collection
      */
     public void invalidateCache() {
-        cache.invalidateAll();
+        cache.clear();
         log.debug("继承缓存已全局失效");
     }
 
@@ -157,7 +151,7 @@ public class InheritanceService {
      * @param requestId 请求ID
      */
     public void invalidateCache(String requestId) {
-        cache.invalidate(requestId);
+        cache.remove(requestId);
         log.debug("请求缓存已失效: {}", requestId);
     }
 
@@ -167,7 +161,7 @@ public class InheritanceService {
      * @return 统计信息
      */
     public String getCacheStats() {
-        return cache.getStats().toString();
+        return cache.getStats();
     }
 
     /**

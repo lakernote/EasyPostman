@@ -63,6 +63,12 @@ public class GroupInheritanceHelper {
             return item;
         }
 
+        // 收集分组链
+        List<RequestGroup> groupChain = collectGroupChain(requestNode);
+        if (groupChain.isEmpty()) {
+            return item; // 无父分组，直接返回原对象
+        }
+
         // 创建副本，避免修改原对象
         HttpRequestItem mergedItem = cloneRequest(item);
 
@@ -75,11 +81,9 @@ public class GroupInheritanceHelper {
         List<ScriptFragment> groupPostScripts = new ArrayList<>();
         List<HttpHeader> groupHeaders = new ArrayList<>();
 
-        // 查找父分组并收集脚本和请求头
-        TreeNode parent = requestNode.getParent();
-        if (parent instanceof DefaultMutableTreeNode parentNode) {
-            collectGroupSettings(mergedItem, parentNode, groupPreScripts, groupPostScripts, groupHeaders);
-        }
+        // 应用继承逻辑
+        applyAuthInheritance(mergedItem, groupChain);
+        collectScriptsAndHeaders(groupChain, groupPreScripts, groupPostScripts, groupHeaders);
 
         // 合并前置脚本（外层到内层的顺序）
         String mergedPreScript = ScriptMerger.mergePreScripts(groupPreScripts, requestPreScript);
@@ -98,61 +102,36 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 收集分组设置、脚本和请求头（优化版：使用迭代代替递归）
-     * <p>
-     * 核心策略：
-     * - 认证：就近原则，找到第一个有认证的分组就停止
-     * - 前置脚本：从外到内收集（外层先执行）
-     * - 后置脚本：从内到外收集（内层先执行）
-     * - 请求头：从外到内收集（内层覆盖外层）
+     * 收集分组链（从外到内）
      * <p>
      * 优化点：
      * - 使用迭代代替递归，避免栈溢出
-     * - 减少树节点访问次数
-     * - 提前终止不必要的遍历
-     */
-    private static void collectGroupSettings(
-            HttpRequestItem item,
-            DefaultMutableTreeNode groupNode,
-            List<ScriptFragment> preScripts,
-            List<ScriptFragment> postScripts,
-            List<HttpHeader> headers) {
-
-        if (groupNode == null) {
-            return;
-        }
-
-        // 第一步：从当前节点向上收集所有分组节点（外层到内层）
-        List<RequestGroup> groupChain = collectGroupChain(groupNode);
-
-        if (groupChain.isEmpty()) {
-            return;
-        }
-
-        // 第二步：应用认证继承（就近原则：从内到外查找第一个有认证的分组）
-        applyAuthInheritance(item, groupChain);
-
-        // 第三步：收集脚本和请求头
-        collectScriptsAndHeaders(groupChain, preScripts, postScripts, headers);
-    }
-
-    /**
-     * 收集分组链（从外到内）
+     * - 直接向上遍历，性能为 O(h)，h 为树的高度
      */
     private static List<RequestGroup> collectGroupChain(DefaultMutableTreeNode startNode) {
         List<RequestGroup> groupChain = new ArrayList<>();
-        TreeNode currentNode = startNode;
+
+        if (startNode == null) {
+            return groupChain;
+        }
+
+        TreeNode currentNode = startNode.getParent(); // 从父节点开始
 
         while (currentNode != null) {
-            Object userObj = ((DefaultMutableTreeNode) currentNode).getUserObject();
+            if (!(currentNode instanceof DefaultMutableTreeNode)) {
+                break;
+            }
+
+            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) currentNode;
+            Object userObj = treeNode.getUserObject();
 
             // 检查是否是根节点
-            if ("root".equals(String.valueOf(userObj))) {
+            if (userObj == null || "root".equals(String.valueOf(userObj))) {
                 break;
             }
 
             // 检查是否是分组节点
-            if (userObj instanceof Object[] obj && "group".equals(obj[0])) {
+            if (userObj instanceof Object[] obj && obj.length >= 2 && "group".equals(obj[0])) {
                 Object groupData = obj[1];
                 if (groupData instanceof RequestGroup group) {
                     groupChain.add(0, group); // 插入到列表头部，保持外层到内层的顺序

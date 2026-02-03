@@ -20,12 +20,17 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 /**
  * 树节点仓库默认实现
  * <p>
- * 基于 RequestCollectionsLeftPanel 的适配器实现
+ * 设计原则：简单、直接、易于理解
  * <p>
- * 新增特性：
- * - 内置索引缓存（O(1) 查找）
- * - 自动索引维护
- * - 与 UI 层解耦
+ * 核心职责：
+ * - 根据请求ID查找树节点（O(1) 性能）
+ * - 获取请求的父分组链
+ * - 监听树变更事件
+ * <p>
+ * 实现策略：
+ * - 使用索引缓存提升查找性能（requestId -> TreeNode）
+ * - 索引按需构建，树变更时失效
+ * - 索引未命中时自动重建（自愈机制）
  *
  * @author laker
  * @since 4.3.22
@@ -33,36 +38,64 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 @Slf4j
 public class DefaultTreeNodeRepository implements TreeNodeRepository {
 
+    /**
+     * 树变更监听器列表
+     * 使用 CopyOnWriteArrayList 保证线程安全
+     */
     private final List<TreeChangeListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * 请求节点索引（性能优化：O(1) 查找）
-     * requestId -> TreeNode
+     * <p>
+     * Key: requestId
+     * Value: 该请求在树中的节点
+     * <p>
+     * 为什么需要索引？
+     * - 不使用索引：需要遍历整棵树查找，O(n) 时间复杂度
+     * - 使用索引：直接查 Map，O(1) 时间复杂度
      */
     private final ConcurrentHashMap<String, DefaultMutableTreeNode> requestNodeIndex = new ConcurrentHashMap<>();
 
     /**
-     * 索引是否已初始化
+     * 索引状态标记
+     * <p>
+     * true: 索引有效，可以使用
+     * false: 索引失效，需要重建
      */
-    private volatile boolean indexInitialized = false;
+    private volatile boolean indexValid = false;
+
+    // ==================== 公共 API ====================
 
     @Override
     public Optional<DefaultMutableTreeNode> findNodeByRequestId(String requestId) {
-        if (requestId == null) {
+        if (requestId == null || requestId.trim().isEmpty()) {
             return Optional.empty();
         }
 
-        // 确保索引已初始化
-        ensureIndexInitialized();
+        // 确保索引有效
+        ensureIndexValid();
 
-        // 使用索引查找（O(1)）
-        DefaultMutableTreeNode indexed = requestNodeIndex.get(requestId);
-        if (indexed != null) {
-            return Optional.of(indexed);
+        // 从索引中查找
+        DefaultMutableTreeNode node = requestNodeIndex.get(requestId);
+
+        if (node != null) {
+            log.trace("索引命中: {}", requestId);
+            return Optional.of(node);
         }
 
-        // 索引未命中，降级到树遍历（O(n)）
-        return getRootNode().flatMap(root -> findByTraversal(root, requestId));
+        // 索引未命中 -> 可能是新增的节点或索引损坏
+        // 尝试重建索引后再查一次
+        log.debug("索引未命中: {}, 尝试重建索引", requestId);
+        rebuildIndex();
+
+        node = requestNodeIndex.get(requestId);
+        if (node != null) {
+            log.debug("重建索引后找到节点: {}", requestId);
+            return Optional.of(node);
+        }
+
+        log.trace("节点不存在: {}", requestId);
+        return Optional.empty();
     }
 
     @Override
@@ -73,28 +106,31 @@ public class DefaultTreeNodeRepository implements TreeNodeRepository {
             return groupChain;
         }
 
+        // 从请求节点向上遍历，收集所有父分组
         TreeNode currentNode = requestNode.getParent();
 
         while (currentNode != null) {
+            // 检查节点类型
             if (!(currentNode instanceof DefaultMutableTreeNode treeNode)) {
                 break;
             }
 
             Object userObj = treeNode.getUserObject();
 
-            // 检查是否是根节点
-            if ("root".equals(String.valueOf(userObj))) {
+            // 到达根节点，停止
+            if (userObj == null || "root".equals(String.valueOf(userObj))) {
                 break;
             }
 
             // 检查是否是分组节点
-            if (userObj instanceof Object[] obj && GROUP.equals(obj[0])) {
-                Object groupData = obj[1];
-                if (groupData instanceof RequestGroup group) {
-                    groupChain.add(0, group); // 插入到列表头部，保持外层到内层的顺序
+            if (userObj instanceof Object[] obj && obj.length >= 2 && GROUP.equals(obj[0])) {
+                if (obj[1] instanceof RequestGroup group) {
+                    // 插入到列表头部，保持"外层到内层"的顺序
+                    groupChain.add(0, group);
                 }
             }
 
+            // 继续向上
             currentNode = currentNode.getParent();
         }
 
@@ -120,22 +156,42 @@ public class DefaultTreeNodeRepository implements TreeNodeRepository {
     public void registerChangeListener(TreeChangeListener listener) {
         if (listener != null && !listeners.contains(listener)) {
             listeners.add(listener);
+            log.debug("已注册树变更监听器");
         }
     }
 
     @Override
     public void removeChangeListener(TreeChangeListener listener) {
         listeners.remove(listener);
+        log.debug("已移除树变更监听器");
+    }
+
+    // ==================== 索引管理 ====================
+
+    /**
+     * 使索引失效
+     * <p>
+     * 调用时机：
+     * - 添加/删除/移动节点
+     * - 导入 Collection
+     * - 任何会改变树结构的操作
+     */
+    public void invalidateIndex() {
+        requestNodeIndex.clear();
+        indexValid = false;
+        log.debug("请求节点索引已失效");
     }
 
     /**
-     * 通知所有监听器树结构已变更
+     * 通知所有监听器：树结构已变更
+     * <p>
+     * 这个方法应该在所有修改树结构的地方被调用
      */
     public void notifyTreeChanged() {
-        // 清空索引，强制重建
+        // 1. 失效索引
         invalidateIndex();
 
-        // 通知监听器
+        // 2. 通知监听器
         for (TreeChangeListener listener : listeners) {
             try {
                 listener.onTreeChanged();
@@ -145,139 +201,89 @@ public class DefaultTreeNodeRepository implements TreeNodeRepository {
         }
     }
 
-    /**
-     * 使索引失效（树结构变更时调用）
-     */
-    public void invalidateIndex() {
-        requestNodeIndex.clear();
-        indexInitialized = false;
-        log.debug("请求节点索引已失效");
-    }
+    // ==================== 内部方法 ====================
 
     /**
-     * 确保索引已初始化
+     * 确保索引有效
+     * <p>
+     * 如果索引无效，则重建索引
+     * 使用双重检查锁定（DCL）避免重复构建
      */
-    private void ensureIndexInitialized() {
-        if (!indexInitialized) {
-            synchronized (this) {
-                if (!indexInitialized) {
-                    rebuildIndex();
-                    indexInitialized = true;
-                }
+    private void ensureIndexValid() {
+        // 第一次检查（无锁）
+        if (indexValid) {
+            return;
+        }
+
+        // 第二次检查（有锁）
+        synchronized (this) {
+            if (!indexValid) {
+                rebuildIndex();
+                indexValid = true;
             }
         }
     }
 
     /**
      * 重建索引
+     * <p>
+     * 策略：
+     * 1. 清空现有索引
+     * 2. 遍历整棵树
+     * 3. 将所有请求节点加入索引
      */
     private void rebuildIndex() {
         requestNodeIndex.clear();
 
+        // 获取根节点
         Optional<DefaultMutableTreeNode> rootOpt = getRootNode();
         if (rootOpt.isEmpty()) {
-            log.debug("根节点为空，跳过索引重建");
+            log.debug("根节点为空，无法构建索引");
             return;
         }
 
+        // 递归遍历树，构建索引
         DefaultMutableTreeNode root = rootOpt.get();
-        buildIndexRecursively(root);
+        int count = buildIndexRecursively(root);
 
-        log.debug("请求节点索引重建完成，共 {} 个请求", requestNodeIndex.size());
+        log.debug("请求节点索引重建完成，共 {} 个请求", count);
     }
 
     /**
      * 递归构建索引
+     * <p>
+     * 遍历树的每个节点，如果是请求节点就加入索引
+     *
+     * @param node 当前节点
+     * @return 已索引的请求数量
      */
-    private void buildIndexRecursively(DefaultMutableTreeNode node) {
+    private int buildIndexRecursively(DefaultMutableTreeNode node) {
         if (node == null) {
-            return;
+            return 0;
         }
 
+        int count = 0;
         Object userObj = node.getUserObject();
 
         // 如果是请求节点，加入索引
-        if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
-            HttpRequestItem req = (HttpRequestItem) obj[1];
-            if (req.getId() != null) {
-                requestNodeIndex.put(req.getId(), node);
-            }
+        if (userObj instanceof Object[] obj &&
+            obj.length >= 2 &&
+            REQUEST.equals(obj[0]) &&
+            obj[1] instanceof HttpRequestItem req &&
+            req.getId() != null) {
+
+            requestNodeIndex.put(req.getId(), node);
+            count++;
         }
 
         // 递归处理子节点
         for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            buildIndexRecursively(child);
-        }
-    }
-
-    /**
-     * 添加节点到索引（外部调用，用于增量更新）
-     *
-     * @param requestId 请求ID
-     * @param node 节点
-     */
-    public void addToIndex(String requestId, DefaultMutableTreeNode node) {
-        if (requestId != null && node != null) {
-            requestNodeIndex.put(requestId, node);
-            log.trace("节点已添加到索引: {}", requestId);
-        }
-    }
-
-    /**
-     * 从索引中移除节点（外部调用，用于增量更新）
-     *
-     * @param requestId 请求ID
-     */
-    public void removeFromIndex(String requestId) {
-        if (requestId != null) {
-            DefaultMutableTreeNode removed = requestNodeIndex.remove(requestId);
-            if (removed != null) {
-                log.trace("节点已从索引移除: {}", requestId);
-            }
-        }
-    }
-
-    /**
-     * 获取索引大小（用于监控）
-     *
-     * @return 索引中的节点数量
-     */
-    public int getIndexSize() {
-        return requestNodeIndex.size();
-    }
-
-    /**
-     * 通过树遍历查找节点（降级方案）
-     */
-    private Optional<DefaultMutableTreeNode> findByTraversal(
-            DefaultMutableTreeNode root,
-            String requestId) {
-
-        if (root == null || requestId == null) {
-            return Optional.empty();
-        }
-
-        // 检查当前节点
-        Object userObj = root.getUserObject();
-        if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
-            HttpRequestItem req = (HttpRequestItem) obj[1];
-            if (requestId.equals(req.getId())) {
-                // 找到了，加入索引
-                requestNodeIndex.put(requestId, root);
-                return Optional.of(root);
+            TreeNode child = node.getChildAt(i);
+            if (child instanceof DefaultMutableTreeNode childNode) {
+                count += buildIndexRecursively(childNode);
             }
         }
 
-        // 递归搜索子节点
-        for (int i = 0; i < root.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) root.getChildAt(i);
-            Optional<DefaultMutableTreeNode> result = findByTraversal(child, requestId);
-            if (result.isPresent()) {
-                return result;
-            }
-        }
-
-        return Optional.empty();
+        return count;
     }
 }

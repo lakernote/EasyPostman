@@ -6,18 +6,24 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 继承缓存管理器
  * <p>
- * 职责：管理已应用继承的请求缓存
+ * 设计原则：简单、直观、易于理解
  * <p>
- * 特性：
- * - 线程安全（ConcurrentHashMap）
- * - 版本控制（全局失效）
- * - 精细化失效（单个失效）
- * - 统计监控
+ * 核心职责：
+ * - 缓存已应用继承规则的请求对象（避免重复计算）
+ * - 提供快速的缓存失效机制
+ * <p>
+ * 使用场景：
+ * - 发送请求前，先查缓存，避免重复计算继承规则
+ * - 修改分组设置后，清空缓存，确保数据一致性
+ * <p>
+ * 实现策略：
+ * - 使用 ConcurrentHashMap 保证线程安全
+ * - 失效策略：粗粒度全局清空（简单可靠）
+ * - 不使用 TTL（由业务层控制失效时机）
  *
  * @author laker
  * @since 4.3.22
@@ -26,146 +32,161 @@ import java.util.concurrent.atomic.AtomicLong;
 public class InheritanceCache {
 
     /**
-     * 缓存版本号：Collection 修改时递增，使所有缓存失效
+     * 缓存存储：requestId -> 已应用继承的请求对象
+     * <p>
+     * 为什么用 ConcurrentHashMap？
+     * - 支持高并发读写
+     * - get/put 操作 O(1) 时间复杂度
+     * - 不需要显式加锁
      */
-    private final AtomicLong version = new AtomicLong(0);
+    private final Map<String, HttpRequestItem> cache = new ConcurrentHashMap<>();
 
     /**
-     * 缓存存储：requestId -> CachedItem
+     * 缓存统计：命中次数
      */
-    private final Map<String, CachedItem> cache = new ConcurrentHashMap<>();
+    private long hitCount = 0;
 
     /**
-     * 缓存的项
+     * 缓存统计：未命中次数
      */
-    private static class CachedItem {
-        final HttpRequestItem item;
-        final long version;
-        final long timestamp;
-
-        CachedItem(HttpRequestItem item, long version) {
-            this.item = item;
-            this.version = version;
-            this.timestamp = System.currentTimeMillis();
-        }
-    }
+    private long missCount = 0;
 
     /**
      * 获取缓存的请求
+     * <p>
+     * 逻辑：
+     * 1. 检查 requestId 是否为空
+     * 2. 从 Map 中查找
+     * 3. 返回 Optional（避免 null）
      *
      * @param requestId 请求ID
-     * @return 缓存的请求（如果存在且有效）
+     * @return 缓存的请求（如果存在）
      */
     public Optional<HttpRequestItem> get(String requestId) {
-        if (requestId == null) {
+        if (requestId == null || requestId.trim().isEmpty()) {
             return Optional.empty();
         }
 
-        CachedItem cached = cache.get(requestId);
-        long currentVersion = version.get();
+        HttpRequestItem cached = cache.get(requestId);
 
-        if (cached != null && cached.version == currentVersion) {
+        if (cached != null) {
+            hitCount++;
             log.trace("缓存命中: {}", requestId);
-            return Optional.of(cached.item);
+            return Optional.of(cached);
         }
 
+        missCount++;
         log.trace("缓存未命中: {}", requestId);
         return Optional.empty();
     }
 
     /**
      * 缓存请求
+     * <p>
+     * 逻辑：
+     * 1. 检查参数有效性
+     * 2. 直接放入 Map
      *
      * @param requestId 请求ID
-     * @param item 已应用继承的请求
+     * @param item 已应用继承的请求对象
      */
     public void put(String requestId, HttpRequestItem item) {
-        if (requestId != null && item != null) {
-            cache.put(requestId, new CachedItem(item, version.get()));
-            log.trace("缓存已存储: {}", requestId);
+        if (requestId == null || requestId.trim().isEmpty() || item == null) {
+            log.warn("无效的缓存参数: requestId={}, item={}", requestId, item);
+            return;
+        }
+
+        cache.put(requestId, item);
+        log.trace("缓存已存储: {}", requestId);
+    }
+
+    /**
+     * 清空所有缓存
+     * <p>
+     * 调用时机（重要！）：
+     * 1. 修改分组的认证设置
+     * 2. 修改分组的脚本（前置/后置）
+     * 3. 修改分组的请求头
+     * 4. 添加/删除/移动树节点
+     * 5. 导入/删除 Collection
+     * <p>
+     * 设计思路：
+     * - 采用粗粒度失效（全部清空）
+     * - 简单可靠，不会遗漏
+     * - ConcurrentHashMap.clear() 是线程安全的
+     */
+    public void clear() {
+        int sizeBefore = cache.size();
+        cache.clear();
+
+        if (sizeBefore > 0) {
+            log.debug("缓存已清空: 移除 {} 项", sizeBefore);
         }
     }
 
     /**
-     * 使所有缓存失效（全局失效）
+     * 移除单个请求的缓存
      * <p>
      * 调用时机：
-     * - 修改分组的 auth/headers/scripts
-     * - 添加/删除/移动节点
-     * - 导入 Collection
-     */
-    public void invalidateAll() {
-        long oldVersion = version.get();
-        long newVersion = version.incrementAndGet();
-        int size = cache.size();
-        cache.clear();
-
-        log.debug("缓存全局失效: 版本 {} -> {}, 清除 {} 项", oldVersion, newVersion, size);
-    }
-
-    /**
-     * 使特定请求的缓存失效（精细化失效）
+     * - 修改单个请求的设置（不影响继承）
+     * - 删除单个请求
      * <p>
-     * 调用时机：仅修改单个请求时
+     * 注意：如果不确定是否会影响其他请求，建议使用 clear()
      *
      * @param requestId 请求ID
      */
-    public void invalidate(String requestId) {
-        if (requestId != null) {
-            CachedItem removed = cache.remove(requestId);
-            if (removed != null) {
-                log.debug("缓存精细化失效: {}", requestId);
-            }
+    public void remove(String requestId) {
+        if (requestId == null || requestId.trim().isEmpty()) {
+            return;
         }
+
+        HttpRequestItem removed = cache.remove(requestId);
+        if (removed != null) {
+            log.debug("缓存已移除: {}", requestId);
+        }
+    }
+
+    /**
+     * 获取缓存大小
+     *
+     * @return 缓存中的请求数量
+     */
+    public int size() {
+        return cache.size();
+    }
+
+    /**
+     * 是否为空
+     *
+     * @return true 如果缓存为空
+     */
+    public boolean isEmpty() {
+        return cache.isEmpty();
     }
 
     /**
      * 获取缓存统计信息
+     * <p>
+     * 用于监控和调试
      *
-     * @return 统计信息
+     * @return 统计信息字符串
      */
-    public CacheStats getStats() {
-        return new CacheStats(
-            version.get(),
-            cache.size(),
-            calculateAverageAge()
+    public String getStats() {
+        long total = hitCount + missCount;
+        double hitRate = total > 0 ? (double) hitCount / total * 100 : 0;
+
+        return String.format(
+            "缓存项=%d, 命中=%d, 未命中=%d, 命中率=%.1f%%",
+            cache.size(), hitCount, missCount, hitRate
         );
     }
 
     /**
-     * 计算缓存项的平均年龄（毫秒）
+     * 重置统计信息
      */
-    private long calculateAverageAge() {
-        if (cache.isEmpty()) {
-            return 0;
-        }
-
-        long now = System.currentTimeMillis();
-        long totalAge = cache.values().stream()
-            .mapToLong(item -> now - item.timestamp)
-            .sum();
-
-        return totalAge / cache.size();
-    }
-
-    /**
-     * 缓存统计信息
-     */
-    public static class CacheStats {
-        public final long version;
-        public final int size;
-        public final long averageAgeMs;
-
-        CacheStats(long version, int size, long averageAgeMs) {
-            this.version = version;
-            this.size = size;
-            this.averageAgeMs = averageAgeMs;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("版本=%d, 缓存项=%d, 平均年龄=%dms",
-                version, size, averageAgeMs);
-        }
+    public void resetStats() {
+        hitCount = 0;
+        missCount = 0;
+        log.debug("缓存统计信息已重置");
     }
 }

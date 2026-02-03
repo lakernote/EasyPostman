@@ -6,13 +6,13 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -46,17 +46,8 @@ public class OpenedRequestsService {
 
             for (Object obj : arr) {
                 if (obj instanceof JSONObject jsonObj) {
-                    // 检查是否只包含ID（已保存的请求）
-                    if (jsonObj.size() == 1 && jsonObj.containsKey("id")) {
-                        // 这是一个已保存请求的引用，创建一个只包含ID的请求对象
-                        HttpRequestItem item = new HttpRequestItem();
-                        item.setId(jsonObj.getStr("id"));
-                        result.add(item);
-                    } else {
-                        // 这是一个完整的新请求对象
-                        HttpRequestItem item = jsonObj.toBean(HttpRequestItem.class);
-                        result.add(item);
-                    }
+                    HttpRequestItem item = jsonObj.toBean(HttpRequestItem.class);
+                    result.add(item);
                 }
             }
             return result;
@@ -148,10 +139,10 @@ public class OpenedRequestsService {
                         // 新请求：保存完整数据
                         arr.add(JSONUtil.parse(item));
                     } else {
-                        // 已保存的请求：只保存ID
-                        JSONObject idOnly = new JSONObject();
-                        idOnly.set("id", item.getId());
-                        arr.add(idOnly);
+                        JSONObject existRequest = new JSONObject();
+                        existRequest.set("id", item.getId());
+                        existRequest.set("name", item.getName());
+                        arr.add(existRequest);
                     }
                 }
                 FileUtil.writeUtf8String(arr.toStringPretty(), file);

@@ -2,6 +2,7 @@ package com.laker.postman.service.collections;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
@@ -41,9 +42,26 @@ public class OpenedRequestsService {
                 return List.of();
             }
             JSONArray arr = JSONUtil.parseArray(json);
-            return arr.toList(HttpRequestItem.class);
+            List<HttpRequestItem> result = new ArrayList<>();
+
+            for (Object obj : arr) {
+                if (obj instanceof JSONObject jsonObj) {
+                    // 检查是否只包含ID（已保存的请求）
+                    if (jsonObj.size() == 1 && jsonObj.containsKey("id")) {
+                        // 这是一个已保存请求的引用，创建一个只包含ID的请求对象
+                        HttpRequestItem item = new HttpRequestItem();
+                        item.setId(jsonObj.getStr("id"));
+                        result.add(item);
+                    } else {
+                        // 这是一个完整的新请求对象
+                        HttpRequestItem item = jsonObj.toBean(HttpRequestItem.class);
+                        result.add(item);
+                    }
+                }
+            }
+            return result;
         } catch (Exception ex) {
-            log.error("Failed to read unsaved new requests", ex);
+            log.error("Failed to read opened requests", ex);
             return List.of();
         }
     }
@@ -126,12 +144,20 @@ public class OpenedRequestsService {
                 File file = new File(PATHNAME);
                 JSONArray arr = new JSONArray();
                 for (HttpRequestItem item : openedRequestItem) {
-                    arr.add(JSONUtil.parse(item));
+                    if (item.isNewRequest()) {
+                        // 新请求：保存完整数据
+                        arr.add(JSONUtil.parse(item));
+                    } else {
+                        // 已保存的请求：只保存ID
+                        JSONObject idOnly = new JSONObject();
+                        idOnly.set("id", item.getId());
+                        arr.add(idOnly);
+                    }
                 }
                 FileUtil.writeUtf8String(arr.toStringPretty(), file);
-                log.info("Saved {} new requests to {}", openedRequestItem.size(), file.getAbsolutePath());
+                log.info("Saved {} opened requests to {}", openedRequestItem.size(), file.getAbsolutePath());
             } catch (Exception ex) {
-                log.error("Failed to save new requests on exit", ex);
+                log.error("Failed to save opened requests on exit", ex);
             }
         }
     }
@@ -141,9 +167,9 @@ public class OpenedRequestsService {
         if (file.exists()) {
             try {
                 FileUtil.del(file);
-                log.info("Cleared unsaved new requests file at {}", file.getAbsolutePath());
+                log.info("Cleared opened requests file at {}", file.getAbsolutePath());
             } catch (Exception ex) {
-                log.error("Failed to delete unsaved new requests file", ex);
+                log.error("Failed to delete opened requests file", ex);
             }
         }
     }

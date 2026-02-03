@@ -49,7 +49,7 @@ public class RequestCollectionsService {
                 continue;
             }
 
-            // 如果不是新请求，检查其在左侧树中是否还存在
+            // 如果不是新请求，从tree中找到完整数据
             if (!item.isNewRequest()) {
                 DefaultMutableTreeNode node = findRequestNodeById(rootNode, item.getId());
                 if (node == null) {
@@ -58,6 +58,9 @@ public class RequestCollectionsService {
                             item.getName(), item.getId());
                     continue;
                 }
+                // 从tree节点中获取完整的请求数据
+                Object[] userObj = (Object[]) node.getUserObject();
+                item = (HttpRequestItem) userObj[1];
             }
 
             // 恢复请求

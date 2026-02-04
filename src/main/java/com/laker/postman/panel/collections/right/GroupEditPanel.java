@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.right;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
+import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestGroup;
@@ -49,6 +50,7 @@ public class GroupEditPanel extends JPanel {
     private AuthTabPanel authTabPanel;
     private ScriptPanel scriptPanel;
     private EasyRequestHttpHeadersPanel headersPanel;
+    private EasyPostmanEnvironmentTablePanel variablesPanel;
     private JTabbedPane tabbedPane;
 
     // 原始数据快照，用于检测变化
@@ -61,6 +63,7 @@ public class GroupEditPanel extends JPanel {
     private String originalPrescript;
     private String originalPostscript;
     private List<HttpHeader> originalHeaders;
+    private List<com.laker.postman.model.EnvironmentVariable> originalVariables;
 
     // 防抖定时器
     private Timer autoSaveTimer;
@@ -115,6 +118,22 @@ public class GroupEditPanel extends JPanel {
         headersInfoPanel.add(headersInfoLabel);
         headersWrapperPanel.add(headersInfoPanel, BorderLayout.SOUTH);
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_HEADERS), headersWrapperPanel);
+
+        // Variables Tab - 分组级别的变量
+        variablesPanel = new EasyPostmanEnvironmentTablePanel();
+        JPanel variablesWrapperPanel = new JPanel(new BorderLayout());
+        variablesWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        variablesWrapperPanel.add(variablesPanel, BorderLayout.CENTER);
+
+        JPanel variablesInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        JLabel variablesInfoLabel = new JLabel(
+                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
+                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_VARIABLES_INFO) +
+                        "</i></html>"
+        );
+        variablesInfoPanel.add(variablesInfoLabel);
+        variablesWrapperPanel.add(variablesInfoPanel, BorderLayout.SOUTH);
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_VARIABLES), variablesWrapperPanel);
 
 
         // Authorization Tab - 复用 AuthTabPanel
@@ -284,6 +303,9 @@ public class GroupEditPanel extends JPanel {
 
         // 监听请求头面板变化
         headersPanel.addTableModelListener(e -> triggerAutoSave());
+
+        // 监听变量面板变化
+        variablesPanel.addTableModelListener(e -> triggerAutoSave());
     }
 
     /**
@@ -366,6 +388,7 @@ public class GroupEditPanel extends JPanel {
         group.setPrescript(scriptPanel.getPrescript());
         group.setPostscript(scriptPanel.getPostscript());
         group.setHeaders(headersPanel.getHeadersList());
+        group.setVariables(variablesPanel.getVariableList());
 
         // ⚡ 重要：使缓存失效，确保分组修改立即生效
         PreparedRequestBuilder.invalidateCache();
@@ -399,6 +422,7 @@ public class GroupEditPanel extends JPanel {
         if (!safeEquals(originalPrescript, scriptPanel.getPrescript())) return true;
         if (!safeEquals(originalPostscript, scriptPanel.getPostscript())) return true;
         if (!headersEquals(originalHeaders, headersPanel.getHeadersList())) return true;
+        if (!variablesEquals(originalVariables, variablesPanel.getVariableList())) return true;
         return false;
     }
 
@@ -429,6 +453,24 @@ public class GroupEditPanel extends JPanel {
     }
 
     /**
+     * 比较两个 Variables 列表是否相同
+     */
+    private boolean variablesEquals(List<com.laker.postman.model.EnvironmentVariable> a,
+                                    List<com.laker.postman.model.EnvironmentVariable> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            com.laker.postman.model.EnvironmentVariable va = a.get(i);
+            com.laker.postman.model.EnvironmentVariable vb = b.get(i);
+            if (va.isEnabled() != vb.isEnabled()) return false;
+            if (!safeEquals(va.getKey(), vb.getKey())) return false;
+            if (!safeEquals(va.getValue(), vb.getValue())) return false;
+        }
+        return true;
+    }
+
+    /**
      * 更新原始数据快照
      */
     private void updateOriginalSnapshot() {
@@ -441,6 +483,7 @@ public class GroupEditPanel extends JPanel {
         originalPrescript = scriptPanel.getPrescript();
         originalPostscript = scriptPanel.getPostscript();
         originalHeaders = new java.util.ArrayList<>(headersPanel.getHeadersList());
+        originalVariables = new java.util.ArrayList<>(variablesPanel.getVariableList());
     }
 
     private void loadGroupData() {
@@ -461,6 +504,11 @@ public class GroupEditPanel extends JPanel {
         // Load headers data using EasyRequestHttpHeadersPanel
         if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
             headersPanel.setHeadersList(group.getHeaders());
+        }
+
+        // Load variables data using EasyPostmanEnvironmentTablePanel
+        if (group.getVariables() != null && !group.getVariables().isEmpty()) {
+            variablesPanel.setVariableList(group.getVariables());
         }
 
         // 如果 headers 中有超过 4 个请求头，默认选中第二个 tab (Headers)

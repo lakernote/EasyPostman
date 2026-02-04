@@ -203,6 +203,7 @@ public final class MessageKeys {
     // ============ 标签页 ============
     public static final String TAB_PARAMS = "tab.params";
     public static final String TAB_HEADERS = "tab.headers";
+    public static final String TAB_VARIABLES = "tab.variables";
     public static final String TAB_AUTHORIZATION = "tab.authorization";
     public static final String TAB_SCRIPTS = "tab.scripts";
     public static final String TAB_TESTS = "tab.tests";
@@ -666,6 +667,7 @@ public final class MessageKeys {
     public static final String GROUP_EDIT_AUTH_INFO = "group.edit.auth.info";
     public static final String GROUP_EDIT_SCRIPT_INFO = "group.edit.script.info";
     public static final String GROUP_EDIT_HEADERS_INFO = "group.edit.headers.info";
+    public static final String GROUP_EDIT_VARIABLES_INFO = "group.edit.variables.info";
     public static final String GROUP_EDIT_VALIDATION_ERROR = "group.edit.validation.error";
 
     // ============ Request Docs Tab 相关 ============

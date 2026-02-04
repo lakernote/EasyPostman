@@ -29,6 +29,8 @@ public class RequestGroup implements Serializable {
     private String postscript = "";
     // 公共请求头（会被子请求继承）
     private List<HttpHeader> headers = new ArrayList<>();
+    // 分组级别的变量（会被子请求继承）
+    private List<EnvironmentVariable> variables = new ArrayList<>();
 
     public RequestGroup() {
         this.id = UUID.randomUUID().toString();
@@ -65,6 +67,13 @@ public class RequestGroup implements Serializable {
      */
     public boolean hasHeaders() {
         return headers != null && !headers.isEmpty();
+    }
+
+    /**
+     * 判断分组是否有变量
+     */
+    public boolean hasVariables() {
+        return variables != null && !variables.isEmpty();
     }
 }
 

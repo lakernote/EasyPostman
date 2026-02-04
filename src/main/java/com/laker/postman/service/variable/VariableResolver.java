@@ -71,9 +71,17 @@ public class VariableResolver {
     }
 
     /**
-     * 替换文本中的变量占位符
+     * 替换文本中的变量占位符（支持嵌套变量解析）
      * <p>
      * 示例: {{baseUrl}}/api/users -> https://api.example.com/api/users
+     * <p>
+     * 支持嵌套变量：
+     * <ul>
+     *   <li>baseUrl = https://api.example.com</li>
+     *   <li>apiPath = {{baseUrl}}/api</li>
+     *   <li>userModule = {{apiPath}}/user</li>
+     *   <li>{{userModule}}/list -> https://api.example.com/api/user/list</li>
+     * </ul>
      * <p>
      * 变量优先级: 临时变量 > 环境变量 > 内置函数
      *
@@ -81,6 +89,41 @@ public class VariableResolver {
      * @return 替换后的文本
      */
     public static String resolve(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        // 使用循环进行多轮解析，最多解析 10 轮（防止循环引用导致无限递归）
+        String result = text;
+        int maxIterations = 10;
+        int iteration = 0;
+
+        while (iteration < maxIterations) {
+            String beforeResolve = result;
+            result = resolveOnce(result);
+
+            // 如果本轮没有任何变化，说明已经没有可解析的变量了，退出循环
+            if (result.equals(beforeResolve)) {
+                break;
+            }
+
+            iteration++;
+        }
+
+        if (iteration >= maxIterations) {
+            log.warn("Variable resolution reached max iterations ({}), possible circular reference in: {}", maxIterations, text);
+        }
+
+        return result;
+    }
+
+    /**
+     * 进行一轮变量解析
+     *
+     * @param text 包含变量占位符的文本
+     * @return 替换后的文本
+     */
+    private static String resolveOnce(String text) {
         if (text == null || text.isEmpty()) {
             return text;
         }

@@ -1,8 +1,8 @@
 package com.laker.postman.service.setting;
 
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -333,10 +333,10 @@ public class SettingManager {
             try {
                 return Integer.parseInt(val);
             } catch (NumberFormatException e) {
-                return 20;
+                return 10;
             }
         }
-        return 20;
+        return 10;
     }
 
     public static void setMaxOpenedRequestsCount(int count) {

@@ -4,8 +4,8 @@ import com.laker.postman.model.HttpRequestItem;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * 继承缓存管理器
@@ -15,10 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * 核心职责：
  * - 缓存已应用继承规则的请求对象（避免重复计算）
  * - 提供快速的缓存失效机制
- * <p>
- * 使用场景：
- * - 发送请求前，先查缓存，避免重复计算继承规则
- * - 修改分组设置后，清空缓存，确保数据一致性
  * <p>
  *
  * @author laker
@@ -38,49 +34,49 @@ public class InheritanceCache {
     private final Map<String, HttpRequestItem> cache = new ConcurrentHashMap<>();
 
     /**
-     * 获取缓存的请求
+     * 原子性地获取或计算缓存
      * <p>
-     * 逻辑：
-     * 1. 检查 requestId 是否为空
-     * 2. 从 Map 中查找
-     * 3. 返回 Optional（避免 null）
+     * 并发安全性：
+     * - 使用 ConcurrentHashMap.computeIfAbsent 实现原子操作
+     * - 如果多个线程同时请求同一个 key，只有一个线程会执行 mappingFunction
+     * - 其他线程会等待并获取第一个线程计算的结果
+     * <p>
+     * 性能优势：
+     * - 避免重复计算（check-then-act 竞态条件）
+     * - 不需要显式加锁
+     * <p>
      *
-     * @param requestId 请求ID
-     * @return 缓存的请求（如果存在）
+     * @param requestId       请求ID
+     * @param mappingFunction 计算函数（仅在缓存未命中时执行）
+     * @return 缓存的或新计算的请求对象
      */
-    public Optional<HttpRequestItem> get(String requestId) {
+    public HttpRequestItem computeIfAbsent(String requestId, Function<String, HttpRequestItem> mappingFunction) {
         if (requestId == null || requestId.trim().isEmpty()) {
-            return Optional.empty();
+            log.warn("无效的 requestId，跳过缓存");
+            return mappingFunction.apply(requestId);
         }
 
-        HttpRequestItem cached = cache.get(requestId);
-
-        if (cached != null) {
-            return Optional.of(cached);
+        if (mappingFunction == null) {
+            throw new IllegalArgumentException("mappingFunction 不能为 null");
         }
 
-        log.warn("缓存未命中: {}", requestId);
-        return Optional.empty();
-    }
-
-    /**
-     * 缓存请求
-     * <p>
-     * 逻辑：
-     * 1. 检查参数有效性
-     * 2. 直接放入 Map
-     *
-     * @param requestId 请求ID
-     * @param item      已应用继承的请求对象
-     */
-    public void put(String requestId, HttpRequestItem item) {
-        if (requestId == null || requestId.trim().isEmpty() || item == null) {
-            log.warn("无效的缓存参数: requestId={}, item={}", requestId, item);
-            return;
-        }
-
-        cache.put(requestId, item);
-        log.info("缓存已存储: {}", requestId);
+        // ConcurrentHashMap.computeIfAbsent 保证原子性：
+        // 1. 检查缓存是否存在
+        // 2. 如果不存在，执行 mappingFunction 并存储结果
+        // 3. 返回缓存的或新计算的值
+        //
+        // 多线程场景：
+        // - 线程A、B同时请求同一个key
+        // - 只有一个线程执行 mappingFunction
+        // - 另一个线程等待并获取结果
+        return cache.computeIfAbsent(requestId, id -> {
+            log.info("缓存未命中，开始计算: {}", requestId);
+            HttpRequestItem result = mappingFunction.apply(id);
+            if (result != null) {
+                log.debug("缓存已存储: {}", requestId);
+            }
+            return result;
+        });
     }
 
     /**
@@ -127,24 +123,6 @@ public class InheritanceCache {
         if (removed != null) {
             log.debug("缓存已移除: {}", requestId);
         }
-    }
-
-    /**
-     * 获取缓存大小
-     *
-     * @return 缓存中的请求数量
-     */
-    public int size() {
-        return cache.size();
-    }
-
-    /**
-     * 是否为空
-     *
-     * @return true 如果缓存为空
-     */
-    public boolean isEmpty() {
-        return cache.isEmpty();
     }
 
 }

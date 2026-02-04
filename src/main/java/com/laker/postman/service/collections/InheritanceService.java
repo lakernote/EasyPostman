@@ -58,25 +58,16 @@ public class InheritanceService {
             return null;
         }
 
-        // 1. 如果使用缓存，先检查缓存
         String requestId = item.getId();
-        if (useCache && requestId != null) {
-            Optional<HttpRequestItem> cached = cache.get(requestId);
-            if (cached.isPresent()) {
-                log.trace("缓存命中: {}", item.getName());
-                return cached.get();
-            }
+
+        // 如果不使用缓存或 requestId 为空，直接计算
+        if (!useCache || requestId == null) {
+            return applyInheritanceInternal(item);
         }
 
-        // 2. 缓存未命中或不使用缓存，执行继承计算
-        HttpRequestItem result = applyInheritanceInternal(item);
-
-        // 3. 如果使用缓存，缓存结果
-        if (useCache && requestId != null && result != null) {
-            cache.put(requestId, result);
-        }
-
-        return result;
+        // 使用缓存：原子性地获取或计算并缓存结果（线程安全）
+        // computeIfAbsent 保证只有一个线程执行计算，其他线程等待并获取结果
+        return cache.computeIfAbsent(requestId, id -> applyInheritanceInternal(item));
     }
 
     /**

@@ -737,10 +737,6 @@ public class RequestEditPanel extends SingletonBasePanel {
                 160
         );
 
-        // 为这个 TabbedPane 启用完整边框
-        tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, true);
-
-
         add(tabbedPane, BorderLayout.CENTER);
     }
 

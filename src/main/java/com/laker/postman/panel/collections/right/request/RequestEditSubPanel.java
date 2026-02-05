@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.right.request;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.table.FormDataTablePanel;
@@ -185,7 +186,10 @@ public class RequestEditSubPanel extends JPanel {
 
         // 创建请求选项卡面板
         reqTabs = new JTabbedPane(); // 2. 创建请求选项卡面板
-        reqTabs.setMinimumSize(new Dimension(400, 120));
+        // 不显示边框 - 移除完整边框
+        reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false);
+        // 移除内容区域的边框
+        reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);
 
         // 2.0 Docs Tab - 放在第一个，像 Postman 一样
         descriptionEditor = new MarkdownEditorPanel();
@@ -478,9 +482,9 @@ public class RequestEditSubPanel extends JPanel {
                     String url = item.getUrl();
                     RequestItemProtocolEnum protocol = item.getProtocol();
                     if (protocol.isWebSocketProtocol() && !url.toLowerCase().startsWith("ws://") && !url.toLowerCase().startsWith("wss://")) {
-                            validationError = "WebSocket requests must use ws:// or wss:// protocol";
-                            return null;
-                        }
+                        validationError = "WebSocket requests must use ws:// or wss:// protocol";
+                        return null;
+                    }
 
                     req = PreparedRequestBuilder.build(item, !isModified()); // 仅当未修改时使用缓存
                     effectiveItem = item; // 保持兼容性

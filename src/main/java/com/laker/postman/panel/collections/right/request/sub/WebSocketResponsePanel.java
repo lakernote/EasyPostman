@@ -58,9 +58,9 @@ public class WebSocketResponsePanel extends JPanel {
 
     public WebSocketResponsePanel() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         // 顶部工具栏
-        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2)); // 左对齐，水平间距5，垂直间距2
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
         clearButton = new ClearButton();

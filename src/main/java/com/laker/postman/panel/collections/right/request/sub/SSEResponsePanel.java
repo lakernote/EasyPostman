@@ -54,7 +54,7 @@ public class SSEResponsePanel extends JPanel {
 
     public SSEResponsePanel() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         // 顶部工具栏
         JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);

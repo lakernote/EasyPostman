@@ -15,7 +15,6 @@ import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
@@ -65,7 +64,7 @@ public class RequestLinePanel extends JPanel {
     private void setupPanelStyle() {
         setLayout(new BorderLayout(0, 0));
         setOpaque(true);
-        setBorder(new EmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING));
+        setBorder(BorderFactory.createEmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING));
     }
 
     /**

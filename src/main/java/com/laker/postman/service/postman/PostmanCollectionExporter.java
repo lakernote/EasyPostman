@@ -93,6 +93,21 @@ public class PostmanCollectionExporter {
             collection.put("event", events);
         }
 
+        // 导出集合级别的变量（从根节点）
+        if (rootGroup != null && rootGroup.hasVariables()) {
+            JSONArray variables = new JSONArray();
+            for (Variable variable : rootGroup.getVariables()) {
+                JSONObject varObj = new JSONObject();
+                varObj.put("key", variable.getKey());
+                varObj.put("value", variable.getValue());
+                if (!variable.isEnabled()) {
+                    varObj.put("disabled", true);
+                }
+                variables.add(varObj);
+            }
+            collection.put("variable", variables);
+        }
+
         collection.put("item", buildPostmanItemsFromNode(groupNode));
         return collection;
     }

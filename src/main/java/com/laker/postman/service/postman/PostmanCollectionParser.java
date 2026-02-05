@@ -66,6 +66,11 @@ public class PostmanCollectionParser {
                     parseEventsToGroup(postmanRoot.getJSONArray(KEY_EVENT), collectionGroup);
                 }
 
+                // 解析集合级别的变量
+                if (postmanRoot.containsKey("variable")) {
+                    collectionGroup.setVariables(parseVariables(postmanRoot.getJSONArray("variable")));
+                }
+
                 JSONArray items = postmanRoot.getJSONArray("item");
                 CollectionParseResult result = new CollectionParseResult(collectionGroup);
 
@@ -235,6 +240,25 @@ public class PostmanCollectionParser {
             headersList.add(new HttpHeader(enabled, hObj.getStr("key", ""), hObj.getStr(KEY_VALUE, "")));
         }
         return headersList;
+    }
+
+    /**
+     * 解析Postman的variable数组
+     */
+    private static List<Variable> parseVariables(JSONArray variables) {
+        if (variables == null || variables.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Variable> variableList = new ArrayList<>();
+        for (Object v : variables) {
+            JSONObject vObj = (JSONObject) v;
+            boolean enabled = !vObj.getBool(KEY_DISABLED, false);
+            String key = vObj.getStr("key", "");
+            String value = vObj.getStr(KEY_VALUE, "");
+            variableList.add(new Variable(enabled, key, value));
+        }
+        return variableList;
     }
 
     /**

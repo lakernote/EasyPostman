@@ -73,7 +73,7 @@ public class NetworkLogPanel extends JPanel {
     }
 
     /**
-     * 添加日志（新版API - 推荐使用）
+     * 添加日志
      *
      * @param stage 日志阶段枚举
      * @param msg   消息内容

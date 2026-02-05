@@ -21,13 +21,8 @@ public class ToolboxPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        // 添加左右边距
-        setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
-
         // 创建标签页容器
-        toolTabs = new JTabbedPane(SwingConstants.TOP);
-        // 设置标签页布局策略：使用滚动模式，避免标签页过多时换行显示
-        toolTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        toolTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
 
         // 添加各种工具标签页 - 按功能分类和使用频率排序
         initToolTabs();

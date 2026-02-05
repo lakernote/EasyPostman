@@ -185,7 +185,7 @@ public class RequestEditSubPanel extends JPanel {
         add(topPanel, BorderLayout.NORTH);
 
         // 创建请求选项卡面板
-        reqTabs = new JTabbedPane(); // 2. 创建请求选项卡面板
+        reqTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT); // 2. 创建请求选项卡面板
         reqTabs.setMinimumSize(new Dimension(0, 0));
         // 不显示边框 - 移除完整边框
         reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false);

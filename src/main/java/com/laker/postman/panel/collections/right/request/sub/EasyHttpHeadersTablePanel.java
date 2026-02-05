@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.laker.postman.common.component.table.AbstractEasyPostmanTablePanel;
+import com.laker.postman.common.component.table.AbstractTablePanel;
 import com.laker.postman.common.component.table.HttpHeaderKeyEasyTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
 import com.laker.postman.common.component.table.HttpHeaderValueEasyTextFieldCellEditor;
@@ -11,7 +11,7 @@ import javax.swing.*;
 import java.util.*;
 
 @Slf4j
-public class EasyHttpHeadersTablePanel extends AbstractEasyPostmanTablePanel<Map<String, Object>> {
+public class EasyHttpHeadersTablePanel extends AbstractTablePanel<Map<String, Object>> {
 
     // Default header keys for consistency
     private static final String USER_AGENT = "User-Agent";

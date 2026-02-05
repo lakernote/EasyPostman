@@ -17,7 +17,7 @@ import java.util.List;
  * 支持 Enable、Key、Type(Text/File)、Value 和 Delete 列结构
  */
 @Slf4j
-public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel<HttpFormData> {
+public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
     // Column indices
     private static final int COL_ENABLED = 0;
@@ -32,7 +32,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
     /**
      * 构造函数，创建默认的 Form-Data 表格面板
      */
-    public EasyPostmanFormDataTablePanel() {
+    public FormDataTablePanel() {
         this(true, true);
     }
 
@@ -42,7 +42,7 @@ public class EasyPostmanFormDataTablePanel extends AbstractEasyPostmanTablePanel
      * @param popupMenuEnabled     是否启用右键菜单
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
-    public EasyPostmanFormDataTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
+    public FormDataTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
         super(new String[]{"", "Key", "Type", "Value", ""});
         initializeComponents();
         initializeTableUI();

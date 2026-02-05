@@ -1,6 +1,6 @@
 package com.laker.postman.common.component.table;
 
-import com.laker.postman.model.EnvironmentVariable;
+import com.laker.postman.model.Variable;
 import com.laker.postman.util.FontsUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.List;
  * 支持 Drag+Enable、Key、Value 和 Delete 列结构
  */
 @Slf4j
-public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePanel<EnvironmentVariable> {
+public class EasyVariableTablePanel extends AbstractTablePanel<Variable> {
 
     // Column indices - 此表格有特殊的 Drag+Enable 合并列
     private static final int COL_DRAG_ENABLE = 0;  // 合并拖动手柄和启用复选框
@@ -34,7 +34,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * 构造函数，创建默认的环境变量表格面板
      */
-    public EasyPostmanEnvironmentTablePanel() {
+    public EasyVariableTablePanel() {
         this("Name", "Value", true, true);
     }
 
@@ -46,7 +46,7 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
      * @param popupMenuEnabled     是否启用右键菜单
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
-    public EasyPostmanEnvironmentTablePanel(String nameCol, String valueCol, boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
+    public EasyVariableTablePanel(String nameCol, String valueCol, boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
         super(new String[]{"", nameCol, valueCol, ""});
         initializeComponents();
         initializeTableUI();
@@ -409,19 +409,19 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * 获取环境变量列表（新格式）
      */
-    public List<EnvironmentVariable> getVariableList() {
+    public List<Variable> getVariableList() {
         // Stop cell editing to ensure any in-progress edits are committed
         // Use parent class method with recursion protection
         stopCellEditingWithProtection();
 
-        List<EnvironmentVariable> dataList = new ArrayList<>();
+        List<Variable> dataList = new ArrayList<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             boolean enabled = getBooleanValue(i, COL_DRAG_ENABLE);
             String key = getStringValue(i, COL_KEY);
             String value = getStringValue(i, COL_VALUE);
 
             if (!key.isEmpty()) {
-                dataList.add(new EnvironmentVariable(enabled, key, value));
+                dataList.add(new Variable(enabled, key, value));
             }
         }
         return dataList;
@@ -430,14 +430,14 @@ public class EasyPostmanEnvironmentTablePanel extends AbstractEasyPostmanTablePa
     /**
      * 设置环境变量列表（新格式）
      */
-    public void setVariableList(List<EnvironmentVariable> dataList) {
+    public void setVariableList(List<Variable> dataList) {
         stopCellEditing();
 
         suppressAutoAppendRow = true;
         try {
             tableModel.setRowCount(0);
             if (dataList != null) {
-                for (EnvironmentVariable var : dataList) {
+                for (Variable var : dataList) {
                     tableModel.addRow(new Object[]{var.isEnabled(), var.getKey(), var.getValue(), ""});
                 }
             }

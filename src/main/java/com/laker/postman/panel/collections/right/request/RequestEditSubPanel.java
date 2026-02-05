@@ -5,8 +5,8 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
-import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
+import com.laker.postman.common.component.table.FormDataTablePanel;
+import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.common.exception.DownloadCancelledException;
 import com.laker.postman.model.*;
 import com.laker.postman.model.script.TestResult;
@@ -991,12 +991,12 @@ public class RequestEditSubPanel extends JPanel {
             }
 
             if (CollUtil.isNotEmpty(item.getFormDataList())) {
-                EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+                FormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
                 formDataTablePanel.setFormDataList(item.getFormDataList());
             }
 
             if (CollUtil.isNotEmpty(item.getUrlencodedList())) {
-                EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+                FormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
                 urlencodedTablePanel.setFormDataList(item.getUrlencodedList());
             }
 
@@ -1041,14 +1041,14 @@ public class RequestEditSubPanel extends JPanel {
         item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());
         String bodyType = requestBodyPanel.getBodyType();
         if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(bodyType)) {
-            EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+            FormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             item.setFormDataList(formDataTablePanel.getFormDataList());
             item.setBody(""); // form-data模式下，body通常不直接使用
             item.setUrlencodedList(new ArrayList<>());
         } else if (RequestBodyPanel.BODY_TYPE_FORM_URLENCODED.equals(bodyType)) {
             item.setBody(""); // x-www-form-urlencoded模式下，body通常不直接使用
             item.setFormDataList(new ArrayList<>());
-            EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+            FormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
             item.setUrlencodedList(urlencodedTablePanel.getFormDataList());
         } else if (RequestBodyPanel.BODY_TYPE_RAW.equals(bodyType)) {
             item.setBody(requestBodyPanel.getRawBody());
@@ -1589,13 +1589,13 @@ public class RequestEditSubPanel extends JPanel {
 
                     // 设置 Form Data
                     if (CollUtil.isNotEmpty(originalRequest.getFormDataList())) {
-                        EasyPostmanFormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+                        FormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
                         formDataTablePanel.setFormDataList(new ArrayList<>(originalRequest.getFormDataList()));
                     }
 
                     // 设置 URL Encoded
                     if (CollUtil.isNotEmpty(originalRequest.getUrlencodedList())) {
-                        EasyPostmanFormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+                        FormUrlencodedTablePanel urlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
                         urlencodedTablePanel.setFormDataList(new ArrayList<>(originalRequest.getUrlencodedList()));
                     }
 

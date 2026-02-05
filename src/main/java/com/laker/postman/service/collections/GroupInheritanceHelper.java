@@ -2,6 +2,7 @@ package com.laker.postman.service.collections;
 
 import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.model.AuthType;
+import com.laker.postman.model.Variable;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
@@ -80,10 +81,11 @@ public class GroupInheritanceHelper {
         List<ScriptFragment> groupPreScripts = new ArrayList<>();
         List<ScriptFragment> groupPostScripts = new ArrayList<>();
         List<HttpHeader> groupHeaders = new ArrayList<>();
+        List<Variable> groupVariables = new ArrayList<>();
 
         // 应用继承逻辑
         applyAuthInheritance(mergedItem, groupChain);
-        collectScriptsAndHeaders(groupChain, groupPreScripts, groupPostScripts, groupHeaders);
+        collectScriptsHeadersAndVariables(groupChain, groupPreScripts, groupPostScripts, groupHeaders, groupVariables);
 
         // 合并前置脚本（外层到内层的顺序）
         String mergedPreScript = ScriptMerger.mergePreScripts(groupPreScripts, requestPreScript);
@@ -166,13 +168,14 @@ public class GroupInheritanceHelper {
     }
 
     /**
-     * 收集脚本和请求头
+     * 收集脚本、请求头和变量
      */
-    private static void collectScriptsAndHeaders(
+    private static void collectScriptsHeadersAndVariables(
             List<RequestGroup> groupChain,
             List<ScriptFragment> preScripts,
             List<ScriptFragment> postScripts,
-            List<HttpHeader> headers) {
+            List<HttpHeader> headers,
+            List<Variable> variables) {
 
         // 【前置脚本】外层到内层顺序添加
         for (RequestGroup group : groupChain) {
@@ -193,6 +196,13 @@ public class GroupInheritanceHelper {
         for (RequestGroup group : groupChain) {
             if (group.hasHeaders() && CollUtil.isNotEmpty(group.getHeaders())) {
                 headers.addAll(group.getHeaders());
+            }
+        }
+
+        // 【变量】外层到内层顺序添加（后续合并时内层覆盖外层）
+        for (RequestGroup group : groupChain) {
+            if (CollUtil.isNotEmpty(group.getVariables())) {
+                variables.addAll(group.getVariables());
             }
         }
     }
@@ -314,5 +324,42 @@ public class GroupInheritanceHelper {
         return header != null &&
                header.getKey() != null &&
                !header.getKey().trim().isEmpty();
+    }
+
+    /**
+     * 获取合并后的分组级别变量
+     * <p>
+     * 用于变量解析器获取当前请求所继承的所有分组变量
+     * 变量优先级：内层分组覆盖外层分组
+     *
+     * @param requestNode 请求在树中的节点
+     * @return 合并后的变量列表，按优先级排序（内层优先）
+     */
+    public static List<Variable> getMergedGroupVariables(DefaultMutableTreeNode requestNode) {
+        if (requestNode == null) {
+            return new ArrayList<>();
+        }
+
+        List<RequestGroup> groupChain = collectGroupChain(requestNode);
+        if (groupChain.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 使用 LinkedHashMap 保持插入顺序，同时支持覆盖
+        // Key 使用变量名，内层覆盖外层
+        Map<String, Variable> mergedMap = new LinkedHashMap<>();
+
+        // 外层到内层顺序添加，内层会覆盖外层的同名变量
+        for (RequestGroup group : groupChain) {
+            if (CollUtil.isNotEmpty(group.getVariables())) {
+                for (Variable variable : group.getVariables()) {
+                    if (variable != null && variable.getKey() != null && !variable.getKey().trim().isEmpty()) {
+                        mergedMap.put(variable.getKey(), variable);
+                    }
+                }
+            }
+        }
+
+        return new ArrayList<>(mergedMap.values());
     }
 }

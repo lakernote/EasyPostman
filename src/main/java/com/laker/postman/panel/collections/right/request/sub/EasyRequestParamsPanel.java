@@ -19,7 +19,7 @@ import java.util.List;
  * 类似于 EasyRequestHttpHeadersPanel 的设计
  */
 public class EasyRequestParamsPanel extends JPanel {
-    private EasyPostmanParamsTablePanel tablePanel;
+    private ParamsTablePanel tablePanel;
 
     public EasyRequestParamsPanel() {
         initializeComponents();
@@ -43,7 +43,7 @@ public class EasyRequestParamsPanel extends JPanel {
         headerPanel.add(bulkEditButton);
 
         // Create table panel
-        tablePanel = new EasyPostmanParamsTablePanel();
+        tablePanel = new ParamsTablePanel();
 
         add(headerPanel, BorderLayout.NORTH);
     }

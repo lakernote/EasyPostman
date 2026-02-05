@@ -16,7 +16,7 @@ import java.util.Map;
 public class Environment {
     private String id;
     private String name;
-    private List<EnvironmentVariable> variableList = new ArrayList<>();
+    private List<Variable> variableList = new ArrayList<>();
     private boolean active = false;
 
     public Environment() {
@@ -28,7 +28,7 @@ public class Environment {
 
     public void addVariable(String key, String value) {
         if (key != null && !key.isEmpty()) {
-            EnvironmentVariable variable = new EnvironmentVariable(true, key, value);
+            Variable variable = new Variable(true, key, value);
             variableList.add(variable);
         }
     }
@@ -39,7 +39,7 @@ public class Environment {
             // 查找是否存在该key的变量
             boolean found = false;
             if (variableList != null) {
-                for (EnvironmentVariable envVar : variableList) {
+                for (Variable envVar : variableList) {
                     if (key.equals(envVar.getKey())) {
                         envVar.setValue(value);
                         envVar.setEnabled(true);
@@ -53,7 +53,7 @@ public class Environment {
                 if (variableList == null) {
                     variableList = new ArrayList<>();
                 }
-                variableList.add(new EnvironmentVariable(true, key, value));
+                variableList.add(new Variable(true, key, value));
             }
         }
     }
@@ -81,7 +81,7 @@ public class Environment {
     public String get(String key) {
         // 从 variableList 获取已启用的变量
         if (variableList != null && !variableList.isEmpty()) {
-            for (EnvironmentVariable envVar : variableList) {
+            for (Variable envVar : variableList) {
                 if (envVar.isEnabled() && key.equals(envVar.getKey())) {
                     return envVar.getValue();
                 }
@@ -112,7 +112,7 @@ public class Environment {
     public boolean hasVariable(String key) {
         // 从 variableList 查找已启用的变量
         if (variableList != null && !variableList.isEmpty()) {
-            for (EnvironmentVariable envVar : variableList) {
+            for (Variable envVar : variableList) {
                 if (envVar.isEnabled() && key.equals(envVar.getKey())) {
                     return true;
                 }
@@ -136,7 +136,7 @@ public class Environment {
     public Map<String, String> getVariables() {
         Map<String, String> result = new LinkedHashMap<>();
         if (variableList != null) {
-            for (EnvironmentVariable envVar : variableList) {
+            for (Variable envVar : variableList) {
                 if (envVar.isEnabled()) {
                     result.put(envVar.getKey(), envVar.getValue());
                 }
@@ -166,7 +166,7 @@ public class Environment {
 
         // 然后替换环境变量
         if (variableList != null) {
-            for (EnvironmentVariable envVar : variableList) {
+            for (Variable envVar : variableList) {
                 if (envVar.isEnabled()) {
                     String placeholder = "{{" + envVar.getKey() + "}}";
                     if (result.contains(placeholder)) {

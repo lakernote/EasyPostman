@@ -7,8 +7,8 @@ import com.laker.postman.common.component.button.FormatButton;
 import com.laker.postman.common.component.button.SearchButton;
 import com.laker.postman.common.component.button.WebSocketSendButton;
 import com.laker.postman.common.component.button.WebSocketTimedSendButton;
-import com.laker.postman.common.component.table.EasyPostmanFormDataTablePanel;
-import com.laker.postman.common.component.table.EasyPostmanFormUrlencodedTablePanel;
+import com.laker.postman.common.component.table.FormDataTablePanel;
+import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableSegment;
@@ -58,9 +58,9 @@ public class RequestBodyPanel extends JPanel {
     @Getter
     private EasyComboBox<String> rawTypeComboBox;
     @Getter
-    private EasyPostmanFormDataTablePanel formDataTablePanel;
+    private FormDataTablePanel formDataTablePanel;
     @Getter
-    private EasyPostmanFormUrlencodedTablePanel formUrlencodedTablePanel;
+    private FormUrlencodedTablePanel formUrlencodedTablePanel;
     @Getter
     private RSyntaxTextArea bodyArea;
     private CardLayout bodyCardLayout;
@@ -246,12 +246,12 @@ public class RequestBodyPanel extends JPanel {
     }
 
     private JPanel createFormDataPanel() {
-        formDataTablePanel = new EasyPostmanFormDataTablePanel();
+        formDataTablePanel = new FormDataTablePanel();
         return formDataTablePanel;
     }
 
     private JPanel createFormUrlencodedPanel() {
-        formUrlencodedTablePanel = new EasyPostmanFormUrlencodedTablePanel();
+        formUrlencodedTablePanel = new FormUrlencodedTablePanel();
         return formUrlencodedTablePanel;
     }
 

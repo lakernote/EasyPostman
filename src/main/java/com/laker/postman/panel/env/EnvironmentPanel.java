@@ -13,11 +13,11 @@ import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.button.SaveButton;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
-import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
+import com.laker.postman.common.component.table.EasyVariableTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.EnvironmentItem;
-import com.laker.postman.model.EnvironmentVariable;
+import com.laker.postman.model.Variable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
@@ -52,7 +52,7 @@ import java.util.List;
 @Slf4j
 public class EnvironmentPanel extends SingletonBasePanel {
     public static final String EXPORT_FILE_NAME = "EasyPostman-Environments.json";
-    private EasyPostmanEnvironmentTablePanel variablesTablePanel;
+    private EasyVariableTablePanel variablesTablePanel;
     private transient Environment currentEnvironment;
     private JList<EnvironmentItem> environmentList;
     private DefaultListModel<EnvironmentItem> environmentListModel;
@@ -97,7 +97,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         // 变量表格容器，添加边距
         JPanel tableContainer = new JPanel(new BorderLayout());
         tableContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        variablesTablePanel = new EasyPostmanEnvironmentTablePanel();
+        variablesTablePanel = new EasyVariableTablePanel();
         tableContainer.add(variablesTablePanel, BorderLayout.CENTER);
         rightPanel.add(tableContainer, BorderLayout.CENTER);
 
@@ -206,7 +206,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         try {
             variablesTablePanel.stopCellEditing();
-            List<EnvironmentVariable> variableList = variablesTablePanel.getVariableList();
+            List<Variable> variableList = variablesTablePanel.getVariableList();
             currentEnvironment.setVariableList(new ArrayList<>(variableList)); // 使用副本避免并发修改
             EnvironmentService.saveEnvironment(currentEnvironment);
             // 保存后更新快照
@@ -566,7 +566,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
         variablesTablePanel.stopCellEditing();
 
         // 保存到新格式 variableList
-        List<EnvironmentVariable> variableList = variablesTablePanel.getVariableList();
+        List<Variable> variableList = variablesTablePanel.getVariableList();
         currentEnvironment.setVariableList(new ArrayList<>(variableList)); // 使用副本避免并发修改
         EnvironmentService.saveEnvironment(currentEnvironment);
         // 保存后更新快照为json字符串
@@ -1118,8 +1118,8 @@ public class EnvironmentPanel extends SingletonBasePanel {
 
         // 1. 将当前表格数据转换为文本格式（Key: Value\n）
         StringBuilder text = new StringBuilder();
-        List<EnvironmentVariable> currentVariables = variablesTablePanel.getVariableList();
-        for (EnvironmentVariable variable : currentVariables) {
+        List<Variable> currentVariables = variablesTablePanel.getVariableList();
+        for (Variable variable : currentVariables) {
             if (!variable.getKey().isEmpty()) {
                 text.append(variable.getKey()).append(": ").append(variable.getValue()).append("\n");
             }
@@ -1226,7 +1226,7 @@ public class EnvironmentPanel extends SingletonBasePanel {
             return;
         }
 
-        List<EnvironmentVariable> variables = new ArrayList<>();
+        List<Variable> variables = new ArrayList<>();
         String[] lines = text.split("\n");
 
         for (String line : lines) {
@@ -1247,13 +1247,13 @@ public class EnvironmentPanel extends SingletonBasePanel {
                 String key = parts[0].trim();
                 String value = parts[1].trim();
                 if (!key.isEmpty()) {
-                    variables.add(new EnvironmentVariable(true, key, value));
+                    variables.add(new Variable(true, key, value));
                 }
             } else if (line.contains(":") || line.contains("=")) {
                 // 如果包含分隔符但解析失败，可能是值为空的情况
                 String key = line.replaceAll("[=:].*", "").trim();
                 if (!key.isEmpty()) {
-                    variables.add(new EnvironmentVariable(true, key, ""));
+                    variables.add(new Variable(true, key, ""));
                 }
             }
         }

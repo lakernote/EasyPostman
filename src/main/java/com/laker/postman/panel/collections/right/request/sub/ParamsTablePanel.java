@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.laker.postman.common.component.table.AbstractEasyPostmanTablePanel;
+import com.laker.postman.common.component.table.AbstractTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasySmartValueCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
@@ -15,7 +15,7 @@ import java.util.List;
  * Similar to EasyHttpHeadersTablePanel but for request parameters
  */
 @Slf4j
-public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<HttpParam> {
+public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
 
     // Column indices
     private static final int COL_ENABLED = 0;
@@ -23,7 +23,7 @@ public class EasyPostmanParamsTablePanel extends AbstractEasyPostmanTablePanel<H
     private static final int COL_VALUE = 2;
     private static final int COL_DELETE = 3;
 
-    public EasyPostmanParamsTablePanel() {
+    public ParamsTablePanel() {
         super(new String[]{"", "Key", "Value", ""});
         initializeComponents();
         initializeTableUI();

@@ -23,7 +23,7 @@ import java.awt.event.MouseEvent;
  * @author Laker
  */
 @Slf4j
-public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
+public abstract class AbstractTablePanel<T> extends JPanel {
 
     // ========== 共同字段 ==========
 
@@ -66,7 +66,7 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
      *
      * @param columns 列名数组
      */
-    protected AbstractEasyPostmanTablePanel(String[] columns) {
+    protected AbstractTablePanel(String[] columns) {
         this.columns = columns;
     }
 
@@ -174,12 +174,12 @@ public abstract class AbstractEasyPostmanTablePanel<T> extends JPanel {
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                return AbstractEasyPostmanTablePanel.this.getColumnClass(columnIndex);
+                return AbstractTablePanel.this.getColumnClass(columnIndex);
             }
 
             @Override
             public boolean isCellEditable(int row, int column) {
-                return AbstractEasyPostmanTablePanel.this.isCellEditable(row, column);
+                return AbstractTablePanel.this.isCellEditable(row, column);
             }
         };
 

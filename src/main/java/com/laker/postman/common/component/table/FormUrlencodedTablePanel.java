@@ -12,7 +12,7 @@ import java.util.List;
  * 支持 Enable、Key、Value 和 Delete 列结构
  */
 @Slf4j
-public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTablePanel<HttpFormUrlencoded> {
+public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlencoded> {
 
     // Column indices
     private static final int COL_ENABLED = 0;
@@ -23,7 +23,7 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
     /**
      * 构造函数，创建默认的 Form-Urlencoded 表格面板
      */
-    public EasyPostmanFormUrlencodedTablePanel() {
+    public FormUrlencodedTablePanel() {
         this(true, true);
     }
 
@@ -33,7 +33,7 @@ public class EasyPostmanFormUrlencodedTablePanel extends AbstractEasyPostmanTabl
      * @param popupMenuEnabled     是否启用右键菜单
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
-    public EasyPostmanFormUrlencodedTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
+    public FormUrlencodedTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
         super(new String[]{"", "Key", "Value", ""});
         initializeComponents();
         initializeTableUI();

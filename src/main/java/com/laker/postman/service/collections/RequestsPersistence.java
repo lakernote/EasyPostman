@@ -3,10 +3,7 @@ package com.laker.postman.service.collections;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.SavedResponse;
+import com.laker.postman.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -198,6 +195,16 @@ public class RequestsPersistence {
             }
         }
 
+        // 解析分组级别的变量
+        if (groupJson.containsKey("variables")) {
+            JSONArray variablesArray = groupJson.getJSONArray("variables");
+            if (variablesArray != null && !variablesArray.isEmpty()) {
+                List<Variable> variables =
+                        JSONUtil.toList(variablesArray, Variable.class);
+                group.setVariables(variables);
+            }
+        }
+
         DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
         JSONArray children = groupJson.getJSONArray("children");
         if (children != null) {
@@ -261,6 +268,10 @@ public class RequestsPersistence {
             // 保存公共请求头
             if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
                 groupJson.set("headers", group.getHeaders());
+            }
+            // 保存分组级别的变量
+            if (group.getVariables() != null && !group.getVariables().isEmpty()) {
+                groupJson.set("variables", group.getVariables());
             }
         } else if (groupData instanceof String name) {
             // 旧格式兼容：字符串名称

@@ -1,12 +1,14 @@
 package com.laker.postman.panel.collections.right;
 
+import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.table.EasyPostmanEnvironmentTablePanel;
+import com.laker.postman.common.component.table.EasyVariableTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.Variable;
 import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
@@ -50,7 +52,7 @@ public class GroupEditPanel extends JPanel {
     private AuthTabPanel authTabPanel;
     private ScriptPanel scriptPanel;
     private EasyRequestHttpHeadersPanel headersPanel;
-    private EasyPostmanEnvironmentTablePanel variablesPanel;
+    private EasyVariableTablePanel variablesPanel;
     private JTabbedPane tabbedPane;
 
     // 原始数据快照，用于检测变化
@@ -63,7 +65,7 @@ public class GroupEditPanel extends JPanel {
     private String originalPrescript;
     private String originalPostscript;
     private List<HttpHeader> originalHeaders;
-    private List<com.laker.postman.model.EnvironmentVariable> originalVariables;
+    private List<Variable> originalVariables;
 
     // 防抖定时器
     private Timer autoSaveTimer;
@@ -120,7 +122,7 @@ public class GroupEditPanel extends JPanel {
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_HEADERS), headersWrapperPanel);
 
         // Variables Tab - 分组级别的变量
-        variablesPanel = new EasyPostmanEnvironmentTablePanel();
+        variablesPanel = new EasyVariableTablePanel();
         JPanel variablesWrapperPanel = new JPanel(new BorderLayout());
         variablesWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         variablesWrapperPanel.add(variablesPanel, BorderLayout.CENTER);
@@ -455,14 +457,14 @@ public class GroupEditPanel extends JPanel {
     /**
      * 比较两个 Variables 列表是否相同
      */
-    private boolean variablesEquals(List<com.laker.postman.model.EnvironmentVariable> a,
-                                    List<com.laker.postman.model.EnvironmentVariable> b) {
+    private boolean variablesEquals(List<Variable> a,
+                                    List<Variable> b) {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         if (a.size() != b.size()) return false;
         for (int i = 0; i < a.size(); i++) {
-            com.laker.postman.model.EnvironmentVariable va = a.get(i);
-            com.laker.postman.model.EnvironmentVariable vb = b.get(i);
+            Variable va = a.get(i);
+            Variable vb = b.get(i);
             if (va.isEnabled() != vb.isEnabled()) return false;
             if (!safeEquals(va.getKey(), vb.getKey())) return false;
             if (!safeEquals(va.getValue(), vb.getValue())) return false;
@@ -514,6 +516,11 @@ public class GroupEditPanel extends JPanel {
         // 如果 headers 中有超过 4 个请求头，默认选中第二个 tab (Headers)
         if (group.getHeaders() != null && group.getHeaders().size() > 4) {
             tabbedPane.setSelectedIndex(1);
+        }
+
+        // 如果 variables 中有变量，默认选中第三个 tab (Variables)
+        if (CollUtil.isNotEmpty(group.getVariables())) {
+            tabbedPane.setSelectedIndex(2);
         }
 
         // 初始化原始数据快照

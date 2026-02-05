@@ -88,23 +88,19 @@ public class InheritanceService {
             // 2. 应用继承（mergeGroupSettings 内部会收集分组链）
             DefaultMutableTreeNode requestNode = nodeOpt.get();
 
-            try {
-                // 设置当前请求节点，以便分组变量服务能够获取正确的分组变量
-                GroupVariableService.getInstance().setCurrentRequestNode(requestNode);
+            // 设置当前请求节点，以便分组变量服务能够获取正确的分组变量
+            // 注意：不在此处清除 ThreadLocal，由调用方（PreparedRequestBuilder）负责清除
+            GroupVariableService.getInstance().setCurrentRequestNode(requestNode);
 
-                HttpRequestItem result = GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
+            HttpRequestItem result = GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
 
-                if (result == item) {
-                    log.trace("请求 [{}] 没有父分组，使用原始配置", item.getName());
-                } else {
-                    log.debug("为请求 [{}] 应用分组继承", item.getName());
-                }
-
-                return result;
-            } finally {
-                // 清除当前请求节点，释放资源
-                GroupVariableService.getInstance().clearCurrentRequestNode();
+            if (result == item) {
+                log.trace("请求 [{}] 没有父分组，使用原始配置", item.getName());
+            } else {
+                log.debug("为请求 [{}] 应用分组继承", item.getName());
             }
+
+            return result;
 
         } catch (Exception e) {
             log.debug("应用继承时发生异常（将使用原始配置）: {}", e.getMessage());

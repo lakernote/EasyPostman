@@ -3,6 +3,7 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.*;
 import com.laker.postman.service.collections.InheritanceService;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.GroupVariableService;
 import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +86,7 @@ public class PreparedRequestBuilder {
      */
     public static PreparedRequest build(HttpRequestItem item, boolean useCache) {
         // 1. 先应用 group 继承（如果适用）
-        HttpRequestItem effectiveItem = applyGroupInheritance(item, useCache);
+        HttpRequestItem effectiveItem = inheritanceService.applyInheritance(item, useCache);
 
         // 2. 构建 PreparedRequest
         PreparedRequest req = new PreparedRequest();
@@ -117,22 +118,29 @@ public class PreparedRequestBuilder {
 
     /**
      * 在前置脚本执行后，替换所有变量占位符
+     * <p>
+     * 注意：此方法会在完成后清除 GroupVariableService 的 ThreadLocal
      */
     public static void replaceVariablesAfterPreScript(PreparedRequest req) {
-        // 替换 List 中的变量，支持相同 key
-        replaceVariablesInHeadersList(req.headersList);
-        replaceVariablesInFormDataList(req.formDataList);
-        replaceVariablesInUrlencodedList(req.urlencodedList);
+        try {
+            // 替换 List 中的变量，支持相同 key
+            replaceVariablesInHeadersList(req.headersList);
+            replaceVariablesInFormDataList(req.formDataList);
+            replaceVariablesInUrlencodedList(req.urlencodedList);
 
-        // 先替换 URL 和 paramsList 中的变量，然后再重建 URL
-        // 这样可以避免重复参数的问题（例如：URL 中有 {{a}}=3，paramsList 中也有 {{a}}=3）
-        req.url = VariableResolver.resolve(req.url);
-        replaceVariablesInParamsList(req.paramsList);
-        // 此时 URL 和 paramsList 中的变量都已替换，buildUrlWithParams 可以正确检测重复
-        rebuildUrlWithParams(req);
+            // 先替换 URL 和 paramsList 中的变量，然后再重建 URL
+            // 这样可以避免重复参数的问题（例如：URL 中有 {{a}}=3，paramsList 中也有 {{a}}=3）
+            req.url = VariableResolver.resolve(req.url);
+            replaceVariablesInParamsList(req.paramsList);
+            // 此时 URL 和 paramsList 中的变量都已替换，buildUrlWithParams 可以正确检测重复
+            rebuildUrlWithParams(req);
 
-        // 替换Body中的变量
-        req.body = VariableResolver.resolve(req.body);
+            // 替换Body中的变量
+            req.body = VariableResolver.resolve(req.body);
+        } finally {
+            // 清除分组变量服务的 ThreadLocal，释放资源
+            GroupVariableService.getInstance().clearCurrentRequestNode();
+        }
     }
 
     /**
@@ -165,19 +173,6 @@ public class PreparedRequestBuilder {
             }
         }
         return false;
-    }
-
-    /**
-     * 应用 group 继承规则（可选是否使用缓存）
-     * <p>
-     * 用于处理未保存的请求（如 UI 中修改但未保存）
-     *
-     * @param item     原始请求项
-     * @param useCache 是否使用缓存
-     * @return 应用了 group 继承后的请求项（新对象），如果不适用则返回原始请求
-     */
-    private static HttpRequestItem applyGroupInheritance(HttpRequestItem item, boolean useCache) {
-        return inheritanceService.applyInheritance(item, useCache);
     }
 
     /**

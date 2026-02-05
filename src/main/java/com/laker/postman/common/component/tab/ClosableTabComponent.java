@@ -42,7 +42,7 @@ public class ClosableTabComponent extends JPanel {
     private final JTabbedPane tabbedPane;
 
     private boolean hoverClose = false; // 鼠标是否悬浮在关闭按钮区域
-    private static final int CLOSE_DIAMETER = 10; // 关闭按钮直径
+    private static final int CLOSE_DIAMETER = 11; // 关闭按钮直径
     private static final int CLOSE_MARGIN = 0; // 关闭按钮距离顶部和右侧的距离
     private static final int CLOSE_TEXT_SPACING = 0; // 关闭按钮与文字之间的间距
     private static final int LABEL_HORIZONTAL_PADDING = 4; // Label 左右内边距

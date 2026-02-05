@@ -1,4 +1,8 @@
-[English](README.md) | 中文
+<div align="center">
+
+[English](README.md) | 简体中文
+
+</div>
 
 # EasyPostman
 

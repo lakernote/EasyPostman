@@ -186,6 +186,7 @@ public class RequestEditSubPanel extends JPanel {
 
         // 创建请求选项卡面板
         reqTabs = new JTabbedPane(); // 2. 创建请求选项卡面板
+        reqTabs.setMinimumSize(new Dimension(0, 0));
         // 不显示边框 - 移除完整边框
         reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false);
         // 移除内容区域的边框
@@ -239,7 +240,7 @@ public class RequestEditSubPanel extends JPanel {
         }
 
         splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
-        splitPane.setDividerSize(3); // 设置分割条宽度
+        splitPane.setDividerSize(4); // 设置分割条宽度
         splitPane.setOneTouchExpandable(false);
         splitPane.setContinuousLayout(true); // 连续布局，拖动时更流畅
 

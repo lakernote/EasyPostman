@@ -15,7 +15,6 @@ import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -66,21 +65,7 @@ public class RequestLinePanel extends JPanel {
     private void setupPanelStyle() {
         setLayout(new BorderLayout(0, 0));
         setOpaque(true);
-        // 添加精致的边框和内边距
-        setBorder(new CompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                new EmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING)
-        ));
-    }
-
-    @Override
-    public void updateUI() {
-        super.updateUI();
-        // 主题切换时重新设置边框，确保分隔线颜色更新
-        setBorder(new CompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                new EmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING)
-        ));
+        setBorder(new EmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING));
     }
 
     /**

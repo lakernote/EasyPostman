@@ -228,6 +228,14 @@ public final class MessageKeys {
     public static final String BULK_EDIT_VARIABLES = "bulk.edit.variables";
     public static final String BULK_EDIT_HINT = "bulk.edit.hint";
     public static final String BULK_EDIT_SUPPORTED_FORMATS = "bulk.edit.supported.formats";
+
+    // ============ Variable Type 变量类型 ============
+    public static final String VARIABLE_TYPE_TEMPORARY = "variable.type.temporary";
+    public static final String VARIABLE_TYPE_GROUP = "variable.type.group";
+    public static final String VARIABLE_TYPE_ENVIRONMENT = "variable.type.environment";
+    public static final String VARIABLE_TYPE_BUILT_IN = "variable.type.built_in";
+    public static final String VARIABLE_TYPE_UNDEFINED = "variable.type.undefined";
+
     // ============ 快捷键设置 ============
     public static final String SHORTCUT_SETTINGS_TITLE = "shortcut.settings.title";
     public static final String SHORTCUT_ACTION = "shortcut.action";

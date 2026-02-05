@@ -1,5 +1,7 @@
 package com.laker.postman.service.variable;
 
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import java.awt.*;
@@ -14,27 +16,27 @@ public enum VariableType {
     /**
      * 临时变量 - 优先级最高，仅在当前请求执行过程中有效
      */
-    TEMPORARY("临时变量", "T", new Color(255, 152, 0), 1),
+    TEMPORARY(MessageKeys.VARIABLE_TYPE_TEMPORARY, "T", new Color(255, 152, 0), 1),
 
     /**
      * 分组变量 - 从请求所在分组继承的变量
      */
-    GROUP("分组变量", "G", new Color(3, 169, 244), 2),
+    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "G", new Color(3, 169, 244), 2),
 
     /**
      * 环境变量 - 从当前激活的环境中获取
      */
-    ENVIRONMENT("环境变量", "E", new Color(46, 125, 50), 5),
+    ENVIRONMENT(MessageKeys.VARIABLE_TYPE_ENVIRONMENT, "E", new Color(46, 125, 50), 5),
 
     /**
      * 内置函数 - 动态函数，如 $guid, $timestamp 等
      */
-    BUILT_IN("内置函数", "$", new Color(156, 39, 176), 10);
+    BUILT_IN(MessageKeys.VARIABLE_TYPE_BUILT_IN, "$", new Color(156, 39, 176), 10);
 
     /**
-     * 变量类型的中文名称
+     * 变量类型的国际化消息键
      */
-    private final String displayName;
+    private final String displayNameKey;
 
     /**
      * UI渲染时使用的图标符号
@@ -51,10 +53,19 @@ public enum VariableType {
      */
     private final int priority;
 
-    VariableType(String displayName, String iconSymbol, Color color, int priority) {
-        this.displayName = displayName;
+    VariableType(String displayNameKey, String iconSymbol, Color color, int priority) {
+        this.displayNameKey = displayNameKey;
         this.iconSymbol = iconSymbol;
         this.color = color;
         this.priority = priority;
+    }
+
+    /**
+     * 获取国际化后的显示名称
+     *
+     * @return 根据当前语言环境返回的显示名称
+     */
+    public String getDisplayName() {
+        return I18nUtil.getMessage(displayNameKey);
     }
 }

@@ -6,6 +6,8 @@ import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.service.variable.VariableType;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.VariableParser;
 import lombok.extern.slf4j.Slf4j;
 
@@ -690,7 +692,7 @@ public class EasyTextField extends FlatTextField {
         } else {
             // 未定义变量
             titleColor = "#D32F2F";
-            typeLabel = "未定义变量";
+            typeLabel = I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED);
             typeIcon = "✗";
         }
 

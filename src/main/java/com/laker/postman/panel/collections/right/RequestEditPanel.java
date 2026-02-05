@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
+import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
@@ -706,6 +707,40 @@ public class RequestEditPanel extends SingletonBasePanel {
         setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // 去掉默认边框
         // 设置tabbedPane为单行滚动模式，防止多行tab顺序混乱
         tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+
+        // 1. 滚动按钮策略：NEVER - 完全依赖鼠标滚轮（更现代的体验）
+        tabbedPane.putClientProperty(
+                FlatClientProperties.TABBED_PANE_SCROLL_BUTTONS_POLICY,
+                FlatClientProperties.TABBED_PANE_POLICY_NEVER
+        );
+
+        // 2. Tabs 弹出菜单策略：根据需要显示（当 tabs 过多时右键显示列表）
+        tabbedPane.putClientProperty(
+                FlatClientProperties.TABBED_PANE_TABS_POPUP_POLICY,
+                FlatClientProperties.TABBED_PANE_POLICY_AS_NEEDED
+        );
+
+        // 4. Tab 宽度模式：preferred（根据内容自适应）
+        tabbedPane.putClientProperty(
+                FlatClientProperties.TABBED_PANE_TAB_WIDTH_MODE,
+                FlatClientProperties.TABBED_PANE_TAB_WIDTH_MODE_PREFERRED
+        );
+
+        // 5. 设置最小/最大 Tab 宽度
+        tabbedPane.putClientProperty(
+                FlatClientProperties.TABBED_PANE_MINIMUM_TAB_WIDTH,
+                30
+        );
+
+        tabbedPane.putClientProperty(
+                FlatClientProperties.TABBED_PANE_MAXIMUM_TAB_WIDTH,
+                160
+        );
+
+        // 为这个 TabbedPane 启用完整边框
+        tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, true);
+
+
         add(tabbedPane, BorderLayout.CENTER);
     }
 

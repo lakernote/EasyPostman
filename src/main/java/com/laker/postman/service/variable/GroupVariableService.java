@@ -15,7 +15,7 @@ import java.util.Map;
  * 提供从请求所在分组继承的变量
  * 变量优先级：内层分组 > 外层分组
  * <p>
- * 注意：此服务需要在请求执行前设置当前请求节点
+ * 注意：使用全局 RequestContext 获取当前请求节点
  */
 @Slf4j
 public class GroupVariableService implements VariableProvider {
@@ -24,11 +24,6 @@ public class GroupVariableService implements VariableProvider {
      * 单例实例
      */
     private static final GroupVariableService INSTANCE = new GroupVariableService();
-
-    /**
-     * 当前请求所在的树节点（线程局部变量，避免并发问题）
-     */
-    private final ThreadLocal<DefaultMutableTreeNode> currentRequestNode = new ThreadLocal<>();
 
     /**
      * 私有构造函数，防止外部实例化
@@ -45,33 +40,13 @@ public class GroupVariableService implements VariableProvider {
         return INSTANCE;
     }
 
-    /**
-     * 设置当前请求节点
-     * <p>
-     * 在请求执行前调用此方法，以便变量解析器能够获取正确的分组变量
-     *
-     * @param requestNode 请求节点
-     */
-    public void setCurrentRequestNode(DefaultMutableTreeNode requestNode) {
-        currentRequestNode.set(requestNode);
-    }
-
-    /**
-     * 清除当前请求节点
-     * <p>
-     * 在请求执行完成后调用此方法，释放资源
-     */
-    public void clearCurrentRequestNode() {
-        currentRequestNode.remove();
-    }
-
     @Override
     public String get(String key) {
         if (key == null || key.trim().isEmpty()) {
             return null;
         }
 
-        DefaultMutableTreeNode requestNode = currentRequestNode.get();
+        DefaultMutableTreeNode requestNode = RequestContext.getCurrentRequestNode();
         if (requestNode == null) {
             return null;
         }
@@ -94,7 +69,7 @@ public class GroupVariableService implements VariableProvider {
     public Map<String, String> getAll() {
         Map<String, String> result = new HashMap<>();
 
-        DefaultMutableTreeNode requestNode = currentRequestNode.get();
+        DefaultMutableTreeNode requestNode = RequestContext.getCurrentRequestNode();
         if (requestNode == null) {
             return result;
         }
@@ -110,12 +85,11 @@ public class GroupVariableService implements VariableProvider {
 
     @Override
     public int getPriority() {
-        // 优先级：临时变量(10) > 分组变量(20) > 环境变量(30) > 内置函数(100)
-        return 20;
+        return VariableType.GROUP.getPriority();
     }
 
     @Override
-    public String getName() {
-        return "Group Variables";
+    public VariableType getType() {
+        return VariableType.GROUP;
     }
 }

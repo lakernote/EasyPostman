@@ -77,11 +77,11 @@ public class EnvironmentVariableService implements VariableProvider {
 
     @Override
     public int getPriority() {
-        return 2; // 中等优先级
+        return VariableType.ENVIRONMENT.getPriority();
     }
 
     @Override
-    public String getName() {
-        return "Environment Variables";
+    public VariableType getType() {
+        return VariableType.ENVIRONMENT;
     }
 }

@@ -48,9 +48,9 @@ public interface VariableProvider {
     int getPriority();
 
     /**
-     * 获取变量提供者的名称（用于日志和调试）
+     * 获取变量提供者的类型
      *
-     * @return 提供者名称
+     * @return 变量类型枚举
      */
-    String getName();
+    VariableType getType();
 }

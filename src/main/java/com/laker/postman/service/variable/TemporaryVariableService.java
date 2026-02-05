@@ -63,12 +63,12 @@ public class TemporaryVariableService implements VariableProvider {
 
     @Override
     public int getPriority() {
-        return 1; // 最高优先级
+        return VariableType.TEMPORARY.getPriority();
     }
 
     @Override
-    public String getName() {
-        return "Temporary Variables";
+    public VariableType getType() {
+        return VariableType.TEMPORARY;
     }
 
     // ==================== 临时变量特有方法 ====================

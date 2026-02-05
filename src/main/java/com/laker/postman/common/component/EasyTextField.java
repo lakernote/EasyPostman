@@ -1,9 +1,10 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.model.VariableInfo;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
-import com.laker.postman.service.variable.BuiltInFunctionService;
+import com.laker.postman.service.variable.VariableType;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.VariableParser;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 1.支持 Postman 风格变量高亮和悬浮提示的文本输入框
@@ -43,8 +43,6 @@ public class EasyTextField extends FlatTextField {
     private static final Color UNDEFINED_VAR_BORDER = new Color(255, 100, 100);
 
     // 自动补全UI颜色
-    private static final Color BUILTIN_FUNCTION_COLOR = new Color(156, 39, 176); // 紫色 - 内置函数
-    private static final Color ENV_VARIABLE_COLOR = new Color(46, 125, 50); // 绿色 - 环境变量
     private static final Color POPUP_BACKGROUND = new Color(255, 255, 255);
     private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
 
@@ -52,9 +50,8 @@ public class EasyTextField extends FlatTextField {
 
     // 自动补全相关
     private JWindow autocompleteWindow;
-    private JList<String> autocompleteList;
-    private DefaultListModel<String> autocompleteModel;
-    private Map<String, String> currentVariables;
+    private JList<VariableInfo> autocompleteList;
+    private DefaultListModel<VariableInfo> autocompleteModel;
     private int autocompleteStartPos = -1;
 
     public EasyTextField(int columns) {
@@ -188,7 +185,7 @@ public class EasyTextField extends FlatTextField {
         // 固定列表宽度，防止内容过长导致横向滚动
         autocompleteList.setFixedCellWidth(384); // 400 - 边框和内边距
 
-        // 自定义列表渲染器 - 显示图标、变量名和值/描述，支持长文本截断
+        // 自定义列表渲染器
         autocompleteList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -206,13 +203,12 @@ public class EasyTextField extends FlatTextField {
                     panel.setBackground(POPUP_BACKGROUND);
                 }
 
-                if (value != null && currentVariables != null) {
-                    String varName = value.toString();
-                    String varValue = currentVariables.get(varName);
-
-                    // 判断是内置函数还是环境变量
-                    boolean isBuiltIn = varName.startsWith("$");
-                    Color labelColor = isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR;
+                if (value instanceof VariableInfo varInfo) {
+                    String varName = varInfo.getName();
+                    String varValue = varInfo.getValue();
+                    VariableType varType = varInfo.getType();
+                    Color labelColor = varType.getColor();
+                    String symbol = varType.getIconSymbol();
 
                     // 使用彩色圆点代替 Emoji（更好的跨平台兼容性）
                     JPanel iconPanel = new JPanel() {
@@ -230,14 +226,13 @@ public class EasyTextField extends FlatTextField {
                             int circleY = (panelHeight - circleSize) / 2;
 
                             // 绘制圆形图标
-                            g2d.setColor(isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR);
+                            g2d.setColor(varType.getColor());
                             g2d.fillOval(2, circleY, circleSize, circleSize);
 
                             // 绘制白色符号 - 垂直居中对齐
                             g2d.setColor(Color.WHITE);
                             g2d.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2)); // 比标准字体小2号
                             FontMetrics symbolFm = g2d.getFontMetrics();
-                            String symbol = isBuiltIn ? "$" : "E";
                             int symbolWidth = symbolFm.stringWidth(symbol);
                             int symbolAscent = symbolFm.getAscent();
                             int symbolDescent = symbolFm.getDescent();
@@ -319,9 +314,10 @@ public class EasyTextField extends FlatTextField {
 
                     panel.add(contentPanel, BorderLayout.CENTER);
 
-                    // 为整个面板添加工具提示（显示完整信息）
+                    // 为整个面板添加工具提示
                     StringBuilder tooltipBuilder = new StringBuilder("<html>");
                     tooltipBuilder.append("<b>").append(escapeHtml(varName)).append("</b>");
+                    tooltipBuilder.append(" <span style='color:gray'>(").append(varType.getDisplayName()).append(")</span>");
                     if (varValue != null && !varValue.isEmpty()) {
                         tooltipBuilder.append("<br/>").append(escapeHtml(varValue));
                     }
@@ -499,9 +495,9 @@ public class EasyTextField extends FlatTextField {
         String prefix = text.substring(openBracePos + 2, caretPos);
 
         // 过滤变量列表
-        currentVariables = VariableResolver.filterVariables(prefix);
+        List<VariableInfo> filteredVariables = VariableResolver.filterVariablesWithType(prefix);
 
-        if (currentVariables.isEmpty()) {
+        if (filteredVariables.isEmpty()) {
             hideAutocomplete();
             return;
         }
@@ -509,8 +505,8 @@ public class EasyTextField extends FlatTextField {
         // 更新列表
         autocompleteStartPos = openBracePos + 2;
         autocompleteModel.clear();
-        for (String varName : currentVariables.keySet()) {
-            autocompleteModel.addElement(varName);
+        for (VariableInfo varInfo : filteredVariables) {
+            autocompleteModel.addElement(varInfo);
         }
 
         // 默认选中第一项
@@ -575,7 +571,7 @@ public class EasyTextField extends FlatTextField {
      * 插入选中的变量
      */
     private void insertSelectedVariable() {
-        String selected = autocompleteList.getSelectedValue();
+        VariableInfo selected = autocompleteList.getSelectedValue();
         if (selected == null || autocompleteStartPos == -1) {
             return;
         }
@@ -596,16 +592,17 @@ public class EasyTextField extends FlatTextField {
 
             // 检查后面是否已经有 }}，如果有则跳过，避免重复
             String closingBraces = "}}";
+            String varName = selected.getName();
             if (after.startsWith(closingBraces)) {
                 // 后面已经有 }}，不再添加
-                String newText = before + "{{" + selected + after;
+                String newText = before + "{{" + varName + after;
                 setText(newText);
-                setCaretPosition(openBracePos + selected.length() + 4); // 光标放在 }} 之后
+                setCaretPosition(openBracePos + varName.length() + 4); // 光标放在 }} 之后
             } else {
                 // 后面没有 }}，正常添加
-                String newText = before + "{{" + selected + "}}" + after;
+                String newText = before + "{{" + varName + "}}" + after;
                 setText(newText);
-                setCaretPosition(openBracePos + selected.length() + 4); // 光标放在 }} 之后
+                setCaretPosition(openBracePos + varName.length() + 4); // 光标放在 }} 之后
             }
 
             hideAutocomplete();
@@ -644,20 +641,16 @@ public class EasyTextField extends FlatTextField {
                     // 鼠标悬浮在变量上
                     String varName = seg.name;
 
-                    // 检查是否是内置函数
-                    if (BuiltInFunctionService.getInstance().isBuiltInFunction(varName)) {
-                        String desc = currentVariables != null ?
-                                currentVariables.get(varName) :
-                                "Dynamic function generates value at runtime";
-                        return buildTooltip(varName, desc, true, true);
-                    }
-
-                    // 环境变量
+                    // 获取变量类型和值
+                    VariableType varType = VariableResolver.getVariableType(varName);
                     String varValue = VariableResolver.resolveVariable(varName);
-                    if (varValue != null) {
-                        return buildTooltip(varName, varValue, false, true);
+
+                    if (varType != null && varValue != null) {
+                        // 变量已定义
+                        return buildTooltip(varName, varValue, varType);
                     } else {
-                        return buildTooltip(varName, "Variable not defined in current environment", false, false);
+                        // 变量未定义
+                        return buildTooltip(varName, "Variable not defined", null);
                     }
                 }
                 x += varWidth;
@@ -671,16 +664,37 @@ public class EasyTextField extends FlatTextField {
 
     /**
      * 构建美观的工具提示HTML
+     *
+     * @param varName 变量名
+     * @param content 变量值或描述
+     * @param varType 变量类型（如果为null表示未定义）
+     * @return HTML格式的工具提示
      */
-    private String buildTooltip(String varName, String content, boolean isBuiltIn, boolean isDefined) {
+    private String buildTooltip(String varName, String content, VariableType varType) {
         StringBuilder tooltip = new StringBuilder();
         tooltip.append("<html><body style='padding: 8px; font-family: Arial, sans-serif;'>");
 
-        // 标题部分 - 变量名
-        String titleColor = isBuiltIn ? "#9C27B0" : (isDefined ? "#2E7D32" : "#D32F2F");
-        String typeLabel = isBuiltIn ? "Built-in Function" : (isDefined ? "Environment Variable" : "Undefined Variable");
-        String typeIcon = isBuiltIn ? "⚡" : (isDefined ? "✓" : "✗");
+        boolean isDefined = varType != null;
+        String titleColor;
+        String typeLabel;
+        String typeIcon;
 
+        if (isDefined) {
+            // 使用枚举中的颜色
+            titleColor = String.format("#%02X%02X%02X",
+                    varType.getColor().getRed(),
+                    varType.getColor().getGreen(),
+                    varType.getColor().getBlue());
+            typeLabel = varType.getDisplayName();
+            typeIcon = varType.getIconSymbol();
+        } else {
+            // 未定义变量
+            titleColor = "#D32F2F";
+            typeLabel = "未定义变量";
+            typeIcon = "✗";
+        }
+
+        // 标题部分 - 变量类型
         tooltip.append("<div style='margin-bottom: 6px;'>");
         tooltip.append("<span style='font-size: 10px; color: ").append(titleColor).append(";'>");
         tooltip.append(typeIcon).append(" ").append(typeLabel);
@@ -698,8 +712,13 @@ public class EasyTextField extends FlatTextField {
         // 内容部分 - 变量值或描述
         tooltip.append("<div style='margin-top: 1px; color: #424242; font-size: 10px;'>");
 
-        if (isDefined && !isBuiltIn) {
-            // 环境变量值
+        if (isDefined && varType == VariableType.BUILT_IN) {
+            // 内置函数描述
+            tooltip.append("<span style='color: #757575; font-style: italic;'>");
+            tooltip.append(escapeHtml(content));
+            tooltip.append("</span>");
+        } else if (isDefined) {
+            // 其他类型变量值
             tooltip.append("<span style='color: #757575;'>Value:</span><br/>");
             tooltip.append("<span style='font-family: Consolas, monospace; background-color: #F5F5F5; ");
             tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
@@ -707,11 +726,6 @@ public class EasyTextField extends FlatTextField {
             // 限制显示长度，超过150字符截断
             String displayContent = content.length() > 150 ? content.substring(0, 150) + "..." : content;
             tooltip.append(escapeHtml(displayContent));
-            tooltip.append("</span>");
-        } else if (isBuiltIn) {
-            // 内置函数描述
-            tooltip.append("<span style='color: #757575; font-style: italic;'>");
-            tooltip.append(escapeHtml(content));
             tooltip.append("</span>");
         } else {
             // 未定义变量警告

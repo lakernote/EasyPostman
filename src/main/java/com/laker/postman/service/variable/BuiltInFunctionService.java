@@ -75,12 +75,12 @@ public class BuiltInFunctionService implements VariableProvider {
 
     @Override
     public int getPriority() {
-        return 3; // 最低优先级
+        return VariableType.BUILT_IN.getPriority();
     }
 
     @Override
-    public String getName() {
-        return "Built-in Functions";
+    public VariableType getType() {
+        return VariableType.BUILT_IN;
     }
 
     // ==================== 内置函数特有方法 ====================

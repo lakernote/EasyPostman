@@ -1,5 +1,6 @@
 package com.laker.postman.service.variable;
 
+import com.laker.postman.model.VariableInfo;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -142,52 +143,62 @@ public class VariableResolver {
     }
 
     /**
-     * 获取所有可用变量
+     * 获取变量的类型
+     *
+     * @param varName 变量名
+     * @return 变量类型，如果变量不存在则返回 null
      */
-    public static Map<String, String> getAllAvailableVariables() {
-        Map<String, String> allVars = new LinkedHashMap<>();
+    public static VariableType getVariableType(String varName) {
+        if (varName == null || varName.isEmpty()) {
+            return null;
+        }
+
+        for (VariableProvider provider : PROVIDERS) {
+            if (provider.has(varName)) {
+                return provider.getType();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取所有可用变量（包含类型信息）
+     *
+     * @return 变量信息列表
+     */
+    public static List<VariableInfo> getAllAvailableVariablesWithType() {
+        Map<String, VariableInfo> varMap = new LinkedHashMap<>();
 
         // 按优先级添加，使用 putIfAbsent 避免被低优先级覆盖
         for (VariableProvider provider : PROVIDERS) {
             Map<String, String> providerVars = provider.getAll();
             for (Map.Entry<String, String> entry : providerVars.entrySet()) {
-                String value = entry.getValue();
-                if (value != null && value.length() > 50) {
-                    value = value.substring(0, 47) + "...";
-                }
-                allVars.putIfAbsent(entry.getKey(), value);
+                varMap.putIfAbsent(entry.getKey(),
+                        new VariableInfo(entry.getKey(), entry.getValue(), provider.getType()));
             }
         }
 
-        // 为临时变量添加标记
-        Map<String, String> tempVars = TemporaryVariableService.getInstance().getAll();
-        for (String key : tempVars.keySet()) {
-            if (allVars.containsKey(key)) {
-                String value = allVars.get(key);
-                if (value != null && value.length() > 50) {
-                    value = value.substring(0, 47) + "...";
-                }
-                allVars.put(key, value + " (temp)");
-            }
-        }
-
-        return allVars;
+        return new ArrayList<>(varMap.values());
     }
 
     /**
-     * 根据前缀过滤变量列表
+     * 根据前缀过滤变量列表（包含类型信息）
+     *
+     * @param prefix 过滤前缀
+     * @return 变量信息列表
      */
-    public static Map<String, String> filterVariables(String prefix) {
-        Map<String, String> allVars = getAllAvailableVariables();
+    public static List<VariableInfo> filterVariablesWithType(String prefix) {
+        List<VariableInfo> allVars = getAllAvailableVariablesWithType();
         if (prefix == null || prefix.isEmpty()) {
             return allVars;
         }
 
-        Map<String, String> filtered = new LinkedHashMap<>();
+        List<VariableInfo> filtered = new ArrayList<>();
         String lowerPrefix = prefix.toLowerCase();
-        for (Map.Entry<String, String> entry : allVars.entrySet()) {
-            if (entry.getKey().toLowerCase().startsWith(lowerPrefix)) {
-                filtered.put(entry.getKey(), entry.getValue());
+        for (VariableInfo varInfo : allVars) {
+            if (varInfo.getName().toLowerCase().startsWith(lowerPrefix)) {
+                filtered.add(varInfo);
             }
         }
         return filtered;

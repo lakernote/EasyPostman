@@ -3,7 +3,7 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.*;
 import com.laker.postman.service.collections.InheritanceService;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.service.variable.GroupVariableService;
+import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -119,7 +119,7 @@ public class PreparedRequestBuilder {
     /**
      * 在前置脚本执行后，替换所有变量占位符
      * <p>
-     * 注意：此方法会在完成后清除 GroupVariableService 的 ThreadLocal
+     * 注意：此方法会在完成后清除 RequestContext 的 ThreadLocal
      */
     public static void replaceVariablesAfterPreScript(PreparedRequest req) {
         try {
@@ -138,8 +138,8 @@ public class PreparedRequestBuilder {
             // 替换Body中的变量
             req.body = VariableResolver.resolve(req.body);
         } finally {
-            // 清除分组变量服务的 ThreadLocal，释放资源
-            GroupVariableService.getInstance().clearCurrentRequestNode();
+            // 清除全局请求上下文，释放资源
+            RequestContext.clearCurrentRequestNode();
         }
     }
 

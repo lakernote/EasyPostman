@@ -181,33 +181,4 @@ public class VariableResolverTest {
         assertFalse(VariableResolver.isVariableDefined(""));
     }
 
-    /**
-     * 测试获取所有可用变量
-     */
-    @Test
-    public void testGetAllAvailableVariables() {
-        Map<String, String> allVars = VariableResolver.getAllAvailableVariables();
-
-        // 应包含环境变量
-        assertTrue(allVars.containsKey("baseUrl"));
-        assertTrue(allVars.containsKey("apiPath"));
-        assertTrue(allVars.containsKey("userModule"));
-
-        // 应包含内置函数
-        assertTrue(allVars.containsKey("$guid"));
-        assertTrue(allVars.containsKey("$timestamp"));
-    }
-
-    /**
-     * 测试变量过滤
-     */
-    @Test
-    public void testFilterVariables() {
-        Map<String, String> filtered = VariableResolver.filterVariables("base");
-        assertTrue(filtered.containsKey("baseUrl"));
-        assertFalse(filtered.containsKey("apiPath"));
-
-        Map<String, String> all = VariableResolver.filterVariables("");
-        assertTrue(all.size() > 0);
-    }
 }

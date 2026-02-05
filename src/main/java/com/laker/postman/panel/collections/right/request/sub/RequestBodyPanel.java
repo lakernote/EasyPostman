@@ -11,10 +11,11 @@ import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.VariableInfo;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
+import com.laker.postman.service.variable.VariableType;
 import com.laker.postman.util.*;
-import com.laker.postman.util.VariableParser;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,6 @@ import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Map;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
@@ -47,9 +47,7 @@ public class RequestBodyPanel extends JPanel {
     public static final String RAW_TYPE_TEXT = "Text";
     public static final String RAW_TYPE_XML = "XML";
 
-    // 自动补全UI颜色 - 与 EasyPostmanTextField 保持一致
-    private static final Color BUILTIN_FUNCTION_COLOR = new Color(156, 39, 176); // 紫色 - 内置函数
-    private static final Color ENV_VARIABLE_COLOR = new Color(46, 125, 50); // 绿色 - 环境变量
+    // 自动补全UI颜色
     private static final Color POPUP_BACKGROUND = new Color(255, 255, 255);
     private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
 
@@ -80,9 +78,8 @@ public class RequestBodyPanel extends JPanel {
 
     // 自动补全相关
     private JWindow autocompleteWindow;
-    private JList<String> autocompleteList;
-    private DefaultListModel<String> autocompleteModel;
-    private Map<String, String> currentVariables;
+    private JList<VariableInfo> autocompleteList;
+    private DefaultListModel<VariableInfo> autocompleteModel;
 
     @Setter
     private transient ActionListener wsSendActionListener; // 外部注入的发送回调
@@ -600,7 +597,7 @@ public class RequestBodyPanel extends JPanel {
         // 固定列表宽度，防止内容过长导致横向滚动
         autocompleteList.setFixedCellWidth(384); // 400 - 边框和内边距
 
-        // 自定义列表渲染器 - 显示图标、变量名和值/描述，支持长文本截断
+        // 自定义列表渲染器
         autocompleteList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -618,13 +615,12 @@ public class RequestBodyPanel extends JPanel {
                     panel.setBackground(POPUP_BACKGROUND);
                 }
 
-                if (value != null && currentVariables != null) {
-                    String varName = value.toString();
-                    String varValue = currentVariables.get(varName);
-
-                    // 判断是内置函数还是环境变量
-                    boolean isBuiltIn = varName.startsWith("$");
-                    Color labelColor = isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR;
+                if (value instanceof VariableInfo varInfo) {
+                    String varName = varInfo.getName();
+                    String varValue = varInfo.getValue();
+                    VariableType varType = varInfo.getType();
+                    Color labelColor = varType.getColor();
+                    String symbol = varType.getIconSymbol();
 
                     // 使用彩色圆点代替 Emoji（更好的跨平台兼容性）
                     JPanel iconPanel = new JPanel() {
@@ -634,28 +630,23 @@ public class RequestBodyPanel extends JPanel {
                             Graphics2D g2d = (Graphics2D) g.create();
                             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                            // 获取字体度量信息以实现垂直对齐
                             int panelHeight = getHeight();
-
-                            // 计算圆点垂直居中位置
                             int circleSize = 12;
                             int circleY = (panelHeight - circleSize) / 2;
 
                             // 绘制圆形图标
-                            g2d.setColor(isBuiltIn ? BUILTIN_FUNCTION_COLOR : ENV_VARIABLE_COLOR);
+                            g2d.setColor(varType.getColor());
                             g2d.fillOval(2, circleY, circleSize, circleSize);
 
-                            // 绘制白色符号 - 垂直居中对齐
+                            // 绘制白色符号
                             g2d.setColor(Color.WHITE);
                             g2d.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
                             FontMetrics symbolFm = g2d.getFontMetrics();
-                            String symbol = isBuiltIn ? "$" : "E";
                             int symbolWidth = symbolFm.stringWidth(symbol);
                             int symbolAscent = symbolFm.getAscent();
                             int symbolDescent = symbolFm.getDescent();
                             int symbolHeight = symbolAscent + symbolDescent;
 
-                            // 符号在圆点内垂直居中
                             int symbolX = 2 + (circleSize - symbolWidth) / 2;
                             int symbolY = circleY + (circleSize - symbolHeight) / 2 + symbolAscent;
                             g2d.drawString(symbol, symbolX, symbolY);
@@ -680,9 +671,6 @@ public class RequestBodyPanel extends JPanel {
                     namePanel.setOpaque(false);
 
                     String displayName = varName;
-                    String fullName = varName;
-
-                    // 变量名最大长度（约占一半宽度）
                     int maxNameLength = 25;
                     if (varName.length() > maxNameLength) {
                         displayName = varName.substring(0, maxNameLength - 3) + "...";
@@ -692,9 +680,8 @@ public class RequestBodyPanel extends JPanel {
                     nameLabel.setFont(bodyArea.getFont().deriveFont(Font.BOLD));
                     nameLabel.setForeground(labelColor);
 
-                    // 为变量名添加工具提示
-                    if (!displayName.equals(fullName)) {
-                        nameLabel.setToolTipText(fullName);
+                    if (!displayName.equals(varName)) {
+                        nameLabel.setToolTipText(varName);
                     }
 
                     namePanel.add(nameLabel, BorderLayout.WEST);
@@ -706,22 +693,17 @@ public class RequestBodyPanel extends JPanel {
 
                     if (varValue != null && !varValue.isEmpty()) {
                         String displayValue = varValue;
-                        String fullValue = varValue;
-
-                        // 变量值最大长度（约占一半宽度）
                         int maxValueLength = 25;
                         if (varValue.length() > maxValueLength) {
                             displayValue = varValue.substring(0, maxValueLength - 3) + "...";
                         }
 
                         JLabel valueLabel = new JLabel(displayValue);
-                        valueLabel.setFont(bodyArea.getFont().deriveFont(Font.PLAIN, bodyArea.getFont().getSize() - 1));
+                        valueLabel.setFont(bodyArea.getFont().deriveFont(Font.PLAIN, (float) (bodyArea.getFont().getSize() - 1)));
                         valueLabel.setForeground(Color.GRAY);
 
-                        // 为值添加工具提示（显示完整内容）
-                        if (!displayValue.equals(fullValue) || fullValue.length() > 20) {
-                            // 格式化工具提示，支持换行
-                            String tooltipText = formatTooltipText(fullValue);
+                        if (!displayValue.equals(varValue) || varValue.length() > 20) {
+                            String tooltipText = formatTooltipText(varValue);
                             valueLabel.setToolTipText("<html>" + tooltipText + "</html>");
                         }
 
@@ -731,9 +713,10 @@ public class RequestBodyPanel extends JPanel {
 
                     panel.add(contentPanel, BorderLayout.CENTER);
 
-                    // 为整个面板添加工具提示（显示完整信息）
+                    // 为整个面板添加工具提示
                     StringBuilder tooltipBuilder = new StringBuilder("<html>");
                     tooltipBuilder.append("<b>").append(escapeHtml(varName)).append("</b>");
+                    tooltipBuilder.append(" <span style='color:gray'>(").append(varType.getDisplayName()).append(")</span>");
                     if (varValue != null && !varValue.isEmpty()) {
                         tooltipBuilder.append("<br/>").append(escapeHtml(varValue));
                     }
@@ -798,16 +781,16 @@ public class RequestBodyPanel extends JPanel {
         String prefix = text.substring(openBracePos + 2, caretPos);
 
         // 过滤变量列表
-        currentVariables = VariableResolver.filterVariables(prefix);
+        java.util.List<VariableInfo> filteredVariables = VariableResolver.filterVariablesWithType(prefix);
 
-        if (currentVariables.isEmpty()) {
+        if (filteredVariables.isEmpty()) {
             hideAutocomplete();
             return;
         }
 
         autocompleteModel.clear();
-        for (String varName : currentVariables.keySet()) {
-            autocompleteModel.addElement(varName);
+        for (VariableInfo varInfo : filteredVariables) {
+            autocompleteModel.addElement(varInfo);
         }
 
         // 默认选中第一项
@@ -958,7 +941,7 @@ public class RequestBodyPanel extends JPanel {
     private void insertSelectedVariable() {
         if (autocompleteList == null || bodyArea == null) return;
 
-        String selected = autocompleteList.getSelectedValue();
+        VariableInfo selected = autocompleteList.getSelectedValue();
         if (selected == null) return;
 
         try {
@@ -975,6 +958,7 @@ public class RequestBodyPanel extends JPanel {
             // 构建新文本
             String before = text.substring(0, openBracePos);
             String after = text.substring(caretPos);
+            String varName = selected.getName();
 
             // 检查光标后面是否已经有结束的双花括号
             boolean hasClosingBraces = after.startsWith("}}");
@@ -983,12 +967,12 @@ public class RequestBodyPanel extends JPanel {
 
             if (hasClosingBraces) {
                 // 如果后面已经有结束符，则只插入开始符和变量名，不再添加结束符
-                newText = before + "{{" + selected + after;
-                newCaretPos = before.length() + selected.length() + 4; // 光标位置在已存在的结束符之后
+                newText = before + "{{" + varName + after;
+                newCaretPos = before.length() + varName.length() + 4; // 光标位置在已存在的结束符之后
             } else {
                 // 如果后面没有结束符，则添加完整的变量引用语法
-                newText = before + "{{" + selected + "}}" + after;
-                newCaretPos = before.length() + selected.length() + 4; // 光标位置在新添加的结束符之后
+                newText = before + "{{" + varName + "}}" + after;
+                newCaretPos = before.length() + varName.length() + 4; // 光标位置在新添加的结束符之后
             }
 
             // 设置新文本并移动光标

@@ -16,8 +16,11 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.service.collections.DefaultTreeNodeRepository;
+import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsTabsService;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.util.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -124,6 +127,16 @@ public class RequestEditPanel extends SingletonBasePanel {
             return;
         }
 
+        // 设置全局请求上下文（供分组变量使用）
+        DefaultTreeNodeRepository repository =
+                SingletonFactory.getInstance(DefaultTreeNodeRepository.class);
+        repository.getRootNode().ifPresent(rootNode -> {
+            DefaultMutableTreeNode requestNode = RequestCollectionsService.findRequestNodeById(rootNode, id);
+            if (requestNode != null) {
+                RequestContext.setCurrentRequestNode(requestNode);
+            }
+        });
+
         // 1. 先查找是否已有固定的 tab（不包括预览 tab）
         if (switchToExistingRequestTab(id)) {
             return;
@@ -187,6 +200,16 @@ public class RequestEditPanel extends SingletonBasePanel {
             updateRequest(item);
             return;
         }
+
+        // 设置全局请求上下文（供分组变量使用）
+        DefaultTreeNodeRepository repository =
+                SingletonFactory.getInstance(DefaultTreeNodeRepository.class);
+        repository.getRootNode().ifPresent(rootNode -> {
+            DefaultMutableTreeNode requestNode = RequestCollectionsService.findRequestNodeById(rootNode, id);
+            if (requestNode != null) {
+                RequestContext.setCurrentRequestNode(requestNode);
+            }
+        });
 
         // 如果当前预览的就是这个 request，则将预览 tab 转为固定 tab
         if (previewTab instanceof RequestEditSubPanel subPanel && id.equals(subPanel.getId())) {
@@ -1064,10 +1087,9 @@ public class RequestEditPanel extends SingletonBasePanel {
                 if (i != previewTabIndex) {
                     Component comp = tabbedPane.getComponentAt(i);
                     if (comp instanceof GroupEditPanel existingPanel && groupId.equals(existingPanel.getGroup().getId())) {
-                            tabbedPane.setSelectedIndex(i);
-                            return true;
-                        }
-
+                        tabbedPane.setSelectedIndex(i);
+                        return true;
+                    }
                 }
             }
         }

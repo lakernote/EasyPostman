@@ -62,6 +62,8 @@ public class ResponseBodyPanel extends JPanel {
 
     public ResponseBodyPanel(boolean enableSaveButton) {
         setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         responseBodyPane = new RSyntaxTextArea();
         responseBodyPane.setEditable(false);
         responseBodyPane.setCodeFoldingEnabled(true);

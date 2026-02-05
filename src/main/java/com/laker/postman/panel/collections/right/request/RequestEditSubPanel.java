@@ -1677,7 +1677,7 @@ public class RequestEditSubPanel extends JPanel {
     private double getDefaultResizeWeight() {
         // WebSocket 和 SSE：请求占 20%，响应占 80%（主要看响应流）
         if (protocol.isWebSocketProtocol() || protocol.isSseProtocol()) {
-            return 0.2;
+            return 0.3;
         }
         // HTTP：默认对半分
         return 0.4;

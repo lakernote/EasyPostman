@@ -24,6 +24,9 @@ public class ResponseHeadersPanel extends JPanel {
 
     public ResponseHeadersPanel() {
         setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // 表格模型和表格
         tableModel = new DefaultTableModel(new Object[]{"Name", "Value"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {

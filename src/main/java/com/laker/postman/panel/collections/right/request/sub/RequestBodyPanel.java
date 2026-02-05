@@ -117,6 +117,8 @@ public class RequestBodyPanel extends JPanel {
     public RequestBodyPanel(RequestItemProtocolEnum protocol) {
         this.isWebSocketMode = protocol.isWebSocketProtocol();
         setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         if (isWebSocketMode) {
             initWebSocketBodyPanel();
         } else {

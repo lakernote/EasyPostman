@@ -28,6 +28,8 @@ public class EasyRequestParamsPanel extends JPanel {
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // Create header panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));

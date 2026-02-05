@@ -31,6 +31,8 @@ public class NetworkLogPanel extends JPanel {
 
     public NetworkLogPanel() {
         setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 5));
 
         // 创建 TabbedPane
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);

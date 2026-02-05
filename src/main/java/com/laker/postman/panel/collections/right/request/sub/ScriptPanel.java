@@ -28,6 +28,8 @@ public class ScriptPanel extends JPanel {
 
     public ScriptPanel() {
         setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(new EmptyBorder(5, 0, 5, 5));
 
         // 初始化并配置 PreScript 编辑器
         prescriptArea = new RSyntaxTextArea(6, 40);

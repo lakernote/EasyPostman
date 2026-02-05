@@ -175,6 +175,8 @@ public class ResponsePanel extends JPanel {
             responseBodyPanel.setBodyText(null);
             responseHeadersPanel = new ResponseHeadersPanel();
             JPanel testsPanel = new JPanel(new BorderLayout());
+            // 设置边框
+            testsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             testsPane = new JEditorPane();
             testsPane.setContentType("text/html");
             testsPane.setEditable(false);
@@ -182,14 +184,16 @@ public class ResponsePanel extends JPanel {
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
             timelinePanel = new TimelinePanel(new ArrayList<>(), null);
-
+            JScrollPane timelineScrollPanel = new JScrollPane(timelinePanel);
+            // 设置边框
+            timelineScrollPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             // 按照指定顺序添加到 cardPanel
             // [Response Body] [Response Headers] [Tests] [Network Log] [Timing] [Log]
             cardPanel.add(responseBodyPanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
             cardPanel.add(testsPanel, tabNames[2]);
             cardPanel.add(networkLogPanel, tabNames[3]);
-            cardPanel.add(new JScrollPane(timelinePanel), tabNames[4]);
+            cardPanel.add(timelineScrollPanel, tabNames[4]);
             sseResponsePanel = new SSEResponsePanel();
             cardPanel.add(sseResponsePanel, tabNames[5]);
             webSocketResponsePanel = null;

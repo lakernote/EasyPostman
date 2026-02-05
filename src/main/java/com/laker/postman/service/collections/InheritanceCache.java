@@ -71,11 +71,7 @@ public class InheritanceCache {
         // - 另一个线程等待并获取结果
         return cache.computeIfAbsent(requestId, id -> {
             log.info("缓存未命中，开始计算: {}", requestId);
-            HttpRequestItem result = mappingFunction.apply(id);
-            if (result != null) {
-                log.debug("缓存已存储: {}", requestId);
-            }
-            return result;
+            return mappingFunction.apply(id);
         });
     }
 

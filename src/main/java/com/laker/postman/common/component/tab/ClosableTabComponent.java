@@ -42,8 +42,10 @@ public class ClosableTabComponent extends JPanel {
     private final JTabbedPane tabbedPane;
 
     private boolean hoverClose = false; // 鼠标是否悬浮在关闭按钮区域
-    private static final int CLOSE_DIAMETER = 12; // 关闭按钮直径
+    private static final int CLOSE_DIAMETER = 10; // 关闭按钮直径
     private static final int CLOSE_MARGIN = 0; // 关闭按钮距离顶部和右侧的距离
+    private static final int CLOSE_TEXT_SPACING = 0; // 关闭按钮与文字之间的间距
+    private static final int LABEL_HORIZONTAL_PADDING = 4; // Label 左右内边距
 
     /**
      * 检查当前是否为暗色主题
@@ -100,7 +102,7 @@ public class ClosableTabComponent extends JPanel {
         // 动态计算宽度，最大不超过MAX_TAB_WIDTH
         FontMetrics fm = getFontMetrics(getFont());
         // 计算关闭按钮占用的空间：按钮直径 + 间距 + 右边距 + 左侧图标空间
-        int closeButtonSpace = CLOSE_DIAMETER + 4 + CLOSE_MARGIN; // 8px为文本与按钮之间的间距
+        int closeButtonSpace = CLOSE_DIAMETER + CLOSE_TEXT_SPACING + CLOSE_MARGIN; // 按钮直径 + 文字间距 + 右边距
         int iconSpace = 20; // 为协议图标预留空间
         int padding = 20; // 左右内边距
 
@@ -134,7 +136,7 @@ public class ClosableTabComponent extends JPanel {
             // 分组编辑tab
             label.setIcon(new FlatSVGIcon("icons/group.svg", 16, 16));
         }
-        label.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, closeButtonSpace + 4)); // 右侧预留关闭按钮空间
+        label.setBorder(BorderFactory.createEmptyBorder(0, LABEL_HORIZONTAL_PADDING, 0, closeButtonSpace + CLOSE_TEXT_SPACING)); // 右侧预留关闭按钮空间
         label.setHorizontalAlignment(SwingConstants.LEFT); // 改为左对齐，避免文本居中与按钮重叠
         label.setVerticalAlignment(SwingConstants.CENTER);
         add(label, BorderLayout.CENTER);

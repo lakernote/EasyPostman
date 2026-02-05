@@ -4,13 +4,13 @@ import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.table.EasyVariableTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.Variable;
 import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
+import com.laker.postman.panel.collections.right.request.sub.EasyVariablesPanel;
 import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.util.FontsUtil;
@@ -52,7 +52,7 @@ public class GroupEditPanel extends JPanel {
     private AuthTabPanel authTabPanel;
     private ScriptPanel scriptPanel;
     private EasyRequestHttpHeadersPanel headersPanel;
-    private EasyVariableTablePanel variablesPanel;
+    private EasyVariablesPanel variablesPanel;
     private JTabbedPane tabbedPane;
 
     // 原始数据快照，用于检测变化
@@ -122,7 +122,7 @@ public class GroupEditPanel extends JPanel {
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_HEADERS), headersWrapperPanel);
 
         // Variables Tab - 分组级别的变量
-        variablesPanel = new EasyVariableTablePanel();
+        variablesPanel = new EasyVariablesPanel();
         JPanel variablesWrapperPanel = new JPanel(new BorderLayout());
         variablesWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         variablesWrapperPanel.add(variablesPanel, BorderLayout.CENTER);

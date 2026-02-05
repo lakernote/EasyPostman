@@ -12,440 +12,276 @@
 ![Java](https://img.shields.io/badge/Java-17+-orange)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20|%20macOS%20|%20Linux-blue)
 
-## 💡 项目介绍
+---
 
-EasyPostman 致力于为开发者提供媲美 Postman 的本地 API 调试体验，并集成简易版 JMeter 的批量请求与压力测试能力。项目采用
-Java Swing 技术栈，支持跨平台运行，无需联网即可使用，保护您的接口数据隐私。同时，内置 Git
-工作区功能，支持接口数据的版本管理与团队协作，轻松实现多端同步与协作开发。
+## 📖 目录
+
+- [✨ 功能特性](#-功能特性)
+- [📦 下载](#-下载)
+- [🚀 快速开始](#-快速开始)
+- [🖼️ 截图预览](#️-截图预览)
+- [🤝 贡献指南](#-贡献指南)
+- [📚 文档](#-文档)
+- [❓ 常见问题](#-常见问题)
+- [💖 支持项目](#-支持项目)
+
+---
+
+## 💡 项目简介
+
+EasyPostman 为开发者提供**本地化、隐私优先**的 API 调试体验，媲美 Postman，同时集成简易版 JMeter 的性能测试能力。采用 Java Swing 构建，支持跨平台运行，完全离线可用，内置 Git 工作区功能，支持团队协作和版本控制。
 
 ### 🔥 开发理念
 
 - **🎯 专注核心功能** - 简洁而不简单，功能丰富而不臃肿
-- **🔒 隐私优先** - 本地存储，数据不上云，保护开发者隐私
+- **🔒 隐私优先** - 100% 本地存储，数据不上云，保护开发者隐私
 - **🚀 性能至上** - 原生 Java 应用，启动快速，运行流畅
-
----
-
-## 🔗 相关链接
-
-- 🌟 GitHub: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
-- 🏠 Gitee: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
-- 💬 讨论区: [https://github.com/lakernote/easy-postman/discussions](https://github.com/lakernote/easy-postman/discussions) - 社区问答与交流
-- 👥 **微信交流群**: 添加微信 **lakernote** 拉你进群，与开发者和用户直接交流
-- 📦 **下载地址**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
-    - 🌏 **国内镜像**: [https://gitee.com/lakernote/easy-postman/releases](https://gitee.com/lakernote/easy-postman/releases)
-        - ⚠️ 由于存储空间限制，国内镜像仅提供以下版本：
-            - `EasyPostman-{版本号}-macos-arm64.dmg`
-            - `EasyPostman-{版本号}-windows-x64.exe`
-            - `EasyPostman-{版本号}-windows-x64-portable.zip` (免安装绿色版)
-        - 💡 其他平台版本（macOS Intel、Ubuntu DEB、跨平台 JAR）请访问 GitHub Releases 下载
-    - 🍎 Mac (Apple Silicon - M1/M2/M3/M4): `EasyPostman-{版本号}-macos-arm64.dmg`
-    - 🍏 Mac (Intel 芯片): `EasyPostman-{版本号}-macos-x86_64.dmg`
-    - 🪟 Windows: 
-        - **EXE 安装包**: `EasyPostman-{版本号}-windows-x64.exe` - 安装到系统，创建桌面快捷方式，支持自动升级
-        - **便携版 ZIP**: `EasyPostman-{版本号}-windows-x64-portable.zip` - 解压即用，无需安装，绿色便携，可放置任意目录
-    - 🐧 Ubuntu/Debian: `easypostman_{版本号}_amd64.deb`
-    - ☕ 跨平台 JAR: `easy-postman-{版本号}.jar` - 需要 Java 17+ 环境
-
-> ⚠️ **首次运行提示**:
-> 
-> **Windows 用户**: 如遇到 SmartScreen 警告，点击"更多信息" → "仍要运行"即可。本应用完全开源，代码可审查。
-> 
-> **macOS 用户**: 如提示"无法打开"，右键点击应用 → 选择"打开" → 在弹窗中点击"打开"即可。
 
 
 ---
 
 ## ✨ 功能特性
 
-- 🚦 支持常用 HTTP 方法（GET/POST/PUT/DELETE 等）
-- 📡 支持 SSE（Server-Sent Events）和 WebSocket 协议
-- 🌏 多环境变量管理，轻松切换测试环境
-- 🕑 请求历史自动保存，便于回溯与复用
-- 📦 批量请求与压力测试（简易版 JMeter），满足多场景需求，支持报告、结果树、趋势图可视化
-- 📝 语法高亮请求编辑器
-- 🌐 多语言支持（简体中文、英文）
-- 🎨 支持亮色和暗色模式，舒适观感
-- 💾 本地数据存储，隐私安全
-- 📂 支持导入导出 Postman v2.1、curl格式
-- 📊 响应结果可视化，支持 JSON/XML 格式
-- 🔍 支持请求参数、头部、Cookie 等配置
-- 📂 支持文件上传下载
-- 📑 支持请求脚本（Pre-request Script、Tests）
-- 🔗 支持请求链路（Chaining）
-- 🧪 支持网络请求详细事件监控与分析
-- 🏢 工作区管理 - 支持本地工作区和Git工作区，实现项目级别的数据隔离与版本控制
-- 🔄 Git 集成 - 支持 commit、push、pull 等版本控制操作
-- 👥 团队协作 - 通过 Git 工作区实现团队间的接口数据共享
-- ☕ 内置 Java 反编译工具，便于分析 Java 类文件
+### 🏢 工作区 & 协作
+- **本地工作区** - 个人项目，数据本地存储
+- **Git 工作区** - 版本控制和团队协作
+- **多设备同步** - 通过 Git 仓库共享接口数据
+- **项目隔离** - 每个工作区独立管理集合和环境
 
----
-
-## 🖼️ 截图预览
-
-|                                    预览                                    |                                     预览                                     |
-|:------------------------------------------------------------------------:|:--------------------------------------------------------------------------:|
-|                          ![icon](docs/icon.png)                          |                        ![welcome](docs/welcome.png)                        |
-|                          ![home](docs/home.png)                          |                     ![workspaces](docs/workspaces.png)                     |
-|                   ![collections](docs/collections.png)                   |             ![collections-import](docs/collections-import.png)             |
-|            ![dark-collections](docs/dark-collections.png)            |          ![dark-performance-trend](docs/dark-performance-trend.png)          |
-|                  ![environments](docs/environments.png)                  |                     ![functional](docs/functional.png)                     |
-|                  ![functional_1](docs/functional_1.png)                  |                   ![functional_2](docs/functional_2.png)                   |
-|                       ![history](docs/history.png)                       |               ![history-timeline](docs/history-timeline.png)               |
-|                ![history-events](docs/history-events.png)                |                     ![networklog](docs/networklog.png)                     |
-|                   ![performance](docs/performance.png)                   |             ![performance-report](docs/performance-report.png)             |
-|        ![performance-resultTree](docs/performance-resultTree.png)        |              ![performance-trend](docs/performance-trend.png)              |
-| ![performance-threadgroup-fixed](docs/performance-threadgroup-fixed.png) | ![performance-threadgroup-rampup](docs/performance-threadgroup-rampup.png) |
-| ![performance-threadgroup-spike](docs/performance-threadgroup-spike.png) | ![performance-threadgroup-stairs](docs/performance-threadgroup-stairs.png) |
-|                    ![script-pre](docs/script-pre.png)                    |                    ![script-post](docs/script-post.png)                    |
-|               ![script-snippets](docs/script-snippets.png)               |           ![workspaces-gitcommit](docs/workspaces-gitcommit.png)           |
-
----
-
-## 🏗️ 系统架构
-
-```
-EasyPostman
-├── 🎨 用户界面层 (UI Layer)
-│   ├── Workspace 工作区管理
-│   ├── Collections 接口集合管理
-│   ├── Environments 环境变量配置
-│   ├── History 请求历史记录
-│   ├── Performance 性能测试模块
-│   └── NetworkLog 网络请求监控
-├── 🔧 业务逻辑层 (Business Layer)
-│   ├── HTTP 请求处理引擎
-│   ├── 工作区切换与隔离引擎
-│   ├── Git 版本控制引擎
-│   ├── 环境变量解析器
-│   ├── 脚本执行引擎
-│   ├── 数据导入导出模块
-│   └── 性能测试执行器
-├── 💾 数据访问层 (Data Layer)
-│   ├── 工作区存储管理
-│   ├── 本地文件存储
-│   ├── Git 仓库管理
-│   ├── 配置管理
-│   └── 历史记录管理
-└── 🌐 网络通信层 (Network Layer)
-    ├── HTTP/HTTPS 客户端
-    ├── WebSocket 客户端
-    ├── SSE 客户端
-    └── Git 远程仓库通信
-```
-
----
-
-## 🛠️ 技术选型说明
-
-### 核心技术栈
-
-- **Java 17**: 使用最新 LTS 版本，享受现代 Java 特性
-- **JavaSwing**: 原生桌面 GUI 框架，跨平台兼容性好
-- **jlink & jpackage**: 官方打包工具，生成原生安装包
-
-### UI 组件库
-
-- **FlatLaf**: 现代化 UI 主题，支持暗色模式和高分辨率显示
-- **RSyntaxTextArea**: 语法高亮文本编辑器，支持 JSON/XML/JavaScript 等
-- **jIconFont-Swing**: 矢量图标字体支持
-- **SwingX**: 扩展 Swing 组件库
-- **MigLayout**: 强大的布局管理器
-
-### 网络与工具库
-
-- **OkHttp**: 高性能 HTTP 客户端
-- **Nashorn/GraalVM**: JavaScript 脚本引擎支持
-- **SLF4J + Logback**: 日志框架
-
----
-
-## 🎯 核心特性详解
-
-### 🏢 工作区管理 - 重大功能更新！
-
-- ✅ 本地工作区：适合个人项目，数据完全本地存储，隐私安全
-- ✅ Git工作区：支持版本控制和团队协作的工作区类型
-    - 从远程仓库克隆：直接从 GitHub/Gitee 等平台克隆项目
-    - 本地初始化：在本地创建 Git 仓库，后续推送到远程
-- ✅ 项目级别数据隔离：每个工作区独立管理接口集合、环境变量
-- ✅ 工作区快速切换：一键切换不同项目，互不干扰
-- ✅ Git操作集成：
-    - 提交（Commit）：保存本地变更到版本控制
-    - 推送（Push）：将本地提交推送到远程仓库
-    - 拉取（Pull）：从远程仓库获取最新变更
-    - 冲突检测与智能处理
-- ✅ 团队协作支持：通过 Git 工作区实现接口数据的团队共享
-- ✅ 多种认证方式：支持用户名密码、Personal Access Token、SSH Key
-
-### 🔌 接口调试功能
-
-- ✅ 支持 HTTP/1.1 和 HTTP/2 协议
-- ✅ 完整的 REST API 方法支持（GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS）
-- ✅ 多种请求体格式：Form Data、x-www-form-urlencoded、JSON、XML、Binary
-- ✅ 文件上传下载支持（支持拖拽）
-- ✅ Cookie 自动管理和手动编辑
-- ✅ 请求头、查询参数可视化编辑
-- ✅ 响应数据格式化显示（JSON、XML、HTML）
-- ✅ 响应时间、状态码、大小统计
-
-### 🌍 环境管理
-
-- ✅ 多环境快速切换（开发/测试/生产）
-- ✅ 全局变量和环境变量支持
-- ✅ 变量嵌套引用：`{{baseUrl}}/api/{{version}}`
-- ✅ 动态变量：`{{$timestamp}}`、`{{$randomInt}}`
-- ✅ 环境变量导入导出
-
-### 📝 脚本支持
-
-- ✅ Pre-request Script：请求前执行脚本
-- ✅ Tests Script：响应后测试脚本
-- ✅ 内置代码片段库
-- ✅ JavaScript 运行时环境
-- ✅ 断言测试支持
+### 🔌 接口测试
+- **HTTP/HTTPS** - 完整的 REST API 支持（GET、POST、PUT、DELETE 等）
+- **WebSocket & SSE** - 实时协议支持
+- **多种请求体** - Form Data、JSON、XML、Binary
+- **文件上传下载** - 支持拖拽
+- **环境变量** - 多环境管理，支持动态变量
 
 ### ⚡ 性能测试
+- **线程组模式** - 固定、递增、阶梯、尖刺
+- **实时监控** - TPS、响应时间、错误率
+- **可视化报告** - 性能趋势图和结果树
+- **批量请求** - 简易版 JMeter 风格测试
 
-- ✅ 多种线程组模式：
-    - 固定线程数：稳定负载测试
-    - 递增式：逐步增加负载
-    - 阶梯式：分阶段负载测试
-    - 尖刺式：突发流量测试
-- ✅ 实时性能监控
-- ✅ 详细测试报告（响应时间、TPS、错误率）
-- ✅ 结果树分析
-- ✅ 性能趋势图表
+### 📝 高级功能
+- **请求前脚本** - 请求前执行 JavaScript
+- **测试脚本** - 断言和响应验证
+- **请求链路** - 提取数据传递给下一个请求
+- **网络事件日志** - 详细的请求/响应分析
+- **导入导出** - Postman v2.1、cURL、HAR（进行中）
 
-### 📊 数据分析
+### 🎨 用户体验
+- **亮色暗色模式** - 任何光线下舒适观看
+- **多语言** - 中文、English
+- **语法高亮** - JSON、XML、JavaScript
+- **跨平台** - Windows、macOS、Linux
 
-- ✅ 请求历史时间线
-- ✅ 网络事件详细日志
-- ✅ 响应数据统计分析
-- ✅ 错误请求自动分类
+📖 **[查看所有功能 →](docs/FEATURES_zh.md)**
 
-### 🔄 数据迁移
+---
 
-- ✅ Postman Collection v2.1 导入
-- ✅ cURL 命令导入
-- ✅ HAR 文件导入（开发中）
-- ✅ OpenAPI/Swagger 导入（开发中）
+## 📦 下载
+
+### 最新版本
+
+🔗 **[GitHub Releases](https://github.com/lakernote/easy-postman/releases)** | **[Gitee 镜像（国内）](https://gitee.com/lakernote/easy-postman/releases)**
+
+### 平台下载
+
+| 平台 | 下载 | 说明 |
+|------|------|------|
+| 🍎 **macOS (Apple Silicon)** | `EasyPostman-{版本号}-macos-arm64.dmg` | 适用于 M1/M2/M3/M4 Mac |
+| 🍏 **macOS (Intel)** | `EasyPostman-{版本号}-macos-x86_64.dmg` | 适用于 Intel Mac |
+| 🪟 **Windows (安装版)** | `EasyPostman-{版本号}-windows-x64.exe` | 安装程序，支持自动更新 |
+| 🪟 **Windows (便携版)** | `EasyPostman-{版本号}-windows-x64-portable.zip` | 解压即用，无需安装 |
+| 🐧 **Ubuntu/Debian** | `easypostman_{版本号}_amd64.deb` | DEB 安装包 |
+| ☕ **跨平台** | `easy-postman-{版本号}.jar` | 需要 Java 17+ |
+
+> ⚠️ **首次运行提示**
+> 
+> - **Windows**: 如遇 SmartScreen 警告 → 点击"更多信息" → "仍要运行"
+> - **macOS**: 如提示"无法打开" → 右键点击应用 → 选择"打开" → 点击"打开"
+> 
+> 本应用完全开源，代码可审查。这些警告是因为我们没有购买代码签名证书。
+
+### Gitee 国内镜像 🌏
+
+由于存储空间限制，Gitee 镜像仅提供：
+- macOS (Apple Silicon) DMG
+- Windows 安装版和便携版 ZIP
+
+其他平台请访问 GitHub Releases 下载。
 
 ---
 
 ## 🚀 快速开始
 
-### 环境要求
+### 方式一：下载预编译版本
 
-- Java 17 或更高版本
-- 内存：至少 512MB 可用内存
-- 磁盘：至少 100MB 可用空间
+1. 从 [Releases](https://github.com/lakernote/easy-postman/releases) 下载适合您平台的安装包
+2. 安装并运行：
+   - **macOS**: 打开 DMG，拖拽到应用程序
+   - **Windows 安装版**: 运行 EXE，按安装向导操作
+   - **Windows 便携版**: 解压 ZIP，运行 `EasyPostman.exe`
+   - **Linux DEB**: `sudo dpkg -i easypostman_{版本号}_amd64.deb`
+   - **JAR**: `java -jar easy-postman-{版本号}.jar`
 
-> 💡 **开发和打包建议**：推荐使用 **[JetBrains Runtime (JBR)](https://github.com/JetBrains/JetBrainsRuntime)**，这是 JetBrains 为 Swing 应用优化的 JDK 发行版，提供：
-> - ✨ 更好的 Swing/AWT 渲染性能
-> - 🎨 改进的字体渲染和 HiDPI 支持
-> - 🐛 修复了标准 JDK 中的 Swing 相关 bug
-> - 🚀 针对 IDE 和桌面应用优化的 GC 和性能调优
-> 
-> **下载地址**：[JetBrains Runtime Releases](https://github.com/JetBrains/JetBrainsRuntime/releases)
-> 
-> 使用 JBR 构建和运行：
-> ```bash
-> # 设置 JAVA_HOME 为 JBR 路径
-> export JAVA_HOME=/path/to/jbr
-> # 或在 Windows 中
-> set JAVA_HOME=C:\path\to\jbr
-> ```
-
-### 从源码构建
+### 方式二：从源码构建
 
 ```bash
-# 克隆项目
-git clone https://gitee.com/lakernote/easy-postman.git
+# 克隆仓库
+git clone https://github.com/lakernote/easy-postman.git
 cd easy-postman
 
-# 或者打包后运行
+# 构建并运行
 mvn clean package
 java -jar target/easy-postman-*.jar
 ```
 
-### 生成安装包
+📖 **[构建指南 →](docs/BUILD_zh.md)**
 
-```bash
-# macOS
-chmod +x build/mac.sh
-./build/mac.sh
+### 第一步
 
-# Windows
-build/win.bat
-```
+1. **创建工作区** - 选择本地（个人）或 Git（团队协作）
+2. **创建集合** - 组织您的 API 请求
+3. **发送第一个请求** - 输入 URL，配置参数，点击发送
+4. **设置环境** - 轻松切换开发/测试/生产环境
 
 ---
 
-## 📖 使用指南
+## 🖼️ 截图预览
 
-### 0️⃣ 工作区管理（新功能！）
+<div align="center">
 
-#### 创建工作区
+### 主界面
+![主页](docs/home-zh.png)
 
-1. 点击左侧 **Workspace** 选项卡
-2. 点击 **+ 新建** 按钮
-3. 选择工作区类型：
-    - **本地工作区**：适合个人项目，数据仅存储在本地
-    - **Git 工作区**：支持版本控制和团队协作
-4. 填写工作区名称、描述和存储路径
-5. 如果选择 Git 工作区，配置 Git 相关信息：
-    - **从远程克隆**：输入 Git 仓库 URL 和认证信息
-    - **本地初始化**：创建本地 Git 仓库，后续可配置远程仓库
+### 工作区管理
+![工作区](docs/workspaces.png)
 
-#### 工作区协作流程
+### 接口集合 & API 测试
+![接口集合](docs/collections.png)
 
-1. **团队领导者**：
-    - 创建 Git 工作区（从远程克隆或本地初始化）
-    - 配置接口集合和环境变量
-    - 提交并推送到远程仓库
-2. **团队成员**：
-    - 创建 Git 工作区（从远程克隆）
-    - 获取最新的接口数据和环境配置
-    - 本地修改后提交并推送更新
-3. **日常协作**：
-    - 开始工作前：先执行 **Pull** 拉取最新变更
-    - 完成修改后：执行 **Commit** 提交本地变更
-    - 分享更新：执行 **Push** 推送到远程仓库
+### 性能测试
+![性能测试](docs/performance.png)
 
-### 1️⃣ 创建第一个请求
+</div>
 
-1. 点击 **Collections** 选项卡
-2. 右键创建新的集合和请求
-3. 输入 URL 和选择 HTTP 方法
-4. 配置请求参数、头部信息
-5. 点击 **Send** 发送请求
-
-### 2️⃣ 环境变量配置
-
-1. 点击 **Environments** 选项卡
-2. 创建新环境（如：dev、test、prod）
-3. 添加变量：如 `baseUrl = https://api.example.com`
-4. 在请求中使用：`{{baseUrl}}/users`
-
-### 3️⃣ 性能测试
-
-1. 点击 **Performance** 选项卡
-2. 配置线程组参数
-3. 添加要测试的接口
-4. 启动测试并查看实时报告
-
+📸 **[查看所有截图 →](docs/SCREENSHOTS_zh.md)**
 ---
 
 ## 🤝 贡献指南
 
-我们欢迎任何形式的贡献！我们已经设置了完善的模板和自动化检查，让贡献变得更简单。
+我们欢迎任何形式的贡献！无论是 Bug 报告、功能建议还是代码贡献。
 
-### 🐛 报告 Bug
+### 贡献方式
 
-发现了 Bug？请使用我们的 Bug 报告模板：
+- 🐛 **报告 Bug** - 使用我们的 [Bug 报告模板](https://github.com/lakernote/easy-postman/issues/new/choose)
+- ✨ **功能建议** - 通过 [功能请求](https://github.com/lakernote/easy-postman/issues/new/choose) 分享您的想法
+- 💻 **提交代码** - Fork、编写代码并创建 Pull Request
+- 📝 **改进文档** - 修正错别字、添加示例、翻译文档
 
-1. 前往 [Issues](https://github.com/lakernote/easy-postman/issues/new/choose)
-2. 选择 "🐛 Bug 报告"
-3. 填写必要信息
-4. 提交后我们会尽快回复
+### 自动化检查
 
-### ✨ 功能建议
+当您提交 PR 时，会自动进行：
+- ✅ 构建和编译检查
+- ✅ 测试执行
+- ✅ 代码质量验证
+- ✅ PR 格式校验
 
-有好的想法？我们很乐意听取：
+📖 **[贡献指南 →](.github/CONTRIBUTING.md)**
 
-1. 前往 [Issues](https://github.com/lakernote/easy-postman/issues/new/choose)
-2. 选择 "✨ 功能请求"
-3. 描述你的使用场景和期望的解决方案
-4. 提交后进入社区讨论
+---
 
-### 💻 提交代码
+## 📚 文档
 
-我们欢迎代码贡献！当你提交 PR 时：
-
-- **自动化检查**：你的 PR 会自动经过：
-  - ✅ 构建和编译检查
-  - ✅ 测试执行
-  - ✅ 代码质量验证
-  - ✅ PR 格式校验
-- **审查流程**：维护者会审查你的代码并提供反馈
-- **开发规范**：请遵循我们的 [贡献指南](.github/CONTRIBUTING.md)
-
-### 📝 改进文档
-
-文档同样重要！你可以：
-
-- 修正错别字或不准确的描述
-- 补充使用示例
-- 翻译文档
-- 完善常见问题
-
-### 开发规范
-
-- 遵循 Java 编码规范
-- 提交前请运行测试：`mvn test`
-- 提交信息，格式：`feat: 添加新功能` 或 `fix: 修复bug`
-- 阅读完整的 [贡献指南](.github/CONTRIBUTING.md) 获取详细说明
+- 📖 **[功能详细说明](docs/FEATURES_zh.md)** - 全面的功能文档
+- 🏗️ **[系统架构](docs/ARCHITECTURE_zh.md)** - 技术栈和架构
+- 🚀 **[构建指南](docs/BUILD_zh.md)** - 从源码构建和生成安装包
+- 🖼️ **[截图展示](docs/SCREENSHOTS_zh.md)** - 所有应用截图
+- 📝 **[脚本 API 参考](docs/SCRIPT_API_REFERENCE_zh.md)** - 请求前和测试脚本 API
+- 📝 **[脚本代码片段速查](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md)** - 内置代码片段
+- 🔐 **[客户端证书](docs/CLIENT_CERTIFICATES.md)** - mTLS 配置
+- 🐧 **[Linux 构建指南](docs/LINUX_BUILD.md)** - 在 Linux 上构建
+- ❓ **[常见问题](docs/FQA.MD)** - 常见问题解答
 
 ---
 
 ## ❓ 常见问题
 
-### Q: 为什么选择本地存储而不是云同步？
+<details>
+<summary><b>Q: 为什么选择本地存储而不是云同步？</b></summary>
 
-A: 我们重视开发者的隐私安全，本地存储可以确保您的接口数据不会泄露给第三方。
+A: 我们重视开发者的隐私安全。本地存储可以确保您的接口数据不会泄露给第三方。您可以选择使用 Git 工作区进行团队协作，同时保持对数据的完全控制。
+</details>
 
-### Q: 如何导入 Postman 数据？
+<details>
+<summary><b>Q: 如何导入 Postman 数据？</b></summary>
 
-A: 在 Collections 界面点击导入按钮，选择 Postman v2.1 格式的 JSON 文件即可。
+A: 在 Collections 界面点击 **导入** 按钮，选择 Postman v2.1 格式的 JSON 文件即可。工具会自动转换集合、请求和环境变量。
+</details>
 
-### Q: 性能测试结果准确吗？
+<details>
+<summary><b>Q: 为什么 Windows/macOS 提示安全警告？</b></summary>
 
-A: 基于 Java 多线程实现，测试结果具有一定参考价值，但建议与专业压测工具结果进行对比验证。
+**Windows SmartScreen**: 未购买代码签名证书（约 $100-400/年）会触发警告。
+- **解决方法**：点击"更多信息" → "仍要运行"
+- 随着下载量增加，警告会逐渐减少
 
-### Q: 为什么 Windows/macOS 提示"不安全"或"无法验证"？
+**macOS Gatekeeper**: 未购买 Apple 开发者证书（$99/年）+ 公证会触发警告。
+- **解决方法**：右键点击应用 → 选择"打开"
+- 或终端执行：`sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
 
-A: 这是因为应用未购买代码签名证书。这是开源软件的常见现象：
-- **Windows SmartScreen**：未购买代码签名证书（约 $100-400/年）会触发警告
-  - 解决方法：点击"更多信息" → "仍要运行"
-  - 随着下载量增加（200-500次），警告会逐渐减少
-- **macOS Gatekeeper**：未购买 Apple 开发者证书（$99/年）+ 公证会触发警告
-  - 解决方法：右键点击应用 → 选择"打开"
-  - 或终端执行：`sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
+本项目**完全开源**，代码可在 GitHub 审查。
+</details>
 
-**说明**：本项目完全开源，代码可在 GitHub 审查。大多数个人开发的开源软件都采用相同的方式分发。
+<details>
+<summary><b>Q: 支持团队协作吗？</b></summary>
 
-### Q: 支持团队协作吗？
+A: ✅ **支持！** 使用 **Git 工作区**可以：
+- 与团队共享接口集合和环境变量
+- 使用版本控制跟踪变更（commit、push、pull）
+- 跨多个设备工作
+- 无需云服务即可协作
+</details>
 
-A: ✅ **现已支持！** 通过 Git 工作区功能，团队可以共享接口集合、环境变量等数据，实现真正的团队协作。
+<details>
+<summary><b>Q: 工作区之间的数据会相互影响吗？</b></summary>
 
-### Q: 工作区之间的数据会相互影响吗？
+A: 不会。每个工作区都是完全独立的，拥有自己的接口集合、环境变量和历史记录。切换工作区时数据完全隔离。
+</details>
 
-A: 不会。每个工作区都是完全独立的，拥有自己的接口集合、环境变量等，切换工作区时数据完全隔离。
+<details>
+<summary><b>Q: Git 工作区支持哪些平台？</b></summary>
 
-### Q: Git 工作区支持哪些平台？
+A: 支持所有标准的 Git 平台，包括：
+- GitHub
+- Gitee
+- GitLab
+- Bitbucket
+- 自建 Git 服务器
 
-A: 支持所有标准的 Git 平台，包括 GitHub、Gitee、GitLab、自建 Git 服务器等，只要提供标准的 Git URL 即可。
-
-### Q: 如何解决 Git 操作冲突？
-
-A: 系统内置了冲突检测机制，在执行 Git 操作前会检查潜在冲突并提供解决方案，如自动提交本地变更、暂存变更等。
-
-### Q: 可以在不同设备间同步工作区吗？
-
-A: 可以！通过 Git 工作区功能，你可以在不同设备上克隆同一个远程仓库，实现跨设备的数据同步。
+只需提供标准的 Git URL（HTTPS 或 SSH）即可。
+</details>
 
 ---
 
 ## 💖 支持项目
 
-如果这个项目对您有帮助，欢迎：
+如果 EasyPostman 对您有帮助：
 
-- ⭐ 给项目点个 Star
-- 🍴 Fork 项目参与贡献
-- 📢 向朋友推荐本项目
-- ☕ 请作者喝杯咖啡
-- 💬 微信交流：**lakernote**
+- ⭐ **给项目点个 Star** - 表达您的支持！
+- 🍴 **Fork 并贡献** - 帮助改进项目
+- 📢 **向朋友推荐** - 传播好工具
+- 💬 **加入微信群** - 添加 **lakernote** 直接交流
+- 💬 **GitHub 讨论区** - [提问和分享想法](https://github.com/lakernote/easy-postman/discussions)
+
+---
+
+## 🔗 相关链接
+
+- 🌟 **GitHub**: [https://github.com/lakernote/easy-postman](https://github.com/lakernote/easy-postman)
+- 🏠 **Gitee**: [https://gitee.com/lakernote/easy-postman](https://gitee.com/lakernote/easy-postman)
+- 💬 **讨论区**: [https://github.com/lakernote/easy-postman/discussions](https://github.com/lakernote/easy-postman/discussions)
+- 📦 **下载地址**: [https://github.com/lakernote/easy-postman/releases](https://github.com/lakernote/easy-postman/releases)
 
 ---
 
@@ -457,7 +293,7 @@ A: 可以！通过 Git 工作区功能，你可以在不同设备上克隆同一
 
 ## 🙏 致谢
 
-感谢以下开源项目的支持：
+感谢以下优秀的开源项目：
 
 - [FlatLaf](https://github.com/JFormDesigner/FlatLaf) - 现代化 Swing 主题
 - [RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea) - 语法高亮编辑器

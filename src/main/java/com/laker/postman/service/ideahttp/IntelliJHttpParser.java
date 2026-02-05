@@ -1,6 +1,5 @@
 package com.laker.postman.service.ideahttp;
 
-import cn.hutool.core.util.IdUtil;
 import com.laker.postman.model.*;
 import com.laker.postman.service.common.AuthParserUtil;
 import com.laker.postman.service.common.CollectionParseResult;
@@ -12,11 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,16 +54,13 @@ public class IntelliJHttpParser {
 
             // 创建分组 - 优先使用文件名，否则使用国际化的组名和格式化的时间戳
             String groupName;
-            String environmentName;
             if (filename != null && !filename.trim().isEmpty()) {
                 // 移除文件扩展名
                 groupName = filename.replaceAll("\\.http$", "").trim();
-                environmentName = groupName;
             } else {
                 // 使用默认的国际化组名
                 String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 groupName = I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DEFAULT_GROUP, timestamp);
-                environmentName = "Imported-" + timestamp;
             }
 
             RequestGroup collectionGroup = new RequestGroup(groupName);
@@ -91,20 +83,17 @@ public class IntelliJHttpParser {
                 return null;
             }
 
-            // 创建解析结果
-            CollectionParseResult result = CollectionParseResult.createFlat(collectionGroup, validRequests);
-
-            // 如果有环境变量，创建环境对象并添加
+            // 如果有解析出的变量，将它们添加到 RequestGroup 的 variables 字段中（分组级别的变量）
             if (!context.variables.isEmpty()) {
-                Environment environment = new Environment(environmentName);
-                environment.setId("env-" + IdUtil.simpleUUID()); // 设置唯一 ID
                 for (Map.Entry<String, String> entry : context.variables.entrySet()) {
-                    environment.addVariable(entry.getKey(), entry.getValue());
+                    Variable variable = new Variable(true, entry.getKey(), entry.getValue());
+                    collectionGroup.getVariables().add(variable);
                 }
-                result.addEnvironment(environment);
             }
 
-            return result;
+            // 创建解析结果
+            return CollectionParseResult.createFlat(collectionGroup, validRequests);
+
         } catch (Exception e) {
             log.error("Failed to parse HTTP file", e);
             return null;
@@ -131,7 +120,7 @@ public class IntelliJHttpParser {
     /**
      * 解析 HTTP 请求列表
      *
-     * @param lines 文件行数组
+     * @param lines     文件行数组
      * @param variables 用于存储解析出的变量定义
      * @return 请求列表
      */

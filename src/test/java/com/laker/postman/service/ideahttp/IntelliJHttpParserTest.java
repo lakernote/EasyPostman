@@ -1,6 +1,5 @@
 package com.laker.postman.service.ideahttp;
 
-import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -827,6 +826,15 @@ public class IntelliJHttpParserTest {
                 .anyMatch(f -> key.equals(f.getKey()) && value.equals(f.getValue()));
     }
 
+    // 辅助方法：检查分组是否有指定的变量
+    private boolean hasVariable(RequestGroup group, String key, String value) {
+        if (group.getVariables() == null) {
+            return false;
+        }
+        return group.getVariables().stream()
+                .anyMatch(v -> key.equals(v.getKey()) && value.equals(v.getValue()));
+    }
+
     @Test(description = "测试解析环境变量定义（@ 开头）")
     public void testParseEnvironmentVariables() {
         String content = """
@@ -847,19 +855,18 @@ public class IntelliJHttpParserTest {
         CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "ci-service.http");
         assertNotNull(result, "应该成功解析");
 
-        // 验证环境变量
-        assertNotNull(result.getEnvironments(), "应该有环境变量列表");
-        assertFalse(result.getEnvironments().isEmpty(), "环境变量列表不应为空");
+        // 验证分组级别的变量
+        RequestGroup group = result.getGroup();
+        assertNotNull(group, "应该有分组对象");
+        assertNotNull(group.getVariables(), "分组应该有变量列表");
+        assertFalse(group.getVariables().isEmpty(), "变量列表不应为空");
+        assertEquals(group.getVariables().size(), 4, "应该有4个变量");
 
-        Environment env = result.getEnvironments().get(0);
-        assertNotNull(env, "应该有环境对象");
-        assertEquals(env.getName(), "ci-service", "环境名称应该基于文件名");
-
-        // 验证变量
-        assertEquals(env.get("ciUserId"), "test-user-uuid-12345");
-        assertEquals(env.get("orgId"), "test-org-uuid-67890");
-        assertEquals(env.get("displayName"), "Test User");
-        assertEquals(env.get("userEmail"), "test@example.com");
+        // 验证变量值
+        assertTrue(hasVariable(group, "ciUserId", "test-user-uuid-12345"));
+        assertTrue(hasVariable(group, "orgId", "test-org-uuid-67890"));
+        assertTrue(hasVariable(group, "displayName", "Test User"));
+        assertTrue(hasVariable(group, "userEmail", "test@example.com"));
 
         // 验证请求被正确解析
         assertEquals(result.getChildren().size(), 1, "应该有一个请求");
@@ -892,11 +899,12 @@ public class IntelliJHttpParserTest {
         CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "test.http");
         assertNotNull(result);
 
-        // 验证环境变量
-        assertEquals(result.getEnvironments().size(), 1);
-        Environment env = result.getEnvironments().get(0);
-        assertEquals(env.get("ciUrl"), "https://api.example.com");
-        assertEquals(env.get("accessToken"), "test-token-123");
+        // 验证分组级别的变量
+        RequestGroup group = result.getGroup();
+        assertNotNull(group.getVariables());
+        assertEquals(group.getVariables().size(), 2, "应该有2个变量");
+        assertTrue(hasVariable(group, "ciUrl", "https://api.example.com"));
+        assertTrue(hasVariable(group, "accessToken", "test-token-123"));
 
         // 验证两个请求
         assertEquals(result.getChildren().size(), 2);

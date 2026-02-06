@@ -233,12 +233,6 @@ public class RequestEditSubPanel extends JPanel {
         // 根据保存的设置初始化布局方向
         boolean isVertical = SettingManager.isLayoutVertical();
         int orientation = isVertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;
-
-        // 水平布局时，设置 responsePanel 的 minimumSize 与 reqTabs 对称（reqTabs 在第 172 行已设置）
-        if (!isVertical) {
-            responsePanel.setMinimumSize(new Dimension(400, 120));
-        }
-
         splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
         splitPane.setDividerSize(4); // 设置分割条宽度
         splitPane.setOneTouchExpandable(false);
@@ -1727,13 +1721,17 @@ public class RequestEditSubPanel extends JPanel {
     @Override
     public void doLayout() {
         super.doLayout();
-        // 第一次布局时，为水平布局设置精确的 5:5 分割位置
-        // 垂直布局依赖 resizeWeight 即可，不需要额外设置
-        if (!initialDividerLocationSet && splitPane != null &&
-                splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT &&
-                splitPane.getWidth() > 0) {
-            initialDividerLocationSet = true;
-            splitPane.setDividerLocation(0.5);
+        // 第一次布局时，设置分割位置
+        if (!initialDividerLocationSet && splitPane != null) {
+            if (splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT && splitPane.getWidth() > 0) {
+                // 水平布局：设置 5:5 分割位置
+                initialDividerLocationSet = true;
+                splitPane.setDividerLocation(0.5);
+            } else if (splitPane.getOrientation() == JSplitPane.VERTICAL_SPLIT && splitPane.getHeight() > 0) {
+                // 垂直布局：设置协议默认比例
+                initialDividerLocationSet = true;
+                splitPane.setDividerLocation(getDefaultResizeWeight());
+            }
         }
     }
 

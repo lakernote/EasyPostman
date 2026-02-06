@@ -99,6 +99,8 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         searchField = new SearchTextField();
         searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER));
@@ -125,6 +127,8 @@ public class PerformanceResultTablePanel extends JPanel {
         JScrollPane tableScroll = new JScrollPane(table);
 
         JPanel leftPanel = new JPanel(new BorderLayout());
+        // 设置左侧面板边距
+        leftPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
         leftPanel.add(searchPanel, BorderLayout.NORTH);
         leftPanel.add(tableScroll, BorderLayout.CENTER);
 

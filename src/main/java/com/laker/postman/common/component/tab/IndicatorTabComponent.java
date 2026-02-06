@@ -16,13 +16,12 @@ import java.awt.*;
 public class IndicatorTabComponent extends JPanel {
     private static final int INDICATOR_DIAMETER = 6; // 指示器直径
     private static final int INDICATOR_SPACING = 6; // 指示器与文字之间的间距
-    private static final int LABEL_HORIZONTAL_PADDING = 4; // Label 左右内边距
+    private static final int LABEL_HORIZONTAL_PADDING = 0; // Label 左右内边距
     private static final int LABEL_VERTICAL_PADDING = 4; // Label 上下内边距
 
     private final String title;
     private boolean showIndicator = false; // 是否显示指示器
-    private int alignment = SwingConstants.LEADING; // 文字对齐方式，默认居左
-    private Font font;
+    private final Font font;
 
     /**
      * 创建一个带指示器的Tab组件
@@ -45,33 +44,25 @@ public class IndicatorTabComponent extends JPanel {
     public void setShowIndicator(boolean show) {
         if (this.showIndicator != show) {
             this.showIndicator = show;
-            // 不重新计算大小，只重绘，避免Tab跳动
-            repaint();
-        }
-    }
-
-    /**
-     * 设置文字对齐方式
-     *
-     * @param alignment 对齐方式 (SwingConstants.LEADING, CENTER, TRAILING)
-     */
-    public void setAlignment(int alignment) {
-        if (this.alignment != alignment) {
-            this.alignment = alignment;
+            // 重新计算大小，根据绿点显示状态动态调整宽度
+            updatePreferredSize();
             repaint();
         }
     }
 
     /**
      * 更新组件的首选大小
+     * 根据是否显示指示器动态计算宽度
      */
     private void updatePreferredSize() {
         FontMetrics fm = getFontMetrics(font);
         int textWidth = fm.stringWidth(title);
         int width = textWidth + LABEL_HORIZONTAL_PADDING * 2;
 
-        // 始终预留指示器空间，避免显示/隐藏时Tab大小变化导致跳动
-        width += INDICATOR_DIAMETER + INDICATOR_SPACING;
+        // 只有在显示指示器时才增加指示器的宽度
+        if (showIndicator) {
+            width += INDICATOR_DIAMETER + INDICATOR_SPACING;
+        }
 
         int height = fm.getHeight() + LABEL_VERTICAL_PADDING * 2;
         setPreferredSize(new Dimension(width, height));
@@ -96,52 +87,26 @@ public class IndicatorTabComponent extends JPanel {
 
             // 计算文字尺寸
             FontMetrics fm = g2.getFontMetrics();
-            int textWidth = fm.stringWidth(title);
             int textHeight = fm.getAscent();
 
-            // 组件的总宽度和总高度
-            int totalWidth = getWidth();
+            // 组件的总高度
             int totalHeight = getHeight();
 
-            // 计算内容区域（去掉padding后的区域）
-            int contentX = LABEL_HORIZONTAL_PADDING;
-            int contentY = LABEL_VERTICAL_PADDING;
-            int contentWidth = totalWidth - LABEL_HORIZONTAL_PADDING * 2;
-            int contentHeight = totalHeight - LABEL_VERTICAL_PADDING * 2;
-
-
-            // 根据对齐方式计算文字起始X坐标
-            int textX;
-            switch (alignment) {
-                case SwingConstants.CENTER:
-                    // 居中对齐：文本+指示器整体居中
-                    int totalContentWidth = textWidth + (INDICATOR_DIAMETER + INDICATOR_SPACING);
-                    textX = contentX + (contentWidth - totalContentWidth) / 2;
-                    break;
-                case SwingConstants.TRAILING:
-                case SwingConstants.RIGHT:
-                    // 右对齐：指示器在最右边，文本在指示器左边
-                    textX = contentX + contentWidth - (textWidth + INDICATOR_DIAMETER + INDICATOR_SPACING);
-                    break;
-                case SwingConstants.LEADING:
-                case SwingConstants.LEFT:
-                default:
-                    // 左对齐：文本从内容区域左边开始
-                    textX = contentX;
-                    break;
-            }
+            // 文字从左边开始绘制（加上padding）
+            int textX = LABEL_HORIZONTAL_PADDING;
 
             // 文字垂直居中
-            int textY = contentY + (contentHeight - fm.getHeight()) / 2 + textHeight;
+            int textY = (totalHeight - fm.getHeight()) / 2 + textHeight;
 
             // 绘制文字
             g2.drawString(title, textX, textY);
 
             // 如果需要显示指示器
             if (showIndicator) {
+                int textWidth = fm.stringWidth(title);
                 // 指示器在文字右侧
                 int indicatorX = textX + textWidth + INDICATOR_SPACING;
-                int indicatorY = contentY + (contentHeight - INDICATOR_DIAMETER) / 2;
+                int indicatorY = (totalHeight - INDICATOR_DIAMETER) / 2;
 
                 // 绘制绿色圆点
                 g2.setColor(getIndicatorColor());

@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
+import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestGroup;
@@ -55,6 +56,12 @@ public class GroupEditPanel extends JPanel {
     private EasyVariablesPanel variablesPanel;
     private JTabbedPane tabbedPane;
 
+    // Tab indicators for showing content status
+    private IndicatorTabComponent headersTabIndicator;
+    private IndicatorTabComponent variablesTabIndicator;
+    private IndicatorTabComponent authTabIndicator;
+    private IndicatorTabComponent scriptsTabIndicator;
+
     // 原始数据快照，用于检测变化
     private String originalName;
     private String originalDescription;
@@ -79,7 +86,11 @@ public class GroupEditPanel extends JPanel {
         initUI();
         loadGroupData();
         setupAutoSaveListeners();
+        setupTabIndicatorListeners();
         setupSaveShortcut();
+
+        // 初始化tab指示器状态
+        SwingUtilities.invokeLater(this::updateTabIndicators);
     }
 
     private void initAutoSaveTimer() {
@@ -119,7 +130,10 @@ public class GroupEditPanel extends JPanel {
         );
         headersInfoPanel.add(headersInfoLabel);
         headersWrapperPanel.add(headersInfoPanel, BorderLayout.SOUTH);
+
+        headersTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_HEADERS));
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_HEADERS), headersWrapperPanel);
+        tabbedPane.setTabComponentAt(1, headersTabIndicator);
 
         // Variables Tab - 分组级别的变量
         variablesPanel = new EasyVariablesPanel();
@@ -135,7 +149,10 @@ public class GroupEditPanel extends JPanel {
         );
         variablesInfoPanel.add(variablesInfoLabel);
         variablesWrapperPanel.add(variablesInfoPanel, BorderLayout.SOUTH);
+
+        variablesTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_VARIABLES));
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_VARIABLES), variablesWrapperPanel);
+        tabbedPane.setTabComponentAt(2, variablesTabIndicator);
 
 
         // Authorization Tab - 复用 AuthTabPanel
@@ -151,7 +168,10 @@ public class GroupEditPanel extends JPanel {
         );
         authInfoPanel.add(authInfoLabel);
         authWrapperPanel.add(authInfoPanel, BorderLayout.SOUTH);
+
+        authTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION));
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION), authWrapperPanel);
+        tabbedPane.setTabComponentAt(3, authTabIndicator);
 
         // Scripts Tab - 复用 ScriptPanel
         scriptPanel = new ScriptPanel();
@@ -166,7 +186,10 @@ public class GroupEditPanel extends JPanel {
         );
         scriptInfoPanel.add(scriptInfoLabel);
         scriptWrapperPanel.add(scriptInfoPanel, BorderLayout.SOUTH);
+
+        scriptsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS));
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptWrapperPanel);
+        tabbedPane.setTabComponentAt(4, scriptsTabIndicator);
 
 
         add(tabbedPane, BorderLayout.CENTER);
@@ -308,6 +331,97 @@ public class GroupEditPanel extends JPanel {
 
         // 监听变量面板变化
         variablesPanel.addTableModelListener(e -> triggerAutoSave());
+    }
+
+    /**
+     * 设置 tab 指示器监听器
+     */
+    private void setupTabIndicatorListeners() {
+
+        // 监听请求头面板变化
+        headersPanel.addTableModelListener(e -> updateTabIndicators());
+
+        // 监听变量面板变化
+        variablesPanel.addTableModelListener(e -> updateTabIndicators());
+
+        // 监听认证面板变化
+        authTabPanel.addDirtyListener(this::updateTabIndicators);
+
+        // 监听脚本面板变化
+        scriptPanel.addDirtyListeners(this::updateTabIndicators);
+    }
+
+    /**
+     * 更新所有 tab 的内容指示器
+     */
+    private void updateTabIndicators() {
+        SwingUtilities.invokeLater(() -> {
+            if (headersTabIndicator != null) {
+                headersTabIndicator.setShowIndicator(hasHeadersContent());
+            }
+            if (variablesTabIndicator != null) {
+                variablesTabIndicator.setShowIndicator(hasVariablesContent());
+            }
+            if (authTabIndicator != null) {
+                authTabIndicator.setShowIndicator(hasAuthContent());
+            }
+            if (scriptsTabIndicator != null) {
+                scriptsTabIndicator.setShowIndicator(hasScriptsContent());
+            }
+        });
+    }
+
+
+    /**
+     * 检查 Headers tab 是否有内容
+     */
+    private boolean hasHeadersContent() {
+        List<HttpHeader> headers = headersPanel.getHeadersList();
+        if (headers == null || headers.isEmpty()) {
+            return false;
+        }
+        // 检查是否有非空的 header
+        return headers.stream().anyMatch(header ->
+                header.getKey() != null && !header.getKey().trim().isEmpty()
+        );
+    }
+
+    /**
+     * 检查 Variables tab 是否有内容
+     */
+    private boolean hasVariablesContent() {
+        List<Variable> variables = variablesPanel.getVariableList();
+        if (variables == null || variables.isEmpty()) {
+            return false;
+        }
+        // 检查是否有非空的变量
+        return variables.stream().anyMatch(variable ->
+                variable.getKey() != null && !variable.getKey().trim().isEmpty()
+        );
+    }
+
+    /**
+     * 检查 Auth tab 是否有内容
+     */
+    private boolean hasAuthContent() {
+        String authType = authTabPanel.getAuthType();
+        // 如果认证类型不是 "inherit" 或 "none"，则认为有内容
+        return authType != null &&
+                !AuthTabPanel.AUTH_TYPE_INHERIT.equals(authType) &&
+                !AuthTabPanel.AUTH_TYPE_NONE.equals(authType);
+    }
+
+    /**
+     * 检查 Scripts tab 是否有内容
+     */
+    private boolean hasScriptsContent() {
+        String prescript = scriptPanel.getPrescript();
+        String postscript = scriptPanel.getPostscript();
+
+        boolean hasPrescript = prescript != null && !prescript.trim().isEmpty();
+        boolean hasPostscript = postscript != null && !postscript.trim().isEmpty();
+
+        return hasPrescript || hasPostscript;
     }
 
     /**

@@ -98,7 +98,6 @@ public class RequestEditSubPanel extends JPanel {
     private final JTabbedPane reqTabs; // 请求选项卡面板
 
     // Tab indicators for showing content status
-    private IndicatorTabComponent docsTabIndicator;
     private IndicatorTabComponent paramsTabIndicator;
     private IndicatorTabComponent authTabIndicator;
     private IndicatorTabComponent headersTabIndicator;
@@ -204,9 +203,7 @@ public class RequestEditSubPanel extends JPanel {
         // 2.0 Docs Tab - 放在第一个，像 Postman 一样
         descriptionEditor = new MarkdownEditorPanel();
 
-        docsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE));
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE), descriptionEditor);
-        reqTabs.setTabComponentAt(0, docsTabIndicator);
 
         // 2.1 Params
         paramsPanel = new EasyRequestParamsPanel();
@@ -382,20 +379,6 @@ public class RequestEditSubPanel extends JPanel {
      * 添加监听器以更新tab内容指示器（绿点）
      */
     private void addTabIndicatorListeners() {
-        // 监听descriptionEditor
-        descriptionEditor.addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) {
-                updateTabIndicators();
-            }
-
-            public void removeUpdate(DocumentEvent e) {
-                updateTabIndicators();
-            }
-
-            public void changedUpdate(DocumentEvent e) {
-                updateTabIndicators();
-            }
-        });
 
         // 监听paramsPanel
         paramsPanel.addTableModelListener(e -> updateTabIndicators());
@@ -440,9 +423,6 @@ public class RequestEditSubPanel extends JPanel {
      */
     private void updateTabIndicators() {
         SwingUtilities.invokeLater(() -> {
-            if (docsTabIndicator != null) {
-                docsTabIndicator.setShowIndicator(hasDocsContent());
-            }
             if (paramsTabIndicator != null) {
                 paramsTabIndicator.setShowIndicator(hasParamsContent());
             }
@@ -462,14 +442,6 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 检查Docs tab是否有内容
-     */
-    private boolean hasDocsContent() {
-        String text = descriptionEditor.getText();
-        return text != null && !text.trim().isEmpty();
-    }
-
-    /**
      * 检查Params tab是否有内容
      */
     private boolean hasParamsContent() {
@@ -479,7 +451,7 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 检查是否有非空的参数
         return params.stream().anyMatch(param ->
-            param.getKey() != null && !param.getKey().trim().isEmpty()
+                param.getKey() != null && !param.getKey().trim().isEmpty()
         );
     }
 
@@ -490,8 +462,8 @@ public class RequestEditSubPanel extends JPanel {
         String authType = authTabPanel.getAuthType();
         // 如果认证类型不是 "inherit" 或 "none"，则认为有内容
         return authType != null &&
-               !AuthTabPanel.AUTH_TYPE_INHERIT.equals(authType) &&
-               !AuthTabPanel.AUTH_TYPE_NONE.equals(authType);
+                !AuthTabPanel.AUTH_TYPE_INHERIT.equals(authType) &&
+                !AuthTabPanel.AUTH_TYPE_NONE.equals(authType);
     }
 
     /**
@@ -504,7 +476,7 @@ public class RequestEditSubPanel extends JPanel {
         }
         // 检查是否有非空的header
         return headers.stream().anyMatch(header ->
-            header.getKey() != null && !header.getKey().trim().isEmpty()
+                header.getKey() != null && !header.getKey().trim().isEmpty()
         );
     }
 
@@ -533,7 +505,7 @@ public class RequestEditSubPanel extends JPanel {
                 if (formDataPanel != null) {
                     List<HttpFormData> items = formDataPanel.getFormDataList();
                     return items != null && items.stream().anyMatch(item ->
-                        item.getKey() != null && !item.getKey().trim().isEmpty()
+                            item.getKey() != null && !item.getKey().trim().isEmpty()
                     );
                 }
                 return false;
@@ -542,7 +514,7 @@ public class RequestEditSubPanel extends JPanel {
                 if (urlencodedPanel != null) {
                     List<HttpFormUrlencoded> items = urlencodedPanel.getFormDataList();
                     return items != null && items.stream().anyMatch(item ->
-                        item.getKey() != null && !item.getKey().trim().isEmpty()
+                            item.getKey() != null && !item.getKey().trim().isEmpty()
                     );
                 }
                 return false;

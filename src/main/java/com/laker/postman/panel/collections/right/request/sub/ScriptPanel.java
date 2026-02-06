@@ -5,6 +5,7 @@ import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
+import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
 import com.laker.postman.util.EditorThemeUtil;
@@ -30,6 +31,8 @@ public class ScriptPanel extends JPanel {
     private final RSyntaxTextArea postscriptArea;
     private final JTabbedPane tabbedPane;
     private final SnippetButton snippetBtn;
+    private final IndicatorTabComponent preScriptTab;
+    private final IndicatorTabComponent postScriptTab;
 
     public ScriptPanel() {
         setLayout(new BorderLayout());
@@ -48,15 +51,21 @@ public class ScriptPanel extends JPanel {
 
         // 创建选项卡面板 垂直方向
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
-        // Tab 标题对齐
-        tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_TAB_ALIGNMENT, SwingConstants.LEADING);
 
+        // 创建带指示器的 Tab 组件
+        preScriptTab = new IndicatorTabComponent("Pre-script");
+        postScriptTab = new IndicatorTabComponent("Post-script");
 
-        // Pre-script 标签带图标
+        // Pre-script 标签带指示器
         tabbedPane.addTab("Pre-script", prescriptSearchableArea);
+        tabbedPane.setTabComponentAt(0, preScriptTab);
 
-        // Post-script 标签带图标
+        // Post-script 标签带指示器
         tabbedPane.addTab("Post-script", postscriptSearchableArea);
+        tabbedPane.setTabComponentAt(1, postScriptTab);
+
+        // 添加文档监听器以更新指示器
+        addIndicatorListeners();
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -221,10 +230,12 @@ public class ScriptPanel extends JPanel {
 
     public void setPrescript(String text) {
         prescriptArea.setText(text);
+        updateIndicator(preScriptTab, text);
     }
 
     public void setPostscript(String text) {
         postscriptArea.setText(text);
+        updateIndicator(postScriptTab, text);
     }
 
     public String getPrescript() {
@@ -256,6 +267,58 @@ public class ScriptPanel extends JPanel {
         postscriptArea.getDocument().addDocumentListener(listener);
     }
 
+
+    /**
+     * 添加文档监听器以更新指示器状态
+     */
+    private void addIndicatorListeners() {
+        // Pre-script 监听器
+        prescriptArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateIndicator(preScriptTab, prescriptArea.getText());
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateIndicator(preScriptTab, prescriptArea.getText());
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateIndicator(preScriptTab, prescriptArea.getText());
+            }
+        });
+
+        // Post-script 监听器
+        postscriptArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateIndicator(postScriptTab, postscriptArea.getText());
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateIndicator(postScriptTab, postscriptArea.getText());
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateIndicator(postScriptTab, postscriptArea.getText());
+            }
+        });
+    }
+
+    /**
+     * 根据文本内容更新指示器状态
+     *
+     * @param tabComponent Tab组件
+     * @param text         文本内容
+     */
+    private void updateIndicator(IndicatorTabComponent tabComponent, String text) {
+        boolean hasContent = text != null && !text.trim().isEmpty();
+        tabComponent.setShowIndicator(hasContent);
+    }
 
     /**
      * 为 RSyntaxTextArea 添加自动补全、悬浮提示和代码片段

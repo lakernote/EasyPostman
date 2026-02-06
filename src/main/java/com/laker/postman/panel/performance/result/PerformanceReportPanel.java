@@ -82,6 +82,7 @@ public class PerformanceReportPanel extends JPanel {
 
     private JTable createReportTable() {
         JTable table = new JTable(reportTableModel);
+        table.setFocusable(false);
         // 使用 SUBSEQUENT_COLUMNS 模式：调整一列时，只影响后续列，不影响前面的列
         table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 

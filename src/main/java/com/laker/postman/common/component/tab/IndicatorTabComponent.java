@@ -16,7 +16,7 @@ import java.awt.*;
 public class IndicatorTabComponent extends JPanel {
     private static final int INDICATOR_DIAMETER = 6; // 指示器直径
     private static final int INDICATOR_SPACING = 6; // 指示器与文字之间的间距
-    private static final int LABEL_HORIZONTAL_PADDING = 8; // Label 左右内边距
+    private static final int LABEL_HORIZONTAL_PADDING = 4; // Label 左右内边距
     private static final int LABEL_VERTICAL_PADDING = 4; // Label 上下内边距
 
     private final String title;

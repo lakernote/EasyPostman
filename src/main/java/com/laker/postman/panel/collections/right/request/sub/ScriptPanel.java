@@ -230,11 +230,20 @@ public class ScriptPanel extends JPanel {
     public void setPrescript(String text) {
         prescriptArea.setText(text);
         updateIndicator(preScriptTab, text);
+        // 如果设置的内容不为空，自动切换到Pre-script标签页
+        if (text != null && !text.trim().isEmpty()) {
+            tabbedPane.setSelectedIndex(0);
+        }
     }
 
     public void setPostscript(String text) {
         postscriptArea.setText(text);
         updateIndicator(postScriptTab, text);
+        // 如果Pre-script为空且Post-script有内容，自动切换到Post-script标签页
+        if (text != null && !text.trim().isEmpty() &&
+            (prescriptArea.getText() == null || prescriptArea.getText().trim().isEmpty())) {
+            tabbedPane.setSelectedIndex(1);
+        }
     }
 
     public String getPrescript() {

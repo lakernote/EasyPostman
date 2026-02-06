@@ -1,6 +1,5 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
-import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.SnippetButton;

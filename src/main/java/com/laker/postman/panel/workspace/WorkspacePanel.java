@@ -5,6 +5,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -15,6 +16,7 @@ import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -82,7 +84,7 @@ public class WorkspacePanel extends SingletonBasePanel {
      */
     private JPanel createToolbar() {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        toolbar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        toolbar.setBorder(createPanelBorder());
 
         // 新建工作区按钮
         JButton newButton = new PlusButton();
@@ -96,6 +98,14 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         return toolbar;
     }
+
+    private Border createPanelBorder() {
+        return BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        );
+    }
+
 
     /**
      * 创建工作区列表面板
@@ -149,7 +159,6 @@ public class WorkspacePanel extends SingletonBasePanel {
      */
     private JPanel createInfoPanel() {
         infoPanel = new JPanel(new BorderLayout());
-        infoPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO)));
         infoPanel.setPreferredSize(new Dimension(400, 0));
 
         JLabel welcomeLabel = new JLabel("<html><center>" +

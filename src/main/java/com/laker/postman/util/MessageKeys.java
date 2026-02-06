@@ -957,13 +957,47 @@ public final class MessageKeys {
 
     // ============ Expectation 国际化 ============
     public static final String EXPECTATION_INCLUDE_FAILED = "expectation.include_failed";
+    public static final String EXPECTATION_NOT_INCLUDE_FAILED = "expectation.not_include_failed";
     public static final String EXPECTATION_EQL_FAILED = "expectation.eql_failed";
+    public static final String EXPECTATION_NOT_EQL_FAILED = "expectation.not_eql_failed";
     public static final String EXPECTATION_PROPERTY_NOT_FOUND = "expectation.property_not_found";
+    public static final String EXPECTATION_NOT_PROPERTY_FOUND = "expectation.not_property_found";
     public static final String EXPECTATION_PROPERTY_NOT_MAP = "expectation.property_not_map";
     public static final String EXPECTATION_MATCH_REGEX_FAILED = "expectation.match_regex_failed";
+    public static final String EXPECTATION_NOT_MATCH_REGEX_FAILED = "expectation.not_match_regex_failed";
     public static final String EXPECTATION_MATCH_PATTERN_FAILED = "expectation.match_pattern_failed";
+    public static final String EXPECTATION_NOT_MATCH_PATTERN_FAILED = "expectation.not_match_pattern_failed";
     public static final String EXPECTATION_MATCH_JSREGEXP_FAILED = "expectation.match_jsregexp_failed";
     public static final String EXPECTATION_BELOW_FAILED = "expectation.below_failed";
+    public static final String EXPECTATION_NOT_BELOW_FAILED = "expectation.not_below_failed";
+    public static final String EXPECTATION_ABOVE_FAILED = "expectation.above_failed";
+    public static final String EXPECTATION_NOT_ABOVE_FAILED = "expectation.not_above_failed";
+    public static final String EXPECTATION_LEAST_FAILED = "expectation.least_failed";
+    public static final String EXPECTATION_NOT_LEAST_FAILED = "expectation.not_least_failed";
+    public static final String EXPECTATION_MOST_FAILED = "expectation.most_failed";
+    public static final String EXPECTATION_NOT_MOST_FAILED = "expectation.not_most_failed";
+    public static final String EXPECTATION_WITHIN_FAILED = "expectation.within_failed";
+    public static final String EXPECTATION_NOT_WITHIN_FAILED = "expectation.not_within_failed";
+    public static final String EXPECTATION_LENGTH_FAILED = "expectation.length_failed";
+    public static final String EXPECTATION_NOT_LENGTH_FAILED = "expectation.not_length_failed";
+    public static final String EXPECTATION_NO_LENGTH_PROPERTY = "expectation.no_length_property";
+    public static final String EXPECTATION_NOT_A_NUMBER = "expectation.not_a_number";
+    public static final String EXPECTATION_OK_FAILED = "expectation.ok_failed";
+    public static final String EXPECTATION_NOT_OK_FAILED = "expectation.not_ok_failed";
+    public static final String EXPECTATION_EXIST_FAILED = "expectation.exist_failed";
+    public static final String EXPECTATION_NOT_EXIST_FAILED = "expectation.not_exist_failed";
+    public static final String EXPECTATION_EMPTY_FAILED = "expectation.empty_failed";
+    public static final String EXPECTATION_NOT_EMPTY_FAILED = "expectation.not_empty_failed";
+    public static final String EXPECTATION_TYPE_FAILED = "expectation.type_failed";
+    public static final String EXPECTATION_NOT_TYPE_FAILED = "expectation.not_type_failed";
+    public static final String EXPECTATION_TRUE_FAILED = "expectation.true_failed";
+    public static final String EXPECTATION_NOT_TRUE_FAILED = "expectation.not_true_failed";
+    public static final String EXPECTATION_FALSE_FAILED = "expectation.false_failed";
+    public static final String EXPECTATION_NOT_FALSE_FAILED = "expectation.not_false_failed";
+    public static final String EXPECTATION_NULL_FAILED = "expectation.null_failed";
+    public static final String EXPECTATION_NOT_NULL_FAILED = "expectation.not_null_failed";
+    public static final String EXPECTATION_NAN_FAILED = "expectation.nan_failed";
+    public static final String EXPECTATION_NOT_NAN_FAILED = "expectation.not_nan_failed";
 
     // ============ ScriptPanel AutoCompletion 国际化 ============
     public static final String AUTOCOMPLETE_PM = "autocomplete.pm";
@@ -1046,6 +1080,22 @@ public final class MessageKeys {
     public static final String AUTOCOMPLETE_PM_EXPECT_TO_HAVE_PROPERTY = "autocomplete.pm.expect.to.have.property";
     public static final String AUTOCOMPLETE_PM_EXPECT_TO_MATCH = "autocomplete.pm.expect.to.match";
     public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_BELOW = "autocomplete.pm.expect.to.be.below";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_ABOVE = "autocomplete.pm.expect.to.be.above";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_AT_LEAST = "autocomplete.pm.expect.to.be.at.least";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_AT_MOST = "autocomplete.pm.expect.to.be.at.most";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_WITHIN = "autocomplete.pm.expect.to.be.within";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_HAVE_LENGTH = "autocomplete.pm.expect.to.have.length";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_OK = "autocomplete.pm.expect.to.be.ok";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_EXIST = "autocomplete.pm.expect.to.exist";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_EMPTY = "autocomplete.pm.expect.to.be.empty";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_A = "autocomplete.pm.expect.to.be.a";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_AN = "autocomplete.pm.expect.to.be.an";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_TRUE = "autocomplete.pm.expect.to.be.true";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_FALSE = "autocomplete.pm.expect.to.be.false";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_NULL = "autocomplete.pm.expect.to.be.null";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_UNDEFINED = "autocomplete.pm.expect.to.be.undefined";
+    public static final String AUTOCOMPLETE_PM_EXPECT_TO_BE_NAN = "autocomplete.pm.expect.to.be.NaN";
+    public static final String AUTOCOMPLETE_PM_EXPECT_NOT = "autocomplete.pm.expect.not";
 
     // ========== 内置库 - CryptoJS ==========
     public static final String AUTOCOMPLETE_CRYPTOJS = "autocomplete.cryptojs";

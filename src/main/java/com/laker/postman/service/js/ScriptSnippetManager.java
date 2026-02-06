@@ -6,6 +6,7 @@ import lombok.experimental.UtilityClass;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
+import org.fife.ui.autocomplete.ShorthandCompletion;
 
 /**
  * 脚本 API 提示管理器
@@ -144,18 +145,100 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_COOKIES_TO_OBJECT)));
 
         // ========== pm.expect - 断言方法 ==========
-        provider.addCompletion(new BasicCompletion(provider, "pm.expect().to.equal",
+        // 基础断言 - 使用 ShorthandCompletion 提供完整代码模板
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.equal",
+                "pm.expect(value).to.equal(expected)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_EQUAL)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.expect().to.eql",
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.eql",
+                "pm.expect(value).to.eql(expected)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_EQL)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.expect().to.include",
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.include",
+                "pm.expect(text).to.include(\"substring\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_INCLUDE)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.expect().to.have.property",
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.property",
+                "pm.expect(object).to.have.property(\"propertyName\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_HAVE_PROPERTY)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.expect().to.match",
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.match",
+                "pm.expect(text).to.match(/regex/)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_MATCH)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.expect().to.be.below",
+
+        // 数值比较断言
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.below",
+                "pm.expect(value).to.be.below(max)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_BELOW)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.above",
+                "pm.expect(value).to.be.above(min)",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_ABOVE)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.least",
+                "pm.expect(value).to.be.at.least(min)",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AT_LEAST)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.most",
+                "pm.expect(value).to.be.at.most(max)",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AT_MOST)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.within",
+                "pm.expect(value).to.be.within(min, max)",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_WITHIN)));
+
+        // 长度和类型断言
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.length",
+                "pm.expect(array).to.have.length(expectedLength)",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_HAVE_LENGTH)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.a",
+                "pm.expect(value).to.be.a(\"string\")",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_A)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.an",
+                "pm.expect(value).to.be.an(\"array\")",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AN)));
+
+        // 状态断言
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.ok",
+                "pm.expect(value).to.be.ok",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_OK)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.exist",
+                "pm.expect(value).to.exist",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_EXIST)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.empty",
+                "pm.expect(value).to.be.empty",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_EMPTY)));
+
+        // 布尔值和特殊值断言
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.true",
+                "pm.expect(value).to.be.true",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_TRUE)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.false",
+                "pm.expect(value).to.be.false",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_FALSE)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.null",
+                "pm.expect(value).to.be.null",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_NULL)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.undefined",
+                "pm.expect(value).to.be.undefined",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_UNDEFINED)));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.NaN",
+                "pm.expect(value).to.be.NaN",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_NAN)));
+
+        // 否定断言
+        provider.addCompletion(new ShorthandCompletion(provider, "expect.not",
+                "pm.expect(value).to.not.equal(expected)",
+                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_NOT)));
+
 
         // ========== 内置库 - CryptoJS ==========
         provider.addCompletion(new BasicCompletion(provider, "CryptoJS",

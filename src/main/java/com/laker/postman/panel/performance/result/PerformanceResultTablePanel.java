@@ -113,6 +113,7 @@ public class PerformanceResultTablePanel extends JPanel {
         table.setRowHeight(24);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(false);
+        table.setFocusable(false);
         // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 

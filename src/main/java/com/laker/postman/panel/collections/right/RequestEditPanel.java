@@ -711,7 +711,6 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(0, 0, 0, 5));
         // 设置tabbedPane中一个个头部标签的的内边距（上、左、下、右）
         tabbedPane.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
-
         add(tabbedPane, BorderLayout.CENTER);
     }
 

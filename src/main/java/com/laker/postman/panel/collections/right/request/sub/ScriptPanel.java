@@ -1,11 +1,16 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
-import com.laker.postman.util.*;
+import com.laker.postman.util.EditorThemeUtil;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -43,6 +48,9 @@ public class ScriptPanel extends JPanel {
 
         // 创建选项卡面板 垂直方向
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
+        // Tab 标题对齐
+        tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_TAB_ALIGNMENT, SwingConstants.LEADING);
+
 
         // Pre-script 标签带图标
         tabbedPane.addTab("Pre-script", prescriptSearchableArea);
@@ -50,18 +58,16 @@ public class ScriptPanel extends JPanel {
         // Post-script 标签带图标
         tabbedPane.addTab("Post-script", postscriptSearchableArea);
 
-        // 创建帮助面板
-        JPanel helpPanel = createHelpPanel();
-        tabbedPane.addTab(null,
-                IconUtil.createThemed("icons/help.svg", 18, 18),
-                helpPanel);
-
         add(tabbedPane, BorderLayout.CENTER);
 
-        // 右下角添加 Snippets 按钮
+        // 右下角添加帮助按钮和 Snippets 按钮
         snippetBtn = new SnippetButton();
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
+        HelpButton helpBtn = new HelpButton();
+        helpBtn.addActionListener(e -> showHelpDialog());
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 2));
+        btnPanel.add(helpBtn);
         btnPanel.add(snippetBtn);
         add(btnPanel, BorderLayout.SOUTH);
 
@@ -73,6 +79,22 @@ public class ScriptPanel extends JPanel {
 
         // Snippets 按钮点击事件
         snippetBtn.addActionListener(e -> openSnippetDialog());
+    }
+
+    /**
+     * 显示帮助对话框
+     */
+    private void showHelpDialog() {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TITLE), true);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+        JPanel helpPanel = createHelpPanel();
+        dialog.add(helpPanel);
+
+        dialog.setSize(600, 500);
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
     /**

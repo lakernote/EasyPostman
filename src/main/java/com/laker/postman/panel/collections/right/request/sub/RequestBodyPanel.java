@@ -314,7 +314,6 @@ public class RequestBodyPanel extends JPanel {
                 String text = bodyArea.getText();
                 java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
                 for (VariableSegment seg : segments) {
-                    // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
                     boolean isDefined = VariableResolver.isVariableDefined(seg.name);
                     try {
                         highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
@@ -340,7 +339,6 @@ public class RequestBodyPanel extends JPanel {
             String text = bodyArea.getText();
             java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
             for (VariableSegment seg : segments) {
-                // 判断变量状态：环境变量、临时变量或内置函数 - 与 EasyPostmanTextField 保持一致
                 boolean isDefined = VariableResolver.isVariableDefined(seg.name);
                 try {
                     highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
@@ -348,7 +346,7 @@ public class RequestBodyPanel extends JPanel {
                 }
             }
         });
-        // 悬浮提示 - 与 EasyPostmanTextField 保持一致
+        // 悬浮提示
         bodyArea.addMouseMotionListener(new MouseInputAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -359,19 +357,16 @@ public class RequestBodyPanel extends JPanel {
                     if (pos >= seg.start && pos <= seg.end) {
                         String varName = seg.name;
 
-                        // 检查是否是内置函数
-                        if (VariableResolver.isVariableDefined(varName)) {
-                            String value = VariableResolver.resolveVariable(varName);
-                            bodyArea.setToolTipText(buildTooltip(varName, value, true, true));
-                            return;
-                        }
-
-                        // 环境变量
+                        // 获取变量类型和值
+                        VariableType varType = VariableResolver.getVariableType(varName);
                         String varValue = VariableResolver.resolveVariable(varName);
-                        if (varValue != null) {
-                            bodyArea.setToolTipText(buildTooltip(varName, varValue, false, true));
+
+                        if (varType != null && varValue != null) {
+                            // 变量已定义
+                            bodyArea.setToolTipText(buildTooltip(varName, varValue, varType));
                         } else {
-                            bodyArea.setToolTipText(buildTooltip(varName, "Variable not defined in current environment", false, false));
+                            // 变量未定义
+                            bodyArea.setToolTipText(buildTooltip(varName, "Variable not defined", null));
                         }
                         return;
                     }
@@ -881,17 +876,36 @@ public class RequestBodyPanel extends JPanel {
     }
 
     /**
-     * 构建美观的工具提示HTML - 与 EasyPostmanTextField 保持一致
+     * @param varName 变量名
+     * @param content 变量值或描述
+     * @param varType 变量类型（如果为null表示未定义）
+     * @return HTML格式的工具提示
      */
-    private String buildTooltip(String varName, String content, boolean isBuiltIn, boolean isDefined) {
+    private String buildTooltip(String varName, String content, VariableType varType) {
         StringBuilder tooltip = new StringBuilder();
         tooltip.append("<html><body style='padding: 8px; font-family: Arial, sans-serif;'>");
 
-        // 标题部分 - 变量名
-        String titleColor = isBuiltIn ? "#9C27B0" : (isDefined ? "#2E7D32" : "#D32F2F");
-        String typeLabel = isBuiltIn ? "Built-in Function" : (isDefined ? "Environment Variable" : "Undefined Variable");
-        String typeIcon = isBuiltIn ? "⚡" : (isDefined ? "✓" : "✗");
+        boolean isDefined = varType != null;
+        String titleColor;
+        String typeLabel;
+        String typeIcon;
 
+        if (isDefined) {
+            // 使用枚举中的颜色
+            titleColor = String.format("#%02X%02X%02X",
+                    varType.getColor().getRed(),
+                    varType.getColor().getGreen(),
+                    varType.getColor().getBlue());
+            typeLabel = varType.getDisplayName();
+            typeIcon = varType.getIconSymbol();
+        } else {
+            // 未定义变量
+            titleColor = "#D32F2F";
+            typeLabel = I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED);
+            typeIcon = "✗";
+        }
+
+        // 标题部分 - 变量类型
         tooltip.append("<div style='margin-bottom: 6px;'>");
         tooltip.append("<span style='font-size: 10px; color: ").append(titleColor).append(";'>");
         tooltip.append(typeIcon).append(" ").append(typeLabel);
@@ -909,8 +923,13 @@ public class RequestBodyPanel extends JPanel {
         // 内容部分 - 变量值或描述
         tooltip.append("<div style='margin-top: 1px; color: #424242; font-size: 10px;'>");
 
-        if (isDefined && !isBuiltIn) {
-            // 环境变量值
+        if (isDefined && varType == VariableType.BUILT_IN) {
+            // 内置函数描述
+            tooltip.append("<span style='color: #757575; font-style: italic;'>");
+            tooltip.append(escapeHtml(content));
+            tooltip.append("</span>");
+        } else if (isDefined) {
+            // 其他类型变量值
             tooltip.append("<span style='color: #757575;'>Value:</span><br/>");
             tooltip.append("<span style='font-family: Consolas, monospace; background-color: #F5F5F5; ");
             tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
@@ -918,11 +937,6 @@ public class RequestBodyPanel extends JPanel {
             // 限制显示长度，超过150字符截断
             String displayContent = content.length() > 150 ? content.substring(0, 150) + "..." : content;
             tooltip.append(escapeHtml(displayContent));
-            tooltip.append("</span>");
-        } else if (isBuiltIn) {
-            // 内置函数描述
-            tooltip.append("<span style='color: #757575; font-style: italic;'>");
-            tooltip.append(escapeHtml(content));
             tooltip.append("</span>");
         } else {
             // 未定义变量警告

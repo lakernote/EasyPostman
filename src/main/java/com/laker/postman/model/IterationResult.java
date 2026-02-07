@@ -1,5 +1,7 @@
 package com.laker.postman.model;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,9 +10,12 @@ import java.util.Map;
  * 单次迭代的执行结果
  */
 public class IterationResult {
+    @Getter
     private final int iterationIndex;
+    @Getter
     private final Map<String, String> csvData;
     private final List<RequestResult> requestResults = new ArrayList<>();
+    @Getter
     private final long startTime;
     private long endTime;
 
@@ -28,14 +33,6 @@ public class IterationResult {
         this.endTime = System.currentTimeMillis();
     }
 
-    public int getIterationIndex() {
-        return iterationIndex;
-    }
-
-    public Map<String, String> getCsvData() {
-        return csvData;
-    }
-
     public List<RequestResult> getRequestResults() {
         return new ArrayList<>(requestResults);
     }
@@ -44,11 +41,4 @@ public class IterationResult {
         return endTime - startTime;
     }
 
-    public long getStartTime() {
-        return startTime;
-    }
-
-    public long getEndTime() {
-        return endTime;
-    }
 }

@@ -17,6 +17,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,38 @@ public class CsvDataPanel extends JPanel {
         // 状态文本
         csvStatusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
         csvStatusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        csvStatusLabel.setForeground(ModernColors.getTextHint());
+        csvStatusLabel.setForeground(ModernColors.getTextSecondary()); // 使用次要文本颜色
+        csvStatusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // 设置手型光标
+        csvStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA)); // 添加提示文本
+
+        // 添加点击事件监听器，点击文字打开数据管理对话框
+        csvStatusLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            private Color originalColor;
+
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (csvData != null && !csvData.isEmpty()) {
+                    showCsvDataManageDialog();
+                }
+            }
+
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (csvData != null && !csvData.isEmpty()) {
+                    // 鼠标悬停时改变颜色（使用更明亮的颜色）
+                    originalColor = csvStatusLabel.getForeground();
+                    csvStatusLabel.setForeground(ModernColors.PRIMARY);
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (csvData != null && !csvData.isEmpty() && originalColor != null) {
+                    // 鼠标离开时恢复原始颜色
+                    csvStatusLabel.setForeground(originalColor);
+                }
+            }
+        });
 
         // CSV 清除按钮
         CloseButton csvClearBtn = new CloseButton();
@@ -135,10 +167,7 @@ public class CsvDataPanel extends JPanel {
         csvData = null;
         csvHeaders = null;
         updateCsvStatus();
-        JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.CSV_DATA_CLEARED),
-                I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
-                JOptionPane.INFORMATION_MESSAGE);
+        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.CSV_DATA_CLEARED));
     }
 
     /**
@@ -148,10 +177,8 @@ public class CsvDataPanel extends JPanel {
         if (csvData == null || csvData.isEmpty()) {
             csvStatusPanel.setVisible(false);
         } else {
-            csvStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
-                    csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED),
-                    csvData.size()));
-            csvStatusLabel.setForeground(ModernColors.SUCCESS); // 绿色表示已加载
+            csvStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, csvData.size()));
+            csvStatusLabel.setForeground(ModernColors.getTextSecondary()); // 使用次要文本颜色
             csvStatusPanel.setVisible(true);
         }
         revalidate();
@@ -223,7 +250,7 @@ public class CsvDataPanel extends JPanel {
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
-        JTextField rowCountField = new JTextField("5");
+        JTextField rowCountField = new JTextField("2");
         rowCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(rowCountField, gbc);
 
@@ -360,10 +387,9 @@ public class CsvDataPanel extends JPanel {
             currentStatusLabel.setIcon(IconUtil.createThemed("icons/warning.svg", 16, 16));
             currentStatusLabel.setForeground(ModernColors.getTextHint());
         } else {
-            currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
-                    csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED), csvData.size()));
+            currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, csvData.size()));
             currentStatusLabel.setIcon(IconUtil.createThemed("icons/check.svg", 16, 16));
-            currentStatusLabel.setForeground(ModernColors.SUCCESS);
+            currentStatusLabel.setForeground(ModernColors.getTextSecondary());
         }
         statusPanel.add(currentStatusLabel);
         contentPanel.add(statusPanel, BorderLayout.NORTH);
@@ -397,10 +423,9 @@ public class CsvDataPanel extends JPanel {
         // 为按钮添加事件监听器，并确保状态更新
         selectFileBtn.addActionListener(e -> {
             if (selectCsvFile()) {
-                currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED,
-                        csvFile.getName(), csvData.size()));
+                currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, csvData.size()));
                 currentStatusLabel.setIcon(IconUtil.createThemed("icons/check.svg", 16, 16));
-                currentStatusLabel.setForeground(ModernColors.SUCCESS);
+                currentStatusLabel.setForeground(ModernColors.getTextSecondary());
                 updateCsvStatus();
 
                 // 立即更新按钮状态
@@ -513,17 +538,10 @@ public class CsvDataPanel extends JPanel {
         };
 
         JTable csvTable = new JTable(editTableModel);
-
-        csvTable.setFillsViewportHeight(true);
         csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
         csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
         csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用标准字体大小（粗体）
-        csvTable.setShowHorizontalLines(true);
-        csvTable.setShowVerticalLines(true);
-        csvTable.setIntercellSpacing(new Dimension(2, 2)); // 设置单元格间距
-        csvTable.setRowMargin(2);
         csvTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        csvTable.setOpaque(false); // 设置表格透明
 
         // 设置空值渲染器 - 优化后的主题适配版本
         DefaultTableCellRenderer emptyCellRenderer = new DefaultTableCellRenderer() {
@@ -859,6 +877,6 @@ public class CsvDataPanel extends JPanel {
         if (csvData != null && index >= 0 && index < csvData.size()) {
             return csvData.get(index);
         }
-        return null;
+        return Collections.emptyMap();
     }
 }

@@ -43,11 +43,11 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     /**
-     * 格式化时间戳为 yyyy-MM-dd HH:mm:ss 格式
+     * 格式化时间戳为 HH:mm:ss 格式
      */
     private String formatTimestamp(long timestamp) {
         // 日期格式化器
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         return dateFormat.format(new Date(timestamp));
     }
 

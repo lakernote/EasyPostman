@@ -33,6 +33,14 @@ import java.util.List;
  * 响应部分面板，包含响应体、响应头、测试结果、网络日志、耗时等
  */
 public class ResponsePanel extends JPanel {
+
+    // ==================== Tab索引常量 ====================
+    private static final int TAB_INDEX_RESPONSE_BODY = 0;
+    private static final int TAB_INDEX_RESPONSE_HEADERS = 1;
+    private static final int TAB_INDEX_TESTS = 2;
+    private static final int TAB_INDEX_LOG = 5;
+
+    // ==================== UI组件 ====================
     private final JLabel statusCodeLabel;
     private final JLabel responseTimeLabel;
     private final JLabel responseSizeLabel;
@@ -78,15 +86,16 @@ public class ResponsePanel extends JPanel {
         separator2.setVisible(false);
 
 
-        // 根据协议类型初始化相应的面板
+        // 根据协议类型初始化相应的面板（使用TabBarBuilder简化）
         if (protocol.isWebSocketProtocol()) {
             // WebSocket 专用布局
-            tabNames = new String[]{I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG), I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)};
-            tabButtons = new JButton[tabNames.length];
-            for (int i = 0; i < tabNames.length; i++) {
-                tabButtons[i] = new TabButton(tabNames[i], i);
-                tabBar.add(tabButtons[i]);
-            }
+            TabBarBuilder.TabConfig tabConfig = TabBarBuilder.createWebSocketTabs();
+            tabNames = tabConfig.tabNames;
+            tabButtons = createModernTabButtons(tabNames);
+            TabBarBuilder.addButtonsToTabBar(tabBar, tabButtons, tabConfig.initialVisibility);
+            // 初始化第一个可见tab为选中状态
+            initializeFirstSelectedTab(tabButtons);
+
             statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
             // 现代扁平风格：紧凑布局，状态码带彩色背景框
             statusBar.add(statusCodeLabel);
@@ -110,15 +119,13 @@ public class ResponsePanel extends JPanel {
             sseResponsePanel = null;
         } else if (protocol == RequestItemProtocolEnum.SSE) {
             // SSE: 使用 SSEResponsePanel 和 ResponseHeadersPanel
-            tabNames = new String[]{
-                    I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG),
-                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)
-            };
-            tabButtons = new JButton[tabNames.length];
-            for (int i = 0; i < tabNames.length; i++) {
-                tabButtons[i] = new TabButton(tabNames[i], i);
-                tabBar.add(tabButtons[i]);
-            }
+            TabBarBuilder.TabConfig tabConfig = TabBarBuilder.createSSETabs();
+            tabNames = tabConfig.tabNames;
+            tabButtons = createModernTabButtons(tabNames);
+            TabBarBuilder.addButtonsToTabBar(tabBar, tabButtons, tabConfig.initialVisibility);
+            // 初始化第一个可见tab为选中状态
+            initializeFirstSelectedTab(tabButtons);
+
             statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
             // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
@@ -141,23 +148,13 @@ public class ResponsePanel extends JPanel {
             testsPane = null;
         } else {
             // HTTP 普通请求
-            tabNames = new String[]{
-                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_BODY),
-                    I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
-                    I18nUtil.getMessage(MessageKeys.TAB_TESTS),
-                    I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG),
-                    I18nUtil.getMessage(MessageKeys.TAB_TIMING),
-                    I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG)
-            };
-            tabButtons = new JButton[tabNames.length];
-            for (int i = 0; i < tabButtons.length; i++) {
-                tabButtons[i] = new TabButton(tabNames[i], i);
-                // 默认情况下HTTP模式不显示日志tab
-                if (i == 5) {
-                    tabButtons[i].setVisible(false);
-                }
-                tabBar.add(tabButtons[i]);
-            }
+            TabBarBuilder.TabConfig tabConfig = TabBarBuilder.createHttpTabs();
+            tabNames = tabConfig.tabNames;
+            tabButtons = createModernTabButtons(tabNames);
+            TabBarBuilder.addButtonsToTabBar(tabBar, tabButtons, tabConfig.initialVisibility);
+            // 初始化第一个可见tab为选中状态
+            initializeFirstSelectedTab(tabButtons);
+
             statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 3));
             // 现代扁平风格：添加适当间距和分隔符
             statusBar.add(statusCodeLabel);
@@ -232,17 +229,9 @@ public class ResponsePanel extends JPanel {
         contentPanel.add(topResponseBar, BorderLayout.NORTH);
         contentPanel.add(cardPanel, BorderLayout.CENTER);
 
-        for (int i = 0; i < tabButtons.length; i++) {
-            final int idx = i;
-            tabButtons[i].addActionListener(e -> {
-                CardLayout cl = (CardLayout) cardPanel.getLayout();
-                cl.show(cardPanel, tabNames[idx]);
-                selectedTabIndex = idx;
-                for (JButton btn : tabButtons) {
-                    btn.repaint();
-                }
-            });
-        }
+        // 使用TabBarBuilder绑定tab事件
+        TabBarBuilder.bindTabActions(tabButtons, tabNames, cardPanel, this::onTabSelected);
+
         // 默认所有按钮不可用
         setResponseTabButtonsEnable(false);
 
@@ -264,20 +253,65 @@ public class ResponsePanel extends JPanel {
         add(layeredPane, BorderLayout.CENTER);
     }
 
+    // ==================== Tab相关辅助方法 ====================
+
+    /**
+     * 创建现代化的Tab按钮数组
+     */
+    private JButton[] createModernTabButtons(String[] names) {
+        JButton[] buttons = new JButton[names.length];
+        for (int i = 0; i < names.length; i++) {
+            buttons[i] = new ModernTabButton(names[i], i);
+        }
+        return buttons;
+    }
+
+    /**
+     * 初始化第一个可见的tab为选中状态
+     */
+    private void initializeFirstSelectedTab(JButton[] buttons) {
+        for (int i = 0; i < buttons.length; i++) {
+            if (buttons[i].isVisible() && buttons[i] instanceof ModernTabButton modernTabButton) {
+                modernTabButton.updateSelectedIndex(i);
+                selectedTabIndex = i;
+                break;
+            }
+        }
+    }
+
+    /**
+     * Tab选中回调
+     */
+    private void onTabSelected(int tabIndex) {
+        selectedTabIndex = tabIndex;
+        // 更新所有ModernTabButton的选中状态
+        for (JButton btn : tabButtons) {
+            if (btn instanceof ModernTabButton modernTabButton) {
+                modernTabButton.updateSelectedIndex(selectedTabIndex);
+            } else {
+                // 兼容旧的TabButton
+                btn.repaint();
+            }
+        }
+    }
+
     /**
      * 自定义LayoutManager，用于确保遮罩层覆盖整个cardPanel
      */
     private static class OverlayLayout implements LayoutManager2 {
 
         public OverlayLayout() {
+            // 默认构造函数
         }
 
         @Override
         public void addLayoutComponent(String name, Component comp) {
+            // 此布局不需要根据名称添加组件
         }
 
         @Override
         public void removeLayoutComponent(Component comp) {
+            // 此布局不需要移除组件逻辑
         }
 
         @Override
@@ -303,6 +337,7 @@ public class ResponsePanel extends JPanel {
 
         @Override
         public void addLayoutComponent(Component comp, Object constraints) {
+            // 此布局不需要约束条件
         }
 
         @Override
@@ -322,6 +357,7 @@ public class ResponsePanel extends JPanel {
 
         @Override
         public void invalidateLayout(Container target) {
+            // 此布局不需要缓存，无需失效逻辑
         }
     }
 
@@ -439,9 +475,8 @@ public class ResponsePanel extends JPanel {
     public void setResponseHeaders(HttpResponse resp) {
         responseHeadersPanel.setHeaders(resp.headers);
         // 动态设置Headers按钮文本和颜色
-        int headersTabIndex = 1;
-        if (tabButtons.length > headersTabIndex) {
-            JButton headersBtn = tabButtons[headersTabIndex];
+        if (tabButtons.length > TAB_INDEX_RESPONSE_HEADERS) {
+            JButton headersBtn = tabButtons[TAB_INDEX_RESPONSE_HEADERS];
             int count = (resp.headers != null) ? resp.headers.size() : 0;
             if (count > 0) {
                 String countText = " (" + count + ")";
@@ -499,183 +534,78 @@ public class ResponsePanel extends JPanel {
         separator2.setVisible(hasTime);
     }
 
+    /**
+     * 设置响应大小显示
+     * 重构后使用Helper类简化代码逻辑
+     */
     public void setResponseSize(long bytes, HttpEventInfo httpEventInfo) {
-        // 检查响应是否被压缩
-        // bytes = 解压后的响应体大小（从 body.bytes() 获取，OkHttp 自动解压）
-        // bodyBytesReceived = 网络层实际接收的字节数（从 OkHttp 事件监听器获取）
-        //
-        // 必须确保 bytes > bodyBytesReceived 才认为是压缩，原因如下：
-        // 1. Chunked 编码：bodyBytesReceived 包含 chunk 头部元数据（如 "1a\r\n...data...\r\n"），可能大于实际内容
-        // 2. HTTP/2 协议：bodyBytesReceived 包含 frame 头部开销，可能大于实际 payload
-        // 3. 统计方式差异：事件监听器可能统计了额外的协议层开销
-        // 如果 bodyBytesReceived > bytes，则 savedBytes 会变成负数，这是不合理的
-        boolean isCompressed = httpEventInfo != null && bytes > 0 &&
-                httpEventInfo.getBodyBytesReceived() > 0 &&
-                bytes > httpEventInfo.getBodyBytesReceived();
+        // 使用Helper类计算大小信息
+        ResponseSizeCalculator.SizeInfo sizeInfo = ResponseSizeCalculator.calculate(bytes, httpEventInfo);
 
-        // Calculate compression ratio and saved bytes
-        double compressionRatio = 0;
-        long savedBytes = 0;
-        if (isCompressed) {
-            compressionRatio = (1 - (double) httpEventInfo.getBodyBytesReceived() / bytes) * 100;
-            savedBytes = bytes - httpEventInfo.getBodyBytesReceived();
+        // 更新标签显示
+        updateSizeLabel(sizeInfo);
+
+        // 添加tooltip（如果有httpEventInfo）
+        if (httpEventInfo != null) {
+            attachSizeTooltip(bytes, httpEventInfo, sizeInfo);
         }
+    }
 
-        // 使用 ModernColors 统一颜色方案
-        final Color colorCompressed = ModernColors.SUCCESS;           // 绿色 - 压缩成功
-        final Color colorNormal = ModernColors.getTextPrimary();      // 主题适配的文本颜色
-        final Color colorHoverCompressed = ModernColors.SUCCESS_DARK; // 深绿色 - 悬停时
-        final Color colorHoverNormal = ModernColors.PRIMARY;          // 蓝色 - 悬停时
-
-        // Build label text with compression info
-        String sizeText;
-        final Color normalColor;
-        final Color hoverColor;
-
-        if (isCompressed) {
-            // 现代扁平风格：直接显示压缩后的大小和压缩比，无需"大小:"前缀
-            sizeText = String.format("%s 📦%.0f%%", getSizeText(httpEventInfo.getBodyBytesReceived()), compressionRatio);
-            normalColor = colorCompressed;
-            hoverColor = colorHoverCompressed;
-        } else {
-            // 现代扁平风格：直接显示大小值，无需"大小:"前缀
-            sizeText = getSizeText(bytes);
-            normalColor = colorNormal;
-            hoverColor = colorHoverNormal;
-        }
-
-        responseSizeLabel.setText(sizeText);
-        responseSizeLabel.setForeground(normalColor);
-
-        // Set cursor to hand when hovering to indicate it's interactive
+    /**
+     * 更新响应大小标签
+     */
+    private void updateSizeLabel(ResponseSizeCalculator.SizeInfo sizeInfo) {
+        responseSizeLabel.setText(sizeInfo.getDisplayText());
+        responseSizeLabel.setForeground(sizeInfo.getNormalColor());
         responseSizeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // Remove default tooltip
         responseSizeLabel.setToolTipText(null);
 
-        // Remove existing mouse listeners to avoid duplicates
-        MouseListener[] listeners = responseSizeLabel.getMouseListeners();
-        for (MouseListener listener : listeners) {
+        // 移除旧的监听器
+        for (MouseListener listener : responseSizeLabel.getMouseListeners()) {
             responseSizeLabel.removeMouseListener(listener);
         }
+    }
 
-        // Add custom tooltip behavior with hover color effects
-        if (httpEventInfo != null) {
-            // 定义主题自适应的 tooltip 颜色
-            String colorTitlePrimary = toHtmlColor(ModernColors.PRIMARY);           // 标题蓝色
-            String colorTextSecondary = toHtmlColor(ModernColors.getTextSecondary()); // 次要文本
-            String colorTextPrimary = toHtmlColor(ModernColors.getTextPrimary());     // 主要文本
-            String colorTextHint = toHtmlColor(ModernColors.getTextHint());           // 提示文本
-            String colorSuccess = toHtmlColor(ModernColors.SUCCESS);                  // 成功绿色
-            String colorSuccessDark = toHtmlColor(ModernColors.SUCCESS_DARK);         // 深绿色
-            String colorBorder = toHtmlColor(ModernColors.getBorderLightColor());     // 边框颜色
+    /**
+     * 添加响应大小的tooltip和鼠标悬停效果
+     */
+    private void attachSizeTooltip(long bytes, HttpEventInfo httpEventInfo, ResponseSizeCalculator.SizeInfo sizeInfo) {
+        // 使用Helper类生成tooltip HTML
+        String tooltip = ResponseTooltipBuilder.buildSizeTooltip(bytes, httpEventInfo, sizeInfo);
 
-            // 压缩信息背景色 - 根据主题调整
-            String colorCompressBg = ModernColors.isDarkTheme()
-                    ? "rgba(34, 197, 94, 0.15)"   // 暗色主题：半透明绿色
-                    : "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"; // 亮色主题：渐变绿色
+        // 添加鼠标监听器实现悬停效果
+        responseSizeLabel.addMouseListener(new MouseAdapter() {
+            private Timer showTimer;
+            private Timer hideTimer;
 
-            String tooltip;
-            if (isCompressed) {
-                // Enhanced tooltip for compressed responses - 主题自适应配色
-                tooltip = String.format("<html>" +
-                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 10px; width: 220px; padding: 4px;'>" +
-                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔽 Response Size</div>" +
-                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
-                                "<div style='color: %s; margin-bottom: 3px;'>🏷️ Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "<div style='color: %s; margin-bottom: 3px;'>📦 Body (Compressed): <span style='font-weight: 600; color: %s;'>%s</span></div>" +
-                                "<div style='margin-left: 8px; color: %s; font-size: 9px; margin-bottom: 4px;'>🔓 Uncompressed: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "<div style='margin: 4px 0; padding: 6px 8px; background: %s; border-radius: 4px; border-left: 3px solid %s;'>" +
-                                "<div style='color: %s; font-weight: 600; font-size: 10px; margin-bottom: 2px;'>✨ Compression Ratio: <span style='color: %s;'>%.1f%%</span></div>" +
-                                "<div style='color: %s; font-weight: 600; font-size: 10px;'>💾 Saved: <span style='color: %s;'>%s</span></div>" +
-                                "</div>" +
-                                "</div>" +
-                                "<div style='border-top: 1px solid %s; margin: 6px 0;'></div>" +
-                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔼 Request Size</div>" +
-                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
-                                "<div style='color: %s; margin-bottom: 3px;'>📋 Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "<div style='color: %s;'>📝 Body: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "</div>" +
-                                "</div>" +
-                                "</html>",
-                        colorTitlePrimary,  // 标题颜色
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesReceived()),
-                        colorTextSecondary, colorSuccess, getSizeText(httpEventInfo.getBodyBytesReceived()),
-                        colorTextHint, colorTextSecondary, getSizeText(bytes),
-                        colorCompressBg, colorSuccess,  // 压缩背景和边框
-                        colorSuccessDark, colorSuccessDark, compressionRatio,
-                        colorSuccessDark, colorSuccessDark, getSizeText(savedBytes),
-                        colorBorder,  // 分隔线
-                        colorTitlePrimary,  // 请求大小标题
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesSent()),
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getBodyBytesSent())
-                );
-            } else {
-                // Standard tooltip for non-compressed responses - 主题自适应配色
-                tooltip = String.format("<html>" +
-                                "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif; font-size: 10px; width: 180px; padding: 4px;'>" +
-                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔽 Response Size</div>" +
-                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
-                                "<div style='color: %s; margin-bottom: 3px;'>🏷️ Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "<div style='color: %s; margin-bottom: 3px;'>📦 Body: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "<div style='margin-left: 8px; color: %s; font-size: 9px;'>🔓 Uncompressed: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "</div>" +
-                                "<div style='border-top: 1px solid %s; margin: 6px 0;'></div>" +
-                                "<div style='color: %s; font-weight: 600; font-size: 11px; margin-bottom: 6px;'>🔼 Request Size</div>" +
-                                "<div style='margin-left: 8px; line-height: 1.4;'>" +
-                                "<div style='color: %s; margin-bottom: 3px;'>📋 Headers: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "<div style='color: %s;'>📝 Body: <span style='font-weight: 500; color: %s;'>%s</span></div>" +
-                                "</div>" +
-                                "</div>" +
-                                "</html>",
-                        colorTitlePrimary,  // 标题颜色
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesReceived()),
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getBodyBytesReceived()),
-                        colorTextHint, colorTextSecondary, getSizeText(bytes),
-                        colorBorder,  // 分隔线
-                        colorTitlePrimary,  // 请求大小标题
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getHeaderBytesSent()),
-                        colorTextSecondary, colorTextPrimary, getSizeText(httpEventInfo.getBodyBytesSent())
-                );
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 悬停时改变颜色
+                responseSizeLabel.setForeground(sizeInfo.getHoverColor());
+
+                if (hideTimer != null) {
+                    hideTimer.stop();
+                }
+
+                showTimer = new Timer(400, evt -> EasyPostmanStyleTooltip.showTooltip(responseSizeLabel, tooltip));
+                showTimer.setRepeats(false);
+                showTimer.start();
             }
 
-            responseSizeLabel.addMouseListener(new MouseAdapter() {
-                private Timer showTimer;
-                private Timer hideTimer;
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 恢复原色
+                responseSizeLabel.setForeground(sizeInfo.getNormalColor());
 
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    // 悬停时改变颜色，提供视觉反馈
-                    responseSizeLabel.setForeground(hoverColor);
-
-                    // Cancel any pending hide timer
-                    if (hideTimer != null) {
-                        hideTimer.stop();
-                    }
-
-                    // Show tooltip after a short delay (like Postman)
-                    showTimer = new Timer(400, evt -> EasyPostmanStyleTooltip.showTooltip(responseSizeLabel, tooltip));
-                    showTimer.setRepeats(false);
-                    showTimer.start();
+                if (showTimer != null) {
+                    showTimer.stop();
                 }
 
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    // 鼠标离开时恢复原色
-                    responseSizeLabel.setForeground(normalColor);
-
-                    // Cancel show timer if mouse exits before tooltip shows
-                    if (showTimer != null) {
-                        showTimer.stop();
-                    }
-
-                    // Hide tooltip with a small delay to prevent flicker
-                    hideTimer = new Timer(200, evt -> EasyPostmanStyleTooltip.hideTooltip());
-                    hideTimer.setRepeats(false);
-                    hideTimer.start();
-                }
-            });
-        }
+                hideTimer = new Timer(200, evt -> EasyPostmanStyleTooltip.hideTooltip());
+                hideTimer.setRepeats(false);
+                hideTimer.start();
+            }
+        });
     }
 
     public void setTestResults(List<TestResult> testResults) {
@@ -684,9 +614,8 @@ public class ResponsePanel extends JPanel {
         testsPane.setText(html);
         testsPane.setCaretPosition(0);
         // 动态设置Tests按钮文本和颜色
-        int testsTabIndex = 2;
-        if (tabButtons.length > testsTabIndex) {
-            JButton testsBtn = tabButtons[testsTabIndex];
+        if (tabButtons.length > TAB_INDEX_TESTS) {
+            JButton testsBtn = tabButtons[TAB_INDEX_TESTS];
             if (testResults != null && !testResults.isEmpty()) {
                 boolean allPassed = testResults.stream().allMatch(r -> r.passed);
                 String countText = " (" + testResults.size() + ")";
@@ -730,18 +659,34 @@ public class ResponsePanel extends JPanel {
     }
 
     /**
-     * 切换Tab按钮，http或sse
+     * 切换Tab按钮显示（HTTP或SSE）
+     *
+     * @param type "http" 显示HTTP相关tabs，"sse" 显示SSE相关tabs
      */
     public void switchTabButtonHttpOrSse(String type) {
         if ("http".equals(type)) {
-            tabButtons[0].setVisible(true);
-            tabButtons[0].doClick();
-            tabButtons[5].setVisible(false);
+            showHttpTabs();
         } else {
-            tabButtons[0].setVisible(false);
-            tabButtons[5].setVisible(true);
-            tabButtons[5].doClick();
+            showSSETabs();
         }
+    }
+
+    /**
+     * 显示HTTP相关的tabs
+     */
+    private void showHttpTabs() {
+        tabButtons[TAB_INDEX_RESPONSE_BODY].setVisible(true);
+        tabButtons[TAB_INDEX_RESPONSE_BODY].doClick();
+        tabButtons[TAB_INDEX_LOG].setVisible(false);
+    }
+
+    /**
+     * 显示SSE相关的tabs
+     */
+    private void showSSETabs() {
+        tabButtons[TAB_INDEX_RESPONSE_BODY].setVisible(false);
+        tabButtons[TAB_INDEX_LOG].setVisible(true);
+        tabButtons[TAB_INDEX_LOG].doClick();
     }
 
     /**
@@ -759,42 +704,6 @@ public class ResponsePanel extends JPanel {
     public void hideLoadingOverlay() {
         if (loadingOverlay != null) {
             SwingUtilities.invokeLater(loadingOverlay::hideLoading);
-        }
-    }
-
-    private String getSizeText(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
-        return String.format("%.2f MB", bytes / 1024.0 / 1024.0);
-    }
-
-    /**
-     * 将 Color 转换为 HTML 颜色代码
-     */
-    private String toHtmlColor(Color color) {
-        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
-    }
-
-    // 自定义TabButton，支持底部高亮
-    private class TabButton extends JButton {
-        private final int tabIndex;
-
-        public TabButton(String text, int tabIndex) {
-            super(text);
-            this.tabIndex = tabIndex;
-            setFocusPainted(false);
-            setBorderPainted(false);
-            setContentAreaFilled(false);
-            setOpaque(true);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (selectedTabIndex == tabIndex) {
-                g.setColor(new Color(141, 188, 223));
-                g.fillRect(0, getHeight() - 3, getWidth(), 3);
-            }
         }
     }
 

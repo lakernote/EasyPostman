@@ -666,7 +666,9 @@ public class RequestEditSubPanel extends JPanel {
                         return null;
                     }
 
-                    req = PreparedRequestBuilder.build(item, !isModified()); // 仅当未修改时使用缓存
+                    // 对于新请求（originalRequestItem == null）或已修改的请求，不使用缓存
+                    boolean useCache = originalRequestItem != null && !isModified();
+                    req = PreparedRequestBuilder.build(item, useCache);
                     effectiveItem = item; // 保持兼容性
 
                     // 创建脚本执行流水线（使用 req 中合并后的脚本）

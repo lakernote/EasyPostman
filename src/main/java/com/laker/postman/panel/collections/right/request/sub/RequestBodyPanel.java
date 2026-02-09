@@ -7,6 +7,7 @@ import com.laker.postman.common.component.button.FormatButton;
 import com.laker.postman.common.component.button.SearchButton;
 import com.laker.postman.common.component.button.WebSocketSendButton;
 import com.laker.postman.common.component.button.WebSocketTimedSendButton;
+import com.laker.postman.common.component.button.WrapToggleButton;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -75,6 +76,7 @@ public class RequestBodyPanel extends JPanel {
     private JCheckBox wsClearInputCheckBox; // 清空输入复选框
     private SearchableTextArea searchableTextArea; // 集成了搜索功能的文本编辑器（HTTP模式）
     private SearchButton searchButton; // 搜索按钮（HTTP模式）
+    private WrapToggleButton wrapButton; // 换行按钮（HTTP模式）
 
     // 自动补全相关
     private JWindow autocompleteWindow;
@@ -161,6 +163,12 @@ public class RequestBodyPanel extends JPanel {
         topPanel.add(searchButton);
         topPanel.add(Box.createHorizontalStrut(1));
 
+        // 换行按钮
+        wrapButton = new WrapToggleButton();
+        wrapButton.addActionListener(e -> toggleLineWrap());
+        topPanel.add(wrapButton);
+        topPanel.add(Box.createHorizontalStrut(1));
+
         formatButton = new FormatButton();
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
@@ -185,12 +193,14 @@ public class RequestBodyPanel extends JPanel {
             rawTypeComboBox.setVisible(isRaw);
             formatButton.setVisible(isRaw);
             searchButton.setVisible(isRaw);
+            wrapButton.setVisible(isRaw);
         });
         // 初始化显示状态
         boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
         rawTypeComboBox.setVisible(isRaw);
         formatButton.setVisible(isRaw);
         searchButton.setVisible(isRaw);
+        wrapButton.setVisible(isRaw);
     }
 
     /**
@@ -259,6 +269,7 @@ public class RequestBodyPanel extends JPanel {
         bodyArea = new RSyntaxTextArea(5, 20);
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
+        bodyArea.setLineWrap(false); // 禁用自动换行以提升大文本性能
 
         // 加载编辑器主题 - 支持亮色和暗色主题自适应
         EditorThemeUtil.loadTheme(bodyArea);
@@ -482,6 +493,16 @@ public class RequestBodyPanel extends JPanel {
             log.debug("Unsupported format type or content is not JSON/XML");
         }
 
+    }
+
+    /**
+     * 切换自动换行状态
+     */
+    private void toggleLineWrap() {
+        if (bodyArea != null && wrapButton != null) {
+            boolean isWrapEnabled = wrapButton.isSelected();
+            bodyArea.setLineWrap(isWrapEnabled);
+        }
     }
 
 

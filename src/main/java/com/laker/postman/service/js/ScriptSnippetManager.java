@@ -8,6 +8,9 @@ import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.ShorthandCompletion;
 
+import javax.swing.text.BadLocationException;
+import javax.swing.text.JTextComponent;
+
 /**
  * 脚本 API 提示管理器
  * 仅提供 API 自动补全提示，不包含代码片段
@@ -20,7 +23,68 @@ public class ScriptSnippetManager {
      * 创建自动补全提供器
      */
     public static CompletionProvider createCompletionProvider() {
-        DefaultCompletionProvider provider = new DefaultCompletionProvider();
+        // 使用自定义 Provider 来实现自动激活和点号分隔的补全
+        DefaultCompletionProvider provider = new DefaultCompletionProvider() {
+            @Override
+            public boolean isAutoActivateOkay(JTextComponent tc) {
+                // 获取光标前的字符
+                int caret = tc.getCaretPosition();
+                if (caret > 0) {
+                    try {
+                        char ch = tc.getText(caret - 1, 1).charAt(0);
+                        // 字母、数字、下划线、点号都触发自动补全
+                        return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
+                    } catch (BadLocationException e) {
+                        // Ignore
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            protected boolean isValidChar(char ch) {
+                // 点号也是有效字符，这样 pm. 会被当作一个整体
+                return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
+            }
+
+            @Override
+            public String getAlreadyEnteredText(JTextComponent comp) {
+                // 获取已输入的文本，支持点号分隔
+                String text = super.getAlreadyEnteredText(comp);
+
+                // 如果文本为空，尝试获取更多上下文
+                if (text == null || text.isEmpty()) {
+                    try {
+                        int caret = comp.getCaretPosition();
+                        if (caret > 0) {
+                            // 检查光标前是否是点号
+                            char prevChar = comp.getText(caret - 1, 1).charAt(0);
+                            if (prevChar == '.') {
+                                // 获取点号前的标识符
+                                int start = caret - 2;
+                                while (start >= 0) {
+                                    char ch = comp.getText(start, 1).charAt(0);
+                                    if (!Character.isLetterOrDigit(ch) && ch != '_' && ch != '.') {
+                                        break;
+                                    }
+                                    start--;
+                                }
+                                start++;
+                                if (start < caret) {
+                                    text = comp.getText(start, caret - start);
+                                    return text;
+                                }
+                            }
+                        }
+                    } catch (BadLocationException e) {
+                        // Ignore
+                    }
+                }
+
+                // 确保即使是单个字符也返回
+                return text != null ? text : "";
+            }
+        };
 
         // 添加 API 提示
         addApiCompletions(provider);

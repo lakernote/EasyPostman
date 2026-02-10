@@ -21,7 +21,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.KeyEvent;
 
 
 @Slf4j
@@ -241,7 +240,7 @@ public class ScriptPanel extends JPanel {
         updateIndicator(postScriptTab, text);
         // 如果Pre-script为空且Post-script有内容，自动切换到Post-script标签页
         if (text != null && !text.trim().isEmpty() &&
-            (prescriptArea.getText() == null || prescriptArea.getText().trim().isEmpty())) {
+                (prescriptArea.getText() == null || prescriptArea.getText().trim().isEmpty())) {
             tabbedPane.setSelectedIndex(1);
         }
     }
@@ -336,11 +335,13 @@ public class ScriptPanel extends JPanel {
 
         // 配置自动补全
         AutoCompletion ac = new AutoCompletion(provider);
-        ac.setAutoCompleteEnabled(true); // 启用自动补全
-        ac.setAutoActivationEnabled(true); // 启用自动激活
-        ac.setAutoActivationDelay(200); // 200ms后触发自动补全
-        ac.setTriggerKey(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0)); // 使用Tab键触发补全
-        ac.setShowDescWindow(true); // 显示悬浮说明
+        ac.setAutoCompleteEnabled(true);      // 启用自动补全
+        ac.setAutoActivationEnabled(true);    // 启用自动激活
+        ac.setAutoActivationDelay(200);       // 200ms 延迟，快速响应
+        ac.setAutoCompleteSingleChoices(false); // 只有多个选项时才显示弹窗
+        ac.setShowDescWindow(true);           // 显示说明窗口
+        ac.setParameterAssistanceEnabled(false); // 禁用参数辅助（JavaScript 不需要）
+        // 安装到编辑器
         ac.install(area);
     }
 }

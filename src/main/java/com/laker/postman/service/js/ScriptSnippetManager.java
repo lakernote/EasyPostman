@@ -87,16 +87,37 @@ public class ScriptSnippetManager {
      * 添加 API 补全提示
      */
     private static void addApiCompletions(DefaultCompletionProvider provider) {
-        // ========== JavaScript 关键字 ==========
         addJavaScriptKeywords(provider);
+        addCoreObjects(provider);
+        addPmCoreMethods(provider);
+        addPmEnvironment(provider);
+        addPmVariables(provider);
+        addPmRequest(provider);
+        addPmResponse(provider);
+        addPmCookies(provider);
+        addPmExpect(provider);
+        addCryptoJS(provider);
+        addLodash(provider);
+        addMoment(provider);
+        addJavaScriptBuiltins(provider);
+        addEncodingFunctions(provider);
+        addConsoleMethods(provider);
+    }
 
-        // ========== 核心对象 ==========
+    /**
+     * 添加核心对象
+     */
+    private static void addCoreObjects(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM)));
         provider.addCompletion(new BasicCompletion(provider, "console",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE)));
+    }
 
-        // ========== pm 对象核心方法 ==========
+    /**
+     * 添加 pm 对象核心方法
+     */
+    private static void addPmCoreMethods(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.test",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_TEST)));
         provider.addCompletion(new BasicCompletion(provider, "pm.expect",
@@ -117,8 +138,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GET_GLOBAL_VARIABLE)));
         provider.addCompletion(new BasicCompletion(provider, "pm.getResponseCookie",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GET_RESPONSE_COOKIE)));
+    }
 
-        // ========== pm.environment - 环境变量 ==========
+    /**
+     * 添加 pm.environment - 环境变量
+     */
+    private static void addPmEnvironment(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.environment",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_ENVIRONMENT)));
         provider.addCompletion(new BasicCompletion(provider, "pm.environment.set",
@@ -131,8 +156,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_ENV_UNSET)));
         provider.addCompletion(new BasicCompletion(provider, "pm.environment.clear",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_ENV_CLEAR)));
+    }
 
-        // ========== pm.variables - 临时变量 ==========
+    /**
+     * 添加 pm.variables - 临时变量
+     */
+    private static void addPmVariables(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.variables",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_VARIABLES)));
         provider.addCompletion(new BasicCompletion(provider, "pm.variables.set",
@@ -147,8 +176,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_VAR_CLEAR)));
         provider.addCompletion(new BasicCompletion(provider, "pm.variables.toObject",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_VAR_TO_OBJECT)));
+    }
 
-        // ========== pm.request - 请求对象 (Pre-request) ==========
+    /**
+     * 添加 pm.request - 请求对象
+     */
+    private static void addPmRequest(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.request",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_REQUEST)));
         provider.addCompletion(new BasicCompletion(provider, "pm.request.url",
@@ -165,8 +198,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_REQUEST_URLENCODED)));
         provider.addCompletion(new BasicCompletion(provider, "pm.request.body",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_REQUEST_BODY)));
+    }
 
-        // ========== pm.response - 响应对象 (Post-request) ==========
+    /**
+     * 添加 pm.response - 响应对象
+     */
+    private static void addPmResponse(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.response",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_RESPONSE)));
         provider.addCompletion(new BasicCompletion(provider, "pm.response.code",
@@ -187,8 +224,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_RESPONSE_TO_HAVE_STATUS)));
         provider.addCompletion(new BasicCompletion(provider, "pm.response.to.have.header",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_RESPONSE_TO_HAVE_HEADER)));
+    }
 
-        // ========== pm.cookies - Cookie 管理 ==========
+    /**
+     * 添加 pm.cookies - Cookie 管理
+     */
+    private static void addPmCookies(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.cookies",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_COOKIES)));
         provider.addCompletion(new BasicCompletion(provider, "pm.cookies.get",
@@ -201,25 +242,25 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_COOKIES_JAR)));
         provider.addCompletion(new BasicCompletion(provider, "pm.cookies.toObject",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_COOKIES_TO_OBJECT)));
+    }
 
-        // ========== pm.expect - 断言方法 ==========
-        // 基础断言 - 使用 ShorthandCompletion 提供完整代码模板
+    /**
+     * 添加 pm.expect - 断言方法
+     */
+    private static void addPmExpect(DefaultCompletionProvider provider) {
+        // 基础断言
         provider.addCompletion(new ShorthandCompletion(provider, "expect.equal",
                 "pm.expect(value).to.equal(expected)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_EQUAL)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.eql",
                 "pm.expect(value).to.eql(expected)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_EQL)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.include",
                 "pm.expect(text).to.include(\"substring\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_INCLUDE)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.property",
                 "pm.expect(object).to.have.property(\"propertyName\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_HAVE_PROPERTY)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.match",
                 "pm.expect(text).to.match(/regex/)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_MATCH)));
@@ -228,19 +269,15 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.below",
                 "pm.expect(value).to.be.below(max)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_BELOW)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.above",
                 "pm.expect(value).to.be.above(min)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_ABOVE)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.least",
                 "pm.expect(value).to.be.at.least(min)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AT_LEAST)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.most",
                 "pm.expect(value).to.be.at.most(max)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AT_MOST)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.within",
                 "pm.expect(value).to.be.within(min, max)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_WITHIN)));
@@ -249,11 +286,9 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.length",
                 "pm.expect(array).to.have.length(expectedLength)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_HAVE_LENGTH)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.a",
                 "pm.expect(value).to.be.a(\"string\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_A)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.an",
                 "pm.expect(value).to.be.an(\"array\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AN)));
@@ -262,11 +297,9 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.ok",
                 "pm.expect(value).to.be.ok",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_OK)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.exist",
                 "pm.expect(value).to.exist",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_EXIST)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.empty",
                 "pm.expect(value).to.be.empty",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_EMPTY)));
@@ -275,19 +308,15 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.true",
                 "pm.expect(value).to.be.true",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_TRUE)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.false",
                 "pm.expect(value).to.be.false",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_FALSE)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.null",
                 "pm.expect(value).to.be.null",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_NULL)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.undefined",
                 "pm.expect(value).to.be.undefined",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_UNDEFINED)));
-
         provider.addCompletion(new ShorthandCompletion(provider, "expect.NaN",
                 "pm.expect(value).to.be.NaN",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_NAN)));
@@ -296,9 +325,12 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.not",
                 "pm.expect(value).to.not.equal(expected)",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_NOT)));
+    }
 
-
-        // ========== 内置库 - CryptoJS ==========
+    /**
+     * 添加 CryptoJS 加密库
+     */
+    private static void addCryptoJS(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "CryptoJS",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CRYPTOJS)));
         provider.addCompletion(new BasicCompletion(provider, "CryptoJS.AES",
@@ -317,8 +349,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CRYPTOJS_ENC)));
         provider.addCompletion(new BasicCompletion(provider, "CryptoJS.lib.WordArray",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CRYPTOJS_WORD_ARRAY)));
+    }
 
-        // ========== 内置库 - Lodash ==========
+    /**
+     * 添加 Lodash 工具库
+     */
+    private static void addLodash(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "_",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_LODASH)));
         provider.addCompletion(new BasicCompletion(provider, "_.map",
@@ -353,8 +389,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_LODASH_CLONE_DEEP)));
         provider.addCompletion(new BasicCompletion(provider, "_.merge",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_LODASH_MERGE)));
+    }
 
-        // ========== 内置库 - Moment ==========
+    /**
+     * 添加 Moment 时间处理库
+     */
+    private static void addMoment(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "moment",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_MOMENT)));
         provider.addCompletion(new BasicCompletion(provider, "moment()",
@@ -383,8 +423,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_MOMENT_START_OF)));
         provider.addCompletion(new BasicCompletion(provider, "moment().endOf",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_MOMENT_END_OF)));
+    }
 
-        // ========== JavaScript 内置对象 ==========
+    /**
+     * 添加 JavaScript 内置对象
+     */
+    private static void addJavaScriptBuiltins(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "JSON",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_JSON)));
         provider.addCompletion(new BasicCompletion(provider, "JSON.parse",
@@ -405,8 +449,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_MATH_CEIL)));
         provider.addCompletion(new BasicCompletion(provider, "Math.round",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_MATH_ROUND)));
+    }
 
-        // ========== 编码/解码函数 ==========
+    /**
+     * 添加编码/解码函数
+     */
+    private static void addEncodingFunctions(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "btoa",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_BTOA)));
         provider.addCompletion(new BasicCompletion(provider, "atob",
@@ -419,8 +467,12 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_ENCODE_URI_FULL)));
         provider.addCompletion(new BasicCompletion(provider, "decodeURI",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_DECODE_URI_FULL)));
+    }
 
-        // ========== 控制台方法 ==========
+    /**
+     * 添加控制台方法
+     */
+    private static void addConsoleMethods(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "console.log",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE_LOG)));
     }

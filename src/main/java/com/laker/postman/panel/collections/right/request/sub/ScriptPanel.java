@@ -5,6 +5,7 @@ import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
+import com.laker.postman.editor.PostmanJavaScriptTokenMaker;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.service.js.ScriptSnippetManager;
 import com.laker.postman.util.EditorThemeUtil;
@@ -13,8 +14,9 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.autocomplete.AutoCompletion;
+import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -25,12 +27,20 @@ import java.awt.*;
 
 @Slf4j
 public class ScriptPanel extends JPanel {
+    private static final String POSTMAN_JS_SYNTAX = "text/postman-javascript";
+
     private final RSyntaxTextArea prescriptArea;
     private final RSyntaxTextArea postscriptArea;
     private final JTabbedPane tabbedPane;
     private final SnippetButton snippetBtn;
     private final IndicatorTabComponent preScriptTab;
     private final IndicatorTabComponent postScriptTab;
+
+    // 静态初始化块：只注册一次 TokenMaker
+    static {
+        AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
+        atmf.putMapping(POSTMAN_JS_SYNTAX, PostmanJavaScriptTokenMaker.class.getName());
+    }
 
     public ScriptPanel() {
         setLayout(new BorderLayout());
@@ -175,15 +185,22 @@ public class ScriptPanel extends JPanel {
      * 配置编辑器的通用设置
      */
     private void configureEditor(RSyntaxTextArea area) {
-        area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-        area.setCodeFoldingEnabled(true);
-        area.setAntiAliasingEnabled(true);  // 启用抗锯齿，文字更清晰
-        area.setAutoIndentEnabled(true);  // 启用自动缩进
-        area.setBracketMatchingEnabled(true);  // 启用括号匹配
-        area.setPaintTabLines(true);  // 显示缩进参考线
-        area.setMarkOccurrences(true);  // 高亮显示相同的标识符
-        area.setTabSize(4);  // 设置 Tab 为 4 个空格
-        EditorThemeUtil.loadTheme(area);  // 加载主题
+        // 设置语法高亮
+        area.setSyntaxEditingStyle(POSTMAN_JS_SYNTAX);
+
+        // 代码编辑功能
+        area.setCodeFoldingEnabled(true);           // 代码折叠
+        area.setAutoIndentEnabled(true);            // 自动缩进
+        area.setBracketMatchingEnabled(true);       // 括号匹配
+        area.setMarkOccurrences(true);              // 高亮相同标识符
+
+        // 显示设置
+        area.setAntiAliasingEnabled(true);          // 抗锯齿，文字更清晰
+        area.setPaintTabLines(true);                // 显示缩进参考线
+        area.setTabSize(4);                         // Tab = 4 个空格
+
+        // 加载主题和自动补全
+        EditorThemeUtil.loadTheme(area);
         addAutoCompletion(area);
     }
 

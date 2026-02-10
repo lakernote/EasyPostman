@@ -9,6 +9,7 @@ import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.ShorthandCompletion;
 
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 
 /**
@@ -27,18 +28,21 @@ public class ScriptSnippetManager {
         DefaultCompletionProvider provider = new DefaultCompletionProvider() {
             @Override
             public boolean isAutoActivateOkay(JTextComponent tc) {
-                // 获取光标前的字符
-                int caret = tc.getCaretPosition();
-                if (caret > 0) {
-                    try {
-                        char ch = tc.getText(caret - 1, 1).charAt(0);
-                        // 字母、数字、下划线、点号都触发自动补全
-                        return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
-                    } catch (BadLocationException e) {
-                        // Ignore
-                    }
+                Document doc = tc.getDocument();
+                int docLength = doc.getLength();
+
+                if (docLength == 0) {
+                    return false;
                 }
-                return false;
+
+                try {
+                    // 检查文档中的最后一个字符（因为此方法可能在光标位置更新之前被调用）
+                    char ch = doc.getText(docLength - 1, 1).charAt(0);
+                    // 字母、数字、下划线、点号都触发自动补全
+                    return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
+                } catch (BadLocationException e) {
+                    return false;
+                }
             }
 
             @Override
@@ -49,40 +53,27 @@ public class ScriptSnippetManager {
 
             @Override
             public String getAlreadyEnteredText(JTextComponent comp) {
-                // 获取已输入的文本，支持点号分隔
-                String text = super.getAlreadyEnteredText(comp);
-
-                // 如果文本为空，尝试获取更多上下文
-                if (text == null || text.isEmpty()) {
-                    try {
-                        int caret = comp.getCaretPosition();
-                        if (caret > 0) {
-                            // 检查光标前是否是点号
-                            char prevChar = comp.getText(caret - 1, 1).charAt(0);
-                            if (prevChar == '.') {
-                                // 获取点号前的标识符
-                                int start = caret - 2;
-                                while (start >= 0) {
-                                    char ch = comp.getText(start, 1).charAt(0);
-                                    if (!Character.isLetterOrDigit(ch) && ch != '_' && ch != '.') {
-                                        break;
-                                    }
-                                    start--;
-                                }
-                                start++;
-                                if (start < caret) {
-                                    text = comp.getText(start, caret - start);
-                                    return text;
-                                }
-                            }
-                        }
-                    } catch (BadLocationException e) {
-                        // Ignore
-                    }
+                int caret = comp.getCaretPosition();
+                if (caret == 0) {
+                    return "";
                 }
 
-                // 确保即使是单个字符也返回
-                return text != null ? text : "";
+                try {
+                    Document doc = comp.getDocument();
+                    // 向前查找到非标识符字符（空格、换行、括号等）
+                    int start = caret - 1;
+                    while (start >= 0) {
+                        char ch = doc.getText(start, 1).charAt(0);
+                        if (!isValidChar(ch)) {
+                            break;
+                        }
+                        start--;
+                    }
+                    start++; // 移到第一个有效字符位置
+                    return doc.getText(start, caret - start);
+                } catch (BadLocationException e) {
+                    return "";
+                }
             }
         };
 
@@ -96,6 +87,9 @@ public class ScriptSnippetManager {
      * 添加 API 补全提示
      */
     private static void addApiCompletions(DefaultCompletionProvider provider) {
+        // ========== JavaScript 关键字 ==========
+        addJavaScriptKeywords(provider);
+
         // ========== 核心对象 ==========
         provider.addCompletion(new BasicCompletion(provider, "pm",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM)));
@@ -429,5 +423,101 @@ public class ScriptSnippetManager {
         // ========== 控制台方法 ==========
         provider.addCompletion(new BasicCompletion(provider, "console.log",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_CONSOLE_LOG)));
+    }
+
+    /**
+     * 添加 JavaScript 关键字和常用代码模板
+     */
+    private static void addJavaScriptKeywords(DefaultCompletionProvider provider) {
+        // ========== JavaScript 关键字 ==========
+        provider.addCompletion(new BasicCompletion(provider, "function", "JavaScript function keyword"));
+        provider.addCompletion(new BasicCompletion(provider, "var", "Variable declaration (ES5)"));
+        provider.addCompletion(new BasicCompletion(provider, "let", "Block-scoped variable (ES6)"));
+        provider.addCompletion(new BasicCompletion(provider, "const", "Block-scoped constant (ES6)"));
+        provider.addCompletion(new BasicCompletion(provider, "if", "Conditional statement"));
+        provider.addCompletion(new BasicCompletion(provider, "else", "Else clause"));
+        provider.addCompletion(new BasicCompletion(provider, "for", "For loop"));
+        provider.addCompletion(new BasicCompletion(provider, "while", "While loop"));
+        provider.addCompletion(new BasicCompletion(provider, "do", "Do-while loop"));
+        provider.addCompletion(new BasicCompletion(provider, "switch", "Switch statement"));
+        provider.addCompletion(new BasicCompletion(provider, "case", "Case clause"));
+        provider.addCompletion(new BasicCompletion(provider, "break", "Break statement"));
+        provider.addCompletion(new BasicCompletion(provider, "continue", "Continue statement"));
+        provider.addCompletion(new BasicCompletion(provider, "return", "Return statement"));
+        provider.addCompletion(new BasicCompletion(provider, "try", "Try-catch block"));
+        provider.addCompletion(new BasicCompletion(provider, "catch", "Catch clause"));
+        provider.addCompletion(new BasicCompletion(provider, "finally", "Finally clause"));
+        provider.addCompletion(new BasicCompletion(provider, "throw", "Throw exception"));
+        provider.addCompletion(new BasicCompletion(provider, "new", "Create new object"));
+        provider.addCompletion(new BasicCompletion(provider, "this", "Current context reference"));
+        provider.addCompletion(new BasicCompletion(provider, "typeof", "Get type of variable"));
+        provider.addCompletion(new BasicCompletion(provider, "instanceof", "Check instance type"));
+        provider.addCompletion(new BasicCompletion(provider, "true", "Boolean true"));
+        provider.addCompletion(new BasicCompletion(provider, "false", "Boolean false"));
+        provider.addCompletion(new BasicCompletion(provider, "null", "Null value"));
+        provider.addCompletion(new BasicCompletion(provider, "undefined", "Undefined value"));
+
+        // ========== 常用代码模板 ==========
+        provider.addCompletion(new ShorthandCompletion(provider, "func",
+                "function ${name}(${params}) {\n    ${cursor}\n}",
+                "Function declaration"));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "arrow",
+                "(${params}) => {\n    ${cursor}\n}",
+                "Arrow function (ES6)"));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "ifel",
+                "if (${condition}) {\n    ${cursor}\n} else {\n    \n}",
+                "If-else statement"));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "forin",
+                "for (let ${key} in ${object}) {\n    ${cursor}\n}",
+                "For-in loop"));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "forof",
+                "for (let ${item} of ${array}) {\n    ${cursor}\n}",
+                "For-of loop (ES6)"));
+
+        provider.addCompletion(new ShorthandCompletion(provider, "trycatch",
+                "try {\n    ${cursor}\n} catch (error) {\n    console.log(error);\n}",
+                "Try-catch block"));
+
+        // ========== 常用方法 ==========
+        provider.addCompletion(new BasicCompletion(provider, "forEach", "Array.prototype.forEach()"));
+        provider.addCompletion(new BasicCompletion(provider, "map", "Array.prototype.map()"));
+        provider.addCompletion(new BasicCompletion(provider, "filter", "Array.prototype.filter()"));
+        provider.addCompletion(new BasicCompletion(provider, "reduce", "Array.prototype.reduce()"));
+        provider.addCompletion(new BasicCompletion(provider, "find", "Array.prototype.find()"));
+        provider.addCompletion(new BasicCompletion(provider, "some", "Array.prototype.some()"));
+        provider.addCompletion(new BasicCompletion(provider, "every", "Array.prototype.every()"));
+        provider.addCompletion(new BasicCompletion(provider, "includes", "Array/String.prototype.includes()"));
+        provider.addCompletion(new BasicCompletion(provider, "indexOf", "Array/String.prototype.indexOf()"));
+        provider.addCompletion(new BasicCompletion(provider, "join", "Array.prototype.join()"));
+        provider.addCompletion(new BasicCompletion(provider, "split", "String.prototype.split()"));
+        provider.addCompletion(new BasicCompletion(provider, "slice", "Array/String.prototype.slice()"));
+        provider.addCompletion(new BasicCompletion(provider, "splice", "Array.prototype.splice()"));
+        provider.addCompletion(new BasicCompletion(provider, "push", "Array.prototype.push()"));
+        provider.addCompletion(new BasicCompletion(provider, "pop", "Array.prototype.pop()"));
+        provider.addCompletion(new BasicCompletion(provider, "shift", "Array.prototype.shift()"));
+        provider.addCompletion(new BasicCompletion(provider, "unshift", "Array.prototype.unshift()"));
+        provider.addCompletion(new BasicCompletion(provider, "substring", "String.prototype.substring()"));
+        provider.addCompletion(new BasicCompletion(provider, "substr", "String.prototype.substr()"));
+        provider.addCompletion(new BasicCompletion(provider, "toLowerCase", "String.prototype.toLowerCase()"));
+        provider.addCompletion(new BasicCompletion(provider, "toUpperCase", "String.prototype.toUpperCase()"));
+        provider.addCompletion(new BasicCompletion(provider, "trim", "String.prototype.trim()"));
+        provider.addCompletion(new BasicCompletion(provider, "replace", "String.prototype.replace()"));
+        provider.addCompletion(new BasicCompletion(provider, "match", "String.prototype.match()"));
+        provider.addCompletion(new BasicCompletion(provider, "search", "String.prototype.search()"));
+        provider.addCompletion(new BasicCompletion(provider, "toString", "Object.prototype.toString()"));
+        provider.addCompletion(new BasicCompletion(provider, "valueOf", "Object.prototype.valueOf()"));
+        provider.addCompletion(new BasicCompletion(provider, "hasOwnProperty", "Object.prototype.hasOwnProperty()"));
+
+        // ========== Object/Array 静态方法 ==========
+        provider.addCompletion(new BasicCompletion(provider, "Object.keys", "Get object keys"));
+        provider.addCompletion(new BasicCompletion(provider, "Object.values", "Get object values"));
+        provider.addCompletion(new BasicCompletion(provider, "Object.entries", "Get object entries"));
+        provider.addCompletion(new BasicCompletion(provider, "Object.assign", "Merge objects"));
+        provider.addCompletion(new BasicCompletion(provider, "Array.isArray", "Check if value is array"));
+        provider.addCompletion(new BasicCompletion(provider, "Array.from", "Create array from iterable"));
     }
 }

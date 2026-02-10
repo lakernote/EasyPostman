@@ -68,7 +68,7 @@ public class SettingManager {
                 return 100 * 1024;
             }
         }
-        return 100 * 1024;
+        return 100 * 1024; // 默认100KB
     }
 
     public static void setMaxBodySize(int size) {
@@ -248,10 +248,10 @@ public class SettingManager {
             try {
                 return Integer.parseInt(val);
             } catch (NumberFormatException e) {
-                return 5 * 1024 * 1024;
+                return 100 * 1024 * 1024;
             }
         }
-        return 5 * 1024 * 1024; // 默认5MB
+        return 100 * 1024 * 1024; // 默认100MB
     }
 
     public static void setDownloadProgressDialogThreshold(int threshold) {

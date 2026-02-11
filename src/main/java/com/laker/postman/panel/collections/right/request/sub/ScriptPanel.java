@@ -17,6 +17,8 @@ import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
+import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -36,10 +38,11 @@ public class ScriptPanel extends JPanel {
     private final IndicatorTabComponent preScriptTab;
     private final IndicatorTabComponent postScriptTab;
 
-    // 静态初始化块：只注册一次 TokenMaker
     static {
         AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
         atmf.putMapping(POSTMAN_JS_SYNTAX, PostmanJavaScriptTokenMaker.class.getName());
+        // 为自定义语法注册 FoldParser，使代码折叠功能生效
+        FoldParserManager.get().addFoldParserMapping(POSTMAN_JS_SYNTAX, new CurlyFoldParser());
     }
 
     public ScriptPanel() {

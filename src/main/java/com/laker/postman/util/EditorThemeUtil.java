@@ -37,8 +37,14 @@ public class EditorThemeUtil {
                 in = EditorThemeUtil.class.getResourceAsStream(themeFile);
             }
         } else {
-            themeFile = "/org/fife/ui/rsyntaxtextarea/themes/vs.xml";
+            // 优先加载自定义亮色主题
+            themeFile = "/themes/easypostman-light.xml";
             in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+            if (in == null) {
+                // 回退到默认 vs.xml
+                themeFile = "/org/fife/ui/rsyntaxtextarea/themes/vs.xml";
+                in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+            }
         }
         try {
             if (in != null) {

@@ -39,37 +39,43 @@
 	<tokenStyles>
 		<!-- 标识符 - 默认文字 -->
 		<style token="IDENTIFIER" fg="A9B7C6" />
+		<style token="NULL" fg="A9B7C6" />
 
-		<!-- 关键字 - 橙色系 -->
+		<!-- 关键字 - 橙色系（用于 pm 等核心 API）-->
 		<style token="RESERVED_WORD" fg="CC7832" bold="true" />
 		<style token="RESERVED_WORD_2" fg="CC7832" bold="true" />
 
-		<!-- 注解 - 黄色 -->
-		<style token="ANNOTATION" fg="BBB529" />
+		<!-- 注解 - 金黄色（用于 request、response 等 Postman 属性）-->
+		<style token="ANNOTATION" fg="BBB529" bold="false" />
 
-		<!-- 注释 - 灰色系 -->
+		<!-- 注释 - 灰绿色系 -->
 		<style token="COMMENT_DOCUMENTATION" fg="629755" italic="true" />
-		<style token="COMMENT_EOL" fg="808080" />
-		<style token="COMMENT_MULTILINE" fg="808080" />
+		<style token="COMMENT_EOL" fg="808080" italic="false" />
+		<style token="COMMENT_MULTILINE" fg="808080" italic="false" />
 		<style token="COMMENT_KEYWORD" fg="629755" bold="true" />
 		<style token="COMMENT_MARKUP" fg="629755" />
 
-		<!-- 函数/方法 - 黄色 -->
-		<style token="FUNCTION" fg="FFC66D" />
+		<!-- 函数/方法 - 亮黄色（用于 console、moment 等库对象）-->
+		<style token="FUNCTION" fg="FFC66D" bold="false" />
 
 		<!-- 数据类型 - 蓝绿色 -->
 		<style token="DATA_TYPE" fg="6897BB" bold="true" />
 
-		<!-- 字面量 - 布尔值/数字 -->
+		<!-- 字面量 - 布尔值/null -->
 		<style token="LITERAL_BOOLEAN" fg="CC7832" bold="true" />
+		<style token="LITERAL_NULL" fg="CC7832" bold="true" />
+
+		<!-- 字面量 - 数字（所有进制）-->
 		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="6897BB" />
 		<style token="LITERAL_NUMBER_FLOAT" fg="6897BB" />
 		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="6897BB" />
+		<style token="LITERAL_NUMBER_BINARY" fg="6897BB" />
+		<style token="LITERAL_NUMBER_OCTAL" fg="6897BB" />
 
-		<!-- 字符串 - 绿色 -->
+		<!-- 字符串 - 绿色（JavaScript 支持多种字符串）-->
 		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="6A8759" />
 		<style token="LITERAL_CHAR" fg="6A8759" />
-		<style token="LITERAL_BACKQUOTE" fg="6A8759" />
+		<style token="LITERAL_BACKQUOTE" fg="6A8759" />  <!-- ES6 模板字符串 -->
 
 		<!-- HTML/XML 标签 -->
 		<style token="MARKUP_TAG_DELIMITER" fg="E8BF6A" />
@@ -106,6 +112,14 @@
 		<style token="ERROR_NUMBER_FORMAT" fg="FF6B68" bg="52322B" />
 		<style token="ERROR_STRING_DOUBLE" fg="FF6B68" bg="52322B" />
 		<style token="ERROR_CHAR" fg="FF6B68" bg="52322B" />
+
+		<!-- JSON 特定 tokens -->
+		<style token="LITERAL_BOOLEAN_JSON" fg="CC7832" bold="true" />
+		<style token="LITERAL_NULL_JSON" fg="CC7832" bold="true" />
+
+		<!-- 其他常用 tokens -->
+		<style token="LITERAL_NUMBER_SCIENTIFIC" fg="6897BB" />
+		<style token="LITERAL_NUMBER_BIGINT" fg="6897BB" />
 	</tokenStyles>
 
 </RSyntaxTheme>

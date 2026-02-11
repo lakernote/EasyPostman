@@ -161,33 +161,47 @@ public class JsScriptExecutor {
     }
 
     /**
-     * 注入自定义的 console.log 实现（使用 Java 回调）
+     * 注入自定义的 console 方法实现（使用 Java 回调）
+     * 支持 console.log, console.error, console.warn, console.info, console.debug
      */
     private static void injectConsoleLog(Context context, OutputCallback outputCallback) {
         if (outputCallback == null) {
             return;
         }
 
-        // 使用 ProxyExecutable 实现 console.log
-        ProxyExecutable logFunc = args -> {
+        // 确保 console 对象存在
+        context.eval("js", """
+                if (typeof console === 'undefined') {
+                    globalThis.console = {};
+                }
+                """);
+
+        // 批量注入所有 console 方法
+        var consoleObj = context.getBindings("js").getMember("console");
+        for (ConsoleType type : ConsoleType.values()) {
+            consoleObj.putMember(type.getMethodName(), createConsoleFunc(outputCallback, type));
+        }
+    }
+
+    /**
+     * 创建 console 方法的 ProxyExecutable
+     *
+     * @param callback    输出回调
+     * @param consoleType Console 方法类型
+     * @return ProxyExecutable 实例
+     */
+    private static ProxyExecutable createConsoleFunc(OutputCallback callback, ConsoleType consoleType) {
+        return args -> {
             if (args.length > 0) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < args.length; i++) {
                     if (i > 0) sb.append(" ");
                     sb.append(args[i].toString());
                 }
-                outputCallback.onOutput(sb.toString());
+                callback.onOutput(sb.toString(), consoleType);
             }
             return null;
         };
-
-        // 注入到 console 对象
-        context.eval("js", """
-                if (typeof console === 'undefined') {
-                    globalThis.console = {};
-                }
-                """);
-        context.getBindings("js").getMember("console").putMember("log", logFunc);
     }
 
 
@@ -263,9 +277,40 @@ public class JsScriptExecutor {
     }
 
     /**
+     * Console 方法类型枚举
+     */
+    public enum ConsoleType {
+        LOG("log"),
+        ERROR("error"),
+        WARN("warn"),
+        INFO("info"),
+        DEBUG("debug");
+
+        private final String methodName;
+
+        ConsoleType(String methodName) {
+            this.methodName = methodName;
+        }
+
+        public String getMethodName() {
+            return methodName;
+        }
+    }
+
+    /**
      * 输出回调接口
      */
     public interface OutputCallback {
         void onOutput(String output);
+
+        /**
+         * 带日志类型的输出回调
+         *
+         * @param output      输出内容
+         * @param consoleType Console 方法类型
+         */
+        default void onOutput(String output, ConsoleType consoleType) {
+            onOutput(output); // 默认回退到无类型的方法
+        }
     }
 }

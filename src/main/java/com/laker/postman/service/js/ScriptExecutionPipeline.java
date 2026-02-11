@@ -182,7 +182,31 @@ public class ScriptExecutionPipeline {
         if (outputCallback != null) {
             return outputCallback;
         }
-        return output -> ConsolePanel.appendLog(prefix + output);
+        // 返回一个带颜色支持的回调
+        return new JsScriptExecutor.OutputCallback() {
+            @Override
+            public void onOutput(String output) {
+                ConsolePanel.appendLog(prefix + output);
+            }
+
+            @Override
+            public void onOutput(String output, JsScriptExecutor.ConsoleType consoleType) {
+                ConsolePanel.appendLog(prefix + output, mapConsoleType(consoleType));
+            }
+        };
+    }
+
+    /**
+     * 将 ConsoleType 映射到 ConsolePanel.LogType
+     */
+    private ConsolePanel.LogType mapConsoleType(JsScriptExecutor.ConsoleType consoleType) {
+        return switch (consoleType) {
+            case ERROR -> ConsolePanel.LogType.ERROR;
+            case WARN -> ConsolePanel.LogType.WARN;
+            case INFO -> ConsolePanel.LogType.INFO;
+            case DEBUG -> ConsolePanel.LogType.DEBUG;
+            case LOG -> ConsolePanel.LogType.INFO;
+        };
     }
 
     /**

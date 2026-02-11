@@ -34,89 +34,80 @@
 
 	<!-- Syntax tokens -->
 	<tokenStyles>
-		<!-- 标识符 - 默认黑色 -->
-		<style token="IDENTIFIER" fg="000000" />
+		<!-- NULL - 行结束标记 -->
 		<style token="NULL" fg="000000" />
 
-		<!-- 关键字 - 蓝色 (像 function, var, const 等，也用于 pm) -->
+		<!-- 注释 - 绿色系 -->
+		<style token="COMMENT_EOL" fg="008000" italic="true" />
+		<style token="COMMENT_MULTILINE" fg="008000" italic="true" />
+		<style token="COMMENT_DOCUMENTATION" fg="008000" italic="true" />
+		<style token="COMMENT_KEYWORD" fg="008000" bold="true" italic="true" />
+		<style token="COMMENT_MARKUP" fg="008000" italic="true" />
+
+		<!-- 关键字 - 蓝色（JavaScript: function, var, const, let, if, else 等）-->
 		<style token="RESERVED_WORD" fg="0033B3" bold="true" />
 		<style token="RESERVED_WORD_2" fg="0033B3" bold="true" />
 
-		<!-- 注解 - 黄褐色 (用于 request, response 等 Postman 属性) -->
-		<style token="ANNOTATION" fg="808000" bold="false" />
+		<!-- 函数/方法 - 橙色（JavaScript: console.log, Array.map 等）-->
+		<style token="FUNCTION" fg="FF6600" />
 
-		<!-- 注释 - 绿色系 -->
-		<style token="COMMENT_DOCUMENTATION" fg="008000" italic="true" />
-		<style token="COMMENT_EOL" fg="008000" italic="false" />
-		<style token="COMMENT_MULTILINE" fg="008000" italic="false" />
-		<style token="COMMENT_KEYWORD" fg="008000" bold="true" />
-		<style token="COMMENT_MARKUP" fg="008000" />
-
-		<!-- 函数/方法 - 橙色 (用于 console, moment 等库对象) -->
-		<style token="FUNCTION" fg="FF6600" bold="false" />
-
-		<!-- 数据类型 - 深青色 -->
-		<style token="DATA_TYPE" fg="000080" bold="true" />
-
-		<!-- 字面量 - 布尔值/null -->
+		<!-- 字面量 - 布尔值 (true, false) -->
 		<style token="LITERAL_BOOLEAN" fg="0033B3" bold="true" />
-		<style token="LITERAL_NULL" fg="0033B3" bold="true" />
 
 		<!-- 字面量 - 数字（所有进制）-->
 		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="0000FF" />
 		<style token="LITERAL_NUMBER_FLOAT" fg="0000FF" />
 		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="0000FF" />
-		<style token="LITERAL_NUMBER_BINARY" fg="0000FF" />
-		<style token="LITERAL_NUMBER_OCTAL" fg="0000FF" />
 
 		<!-- 字符串 - 绿色（JavaScript 支持多种字符串）-->
 		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="008000" bold="true" />
 		<style token="LITERAL_CHAR" fg="008000" bold="true" />
 		<style token="LITERAL_BACKQUOTE" fg="008000" bold="true" />  <!-- ES6 模板字符串 -->
 
+		<!-- 数据类型 - 深青色（Java: int, String, void 等）-->
+		<style token="DATA_TYPE" fg="000080" bold="true" />
+
+		<!-- 变量 - 紫色（Java: @Autowired, @Override 等相关）-->
+		<style token="VARIABLE" fg="660E7A" bold="true" />
+
+		<!-- 正则表达式 - 深绿色 -->
+		<style token="REGEX" fg="009900" bold="true" />
+
+		<!-- 注解 - 黄褐色（Java: @Override, @Deprecated 等，用于 request、response 等 Postman 属性）-->
+		<style token="ANNOTATION" fg="808000" />
+
+		<!-- 标识符 - 默认黑色（变量名、函数名等）-->
+		<style token="IDENTIFIER" fg="000000" />
+
+		<!-- 空白 -->
+		<style token="WHITESPACE" fg="000000" />
+
+		<!-- 分隔符 - 黑色（括号、大括号、方括号等：{}[]()）-->
+		<style token="SEPARATOR" fg="000000" />
+
+		<!-- 操作符 - 黑色（+, -, *, /, =, ==, ===, !=, !==, &&, ||, !, ?, : 等）-->
+		<style token="OPERATOR" fg="000000" />
+
+		<!-- 预处理器 - 灰色（C/C++: #include, #define 等）-->
+		<style token="PREPROCESSOR" fg="808080" />
+
 		<!-- HTML/XML 标签 -->
 		<style token="MARKUP_TAG_DELIMITER" fg="0000FF" />
 		<style token="MARKUP_TAG_NAME" fg="000080" bold="true" />
 		<style token="MARKUP_TAG_ATTRIBUTE" fg="0000FF" />
 		<style token="MARKUP_TAG_ATTRIBUTE_VALUE" fg="008000" bold="true" />
-		<style token="MARKUP_COMMENT" fg="008000" />
+		<style token="MARKUP_COMMENT" fg="008000" italic="true" />
 		<style token="MARKUP_DTD" fg="808080" />
 		<style token="MARKUP_PROCESSING_INSTRUCTION" fg="808080" />
-		<style token="MARKUP_CDATA" fg="CC6600" />
 		<style token="MARKUP_CDATA_DELIMITER" fg="808080" />
+		<style token="MARKUP_CDATA" fg="CC6600" />
 		<style token="MARKUP_ENTITY_REFERENCE" fg="0000FF" />
-
-		<!-- 操作符 -->
-		<style token="OPERATOR" fg="000000" />
-
-		<!-- 预处理器 -->
-		<style token="PREPROCESSOR" fg="808080" />
-
-		<!-- 正则表达式 -->
-		<style token="REGEX" fg="009900" bold="true" />
-
-		<!-- 分隔符 -->
-		<style token="SEPARATOR" fg="000000" />
-
-		<!-- 变量 - 紫色 -->
-		<style token="VARIABLE" fg="660E7A" bold="true" />
-
-		<!-- 空白 -->
-		<style token="WHITESPACE" fg="000000" />
 
 		<!-- 错误标记 - 红色 -->
 		<style token="ERROR_IDENTIFIER" fg="FF0000" bg="FFE0E0" />
 		<style token="ERROR_NUMBER_FORMAT" fg="FF0000" bg="FFE0E0" />
 		<style token="ERROR_STRING_DOUBLE" fg="FF0000" bg="FFE0E0" />
 		<style token="ERROR_CHAR" fg="FF0000" bg="FFE0E0" />
-
-		<!-- JSON 特定 tokens -->
-		<style token="LITERAL_BOOLEAN_JSON" fg="0033B3" bold="true" />
-		<style token="LITERAL_NULL_JSON" fg="0033B3" bold="true" />
-
-		<!-- 其他常用 tokens -->
-		<style token="LITERAL_NUMBER_SCIENTIFIC" fg="0000FF" />
-		<style token="LITERAL_NUMBER_BIGINT" fg="0000FF" />
 	</tokenStyles>
 
 </RSyntaxTheme>

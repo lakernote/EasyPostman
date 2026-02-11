@@ -1861,7 +1861,7 @@ public class RequestEditSubPanel extends JPanel {
             return 0.3;
         }
         // HTTP：默认对半分
-        return 0.4;
+        return 0.5;
     }
 
     /**

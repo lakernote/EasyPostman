@@ -23,17 +23,96 @@ public class PostmanJavaScriptTokenMaker extends JavaScriptTokenMaker {
         // 初始化 Postman 关键字映射
         postmanWordsToHighlight = new TokenMap();
 
-        // Postman 核心 API 对象 - 使用 RESERVED_WORD（蓝色 - 最重要）
+        // ===== Postman 核心 API 对象 - 使用 RESERVED_WORD（蓝色/橙色 - 最重要）=====
         postmanWordsToHighlight.put("pm", TokenTypes.RESERVED_WORD);
 
-        // 内置库对象 - 使用 FUNCTION（黄色/橙色 - 次重要）
+        // ===== 内置库对象 - 使用 FUNCTION（黄色/橙色 - 次重要）=====
         postmanWordsToHighlight.put("console", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("CryptoJS", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("moment", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("cheerio", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("xml2Json", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("atob", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("btoa", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("_", TokenTypes.FUNCTION);  // Lodash
         postmanWordsToHighlight.put("require", TokenTypes.FUNCTION);
 
-        // Postman 常用属性 - 使用 ANNOTATION（黄色/特殊颜色 - 属性标识）
+        // ===== Postman 核心方法 - 使用 FUNCTION =====
+        postmanWordsToHighlight.put("test", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("expect", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("uuid", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("generateUUID", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("getTimestamp", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("setVariable", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("getVariable", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("setGlobalVariable", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("getGlobalVariable", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("setEnvironmentVariable", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("getEnvironmentVariable", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("getResponseCookie", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("sendRequest", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("setNextRequest", TokenTypes.FUNCTION);
+
+        // ===== Chai 断言链式关键字 - 使用 RESERVED_WORD_2（与关键字同级）=====
+        postmanWordsToHighlight.put("to", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("be", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("been", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("is", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("that", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("which", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("and", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("has", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("have", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("with", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("at", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("of", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("same", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("not", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("deep", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("any", TokenTypes.RESERVED_WORD_2);
+        postmanWordsToHighlight.put("all", TokenTypes.RESERVED_WORD_2);
+
+        // ===== Chai 断言方法 - 使用 FUNCTION =====
+        postmanWordsToHighlight.put("equal", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("eql", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("above", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("least", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("below", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("most", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("within", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("instanceof", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("property", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("length", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("lengthOf", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("match", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("string", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("keys", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("include", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("includes", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("contain", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("contains", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("members", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("oneOf", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("change", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("increase", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("decrease", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("throw", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("respondTo", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("satisfy", TokenTypes.FUNCTION);
+        postmanWordsToHighlight.put("closeTo", TokenTypes.FUNCTION);
+
+        // ===== Chai 属性断言 - 使用 DATA_TYPE（类型相关）=====
+        postmanWordsToHighlight.put("ok", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("true", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("false", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("null", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("undefined", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("NaN", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("exist", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("empty", TokenTypes.DATA_TYPE);
+        postmanWordsToHighlight.put("arguments", TokenTypes.DATA_TYPE);
+
+        // ===== Postman 常用属性/对象 - 使用 ANNOTATION（黄色/特殊颜色 - 属性标识）=====
         postmanWordsToHighlight.put("request", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("response", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("environment", TokenTypes.ANNOTATION);
@@ -41,6 +120,21 @@ public class PostmanJavaScriptTokenMaker extends JavaScriptTokenMaker {
         postmanWordsToHighlight.put("variables", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("cookies", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("iterationData", TokenTypes.ANNOTATION);
+        postmanWordsToHighlight.put("collectionVariables", TokenTypes.ANNOTATION);
+        postmanWordsToHighlight.put("info", TokenTypes.ANNOTATION);
+        postmanWordsToHighlight.put("execution", TokenTypes.ANNOTATION);
+
+        // ===== 常用的响应/请求属性 - 使用 VARIABLE =====
+        postmanWordsToHighlight.put("status", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("code", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("headers", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("body", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("text", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("json", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("responseTime", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("size", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("url", TokenTypes.VARIABLE);
+        postmanWordsToHighlight.put("method", TokenTypes.VARIABLE);
     }
 
     /**

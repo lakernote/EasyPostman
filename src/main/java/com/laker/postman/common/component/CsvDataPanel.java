@@ -16,11 +16,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 /**
  * CSV 数据管理面板 - 独立的CSV功能组件
@@ -191,7 +188,7 @@ public class CsvDataPanel extends JPanel {
     private void showManualCreateDialog() {
         JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE), true);
-        dialog.setSize(500, 320);
+        dialog.setSize(550, 220);
         dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
 
@@ -240,19 +237,6 @@ public class CsvDataPanel extends JPanel {
         placeholderLabel.setForeground(ModernColors.getTextHint());
         contentPanel.add(placeholderLabel, gbc);
 
-        // 行数输入
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weightx = 0.3;
-        JLabel rowCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_ROW_COUNT));
-        rowCountLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        contentPanel.add(rowCountLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 0.7;
-        JTextField rowCountField = new JTextField("2");
-        rowCountField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        contentPanel.add(rowCountField, gbc);
 
         dialog.add(contentPanel, BorderLayout.CENTER);
 
@@ -263,18 +247,8 @@ public class CsvDataPanel extends JPanel {
         JButton createBtn = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         createBtn.addActionListener(e -> {
             try {
-                // 验证行数
-                int rowCount;
-                try {
-                    rowCount = Integer.parseInt(rowCountField.getText().trim());
-                    if (rowCount < 1 || rowCount > 10000) {
-                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_INVALID_ROW_COUNT));
-                        return;
-                    }
-                } catch (NumberFormatException ex) {
-                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_INVALID_ROW_COUNT));
-                    return;
-                }
+                // 默认创建1行数据
+                int rowCount = 1;
 
                 // 处理列标题
                 List<String> headers = new ArrayList<>();
@@ -598,9 +572,13 @@ public class CsvDataPanel extends JPanel {
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
+        JButton bulkEditBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT));
+        bulkEditBtn.setIcon(IconUtil.createThemed("icons/edit.svg", 16, 16));
+        List<String> finalHeaders = headers;
+        bulkEditBtn.addActionListener(e -> showBulkEditDialog(manageDialog, editTableModel, csvTable, finalHeaders, applyEmptyCellRenderer));
+
         JButton addRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW));
         addRowBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
-        List<String> finalHeaders = headers;
         addRowBtn.addActionListener(e -> editTableModel.addRow(new Object[finalHeaders.size()]));
 
         JButton deleteRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW));
@@ -714,6 +692,7 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
+        toolPanel.add(bulkEditBtn);
         toolPanel.add(addRowBtn);
         toolPanel.add(deleteRowBtn);
         toolPanel.add(addColumnBtn);
@@ -806,6 +785,207 @@ public class CsvDataPanel extends JPanel {
 
         manageDialog.add(bottomPanel, BorderLayout.SOUTH);
         manageDialog.setVisible(true);
+    }
+
+    /**
+     * 显示批量编辑对话框
+     * 支持以 CSV 格式批量粘贴和编辑数据
+     */
+    private void showBulkEditDialog(Window parentWindow, DefaultTableModel tableModel, JTable csvTable, List<String> headers, Runnable applyEmptyCellRenderer) {
+        // 1. 将当前表格数据转换为文本格式（用逗号分隔）
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            boolean hasData = false;
+            StringBuilder rowText = new StringBuilder();
+            for (int j = 0; j < headers.size(); j++) {
+                Object value = tableModel.getValueAt(i, j);
+                String strValue = value != null ? value.toString() : "";
+                if (!strValue.trim().isEmpty()) {
+                    hasData = true;
+                }
+                if (j > 0) {
+                    rowText.append(",");
+                }
+                // 如果值包含逗号、换行符或引号，用引号包裹并转义引号
+                if (strValue.contains(",") || strValue.contains("\n") || strValue.contains("\"")) {
+                    rowText.append("\"").append(strValue.replace("\"", "\"\"")).append("\"");
+                } else {
+                    rowText.append(strValue);
+                }
+            }
+            if (hasData) {
+                text.append(rowText).append("\n");
+            }
+        }
+
+        // 2. 创建文本编辑区域
+        JTextArea textArea = new JTextArea(text.toString());
+        textArea.setLineWrap(false);
+        textArea.setTabSize(4);
+        textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        textArea.setBackground(ModernColors.getInputBackgroundColor());
+        textArea.setForeground(ModernColors.getTextPrimary());
+        textArea.setCaretColor(ModernColors.PRIMARY);
+
+        // 将光标定位到文本末尾
+        textArea.setCaretPosition(textArea.getDocument().getLength());
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(700, 450));
+
+        // 3. 创建提示标签 - 使用国际化，垂直排列
+        JPanel hintPanel = new JPanel();
+        hintPanel.setLayout(new BoxLayout(hintPanel, BoxLayout.Y_AXIS));
+        hintPanel.setOpaque(false);
+
+        // 主提示文本
+        JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT_HINT));
+        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        hintLabel.setForeground(ModernColors.getTextPrimary());
+
+        // 支持格式说明
+        JLabel formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT_SUPPORTED_FORMATS));
+        formatLabel.setForeground(ModernColors.getTextSecondary());
+        formatLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        formatLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        hintPanel.add(hintLabel);
+        hintPanel.add(Box.createVerticalStrut(6));
+        hintPanel.add(formatLabel);
+        hintPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        // 4. 组装内容面板
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 5));
+        contentPanel.add(hintPanel, BorderLayout.NORTH);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // 5. 创建按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+
+        buttonPanel.add(okButton);
+        buttonPanel.add(cancelButton);
+
+        // 6. 创建对话框
+        JDialog dialog = new JDialog(parentWindow, I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT), Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout());
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setSize(750, 550);
+        dialog.setMinimumSize(new Dimension(600, 400));
+        dialog.setResizable(true);
+        dialog.setLocationRelativeTo(parentWindow); // 相对于父窗口（CSV数据管理对话框）居中
+
+        // 7. 按钮事件处理
+        okButton.addActionListener(e -> {
+            parseBulkCsvText(textArea.getText(), tableModel, headers, csvTable, applyEmptyCellRenderer);
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        // 8. 支持 ESC 键关闭对话框
+        dialog.getRootPane().registerKeyboardAction(
+                e -> dialog.dispose(),
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
+        // 9. 设置默认按钮
+        dialog.getRootPane().setDefaultButton(okButton);
+
+        // 10. 显示对话框
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 解析批量编辑的 CSV 文本内容
+     * 支持标准 CSV 格式（逗号分隔）
+     * 空行会被忽略
+     */
+    private void parseBulkCsvText(String text, DefaultTableModel tableModel, List<String> headers, JTable csvTable, Runnable applyEmptyCellRenderer) {
+        if (text == null || text.trim().isEmpty()) {
+            // 如果文本为空，清空所有数据行
+            tableModel.setRowCount(0);
+            return;
+        }
+
+        // 先停止单元格编辑
+        if (csvTable.isEditing()) {
+            csvTable.getCellEditor().stopCellEditing();
+        }
+
+        // 清空现有数据
+        tableModel.setRowCount(0);
+
+        String[] lines = text.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue; // 忽略空行
+            }
+
+            // 解析 CSV 行，支持引号包裹的值
+            List<String> values = parseCsvLine(line);
+
+            // 创建新行
+            Object[] rowData = new Object[headers.size()];
+            for (int i = 0; i < headers.size() && i < values.size(); i++) {
+                rowData[i] = values.get(i);
+            }
+
+            // 填充剩余列为空字符串
+            for (int i = values.size(); i < headers.size(); i++) {
+                rowData[i] = "";
+            }
+
+            tableModel.addRow(rowData);
+        }
+
+        // 重新应用空单元格渲染器
+        if (applyEmptyCellRenderer != null) {
+            applyEmptyCellRenderer.run();
+        }
+    }
+
+    /**
+     * 解析 CSV 行，支持引号包裹的值
+     * 只支持逗号作为分隔符（标准 CSV 格式）
+     */
+    private List<String> parseCsvLine(String line) {
+        List<String> values = new ArrayList<>();
+
+        StringBuilder currentValue = new StringBuilder();
+        boolean inQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            if (c == '"') {
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    // 转义的引号（""）
+                    currentValue.append('"');
+                    i++; // 跳过下一个引号
+                } else {
+                    // 开始或结束引号包裹
+                    inQuotes = !inQuotes;
+                }
+            } else if (c == ',' && !inQuotes) {
+                // 逗号分隔符，且不在引号内
+                values.add(currentValue.toString().trim());
+                currentValue = new StringBuilder();
+            } else {
+                currentValue.append(c);
+            }
+        }
+
+        // 添加最后一个值
+        values.add(currentValue.toString().trim());
+
+        return values;
     }
 
     /**

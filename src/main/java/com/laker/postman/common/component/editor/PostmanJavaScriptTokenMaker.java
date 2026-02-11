@@ -1,4 +1,4 @@
-package com.laker.postman.editor;
+package com.laker.postman.common.component.editor;
 
 import org.fife.ui.rsyntaxtextarea.TokenMap;
 import org.fife.ui.rsyntaxtextarea.TokenTypes;

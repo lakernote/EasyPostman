@@ -41,8 +41,8 @@ public class HttpHeaderValueEasyTextFieldCellEditor extends EasySmartValueCellEd
             }
         });
 
-        // 直接替换父类的 textField（现在是 protected）
-        this.textField = autoCompleteTextField;
+        // 通过父类方法替换单行组件，同步更新 CardLayout 卡片和 DocumentListener
+        replaceTextField(autoCompleteTextField);
     }
 
     @Override
@@ -51,11 +51,11 @@ public class HttpHeaderValueEasyTextFieldCellEditor extends EasySmartValueCellEd
         this.parentTable = table;
         this.editingRow = row;
 
-        // 调用父类方法获取编辑组件（单行或多行）
+        // 调用父类方法（父类始终返回 containerPanel）
         Component editor = super.getTableCellEditorComponent(table, value, isSelected, row, column);
 
-        // 如果是单行编辑模式，更新自动补全建议
-        if (editor == autoCompleteTextField) {
+        // 只要当前是单行模式，就更新自动补全建议
+        if (!isMultiLineMode()) {
             updateSuggestionsForCurrentKey();
         }
 
@@ -103,4 +103,3 @@ public class HttpHeaderValueEasyTextFieldCellEditor extends EasySmartValueCellEd
         }
     }
 }
-

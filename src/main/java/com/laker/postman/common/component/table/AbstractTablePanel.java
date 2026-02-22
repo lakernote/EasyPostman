@@ -208,7 +208,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
      * 所有表格共用的 UI 配置
      */
     protected void initializeTableUI() {
-        table.setFillsViewportHeight(true);
+        table.setFillsViewportHeight(false); // 只占用必要的高度，避免空白行过多
         table.setRowHeight(28);
         table.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
         table.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1)); // 比标准字体小1号（粗体）

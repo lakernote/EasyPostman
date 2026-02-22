@@ -418,7 +418,8 @@ public class ResponseBodyPanel extends JPanel {
         // 小文件直接格式化
         if (textSize < LARGE_RESPONSE_THRESHOLD) {
             try {
-                if (contentType != null && contentType.toLowerCase().contains("json")) {
+                if (contentType != null && contentType.toLowerCase().contains("json")
+                        || JsonUtil.isTypeJSON(text)) {
                     String pretty = JsonUtil.toJsonPrettyStr(text);
                     responseBodyPane.setText(pretty);
                 } else if (contentType != null && contentType.toLowerCase().contains("xml")) {

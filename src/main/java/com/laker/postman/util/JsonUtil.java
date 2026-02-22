@@ -1,5 +1,6 @@
 package com.laker.postman.util;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import lombok.experimental.UtilityClass;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.json.JsonReadFeature;
@@ -96,6 +97,7 @@ public class JsonUtil {
      * @return 是否为有效的 JSON/JSON5
      */
     public static boolean isTypeJSON(String json) {
+        if (CharSequenceUtil.isBlank(json)) return false;
         try {
             JsonNode rootNode = mapper.readTree(json);
             // 严格校验：只有是JSON对象或JSON数组时才返回true

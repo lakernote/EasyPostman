@@ -254,7 +254,7 @@ public class ResponseBodyPanel extends JPanel {
 
         try {
             String formatted = null;
-            if (contentType.contains("json")) {
+            if (contentType.contains("json") || JsonUtil.isTypeJSON(text)) {
                 formatted = JsonUtil.toJsonPrettyStr(text);
             } else if (contentType.contains("xml")) {
                 formatted = XmlUtil.format(text);
@@ -372,6 +372,9 @@ public class ResponseBodyPanel extends JPanel {
      */
     private String detectSyntax(String text, String contentType) {
         if (contentType != null) contentType = contentType.toLowerCase();
+        if (JsonUtil.isTypeJSON(text)) {
+            return SyntaxConstants.SYNTAX_STYLE_JSON;
+        }
         if (contentType != null) {
             if (contentType.contains("json")) return SyntaxConstants.SYNTAX_STYLE_JSON;
             if (contentType.contains("xml")) return SyntaxConstants.SYNTAX_STYLE_XML;

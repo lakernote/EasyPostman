@@ -53,8 +53,8 @@ echo [3/9] 检查 Java 版本...
 for /f tokens^=2^ delims^=^" %%a in ('java -version 2^>^&1 ^| findstr version') do set "JVER=%%a"
 for /f tokens^=1^ delims^=.^" %%b in ("%JVER%") do set "MAJOR_JVER=%%b"
 
-if %MAJOR_JVER% lss 17 (
-    echo ERROR: JDK 17 or higher is required. Current version: %JVER%
+if %MAJOR_JVER% lss 21 (
+    echo ERROR: JDK 21 or higher is required. Current version: %JVER%
     pause
     exit /b 1
 )

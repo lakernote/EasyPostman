@@ -9,7 +9,7 @@ on:
   workflow_dispatch: { }  # 支持手动触发
 
 env:
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'jetbrains'  # 使用 JetBrains Runtime（JBR），为 Swing 应用优化
   JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
   # 通用 Java 选项（所有平台共享）

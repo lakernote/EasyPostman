@@ -4,7 +4,7 @@
 
 # 检查 java 是否可用
 if ! command -v java &> /dev/null; then
-    echo "❌ 未检测到 java，请先安装 JDK 17+ 并配置环境变量。"
+    echo "❌ 未检测到 java，请先安装 JDK 21+ 并配置环境变量。"
     exit 1
 fi
 # 检查 mvn 是否可用
@@ -14,12 +14,12 @@ if ! command -v mvn &> /dev/null; then
 fi
 # 检查 jlink 是否可用
 if ! command -v jlink &> /dev/null; then
-    echo "❌ 未检测到 jlink，请确认 JDK 17+ 已正确安装。"
+    echo "❌ 未检测到 jlink，请确认 JDK 21+ 已正确安装。"
     exit 1
 fi
 # 检查 jpackage 是否可用
 if ! command -v jpackage &> /dev/null; then
-    echo "❌ 未检测到 jpackage，请确认 JDK 17+ 已正确安装。"
+    echo "❌ 未检测到 jpackage，请确认 JDK 21+ 已正确安装。"
     exit 1
 fi
 # 检查 objcopy 是否可用（jlink 需要）
@@ -45,10 +45,10 @@ MAIN_CLASS="com.laker.postman.App"
 ICON_DIR="assets/linux/EasyPostman.png"
 OUTPUT_DIR="dist"
 
-# 检查 JDK 版本是否 >= 17
+# 检查 JDK 版本是否 >= 21
 JAVA_VERSION=$(java -version 2>&1 | grep version | awk '{print substr($3, 2, 3)}' | tr -d '"')
-if (( $(echo "$JAVA_VERSION < 17" | bc -l) )); then
-    echo "❌ 需要 JDK 17 或更高版本。当前版本: $JAVA_VERSION"
+if (( $(echo "$JAVA_VERSION < 21" | bc -l) )); then
+    echo "❌ 需要 JDK 21 或更高版本。当前版本: $JAVA_VERSION"
     exit 1
 fi
 

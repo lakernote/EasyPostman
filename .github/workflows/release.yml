@@ -12,12 +12,12 @@ env:
   JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'jetbrains'  # 使用 JetBrains Runtime（JBR），为 Swing 应用优化
   JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
-  # 通用 Java 选项（所有平台共享）
-  JAVA_OPTIONS_COMMON: '-Xms512m|-Xmx1g|-XX:MaxMetaspaceSize=256m|-XX:MetaspaceSize=128m|-XX:MaxDirectMemorySize=256m|-XX:+UseG1GC|-XX:MaxGCPauseMillis=200|-XX:InitiatingHeapOccupancyPercent=45|-XX:+UseStringDeduplication|-XX:+HeapDumpOnOutOfMemoryError|-XX:HeapDumpPath=./dumps|-Dfile.encoding=UTF-8|-Dswing.aatext=true|-Djava.net.preferIPv4Stack=true|-Dhttp.keepAlive=true'
+  # 通用 Java 选项（所有平台共享）- JDK 21 优化
+  JAVA_OPTIONS_COMMON: '-Xms512m|-Xmx1g|-XX:MaxMetaspaceSize=256m|-XX:MaxDirectMemorySize=256m|-XX:+UseG1GC|-XX:MaxGCPauseMillis=200|-XX:InitiatingHeapOccupancyPercent=45|-XX:+UseStringDeduplication|-XX:+HeapDumpOnOutOfMemoryError|-XX:HeapDumpPath=./dumps|-Dfile.encoding=UTF-8|-Dstdout.encoding=UTF-8|-Dstderr.encoding=UTF-8|-Dsun.java2d.metal=true|-Dswing.aatext=true|-Djava.net.preferIPv4Stack=true|-Dhttp.keepAlive=true|--add-exports java.base/sun.nio.ch=ALL-UNNAMED'
   # Windows 特定选项
   JAVA_OPTIONS_WINDOWS: '-Djavax.accessibility.assistive_technologies='
   # macOS 特定选项
-  JAVA_OPTIONS_MACOS: '-Dsun.java2d.metal=true|-Dapple.awt.application.appearance=system|--add-opens java.desktop/java.awt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED|--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'
+  JAVA_OPTIONS_MACOS: '-Dapple.awt.application.appearance=system|--add-opens java.desktop/java.awt=ALL-UNNAMED|--add-opens java.desktop/sun.font=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt.macosx.concurrent=ALL-UNNAMED|--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'
   # Linux 特定选项
   JAVA_OPTIONS_LINUX: '-Dawt.useSystemAAFontSettings=on|--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED'
 
@@ -118,7 +118,7 @@ jobs:
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=2 `
+            --compress=zip-6 `
             --verbose `
             --output $runtimeDir
           
@@ -278,7 +278,7 @@ jobs:
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=2 `
+            --compress=zip-6 `
             --verbose `
             --output $runtimeDir
           
@@ -449,7 +449,7 @@ jobs:
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=2 \
+            --compress=zip-6 \
             --verbose \
             --output target/runtime
           
@@ -563,7 +563,7 @@ jobs:
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=2 \
+            --compress=zip-6 \
             --verbose \
             --output target/runtime
           
@@ -699,11 +699,17 @@ jobs:
           # 创建 Linux 平台的 JRE
           jlink \
             --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-java-debug-attributes \
+            --strip-native-commands \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=2 \
+            --compress=zip-6 \
+            --verbose \
             --output target/runtime
+          
+          # 验证 JRE 大小
+          echo "✅ JRE 创建成功，大小: $(du -sh target/runtime | cut -f1)"
 
       - name: Prepare dist-input（准备打包输入目录）
         run: |

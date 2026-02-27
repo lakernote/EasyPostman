@@ -95,10 +95,12 @@ echo [6/9] 使用 jlink 创建精简 JRE...
 if exist target\runtime rd /s /q target\runtime
 jlink ^
     --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki ^
+    --strip-java-debug-attributes ^
+    --strip-native-commands ^
     --strip-debug ^
     --no-header-files ^
     --no-man-pages ^
-    --compress=2 ^
+    --compress=zip-9 ^
     --output target\runtime
 if errorlevel 1 (
     echo ERROR: jlink failed
@@ -141,7 +143,6 @@ jpackage ^
     --java-options "-Xms512m" ^
     --java-options "-Xmx1g" ^
     --java-options "-XX:MaxMetaspaceSize=256m" ^
-    --java-options "-XX:MetaspaceSize=128m" ^
     --java-options "-XX:MaxDirectMemorySize=256m" ^
     --java-options "-XX:+UseG1GC" ^
     --java-options "-XX:MaxGCPauseMillis=200" ^
@@ -150,9 +151,13 @@ jpackage ^
     --java-options "-XX:+HeapDumpOnOutOfMemoryError" ^
     --java-options "-XX:HeapDumpPath=./dumps" ^
     --java-options "-Dfile.encoding=UTF-8" ^
+    --java-options "-Dstdout.encoding=UTF-8" ^
+    --java-options "-Dstderr.encoding=UTF-8" ^
+    --java-options "-Dsun.java2d.metal=true" ^
     --java-options "-Dswing.aatext=true" ^
     --java-options "-Djava.net.preferIPv4Stack=true" ^
     --java-options "-Dhttp.keepAlive=true" ^
+    --java-options "--add-exports java.base/sun.nio.ch=ALL-UNNAMED" ^
     --java-options "-Djavax.accessibility.assistive_technologies="
 
 if errorlevel 1 (

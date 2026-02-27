@@ -114,11 +114,10 @@ jobs:
           jlink `
             --add-modules $env:JLINK_MODULES `
             --strip-java-debug-attributes `
-            --strip-native-commands `
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=zip-6 `
+            --compress=zip-9 `
             --verbose `
             --output $runtimeDir
           
@@ -274,11 +273,10 @@ jobs:
           jlink `
             --add-modules $env:JLINK_MODULES `
             --strip-java-debug-attributes `
-            --strip-native-commands `
             --strip-debug `
             --no-header-files `
             --no-man-pages `
-            --compress=zip-6 `
+            --compress=zip-9 `
             --verbose `
             --output $runtimeDir
           
@@ -416,7 +414,7 @@ jobs:
 
   build-macos-intel:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
-    runs-on: macos-15-intel  # Intel x86_64
+    runs-on: macos-13  # Intel x86_64（GitHub Actions 最新 Intel macOS runner）
     needs: [ get-version, build-jar-artifact ]
 
     steps:
@@ -445,11 +443,10 @@ jobs:
           jlink \
             --add-modules ${{ env.JLINK_MODULES }} \
             --strip-java-debug-attributes \
-            --strip-native-commands \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=zip-6 \
+            --compress=zip-9 \
             --verbose \
             --output target/runtime
           
@@ -559,11 +556,10 @@ jobs:
           jlink \
             --add-modules ${{ env.JLINK_MODULES }} \
             --strip-java-debug-attributes \
-            --strip-native-commands \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=zip-6 \
+            --compress=zip-9 \
             --verbose \
             --output target/runtime
           
@@ -700,11 +696,10 @@ jobs:
           jlink \
             --add-modules ${{ env.JLINK_MODULES }} \
             --strip-java-debug-attributes \
-            --strip-native-commands \
             --strip-debug \
             --no-header-files \
             --no-man-pages \
-            --compress=zip-6 \
+            --compress=zip-9 \
             --verbose \
             --output target/runtime
           

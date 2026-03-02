@@ -285,7 +285,11 @@ public class RequestEditPanel extends SingletonBasePanel {
                     if (currentSubPanel != null && currentSubPanel.getRequestLinePanel() != null) {
                         JButton sendButton = currentSubPanel.getRequestLinePanel().getSendButton();
                         if (sendButton != null && sendButton.isEnabled()) {
-                            sendButton.doClick();
+                            // 先将焦点转移到 sendButton，触发 table cell editor 的
+                            // terminateEditOnFocusLost 机制，确保正在编辑的 cell
+                            // 值提交到 model，然后再执行发送逻辑。
+                            sendButton.requestFocusInWindow();
+                            SwingUtilities.invokeLater(sendButton::doClick);
                         }
                     }
                 }
@@ -304,7 +308,11 @@ public class RequestEditPanel extends SingletonBasePanel {
                     if (currentSubPanel != null && currentSubPanel.getRequestLinePanel() != null) {
                         JButton saveButton = currentSubPanel.getRequestLinePanel().getSaveButton();
                         if (saveButton != null && saveButton.isEnabled()) {
-                            saveButton.doClick();
+                            // 先将焦点转移到 saveButton，触发 table cell editor 的
+                            // terminateEditOnFocusLost 机制，确保正在编辑的 cell
+                            // 值提交到 model，然后再执行点击保存逻辑。
+                            saveButton.requestFocusInWindow();
+                            SwingUtilities.invokeLater(saveButton::doClick);
                         }
                     }
                 }

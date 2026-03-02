@@ -449,10 +449,13 @@ public class GroupEditPanel extends JPanel {
                 if (autoSaveTimer.isRunning()) {
                     autoSaveTimer.stop();
                 }
-                // 立即保存（先提交正在编辑的 cell，确保最新输入被包含）
-                autoSaveGroupData(true);
-                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
-
+                // 先将焦点从 cell editor 转移到面板自身，触发 terminateEditOnFocusLost
+                // 机制让正在编辑的 cell 值提交到 model，再用 invokeLater 执行保存。
+                GroupEditPanel.this.requestFocusInWindow();
+                SwingUtilities.invokeLater(() -> {
+                    autoSaveGroupData(true);
+                    NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
+                });
             }
         });
     }

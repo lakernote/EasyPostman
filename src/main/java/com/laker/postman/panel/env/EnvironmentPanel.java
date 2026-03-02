@@ -358,7 +358,11 @@ public class EnvironmentPanel extends SingletonBasePanel {
         this.getActionMap().put(actionKey, new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                saveVariablesManually();
+                // 先将焦点转移到面板自身，触发 table cell editor 的
+                // terminateEditOnFocusLost 机制，确保正在编辑的 cell
+                // 值提交到 model，然后再执行保存逻辑。
+                EnvironmentPanel.this.requestFocusInWindow();
+                SwingUtilities.invokeLater(() -> saveVariablesManually());
             }
         });
     }

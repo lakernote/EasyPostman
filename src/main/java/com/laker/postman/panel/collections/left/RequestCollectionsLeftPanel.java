@@ -276,8 +276,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         PreparedRequestBuilder.invalidateCacheForRequest(item.getId());
 
         persistence.saveRequestGroups();
-        // 保存后去除Tab红点
+        // 保存后去除Tab红点，同时通知 FunctionalPanel 和 PerformancePanel 同步最新数据
         SwingUtilities.invokeLater(() -> {
+            // 1. 去除 Collections Tab 红点
             RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
             JTabbedPane tabbedPane = editPanel.getTabbedPane();
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
@@ -290,6 +291,12 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     }
                 }
             }
+            // 2. 同步 FunctionalPanel
+            SingletonFactory.getInstance(com.laker.postman.panel.functional.FunctionalPanel.class)
+                    .syncRequestItem(item);
+            // 3. 同步 PerformancePanel
+            SingletonFactory.getInstance(com.laker.postman.panel.performance.PerformancePanel.class)
+                    .syncRequestItem(item);
         });
         return true;
     }

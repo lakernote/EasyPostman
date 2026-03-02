@@ -1,10 +1,12 @@
 package com.laker.postman.service.collections;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
 import com.laker.postman.service.variable.RequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,13 +48,15 @@ public class InheritanceService {
     }
 
     /**
-     * 应用分组继承规则（可选是否使用缓存）
+     * 应用分组继承规则
      * <p>
-     * 用于处理未保存的请求（如 UI 中修改但未保存）
+     * 缓存策略：只缓存 Group 链（auth/headers/scripts 来源），不缓存整个 item。
+     * 这样每次调用都会把最新 item（含最新 url/params）与缓存的 group 链重新合并，
+     * 确保用户在 editSubPanel 修改请求后，发送/执行时始终用最新数据。
      *
-     * @param item     原始请求项
-     * @param useCache 是否使用缓存
-     * @return 应用了继承后的请求项（新对象），如果不需要继承则返回原对象
+     * @param item     原始请求项（最新的，包含最新 url/params）
+     * @param useCache 是否缓存 Group 链
+     * @return 应用了继承后的请求项
      */
     public HttpRequestItem applyInheritance(HttpRequestItem item, boolean useCache) {
         if (item == null) {
@@ -61,22 +65,45 @@ public class InheritanceService {
 
         String requestId = item.getId();
 
-        // 如果不使用缓存或 requestId 为空，直接计算
-        if (!useCache || requestId == null) {
+        // requestId 为空：不在 Collections 里，直接返回
+        if (requestId == null || requestId.trim().isEmpty()) {
             return applyInheritanceInternal(item);
         }
 
-        // 使用缓存：原子性地获取或计算并缓存结果（线程安全）
-        // computeIfAbsent 保证只有一个线程执行计算，其他线程等待并获取结果
-        return cache.computeIfAbsent(requestId, id -> applyInheritanceInternal(item));
+        if (!useCache) {
+            return applyInheritanceInternal(item);
+        }
+
+        // 获取（或计算并缓存）该请求对应的 Group 链
+        List<RequestGroup> groupChain = cache.computeIfAbsent(requestId, id -> {
+            Optional<DefaultMutableTreeNode> nodeOpt = treeRepository.findNodeByRequestId(id);
+            if (nodeOpt.isEmpty()) {
+                return List.of(); // 不在 Collections 树中，空 group 链
+            }
+            DefaultMutableTreeNode requestNode = nodeOpt.get();
+            // 设置全局上下文（供分组变量服务使用）
+            RequestContext.setCurrentRequestNode(requestNode);
+            return GroupInheritanceHelper.collectGroupChain(requestNode);
+        });
+
+        // 用最新的 item + 缓存的 group 链合并（每次都重新合并，保证 url/params 最新）
+        if (groupChain.isEmpty()) {
+            log.trace("请求 [{}] 不在 Collections 树中或无父分组，使用原始配置", item.getName());
+            return item;
+        }
+
+        // 需要设置 RequestContext（后续变量解析依赖）
+        Optional<DefaultMutableTreeNode> nodeOpt = treeRepository.findNodeByRequestId(requestId);
+        nodeOpt.ifPresent(RequestContext::setCurrentRequestNode);
+
+        return GroupInheritanceHelper.mergeGroupSettingsWithChain(item, groupChain);
     }
 
     /**
-     * 内部方法：执行实际的继承计算
+     * 内部方法：不使用缓存，直接从树中查找并合并
      */
     private HttpRequestItem applyInheritanceInternal(HttpRequestItem item) {
         try {
-            // 1. 查找请求节点
             Optional<DefaultMutableTreeNode> nodeOpt =
                     treeRepository.findNodeByRequestId(item.getId());
 
@@ -85,13 +112,8 @@ public class InheritanceService {
                 return item;
             }
 
-            // 2. 应用继承（mergeGroupSettings 内部会收集分组链）
             DefaultMutableTreeNode requestNode = nodeOpt.get();
-
-            // 设置当前请求节点到全局上下文，供分组变量服务使用
-            // 注意：不在此处清除，由调用方（PreparedRequestBuilder）负责清除
             RequestContext.setCurrentRequestNode(requestNode);
-
             HttpRequestItem result = GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
 
             if (result == item) {
@@ -99,9 +121,7 @@ public class InheritanceService {
             } else {
                 log.debug("为请求 [{}] 应用分组继承", item.getName());
             }
-
             return result;
-
         } catch (Exception e) {
             log.debug("应用继承时发生异常（将使用原始配置）: {}", e.getMessage());
             return item;
@@ -110,11 +130,6 @@ public class InheritanceService {
 
     /**
      * 使所有缓存失效
-     * <p>
-     * 调用时机：
-     * - 修改分组的 auth/headers/scripts
-     * - 添加/删除/移动节点
-     * - 导入 Collection
      */
     public void invalidateCache() {
         cache.clear();
@@ -130,5 +145,4 @@ public class InheritanceService {
         cache.remove(requestId);
         log.debug("请求缓存已失效: {}", requestId);
     }
-
 }

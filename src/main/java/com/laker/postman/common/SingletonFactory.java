@@ -34,7 +34,6 @@ public class SingletonFactory {
         if (clazz == null) {
             throw new IllegalArgumentException("Class must not be null");
         }
-        log.debug("尝试获取单例实例: {}", clazz.getName());
         // 1. 创建占位符对象，防止递归依赖
         // 每个类的占位符是唯一的，避免不同类间冲突
         Object placeholder = new Object();
@@ -44,11 +43,9 @@ public class SingletonFactory {
         Object existing = INSTANCE_MAP.putIfAbsent(clazz, placeholder);
         // 3. 如果已存在实例（或占位符），直接返回
         if (existing != null && existing != placeholder) {
-            log.debug("已存在单例实例: {}", clazz.getName());
             return (T) existing;
         }
         try {
-            log.debug("开始创建单例实例: {}", clazz.getName());
 
             // 对于SingletonBasePanel类型，设置创建标志
             boolean isSingletonBasePanel = SingletonBasePanel.class.isAssignableFrom(clazz);
@@ -71,16 +68,12 @@ public class SingletonFactory {
                 SingletonBasePanel.setCreatingAllowed(false);
             }
 
-            log.debug("单例实例创建成功: {}", clazz.getName());
             if (instance instanceof SingletonBasePanel panel) {
-                log.debug("初始化面板: {}", clazz.getName());
                 panel.safeInit();
             } else if (instance instanceof SingletonBaseMenuBar menuBar) {
-                log.debug("初始化菜单: {}", clazz.getName());
                 menuBar.safeInit();
             }
             INSTANCE_MAP.put(clazz, instance); // 替换占位符为真实实例
-            log.debug("单例实例已注册到 INSTANCE_MAP: {}", clazz.getName());
             return instance;
         } catch (Exception e) {
             log.error("创建单例失败: {}", clazz.getName(), e);

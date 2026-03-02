@@ -772,6 +772,28 @@ public class FunctionalPanel extends SingletonBasePanel {
     }
 
     /**
+     * 同步最新的 HttpRequestItem 到表格中对应的行（由 Collections 保存时调用）
+     * 避免用户在 editSubPanel 修改并保存后，FunctionalPanel 仍持有旧数据。
+     *
+     * @param item 已保存的最新请求数据
+     */
+    public void syncRequestItem(HttpRequestItem item) {
+        if (item == null || item.getId() == null) return;
+        List<RunnerRowData> rows = tableModel.getAllRows();
+        for (int i = 0; i < rows.size(); i++) {
+            RunnerRowData row = rows.get(i);
+            if (row != null && row.requestItem != null && item.getId().equals(row.requestItem.getId())) {
+                row.requestItem = item;
+                row.name = item.getName();
+                row.url = item.getUrl();
+                row.method = item.getMethod();
+                tableModel.fireTableRowsUpdated(i, i);
+                log.debug("FunctionalPanel syncRequestItem: id={}, name={}", item.getId(), item.getName());
+            }
+        }
+    }
+
+    /**
      * 保存当前配置
      */
     public void save() {

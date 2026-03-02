@@ -104,13 +104,49 @@ public class GroupInheritanceHelper {
     }
 
     /**
+     * 使用已有的 Group 链直接合并，跳过树遍历（供 InheritanceService 缓存命中时使用）
+     * <p>
+     * 与 mergeGroupSettings 完全相同的合并逻辑，但直接接受 groupChain 参数，
+     * 避免重复遍历树，同时每次用最新 item（url/params 最新）。
+     *
+     * @param item       请求项（最新的，包含最新 url/params）
+     * @param groupChain 已缓存的 Group 链（从外到内）
+     * @return 合并后的请求项
+     */
+    public static HttpRequestItem mergeGroupSettingsWithChain(HttpRequestItem item, List<RequestGroup> groupChain) {
+        if (item == null || groupChain == null || groupChain.isEmpty()) {
+            return item;
+        }
+
+        HttpRequestItem mergedItem = cloneRequest(item);
+
+        String requestPreScript = mergedItem.getPrescript();
+        String requestPostScript = mergedItem.getPostscript();
+
+        List<ScriptFragment> groupPreScripts = new ArrayList<>();
+        List<ScriptFragment> groupPostScripts = new ArrayList<>();
+        List<HttpHeader> groupHeaders = new ArrayList<>();
+        List<Variable> groupVariables = new ArrayList<>();
+
+        applyAuthInheritance(mergedItem, groupChain);
+        collectScriptsHeadersAndVariables(groupChain, groupPreScripts, groupPostScripts, groupHeaders, groupVariables);
+
+        mergedItem.setPrescript(ScriptMerger.mergePreScripts(groupPreScripts, requestPreScript));
+        mergedItem.setPostscript(ScriptMerger.mergePostScripts(requestPostScript, groupPostScripts));
+        mergedItem.setHeadersList(mergeHeaders(groupHeaders, mergedItem.getHeadersList()));
+
+        log.debug("为请求 [{}] 应用分组继承（缓存 group 链）", item.getName());
+        return mergedItem;
+    }
+
+    /**
      * 收集分组链（从外到内）
      * <p>
      * 优化点：
      * - 使用迭代代替递归，避免栈溢出
      * - 直接向上遍历，性能为 O(h)，h 为树的高度
      */
-    private static List<RequestGroup> collectGroupChain(DefaultMutableTreeNode startNode) {
+    public static List<RequestGroup> collectGroupChain(DefaultMutableTreeNode startNode) {
         List<RequestGroup> groupChain = new ArrayList<>();
 
         if (startNode == null) {

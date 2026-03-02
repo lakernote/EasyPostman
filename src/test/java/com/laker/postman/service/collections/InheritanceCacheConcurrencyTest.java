@@ -1,8 +1,9 @@
 package com.laker.postman.service.collections;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestGroup;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,16 +35,17 @@ public class InheritanceCacheConcurrencyTest {
         AtomicInteger computeCount = new AtomicInteger(0);
 
         // 模拟耗时计算
-        HttpRequestItem expectedItem = new HttpRequestItem();
-        expectedItem.setId(requestId);
-        expectedItem.setName("Test Request");
+        RequestGroup group = new RequestGroup();
+        group.setName("Test Group");
+        List<RequestGroup> expectedGroupChain = List.of(group);
 
         // 启动 10 个线程同时请求
         int threadCount = 10;
         CountDownLatch startLatch = new CountDownLatch(1);  // 用于同步启动
         CountDownLatch doneLatch = new CountDownLatch(threadCount);  // 用于等待完成
 
-        HttpRequestItem[] results = new HttpRequestItem[threadCount];
+        @SuppressWarnings("unchecked")
+        List<RequestGroup>[] results = new List[threadCount];
 
         for (int i = 0; i < threadCount; i++) {
             final int index = i;
@@ -63,7 +65,7 @@ public class InheritanceCacheConcurrencyTest {
                             Thread.currentThread().interrupt();
                         }
 
-                        return expectedItem;
+                        return expectedGroupChain;
                     });
 
                 } catch (InterruptedException e) {
@@ -84,8 +86,8 @@ public class InheritanceCacheConcurrencyTest {
         assertEquals(computeCount.get(), 1, "计算函数应该只执行一次");
 
         // 验证所有线程获取到相同的对象
-        for (HttpRequestItem result : results) {
-            assertEquals(result, expectedItem, "所有线程应该获取到相同的对象");
+        for (List<RequestGroup> result : results) {
+            assertEquals(result, expectedGroupChain, "所有线程应该获取到相同的对象");
         }
 
     }
@@ -115,9 +117,9 @@ public class InheritanceCacheConcurrencyTest {
 
                     cache.computeIfAbsent(requestId, id -> {
                         computeCount.incrementAndGet();
-                        HttpRequestItem item = new HttpRequestItem();
-                        item.setId(id);
-                        return item;
+                        RequestGroup g = new RequestGroup();
+                        g.setName(id);
+                        return List.of(g);
                     });
 
                 } catch (InterruptedException e) {
